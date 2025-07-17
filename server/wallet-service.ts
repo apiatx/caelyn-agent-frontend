@@ -8,17 +8,17 @@ export class WalletService {
     try {
       console.log("🔗 Fetching BASE holdings using multi-chain API for:", walletAddress);
       
-      const apiKey = process.env.BASESCAN_API_KEY;
+      const apiKey = process.env.ETHERSCAN_API_KEY;
       if (!apiKey) {
-        console.log("❌ No API key found");
+        console.log("❌ No Etherscan API key found");
         return [];
       }
       
       const baseChainId = 8453; // BASE chain ID
       const holdings: any[] = [];
       
-      // Get ETH balance on BASE
-      const balanceUrl = `https://api.etherscan.io/v2/api?chainid=${baseChainId}&module=account&action=balance&address=${walletAddress}&tag=latest&apikey=${apiKey}`;
+      // Get ETH balance on BASE using standard Basescan API
+      const balanceUrl = `https://api.basescan.org/api?module=account&action=balance&address=${walletAddress}&tag=latest&apikey=${apiKey}`;
       console.log("Fetching ETH balance from:", balanceUrl);
       
       const ethResponse = await fetch(balanceUrl);
@@ -43,8 +43,8 @@ export class WalletService {
         }
       }
       
-      // Get token list on BASE
-      const tokenUrl = `https://api.etherscan.io/v2/api?chainid=${baseChainId}&module=account&action=tokenlist&address=${walletAddress}&apikey=${apiKey}`;
+      // Get token list on BASE using standard Basescan API
+      const tokenUrl = `https://api.basescan.org/api?module=account&action=tokenlist&address=${walletAddress}&apikey=${apiKey}`;
       console.log("Fetching tokens from:", tokenUrl);
       
       const tokenResponse = await fetch(tokenUrl);
@@ -103,7 +103,7 @@ export class WalletService {
       
       for (const token of baseTokens) {
         try {
-          const apiKey = process.env.BASESCAN_API_KEY || 'YourApiKeyToken';
+          const apiKey = process.env.ETHERSCAN_API_KEY;
           const balanceResponse = await fetch(
             `https://api.basescan.org/api?module=account&action=tokenbalance&contractaddress=${token.address}&address=${walletAddress}&tag=latest&apikey=${apiKey}`
           );

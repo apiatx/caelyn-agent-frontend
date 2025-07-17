@@ -10,18 +10,18 @@ export function DataIntegrityNotice() {
             Authentic Data Required
           </h3>
           <p className="text-sm text-orange-700 dark:text-orange-300 mt-1">
-            To display your real crypto holdings, a valid API key is required for blockchain data access. 
-            Without proper credentials, no portfolio data will be shown to maintain data integrity.
+            Your wallet addresses are saved but we're unable to fetch real holdings due to API authentication issues. 
+            The platform maintains data integrity by showing empty portfolios rather than fake data.
           </p>
           <div className="mt-3 flex flex-col sm:flex-row gap-2">
-            <a 
-              href="https://basescan.org/apis" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-sm text-orange-600 dark:text-orange-400 hover:text-orange-800 dark:hover:text-orange-200"
-            >
-              Get Basescan API Key <ExternalLink className="h-3 w-3" />
-            </a>
+            <span className="text-sm text-orange-600 dark:text-orange-400">
+              Wallet: 0x1677...8D97E (BASE) • 5EyoW...3FFAA (TAO)
+            </span>
+          </div>
+          <div className="mt-2">
+            <p className="text-xs text-orange-600 dark:text-orange-400">
+              Whale monitoring and market research features remain fully functional.
+            </p>
           </div>
         </div>
       </div>

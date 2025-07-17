@@ -4,7 +4,7 @@ const walletAddress = "0x1677B97859620CcbF4eEcF33f6feB1b7bEA8D97E";
 async function testRealWalletData() {
   console.log("Testing real wallet data for:", walletAddress);
   
-  const apiKey = process.env.BASESCAN_API_KEY;
+  const apiKey = process.env.ETHERSCAN_API_KEY;
   console.log("API Key available:", !!apiKey);
   
   if (!apiKey) {
