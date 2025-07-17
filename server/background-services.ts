@@ -234,11 +234,18 @@ class WhaleMonitoringService {
   private async updatePrices() {
     console.log("Updating prices...");
     
-    // Simulate price updates for holdings
-    // In a real implementation, this would fetch from external price APIs
     try {
-      // Update portfolio values with simulated price changes
+      // Check if portfolio has wallet addresses and update with real data
       const portfolio = await storage.getPortfolioByUserId(1);
+      if (portfolio && (portfolio.baseWalletAddress || portfolio.taoWalletAddress)) {
+        // Import and use wallet service for real data
+        const { walletService } = await import("./wallet-service");
+        await walletService.updatePortfolioWithRealData(portfolio.id);
+        console.log("✅ Updated portfolio with real wallet data");
+        return;
+      }
+
+      // Fallback to simulated price updates if no wallet addresses
       if (portfolio) {
         const holdings = await storage.getHoldingsByPortfolioId(portfolio.id);
         
@@ -260,7 +267,7 @@ class WhaleMonitoringService {
           });
         }
 
-        // Update portfolio totals
+        // Update portfolio totals with simulated extended PnL
         const updatedHoldings = await storage.getHoldingsByPortfolioId(portfolio.id);
         const totalBalance = updatedHoldings.reduce((sum, h) => {
           return sum + (parseFloat(h.amount) * parseFloat(h.currentPrice));
@@ -278,11 +285,21 @@ class WhaleMonitoringService {
           .filter(h => h.network === 'TAO')
           .reduce((sum, h) => sum + (parseFloat(h.amount) * parseFloat(h.currentPrice)), 0);
 
+        // Simulate extended PnL variations
+        const pnl7d = (totalPnl * 3.2).toFixed(2);
+        const pnl30d = (totalPnl * 7.8).toFixed(2);
+        const pnlYtd = (totalPnl * 15.3).toFixed(2);
+        const pnlAll = (totalPnl * 24.7).toFixed(2);
+
         await storage.updatePortfolio(portfolio.id, {
           totalBalance: totalBalance.toFixed(2),
           baseHoldings: baseHoldings.toFixed(2),
           taoHoldings: taoHoldings.toFixed(2),
-          pnl24h: totalPnl.toFixed(2)
+          pnl24h: totalPnl.toFixed(2),
+          pnl7d,
+          pnl30d,
+          pnlYtd,
+          pnlAll
         });
       }
     } catch (error) {

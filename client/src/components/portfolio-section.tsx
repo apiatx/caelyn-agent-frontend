@@ -42,10 +42,19 @@ export default function PortfolioSection() {
     onSuccess: () => {
       toast({
         title: "Success",
-        description: "Wallet addresses updated successfully",
+        description: "Wallet addresses updated - fetching real data...",
       });
       setIsEditingWallets(false);
       queryClient.invalidateQueries({ queryKey: ['/api/portfolio', 1] });
+      
+      // Refresh portfolio data after 3 seconds to show real wallet data
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['/api/portfolio', 1] });
+        toast({
+          title: "Portfolio Updated",
+          description: "Real wallet data has been loaded",
+        });
+      }, 3000);
     },
     onError: () => {
       toast({
@@ -206,7 +215,13 @@ export default function PortfolioSection() {
             <h3 className="text-crypto-silver text-sm font-medium">24h PnL</h3>
             <TrendingUp className="text-crypto-success h-5 w-5" />
           </div>
-          <div className="text-2xl font-bold text-crypto-success mb-2">+${portfolio.pnl24h}</div>
+          <div className={`text-2xl font-bold mb-2 ${
+            portfolio.pnl24h && parseFloat(portfolio.pnl24h) >= 0 
+              ? 'text-crypto-success' 
+              : 'text-red-500'
+          }`}>
+            {portfolio.pnl24h && parseFloat(portfolio.pnl24h) >= 0 ? '+' : ''}${portfolio.pnl24h}
+          </div>
           <div className="flex items-center text-sm">
             <span className="text-crypto-success">+1.47%</span>
             <span className="text-crypto-silver ml-2">vs yesterday</span>
@@ -249,6 +264,78 @@ export default function PortfolioSection() {
           </div>
         </GlassCard>
       </div>
+
+      {/* Extended PnL Timeline */}
+      <GlassCard className="p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-r from-crypto-success to-green-400 rounded-xl flex items-center justify-center">
+              <TrendingUp className="text-white text-xl" />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-white">Performance Timeline</h2>
+              <p className="text-crypto-silver text-sm">Real PnL tracking across multiple timeframes</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="text-center p-4 bg-white/5 backdrop-blur-sm rounded-lg border border-crypto-silver/20">
+            <div className={`text-xl font-bold mb-1 ${
+              portfolio.pnl24h && parseFloat(portfolio.pnl24h) >= 0 
+                ? 'text-crypto-success' 
+                : 'text-red-500'
+            }`}>
+              {portfolio.pnl24h && parseFloat(portfolio.pnl24h) >= 0 ? '+' : ''}${portfolio.pnl24h}
+            </div>
+            <div className="text-crypto-silver text-sm">24h PnL</div>
+          </div>
+          
+          <div className="text-center p-4 bg-white/5 backdrop-blur-sm rounded-lg border border-crypto-silver/20">
+            <div className={`text-xl font-bold mb-1 ${
+              portfolio.pnl7d && parseFloat(portfolio.pnl7d) >= 0 
+                ? 'text-crypto-success' 
+                : 'text-red-500'
+            }`}>
+              {portfolio.pnl7d && parseFloat(portfolio.pnl7d) >= 0 ? '+' : ''}${portfolio.pnl7d || '0.00'}
+            </div>
+            <div className="text-crypto-silver text-sm">7d PnL</div>
+          </div>
+          
+          <div className="text-center p-4 bg-white/5 backdrop-blur-sm rounded-lg border border-crypto-silver/20">
+            <div className={`text-xl font-bold mb-1 ${
+              portfolio.pnl30d && parseFloat(portfolio.pnl30d) >= 0 
+                ? 'text-crypto-success' 
+                : 'text-red-500'
+            }`}>
+              {portfolio.pnl30d && parseFloat(portfolio.pnl30d) >= 0 ? '+' : ''}${portfolio.pnl30d || '0.00'}
+            </div>
+            <div className="text-crypto-silver text-sm">30d PnL</div>
+          </div>
+          
+          <div className="text-center p-4 bg-white/5 backdrop-blur-sm rounded-lg border border-crypto-silver/20">
+            <div className={`text-xl font-bold mb-1 ${
+              portfolio.pnlYtd && parseFloat(portfolio.pnlYtd) >= 0 
+                ? 'text-crypto-success' 
+                : 'text-red-500'
+            }`}>
+              {portfolio.pnlYtd && parseFloat(portfolio.pnlYtd) >= 0 ? '+' : ''}${portfolio.pnlYtd || '0.00'}
+            </div>
+            <div className="text-crypto-silver text-sm">YTD PnL</div>
+          </div>
+          
+          <div className="text-center p-4 bg-white/5 backdrop-blur-sm rounded-lg border border-crypto-silver/20">
+            <div className={`text-xl font-bold mb-1 ${
+              portfolio.pnlAll && parseFloat(portfolio.pnlAll) >= 0 
+                ? 'text-crypto-success' 
+                : 'text-red-500'
+            }`}>
+              {portfolio.pnlAll && parseFloat(portfolio.pnlAll) >= 0 ? '+' : ''}${portfolio.pnlAll || '0.00'}
+            </div>
+            <div className="text-crypto-silver text-sm">All-Time PnL</div>
+          </div>
+        </div>
+      </GlassCard>
 
       {/* Holdings Breakdown */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

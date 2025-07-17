@@ -27,7 +27,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Update portfolio wallet addresses
+  // Update portfolio wallet addresses and fetch real data
   app.put("/api/portfolio/:id/wallets", async (req, res) => {
     try {
       const { id } = req.params;
@@ -37,6 +37,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         baseWalletAddress,
         taoWalletAddress
       });
+      
+      // Import wallet service and update with real data
+      const { walletService } = await import("./wallet-service");
+      
+      // Fetch real wallet data in background
+      setTimeout(() => {
+        walletService.updatePortfolioWithRealData(parseInt(id))
+          .catch(error => console.error("Background wallet update failed:", error));
+      }, 1000);
       
       res.json(portfolio);
     } catch (error) {

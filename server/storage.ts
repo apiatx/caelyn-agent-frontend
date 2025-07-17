@@ -14,6 +14,7 @@ export interface IStorage {
 
   // Portfolio methods
   getPortfolioByUserId(userId: number): Promise<Portfolio | undefined>;
+  getPortfolioById(portfolioId: number): Promise<Portfolio | undefined>;
   createPortfolio(portfolio: InsertPortfolio): Promise<Portfolio>;
   updatePortfolio(id: number, portfolio: Partial<InsertPortfolio>): Promise<Portfolio | undefined>;
 
@@ -107,6 +108,10 @@ export class MemStorage implements IStorage {
       baseHoldings: "47234.18",
       taoHoldings: "80611.14",
       pnl24h: "1847.52",
+      pnl7d: "8923.45",
+      pnl30d: "15678.90",
+      pnlYtd: "32154.76",
+      pnlAll: "89432.10",
       updatedAt: new Date(),
     };
     this.portfolios.set(1, portfolio);
@@ -359,6 +364,10 @@ export class MemStorage implements IStorage {
     return Array.from(this.portfolios.values()).find(portfolio => portfolio.userId === userId);
   }
 
+  async getPortfolioById(portfolioId: number): Promise<Portfolio | undefined> {
+    return this.portfolios.get(portfolioId);
+  }
+
   async createPortfolio(insertPortfolio: InsertPortfolio): Promise<Portfolio> {
     const id = this.currentPortfolioId++;
     const portfolio: Portfolio = { 
@@ -366,7 +375,11 @@ export class MemStorage implements IStorage {
       id, 
       updatedAt: new Date(),
       baseWalletAddress: insertPortfolio.baseWalletAddress ?? null,
-      taoWalletAddress: insertPortfolio.taoWalletAddress ?? null
+      taoWalletAddress: insertPortfolio.taoWalletAddress ?? null,
+      pnl7d: insertPortfolio.pnl7d ?? "0.00",
+      pnl30d: insertPortfolio.pnl30d ?? "0.00",
+      pnlYtd: insertPortfolio.pnlYtd ?? "0.00",
+      pnlAll: insertPortfolio.pnlAll ?? "0.00"
     };
     this.portfolios.set(id, portfolio);
     return portfolio;
@@ -376,7 +389,15 @@ export class MemStorage implements IStorage {
     const portfolio = this.portfolios.get(id);
     if (!portfolio) return undefined;
     
-    const updated: Portfolio = { ...portfolio, ...updates, updatedAt: new Date() };
+    const updated: Portfolio = { 
+      ...portfolio, 
+      ...updates, 
+      updatedAt: new Date(),
+      pnl7d: updates.pnl7d ?? portfolio.pnl7d,
+      pnl30d: updates.pnl30d ?? portfolio.pnl30d,
+      pnlYtd: updates.pnlYtd ?? portfolio.pnlYtd,
+      pnlAll: updates.pnlAll ?? portfolio.pnlAll
+    };
     this.portfolios.set(id, updated);
     return updated;
   }

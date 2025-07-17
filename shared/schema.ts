@@ -17,6 +17,10 @@ export const portfolios = pgTable("portfolios", {
   baseHoldings: decimal("base_holdings", { precision: 18, scale: 8 }).notNull(),
   taoHoldings: decimal("tao_holdings", { precision: 18, scale: 8 }).notNull(),
   pnl24h: decimal("pnl_24h", { precision: 18, scale: 8 }).notNull(),
+  pnl7d: decimal("pnl_7d", { precision: 18, scale: 8 }).default("0.00"),
+  pnl30d: decimal("pnl_30d", { precision: 18, scale: 8 }).default("0.00"),
+  pnlYtd: decimal("pnl_ytd", { precision: 18, scale: 8 }).default("0.00"),
+  pnlAll: decimal("pnl_all", { precision: 18, scale: 8 }).default("0.00"),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
