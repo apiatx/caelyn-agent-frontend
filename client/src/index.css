@@ -1,0 +1,124 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(0, 0%, 0%);
+  --foreground: hsl(0, 0%, 100%);
+  --muted: hsl(0, 0%, 10%);
+  --muted-foreground: hsl(0, 0%, 75%);
+  --popover: hsl(0, 0%, 5%);
+  --popover-foreground: hsl(0, 0%, 100%);
+  --card: hsl(0, 0%, 5%);
+  --card-foreground: hsl(0, 0%, 100%);
+  --border: hsl(0, 0%, 75%, 0.2);
+  --input: hsl(0, 0%, 10%);
+  --primary: hsl(0, 0%, 75%);
+  --primary-foreground: hsl(0, 0%, 0%);
+  --secondary: hsl(0, 0%, 10%);
+  --secondary-foreground: hsl(0, 0%, 100%);
+  --accent: hsl(0, 0%, 10%);
+  --accent-foreground: hsl(0, 0%, 100%);
+  --destructive: hsl(0, 84.2%, 60.2%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(0, 0%, 75%);
+  --radius: 1rem;
+  
+  /* Custom crypto colors */
+  --crypto-black: hsl(0, 0%, 0%);
+  --crypto-charcoal: hsl(0, 0%, 10%);
+  --crypto-silver: hsl(0, 0%, 75%);
+  --crypto-success: hsl(143, 100%, 55%);
+  --crypto-danger: hsl(0, 100%, 63%);
+  --crypto-warning: hsl(45, 100%, 58%);
+}
+
+.dark {
+  --background: hsl(0, 0%, 0%);
+  --foreground: hsl(0, 0%, 100%);
+  --muted: hsl(0, 0%, 10%);
+  --muted-foreground: hsl(0, 0%, 64.9%);
+  --popover: hsl(0, 0%, 5%);
+  --popover-foreground: hsl(0, 0%, 98%);
+  --card: hsl(0, 0%, 5%);
+  --card-foreground: hsl(0, 0%, 98%);
+  --border: hsl(0, 0%, 75%, 0.2);
+  --input: hsl(0, 0%, 10%);
+  --primary: hsl(0, 0%, 75%);
+  --primary-foreground: hsl(0, 0%, 0%);
+  --secondary: hsl(0, 0%, 10%);
+  --secondary-foreground: hsl(0, 0%, 98%);
+  --accent: hsl(0, 0%, 10%);
+  --accent-foreground: hsl(0, 0%, 98%);
+  --destructive: hsl(0, 62.8%, 30.6%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(0, 0%, 83.9%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased text-foreground min-h-screen;
+    background: linear-gradient(135deg, hsl(0, 0%, 0%) 0%, hsl(0, 0%, 10%) 50%, hsl(0, 0%, 0%) 100%);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+}
+
+@layer utilities {
+  .glass-card {
+    @apply backdrop-blur-md bg-white/5 border rounded-2xl;
+    border-color: hsla(0, 0%, 75%, 0.2);
+  }
+  
+  .glass-card-dark {
+    @apply backdrop-blur-md bg-black/30 border rounded-2xl;
+    border-color: hsla(0, 0%, 75%, 0.2);
+  }
+  
+  .text-crypto-success {
+    color: var(--crypto-success);
+  }
+  
+  .text-crypto-danger {
+    color: var(--crypto-danger);
+  }
+  
+  .text-crypto-warning {
+    color: var(--crypto-warning);
+  }
+  
+  .text-crypto-silver {
+    color: var(--crypto-silver);
+  }
+  
+  .bg-crypto-success {
+    background-color: var(--crypto-success);
+  }
+  
+  .bg-crypto-danger {
+    background-color: var(--crypto-danger);
+  }
+  
+  .bg-crypto-warning {
+    background-color: var(--crypto-warning);
+  }
+  
+  .border-crypto-success {
+    border-color: var(--crypto-success);
+  }
+  
+  .border-crypto-danger {
+    border-color: var(--crypto-danger);
+  }
+  
+  .border-crypto-warning {
+    border-color: var(--crypto-warning);
+  }
+  
+  .border-crypto-silver {
+    border-color: var(--crypto-silver);
+  }
+}
