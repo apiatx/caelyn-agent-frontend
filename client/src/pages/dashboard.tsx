@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ChartLine, Settings } from "lucide-react";
 import PortfolioSection from "@/components/portfolio-section";
-import WhaleWatchingSection from "@/components/whale-watching-section";
+import AlphaSection from "@/components/alpha-section";
 import MarketResearchSection from "@/components/market-research-section";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
@@ -60,7 +60,7 @@ export default function Dashboard() {
                   : "hover:bg-white/5 text-crypto-silver"
               }`}
             >
-              <i className="fas fa-search-dollar mr-2"></i>Whale Watching
+              <i className="fas fa-search-dollar mr-2"></i>Alpha
             </button>
             <button
               onClick={() => setActiveTab("research")}
@@ -79,7 +79,7 @@ export default function Dashboard() {
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
         {activeTab === "portfolio" && <PortfolioSection />}
-        {activeTab === "whale" && <WhaleWatchingSection />}
+        {activeTab === "whale" && <AlphaSection />}
         {activeTab === "research" && <MarketResearchSection />}
       </div>
     </div>

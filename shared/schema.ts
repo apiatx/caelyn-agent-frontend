@@ -11,6 +11,8 @@ export const users = pgTable("users", {
 export const portfolios = pgTable("portfolios", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
+  baseWalletAddress: text("base_wallet_address"),
+  taoWalletAddress: text("tao_wallet_address"),
   totalBalance: decimal("total_balance", { precision: 18, scale: 8 }).notNull(),
   baseHoldings: decimal("base_holdings", { precision: 18, scale: 8 }).notNull(),
   taoHoldings: decimal("tao_holdings", { precision: 18, scale: 8 }).notNull(),
@@ -83,6 +85,19 @@ export const tradeSignals = pgTable("trade_signals", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const mindshareProjects = pgTable("mindshare_projects", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  symbol: text("symbol").notNull(),
+  network: text("network").notNull(), // 'BASE' or 'TAO'
+  marketCap: decimal("market_cap", { precision: 18, scale: 8 }),
+  volume24h: decimal("volume_24h", { precision: 18, scale: 8 }),
+  mentions24h: integer("mentions_24h").notNull(),
+  sentiment: decimal("sentiment", { precision: 5, scale: 2 }).notNull(), // -100 to 100
+  trendingScore: integer("trending_score").notNull(), // 1-100
+  lastUpdated: timestamp("last_updated").defaultNow(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
@@ -122,6 +137,15 @@ export const insertTradeSignalSchema = createInsertSchema(tradeSignals).omit({
   id: true,
   createdAt: true,
 });
+
+export const insertMindshareProjectSchema = createInsertSchema(mindshareProjects).omit({
+  id: true,
+  lastUpdated: true,
+});
+
+// Type exports
+export type MindshareProject = typeof mindshareProjects.$inferSelect;
+export type InsertMindshareProject = z.infer<typeof insertMindshareProjectSchema>;
 
 // Types
 export type User = typeof users.$inferSelect;

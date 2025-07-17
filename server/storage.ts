@@ -1,9 +1,9 @@
 import { 
-  users, portfolios, holdings, subnets, whaleTransactions, premiumAccess, marketInsights, tradeSignals,
+  users, portfolios, holdings, subnets, whaleTransactions, premiumAccess, marketInsights, tradeSignals, mindshareProjects,
   type User, type InsertUser, type Portfolio, type InsertPortfolio, type Holding, type InsertHolding,
   type Subnet, type InsertSubnet, type WhaleTransaction, type InsertWhaleTransaction,
   type PremiumAccess, type InsertPremiumAccess, type MarketInsight, type InsertMarketInsight,
-  type TradeSignal, type InsertTradeSignal
+  type TradeSignal, type InsertTradeSignal, type MindshareProject, type InsertMindshareProject
 } from "@shared/schema";
 
 export interface IStorage {
@@ -42,6 +42,10 @@ export interface IStorage {
 
   getTradeSignals(limit?: number): Promise<TradeSignal[]>;
   createTradeSignal(signal: InsertTradeSignal): Promise<TradeSignal>;
+
+  // Mindshare methods
+  getMindshareProjects(): Promise<MindshareProject[]>;
+  createMindshareProject(project: InsertMindshareProject): Promise<MindshareProject>;
 }
 
 export class MemStorage implements IStorage {
@@ -53,6 +57,7 @@ export class MemStorage implements IStorage {
   private premiumAccess: Map<number, PremiumAccess>;
   private marketInsights: Map<number, MarketInsight>;
   private tradeSignals: Map<number, TradeSignal>;
+  private mindshareProjects: Map<number, MindshareProject>;
   
   private currentUserId: number;
   private currentPortfolioId: number;
@@ -62,6 +67,7 @@ export class MemStorage implements IStorage {
   private currentPremiumAccessId: number;
   private currentMarketInsightId: number;
   private currentTradeSignalId: number;
+  private currentMindshareProjectId: number;
 
   constructor() {
     this.users = new Map();
@@ -72,6 +78,7 @@ export class MemStorage implements IStorage {
     this.premiumAccess = new Map();
     this.marketInsights = new Map();
     this.tradeSignals = new Map();
+    this.mindshareProjects = new Map();
     
     this.currentUserId = 1;
     this.currentPortfolioId = 1;
@@ -81,6 +88,7 @@ export class MemStorage implements IStorage {
     this.currentPremiumAccessId = 1;
     this.currentMarketInsightId = 1;
     this.currentTradeSignalId = 1;
+    this.currentMindshareProjectId = 1;
 
     this.seedData();
   }
@@ -93,6 +101,8 @@ export class MemStorage implements IStorage {
     const portfolio: Portfolio = {
       id: 1,
       userId: 1,
+      baseWalletAddress: null,
+      taoWalletAddress: null,
       totalBalance: "127845.32",
       baseHoldings: "47234.18",
       taoHoldings: "80611.14",
@@ -271,6 +281,61 @@ export class MemStorage implements IStorage {
 
     whaleTransactions.forEach(tx => this.whaleTransactions.set(tx.id, tx));
     this.currentWhaleTransactionId = 4;
+
+    // Seed mindshare projects
+    const mindshareProjects: MindshareProject[] = [
+      {
+        id: 1,
+        name: "Farcaster",
+        symbol: "FARCAST",
+        network: "BASE",
+        marketCap: "42500000",
+        volume24h: "8200000",
+        mentions24h: 1247,
+        sentiment: "87.4",
+        trendingScore: 95,
+        lastUpdated: new Date(),
+      },
+      {
+        id: 2,
+        name: "Coinbase Wrapped BTC",
+        symbol: "cbBTC",
+        network: "BASE",
+        marketCap: "890000000",
+        volume24h: "125000000",
+        mentions24h: 892,
+        sentiment: "72.1",
+        trendingScore: 78,
+        lastUpdated: new Date(),
+      },
+      {
+        id: 3,
+        name: "Bittensor",
+        symbol: "TAO",
+        network: "TAO",
+        marketCap: "4200000000",
+        volume24h: "180000000",
+        mentions24h: 1834,
+        sentiment: "91.2",
+        trendingScore: 89,
+        lastUpdated: new Date(),
+      },
+      {
+        id: 4,
+        name: "Commune AI",
+        symbol: "COMAI",
+        network: "TAO",
+        marketCap: "45000000",
+        volume24h: "3200000",
+        mentions24h: 234,
+        sentiment: "68.9",
+        trendingScore: 65,
+        lastUpdated: new Date(),
+      }
+    ];
+
+    mindshareProjects.forEach(project => this.mindshareProjects.set(project.id, project));
+    this.currentMindshareProjectId = 5;
   }
 
   // User methods
@@ -296,7 +361,13 @@ export class MemStorage implements IStorage {
 
   async createPortfolio(insertPortfolio: InsertPortfolio): Promise<Portfolio> {
     const id = this.currentPortfolioId++;
-    const portfolio: Portfolio = { ...insertPortfolio, id, updatedAt: new Date() };
+    const portfolio: Portfolio = { 
+      ...insertPortfolio, 
+      id, 
+      updatedAt: new Date(),
+      baseWalletAddress: insertPortfolio.baseWalletAddress ?? null,
+      taoWalletAddress: insertPortfolio.taoWalletAddress ?? null
+    };
     this.portfolios.set(id, portfolio);
     return portfolio;
   }
@@ -408,6 +479,25 @@ export class MemStorage implements IStorage {
     const signal: TradeSignal = { ...insertSignal, id, createdAt: new Date() };
     this.tradeSignals.set(id, signal);
     return signal;
+  }
+
+  // Mindshare methods
+  async getMindshareProjects(): Promise<MindshareProject[]> {
+    return Array.from(this.mindshareProjects.values())
+      .sort((a, b) => b.trendingScore - a.trendingScore);
+  }
+
+  async createMindshareProject(insertProject: InsertMindshareProject): Promise<MindshareProject> {
+    const id = this.currentMindshareProjectId++;
+    const project: MindshareProject = { 
+      ...insertProject, 
+      id, 
+      lastUpdated: new Date(),
+      marketCap: insertProject.marketCap ?? null,
+      volume24h: insertProject.volume24h ?? null
+    };
+    this.mindshareProjects.set(id, project);
+    return project;
   }
 }
 

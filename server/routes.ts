@@ -142,6 +142,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Mindshare endpoints - Twitter sentiment tracking
+  app.get("/api/mindshare", async (req, res) => {
+    try {
+      const projects = await storage.getMindshareProjects();
+      res.json(projects);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch mindshare data" });
+    }
+  });
+
+  // Portfolio wallet address updates
+  app.put("/api/portfolio/:id/wallets", async (req, res) => {
+    try {
+      const portfolioId = parseInt(req.params.id);
+      const { baseWalletAddress, taoWalletAddress } = req.body;
+      
+      const portfolio = await storage.updatePortfolio(portfolioId, {
+        baseWalletAddress,
+        taoWalletAddress
+      });
+      
+      if (!portfolio) {
+        return res.status(404).json({ message: "Portfolio not found" });
+      }
+      
+      res.json(portfolio);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update wallet addresses" });
+    }
+  });
+
   // Price updates endpoint (simulated)
   app.post("/api/update-prices", async (req, res) => {
     try {

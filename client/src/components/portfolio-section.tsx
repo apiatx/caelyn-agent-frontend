@@ -1,19 +1,63 @@
 import { useState } from "react";
-import { Wallet, ExternalLink, TrendingUp } from "lucide-react";
+import { Wallet, ExternalLink, TrendingUp, Edit3, Save, Plus } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { usePortfolio } from "@/hooks/use-portfolio";
 import { Skeleton } from "@/components/ui/skeleton";
 import { HoldingDetailModal } from "@/components/holding-detail-modal";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import type { Holding, Subnet } from "@shared/schema";
 
 export default function PortfolioSection() {
   const { data: portfolio, isLoading } = usePortfolio(1);
   const [selectedHolding, setSelectedHolding] = useState<Holding | null>(null);
+  const [isEditingWallets, setIsEditingWallets] = useState(false);
+  const [baseWalletAddress, setBaseWalletAddress] = useState(portfolio?.baseWalletAddress || '');
+  const [taoWalletAddress, setTaoWalletAddress] = useState(portfolio?.taoWalletAddress || '');
+  
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   const { data: subnets } = useQuery<Subnet[]>({
     queryKey: ["/api/subnets"],
   });
+
+  // Update wallet addresses mutation
+  const updateWalletsMutation = useMutation({
+    mutationFn: async (data: { baseWalletAddress: string; taoWalletAddress: string }) => {
+      return apiRequest(`/api/portfolio/${portfolio?.id}/wallets`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' }
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Wallet addresses updated successfully",
+      });
+      setIsEditingWallets(false);
+      queryClient.invalidateQueries({ queryKey: ['/api/portfolio', 1] });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update wallet addresses",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const handleSaveWallets = () => {
+    updateWalletsMutation.mutate({
+      baseWalletAddress,
+      taoWalletAddress
+    });
+  };
 
   if (isLoading) {
     return (
@@ -40,6 +84,105 @@ export default function PortfolioSection() {
 
   return (
     <div className="space-y-8">
+      {/* Wallet Address Management */}
+      <GlassCard className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-r from-crypto-silver to-white rounded-xl flex items-center justify-center">
+              <Wallet className="text-crypto-black text-xl" />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-white">Wallet Addresses</h2>
+              <p className="text-crypto-silver text-sm">Connect your BASE and TAO wallets to track real holdings</p>
+            </div>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-crypto-silver/30 hover:bg-white/10"
+            onClick={() => {
+              if (isEditingWallets) {
+                handleSaveWallets();
+              } else {
+                setIsEditingWallets(true);
+                setBaseWalletAddress(portfolio?.baseWalletAddress || '');
+                setTaoWalletAddress(portfolio?.taoWalletAddress || '');
+              }
+            }}
+            disabled={updateWalletsMutation.isPending}
+          >
+            {isEditingWallets ? (
+              <>
+                <Save className="w-4 h-4 mr-2" />
+                {updateWalletsMutation.isPending ? 'Saving...' : 'Save'}
+              </>
+            ) : (
+              <>
+                <Edit3 className="w-4 h-4 mr-2" />
+                Edit
+              </>
+            )}
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <Label htmlFor="base-wallet" className="text-crypto-silver">BASE Network Wallet</Label>
+            {isEditingWallets ? (
+              <Input
+                id="base-wallet"
+                value={baseWalletAddress}
+                onChange={(e) => setBaseWalletAddress(e.target.value)}
+                placeholder="0x... (Enter your BASE wallet address)"
+                className="bg-white/5 border-crypto-silver/30 text-white"
+              />
+            ) : (
+              <div className="px-3 py-2 bg-white/5 rounded-md border border-crypto-silver/30 text-white min-h-10 flex items-center">
+                {portfolio?.baseWalletAddress ? (
+                  <span className="font-mono text-sm">
+                    {portfolio.baseWalletAddress.slice(0, 6)}...{portfolio.baseWalletAddress.slice(-4)}
+                  </span>
+                ) : (
+                  <span className="text-crypto-silver">No wallet connected</span>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="tao-wallet" className="text-crypto-silver">TAO Network Wallet</Label>
+            {isEditingWallets ? (
+              <Input
+                id="tao-wallet"
+                value={taoWalletAddress}
+                onChange={(e) => setTaoWalletAddress(e.target.value)}
+                placeholder="5... (Enter your TAO wallet address)"
+                className="bg-white/5 border-crypto-silver/30 text-white"
+              />
+            ) : (
+              <div className="px-3 py-2 bg-white/5 rounded-md border border-crypto-silver/30 text-white min-h-10 flex items-center">
+                {portfolio?.taoWalletAddress ? (
+                  <span className="font-mono text-sm">
+                    {portfolio.taoWalletAddress.slice(0, 6)}...{portfolio.taoWalletAddress.slice(-4)}
+                  </span>
+                ) : (
+                  <span className="text-crypto-silver">No wallet connected</span>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {isEditingWallets && (
+          <div className="mt-4 p-3 bg-crypto-warning/10 border border-crypto-warning/30 rounded-lg">
+            <p className="text-crypto-warning text-sm">
+              <strong>Note:</strong> Once you add wallet addresses, the platform will fetch your real holdings from the blockchain. 
+              This replaces the demo data with your actual cryptocurrency balances.
+            </p>
+          </div>
+        )}
+      </GlassCard>
+
       {/* Portfolio Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <GlassCard className="p-6 hover:shadow-2xl transition-all duration-300 cursor-pointer hover:scale-105">
