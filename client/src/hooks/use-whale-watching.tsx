@@ -17,8 +17,15 @@ export function useWhaleWatching(userId: number) {
     enabled: accessData?.hasAccess || false,
   });
 
+  // Free whale transactions - always available
+  const { data: freeTransactions } = useQuery<WhaleTransaction[]>({
+    queryKey: ["/api/whale-transactions"],
+    refetchInterval: 5000, // Refresh every 5 seconds
+  });
+
   return {
     data: accessData?.hasAccess,
     premiumTransactions,
+    freeTransactions,
   };
 }

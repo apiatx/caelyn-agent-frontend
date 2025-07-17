@@ -6,7 +6,7 @@ import { useWhaleWatching } from "@/hooks/use-whale-watching";
 import { CryptoPaymentModal } from "@/components/crypto-payment-modal";
 
 export default function WhaleWatchingSection() {
-  const { data: hasAccess, premiumTransactions } = useWhaleWatching(1);
+  const { data: hasAccess, premiumTransactions, freeTransactions } = useWhaleWatching(1);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedPaymentType, setSelectedPaymentType] = useState<'ETH' | 'TAO' | null>(null);
 
@@ -56,23 +56,51 @@ export default function WhaleWatchingSection() {
         </div>
       </div>
 
-      {/* Preview of Whale Activity */}
+      {/* FREE Whale Activity */}
       <GlassCard className="p-6">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-white">Recent Whale Activity</h2>
-          <div className="text-sm text-crypto-silver">Limited preview</div>
+          <h2 className="text-xl font-semibold text-white">Real-Time Whale Activity</h2>
+          <div className="text-sm text-crypto-success">FREE - No premium required</div>
         </div>
         
         <div className="space-y-4">
-          {/* Sample transactions - would be real data with premium access */}
-          <div className="backdrop-blur-sm bg-white/5 rounded-xl border border-crypto-silver/10 p-4 relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent rounded-xl"></div>
-            <div className="relative">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center">
-                  <div className="w-8 h-8 bg-blue-500 rounded-full mr-3 flex items-center justify-center text-xs font-bold">B</div>
-                  <div>
-                    <h3 className="font-medium text-white">Large BASE Transaction</h3>
+          {freeTransactions && freeTransactions.length > 0 ? (
+            freeTransactions.slice(0, 10).map((tx, index) => (
+              <div key={tx.id || index} className="backdrop-blur-sm bg-white/5 rounded-xl border border-crypto-silver/10 p-4 hover:bg-white/10 transition-all duration-200">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 bg-blue-500 rounded-full mr-3 flex items-center justify-center text-xs font-bold">
+                      {tx.network === 'BASE' ? 'B' : 'T'}
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-white">
+                        {tx.amount} {tx.token}
+                      </h3>
+                      <p className="text-crypto-silver text-sm">
+                        {tx.network} Network • ${parseFloat(tx.amountUsd).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-crypto-success font-semibold">${parseFloat(tx.amountUsd).toLocaleString()}</div>
+                    <div className="text-crypto-silver text-xs">
+                      {new Date(tx.timestamp).toLocaleTimeString()}
+                    </div>
+                  </div>
+                </div>
+                <div className="text-crypto-silver text-xs font-mono">
+                  From: {tx.fromAddress.slice(0, 6)}...{tx.fromAddress.slice(-4)}
+                  {' → '}
+                  To: {tx.toAddress.slice(0, 6)}...{tx.toAddress.slice(-4)}
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="text-center py-8">
+              <Activity className="w-12 h-12 text-crypto-silver mx-auto mb-4" />
+              <p className="text-crypto-silver">Loading whale transactions...</p>
+            </div>
+          )}
                     <p className="text-sm text-crypto-silver">2 minutes ago</p>
                   </div>
                 </div>
