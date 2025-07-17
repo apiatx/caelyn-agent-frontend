@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { usePortfolio } from "@/hooks/use-portfolio";
 import { Skeleton } from "@/components/ui/skeleton";
 import { HoldingDetailModal } from "@/components/holding-detail-modal";
+import { DataIntegrityNotice } from "@/components/data-integrity-notice";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -95,8 +96,14 @@ export default function PortfolioSection() {
   const baseHoldings = portfolio.holdings?.filter(h => h.network === "BASE") || [];
   const taoHoldings = portfolio.holdings?.filter(h => h.network === "TAO") || [];
 
+  // Check if portfolio has no real data
+  const hasNoData = !portfolio.holdings?.length && parseFloat(portfolio.totalBalance) === 0;
+
   return (
     <div className="space-y-8">
+      {/* Data Integrity Notice */}
+      {hasNoData && <DataIntegrityNotice />}
+      
       {/* Wallet Address Management */}
       <GlassCard className="p-6">
         <div className="flex items-center justify-between mb-4">

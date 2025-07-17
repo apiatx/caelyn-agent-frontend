@@ -104,61 +104,20 @@ export class MemStorage implements IStorage {
       userId: 1,
       baseWalletAddress: null,
       taoWalletAddress: null,
-      totalBalance: "127845.32",
-      baseHoldings: "47234.18",
-      taoHoldings: "80611.14",
-      pnl24h: "1847.52",
-      pnl7d: "8923.45",
-      pnl30d: "15678.90",
-      pnlYtd: "32154.76",
-      pnlAll: "89432.10",
+      totalBalance: "0.00",
+      baseHoldings: "0.00",
+      taoHoldings: "0.00",
+      pnl24h: "0.00",
+      pnl7d: "0.00",
+      pnl30d: "0.00",
+      pnlYtd: "0.00",
+      pnlAll: "0.00",
       updatedAt: new Date(),
     };
     this.portfolios.set(1, portfolio);
 
-    // Seed holdings
-    const baseHoldings: Holding[] = [
-      {
-        id: 1,
-        portfolioId: 1,
-        symbol: "ETH",
-        network: "BASE",
-        amount: "12.457",
-        entryPrice: "2089.34",
-        currentPrice: "2324.12",
-        pnl: "2347.89",
-        pnlPercentage: "11.25",
-      },
-      {
-        id: 2,
-        portfolioId: 1,
-        symbol: "UNI",
-        network: "BASE",
-        amount: "2847.3",
-        entryPrice: "6.49",
-        currentPrice: "6.42",
-        pnl: "-191.55",
-        pnlPercentage: "-1.08",
-      }
-    ];
-
-    const taoHoldings: Holding[] = [
-      {
-        id: 3,
-        portfolioId: 1,
-        symbol: "TAO",
-        network: "TAO",
-        amount: "145.7",
-        entryPrice: "532.45",
-        currentPrice: "553.24",
-        pnl: "3077.87",
-        pnlPercentage: "3.91",
-      }
-    ];
-
-    baseHoldings.forEach(holding => this.holdings.set(holding.id, holding));
-    taoHoldings.forEach(holding => this.holdings.set(holding.id, holding));
-    this.currentHoldingId = 4;
+    // No seed holdings - only real data
+    this.currentHoldingId = 1;
 
     // Seed subnets
     const subnetsData: Subnet[] = [
