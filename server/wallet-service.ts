@@ -3,10 +3,13 @@ import { storage } from "./storage";
 // Real wallet data integration using Rabby.io and TaoStats APIs
 export class WalletService {
 
-  // Fetch real BASE holdings from Rabby.io API
+  // Fetch real BASE holdings from Rabby.io API with rate limiting
   async fetchBaseHoldingsFromRabby(walletAddress: string): Promise<any[]> {
     try {
       console.log("🔗 Fetching BASE holdings from Rabby.io for:", walletAddress);
+      
+      // Add delay to prevent rate limiting
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
       // Rabby.io API endpoint for wallet token list
       const response = await fetch(`https://api.rabby.io/v1/user/token_list?id=${walletAddress}&is_all=false&chain_id=base`, {
@@ -17,6 +20,10 @@ export class WalletService {
       });
       
       if (!response.ok) {
+        if (response.status === 429) {
+          console.log("⏳ Rabby.io rate limit hit - will retry later");
+          return [];
+        }
         throw new Error(`Rabby.io API failed with status ${response.status}`);
       }
 

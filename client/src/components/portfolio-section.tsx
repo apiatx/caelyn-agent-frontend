@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Wallet, ExternalLink, TrendingUp, Edit3, Save, Plus } from "lucide-react";
+import { Wallet, ExternalLink, TrendingUp, Edit3, Save, Plus, Activity } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -352,7 +352,10 @@ export default function PortfolioSection() {
           </div>
           
           <div className="space-y-4">
-            {baseHoldings.map((holding) => (
+            {baseHoldings.filter(holding => {
+              const value = parseFloat(holding.amount) * parseFloat(holding.currentPrice);
+              return value >= 5; // Only show holdings worth $5 or more
+            }).map((holding) => (
               <div 
                 key={holding.id} 
                 className="backdrop-blur-sm bg-white/5 rounded-xl border border-crypto-silver/10 p-4 hover:bg-white/10 transition-all duration-200 cursor-pointer hover:scale-105"
@@ -402,7 +405,10 @@ export default function PortfolioSection() {
           </div>
           
           <div className="space-y-4">
-            {taoHoldings.map((holding) => (
+            {taoHoldings.filter(holding => {
+              const value = parseFloat(holding.amount) * parseFloat(holding.currentPrice);
+              return value >= 5; // Only show holdings worth $5 or more
+            }).map((holding) => (
               <div 
                 key={holding.id} 
                 className="backdrop-blur-sm bg-white/5 rounded-xl border border-crypto-silver/10 p-4 hover:bg-white/10 transition-all duration-200 cursor-pointer hover:scale-105"
@@ -467,6 +473,129 @@ export default function PortfolioSection() {
           </div>
         </GlassCard>
       </div>
+
+      {/* All Time Performance Section for Small Holdings */}
+      <GlassCard className="p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-semibold text-white flex items-center">
+            <Activity className="w-6 h-6 mr-3 text-crypto-silver" />
+            All Time Performance
+          </h2>
+          <div className="text-sm text-crypto-silver">Holdings under $5</div>
+        </div>
+        
+        <div className="space-y-4">
+          {/* Small BASE Holdings */}
+          {baseHoldings.filter(holding => {
+            const value = parseFloat(holding.amount) * parseFloat(holding.currentPrice);
+            return value < 5; // Only show holdings worth less than $5
+          }).map((holding, index) => (
+            <div key={`small-base-${holding.id}-${index}`} className="backdrop-blur-sm bg-white/5 rounded-xl border border-crypto-silver/10 p-4">
+              <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-center">
+                <div className="flex items-center">
+                  <div className="w-8 h-8 bg-blue-600 rounded-full mr-3 flex items-center justify-center text-xs font-bold">
+                    {holding.symbol.slice(0, 2)}
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-white text-sm">{holding.symbol}</h4>
+                    <p className="text-xs text-crypto-silver">BASE</p>
+                  </div>
+                </div>
+                
+                <div className="text-center">
+                  <div className="text-white text-sm">{parseFloat(holding.amount).toFixed(6)}</div>
+                  <div className="text-crypto-silver text-xs">Amount</div>
+                </div>
+                
+                <div className="text-center">
+                  <div className="text-white text-sm">${parseFloat(holding.entryPrice).toFixed(4)}</div>
+                  <div className="text-crypto-silver text-xs">Entry Price</div>
+                </div>
+                
+                <div className="text-center">
+                  <div className="text-white text-sm">${parseFloat(holding.currentPrice).toFixed(4)}</div>
+                  <div className="text-crypto-silver text-xs">Current Price</div>
+                </div>
+                
+                <div className="text-center">
+                  <div className="text-white text-sm">${(parseFloat(holding.amount) * parseFloat(holding.currentPrice)).toFixed(2)}</div>
+                  <div className="text-crypto-silver text-xs">Current Value</div>
+                </div>
+                
+                <div className="text-center">
+                  <div className={`text-sm font-medium ${parseFloat(holding.pnl) >= 0 ? 'text-crypto-success' : 'text-red-500'}`}>
+                    {parseFloat(holding.pnl) >= 0 ? '+' : ''}${holding.pnl}
+                  </div>
+                  <div className={`text-xs ${parseFloat(holding.pnlPercentage) >= 0 ? 'text-crypto-success' : 'text-red-500'}`}>
+                    ({parseFloat(holding.pnlPercentage) >= 0 ? '+' : ''}{holding.pnlPercentage}%)
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+          
+          {/* Small TAO Holdings */}
+          {taoHoldings.filter(holding => {
+            const value = parseFloat(holding.amount) * parseFloat(holding.currentPrice);
+            return value < 5; // Only show holdings worth less than $5
+          }).map((holding, index) => (
+            <div key={`small-tao-${holding.id}-${index}`} className="backdrop-blur-sm bg-white/5 rounded-xl border border-crypto-silver/10 p-4">
+              <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-center">
+                <div className="flex items-center">
+                  <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mr-3 flex items-center justify-center text-xs font-bold">
+                    Τ
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-white text-sm">{holding.symbol}</h4>
+                    <p className="text-xs text-crypto-silver">TAO</p>
+                  </div>
+                </div>
+                
+                <div className="text-center">
+                  <div className="text-white text-sm">{parseFloat(holding.amount).toFixed(6)}</div>
+                  <div className="text-crypto-silver text-xs">Amount</div>
+                </div>
+                
+                <div className="text-center">
+                  <div className="text-white text-sm">${parseFloat(holding.entryPrice).toFixed(4)}</div>
+                  <div className="text-crypto-silver text-xs">Entry Price</div>
+                </div>
+                
+                <div className="text-center">
+                  <div className="text-white text-sm">${parseFloat(holding.currentPrice).toFixed(4)}</div>
+                  <div className="text-crypto-silver text-xs">Current Price</div>
+                </div>
+                
+                <div className="text-center">
+                  <div className="text-white text-sm">${(parseFloat(holding.amount) * parseFloat(holding.currentPrice)).toFixed(2)}</div>
+                  <div className="text-crypto-silver text-xs">Current Value</div>
+                </div>
+                
+                <div className="text-center">
+                  <div className={`text-sm font-medium ${parseFloat(holding.pnl) >= 0 ? 'text-crypto-success' : 'text-red-500'}`}>
+                    {parseFloat(holding.pnl) >= 0 ? '+' : ''}${holding.pnl}
+                  </div>
+                  <div className={`text-xs ${parseFloat(holding.pnlPercentage) >= 0 ? 'text-crypto-success' : 'text-red-500'}`}>
+                    ({parseFloat(holding.pnlPercentage) >= 0 ? '+' : ''}{holding.pnlPercentage}%)
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+          
+          {/* Show message if no small holdings */}
+          {baseHoldings.filter(h => (parseFloat(h.amount) * parseFloat(h.currentPrice)) < 5).length === 0 && 
+           taoHoldings.filter(h => (parseFloat(h.amount) * parseFloat(h.currentPrice)) < 5).length === 0 && (
+            <div className="text-center py-8">
+              <div className="w-16 h-16 bg-crypto-silver/10 rounded-full mx-auto mb-4 flex items-center justify-center">
+                <Activity className="w-8 h-8 text-crypto-silver" />
+              </div>
+              <p className="text-crypto-silver">No holdings under $5 found</p>
+              <p className="text-crypto-silver text-sm mt-2">All your positions are above the $5 threshold</p>
+            </div>
+          )}
+        </div>
+      </GlassCard>
 
       {/* Subnet Analytics Table */}
       <GlassCard className="p-6">
