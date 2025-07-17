@@ -37,11 +37,7 @@ export default function PortfolioSection() {
   // Update wallet addresses mutation
   const updateWalletsMutation = useMutation({
     mutationFn: async (data: { baseWalletAddress: string; taoWalletAddress: string }) => {
-      return apiRequest(`/api/portfolio/${portfolio?.id}/wallets`, {
-        method: 'PUT',
-        body: JSON.stringify(data),
-        headers: { 'Content-Type': 'application/json' }
-      });
+      return apiRequest('PUT', `/api/portfolio/${portfolio?.id}/wallets`, data);
     },
     onSuccess: () => {
       toast({
