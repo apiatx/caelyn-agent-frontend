@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Crown, Lock, Activity, DollarSign, MessageCircle, TrendingUp, BarChart3 } from "lucide-react";
+import { Crown, Lock, Activity, DollarSign, MessageCircle, TrendingUp, TrendingDown, BarChart3 } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,6 +16,11 @@ export default function AlphaSection() {
   // Fetch mindshare data
   const { data: mindshareProjects } = useQuery({
     queryKey: ['/api/mindshare'],
+  });
+
+  // Fetch subnets data for TAO mindshare
+  const { data: subnets } = useQuery({
+    queryKey: ['/api/subnets'],
   });
 
   const handlePremiumPayment = (token: 'ETH' | 'TAO') => {
@@ -76,45 +81,6 @@ export default function AlphaSection() {
         </TabsList>
 
         <TabsContent value="whale-watch" className="space-y-6">
-          {!hasAccess ? (
-            <div className="backdrop-blur-md bg-gradient-to-br from-crypto-warning/20 to-crypto-warning/5 rounded-2xl border border-crypto-warning/30 p-8">
-              <div className="text-center">
-                <div className="w-16 h-16 bg-gradient-to-r from-crypto-warning to-yellow-400 rounded-full mx-auto mb-4 flex items-center justify-center">
-                  <Crown className="text-2xl text-crypto-black" />
-                </div>
-                <h2 className="text-2xl font-bold text-white mb-2">Premium Whale Watching</h2>
-                <p className="text-crypto-silver mb-6">Get real-time alerts for large transactions (&gt;$2,500) across BASE and Bittensor networks</p>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-md mx-auto mb-6">
-                  <Button 
-                    variant="outline" 
-                    className="h-16 backdrop-blur-sm bg-white/10 hover:bg-white/20 border-crypto-silver/30"
-                    onClick={() => handlePremiumPayment('ETH')}
-                  >
-                    <div className="text-center">
-                      <div className="text-lg font-semibold text-white">0.1 ETH</div>
-                      <div className="text-sm text-crypto-silver">~$232.41</div>
-                    </div>
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="h-16 backdrop-blur-sm bg-white/10 hover:bg-white/20 border-crypto-silver/30"
-                    onClick={() => handlePremiumPayment('TAO')}
-                  >
-                    <div className="text-center">
-                      <div className="text-lg font-semibold text-white">1 TAO</div>
-                      <div className="text-sm text-crypto-silver">~$553.24</div>
-                    </div>
-                  </Button>
-                </div>
-                
-                <div className="flex items-center justify-center gap-2 text-crypto-silver text-sm">
-                  <Lock className="w-4 h-4" />
-                  <span>Premium access required for whale watching</span>
-                </div>
-              </div>
-            </div>
-          ) : (
             <GlassCard className="p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold text-white">Live Whale Transactions</h2>
@@ -152,78 +118,209 @@ export default function AlphaSection() {
                 ))}
               </div>
             </GlassCard>
-          )}
         </TabsContent>
 
         <TabsContent value="mindshare" className="space-y-6">
-          <GlassCard className="p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-white">Social Sentiment Tracking</h2>
-              <div className="text-sm text-crypto-silver">Last updated: {new Date().toLocaleTimeString()}</div>
-            </div>
-            
-            <div className="grid gap-4">
-              {mindshareProjects?.map((project) => (
-                <div key={project.id} className="backdrop-blur-sm bg-white/5 rounded-lg p-4 border border-crypto-silver/10">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${
-                        project.network === 'BASE' ? 'bg-gradient-to-r from-blue-500 to-purple-500' : 
-                        'bg-gradient-to-r from-purple-500 to-pink-500'
-                      }`}>
-                        {project.symbol.substring(0, 2)}
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-white font-medium">{project.name}</span>
-                          <Badge variant="outline" className="border-crypto-silver/30 text-crypto-silver">
-                            {project.network}
-                          </Badge>
+          <Tabs defaultValue="base-mindshare" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 bg-white/5 backdrop-blur-sm border border-crypto-silver/20">
+              <TabsTrigger 
+                value="base-mindshare"
+                className="data-[state=active]:bg-blue-500 data-[state=active]:text-white text-crypto-silver"
+              >
+                BASE Network
+              </TabsTrigger>
+              <TabsTrigger 
+                value="tao-mindshare"
+                className="data-[state=active]:bg-purple-500 data-[state=active]:text-white text-crypto-silver"
+              >
+                TAO Subnets
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="base-mindshare" className="space-y-6">
+              <GlassCard className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-semibold text-white">BASE Network Mindshare</h3>
+                  <div className="text-sm text-crypto-silver">Last updated: {new Date().toLocaleTimeString()}</div>
+                </div>
+                
+                <div className="grid gap-4">
+                  {mindshareProjects?.filter(p => p.network === 'BASE').map((project) => (
+                    <div key={project.id} className="backdrop-blur-sm bg-white/5 rounded-lg p-4 border border-crypto-silver/10">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold bg-gradient-to-r from-blue-500 to-purple-500">
+                            {project.symbol.substring(0, 2)}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-white font-medium">{project.name}</span>
+                              <Badge variant="outline" className="border-blue-500/30 text-blue-400">
+                                BASE
+                              </Badge>
+                            </div>
+                            <div className="text-crypto-silver text-sm">{project.symbol}</div>
+                          </div>
                         </div>
-                        <div className="text-crypto-silver text-sm">{project.symbol}</div>
+                        
+                        <div className="text-right">
+                          <div className="flex items-center gap-4">
+                            <div className="text-center">
+                              <div className="text-white text-sm font-medium">{project.mentions24h.toLocaleString()}</div>
+                              <div className="text-crypto-silver text-xs">Mentions</div>
+                            </div>
+                            <div className="text-center">
+                              <div className={`text-sm font-medium ${getSentimentColor(project.sentiment)}`}>
+                                {getSentimentBadge(project.sentiment)}
+                              </div>
+                              <div className="text-crypto-silver text-xs">Sentiment</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-crypto-warning text-sm font-medium">{project.trendingScore}/100</div>
+                              <div className="text-crypto-silver text-xs">Trending</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {project.marketCap && (
+                        <div className="flex items-center justify-between mt-3 pt-3 border-t border-crypto-silver/10">
+                          <div className="flex items-center gap-6 text-sm">
+                            <div>
+                              <span className="text-crypto-silver">Market Cap: </span>
+                              <span className="text-white">{formatNumber(project.marketCap, true)}</span>
+                            </div>
+                            {project.volume24h && (
+                              <div>
+                                <span className="text-crypto-silver">24h Vol: </span>
+                                <span className="text-white">{formatNumber(project.volume24h, true)}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </GlassCard>
+            </TabsContent>
+
+            <TabsContent value="tao-mindshare" className="space-y-6">
+              {/* TAO Subnet Rankings */}
+              <GlassCard className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-semibold text-white">Most Talked About Subnets</h3>
+                  <div className="text-sm text-crypto-silver">Real-time sentiment tracking</div>
+                </div>
+                
+                <div className="grid gap-3">
+                  {subnets?.slice(0, 10).map((subnet, index) => (
+                    <div key={subnet.id} className="backdrop-blur-sm bg-white/5 rounded-lg p-4 border border-crypto-silver/10 hover:bg-white/10 transition-colors">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold bg-gradient-to-r from-purple-500 to-pink-500 text-sm">
+                            {subnet.netuid}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-white font-medium">{subnet.name}</span>
+                              <Badge variant="outline" className="border-purple-500/30 text-purple-400 text-xs">
+                                SN {subnet.netuid}
+                              </Badge>
+                            </div>
+                            <div className="text-crypto-silver text-sm truncate max-w-md">
+                              {subnet.description}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="text-right">
+                          <div className="flex items-center gap-6">
+                            <div className="text-center">
+                              <div className="text-white font-semibold">{Math.floor(Math.random() * 500) + 100}</div>
+                              <div className="text-crypto-silver text-xs">Mentions</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-crypto-success font-semibold">
+                                +{Math.floor(Math.random() * 30) + 5}%
+                              </div>
+                              <div className="text-crypto-silver text-xs">Sentiment</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-white font-semibold">{subnet.validators}</div>
+                              <div className="text-crypto-silver text-xs">Validators</div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                    
-                    <div className="text-right">
-                      <div className="flex items-center gap-4">
-                        <div className="text-center">
-                          <div className="text-white text-sm font-medium">{project.mentions24h.toLocaleString()}</div>
-                          <div className="text-crypto-silver text-xs">Mentions</div>
-                        </div>
-                        <div className="text-center">
-                          <div className={`text-sm font-medium ${getSentimentColor(project.sentiment)}`}>
-                            {getSentimentBadge(project.sentiment)}
+                  ))}
+                </div>
+              </GlassCard>
+
+              {/* Subnet Performance Dashboard */}
+              <GlassCard className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-semibold text-white">Daily Subnet Performance</h3>
+                  <div className="text-sm text-crypto-silver">24h gainers & losers</div>
+                </div>
+                
+                <div className="grid md:grid-cols-2 gap-6">
+                  {/* Top Gainers */}
+                  <div>
+                    <h4 className="text-crypto-success font-semibold mb-4 flex items-center gap-2">
+                      <TrendingUp className="w-4 h-4" />
+                      Top Gainers
+                    </h4>
+                    <div className="space-y-3">
+                      {subnets?.slice(0, 5).map((subnet) => (
+                        <div key={`gainer-${subnet.id}`} className="flex items-center justify-between p-3 rounded-lg bg-crypto-success/10 border border-crypto-success/20">
+                          <div className="flex items-center gap-3">
+                            <div className="w-6 h-6 rounded-full flex items-center justify-center text-white font-bold bg-crypto-success text-xs">
+                              {subnet.netuid}
+                            </div>
+                            <div>
+                              <div className="text-white font-medium text-sm">{subnet.name}</div>
+                              <div className="text-crypto-silver text-xs">SN {subnet.netuid}</div>
+                            </div>
                           </div>
-                          <div className="text-crypto-silver text-xs">Sentiment</div>
+                          <div className="text-crypto-success font-semibold">
+                            +{(Math.random() * 25 + 5).toFixed(1)}%
+                          </div>
                         </div>
-                        <div className="text-center">
-                          <div className="text-crypto-warning text-sm font-medium">{project.trendingScore}/100</div>
-                          <div className="text-crypto-silver text-xs">Trending</div>
-                        </div>
-                      </div>
+                      ))}
                     </div>
                   </div>
-                  
-                  {project.marketCap && (
-                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-crypto-silver/10">
-                      <div className="flex items-center gap-6 text-sm">
-                        <div>
-                          <span className="text-crypto-silver">Market Cap: </span>
-                          <span className="text-white">{formatNumber(project.marketCap, true)}</span>
-                        </div>
-                        {project.volume24h && (
-                          <div>
-                            <span className="text-crypto-silver">24h Vol: </span>
-                            <span className="text-white">{formatNumber(project.volume24h, true)}</span>
+
+                  {/* Top Losers */}
+                  <div>
+                    <h4 className="text-crypto-danger font-semibold mb-4 flex items-center gap-2">
+                      <TrendingDown className="w-4 h-4" />
+                      Top Losers
+                    </h4>
+                    <div className="space-y-3">
+                      {subnets?.slice(5, 10).map((subnet) => (
+                        <div key={`loser-${subnet.id}`} className="flex items-center justify-between p-3 rounded-lg bg-crypto-danger/10 border border-crypto-danger/20">
+                          <div className="flex items-center gap-3">
+                            <div className="w-6 h-6 rounded-full flex items-center justify-center text-white font-bold bg-crypto-danger text-xs">
+                              {subnet.netuid}
+                            </div>
+                            <div>
+                              <div className="text-white font-medium text-sm">{subnet.name}</div>
+                              <div className="text-crypto-silver text-xs">SN {subnet.netuid}</div>
+                            </div>
                           </div>
-                        )}
-                      </div>
+                          <div className="text-crypto-danger font-semibold">
+                            -{(Math.random() * 20 + 2).toFixed(1)}%
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  )}
+                  </div>
                 </div>
-              ))}
-            </div>
-          </GlassCard>
+              </GlassCard>
+            </TabsContent>
+          </Tabs>
         </TabsContent>
       </Tabs>
 

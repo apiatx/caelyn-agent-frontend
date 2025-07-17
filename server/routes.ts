@@ -27,6 +27,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update portfolio wallet addresses
+  app.put("/api/portfolio/:id/wallets", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { baseWalletAddress, taoWalletAddress } = req.body;
+      
+      const portfolio = await storage.updatePortfolio(parseInt(id), {
+        baseWalletAddress,
+        taoWalletAddress
+      });
+      
+      res.json(portfolio);
+    } catch (error) {
+      console.error('Error updating wallet addresses:', error);
+      res.status(500).json({ error: 'Failed to update wallet addresses' });
+    }
+  });
+
   // Holdings endpoints
   app.get("/api/holdings/:portfolioId", async (req, res) => {
     try {

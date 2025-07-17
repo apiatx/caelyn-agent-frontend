@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Wallet, ExternalLink, TrendingUp, Edit3, Save, Plus } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
@@ -16,8 +16,16 @@ export default function PortfolioSection() {
   const { data: portfolio, isLoading } = usePortfolio(1);
   const [selectedHolding, setSelectedHolding] = useState<Holding | null>(null);
   const [isEditingWallets, setIsEditingWallets] = useState(false);
-  const [baseWalletAddress, setBaseWalletAddress] = useState(portfolio?.baseWalletAddress || '');
-  const [taoWalletAddress, setTaoWalletAddress] = useState(portfolio?.taoWalletAddress || '');
+  const [baseWalletAddress, setBaseWalletAddress] = useState('');
+  const [taoWalletAddress, setTaoWalletAddress] = useState('');
+
+  // Update wallet addresses when portfolio data changes
+  useEffect(() => {
+    if (portfolio) {
+      setBaseWalletAddress(portfolio.baseWalletAddress || '');
+      setTaoWalletAddress(portfolio.taoWalletAddress || '');
+    }
+  }, [portfolio]);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
