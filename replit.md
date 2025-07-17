@@ -111,3 +111,15 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Backend**: Express.js with efficient middleware stack
 - **Database**: Optimized queries through Drizzle ORM with prepared statements
 - **Caching**: React Query provides intelligent client-side caching
+
+## Recent Changes: Latest modifications with dates
+
+### July 17, 2025 - Real Data Integration Implementation
+- **Rabby.io API Integration**: Implemented authentic BASE holdings fetching from Rabby.io API
+- **TaoStats.io API Integration**: Added real TAO subnet stake data from dash.taostats.io
+- **Extended PnL Timeframes**: Added 7d, 30d, YTD, and All-Time PnL tracking to database and frontend
+- **Performance Timeline Section**: Created comprehensive PnL display with all 5 timeframes
+- **Real Wallet Data Service**: Complete wallet service rewrite to use authentic data sources
+- **Background Data Updates**: Automatic portfolio updates when wallet addresses are saved
+- **API Error Handling**: Proper fallback handling when external APIs are unavailable
+- **Data Integrity**: Ensures only authentic blockchain data is displayed, no mock data

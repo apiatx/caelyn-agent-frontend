@@ -179,7 +179,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Portfolio wallet address updates
+  // Portfolio wallet address updates with real data fetching
   app.put("/api/portfolio/:id/wallets", async (req, res) => {
     try {
       const portfolioId = parseInt(req.params.id);
@@ -192,6 +192,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!portfolio) {
         return res.status(404).json({ message: "Portfolio not found" });
+      }
+
+      // Trigger real wallet data fetching in background
+      if (baseWalletAddress || taoWalletAddress) {
+        console.log("🚀 Triggering real wallet data fetch from Rabby.io and TaoStats...");
+        // Import wallet service and update with real data
+        const { walletService } = await import("./wallet-service");
+        
+        // Run in background to avoid blocking the response
+        setTimeout(async () => {
+          await walletService.updatePortfolioWithRealData(portfolioId);
+        }, 1000);
       }
       
       res.json(portfolio);
