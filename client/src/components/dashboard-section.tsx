@@ -267,7 +267,7 @@ export default function DashboardSection() {
               whaleActivity?.slice(0, 4).map((activity, index) => (
                 <a 
                   key={activity.id} 
-                  href={activity.network === 'BASE' ? `https://dexscreener.com/base/${activity.token}` : `https://x.com/search?q=%23SN${activity.token.match(/\d+/)?.[0] || '1'}`}
+                  href={activity.network === 'BASE' ? `https://basescan.org/tx/${activity.txHash}` : `https://taoscan.org/transaction/${activity.txHash}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-between p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer group"
