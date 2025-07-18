@@ -1,23 +1,16 @@
 import { useState } from "react";
-import { Crown, Lock, Activity, DollarSign, ExternalLink, ArrowUpRight, ArrowDownRight, ChevronDown, Copy, Eye } from "lucide-react";
+import { Activity, DollarSign, ExternalLink, ArrowUpRight, ArrowDownRight, ChevronDown, Copy, Eye } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useWhaleWatching } from "@/hooks/use-whale-watching";
-import { CryptoPaymentModal } from "@/components/crypto-payment-modal";
+
 
 export default function WhaleWatchingSection() {
   const { data: hasAccess, premiumTransactions, freeTransactions } = useWhaleWatching(1);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [selectedPaymentType, setSelectedPaymentType] = useState<'ETH' | 'TAO' | null>(null);
   const [expandedTx, setExpandedTx] = useState<string | null>(null);
-
-  const handlePremiumPayment = (token: 'ETH' | 'TAO') => {
-    setSelectedPaymentType(token);
-    setShowPaymentModal(true);
-  };
 
   const getExplorerUrl = (network: string, txHash: string) => {
     if (network === 'BASE') {
@@ -80,50 +73,14 @@ export default function WhaleWatchingSection() {
 
   return (
     <div className="space-y-8">
-      {/* Premium Access Gate */}
-      <div className="backdrop-blur-md bg-gradient-to-br from-crypto-warning/20 to-crypto-warning/5 rounded-2xl border border-crypto-warning/30 p-8">
-        <div className="text-center">
-          <div className="w-16 h-16 bg-gradient-to-r from-crypto-warning to-yellow-400 rounded-full mx-auto mb-4 flex items-center justify-center">
-            <Crown className="text-2xl text-crypto-black" />
-          </div>
-          <h2 className="text-2xl font-bold text-white mb-2">Premium Whale Watching</h2>
-          <p className="text-crypto-silver mb-6">Get real-time alerts for large transactions ({'>'}$2,500) across BASE and Bittensor networks</p>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-md mx-auto mb-6">
-            <Button 
-              variant="outline" 
-              className="h-16 backdrop-blur-sm bg-white/10 hover:bg-white/20 border-crypto-silver/30"
-              onClick={() => handlePremiumPayment('ETH')}
-            >
-              <div className="text-center">
-                <div className="text-lg font-semibold text-white">0.1 ETH</div>
-                <div className="text-sm text-crypto-silver">~$232.41</div>
-              </div>
-            </Button>
-            <Button 
-              variant="outline" 
-              className="h-16 backdrop-blur-sm bg-white/10 hover:bg-white/20 border-crypto-silver/30"
-              onClick={() => handlePremiumPayment('TAO')}
-            >
-              <div className="text-center">
-                <div className="text-lg font-semibold text-white">1 TAO</div>
-                <div className="text-sm text-crypto-silver">~$553.24</div>
-              </div>
-            </Button>
-          </div>
-          
-          <div className="text-xs text-crypto-silver mb-4">30-day access • Real-time alerts • Premium support</div>
-          <Button className="bg-gradient-to-r from-crypto-warning to-yellow-400 text-crypto-black font-semibold hover:shadow-lg transition-all duration-200">
-            Unlock Premium Access
-          </Button>
-        </div>
-      </div>
-
-      {/* FREE Whale Activity */}
+      {/* Real-Time Whale Activity */}
       <GlassCard className="p-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-white">Real-Time Whale Activity</h2>
-          <div className="text-sm text-crypto-success">FREE - No premium required</div>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-crypto-success rounded-full animate-pulse"></div>
+            <span className="text-crypto-success text-sm">Live Monitoring</span>
+          </div>
         </div>
 
         <Tabs defaultValue="base" className="w-full">
@@ -542,67 +499,7 @@ export default function WhaleWatchingSection() {
         </Tabs>
       </GlassCard>
 
-      {/* Live Whale Monitoring (Premium Feature) */}
-      {hasAccess && (
-        <GlassCard className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-white flex items-center">
-              <Activity className="text-crypto-success mr-3 h-6 w-6" />
-              Live Whale Monitoring
-            </h2>
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-crypto-success rounded-full animate-pulse"></div>
-              <span className="text-crypto-success text-sm">Live</span>
-            </div>
-          </div>
-          
-          <div className="space-y-4">
-            {premiumTransactions?.map((transaction) => (
-              <div key={transaction.id} className="backdrop-blur-sm bg-white/5 rounded-xl border border-crypto-silver/10 p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center">
-                    <div className={`w-8 h-8 rounded-full mr-3 flex items-center justify-center text-xs font-bold ${
-                      transaction.network === 'BASE' 
-                        ? 'bg-blue-500' 
-                        : 'bg-gradient-to-r from-purple-500 to-pink-500'
-                    }`}>
-                      {transaction.network === 'BASE' ? 'B' : 'Τ'}
-                    </div>
-                    <div>
-                      <h3 className="font-medium text-white">{transaction.token} Transaction</h3>
-                      <p className="text-sm text-crypto-silver">
-                        {new Date(transaction.timestamp || '').toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-crypto-success font-medium">${transaction.amountUsd}</div>
-                    <div className="text-crypto-silver text-sm">{transaction.amount} {transaction.token}</div>
-                  </div>
-                </div>
-                <div className="text-xs text-crypto-silver">
-                  From: {transaction.fromAddress}
-                  {transaction.toAddress && (
-                    <span className="block">To: {transaction.toAddress}</span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </GlassCard>
-      )}
 
-      {/* Payment Modal */}
-      <CryptoPaymentModal
-        isOpen={showPaymentModal}
-        onClose={() => {
-          setShowPaymentModal(false);
-          setSelectedPaymentType(null);
-        }}
-        paymentType={selectedPaymentType}
-        amount={selectedPaymentType === 'ETH' ? '0.1' : '1'}
-        usdValue={selectedPaymentType === 'ETH' ? '$232.41' : '$553.24'}
-      />
     </div>
   );
 }

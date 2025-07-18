@@ -7,7 +7,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useQuery } from "@tanstack/react-query";
 
 export default function AlphaSection() {
-  const [networkFilter, setNetworkFilter] = useState<'all' | 'base' | 'tao'>('all');
 
   // Fetch comprehensive mindshare data with X.com and swordscan integration
   const { data: mindshareProjects } = useQuery({
@@ -48,13 +47,8 @@ export default function AlphaSection() {
     return "Bearish";
   };
 
-  // Filter mindshare data based on network selection
-  const filteredMindshareData = mindshareProjects?.filter((project: any) => {
-    if (networkFilter === 'all') return true;
-    if (networkFilter === 'base') return project.network === 'BASE';
-    if (networkFilter === 'tao') return project.network === 'TAO';
-    return true;
-  }) || [];
+  // Get all mindshare data
+  const allMindshareData = mindshareProjects || [];
 
   return (
     <div className="space-y-8">
@@ -69,20 +63,7 @@ export default function AlphaSection() {
           </div>
         </div>
         
-        {/* Network Filter */}
-        <div className="flex items-center gap-3">
-          <Filter className="w-4 h-4 text-crypto-silver" />
-          <Select value={networkFilter} onValueChange={(value: 'all' | 'base' | 'tao') => setNetworkFilter(value)}>
-            <SelectTrigger className="w-48 bg-white/5 backdrop-blur-sm border-crypto-silver/20 text-white">
-              <SelectValue placeholder="Select Network" />
-            </SelectTrigger>
-            <SelectContent className="bg-crypto-black/90 backdrop-blur-sm border-crypto-silver/20">
-              <SelectItem value="all" className="text-white hover:bg-white/10">All Networks (Base + TAO)</SelectItem>
-              <SelectItem value="base" className="text-white hover:bg-white/10">Base Network</SelectItem>
-              <SelectItem value="tao" className="text-white hover:bg-white/10">TAO Network</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+
       </div>
 
       <Tabs defaultValue="top-mentioned" className="w-full">
@@ -122,7 +103,7 @@ export default function AlphaSection() {
             </div>
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {filteredMindshareData?.slice(0, 10).map((project: any, index: number) => (
+              {allMindshareData?.slice(0, 10).map((project: any, index: number) => (
                 <div key={project.id} className="backdrop-blur-sm bg-white/5 rounded-lg p-4 border border-crypto-silver/10">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
@@ -174,7 +155,7 @@ export default function AlphaSection() {
           <GlassCard className="p-6">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-semibold text-white">BASE Network Social Intelligence</h3>
-              <div className="text-sm text-crypto-silver">X.com + swordscan.com • Live feed</div>
+              <div className="text-sm text-crypto-silver">X.com • Live social feed</div>
             </div>
             
             <div className="grid gap-4">
@@ -236,7 +217,7 @@ export default function AlphaSection() {
           <GlassCard className="p-6">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-semibold text-white">TAO Subnet Social Intelligence</h3>
-              <div className="text-sm text-crypto-silver">TensorPulse + X.com • Live subnet tracking</div>
+              <div className="text-sm text-crypto-silver">X.com + TensorPulse + Swordscan • Live subnet tracking</div>
             </div>
             
             <div className="grid gap-4">
