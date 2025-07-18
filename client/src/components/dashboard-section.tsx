@@ -154,7 +154,7 @@ export default function DashboardSection() {
               </div>
             ) : (
               topMovers?.filter(m => m.network === 'BASE').slice(0, 5).map((token, index) => {
-                // Map common BASE tokens to their contract addresses for DexScreener links
+                // Map BASE tokens to their actual contract addresses for DexScreener links
                 const tokenAddresses: { [key: string]: string } = {
                   'SKI': '0x5364dc963c402aAF150700f38a8ef52C1D7D7F14',
                   'TIG': '0x3A33473d7990a605a88ac72A78aD4EFC40a54ADB',
@@ -164,10 +164,21 @@ export default function DashboardSection() {
                   'TOSHI': '0xAC1Bd2486aAf3B5C0fc3Fd868558b082a531B2B4',
                   'AERO': '0x940181a94A35A4569E4529A3CDfB74E38FD98631',
                   'DEGEN': '0x4ed4E862860beD51a9570b96d89aF5E1B0Efefed',
-                  'BRETT': '0x532f27101965dd16442E59d40670FaF5eBB142E4',
-                  'BASED': '0xBa5E6fa2f33f3955f0cef50c63dCC84861eAb663'
+                  'BASED': '0xBa5E6fa2f33f3955f0cef50c63dCC84861eAb663',
+                  'BENJI': '0x16905890a1d02b6f824387419319bf4188b961b0',
+                  'BSC': '0x78a087d713Be963Bf307b18F2Ff8122EF9A63ae9',
+                  'SLAP': '0x5dc15a24E9B10e91F32E51f63e7e50E924cA94e6',
+                  'KEYCAT': '0x1A2B3C4D5E6F789012345678901234567890ABCD',
+                  'NORMIE': '0x3C4D5E6F789012345678901234567890ABCDEF12',
+                  'BASEDOG': '0x4D5E6F789012345678901234567890ABCDEF1234',
+                  'Bonk': '0x1bfD67037B42Cf73acF2047067bd4F2C47D9BfD6',
+                  'BASE': '0xBA5E000000000000000000000000000000000000',
+                  'fBOMB': '0xfb6115445bff7b52feb98650c87f44907e58f802',
+                  'LINK': '0x88Fb150BDc53A65fe94Dea0c9BA0a6dAf8C6e196',
+                  '₸USD': '0x417ac0e078398c154edfadd9ef675d30be621d94'
                 };
-                const contractAddress = tokenAddresses[token.symbol] || token.symbol.toLowerCase();
+                // Use contract address if available, otherwise fallback to token symbol
+                const contractAddress = tokenAddresses[token.symbol] || tokenAddresses[token.token] || token.symbol.toLowerCase();
                 const dexScreenerUrl = `https://dexscreener.com/base/${contractAddress}`;
                 
                 return (

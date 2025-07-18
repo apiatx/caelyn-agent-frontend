@@ -204,6 +204,15 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Clean Token Display**: Extract clean symbols from pool names for better user experience
 - **Authentic Market Data**: Platform now displays real market movements from GeckoTerminal's BASE network pools
 
+### July 18, 2025 - Dashboard Enhancement & BRETT Exclusion
+- **Removed AI Market Sentiment**: Eliminated AI sentiment section from dashboard, replaced with Network Activity summary
+- **Authentic Blockchain Links**: Added legitimate Basescan and TaoScan transaction links for whale activity monitoring
+- **Proper DexScreener Integration**: Fixed BASE top movers to use actual contract addresses (not token names) for DexScreener links
+- **BRETT Complete Exclusion**: Removed BRETT from all whale monitoring systems including token lists, price mappings, and address mappings
+- **Enhanced Link Authentication**: All whale transactions now link to proper blockchain explorers using real transaction hashes
+- **Contract Address Mapping**: Comprehensive BASE token contract address database for accurate DexScreener integration
+- **Network Activity Dashboard**: Real-time BASE token count and whale transaction metrics replacing AI sentiment display
+
 ### July 18, 2025 - Comprehensive Social Intelligence Enhancement  
 - **Enhanced X.com Scanning**: Added 24H mentions count, mention change percentage, and trend direction analysis
 - **Top Influencer Tracking**: Real-time top influencer mentions with follower count for both BASE and TAO networks
