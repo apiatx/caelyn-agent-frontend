@@ -1,15 +1,16 @@
 import { useState } from "react";
-import { ChartLine, Settings } from "lucide-react";
+import { ChartLine, Settings, Activity } from "lucide-react";
+import DashboardSection from "@/components/dashboard-section";
 import PortfolioSection from "@/components/portfolio-section";
 import AlphaSection from "@/components/alpha-section";
 import MarketResearchSection from "@/components/market-research-section";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 
-type TabType = "portfolio" | "whale" | "research";
+type TabType = "dashboard" | "portfolio" | "whale" | "research";
 
 export default function Dashboard() {
-  const [activeTab, setActiveTab] = useState<TabType>("portfolio");
+  const [activeTab, setActiveTab] = useState<TabType>("dashboard");
 
   return (
     <div className="min-h-screen text-white" style={{background: 'linear-gradient(135deg, hsl(0, 0%, 0%) 0%, hsl(0, 0%, 10%) 50%, hsl(0, 0%, 0%) 100%)'}}>
@@ -42,6 +43,16 @@ export default function Dashboard() {
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
         <GlassCard className="p-2">
           <div className="flex space-x-2">
+            <button
+              onClick={() => setActiveTab("dashboard")}
+              className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
+                activeTab === "dashboard"
+                  ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                  : "hover:bg-white/5 text-crypto-silver"
+              }`}
+            >
+              <Activity className="w-4 h-4 mr-2 inline" />Dashboard
+            </button>
             <button
               onClick={() => setActiveTab("portfolio")}
               className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
@@ -78,6 +89,7 @@ export default function Dashboard() {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+        {activeTab === "dashboard" && <DashboardSection />}
         {activeTab === "portfolio" && <PortfolioSection />}
         {activeTab === "whale" && <AlphaSection />}
         {activeTab === "research" && <MarketResearchSection />}

@@ -317,6 +317,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Dashboard data endpoint
+  app.get('/api/dashboard', async (req, res) => {
+    try {
+      const dashboardData = await storage.getDashboardData();
+      res.json(dashboardData);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      res.status(500).json({ error: 'Failed to fetch dashboard data' });
+    }
+  });
+
   // Price updates endpoint (simulated)
   app.post("/api/update-prices", async (req, res) => {
     try {

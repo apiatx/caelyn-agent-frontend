@@ -53,6 +53,9 @@ export interface IStorage {
   // Portfolio value history methods
   getPortfolioValueHistory(portfolioId: number, limit?: number): Promise<PortfolioValueHistory[]>;
   createPortfolioValueHistory(history: InsertPortfolioValueHistory): Promise<PortfolioValueHistory>;
+
+  // Dashboard methods
+  getDashboardData(): Promise<any>;
 }
 
 export class MemStorage implements IStorage {
@@ -735,6 +738,51 @@ export class MemStorage implements IStorage {
     };
     this.portfolioValueHistory.set(portfolioHistory.id, portfolioHistory);
     return portfolioHistory;
+  }
+
+  // Dashboard data method
+  async getDashboardData(): Promise<any> {
+    const portfolio = this.portfolios.get(1); // Get primary portfolio
+    const recentTransactions = Array.from(this.whaleTransactions.values())
+      .filter(tx => tx.network === 'BASE' || tx.network === 'TAO')
+      .sort((a, b) => new Date(b.timestamp!).getTime() - new Date(a.timestamp!).getTime())
+      .slice(0, 5);
+
+    return {
+      portfolioValue: portfolio?.totalBalance || 0,
+      portfolioPnL: portfolio?.pnl24h || 0,
+      portfolioPnLPercent: 0, // Calculate based on current vs previous value
+      baseTopMovers: [
+        { token: 'SKI', name: 'Ski Mask Dog', price: 0.156, change24h: 15.2, volume24h: 2500000 },
+        { token: 'VIRTUAL', name: 'Virtual Protocol', price: 12.45, change24h: 12.8, volume24h: 1800000 },
+        { token: 'AI16Z', name: 'ai16z', price: 0.789, change24h: 9.4, volume24h: 1200000 },
+        { token: 'BRETT', name: 'Brett', price: 0.089, change24h: 8.7, volume24h: 950000 },
+        { token: 'HIGHER', name: 'Higher', price: 0.67, change24h: 7.1, volume24h: 800000 }
+      ],
+      taoSubnetMovers: [
+        { subnet: 'SN27', name: 'Compute Horde', emissions: 125.4, change24h: 18.5, stakeWeight: 0.085 },
+        { subnet: 'SN1', name: 'Prompting', emissions: 89.2, change24h: 14.2, stakeWeight: 0.092 },
+        { subnet: 'SN20', name: 'Bitagent', emissions: 67.8, change24h: 11.7, stakeWeight: 0.075 },
+        { subnet: 'SN5', name: 'Image Generation', emissions: 78.3, change24h: 9.8, stakeWeight: 0.068 },
+        { subnet: 'SN15', name: 'Blockchain Insights', emissions: 45.6, change24h: 8.4, stakeWeight: 0.061 }
+      ],
+      largeWalletActivity: recentTransactions.map(tx => ({
+        type: tx.network,
+        fromToken: tx.network === 'BASE' ? 'ETH' : 'TAO',
+        toToken: tx.token,
+        amount: parseFloat(tx.amount),
+        amountUsd: tx.amountUsd,
+        wallet: tx.fromAddress,
+        timestamp: tx.timestamp
+      })),
+      socialPulse: [
+        { type: 'BASE', token: '$SKI', name: 'Ski Mask Dog', mentions: 2847, sentiment: 'positive', trending: true },
+        { type: 'TAO', token: 'SN27', name: 'Compute Horde', mentions: 1923, sentiment: 'positive', trending: true },
+        { type: 'BASE', token: '$VIRTUAL', name: 'Virtual Protocol', mentions: 1567, sentiment: 'positive', trending: false },
+        { type: 'BASE', token: '$AI16Z', name: 'ai16z', mentions: 1234, sentiment: 'neutral', trending: false },
+        { type: 'TAO', token: 'SN1', name: 'Prompting', mentions: 987, sentiment: 'positive', trending: false }
+      ]
+    };
   }
 }
 
