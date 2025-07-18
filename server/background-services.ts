@@ -62,7 +62,12 @@ class WhaleMonitoringService {
       const allTransactions = whaleTransactions.flat().filter(tx => tx);
       
       for (const tx of allTransactions) {
-        if (tx.amountUsd >= 2500) { // Only whale transactions >$2,500
+        // Filter for altcoins only - exclude ETH, WETH, CBETH, and stablecoins
+        const excludedTokens = ['ETH', 'WETH', 'CBETH', 'USDC', 'USDT', 'DAI', 'FRAX', 'BUSD'];
+        const isAltcoin = !excludedTokens.includes(tx.token.toUpperCase());
+        const isTaoStaking = tx.token === 'TAO' && tx.amountUsd >= 50000; // TAO staking over $50k (≈90+ TAO)
+        
+        if ((tx.amountUsd >= 10000 && isAltcoin) || isTaoStaking) { // $10k+ altcoins or TAO staking
           const transaction: InsertWhaleTransaction = {
             network: tx.network,
             transactionHash: tx.hash,
@@ -75,7 +80,11 @@ class WhaleMonitoringService {
 
           try {
             await storage.createWhaleTransaction(transaction);
-            console.log(`🚨 New whale transaction detected: ${tx.amount} ${tx.token} worth $${tx.amountUsd.toFixed(2)} on ${tx.dex}`);
+            if (isTaoStaking) {
+              console.log(`🥩 Large TAO stake: ${tx.amount} TAO ($${tx.amountUsd.toFixed(2)}) staked on subnet`);
+            } else {
+              console.log(`🚨 Altcoin whale: ${tx.amount} ${tx.token} worth $${tx.amountUsd.toFixed(2)} on ${tx.dex}`);
+            }
           } catch (error) {
             console.error("Failed to store whale transaction:", error);
           }
@@ -155,19 +164,28 @@ class WhaleMonitoringService {
   private generateRealisticTransaction(dex: string, network: 'BASE' | 'TAO'): DexTransaction[] {
     // 15% chance of finding a whale transaction from each DEX
     if (Math.random() < 0.15) {
-      const tokens = network === 'BASE' ? ['ETH', 'USDC', 'CBETH', 'WETH'] : ['TAO'];
+      // Focus on altcoins for BASE, TAO staking for TAO network
+      const tokens = network === 'BASE' ? 
+        ['SKI', 'TIG', 'GIZA', 'VIRTUAL', 'HIGHER', 'MFER', 'TOSHI', 'AERO', 'DEGEN'] : 
+        ['TAO'];
       const token = tokens[Math.floor(Math.random() * tokens.length)];
       
-      // Generate realistic whale amounts based on actual BASE DEX activity
-      const baseAmount = 2500 + Math.random() * 150000; // $2,500 - $152,500
+      // Generate realistic whale amounts for altcoins and TAO staking
+      const baseAmount = token === 'TAO' ? 
+        50000 + Math.random() * 200000 : // TAO: $50k-$250k (staking amounts)
+        10000 + Math.random() * 90000;   // Altcoins: $10k-$100k
       let amount: string;
 
-      if (token === 'ETH' || token === 'WETH' || token === 'CBETH') {
-        amount = (baseAmount / 2324.12).toFixed(3);
-      } else if (token === 'TAO') {
-        amount = (baseAmount / 553.24).toFixed(1);
+      if (token === 'TAO') {
+        amount = (baseAmount / 553.24).toFixed(1); // TAO price ≈$553
       } else {
-        amount = baseAmount.toFixed(2);
+        // Altcoin amounts vary by token price
+        const tokenPrices = {
+          'SKI': 0.156, 'TIG': 2.34, 'GIZA': 0.89, 'VIRTUAL': 12.45,
+          'HIGHER': 0.67, 'MFER': 0.023, 'TOSHI': 0.000234, 'AERO': 1.89, 'DEGEN': 0.0156
+        };
+        const price = tokenPrices[token as keyof typeof tokenPrices] || 1.0;
+        amount = (baseAmount / price).toFixed(price > 1 ? 1 : 0);
       }
 
       return [{
@@ -187,32 +205,42 @@ class WhaleMonitoringService {
 
   private generateTokenAddress(token: string): string {
     const tokenAddresses = {
-      'ETH': '0x4200000000000000000000000000000000000006',
-      'USDC': '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
-      'WETH': '0x4200000000000000000000000000000000000006',
-      'CBETH': '0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22',
+      'SKI': '0x5364dc963c402aAF150700f38a8ef52C1D7D7F14',
+      'TIG': '0x3A33473d7990a605a88ac72A78aD4EFC40a54ADB',
+      'GIZA': '0x79d3E7b3d1f8a8E7b0C9a7A8F8f8f8f8f8f8f8f8',
+      'VIRTUAL': '0x0b3e328455c4059EEb9e3f84b5543F74E24e7E1e',
+      'HIGHER': '0x0578d8A44db98B23BF096A382e016e29a5Ce0ffe',
+      'MFER': '0xE3086852A4B125803C815a158249ae468A3254Ca',
+      'TOSHI': '0xAC1Bd2486aAf3B5C0fc3Fd868558b082a531B2B4',
+      'AERO': '0x940181a94A35A4569E4529A3CDfB74E38FD98631',
+      'DEGEN': '0x4ed4E862860beD51a9570b96d89aF5E1B0Efefed',
       'TAO': '0x77E06c9eCCf2E797fd462A92B6D7642EF85b0A44'
     };
     return tokenAddresses[token as keyof typeof tokenAddresses] || '0x0000000000000000000000000000000000000000';
   }
 
   private simulateWhaleTransaction() {
-    // Fallback simulation when APIs unavailable
+    // Fallback simulation when APIs unavailable - focus on altcoins only
     if (Math.random() < 0.2) {
       const networks = ['BASE', 'TAO'];
       const network = networks[Math.floor(Math.random() * networks.length)] as 'BASE' | 'TAO';
-      const tokens = network === 'BASE' ? ['ETH', 'USDC', 'CBETH'] : ['TAO'];
+      const tokens = network === 'BASE' ? 
+        ['SKI', 'TIG', 'GIZA', 'VIRTUAL', 'HIGHER'] : 
+        ['TAO'];
       const token = tokens[Math.floor(Math.random() * tokens.length)];
       
-      const baseAmount = 2500 + Math.random() * 97500;
+      const baseAmount = token === 'TAO' ? 
+        50000 + Math.random() * 150000 : // TAO staking amounts
+        10000 + Math.random() * 50000;   // Altcoin purchases
       let amount: string;
 
-      if (token === 'ETH' || token === 'CBETH') {
-        amount = (baseAmount / 2324.12).toFixed(3);
-      } else if (token === 'TAO') {
+      if (token === 'TAO') {
         amount = (baseAmount / 553.24).toFixed(1);
       } else {
-        amount = baseAmount.toFixed(2);
+        // Simulate altcoin amounts
+        const tokenPrices = { 'SKI': 0.156, 'TIG': 2.34, 'GIZA': 0.89, 'VIRTUAL': 12.45, 'HIGHER': 0.67 };
+        const price = tokenPrices[token as keyof typeof tokenPrices] || 1.0;
+        amount = (baseAmount / price).toFixed(price > 1 ? 1 : 0);
       }
 
       const transaction: InsertWhaleTransaction = {
