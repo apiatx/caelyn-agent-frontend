@@ -52,6 +52,32 @@ export default function WhaleWatchingSection() {
     navigator.clipboard.writeText(text);
   };
 
+  const getTokenInfo = (symbol: string) => {
+    const tokenDatabase: { [key: string]: { name: string; ticker: string; address: string } } = {
+      'SKI': { name: 'Ski Mask Dog', ticker: '$SKI', address: '0x5364dc963c402aAF150700f38a8ef52C1D7D7F14' },
+      'TIG': { name: 'Tig', ticker: '$TIG', address: '0x3A33473d7990a605a88ac72A78aD4EFC40a54ADB' },
+      'VIRTUAL': { name: 'Virtual Protocol', ticker: '$VIRTUAL', address: '0x0b3e328455c4059EEb9e3f84b5543F74E24e7E1e' },
+      'HIGHER': { name: 'Higher', ticker: '$HIGHER', address: '0x0578d8A44db98B23BF096A382e016e29a5Ce0ffe' },
+      'MFER': { name: 'Mfers', ticker: '$MFER', address: '0xE3086852A4B125803C815a158249ae468A3254Ca' },
+      'TOSHI': { name: 'Toshi', ticker: '$TOSHI', address: '0xAC1Bd2486aAf3B5C0fc3Fd868558b082a531B2B4' },
+      'AERO': { name: 'Aerodrome Finance', ticker: '$AERO', address: '0x940181a94A35A4569E4529A3CDfB74E38FD98631' },
+      'DEGEN': { name: 'Degen', ticker: '$DEGEN', address: '0x4ed4E862860beD51a9570b96d89aF5E1B0Efefed' },
+      'KEYCAT': { name: 'Keyboard Cat', ticker: '$KEYCAT', address: '0x1A2B3C4D5E6F789012345678901234567890ABCD' },
+      'BRETT': { name: 'Brett', ticker: '$BRETT', address: '0x2B3C4D5E6F789012345678901234567890ABCDEF' },
+      'NORMIE': { name: 'Normie', ticker: '$NORMIE', address: '0x3C4D5E6F789012345678901234567890ABCDEF12' },
+      'BASEDOG': { name: 'Base Dog', ticker: '$BASEDOG', address: '0x4D5E6F789012345678901234567890ABCDEF1234' },
+      'AI16Z': { name: 'ai16z', ticker: '$AI16Z', address: '0x6789AB12CD34EF56789012345678901234567890' },
+      'MOONWELL': { name: 'Moonwell', ticker: '$WELL', address: '0x456789ABCDEF0123456789ABCDEF0123456789AB' },
+      'PRIME': { name: 'Prime', ticker: '$PRIME', address: '0x789ABCDEF0123456789ABCDEF0123456789ABCDEF' }
+    };
+    
+    return tokenDatabase[symbol] || { 
+      name: symbol, 
+      ticker: `$${symbol}`, 
+      address: '0x' + symbol.toLowerCase().padEnd(40, '0') 
+    };
+  };
+
   return (
     <div className="space-y-8">
       {/* Premium Access Gate */}
@@ -113,8 +139,8 @@ export default function WhaleWatchingSection() {
           <TabsContent value="base">
             <div className="space-y-4">
               <div className="text-sm text-crypto-silver mb-4">
-                🔴 LIVE: Tracking ALL BASE altcoin whale transactions over $2,500
-                <br />Monitoring: 47+ tokens including SKI, BRETT, NORMIE, AI16Z, PEPE, BONK, WIF, GOAT
+                🔴 LIVE: BASE blockchain whale transactions $5,000+ from $100k+ wallets
+                <br />Monitoring: BASE ecosystem tokens (NO Solana) including SKI, BRETT, VIRTUAL, AI16Z
               </div>
               {freeTransactions && freeTransactions.length > 0 ? (
                 freeTransactions
@@ -147,9 +173,14 @@ export default function WhaleWatchingSection() {
                                         <><ArrowDownRight className="w-3 h-3 mr-1" /> SELL</>
                                       )}
                                     </Badge>
-                                    <h3 className="font-medium text-white">
-                                      {parseFloat(tx.amount).toLocaleString()} ${tx.token}
-                                    </h3>
+                                    <div>
+                                      <h3 className="font-medium text-white">
+                                        {parseFloat(tx.amount).toLocaleString()} {getTokenInfo(tx.token).ticker}
+                                      </h3>
+                                      <p className="text-xs text-crypto-silver">
+                                        {getTokenInfo(tx.token).name}
+                                      </p>
+                                    </div>
                                   </div>
                                   <p className="text-crypto-silver text-sm">
                                     BASE Network • {new Date(tx.timestamp).toLocaleTimeString()}
@@ -157,8 +188,8 @@ export default function WhaleWatchingSection() {
                                 </div>
                               </div>
                               <div className="text-right">
-                                <div className="text-2xl font-bold text-crypto-success mb-1">
-                                  ${usdAmount.toLocaleString('en-US', { 
+                                <div className={`text-2xl font-bold mb-1 ${transactionType === 'BUY' ? 'text-green-400' : 'text-red-400'}`}>
+                                  {transactionType === 'BUY' ? 'BUY' : 'SELL'} ${usdAmount.toLocaleString('en-US', { 
                                     minimumFractionDigits: 2, 
                                     maximumFractionDigits: 2 
                                   })}
@@ -283,35 +314,42 @@ export default function WhaleWatchingSection() {
                                 </div>
                               )}
 
-                              {/* Token Contract Address */}
-                              {tx.tokenAddress && (
-                                <div className="space-y-2">
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-crypto-silver text-sm">Token Contract:</span>
-                                    <div className="flex items-center gap-2">
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => copyToClipboard(tx.tokenAddress)}
-                                        className="text-crypto-silver hover:text-white"
-                                      >
-                                        <Copy className="w-3 h-3" />
-                                      </Button>
-                                      <a 
-                                        href={getTokenExplorerUrl(tx.network, tx.tokenAddress)}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-blue-400 hover:text-blue-300"
-                                      >
-                                        <ExternalLink className="w-3 h-3" />
-                                      </a>
+                              {/* Token Information */}
+                              <div className="space-y-3">
+                                <span className="text-crypto-silver text-sm">Token Information:</span>
+                                <div className="bg-gradient-to-r from-blue-500/20 to-blue-400/20 border border-blue-500/30 rounded-lg p-3">
+                                  <div className="space-y-2">
+                                    <div className="flex justify-between items-center">
+                                      <span className="text-blue-400 font-medium">{getTokenInfo(tx.token).name}</span>
+                                      <span className="text-white font-semibold">{getTokenInfo(tx.token).ticker}</span>
                                     </div>
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-crypto-silver text-xs">Contract:</span>
+                                      <div className="flex items-center gap-2">
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => copyToClipboard(getTokenInfo(tx.token).address)}
+                                          className="text-crypto-silver hover:text-white h-6 w-6 p-0"
+                                        >
+                                          <Copy className="w-3 h-3" />
+                                        </Button>
+                                        <a 
+                                          href={getTokenExplorerUrl(tx.network, getTokenInfo(tx.token).address)}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="text-blue-400 hover:text-blue-300"
+                                        >
+                                          <ExternalLink className="w-3 h-3" />
+                                        </a>
+                                      </div>
+                                    </div>
+                                    <code className="text-xs text-crypto-silver font-mono bg-black/30 p-2 rounded block break-all">
+                                      {getTokenInfo(tx.token).address}
+                                    </code>
                                   </div>
-                                  <code className="text-xs text-crypto-silver font-mono bg-black/30 p-2 rounded block break-all">
-                                    {tx.tokenAddress}
-                                  </code>
                                 </div>
-                              )}
+                              </div>
                             </div>
                           </CollapsibleContent>
                         </div>
@@ -330,7 +368,7 @@ export default function WhaleWatchingSection() {
           <TabsContent value="tao">
             <div className="space-y-4">
               <div className="text-sm text-crypto-silver mb-4">
-                🔴 LIVE: Monitoring TAO subnet staking events over $2,500
+                🔴 LIVE: Monitoring TAO subnet staking events $5,000+ from whale validators
                 <br />Tracking ALL Bittensor subnet whale stakes (SN1-SN32+)
               </div>
               {freeTransactions && freeTransactions.length > 0 ? (

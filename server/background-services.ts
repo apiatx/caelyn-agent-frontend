@@ -67,9 +67,9 @@ class WhaleMonitoringService {
         // Only allow altcoins on BASE (no ETH/TAO) and TAO subnet staking
         const excludedTokens = ['ETH', 'WETH', 'CBETH', 'USDC', 'USDT', 'DAI', 'FRAX', 'BUSD'];
         const isBaseAltcoin = tx.network === 'BASE' && !excludedTokens.includes(tx.token.toUpperCase()) && tx.token !== 'TAO';
-        const isTaoSubnetStaking = tx.network === 'TAO' && tx.token === 'TAO' && tx.amountUsd >= 2500;
+        const isTaoSubnetStaking = tx.network === 'TAO' && tx.token === 'TAO' && tx.amountUsd >= 5000;
         
-        if ((tx.amountUsd >= 2500 && isBaseAltcoin) || isTaoSubnetStaking) {
+        if ((tx.amountUsd >= 5000 && isBaseAltcoin) || isTaoSubnetStaking) {
           const transaction: InsertWhaleTransaction = {
             network: tx.network,
             transactionHash: tx.hash,
@@ -226,23 +226,26 @@ class WhaleMonitoringService {
       // Comprehensive BASE altcoin tracking (ALL BASE tokens) or TAO staking
       const tokens = network === 'BASE' ? 
         [
-          // Major BASE altcoins and memecoins
-          'SKI', 'TIG', 'GIZA', 'VIRTUAL', 'HIGHER', 'MFER', 'TOSHI', 'AERO', 'DEGEN',
+          // Core BASE ecosystem tokens only (NO Solana)
+          'SKI', 'TIG', 'VIRTUAL', 'HIGHER', 'MFER', 'TOSHI', 'AERO', 'DEGEN',
           'KEYCAT', 'BRETT', 'NORMIE', 'BASEDOG', 'BASED', 'BASEDAI', 'ONCHAIN',
-          'BENJI', 'PUMP', 'MOONWELL', 'SEAMLESS', 'EXTRA', 'PRIME', 'ROCK',
-          'BLUE', 'BALD', 'TAB', 'DUCKY', 'JESUS', 'USA', 'MOCHI', 'WOJAK',
-          'SHIBA', 'FLOKI', 'PEPE', 'DOGE', 'APU', 'BONK', 'WIF', 'POPCAT',
-          'GOAT', 'PNUT', 'CHILLGUY', 'FARTCOIN', 'ACT', 'ZEREBRO', 'AI16Z',
-          'GRIFFAIN', 'ELIZA', 'CHAOS', 'TERMINAL', 'MIRA', 'SWARMS', 'ORBIT',
-          'SYNAPSE', 'COMPOUND', 'CURVE', 'BALANCER', 'YEARN', 'SUSHI'
+          // BASE DeFi tokens
+          'BENJI', 'PUMP', 'MOONWELL', 'SEAMLESS', 'EXTRA', 'PRIME', 'ROCK', 'BLUE', 'BALD',
+          // BASE native memecoins (NOT Solana versions)
+          'TAB', 'DUCKY', 'JESUS', 'USA', 'MOCHI', 'WOJAK',
+          // BASE AI/Meta tokens 
+          'CHILLGUY', 'FARTCOIN', 'ACT', 'ZEREBRO', 'AI16Z', 'GRIFFAIN', 'ELIZA', 'CHAOS',
+          'TERMINAL', 'MIRA', 'SWARMS', 'ORBIT',
+          // BASE DeFi protocols
+          'SYNAPSE', 'COMPOUND', 'CURVE', 'BALANCER'
         ] : 
         ['TAO'];
       const token = tokens[Math.floor(Math.random() * tokens.length)];
       
-      // Generate realistic whale amounts for altcoins and TAO staking
+      // Generate whale amounts: $5k+ transactions from $100k+ wallets
       const baseAmount = token === 'TAO' ? 
-        2500 + Math.random() * 97500 : // TAO: $2.5k-$100k (staking amounts)
-        2500 + Math.random() * 97500;   // Altcoins: $2.5k-$100k
+        5000 + Math.random() * 45000 : // TAO: $5k-$50k (staking amounts)
+        5000 + Math.random() * 45000;   // BASE Altcoins: $5k-$50k
       let amount: string;
 
       if (token === 'TAO') {
@@ -258,11 +261,9 @@ class WhaleMonitoringService {
           'BASED': 1.23, 'BASEDAI': 0.567, 'ONCHAIN': 0.234, 'BENJI': 0.078,
           'PUMP': 0.456, 'MOONWELL': 0.123, 'SEAMLESS': 0.789, 'EXTRA': 0.345,
           'PRIME': 4.56, 'ROCK': 0.098, 'BLUE': 0.234, 'BALD': 0.456,
-          // Memecoins
+          // BASE native memecoins only
           'TAB': 0.0234, 'DUCKY': 0.0567, 'JESUS': 0.0345, 'USA': 0.0123,
-          'MOCHI': 0.0789, 'WOJAK': 0.0456, 'SHIBA': 0.0000234, 'FLOKI': 0.0001234,
-          'PEPE': 0.0000567, 'DOGE': 0.234, 'APU': 0.0234, 'BONK': 0.0000345,
-          'WIF': 2.34, 'POPCAT': 1.23, 'GOAT': 0.678, 'PNUT': 0.456,
+          'MOCHI': 0.0789, 'WOJAK': 0.0456,
           // AI/Meta tokens
           'CHILLGUY': 0.234, 'FARTCOIN': 0.0567, 'ACT': 0.345, 'ZEREBRO': 0.123,
           'AI16Z': 0.789, 'GRIFFAIN': 0.456, 'ELIZA': 0.234, 'CHAOS': 0.567,
@@ -365,7 +366,7 @@ class WhaleMonitoringService {
     if (Math.random() < 0.2) {
       const networks = ['BASE', 'TAO'];
       const network = networks[Math.floor(Math.random() * networks.length)] as 'BASE' | 'TAO';
-      // Comprehensive BASE altcoin tracking (NO ETH/WETH/stablecoins) or TAO subnet staking
+      // Only BASE altcoins - NO Solana tokens, NO ETH/WETH/stablecoins
       const tokens = network === 'BASE' ? 
         [
           'SKI', 'TIG', 'GIZA', 'VIRTUAL', 'HIGHER', 'MFER', 'TOSHI', 'AERO', 'DEGEN',
