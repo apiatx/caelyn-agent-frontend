@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Crown, Lock, Activity, DollarSign } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useWhaleWatching } from "@/hooks/use-whale-watching";
 import { CryptoPaymentModal } from "@/components/crypto-payment-modal";
 
@@ -62,45 +63,110 @@ export default function WhaleWatchingSection() {
           <h2 className="text-xl font-semibold text-white">Real-Time Whale Activity</h2>
           <div className="text-sm text-crypto-success">FREE - No premium required</div>
         </div>
-        
-        <div className="space-y-4">
-          {freeTransactions && freeTransactions.length > 0 ? (
-            freeTransactions.slice(0, 10).map((tx, index) => (
-              <div key={tx.id || index} className="backdrop-blur-sm bg-white/5 rounded-xl border border-crypto-silver/10 p-4 hover:bg-white/10 transition-all duration-200">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center">
-                    <div className="w-8 h-8 bg-blue-500 rounded-full mr-3 flex items-center justify-center text-xs font-bold">
-                      {tx.network === 'BASE' ? 'B' : 'T'}
-                    </div>
-                    <div>
-                      <h3 className="font-medium text-white">
-                        {tx.amount} {tx.token}
-                      </h3>
-                      <p className="text-crypto-silver text-sm">
-                        {tx.network} Network • ${parseFloat(tx.amountUsd).toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-crypto-success font-semibold">${parseFloat(tx.amountUsd).toLocaleString()}</div>
-                    <div className="text-crypto-silver text-xs">
-                      {new Date(tx.timestamp).toLocaleTimeString()}
-                    </div>
-                  </div>
-                </div>
-                <div className="text-crypto-silver text-xs font-mono">
-                  From: {tx.fromAddress.slice(0, 6)}...{tx.fromAddress.slice(-4)}
-                  {' → '}
-                  To: {tx.toAddress.slice(0, 6)}...{tx.toAddress.slice(-4)}
-                </div>
+
+        <Tabs defaultValue="base" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 bg-white/10 mb-6">
+            <TabsTrigger value="base" className="data-[state=active]:bg-white/20 text-white">
+              BASE Altcoins
+            </TabsTrigger>
+            <TabsTrigger value="tao" className="data-[state=active]:bg-white/20 text-white">
+              TAO Staking
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="base">
+            <div className="space-y-4">
+              <div className="text-sm text-crypto-silver mb-4">
+                Tracking altcoin purchases over $10,000: SKI, TIG, GIZA, VIRTUAL, HIGHER, MFER, TOSHI, AERO, DEGEN
               </div>
-            ))
-          ) : (
-            <div className="text-center py-8">
-              <Activity className="w-12 h-12 text-crypto-silver mx-auto mb-4" />
-              <p className="text-crypto-silver">Loading whale transactions...</p>
+              {freeTransactions && freeTransactions.length > 0 ? (
+                freeTransactions
+                  .filter(tx => tx.network === 'BASE')
+                  .slice(0, 10)
+                  .map((tx, index) => (
+                  <div key={tx.id || index} className="backdrop-blur-sm bg-white/5 rounded-xl border border-crypto-silver/10 p-4 hover:bg-white/10 transition-all duration-200">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center">
+                        <div className="w-8 h-8 bg-blue-500 rounded-full mr-3 flex items-center justify-center text-xs font-bold">
+                          B
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-white">
+                            {tx.amount} ${tx.token}
+                          </h3>
+                          <p className="text-crypto-silver text-sm">
+                            BASE Network • ${parseFloat(tx.amountUsd).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-crypto-success font-semibold">${parseFloat(tx.amountUsd).toLocaleString()}</div>
+                        <div className="text-crypto-silver text-xs">
+                          {new Date(tx.timestamp).toLocaleTimeString()}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-crypto-silver text-xs font-mono">
+                      From: {tx.fromAddress.slice(0, 6)}...{tx.fromAddress.slice(-4)}
+                      {' → '}
+                      To: {tx.toAddress.slice(0, 6)}...{tx.toAddress.slice(-4)}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8">
+                  <Activity className="w-12 h-12 text-crypto-silver mx-auto mb-4" />
+                  <p className="text-crypto-silver">Loading BASE altcoin whale activity...</p>
+                </div>
+              )}
             </div>
-          )}
+          </TabsContent>
+
+          <TabsContent value="tao">
+            <div className="space-y-4">
+              <div className="text-sm text-crypto-silver mb-4">
+                Monitoring TAO staking events over $2,500 across all Bittensor subnets
+              </div>
+              {freeTransactions && freeTransactions.length > 0 ? (
+                freeTransactions
+                  .filter(tx => tx.network === 'TAO')
+                  .slice(0, 10)
+                  .map((tx, index) => (
+                  <div key={tx.id || index} className="backdrop-blur-sm bg-white/5 rounded-xl border border-orange-500/20 p-4 hover:bg-white/10 transition-all duration-200">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center">
+                        <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-orange-600 rounded-full mr-3 flex items-center justify-center text-xs font-bold">
+                          τ
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-white">
+                            {tx.amount} TAO
+                          </h3>
+                          <p className="text-crypto-silver text-sm">
+                            Subnet Stake • ${parseFloat(tx.amountUsd).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-orange-400 font-semibold">${parseFloat(tx.amountUsd).toLocaleString()}</div>
+                        <div className="text-crypto-silver text-xs">
+                          {new Date(tx.timestamp).toLocaleTimeString()}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-crypto-silver text-xs font-mono">
+                      Staker: {tx.fromAddress.slice(0, 6)}...{tx.fromAddress.slice(-4)}
+                      {' → '}
+                      SN{tx.toAddress ? tx.toAddress.slice(-2) : '??'}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8">
+                  <Activity className="w-12 h-12 text-crypto-silver mx-auto mb-4" />
+                  <p className="text-crypto-silver">Loading TAO staking whale activity...</p>
+                </div>
+              )}
                     <p className="text-sm text-crypto-silver">2 minutes ago</p>
                   </div>
                 </div>
