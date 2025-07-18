@@ -134,7 +134,7 @@ export default function WhaleWatchingSection() {
                                       <h3 className="font-medium text-white">
                                         {parseFloat(tx.amount).toLocaleString()}{' '}
                                         <a 
-                                          href={`https://dexscreener.com/base/${getTokenInfo(tx.token).ticker}`}
+                                          href={`https://dexscreener.com/base/${getTokenInfo(tx.token).address}`}
                                           target="_blank"
                                           rel="noopener noreferrer"
                                           className="hover:text-blue-400 transition-colors"

@@ -26,6 +26,36 @@ export default function PortfolioSection() {
   const [baseWalletAddress, setBaseWalletAddress] = useState('');
   const [taoWalletAddress, setTaoWalletAddress] = useState('');
 
+  const getTokenContractAddress = (ticker: string): string => {
+    const contractAddresses: { [key: string]: string } = {
+      'SKI': '0x5364dc963c402aAF150700f38a8ef52C1D7D7F14',
+      'TIG': '0x3A33473d7990a605a88ac72A78aD4EFC40a54ADB',
+      'GIZA': '0x79d3E7b3d1f8a8E7b0C9a7A8F8f8f8f8f8f8f8f8',
+      'VIRTUAL': '0x0b3e328455c4059EEb9e3f84b5543F74E24e7E1e',
+      'HIGHER': '0x0578d8A44db98B23BF096A382e016e29a5Ce0ffe',
+      'MFER': '0xE3086852A4B125803C815a158249ae468A3254Ca',
+      'TOSHI': '0xAC1Bd2486aAf3B5C0fc3Fd868558b082a531B2B4',
+      'AERO': '0x940181a94A35A4569E4529A3CDfB74E38FD98631',
+      'DEGEN': '0x4ed4E862860beD51a9570b96d89aF5E1B0Efefed',
+      'KEYCAT': '0x1A2B3C4D5E6F789012345678901234567890ABCD',
+      'BRETT': '0x532f27101965dd16442E59d40670FaF5eBB142E4',
+      'NORMIE': '0x7F12d13B34F5F4f0a9449c16Bcd42f0da47AF200',
+      'BASEDOG': '0x4D5E6F789012345678901234567890ABCDEF1234',
+      'AI16Z': '0x464eBE77c293E473B48cFe96dDCf88fcF7bFDAC0',
+      'ZEREBRO': '0x6789012345678901234567890ABCDEF123456789',
+      'CHILLGUY': '0x789012345678901234567890ABCDEF123456789A',
+      'FARTCOIN': '0x89012345678901234567890ABCDEF123456789AB',
+      'BONK': '0x1151CB3d861920e07a38e03eEAd12C32178567ACb',
+      'PEPE': '0x6982508145454Ce325dDbE47a25d4ec3d2311933',
+      'WIF': '0x4Fbf0429599460D327BD5F55625E30E4fC066095',
+      'ETH': '0x4200000000000000000000000000000000000006',
+      'USDC': '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+      'DAI': '0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb'
+    };
+    
+    return contractAddresses[ticker] || ticker;
+  };
+
   // Update wallet addresses when portfolio data changes
   useEffect(() => {
     if (portfolio) {
@@ -627,7 +657,7 @@ export default function PortfolioSection() {
             }).map((holding) => (
               <a 
                 key={holding.id} 
-                href={`https://dexscreener.com/base/${holding.symbol}`}
+                href={`https://dexscreener.com/base/${getTokenContractAddress(holding.symbol)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="backdrop-blur-sm bg-white/5 rounded-xl border border-crypto-silver/10 p-4 hover:bg-white/10 transition-all duration-200 cursor-pointer hover:scale-105 group block"
