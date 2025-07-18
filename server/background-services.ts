@@ -63,12 +63,12 @@ class WhaleMonitoringService {
       const allTransactions = whaleTransactions.flat().filter(tx => tx);
       
       for (const tx of allTransactions) {
-        // Filter for altcoins only - exclude ETH, WETH, CBETH, TAO, and stablecoins
-        const excludedTokens = ['ETH', 'WETH', 'CBETH', 'TAO', 'USDC', 'USDT', 'DAI', 'FRAX', 'BUSD'];
-        const isAltcoin = !excludedTokens.includes(tx.token.toUpperCase());
-        const isTaoStaking = tx.token === 'TAO' && tx.amountUsd >= 2500; // TAO staking over $2.5k (≈4.5+ TAO)
+        // Only allow altcoins on BASE (no ETH/TAO) and TAO subnet staking
+        const excludedTokens = ['ETH', 'WETH', 'CBETH', 'USDC', 'USDT', 'DAI', 'FRAX', 'BUSD'];
+        const isBaseAltcoin = tx.network === 'BASE' && !excludedTokens.includes(tx.token.toUpperCase()) && tx.token !== 'TAO';
+        const isTaoSubnetStaking = tx.network === 'TAO' && tx.token === 'TAO' && tx.amountUsd >= 2500;
         
-        if ((tx.amountUsd >= 2500 && isAltcoin) || isTaoStaking) { // $2.5k+ altcoins or TAO staking
+        if ((tx.amountUsd >= 2500 && isBaseAltcoin) || isTaoSubnetStaking) {
           const transaction: InsertWhaleTransaction = {
             network: tx.network,
             transactionHash: tx.hash,
@@ -81,7 +81,7 @@ class WhaleMonitoringService {
 
           try {
             await storage.createWhaleTransaction(transaction);
-            if (isTaoStaking) {
+            if (isTaoSubnetStaking) {
               console.log(`🥩 TAO stake: ${tx.amount} TAO ($${tx.amountUsd.toFixed(2)}) staked to ${tx.toAddress}`);
             } else {
               console.log(`🚨 Altcoin whale: ${tx.amount} ${tx.token} worth $${tx.amountUsd.toFixed(2)} on ${tx.dex}`);
@@ -289,12 +289,13 @@ class WhaleMonitoringService {
   }
 
   private simulateWhaleTransaction() {
-    // Fallback simulation when APIs unavailable - focus on altcoins only
+    // Fallback simulation when APIs unavailable - focus on altcoins and subnet staking only
     if (Math.random() < 0.2) {
       const networks = ['BASE', 'TAO'];
       const network = networks[Math.floor(Math.random() * networks.length)] as 'BASE' | 'TAO';
+      // Only generate BASE altcoins (no ETH) or TAO subnet staking
       const tokens = network === 'BASE' ? 
-        ['SKI', 'TIG', 'GIZA', 'VIRTUAL', 'HIGHER'] : 
+        ['SKI', 'TIG', 'GIZA', 'VIRTUAL', 'HIGHER', 'MFER', 'TOSHI', 'AERO', 'DEGEN'] : 
         ['TAO'];
       const token = tokens[Math.floor(Math.random() * tokens.length)];
       
