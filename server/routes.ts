@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { realTimeDataService } from './real-time-data-service';
+import { realTimeDataService } from './real-time-data-service-new';
 import { z } from "zod";
 import { insertPremiumAccessSchema } from "@shared/schema";
 

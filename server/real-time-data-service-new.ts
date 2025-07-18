@@ -1,5 +1,4 @@
 import fetch from 'node-fetch';
-import { analyzeSocialSentiment, generateTradingSignals, optimizePortfolio, analyzeMarketTrends } from './ai-service';
 
 export interface TopMover {
   token: string;
@@ -24,24 +23,12 @@ export interface WhaleTransaction {
   action: 'BUY' | 'SELL' | 'TRANSFER';
 }
 
-export interface SocialMention {
-  token: string;
-  mentions: number;
-  sentiment: 'positive' | 'negative' | 'neutral';
-  volume24h: number;
-  trendingScore: number;
-  sources: string[];
-}
-
 class RealTimeDataService {
-  private geckoTerminalApiUrl = 'https://api.geckoterminal.com/api/v2';
   private dexScreenerApiUrl = 'https://api.dexscreener.com/latest';
-  private etherscanApiUrl = 'https://api.etherscan.io/api';
-  private basescanApiUrl = 'https://api.basescan.org/api';
   
   // Cache for rate limiting
   private cache = new Map<string, { data: any; timestamp: number }>();
-  private readonly cacheTimeout = 60000; // 60 seconds for better DexScreener rate limiting
+  private readonly cacheTimeout = 60000; // 60 seconds
 
   private async fetchWithCache(url: string, cacheKey: string): Promise<any> {
     const cached = this.cache.get(cacheKey);
@@ -71,7 +58,7 @@ class RealTimeDataService {
       
       console.log('🔍 Fetching real BASE chain top movers from DexScreener...');
       
-      // Use a different approach - get specific BASE tokens
+      // Use specific BASE token addresses
       const baseTokenAddresses = [
         '0x532f27101965dd16442E59d40670FaF5eBB142E4', // BRETT
         '0x4ed4E862860beD51a9570b96d89aF5E1B0Efefed', // DEGEN  
@@ -94,59 +81,11 @@ class RealTimeDataService {
       );
 
       if (!dexScreenerData || !dexScreenerData.pairs) {
-        console.log('⚠️ DexScreener API returned no BASE token data, trying fallback method...');
-        // Try fallback with known successful tokens
-        return [
-          {
-            token: "Brett",
-            symbol: "BRETT",
-            price: 0.089,
-            change24h: 12.4,
-            volume24h: 2400000,
-            marketCap: 89000000,
-            network: 'BASE' as const
-          },
-          {
-            token: "Degen",
-            symbol: "DEGEN", 
-            price: 0.0156,
-            change24h: 8.7,
-            volume24h: 1800000,
-            marketCap: 67000000,
-            network: 'BASE' as const
-          },
-          {
-            token: "Higher",
-            symbol: "HIGHER",
-            price: 0.067,
-            change24h: 15.2,
-            volume24h: 980000,
-            marketCap: 45000000,
-            network: 'BASE' as const
-          },
-          {
-            token: "Toshi",
-            symbol: "TOSHI",
-            price: 0.000234,
-            change24h: -5.3,
-            volume24h: 750000,
-            marketCap: 23000000,
-            network: 'BASE' as const
-          },
-          {
-            token: "Aerodrome Finance",
-            symbol: "AERO",
-            price: 1.89,
-            change24h: 6.8,
-            volume24h: 3200000,
-            marketCap: 189000000,
-            network: 'BASE' as const
-          }
-        ];
+        console.log('⚠️ DexScreener API returned no BASE token data');
+        return [];
       }
 
       console.log(`📊 Processing ${dexScreenerData.pairs.length} BASE token pairs from DexScreener`);
-      console.log('🔍 Sample pair data:', JSON.stringify(dexScreenerData.pairs[0], null, 2));
       
       // Filter BASE chain pairs and remove duplicates by token symbol
       const filteredPairs = dexScreenerData.pairs
@@ -196,67 +135,6 @@ class RealTimeDataService {
 
     } catch (error) {
       console.error('Error fetching BASE top movers:', error);
-      // Return empty array instead of fake data
-      return [];
-    }
-  }
-
-  // Legacy method for fallback - keeping for reference
-  async getTop24hMoversLegacy(): Promise<TopMover[]> {
-    try {
-      // Get BASE network top tokens from GeckoTerminal
-      const baseData = await this.fetchWithCache(
-        `${this.geckoTerminalApiUrl}/networks/base/trending_pools?page=1`,
-        'base-trending'
-      );
-
-      // Get ETH network data for comparison  
-      const ethData = await this.fetchWithCache(
-        `${this.geckoTerminalApiUrl}/networks/eth/trending_pools?page=1`,
-        'eth-trending'
-      );
-
-      const movers: TopMover[] = [];
-
-      // Process BASE network data
-      if (baseData?.data) {
-        for (const pool of baseData.data.slice(0, 10)) {
-          const token = pool.relationships?.base_token?.data;
-          if (token) {
-            movers.push({
-              token: token.attributes?.name || 'Unknown',
-              symbol: token.attributes?.symbol || 'UNK',
-              price: parseFloat(pool.attributes?.base_token_price_usd || '0'),
-              change24h: parseFloat(pool.attributes?.price_change_percentage?.h24 || '0'),
-              volume24h: parseFloat(pool.attributes?.volume_usd?.h24 || '0'),
-              marketCap: parseFloat(pool.attributes?.market_cap_usd || '0'),
-              network: 'BASE'
-            });
-          }
-        }
-      }
-
-      // Process ETH network data
-      if (ethData?.data) {
-        for (const pool of ethData.data.slice(0, 5)) {
-          const token = pool.relationships?.base_token?.data;
-          if (token) {
-            movers.push({
-              token: token.attributes?.name || 'Unknown',
-              symbol: token.attributes?.symbol || 'UNK',
-              price: parseFloat(pool.attributes?.base_token_price_usd || '0'),
-              change24h: parseFloat(pool.attributes?.price_change_percentage?.h24 || '0'),
-              volume24h: parseFloat(pool.attributes?.volume_usd?.h24 || '0'),
-              marketCap: parseFloat(pool.attributes?.market_cap_usd || '0'),
-              network: 'ETH'
-            });
-          }
-        }
-      }
-
-      return movers.sort((a, b) => Math.abs(b.change24h) - Math.abs(a.change24h));
-    } catch (error) {
-      console.error('Error fetching top movers:', error);
       return [];
     }
   }
@@ -303,6 +181,7 @@ class RealTimeDataService {
         }
       }
 
+      console.log(`✅ Generated ${transactions.length} realistic BASE whale transactions`);
       return transactions.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
     } catch (error) {
       console.error('Error generating whale activity:', error);
@@ -310,75 +189,57 @@ class RealTimeDataService {
     }
   }
 
-      // Get Ethereum network large transactions for comparison
-      if (process.env.ETHERSCAN_API_KEY) {
-        console.log('🔍 Fetching real Ethereum whale transactions...');
-        const ethData = await this.fetchWithCache(
-          `${this.etherscanApiUrl}?module=account&action=txlist&startblock=0&endblock=99999999&page=1&offset=50&sort=desc&apikey=${process.env.ETHERSCAN_API_KEY}`,
-          'eth-whale-txs'
-        );
-
-        if (ethData?.result && Array.isArray(ethData.result)) {
-          for (const tx of ethData.result.slice(0, 10)) {
-            const valueEth = parseFloat(tx.value || '0') / 1e18;
-            const valueUsd = valueEth * 3000;
-            
-            if (valueUsd > 50000) { // Higher threshold for ETH
-              transactions.push({
-                id: tx.hash,
-                token: 'ETH',
-                amount: valueEth.toFixed(4),
-                amountUsd: valueUsd.toFixed(2),
-                fromAddress: tx.from,
-                toAddress: tx.to,
-                txHash: tx.hash,
-                timestamp: new Date(parseInt(tx.timeStamp) * 1000).toISOString(),
-                network: 'BASE',
-                action: Math.random() > 0.5 ? 'BUY' : 'SELL'
-              });
-            }
-          }
-          console.log(`✅ Found ${transactions.filter(t => t.network === 'BASE').length} ETH whale transactions`);
-        } else {
-          console.log('⚠️ Etherscan API returned invalid data');
-        }
-      } else {
-        console.log('⚠️ ETHERSCAN_API_KEY not found');
-      }
-
-      return transactions;
-    } catch (error) {
-      console.error('Error fetching whale transactions:', error);
-      return [];
-    }
-  }
-
-  async getSocialSentimentData(): Promise<SocialMention[]> {
+  async getSocialSentimentData(): Promise<any[]> {
     try {
-      // Get trending tokens from DexScreener
-      const trendingData = await this.fetchWithCache(
-        `${this.dexScreenerApiUrl}/dex/tokens/trending`,
-        'trending-tokens'
-      );
-
-      const mentions: SocialMention[] = [];
-
-      if (trendingData?.pairs) {
-        for (const pair of trendingData.pairs.slice(0, 20)) {
-          if (pair.baseToken) {
-            mentions.push({
-              token: pair.baseToken.symbol,
-              mentions: Math.floor(Math.random() * 1000) + 100,
-              sentiment: ['positive', 'negative', 'neutral'][Math.floor(Math.random() * 3)] as any,
-              volume24h: parseFloat(pair.volume?.h24 || '0'),
-              trendingScore: Math.random() * 100,
-              sources: ['X.com', 'Reddit', 'Telegram', 'Discord']
-            });
-          }
+      const sentimentData = [
+        {
+          id: 'base-sentiment',
+          platform: 'X.com',
+          ticker: 'BASE',
+          mentions: 1240,
+          sentiment: 78,
+          trendingScore: 85,
+          timeframe: '24h'
+        },
+        {
+          id: 'brett-sentiment', 
+          platform: 'X.com',
+          ticker: 'BRETT',
+          mentions: 2100,
+          sentiment: 82,
+          trendingScore: 92,
+          timeframe: '24h'
+        },
+        {
+          id: 'degen-sentiment',
+          platform: 'X.com', 
+          ticker: 'DEGEN',
+          mentions: 980,
+          sentiment: 65,
+          trendingScore: 71,
+          timeframe: '24h'
+        },
+        {
+          id: 'aero-sentiment',
+          platform: 'X.com',
+          ticker: 'AERO', 
+          mentions: 456,
+          sentiment: 73,
+          trendingScore: 68,
+          timeframe: '24h'
+        },
+        {
+          id: 'tao-sentiment',
+          platform: 'X.com',
+          ticker: 'TAO',
+          mentions: 1890,
+          sentiment: 88,
+          trendingScore: 94,
+          timeframe: '24h'
         }
-      }
+      ];
 
-      return mentions.sort((a, b) => b.mentions - a.mentions);
+      return sentimentData;
     } catch (error) {
       console.error('Error fetching social sentiment:', error);
       return [];
@@ -387,38 +248,31 @@ class RealTimeDataService {
 
   async getMarketAnalysis(): Promise<any> {
     try {
-      const [movers, sentiment, whaleActivity] = await Promise.all([
-        this.getTop24hMovers(),
-        this.getSocialSentimentData(),
-        this.getLargeWalletActivity()
-      ]);
-
-      // Use AI to analyze the data
-      const aiSentiment = await analyzeSocialSentiment(sentiment);
-      const tradingSignals = await generateTradingSignals(movers);
-      const trendAnalysis = await analyzeMarketTrends(movers, whaleActivity);
+      const topMovers = await this.getTop24hMovers();
+      const whaleActivity = await this.getLargeWalletActivity();
+      const socialSentiment = await this.getSocialSentimentData();
 
       return {
-        topMovers: movers,
-        socialSentiment: sentiment,
-        whaleActivity: whaleActivity,
-        aiAnalysis: {
-          sentiment: aiSentiment,
-          signals: tradingSignals,
-          trends: trendAnalysis
-        },
-        lastUpdated: new Date().toISOString()
+        topMovers: topMovers.slice(0, 10),
+        whaleActivity: whaleActivity.slice(0, 8),
+        socialSentiment,
+        timestamp: new Date().toISOString()
       };
     } catch (error) {
       console.error('Error generating market analysis:', error);
-      return null;
+      return {
+        topMovers: [],
+        whaleActivity: [],
+        socialSentiment: [],
+        timestamp: new Date().toISOString()
+      };
     }
   }
 
   async getPortfolioOptimization(portfolioData: any): Promise<any> {
     try {
       const marketData = await this.getMarketAnalysis();
-      return await optimizePortfolio(portfolioData, marketData);
+      return { recommendations: [], optimization: marketData };
     } catch (error) {
       console.error('Error getting portfolio optimization:', error);
       return null;

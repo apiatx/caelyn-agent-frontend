@@ -324,8 +324,8 @@ export default function DashboardSection() {
             ) : (
               socialSentiment?.slice(0, 4).map((pulse, index) => (
                 <a 
-                  key={`${pulse.token}-${index}`} 
-                  href={`https://x.com/search?q=$${pulse.token.toLowerCase()}`}
+                  key={`${pulse.ticker || pulse.token || index}`} 
+                  href={`https://x.com/search?q=$${(pulse.ticker || pulse.token || '').toLowerCase()}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-between p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer group"
@@ -335,22 +335,22 @@ export default function DashboardSection() {
                       S
                     </div>
                     <div>
-                      <div className="font-medium text-white group-hover:text-blue-400 transition-colors">${pulse.token}</div>
-                      <div className="text-xs text-crypto-silver">Trending Score: {pulse.trendingScore.toFixed(0)}</div>
+                      <div className="font-medium text-white group-hover:text-blue-400 transition-colors">${pulse.ticker || pulse.token}</div>
+                      <div className="text-xs text-crypto-silver">Trending Score: {pulse.trendingScore?.toFixed(0) || 'N/A'}</div>
                     </div>
-                    {pulse.trendingScore > 70 && (
+                    {(pulse.trendingScore || 0) > 70 && (
                       <TrendingUp className="w-4 h-4 text-orange-400" />
                     )}
                   </div>
                   <div className="text-right">
                     <div className="text-sm font-medium text-white">
-                      {pulse.mentions.toLocaleString()} mentions
+                      {(pulse.mentions || 0).toLocaleString()} mentions
                     </div>
                     <div className={`text-xs font-medium ${
                       pulse.sentiment === 'positive' ? 'text-green-400' : 
                       pulse.sentiment === 'negative' ? 'text-red-400' : 'text-yellow-400'
                     }`}>
-                      {pulse.sentiment} sentiment
+                      {pulse.sentiment || 'neutral'} sentiment
                     </div>
                   </div>
                 </a>
