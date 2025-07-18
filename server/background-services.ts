@@ -284,7 +284,7 @@ class WhaleMonitoringService {
       const token = tokens[Math.floor(Math.random() * tokens.length)];
       
       const baseAmount = token === 'TAO' ? 
-        50000 + Math.random() * 150000 : // TAO staking amounts
+        2500 + Math.random() * 47500 : // TAO staking amounts ($2.5k-$50k)
         10000 + Math.random() * 50000;   // Altcoin purchases
       let amount: string;
 
@@ -301,7 +301,7 @@ class WhaleMonitoringService {
         network,
         transactionHash: this.generateTxHash(),
         fromAddress: this.generateAddress(network),
-        toAddress: Math.random() > 0.3 ? this.generateAddress(network) : null,
+        toAddress: token === 'TAO' ? `SN${Math.floor(Math.random() * 32) + 1}` : (Math.random() > 0.3 ? this.generateAddress(network) : null),
         amount,
         amountUsd: baseAmount.toFixed(2),
         token

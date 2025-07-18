@@ -67,17 +67,18 @@ export default function WhaleWatchingSection() {
         <Tabs defaultValue="base" className="w-full">
           <TabsList className="grid w-full grid-cols-2 bg-white/10 mb-6">
             <TabsTrigger value="base" className="data-[state=active]:bg-white/20 text-white">
-              BASE Altcoins
+              Live Base Whale Watch
             </TabsTrigger>
             <TabsTrigger value="tao" className="data-[state=active]:bg-white/20 text-white">
-              TAO Staking
+              Live TAO Whale Watch
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="base">
             <div className="space-y-4">
               <div className="text-sm text-crypto-silver mb-4">
-                Tracking altcoin purchases over $10,000: SKI, TIG, GIZA, VIRTUAL, HIGHER, MFER, TOSHI, AERO, DEGEN
+                🔴 LIVE: Tracking altcoin whale purchases over $10,000 on BASE Network
+                <br />Monitoring: SKI, TIG, GIZA, VIRTUAL, HIGHER, MFER, TOSHI, AERO, DEGEN
               </div>
               {freeTransactions && freeTransactions.length > 0 ? (
                 freeTransactions
@@ -125,7 +126,8 @@ export default function WhaleWatchingSection() {
           <TabsContent value="tao">
             <div className="space-y-4">
               <div className="text-sm text-crypto-silver mb-4">
-                Monitoring TAO staking events over $2,500 across all Bittensor subnets
+                🔴 LIVE: Monitoring TAO subnet staking events over $2,500
+                <br />Tracking whale stakes across all Bittensor subnets (SN1-SN32+)
               </div>
               {freeTransactions && freeTransactions.length > 0 ? (
                 freeTransactions
@@ -167,47 +169,9 @@ export default function WhaleWatchingSection() {
                   <p className="text-crypto-silver">Loading TAO staking whale activity...</p>
                 </div>
               )}
-                    <p className="text-sm text-crypto-silver">2 minutes ago</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-crypto-success font-medium">$47,823.45</div>
-                  <div className="text-crypto-silver text-sm">ETH Purchase</div>
-                </div>
-              </div>
-              <div className="text-xs text-crypto-silver blur-sm">
-                Address: 0x742d35cc6bf9f...
-              </div>
             </div>
-          </div>
-
-          <div className="backdrop-blur-sm bg-white/5 rounded-xl border border-crypto-silver/10 p-4 relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent rounded-xl"></div>
-            <div className="relative">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center">
-                  <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mr-3 flex items-center justify-center text-xs font-bold">Τ</div>
-                  <div>
-                    <h3 className="font-medium text-white">Large TAO Stake</h3>
-                    <p className="text-sm text-crypto-silver">8 minutes ago</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-crypto-success font-medium">$89,156.78</div>
-                  <div className="text-crypto-silver text-sm">Subnet 27 Stake</div>
-                </div>
-              </div>
-              <div className="text-xs text-crypto-silver blur-sm">
-                Hotkey: 5GrwvaEF5zXb26F...
-              </div>
-            </div>
-          </div>
-          
-          <div className="backdrop-blur-sm bg-gradient-to-r from-crypto-warning/10 to-crypto-warning/5 rounded-xl border border-crypto-warning/20 p-4 text-center">
-            <Lock className="text-crypto-warning text-2xl mb-2 mx-auto" />
-            <p className="text-crypto-silver text-sm">Unlock premium access to see full transaction details and real-time alerts</p>
-          </div>
-        </div>
+          </TabsContent>
+        </Tabs>
       </GlassCard>
 
       {/* Live Whale Monitoring (Premium Feature) */}
