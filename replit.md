@@ -155,8 +155,16 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 ### July 18, 2025 - Portfolio Performance Chart Enhancement
 - **Real-Time Value Tracking**: Portfolio chart now tracks actual portfolio value over time at minute intervals instead of PnL periods
 - **Multiple Timeframes**: Added timeframe selector with 24h, 7d, 30d, 90d, YTD, and All Time options
-- **Intelligent Data Sampling**: Smart data point sampling based on timeframe (48 points for 24h, 168 for 7d, 100 for longer periods)
+- **Intelligent Data Sampling**: Smart data point sampling based on timeframe (50 points for 24h, 168 for 7d, 100 for longer periods)
 - **Dynamic Time Labels**: Time formatting adapts to timeframe (HH:MM for 24h, MMM DD for 7d/30d, MMM DD YY for longer)
 - **Background Service**: Minute-by-minute portfolio value recording with historical data generation for demo
 - **Enhanced Tooltips**: Full timestamp display on hover with precise portfolio value at specific moments
 - **Live Status Indicators**: Real-time tracking status and data point count display in chart header
+
+### July 18, 2025 - Consolidated Holdings Display
+- **Network-Based Consolidation**: Merged repetitive BASE and TAO holdings sections into consolidated network totals
+- **Detailed Breakdowns**: Each network card shows total value with individual coin breakdowns below
+- **Enhanced PnL Display**: Individual holdings show coin-specific value and PnL within network summaries
+- **Interactive Holdings**: Click individual coins within network cards to view detailed PnL information
+- **$5+ Filtering**: Holdings breakdown only displays assets worth $5 or more for cleaner interface
+- **Network Branding**: Clear BASE (blue) and TAO (purple gradient) visual distinction with proper iconography
