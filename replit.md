@@ -204,15 +204,16 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Clean Token Display**: Extract clean symbols from pool names for better user experience
 - **Authentic Market Data**: Platform now displays real market movements from GeckoTerminal's BASE network pools
 
-### July 18, 2025 - Dynamic Contract Address Integration & DexScreener Fix
+### July 18, 2025 - 5-Minute Top Movers Tracking & Dynamic Contract Integration
+- **5-Minute Refresh Cycle**: Updated top movers tracking to refresh every 5 minutes for current BASE network leaders
 - **Dynamic Contract Extraction**: Implemented real-time contract address extraction from GeckoTerminal API included token data
 - **Authentic DexScreener Links**: All BASE top movers now use live contract addresses from API response, not static mappings
 - **Real-time Link Generation**: DexScreener URLs dynamically generated using `https://dexscreener.com/base/[CONTRACT_ADDRESS]` format
-- **Multi-source Address Resolution**: Fallback extraction from pool relationships, included token data, and pool ID parsing
-- **Live Data Integration**: Contract addresses update automatically with changing top movers every 60 seconds
-- **Removed AI Market Sentiment**: Eliminated AI sentiment section from dashboard, replaced with Network Activity summary
+- **Current Market Tracking**: Platform now consistently tracks actual current top gainers on BASE network every 5 minutes
+- **Cache Clearing System**: Complete cache refresh ensures completely fresh data on each 5-minute cycle
+- **Synchronized Refresh**: Dashboard, market analysis, and top movers all refresh on 5-minute intervals for consistency
+- **Visual Refresh Indicator**: Added "5min refresh" badge to show users the real-time tracking frequency
 - **BRETT Complete Exclusion**: Removed BRETT from all whale monitoring systems including token lists, price mappings, and address mappings
-- **Enhanced Blockchain Links**: All whale transactions link to proper blockchain explorers using real transaction hashes
 - **Network Activity Dashboard**: Real-time BASE token count and whale transaction metrics replacing AI sentiment display
 
 ### July 18, 2025 - Comprehensive Social Intelligence Enhancement  

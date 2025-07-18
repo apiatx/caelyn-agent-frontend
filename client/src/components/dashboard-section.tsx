@@ -49,7 +49,7 @@ const GlassCard = ({ children, className = "" }: { children: React.ReactNode; cl
 );
 
 export default function DashboardSection() {
-  // Use real-time AI data hooks
+  // Use real-time AI data hooks with 5-minute refresh for current top movers
   const { data: topMovers, isLoading: loadingMovers } = useTopMovers();
   const { data: marketAnalysis, isLoading: loadingAnalysis } = useMarketAnalysis();
   const { data: socialSentiment, isLoading: loadingSocial } = useSocialSentiment();
@@ -57,7 +57,7 @@ export default function DashboardSection() {
   
   const { data: dashboardData, isLoading: loadingDashboard } = useQuery<DashboardData>({
     queryKey: ['/api/dashboard'],
-    refetchInterval: 30000 // Refresh every 30 seconds
+    refetchInterval: 300000 // Refresh every 5 minutes to match top movers
   });
 
   const isLoading = loadingDashboard || loadingMovers || loadingAnalysis;
@@ -142,7 +142,7 @@ export default function DashboardSection() {
             <div className="flex items-center space-x-2">
               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
               <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
-                LIVE
+                5min refresh
               </Badge>
             </div>
           </div>

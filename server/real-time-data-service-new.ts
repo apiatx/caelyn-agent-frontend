@@ -30,7 +30,7 @@ class RealTimeDataService {
   
   // Cache for rate limiting
   private cache = new Map<string, { data: any; timestamp: number }>();
-  private readonly cacheTimeout = 60000; // 60 seconds
+  private readonly cacheTimeout = 300000; // 5 minutes for current top movers tracking
 
   private async fetchWithCache(url: string, cacheKey: string): Promise<any> {
     const cached = this.cache.get(cacheKey);
@@ -54,9 +54,8 @@ class RealTimeDataService {
 
   async getTop24hMovers(): Promise<TopMover[]> {
     try {
-      // Clear old cache entries for fresh data
-      this.cache.delete('geckoterminal-base-gainers');
-      this.cache.delete('geckoterminal-base-trending');
+      // Clear all cache entries for completely fresh data every call
+      this.cache.clear();
       
       console.log('🔍 Fetching real BASE chain TOP GAINERS from GeckoTerminal...');
       

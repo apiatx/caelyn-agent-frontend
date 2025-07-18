@@ -64,12 +64,12 @@ export interface PortfolioOptimization {
   reasoning: string;
 }
 
-// Hook for top 24h movers
+// Hook for top 24h movers - updated for 5-minute refresh as requested
 export function useTopMovers() {
   return useQuery({
     queryKey: ['/api/real-time/top-movers'],
-    refetchInterval: 30000, // Refresh every 30 seconds
-    staleTime: 30000,
+    refetchInterval: 300000, // Refresh every 5 minutes (300 seconds)
+    staleTime: 300000,
   });
 }
 
@@ -91,12 +91,12 @@ export function useSocialSentiment() {
   });
 }
 
-// Hook for comprehensive market analysis with AI
+// Hook for comprehensive market analysis with AI - aligned with top movers refresh
 export function useMarketAnalysis() {
   return useQuery({
     queryKey: ['/api/real-time/market-analysis'],
-    refetchInterval: 60000, // Refresh every minute
-    staleTime: 60000,
+    refetchInterval: 300000, // Refresh every 5 minutes to match top movers
+    staleTime: 300000,
   });
 }
 
