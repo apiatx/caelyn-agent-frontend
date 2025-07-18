@@ -324,7 +324,13 @@ class WhaleMonitoringService {
       };
 
       storage.createWhaleTransaction(transaction)
-        .then(() => console.log(`🚨 New whale transaction detected: ${amount} ${token} worth $${baseAmount.toFixed(2)}`))
+        .then(() => {
+          if (token === 'TAO') {
+            console.log(`🥩 TAO stake: ${amount} TAO ($${baseAmount.toFixed(2)}) staked to ${transaction.toAddress}`);
+          } else {
+            console.log(`🚨 Altcoin whale: ${amount} ${token} worth $${baseAmount.toFixed(2)} on ${dex}`);
+          }
+        })
         .catch(error => console.error("Failed to store whale transaction:", error));
     }
   }

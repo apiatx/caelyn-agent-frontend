@@ -100,7 +100,7 @@ export default function AlphaSection() {
                         <div className={`w-3 h-3 rounded-full ${tx.network === 'BASE' ? 'bg-blue-500' : 'bg-purple-500'}`}></div>
                         <span className="text-white font-medium">{tx.network}</span>
                         <Badge variant="outline" className="border-crypto-silver/30 text-crypto-silver">
-                          {tx.token}
+                          {tx.network === 'TAO' && tx.toAddress ? tx.toAddress : tx.token}
                         </Badge>
                       </div>
                       <div className="text-right">
