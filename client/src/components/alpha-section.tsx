@@ -191,12 +191,12 @@ export default function AlphaSection() {
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold bg-gradient-to-r from-blue-500 to-purple-500">
-                        {project.symbol?.substring(0, 2) || project.ticker?.substring(0, 2)}
+                        {project.symbol?.substring(0, 2) || project.ticker?.substring(0, 2) || project.name?.substring(0, 2) || '??'}
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
                           <a 
-                            href={`https://dexscreener.com/base/${getTokenContractAddress(project.ticker)}`}
+                            href={`https://dexscreener.com/base/${getTokenContractAddress(project.ticker || project.symbol || 'BASE')}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-white font-medium hover:text-blue-400 transition-colors"
@@ -204,7 +204,7 @@ export default function AlphaSection() {
                             {project.name}
                           </a>
                           <Badge variant="outline" className="border-blue-500/30 text-blue-400">
-                            {project.ticker}
+                            {project.ticker || project.symbol || 'N/A'}
                           </Badge>
                           {project.trending && (
                             <Badge variant="outline" className="border-crypto-warning/30 text-crypto-warning">
@@ -214,7 +214,7 @@ export default function AlphaSection() {
                         </div>
                         <div className="text-crypto-silver text-sm flex items-center gap-4">
                           <a 
-                            href={`https://x.com/search?q=%24${project.ticker.toLowerCase()}`}
+                            href={`https://x.com/search?q=%24${project.ticker?.toLowerCase() || project.name?.toLowerCase() || 'crypto'}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="hover:text-blue-400 transition-colors"
