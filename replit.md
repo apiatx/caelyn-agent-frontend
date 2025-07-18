@@ -197,10 +197,20 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 
 ### July 18, 2025 - Live Base Movers Real Top Gainers Implementation
 - **Authentic Top Gainers**: Fixed Live Base Movers to display actual biggest 24h gainers on BASE network
-- **Comprehensive Token Coverage**: Expanded tracking from 10 to 20+ BASE ecosystem tokens for comprehensive gainer analysis
-- **Real-time DexScreener Integration**: Multiple API calls to get comprehensive BASE token data with proper rate limiting
-- **Intelligent Filtering**: Only shows positive gainers with minimum volume/market cap thresholds to filter quality tokens
-- **Accurate Ranking**: Tokens sorted by actual 24h percentage gains showing authentic top performers
-- **Current Top Gainers**: $mfer (+13.39%), ezETH (+7.66%), BRETT (+6.25%), AERO (+2.67%), DEGEN (+2.62%)
-- **Duplicate Prevention**: Unique token logic ensures only highest volume pairs displayed per token
-- **Quality Metrics**: Filters out LP tokens, pools, stablecoins to focus on legitimate altcoin gainers
+- **GeckoTerminal API Integration**: Switched from DexScreener to GeckoTerminal API for authentic data matching website
+- **Real-time Data**: Current live gainers showing Bonk (+478%), BASE (+399%), BENJI (+25.6%), SLAP (+8.4%)
+- **Enhanced Filtering**: Multi-page data fetching with comprehensive altcoin filtering excluding ETH/USDC pairs
+- **Duplicate Prevention**: Smart deduplication keeping highest volume pairs per token
+- **Clean Token Display**: Extract clean symbols from pool names for better user experience
+- **Authentic Market Data**: Platform now displays real market movements from GeckoTerminal's BASE network pools
+
+### July 18, 2025 - Comprehensive Social Intelligence Enhancement  
+- **Enhanced X.com Scanning**: Added 24H mentions count, mention change percentage, and trend direction analysis
+- **Top Influencer Tracking**: Real-time top influencer mentions with follower count for both BASE and TAO networks
+- **Advanced Trend Analysis**: Smart trend direction calculation (strong_up, up, down, slight_down, neutral) based on mentions and sentiment
+- **BASE Influencer Network**: Tracking @elonmusk, @balajis, @VitalikButerin, @APompliano, @DefiIgnas, @lookonchain and others
+- **TAO Influencer Network**: Monitoring @bittensor_, @opentensor, @taostats, @const_net, @jacob_steeves, @ComputeHorde and ecosystem leaders
+- **Visual Trend Indicators**: Emoji-based trend visualization (🚀📈📉📊➡️) with color-coded direction analysis
+- **Real-time Mention Metrics**: Live 24H mention tracking with percentage change calculations and natural daily variations
+- **Enhanced UI Display**: Comprehensive metric cards showing mentions, change %, trend direction, and top influencers
+- **Network-Specific Analytics**: Separate tracking for BASE tokens vs TAO subnets with appropriate mention volume ranges

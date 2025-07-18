@@ -47,6 +47,31 @@ export default function AlphaSection() {
     return "Bearish";
   };
 
+  const getTrendIcon = (direction: string) => {
+    switch (direction) {
+      case 'strong_up': return '🚀';
+      case 'up': return '📈';
+      case 'down': return '📉';
+      case 'slight_down': return '📊';
+      default: return '➡️';
+    }
+  };
+
+  const getTrendColor = (direction: string) => {
+    switch (direction) {
+      case 'strong_up': return 'text-green-400';
+      case 'up': return 'text-crypto-success';
+      case 'down': return 'text-red-500';
+      case 'slight_down': return 'text-crypto-warning';
+      default: return 'text-crypto-silver';
+    }
+  };
+
+  const formatMentionChange = (change: number) => {
+    const sign = change >= 0 ? '+' : '';
+    return `${sign}${change.toFixed(1)}%`;
+  };
+
   const getTokenContractAddress = (ticker: string): string => {
     const contractAddresses: { [key: string]: string } = {
       'SKI': '0x5364dc963c402aAF150700f38a8ef52C1D7D7F14',
@@ -188,7 +213,7 @@ export default function AlphaSection() {
             <div className="grid gap-4">
               {mindshareProjects?.filter(p => p.network === 'BASE').map((project) => (
                 <div key={project.id} className="backdrop-blur-sm bg-white/5 rounded-lg p-4 border border-crypto-silver/10 hover:bg-white/10 transition-all">
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold bg-gradient-to-r from-blue-500 to-purple-500">
                         {project.symbol?.substring(0, 2) || project.ticker?.substring(0, 2) || project.name?.substring(0, 2) || '??'}
@@ -219,7 +244,7 @@ export default function AlphaSection() {
                             rel="noopener noreferrer"
                             className="hover:text-blue-400 transition-colors"
                           >
-                            X: {formatNumber(project.mentions || 0)} mentions
+                            X: {formatNumber(project.xMentions24h || project.mentions || 0)} mentions
                           </a>
                           <span>•</span>
                           <span>Mindshare: {project.trendingScore || 0}/100</span>
@@ -229,8 +254,8 @@ export default function AlphaSection() {
                     
                     <div className="flex items-center gap-4">
                       <div className="text-center">
-                        <div className={`text-sm font-medium ${getSentimentColor(project.sentiment)}`}>
-                          {project.sentiment || 0}%
+                        <div className={`text-sm font-medium ${getSentimentColor(project.xSentiment || project.sentiment)}`}>
+                          {project.xSentiment || project.sentiment || 0}%
                         </div>
                         <div className="text-crypto-silver text-xs">Sentiment</div>
                       </div>
@@ -238,6 +263,33 @@ export default function AlphaSection() {
                         <div className="text-crypto-warning text-sm font-medium">{project.socialScore || 0}/100</div>
                         <div className="text-crypto-silver text-xs">Social Score</div>
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Enhanced Social Intelligence Metrics */}
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                    <div className="text-center p-3 bg-white/5 rounded-lg">
+                      <div className="text-white font-semibold">{formatNumber(project.xMentions24h || 0)}</div>
+                      <div className="text-crypto-silver text-xs">24H Mentions</div>
+                    </div>
+                    <div className="text-center p-3 bg-white/5 rounded-lg">
+                      <div className={`font-semibold ${(project.xMentionChange || 0) >= 0 ? 'text-crypto-success' : 'text-red-500'}`}>
+                        {formatMentionChange(project.xMentionChange || 0)}
+                      </div>
+                      <div className="text-crypto-silver text-xs">24H Change</div>
+                    </div>
+                    <div className="text-center p-3 bg-white/5 rounded-lg">
+                      <div className={`font-semibold flex items-center justify-center gap-1 ${getTrendColor(project.xTrendDirection || 'neutral')}`}>
+                        <span>{getTrendIcon(project.xTrendDirection || 'neutral')}</span>
+                        <span className="text-xs">{(project.xTrendDirection || 'neutral').replace('_', ' ')}</span>
+                      </div>
+                      <div className="text-crypto-silver text-xs">Trend Direction</div>
+                    </div>
+                    <div className="text-center p-3 bg-white/5 rounded-lg">
+                      <div className="text-blue-400 font-semibold text-xs">
+                        {project.xTopInfluencer || '@unknown'}
+                      </div>
+                      <div className="text-crypto-silver text-xs">Top Influencer</div>
                     </div>
                   </div>
                   
@@ -262,45 +314,97 @@ export default function AlphaSection() {
             </div>
             
             <div className="grid gap-4">
-              {subnets?.slice(0, 10).map((subnet) => (
-                <div key={subnet.id} className="backdrop-blur-sm bg-white/5 rounded-lg p-4 border border-crypto-silver/10 hover:bg-white/10 transition-all">
-                  <div className="flex items-center justify-between mb-3">
+              {mindshareProjects?.filter(p => p.network === 'TAO').map((project) => (
+                <div key={project.id} className="backdrop-blur-sm bg-white/5 rounded-lg p-4 border border-crypto-silver/10 hover:bg-white/10 transition-all">
+                  <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold bg-gradient-to-r from-purple-500 to-pink-500">
-                        τ{subnet.netuid}
+                        τ{project.symbol?.replace('SN', '') || '?'}
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
                           <a 
-                            href={`https://x.com/search?q=%23SN${subnet.netuid}`}
+                            href={`https://x.com/search?q=%23${project.symbol}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-white font-medium hover:text-orange-400 transition-colors"
                           >
-                            {subnet.name}
+                            {project.name}
                           </a>
                           <Badge variant="outline" className="border-purple-500/30 text-purple-400">
-                            SN{subnet.netuid}
+                            {project.symbol}
                           </Badge>
-                          {subnet.netuid <= 5 && (
+                          {project.tensorpulseRanking && project.tensorpulseRanking <= 5 && (
                             <Badge variant="outline" className="border-crypto-warning/30 text-crypto-warning">
-                              🔥 Top Tier
+                              🔥 Top 5
                             </Badge>
                           )}
                         </div>
-                        <div className="text-crypto-silver text-sm">{subnet.description}</div>
+                        <div className="text-crypto-silver text-sm flex items-center gap-4">
+                          <a 
+                            href={`https://x.com/search?q=%23${project.symbol}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hover:text-purple-400 transition-colors"
+                          >
+                            X: {formatNumber(project.xMentions24h || project.mentions || 0)} mentions
+                          </a>
+                          <span>•</span>
+                          <span>TensorPulse: #{project.tensorpulseRanking || 'N/A'}</span>
+                        </div>
                       </div>
                     </div>
                     
                     <div className="flex items-center gap-4">
                       <div className="text-center">
-                        <div className="text-purple-400 text-sm font-medium">{typeof subnet.stakeWeight === 'number' ? (subnet.stakeWeight * 100).toFixed(1) : subnet.stakeWeight || '0.0'}%</div>
-                        <div className="text-crypto-silver text-xs">Stake Weight</div>
+                        <div className={`text-sm font-medium ${getSentimentColor(project.xSentiment || project.sentiment)}`}>
+                          {project.xSentiment || project.sentiment || 0}%
+                        </div>
+                        <div className="text-crypto-silver text-xs">Sentiment</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-crypto-success text-sm font-medium">{typeof subnet.emissions === 'number' ? subnet.emissions.toFixed(1) : subnet.emissions || '0.0'}</div>
-                        <div className="text-crypto-silver text-xs">Daily τ</div>
+                        <div className="text-crypto-warning text-sm font-medium">{project.socialScore || 0}/100</div>
+                        <div className="text-crypto-silver text-xs">Social Score</div>
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Enhanced TAO Social Intelligence Metrics */}
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                    <div className="text-center p-3 bg-white/5 rounded-lg">
+                      <div className="text-white font-semibold">{formatNumber(project.xMentions24h || 0)}</div>
+                      <div className="text-crypto-silver text-xs">24H Mentions</div>
+                    </div>
+                    <div className="text-center p-3 bg-white/5 rounded-lg">
+                      <div className={`font-semibold ${(project.xMentionChange || 0) >= 0 ? 'text-crypto-success' : 'text-red-500'}`}>
+                        {formatMentionChange(project.xMentionChange || 0)}
+                      </div>
+                      <div className="text-crypto-silver text-xs">24H Change</div>
+                    </div>
+                    <div className="text-center p-3 bg-white/5 rounded-lg">
+                      <div className={`font-semibold flex items-center justify-center gap-1 ${getTrendColor(project.xTrendDirection || 'neutral')}`}>
+                        <span>{getTrendIcon(project.xTrendDirection || 'neutral')}</span>
+                        <span className="text-xs">{(project.xTrendDirection || 'neutral').replace('_', ' ')}</span>
+                      </div>
+                      <div className="text-crypto-silver text-xs">Trend Direction</div>
+                    </div>
+                    <div className="text-center p-3 bg-white/5 rounded-lg">
+                      <div className="text-purple-400 font-semibold text-xs">
+                        {project.xTopInfluencer || '@unknown'}
+                      </div>
+                      <div className="text-crypto-silver text-xs">Top Influencer</div>
+                    </div>
+                  </div>
+
+                  {/* Additional TAO-specific data */}
+                  <div className="grid grid-cols-2 gap-4 pt-2 border-t border-crypto-silver/10">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-crypto-silver">Mindshare /100:</span>
+                      <span className="text-purple-400">{project.swordscanMindshare || 0}/100</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-crypto-silver">Subnet Staking:</span>
+                      <span className="text-white">{project.subnetStaking || 'N/A'}</span>
                     </div>
                   </div>
                 </div>
