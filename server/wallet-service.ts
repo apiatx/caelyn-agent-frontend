@@ -6,7 +6,7 @@ export class WalletService {
   // Fetch real BASE holdings using multi-chain Etherscan API
   async fetchBaseHoldingsFromBasescan(walletAddress: string): Promise<any[]> {
     try {
-      console.log("🔗 Fetching BASE holdings using multi-chain API for:", walletAddress);
+      console.log("🔗 Fetching BASE holdings from Basescan for:", walletAddress);
       
       const apiKey = process.env.ETHERSCAN_API_KEY;
       if (!apiKey) {
@@ -14,16 +14,18 @@ export class WalletService {
         return [];
       }
       
+      console.log(`🔑 Using API key: ${apiKey.substring(0, 8)}...${apiKey.substring(-4)}`);
+      
       const baseChainId = 8453; // BASE chain ID
       const holdings: any[] = [];
       
-      // Get ETH balance on BASE using standard Basescan API
-      const balanceUrl = `https://api.basescan.org/api?module=account&action=balance&address=${walletAddress}&tag=latest&apikey=${apiKey}`;
-      console.log("Fetching ETH balance from:", balanceUrl);
+      // Get ETH balance on BASE using Etherscan v2 multi-chain API
+      const balanceUrl = `https://api.etherscan.io/v2/api?chainid=${baseChainId}&module=account&action=balance&address=${walletAddress}&tag=latest&apikey=${apiKey}`;
+      console.log("Fetching ETH balance using Etherscan v2 API...");
       
       const ethResponse = await fetch(balanceUrl);
       const ethData = await ethResponse.json();
-      console.log("ETH Response:", ethData);
+      console.log("ETH Response:", ethData.status === '1' ? 'Success' : `Error: ${ethData.message || ethData.result}`);
       
       if (ethData.status === '1' && ethData.result && ethData.result !== '0') {
         const ethAmount = parseFloat(ethData.result) / Math.pow(10, 18);
@@ -43,9 +45,9 @@ export class WalletService {
         }
       }
       
-      // Get token list on BASE using standard Basescan API
-      const tokenUrl = `https://api.basescan.org/api?module=account&action=tokenlist&address=${walletAddress}&apikey=${apiKey}`;
-      console.log("Fetching tokens from:", tokenUrl);
+      // Get token list on BASE using Etherscan v2 multi-chain API
+      const tokenUrl = `https://api.etherscan.io/v2/api?chainid=${baseChainId}&module=account&action=tokenlist&address=${walletAddress}&apikey=${apiKey}`;
+      console.log("Fetching tokens using Etherscan v2 API...");
       
       const tokenResponse = await fetch(tokenUrl);
       const tokenData = await tokenResponse.json();
