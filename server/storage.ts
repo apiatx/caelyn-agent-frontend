@@ -463,11 +463,71 @@ export class MemStorage implements IStorage {
         sentiment: "76.3",
         trendingScore: 72,
         lastUpdated: new Date(),
-      }
+      },
+      
+      // COMPREHENSIVE BASE ECOSYSTEM EXPANSION - Additional BASE tokens
+      { id: 18, name: "Brett", symbol: "BRETT", network: "BASE", marketCap: "234000000", volume24h: "28900000", mentions24h: 3124, sentiment: "86.5", trendingScore: 93, lastUpdated: new Date() },
+      { id: 19, name: "Normie", symbol: "NORMIE", network: "BASE", marketCap: "56000000", volume24h: "8200000", mentions24h: 1523, sentiment: "78.3", trendingScore: 84, lastUpdated: new Date() },
+      { id: 20, name: "Based Dog", symbol: "BASEDOG", network: "BASE", marketCap: "23000000", volume24h: "3400000", mentions24h: 891, sentiment: "72.1", trendingScore: 76, lastUpdated: new Date() },
+      { id: 21, name: "Based", symbol: "BASED", network: "BASE", marketCap: "45000000", volume24h: "6700000", mentions24h: 1234, sentiment: "80.4", trendingScore: 82, lastUpdated: new Date() },
+      { id: 22, name: "Based AI", symbol: "BASEDAI", network: "BASE", marketCap: "78000000", volume24h: "11500000", mentions24h: 1876, sentiment: "83.7", trendingScore: 87, lastUpdated: new Date() },
+      { id: 23, name: "Onchain", symbol: "ONCHAIN", network: "BASE", marketCap: "34000000", volume24h: "5100000", mentions24h: 743, sentiment: "75.8", trendingScore: 79, lastUpdated: new Date() },
+      { id: 24, name: "Benji", symbol: "BENJI", network: "BASE", marketCap: "12000000", volume24h: "1800000", mentions24h: 456, sentiment: "69.2", trendingScore: 71, lastUpdated: new Date() },
+      { id: 25, name: "Pump", symbol: "PUMP", network: "BASE", marketCap: "67000000", volume24h: "9800000", mentions24h: 1345, sentiment: "77.9", trendingScore: 81, lastUpdated: new Date() },
+      { id: 26, name: "Moonwell", symbol: "MOONWELL", network: "BASE", marketCap: "89000000", volume24h: "13200000", mentions24h: 1678, sentiment: "82.3", trendingScore: 85, lastUpdated: new Date() },
+      { id: 27, name: "Seamless", symbol: "SEAMLESS", network: "BASE", marketCap: "56000000", volume24h: "8300000", mentions24h: 1123, sentiment: "79.6", trendingScore: 83, lastUpdated: new Date() },
+      { id: 28, name: "Blue", symbol: "BLUE", network: "BASE", marketCap: "23000000", volume24h: "3400000", mentions24h: 789, sentiment: "74.2", trendingScore: 77, lastUpdated: new Date() },
+      { id: 29, name: "Bald", symbol: "BALD", network: "BASE", marketCap: "34000000", volume24h: "5100000", mentions24h: 923, sentiment: "76.8", trendingScore: 79, lastUpdated: new Date() },
+      { id: 30, name: "Tab", symbol: "TAB", network: "BASE", marketCap: "12000000", volume24h: "1800000", mentions24h: 456, sentiment: "71.5", trendingScore: 73, lastUpdated: new Date() },
+      { id: 31, name: "Ducky", symbol: "DUCKY", network: "BASE", marketCap: "8900000", volume24h: "1300000", mentions24h: 334, sentiment: "68.9", trendingScore: 70, lastUpdated: new Date() },
+      { id: 32, name: "Jesus Coin", symbol: "JESUS", network: "BASE", marketCap: "45000000", volume24h: "6700000", mentions24h: 1234, sentiment: "80.1", trendingScore: 82, lastUpdated: new Date() },
+      { id: 33, name: "USA Coin", symbol: "USA", network: "BASE", marketCap: "23000000", volume24h: "3400000", mentions24h: 667, sentiment: "75.3", trendingScore: 78, lastUpdated: new Date() },
+      { id: 34, name: "Mochi", symbol: "MOCHI", network: "BASE", marketCap: "12000000", volume24h: "1800000", mentions24h: 445, sentiment: "72.7", trendingScore: 74, lastUpdated: new Date() },
+      { id: 35, name: "Wojak", symbol: "WOJAK", network: "BASE", marketCap: "34000000", volume24h: "5100000", mentions24h: 891, sentiment: "77.2", trendingScore: 80, lastUpdated: new Date() },
+      { id: 36, name: "AI16Z", symbol: "AI16Z", network: "BASE", marketCap: "123000000", volume24h: "18200000", mentions24h: 2345, sentiment: "85.9", trendingScore: 90, lastUpdated: new Date() },
+      { id: 37, name: "Zerebro", symbol: "ZEREBRO", network: "BASE", marketCap: "67000000", volume24h: "9800000", mentions24h: 1456, sentiment: "81.4", trendingScore: 84, lastUpdated: new Date() },
+      { id: 38, name: "Chill Guy", symbol: "CHILLGUY", network: "BASE", marketCap: "45000000", volume24h: "6700000", mentions24h: 1123, sentiment: "78.8", trendingScore: 81, lastUpdated: new Date() },
+      { id: 39, name: "Fartcoin", symbol: "FARTCOIN", network: "BASE", marketCap: "89000000", volume24h: "13200000", mentions24h: 1876, sentiment: "79.2", trendingScore: 83, lastUpdated: new Date() },
+      { id: 40, name: "ACT", symbol: "ACT", network: "BASE", marketCap: "56000000", volume24h: "8300000", mentions24h: 1234, sentiment: "80.7", trendingScore: 82, lastUpdated: new Date() },
+      { id: 41, name: "Bonk", symbol: "BONK", network: "BASE", marketCap: "234000000", volume24h: "34500000", mentions24h: 2876, sentiment: "84.3", trendingScore: 89, lastUpdated: new Date() },
+      { id: 42, name: "Pepe", symbol: "PEPE", network: "BASE", marketCap: "456000000", volume24h: "67800000", mentions24h: 4123, sentiment: "87.6", trendingScore: 92, lastUpdated: new Date() },
+      { id: 43, name: "Dogwifhat", symbol: "WIF", network: "BASE", marketCap: "189000000", volume24h: "27600000", mentions24h: 2654, sentiment: "83.9", trendingScore: 88, lastUpdated: new Date() },
+      { id: 44, name: "Popcat", symbol: "POPCAT", network: "BASE", marketCap: "123000000", volume24h: "18200000", mentions24h: 1987, sentiment: "82.1", trendingScore: 86, lastUpdated: new Date() },
+      { id: 45, name: "Goat", symbol: "GOAT", network: "BASE", marketCap: "345000000", volume24h: "51200000", mentions24h: 3456, sentiment: "86.8", trendingScore: 91, lastUpdated: new Date() },
+      
+      // COMPREHENSIVE TAO SUBNET EXPANSION - All remaining subnets
+      { id: 50, name: "SN2 - Machine Translation", symbol: "SN2", network: "TAO", marketCap: null, volume24h: null, mentions24h: 756, sentiment: "87.4", trendingScore: 82, lastUpdated: new Date() },
+      { id: 51, name: "SN3 - Data Scraping", symbol: "SN3", network: "TAO", marketCap: null, volume24h: null, mentions24h: 623, sentiment: "84.1", trendingScore: 78, lastUpdated: new Date() },
+      { id: 52, name: "SN4 - Multi Modality", symbol: "SN4", network: "TAO", marketCap: null, volume24h: null, mentions24h: 945, sentiment: "88.7", trendingScore: 85, lastUpdated: new Date() },
+      { id: 53, name: "SN6 - Compute", symbol: "SN6", network: "TAO", marketCap: null, volume24h: null, mentions24h: 834, sentiment: "86.2", trendingScore: 81, lastUpdated: new Date() },
+      { id: 54, name: "SN7 - Storage", symbol: "SN7", network: "TAO", marketCap: null, volume24h: null, mentions24h: 712, sentiment: "85.8", trendingScore: 80, lastUpdated: new Date() },
+      { id: 55, name: "SN8 - Time Series Prediction", symbol: "SN8", network: "TAO", marketCap: null, volume24h: null, mentions24h: 589, sentiment: "83.4", trendingScore: 77, lastUpdated: new Date() },
+      { id: 56, name: "SN9 - Pre-training", symbol: "SN9", network: "TAO", marketCap: null, volume24h: null, mentions24h: 667, sentiment: "84.7", trendingScore: 79, lastUpdated: new Date() },
+      { id: 57, name: "SN10 - Map Reduce", symbol: "SN10", network: "TAO", marketCap: null, volume24h: null, mentions24h: 534, sentiment: "82.1", trendingScore: 75, lastUpdated: new Date() },
+      { id: 58, name: "SN11 - Text Prompting", symbol: "SN11", network: "TAO", marketCap: null, volume24h: null, mentions24h: 1456, sentiment: "90.5", trendingScore: 88, lastUpdated: new Date() },
+      { id: 59, name: "SN12 - Compute", symbol: "SN12", network: "TAO", marketCap: null, volume24h: null, mentions24h: 789, sentiment: "86.9", trendingScore: 83, lastUpdated: new Date() },
+      { id: 60, name: "SN13 - Data Universe", symbol: "SN13", network: "TAO", marketCap: null, volume24h: null, mentions24h: 623, sentiment: "84.3", trendingScore: 78, lastUpdated: new Date() },
+      { id: 61, name: "SN14 - LLM Defender", symbol: "SN14", network: "TAO", marketCap: null, volume24h: null, mentions24h: 891, sentiment: "87.6", trendingScore: 84, lastUpdated: new Date() },
+      { id: 62, name: "SN15 - Blockchain Insights", symbol: "SN15", network: "TAO", marketCap: null, volume24h: null, mentions24h: 712, sentiment: "85.2", trendingScore: 81, lastUpdated: new Date() },
+      { id: 63, name: "SN16 - Audio", symbol: "SN16", network: "TAO", marketCap: null, volume24h: null, mentions24h: 567, sentiment: "83.8", trendingScore: 77, lastUpdated: new Date() },
+      { id: 64, name: "SN17 - Three Gen", symbol: "SN17", network: "TAO", marketCap: null, volume24h: null, mentions24h: 445, sentiment: "81.4", trendingScore: 74, lastUpdated: new Date() },
+      { id: 65, name: "SN19 - Vision", symbol: "SN19", network: "TAO", marketCap: null, volume24h: null, mentions24h: 834, sentiment: "86.1", trendingScore: 82, lastUpdated: new Date() },
+      { id: 66, name: "SN20 - Bitagent", symbol: "SN20", network: "TAO", marketCap: null, volume24h: null, mentions24h: 623, sentiment: "84.7", trendingScore: 79, lastUpdated: new Date() },
+      { id: 67, name: "SN21 - FileTao", symbol: "SN21", network: "TAO", marketCap: null, volume24h: null, mentions24h: 567, sentiment: "83.2", trendingScore: 76, lastUpdated: new Date() },
+      { id: 68, name: "SN22 - Mining", symbol: "SN22", network: "TAO", marketCap: null, volume24h: null, mentions24h: 789, sentiment: "85.9", trendingScore: 81, lastUpdated: new Date() },
+      { id: 69, name: "SN23 - NicheImage", symbol: "SN23", network: "TAO", marketCap: null, volume24h: null, mentions24h: 445, sentiment: "82.6", trendingScore: 75, lastUpdated: new Date() },
+      { id: 70, name: "SN24 - Omega Labs", symbol: "SN24", network: "TAO", marketCap: null, volume24h: null, mentions24h: 678, sentiment: "84.8", trendingScore: 80, lastUpdated: new Date() },
+      { id: 71, name: "SN25 - Tensor", symbol: "SN25", network: "TAO", marketCap: null, volume24h: null, mentions24h: 891, sentiment: "87.3", trendingScore: 83, lastUpdated: new Date() },
+      { id: 72, name: "SN26 - Sturdy", symbol: "SN26", network: "TAO", marketCap: null, volume24h: null, mentions24h: 534, sentiment: "83.7", trendingScore: 77, lastUpdated: new Date() },
+      { id: 73, name: "SN28 - Foundry S&P", symbol: "SN28", network: "TAO", marketCap: null, volume24h: null, mentions24h: 712, sentiment: "86.4", trendingScore: 82, lastUpdated: new Date() },
+      { id: 74, name: "SN29 - Fractal", symbol: "SN29", network: "TAO", marketCap: null, volume24h: null, mentions24h: 623, sentiment: "84.9", trendingScore: 79, lastUpdated: new Date() },
+      { id: 75, name: "SN30 - Eden", symbol: "SN30", network: "TAO", marketCap: null, volume24h: null, mentions24h: 567, sentiment: "83.5", trendingScore: 76, lastUpdated: new Date() },
+      { id: 76, name: "SN31 - Wombo", symbol: "SN31", network: "TAO", marketCap: null, volume24h: null, mentions24h: 445, sentiment: "82.1", trendingScore: 74, lastUpdated: new Date() },
+      { id: 77, name: "SN106 - VOID AI", symbol: "SN106", network: "TAO", marketCap: null, volume24h: null, mentions24h: 1123, sentiment: "88.9", trendingScore: 86, lastUpdated: new Date() }
     ];
 
     mindshareProjects.forEach(project => this.mindshareProjects.set(project.id, project));
-    this.currentMindshareProjectId = 18;
+    this.currentMindshareProjectId = 78;
   }
 
   // User methods
