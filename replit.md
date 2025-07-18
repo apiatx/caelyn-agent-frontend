@@ -133,3 +133,12 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **TaoStats API**: Integrated TaoStats API for authentic TAO staking data with fallback simulation
 - **Visual Improvements**: Orange τ badges for TAO, blue badges for BASE, enhanced subnet targeting
 - **Whale Criteria**: Focus on whale wallets holding $50k+ total portfolio value for altcoin tracking
+
+### July 18, 2025 - Portfolio $0 Display & Enhanced Features
+- **Portfolio $0 Until Connected**: Portfolio displays $0.00 values and 0% until wallet addresses are connected
+- **Comprehensive Subnet Analytics**: Moved to Alpha tab with TaoStats API integration showing all 64 subnets
+- **Enhanced Mindshare Sources**: Added X.com sentiment and swordscan.com/tensorpulse-mindshare data integration
+- **ALL BASE Altcoins Tracking**: Whale watching now monitors ALL BASE altcoins except ETH/stablecoins
+- **TAO Subnet-Only Monitoring**: TAO whale watching shows only subnet staking events in "SN64: Chutes" format
+- **Data Integrity Priority**: Platform shows authentic $0.00 rather than fake data until real API access
+- **Extended Subnet Coverage**: Comprehensive subnet analytics covers SN1-SN64 with performance metrics

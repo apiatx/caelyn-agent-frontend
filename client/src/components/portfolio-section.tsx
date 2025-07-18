@@ -73,6 +73,9 @@ export default function PortfolioSection() {
     });
   };
 
+  // Check if wallet addresses are configured
+  const hasWalletAddresses = portfolio?.baseWalletAddress || portfolio?.taoWalletAddress;
+
   if (isLoading) {
     return (
       <div className="space-y-8">
@@ -210,10 +213,16 @@ export default function PortfolioSection() {
             <h3 className="text-crypto-silver text-sm font-medium">Total Balance</h3>
             <Wallet className="text-crypto-silver h-5 w-5" />
           </div>
-          <div className="text-2xl font-bold text-white mb-2">${portfolio.totalBalance}</div>
+          <div className="text-2xl font-bold text-white mb-2">
+            ${hasWalletAddresses ? portfolio.totalBalance : '0.00'}
+          </div>
           <div className="flex items-center text-sm">
-            <span className="text-crypto-success">+$5,234.21</span>
-            <span className="text-crypto-silver ml-2">(+4.27%)</span>
+            <span className={hasWalletAddresses ? "text-crypto-success" : "text-crypto-silver"}>
+              {hasWalletAddresses ? "+$5,234.21" : "$0.00"}
+            </span>
+            <span className="text-crypto-silver ml-2">
+              {hasWalletAddresses ? "(+4.27%)" : "(0%)"}
+            </span>
           </div>
         </GlassCard>
 
@@ -223,14 +232,19 @@ export default function PortfolioSection() {
             <TrendingUp className="text-crypto-success h-5 w-5" />
           </div>
           <div className={`text-2xl font-bold mb-2 ${
-            portfolio.pnl24h && parseFloat(portfolio.pnl24h) >= 0 
+            hasWalletAddresses && portfolio.pnl24h && parseFloat(portfolio.pnl24h) >= 0 
               ? 'text-crypto-success' 
-              : 'text-red-500'
+              : hasWalletAddresses ? 'text-red-500' : 'text-crypto-silver'
           }`}>
-            {portfolio.pnl24h && parseFloat(portfolio.pnl24h) >= 0 ? '+' : ''}${portfolio.pnl24h}
+            {hasWalletAddresses ? 
+              `${portfolio.pnl24h && parseFloat(portfolio.pnl24h) >= 0 ? '+' : ''}$${portfolio.pnl24h}` :
+              '$0.00'
+            }
           </div>
           <div className="flex items-center text-sm">
-            <span className="text-crypto-success">+1.47%</span>
+            <span className={hasWalletAddresses ? "text-crypto-success" : "text-crypto-silver"}>
+              {hasWalletAddresses ? "+1.47%" : "0%"}
+            </span>
             <span className="text-crypto-silver ml-2">vs yesterday</span>
           </div>
         </GlassCard>
@@ -246,10 +260,16 @@ export default function PortfolioSection() {
             <h3 className="text-crypto-silver text-sm font-medium">BASE Holdings</h3>
             <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-xs font-bold">B</div>
           </div>
-          <div className="text-2xl font-bold text-white mb-2">${portfolio.baseHoldings}</div>
+          <div className="text-2xl font-bold text-white mb-2">
+            ${hasWalletAddresses ? portfolio.baseHoldings : '0.00'}
+          </div>
           <div className="flex items-center text-sm">
-            <span className="text-crypto-success">+$2,156.34</span>
-            <span className="text-crypto-silver ml-2">(+4.78%)</span>
+            <span className={hasWalletAddresses ? "text-crypto-success" : "text-crypto-silver"}>
+              {hasWalletAddresses ? "+$2,156.34" : "$0.00"}
+            </span>
+            <span className="text-crypto-silver ml-2">
+              {hasWalletAddresses ? "(+4.78%)" : "(0%)"}
+            </span>
           </div>
         </GlassCard>
 
@@ -264,10 +284,16 @@ export default function PortfolioSection() {
             <h3 className="text-crypto-silver text-sm font-medium">TAO Holdings</h3>
             <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-xs font-bold">Τ</div>
           </div>
-          <div className="text-2xl font-bold text-white mb-2">${portfolio.taoHoldings}</div>
+          <div className="text-2xl font-bold text-white mb-2">
+            ${hasWalletAddresses ? portfolio.taoHoldings : '0.00'}
+          </div>
           <div className="flex items-center text-sm">
-            <span className="text-crypto-success">+$3,077.87</span>
-            <span className="text-crypto-silver ml-2">(+3.97%)</span>
+            <span className={hasWalletAddresses ? "text-crypto-success" : "text-crypto-silver"}>
+              {hasWalletAddresses ? "+$3,077.87" : "$0.00"}
+            </span>
+            <span className="text-crypto-silver ml-2">
+              {hasWalletAddresses ? "(+3.97%)" : "(0%)"}
+            </span>
           </div>
         </GlassCard>
       </div>
@@ -289,55 +315,70 @@ export default function PortfolioSection() {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <div className="text-center p-4 bg-white/5 backdrop-blur-sm rounded-lg border border-crypto-silver/20">
             <div className={`text-xl font-bold mb-1 ${
-              portfolio.pnl24h && parseFloat(portfolio.pnl24h) >= 0 
+              hasWalletAddresses && portfolio.pnl24h && parseFloat(portfolio.pnl24h) >= 0 
                 ? 'text-crypto-success' 
-                : 'text-red-500'
+                : hasWalletAddresses ? 'text-red-500' : 'text-crypto-silver'
             }`}>
-              {portfolio.pnl24h && parseFloat(portfolio.pnl24h) >= 0 ? '+' : ''}${portfolio.pnl24h}
+              {hasWalletAddresses ? 
+                `${portfolio.pnl24h && parseFloat(portfolio.pnl24h) >= 0 ? '+' : ''}$${portfolio.pnl24h}` :
+                '$0.00'
+              }
             </div>
             <div className="text-crypto-silver text-sm">24h PnL</div>
           </div>
           
           <div className="text-center p-4 bg-white/5 backdrop-blur-sm rounded-lg border border-crypto-silver/20">
             <div className={`text-xl font-bold mb-1 ${
-              portfolio.pnl7d && parseFloat(portfolio.pnl7d) >= 0 
+              hasWalletAddresses && portfolio.pnl7d && parseFloat(portfolio.pnl7d) >= 0 
                 ? 'text-crypto-success' 
-                : 'text-red-500'
+                : hasWalletAddresses ? 'text-red-500' : 'text-crypto-silver'
             }`}>
-              {portfolio.pnl7d && parseFloat(portfolio.pnl7d) >= 0 ? '+' : ''}${portfolio.pnl7d || '0.00'}
+              {hasWalletAddresses ? 
+                `${portfolio.pnl7d && parseFloat(portfolio.pnl7d) >= 0 ? '+' : ''}$${portfolio.pnl7d || '0.00'}` :
+                '$0.00'
+              }
             </div>
             <div className="text-crypto-silver text-sm">7d PnL</div>
           </div>
           
           <div className="text-center p-4 bg-white/5 backdrop-blur-sm rounded-lg border border-crypto-silver/20">
             <div className={`text-xl font-bold mb-1 ${
-              portfolio.pnl30d && parseFloat(portfolio.pnl30d) >= 0 
+              hasWalletAddresses && portfolio.pnl30d && parseFloat(portfolio.pnl30d) >= 0 
                 ? 'text-crypto-success' 
-                : 'text-red-500'
+                : hasWalletAddresses ? 'text-red-500' : 'text-crypto-silver'
             }`}>
-              {portfolio.pnl30d && parseFloat(portfolio.pnl30d) >= 0 ? '+' : ''}${portfolio.pnl30d || '0.00'}
+              {hasWalletAddresses ? 
+                `${portfolio.pnl30d && parseFloat(portfolio.pnl30d) >= 0 ? '+' : ''}$${portfolio.pnl30d || '0.00'}` :
+                '$0.00'
+              }
             </div>
             <div className="text-crypto-silver text-sm">30d PnL</div>
           </div>
           
           <div className="text-center p-4 bg-white/5 backdrop-blur-sm rounded-lg border border-crypto-silver/20">
             <div className={`text-xl font-bold mb-1 ${
-              portfolio.pnlYtd && parseFloat(portfolio.pnlYtd) >= 0 
+              hasWalletAddresses && portfolio.pnlYtd && parseFloat(portfolio.pnlYtd) >= 0 
                 ? 'text-crypto-success' 
-                : 'text-red-500'
+                : hasWalletAddresses ? 'text-red-500' : 'text-crypto-silver'
             }`}>
-              {portfolio.pnlYtd && parseFloat(portfolio.pnlYtd) >= 0 ? '+' : ''}${portfolio.pnlYtd || '0.00'}
+              {hasWalletAddresses ? 
+                `${portfolio.pnlYtd && parseFloat(portfolio.pnlYtd) >= 0 ? '+' : ''}$${portfolio.pnlYtd || '0.00'}` :
+                '$0.00'
+              }
             </div>
             <div className="text-crypto-silver text-sm">YTD PnL</div>
           </div>
           
           <div className="text-center p-4 bg-white/5 backdrop-blur-sm rounded-lg border border-crypto-silver/20">
             <div className={`text-xl font-bold mb-1 ${
-              portfolio.pnlAll && parseFloat(portfolio.pnlAll) >= 0 
+              hasWalletAddresses && portfolio.pnlAll && parseFloat(portfolio.pnlAll) >= 0 
                 ? 'text-crypto-success' 
-                : 'text-red-500'
+                : hasWalletAddresses ? 'text-red-500' : 'text-crypto-silver'
             }`}>
-              {portfolio.pnlAll && parseFloat(portfolio.pnlAll) >= 0 ? '+' : ''}${portfolio.pnlAll || '0.00'}
+              {hasWalletAddresses ? 
+                `${portfolio.pnlAll && parseFloat(portfolio.pnlAll) >= 0 ? '+' : ''}$${portfolio.pnlAll || '0.00'}` :
+                '$0.00'
+              }
             </div>
             <div className="text-crypto-silver text-sm">All-Time PnL</div>
           </div>

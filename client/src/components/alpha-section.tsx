@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { useWhaleWatching } from "@/hooks/use-whale-watching";
 import { useQuery } from "@tanstack/react-query";
 import { CryptoPaymentModal } from "@/components/crypto-payment-modal";
+import SubnetAnalyticsSection from "@/components/subnet-analytics-section";
 
 export default function AlphaSection() {
   const { data: hasAccess, premiumTransactions } = useWhaleWatching(1);
@@ -323,6 +324,9 @@ export default function AlphaSection() {
           </Tabs>
         </TabsContent>
       </Tabs>
+
+      {/* Comprehensive Subnet Analytics */}
+      <SubnetAnalyticsSection />
 
       <CryptoPaymentModal
         isOpen={showPaymentModal}
