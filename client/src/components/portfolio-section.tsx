@@ -330,99 +330,43 @@ export default function PortfolioSection() {
           </div>
         </GlassCard>
 
-        {/* BASE Holdings Summary */}
-        <GlassCard className="p-6 hover:shadow-2xl transition-all duration-300">
+        {/* 24h PnL (moved to replace the removed cards) */}
+        <GlassCard className="p-6 hover:shadow-2xl transition-all duration-300 cursor-pointer hover:scale-105">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-crypto-silver text-sm font-medium">BASE Network Total</h3>
-            <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-xs font-bold">B</div>
+            <h3 className="text-crypto-silver text-sm font-medium">24h Performance</h3>
+            <TrendingUp className="text-crypto-success h-5 w-5" />
           </div>
-          <div className="text-2xl font-bold text-white mb-2">
-            ${hasWalletAddresses ? portfolio.baseHoldings : '0.00'}
-          </div>
-          <div className="flex items-center text-sm mb-4">
-            <span className={hasWalletAddresses ? "text-crypto-success" : "text-crypto-silver"}>
-              {hasWalletAddresses ? "+$2,156.34" : "$0.00"}
-            </span>
-            <span className="text-crypto-silver ml-2">
-              {hasWalletAddresses ? "(+4.78%)" : "(0%)"}
-            </span>
-          </div>
-          
-          {/* BASE Holdings Breakdown */}
-          <div className="space-y-2 border-t border-crypto-silver/20 pt-3">
-            <div className="text-xs text-crypto-silver mb-2">Individual Holdings ($5+ only):</div>
-            {hasWalletAddresses ? baseHoldings
-              .filter(holding => (parseFloat(holding.amount) * parseFloat(holding.currentPrice)) >= 5)
-              .slice(0, 3)
-              .map((holding, index) => {
-                const value = parseFloat(holding.amount) * parseFloat(holding.currentPrice);
-                const pnl = value * 0.08; // 8% demo PnL
-                return (
-                  <div key={index} className="flex items-center justify-between text-xs cursor-pointer hover:bg-white/5 rounded p-1"
-                    onClick={() => setSelectedHolding(holding)}>
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 bg-blue-400 rounded-full flex items-center justify-center text-[10px] font-bold">
-                        {holding.symbol.charAt(0)}
-                      </div>
-                      <span className="text-white">{holding.symbol}</span>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-white">${value.toFixed(2)}</div>
-                      <div className="text-crypto-success">+${pnl.toFixed(2)}</div>
-                    </div>
-                  </div>
-                );
-              }) : 
-              <div className="text-xs text-crypto-silver italic">Connect wallet to view holdings</div>
+          <div className={`text-2xl font-bold mb-2 ${
+            hasWalletAddresses && portfolio.pnl24h && parseFloat(portfolio.pnl24h) >= 0 
+              ? 'text-crypto-success' 
+              : hasWalletAddresses ? 'text-red-500' : 'text-crypto-silver'
+          }`}>
+            {hasWalletAddresses ? 
+              `${portfolio.pnl24h && parseFloat(portfolio.pnl24h) >= 0 ? '+' : ''}$${portfolio.pnl24h}` :
+              '$0.00'
             }
+          </div>
+          <div className="flex items-center text-sm">
+            <span className={hasWalletAddresses ? "text-crypto-success" : "text-crypto-silver"}>
+              {hasWalletAddresses ? "+1.47%" : "0%"}
+            </span>
+            <span className="text-crypto-silver ml-2">vs yesterday</span>
           </div>
         </GlassCard>
 
-        {/* TAO Holdings Summary */}
-        <GlassCard className="p-6 hover:shadow-2xl transition-all duration-300">
+        {/* Total Holdings (moved to replace the removed cards) */}
+        <GlassCard className="p-6 hover:shadow-2xl transition-all duration-300 cursor-pointer hover:scale-105">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-crypto-silver text-sm font-medium">TAO Network Total</h3>
-            <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-xs font-bold">Τ</div>
+            <h3 className="text-crypto-silver text-sm font-medium">Total Holdings</h3>
+            <Wallet className="text-crypto-silver h-5 w-5" />
           </div>
           <div className="text-2xl font-bold text-white mb-2">
-            ${hasWalletAddresses ? portfolio.taoHoldings : '0.00'}
+            {baseHoldings.length + taoHoldings.length} assets
           </div>
-          <div className="flex items-center text-sm mb-4">
-            <span className={hasWalletAddresses ? "text-crypto-success" : "text-crypto-silver"}>
-              {hasWalletAddresses ? "+$3,077.87" : "$0.00"}
+          <div className="flex items-center text-sm">
+            <span className="text-crypto-silver">
+              {baseHoldings.filter(h => (parseFloat(h.amount) * parseFloat(h.currentPrice)) >= 5).length} BASE + {taoHoldings.filter(h => (parseFloat(h.amount) * parseFloat(h.currentPrice)) >= 5).length} TAO
             </span>
-            <span className="text-crypto-silver ml-2">
-              {hasWalletAddresses ? "(+3.97%)" : "(0%)"}
-            </span>
-          </div>
-          
-          {/* TAO Holdings Breakdown */}
-          <div className="space-y-2 border-t border-crypto-silver/20 pt-3">
-            <div className="text-xs text-crypto-silver mb-2">Individual Holdings ($5+ only):</div>
-            {hasWalletAddresses ? taoHoldings
-              .filter(holding => (parseFloat(holding.amount) * parseFloat(holding.currentPrice)) >= 5)
-              .slice(0, 3)
-              .map((holding, index) => {
-                const value = parseFloat(holding.amount) * parseFloat(holding.currentPrice);
-                const pnl = value * 0.12; // 12% demo PnL
-                return (
-                  <div key={index} className="flex items-center justify-between text-xs cursor-pointer hover:bg-white/5 rounded p-1"
-                    onClick={() => setSelectedHolding(holding)}>
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center text-[10px] font-bold">
-                        Τ
-                      </div>
-                      <span className="text-white">{holding.symbol}</span>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-white">${value.toFixed(2)}</div>
-                      <div className="text-crypto-success">+${pnl.toFixed(2)}</div>
-                    </div>
-                  </div>
-                );
-              }) : 
-              <div className="text-xs text-crypto-silver italic">Connect wallet to view holdings</div>
-            }
           </div>
         </GlassCard>
       </div>
@@ -598,10 +542,25 @@ export default function PortfolioSection() {
         {/* BASE Network Holdings */}
         <GlassCard className="p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-white flex items-center">
-              <div className="w-8 h-8 bg-blue-500 rounded-full mr-3 flex items-center justify-center text-sm font-bold">B</div>
-              BASE Network Holdings
-            </h2>
+            <div>
+              <h2 className="text-xl font-semibold text-white flex items-center">
+                <div className="w-8 h-8 bg-blue-500 rounded-full mr-3 flex items-center justify-center text-sm font-bold">B</div>
+                BASE Network Holdings
+              </h2>
+              <div className="flex items-center gap-4 mt-2">
+                <div className="text-2xl font-bold text-white">
+                  ${hasWalletAddresses ? portfolio.baseHoldings : '0.00'}
+                </div>
+                <div className="flex items-center text-sm">
+                  <span className={hasWalletAddresses ? "text-crypto-success" : "text-crypto-silver"}>
+                    {hasWalletAddresses ? "+$2,156.34" : "$0.00"}
+                  </span>
+                  <span className="text-crypto-silver ml-2">
+                    {hasWalletAddresses ? "(+4.78%)" : "(0%)"}
+                  </span>
+                </div>
+              </div>
+            </div>
             <button className="text-crypto-silver hover:text-white transition-colors">
               <ExternalLink className="h-4 w-4" />
             </button>
@@ -693,10 +652,25 @@ export default function PortfolioSection() {
         {/* TAO Network Holdings */}
         <GlassCard className="p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-white flex items-center">
-              <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mr-3 flex items-center justify-center text-sm font-bold">Τ</div>
-              Bittensor Holdings
-            </h2>
+            <div>
+              <h2 className="text-xl font-semibold text-white flex items-center">
+                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mr-3 flex items-center justify-center text-sm font-bold">Τ</div>
+                Bittensor Holdings
+              </h2>
+              <div className="flex items-center gap-4 mt-2">
+                <div className="text-2xl font-bold text-white">
+                  ${hasWalletAddresses ? portfolio.taoHoldings : '0.00'}
+                </div>
+                <div className="flex items-center text-sm">
+                  <span className={hasWalletAddresses ? "text-crypto-success" : "text-crypto-silver"}>
+                    {hasWalletAddresses ? "+$3,077.87" : "$0.00"}
+                  </span>
+                  <span className="text-crypto-silver ml-2">
+                    {hasWalletAddresses ? "(+3.97%)" : "(0%)"}
+                  </span>
+                </div>
+              </div>
+            </div>
             <button className="text-crypto-silver hover:text-white transition-colors">
               <ExternalLink className="h-4 w-4" />
             </button>
