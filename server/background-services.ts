@@ -472,8 +472,8 @@ class PortfolioValueTracker {
       for (const portfolio of portfolios) {
         const baseValue = parseFloat(portfolio.totalBalance);
         
-        // Create 20 historical data points over the past 20 minutes for demo
-        for (let i = 19; i >= 0; i--) {
+        // Create 50 historical data points over the past 50 minutes for demo
+        for (let i = 49; i >= 0; i--) {
           const timestamp = new Date(Date.now() - (i * 60000)); // i minutes ago
           const variation = (Math.random() - 0.5) * 200; // Small random variation
           const value = Math.max(0, baseValue + variation);
@@ -484,7 +484,7 @@ class PortfolioValueTracker {
           }, timestamp);
         }
         
-        console.log(`📈 Created initial history for portfolio ${portfolio.id} with base value: $${baseValue.toFixed(2)}`);
+        console.log(`📈 Created initial history (50 points) for portfolio ${portfolio.id} with base value: $${baseValue.toFixed(2)}`);
       }
     } catch (error) {
       console.error("Failed to create initial portfolio history:", error);

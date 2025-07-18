@@ -131,7 +131,7 @@ export default function PortfolioSection() {
     };
 
     // Sample data points for better chart visualization
-    const maxDataPoints = selectedTimeframe === '24h' ? 48 : selectedTimeframe === '7d' ? 168 : 100;
+    const maxDataPoints = selectedTimeframe === '24h' ? 50 : selectedTimeframe === '7d' ? 168 : 100;
     const sampledHistory = filteredHistory.length > maxDataPoints 
       ? filteredHistory.filter((_, index) => index % Math.ceil(filteredHistory.length / maxDataPoints) === 0)
       : filteredHistory;
