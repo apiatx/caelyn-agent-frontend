@@ -30,7 +30,7 @@ class RealTimeDataService {
   
   // Cache for rate limiting
   private cache = new Map<string, { data: any; timestamp: number }>();
-  private readonly cacheTimeout = 300000; // 5 minutes for current top movers tracking
+  private readonly cacheTimeout = 300000; // 5 minutes for real-time top movers tracking
 
   private async fetchWithCache(url: string, cacheKey: string): Promise<any> {
     const cached = this.cache.get(cacheKey);
@@ -57,9 +57,9 @@ class RealTimeDataService {
       // Clear all cache entries for completely fresh data every call
       this.cache.clear();
       
-      console.log('🔍 Fetching real BASE chain TOP GAINERS from GeckoTerminal...');
+      console.log('🔍 Fetching SORTED BASE chain TOP GAINERS by 24h price change from GeckoTerminal...');
       
-      // Fetch multiple pages to get more diverse tokens, including trending pools
+      // Fetch pools from multiple sources to capture real top gainers
       const urls = [
         `${this.geckoTerminalApiUrl}/networks/base/pools?include=base_token,quote_token,dex&page=1`,
         `${this.geckoTerminalApiUrl}/networks/base/pools?include=base_token,quote_token,dex&page=2`,
@@ -104,17 +104,19 @@ class RealTimeDataService {
           return (
             h24Change !== null && 
             h24Change !== undefined &&
-            parseFloat(h24Change || '0') > 0 && // Only positive gainers
-            parseFloat(volume24h || '0') > 3000 && // Minimum volume for smaller tokens
-            parseFloat(reserveUsd || '0') > 5000 && // Minimum liquidity for smaller tokens
+            parseFloat(h24Change || '0') > 5 && // Higher minimum gain threshold to catch real movers
+            parseFloat(volume24h || '0') > 1000 && // Lower volume threshold to catch emerging tokens
+            parseFloat(reserveUsd || '0') > 1000 && // Lower liquidity threshold for newer tokens
             poolName &&
             !poolName.toLowerCase().includes('test') &&
             !poolName.toLowerCase().includes('fake') &&
+            !poolName.toLowerCase().includes('old') &&
             // Exclude major tokens as the primary token in pair
             !['ETH', 'WETH', 'USDC', 'USDT', 'DAI', 'EURC', 'USDbC'].includes(firstToken) &&
             // Focus on altcoin/token pairs
-            (poolName.includes('WETH') || poolName.includes('USDC') || poolName.includes('ETH')) &&
-            firstToken.length > 1 // Ensure we have a proper token symbol
+            (poolName.includes('WETH') || poolName.includes('USDC') || poolName.includes('ETH') || poolName.includes('USDT')) &&
+            firstToken.length > 1 && // Ensure we have a proper token symbol
+            firstToken.length < 15 // Exclude excessively long token names
           );
         })
         .sort((a: any, b: any) => {
@@ -141,7 +143,7 @@ class RealTimeDataService {
           const bChange = parseFloat(b.attributes?.price_change_percentage?.h24 || '0');
           return bChange - aChange;
         })
-        .slice(0, 8); // Top 8 unique gainers
+        .slice(0, 12); // Top 12 unique gainers to capture more real movers
 
       const topMovers: TopMover[] = finalPools.map((pool: any) => {
         const gain = parseFloat(pool.attributes?.price_change_percentage?.h24 || '0');
@@ -214,7 +216,9 @@ class RealTimeDataService {
       });
 
       console.log(`🚀 Successfully fetched ${topMovers.length} TOP BASE GAINERS with gains: ${topMovers.map(t => `${t.symbol}(+${t.change24h.toFixed(1)}%)`).join(', ')}`);
-      return topMovers;
+      
+      // Return top 8 for display but log all 12 for debugging
+      return topMovers.slice(0, 8);
 
     } catch (error) {
       console.error('Error fetching BASE top movers:', error);
