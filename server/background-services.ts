@@ -63,8 +63,8 @@ class WhaleMonitoringService {
       const allTransactions = whaleTransactions.flat().filter(tx => tx);
       
       for (const tx of allTransactions) {
-        // Filter for altcoins only - exclude ETH, WETH, CBETH, and stablecoins
-        const excludedTokens = ['ETH', 'WETH', 'CBETH', 'USDC', 'USDT', 'DAI', 'FRAX', 'BUSD'];
+        // Filter for altcoins only - exclude ETH, WETH, CBETH, TAO, and stablecoins
+        const excludedTokens = ['ETH', 'WETH', 'CBETH', 'TAO', 'USDC', 'USDT', 'DAI', 'FRAX', 'BUSD'];
         const isAltcoin = !excludedTokens.includes(tx.token.toUpperCase());
         const isTaoStaking = tx.token === 'TAO' && tx.amountUsd >= 2500; // TAO staking over $2.5k (≈4.5+ TAO)
         
@@ -275,14 +275,15 @@ class WhaleMonitoringService {
 
   private generateSubnetName(): string {
     const subnets = [
-      'SN1 - Prompting', 'SN2 - Machine Translation', 'SN3 - Data Scraping', 'SN4 - Multi Modality',
-      'SN5 - Image Generation', 'SN6 - Compute', 'SN7 - Storage', 'SN8 - Time Series Prediction',
-      'SN9 - Pre-training', 'SN10 - Map Reduce', 'SN11 - Text Prompting', 'SN12 - Compute',
-      'SN13 - Data Universe', 'SN14 - LLM Defender', 'SN15 - Blockchain Insights', 'SN16 - Audio',
-      'SN17 - Three Gen', 'SN18 - Cortex.t', 'SN19 - Vision', 'SN20 - Bitagent',
-      'SN21 - FileTao', 'SN22 - Mining', 'SN23 - NicheImage', 'SN24 - Omega Labs',
-      'SN25 - Tensor', 'SN26 - Sturdy', 'SN27 - Compute Horde', 'SN28 - Foundry S&P',
-      'SN29 - Fractal', 'SN30 - Eden', 'SN31 - Wombo', 'SN32 - MyShell TTS'
+      'SN1: Prompting', 'SN2: Machine Translation', 'SN3: Data Scraping', 'SN4: Multi Modality',
+      'SN5: Image Generation', 'SN6: Compute', 'SN7: Storage', 'SN8: Time Series Prediction',
+      'SN9: Pre-training', 'SN10: Map Reduce', 'SN11: Text Prompting', 'SN12: Compute',
+      'SN13: Data Universe', 'SN14: LLM Defender', 'SN15: Blockchain Insights', 'SN16: Audio',
+      'SN17: Three Gen', 'SN18: Cortex.t', 'SN19: Vision', 'SN20: Bitagent',
+      'SN21: FileTao', 'SN22: Mining', 'SN23: NicheImage', 'SN24: Omega Labs',
+      'SN25: Tensor', 'SN26: Sturdy', 'SN27: Compute Horde', 'SN28: Foundry S&P',
+      'SN29: Fractal', 'SN30: Eden', 'SN31: Wombo', 'SN32: MyShell TTS',
+      'SN64: Chutes', 'SN106: VOID AI'
     ];
     return subnets[Math.floor(Math.random() * subnets.length)];
   }
