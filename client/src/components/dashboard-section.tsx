@@ -1,7 +1,8 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowUpRight, ArrowDownRight, TrendingUp, Eye, Users, MessageCircle } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, TrendingUp, Eye, Users, MessageCircle, Brain, Activity } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { useTopMovers, useMarketAnalysis, useSocialSentiment, useWhaleActivity } from "@/hooks/use-real-time-data";
 import { formatCurrency, formatPercentage } from "@/lib/utils";
 
 interface DashboardData {
@@ -48,10 +49,18 @@ const GlassCard = ({ children, className = "" }: { children: React.ReactNode; cl
 );
 
 export default function DashboardSection() {
-  const { data: dashboardData, isLoading } = useQuery<DashboardData>({
+  // Use real-time AI data hooks
+  const { data: topMovers, isLoading: loadingMovers } = useTopMovers();
+  const { data: marketAnalysis, isLoading: loadingAnalysis } = useMarketAnalysis();
+  const { data: socialSentiment, isLoading: loadingSocial } = useSocialSentiment();
+  const { data: whaleActivity, isLoading: loadingWhales } = useWhaleActivity();
+  
+  const { data: dashboardData, isLoading: loadingDashboard } = useQuery<DashboardData>({
     queryKey: ['/api/dashboard'],
     refetchInterval: 30000 // Refresh every 30 seconds
   });
+
+  const isLoading = loadingDashboard || loadingMovers || loadingAnalysis;
 
   if (isLoading || !dashboardData) {
     return (
@@ -123,152 +132,212 @@ export default function DashboardSection() {
 
       {/* Middle Row - Market Movers */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* BASE Top Movers */}
+        {/* Real-Time BASE Top Movers */}
         <GlassCard className="p-6">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-white">BASE Top Movers (24h)</h3>
-            <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
-              BASE Network
-            </Badge>
+            <h3 className="text-lg font-semibold text-white flex items-center">
+              <Activity className="w-4 h-4 mr-2" />
+              Live BASE Movers (24h)
+            </h3>
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+                LIVE
+              </Badge>
+            </div>
           </div>
           <div className="space-y-3">
-            {dashboardData.baseTopMovers.map((token, index) => (
-              <div key={token.token} className="flex items-center justify-between p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="text-sm font-semibold text-crypto-silver">
-                    #{index + 1}
-                  </div>
-                  <div>
-                    <div className="font-medium text-white">${token.token}</div>
-                    <div className="text-xs text-crypto-silver">{token.name}</div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm font-medium text-white">
-                    {formatCurrency(token.price)}
-                  </div>
-                  <div className={`text-xs font-medium ${token.change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    {token.change24h >= 0 ? '+' : ''}{formatPercentage(token.change24h)}
-                  </div>
-                </div>
+            {loadingMovers ? (
+              <div className="text-center py-4">
+                <Activity className="w-6 h-6 text-crypto-silver mx-auto mb-2 animate-spin" />
+                <p className="text-crypto-silver text-sm">Loading live movers...</p>
               </div>
-            ))}
+            ) : (
+              topMovers?.filter(m => m.network === 'BASE').slice(0, 5).map((token, index) => (
+                <div key={`${token.symbol}-${index}`} className="flex items-center justify-between p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="text-sm font-semibold text-crypto-silver">
+                      #{index + 1}
+                    </div>
+                    <div>
+                      <div className="font-medium text-white">${token.symbol}</div>
+                      <div className="text-xs text-crypto-silver">{token.token}</div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-medium text-white">
+                      ${token.price.toFixed(6)}
+                    </div>
+                    <div className={`text-xs font-medium ${token.change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {token.change24h >= 0 ? '+' : ''}{token.change24h.toFixed(2)}%
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </GlassCard>
 
-        {/* TAO Subnet Movers */}
+        {/* AI Market Sentiment Analysis */}
         <GlassCard className="p-6">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-white">TAO Subnet Movers (24h)</h3>
-            <Badge className="bg-gradient-to-r from-orange-500/20 to-purple-500/20 text-orange-400 border-orange-500/30">
-              Bittensor
+            <h3 className="text-lg font-semibold text-white flex items-center">
+              <Brain className="w-4 h-4 mr-2" />
+              AI Market Sentiment
+            </h3>
+            <Badge className="bg-gradient-to-r from-pink-500/20 to-purple-500/20 text-pink-400 border-pink-500/30">
+              AI POWERED
             </Badge>
           </div>
-          <div className="space-y-3">
-            {dashboardData.taoSubnetMovers.map((subnet, index) => (
-              <div key={subnet.subnet} className="flex items-center justify-between p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="text-sm font-semibold text-crypto-silver">
-                    #{index + 1}
-                  </div>
-                  <div>
-                    <div className="font-medium text-orange-400">{subnet.subnet}</div>
-                    <div className="text-xs text-crypto-silver">{subnet.name}</div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm font-medium text-white">
-                    {subnet.emissions.toFixed(1)} τ
-                  </div>
-                  <div className={`text-xs font-medium ${subnet.change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    {subnet.change24h >= 0 ? '+' : ''}{formatPercentage(subnet.change24h)}
-                  </div>
-                </div>
+          <div className="space-y-4">
+            {loadingAnalysis ? (
+              <div className="text-center py-4">
+                <Brain className="w-6 h-6 text-crypto-silver mx-auto mb-2 animate-spin" />
+                <p className="text-crypto-silver text-sm">AI analyzing market...</p>
               </div>
-            ))}
+            ) : marketAnalysis?.aiAnalysis ? (
+              <>
+                <div className="p-3 bg-white/5 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-crypto-silver">Overall Sentiment</span>
+                    <Badge 
+                      className={`${
+                        marketAnalysis.aiAnalysis.sentiment.overall === 'bullish' 
+                          ? 'bg-green-500/20 text-green-400 border-green-500/30' 
+                          : marketAnalysis.aiAnalysis.sentiment.overall === 'bearish' 
+                          ? 'bg-red-500/20 text-red-400 border-red-500/30' 
+                          : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
+                      }`}
+                    >
+                      {marketAnalysis.aiAnalysis.sentiment.overall.toUpperCase()}
+                    </Badge>
+                  </div>
+                  <div className="text-sm text-white mb-2">
+                    Confidence: {Math.round(marketAnalysis.aiAnalysis.sentiment.confidence * 100)}%
+                  </div>
+                  <p className="text-xs text-crypto-silver">{marketAnalysis.aiAnalysis.sentiment.analysis}</p>
+                </div>
+                <div className="space-y-2">
+                  <span className="text-sm text-crypto-silver">Key Signals:</span>
+                  {marketAnalysis.aiAnalysis.sentiment.signals.map((signal, i) => (
+                    <div key={i} className="text-xs text-white bg-black/20 rounded px-2 py-1">
+                      • {signal}
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-crypto-silver text-sm">AI analysis loading...</p>
+              </div>
+            )}
           </div>
         </GlassCard>
       </div>
 
-      {/* Bottom Row - Activity & Sentiment */}
+      {/* Bottom Row - Real-Time Activity & Sentiment */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Large Wallet Activity */}
+        {/* Live Whale Activity */}
         <GlassCard className="p-6">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-white">Large Wallet Activity</h3>
-            <div className="w-8 h-8 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full flex items-center justify-center">
-              <TrendingUp className="w-4 h-4 text-white" />
+            <h3 className="text-lg font-semibold text-white flex items-center">
+              <Activity className="w-4 h-4 mr-2" />
+              Live Whale Activity
+            </h3>
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30">
+                LIVE
+              </Badge>
             </div>
           </div>
           <div className="space-y-3">
-            {dashboardData.largeWalletActivity.map((activity, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Badge className={`text-xs ${activity.type === 'BASE' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' : 'bg-orange-500/20 text-orange-400 border-orange-500/30'}`}>
-                      {activity.type}
-                    </Badge>
-                    <span className="text-xs text-crypto-silver">
-                      {new Date(activity.timestamp).toLocaleTimeString()}
-                    </span>
-                  </div>
-                  <div className="text-sm text-white">
-                    {activity.fromToken} → {activity.toToken}
-                  </div>
-                  <div className="text-xs text-crypto-silver">
-                    {activity.wallet.slice(0, 8)}...{activity.wallet.slice(-6)}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm font-medium text-white">
-                    {formatCurrency(activity.amountUsd)}
-                  </div>
-                </div>
+            {loadingWhales ? (
+              <div className="text-center py-4">
+                <Activity className="w-6 h-6 text-crypto-silver mx-auto mb-2 animate-spin" />
+                <p className="text-crypto-silver text-sm">Loading whale activity...</p>
               </div>
-            ))}
+            ) : (
+              whaleActivity?.slice(0, 4).map((activity, index) => (
+                <div key={activity.id} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
+                      activity.network === 'BASE' ? 'bg-blue-500' : 'bg-gradient-to-r from-orange-500 to-purple-600'
+                    }`}>
+                      {activity.network === 'BASE' ? 'B' : 'Τ'}
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-white">
+                        {activity.action} {activity.token}
+                      </div>
+                      <div className="text-xs text-crypto-silver">
+                        {new Date(activity.timestamp).toLocaleTimeString()}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-medium text-green-400">
+                      ${parseFloat(activity.amountUsd).toLocaleString()}
+                    </div>
+                    <div className="text-xs text-crypto-silver">
+                      {parseFloat(activity.amount).toLocaleString()} {activity.token}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </GlassCard>
 
-        {/* Social Pulse */}
+        {/* Live Social Sentiment */}
         <GlassCard className="p-6">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-white">Social Pulse (24h)</h3>
-            <div className="w-8 h-8 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full flex items-center justify-center">
-              <MessageCircle className="w-4 h-4 text-white" />
+            <h3 className="text-lg font-semibold text-white flex items-center">
+              <MessageCircle className="w-4 h-4 mr-2" />
+              Live Social Sentiment
+            </h3>
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
+                TRENDING
+              </Badge>
             </div>
           </div>
           <div className="space-y-3">
-            {dashboardData.socialPulse.map((item, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2">
-                    <Badge className={`text-xs ${item.type === 'BASE' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' : 'bg-orange-500/20 text-orange-400 border-orange-500/30'}`}>
-                      {item.type}
-                    </Badge>
-                    {item.trending && (
-                      <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-xs">
-                        🔥 Trending
-                      </Badge>
+            {loadingSocial ? (
+              <div className="text-center py-4">
+                <MessageCircle className="w-6 h-6 text-crypto-silver mx-auto mb-2 animate-spin" />
+                <p className="text-crypto-silver text-sm">Analyzing social sentiment...</p>
+              </div>
+            ) : (
+              socialSentiment?.slice(0, 4).map((pulse, index) => (
+                <div key={`${pulse.token}-${index}`} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-xs font-bold">
+                      S
+                    </div>
+                    <div>
+                      <div className="font-medium text-white">${pulse.token}</div>
+                      <div className="text-xs text-crypto-silver">Trending Score: {pulse.trendingScore.toFixed(0)}</div>
+                    </div>
+                    {pulse.trendingScore > 70 && (
+                      <TrendingUp className="w-4 h-4 text-orange-400" />
                     )}
                   </div>
-                </div>
-                <div className="flex-1 mx-3">
-                  <div className="font-medium text-white text-sm">{item.token}</div>
-                  <div className="text-xs text-crypto-silver">{item.name}</div>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm font-medium text-white">
-                    {item.mentions.toLocaleString()}
-                  </div>
-                  <div className={`text-xs ${
-                    item.sentiment === 'positive' ? 'text-green-400' : 
-                    item.sentiment === 'negative' ? 'text-red-400' : 'text-crypto-silver'
-                  }`}>
-                    {item.sentiment}
+                  <div className="text-right">
+                    <div className="text-sm font-medium text-white">
+                      {pulse.mentions.toLocaleString()} mentions
+                    </div>
+                    <div className={`text-xs font-medium ${
+                      pulse.sentiment === 'positive' ? 'text-green-400' : 
+                      pulse.sentiment === 'negative' ? 'text-red-400' : 'text-yellow-400'
+                    }`}>
+                      {pulse.sentiment} sentiment
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </GlassCard>
       </div>

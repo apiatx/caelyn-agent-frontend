@@ -318,10 +318,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Dashboard data endpoint
+  // Enhanced dashboard data endpoint with real-time portfolio value
   app.get('/api/dashboard', async (req, res) => {
     try {
       const dashboardData = await storage.getDashboardData();
+      
+      // Get real portfolio value from user wallet
+      const portfolio = await storage.getPortfolioByUserId(1);
+      if (portfolio) {
+        dashboardData.portfolioValue = parseFloat(portfolio.totalBalance || '0');
+        dashboardData.portfolioPnL = parseFloat(portfolio.totalPnL24h || '0');
+        dashboardData.portfolioPnLPercent = parseFloat(portfolio.totalPnL24h || '0') / Math.max(parseFloat(portfolio.totalBalance || '1'), 1) * 100;
+      }
+      
       res.json(dashboardData);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);

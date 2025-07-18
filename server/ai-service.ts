@@ -53,12 +53,16 @@ Provide analysis in JSON format with:
 
     const response = await anthropic.messages.create({
       model: DEFAULT_MODEL_STR,
-      system: 'You are a professional crypto market analyst. Analyze social sentiment data and provide actionable insights.',
+      system: 'You are a professional crypto market analyst. Analyze social sentiment data and provide actionable insights. Respond with valid JSON only, no markdown formatting.',
       max_tokens: 1024,
       messages: [{ role: 'user', content: prompt }],
     });
 
-    return JSON.parse(response.content[0].text);
+    let responseText = response.content[0].text;
+    // Clean up any markdown formatting
+    responseText = responseText.replace(/```json\s*|\s*```/g, '').trim();
+    
+    return JSON.parse(responseText);
   } catch (error) {
     console.error('AI sentiment analysis failed:', error);
     return {
@@ -86,12 +90,16 @@ Generate trading signals in JSON array format with each signal containing:
 
     const response = await anthropic.messages.create({
       model: DEFAULT_MODEL_STR,
-      system: 'You are a professional crypto trader. Generate actionable trading signals based on real market data.',
+      system: 'You are a professional crypto trader. Generate actionable trading signals based on real market data. Respond with valid JSON only, no markdown formatting.',
       max_tokens: 1500,
       messages: [{ role: 'user', content: prompt }],
     });
 
-    return JSON.parse(response.content[0].text);
+    let responseText = response.content[0].text;
+    // Clean up any markdown formatting
+    responseText = responseText.replace(/```json\s*|\s*```/g, '').trim();
+    
+    return JSON.parse(responseText);
   } catch (error) {
     console.error('AI trading signals failed:', error);
     return [];
@@ -113,12 +121,16 @@ Provide optimization in JSON format with:
 
     const response = await anthropic.messages.create({
       model: DEFAULT_MODEL_STR,
-      system: 'You are a professional portfolio manager specializing in cryptocurrency investments.',
+      system: 'You are a professional portfolio manager specializing in cryptocurrency investments. Respond with valid JSON only, no markdown formatting.',
       max_tokens: 1500,
       messages: [{ role: 'user', content: prompt }],
     });
 
-    return JSON.parse(response.content[0].text);
+    let responseText = response.content[0].text;
+    // Clean up any markdown formatting
+    responseText = responseText.replace(/```json\s*|\s*```/g, '').trim();
+    
+    return JSON.parse(responseText);
   } catch (error) {
     console.error('AI portfolio optimization failed:', error);
     return {

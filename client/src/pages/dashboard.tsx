@@ -5,11 +5,11 @@ import PortfolioSection from "@/components/portfolio-section";
 import AlphaSection from "@/components/alpha-section";
 import WhaleWatchingSection from "@/components/whale-watching-section";
 import MarketResearchSection from "@/components/market-research-section";
-import RealTimeDashboard from "@/components/real-time-dashboard";
+
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 
-type TabType = "dashboard" | "portfolio" | "alpha" | "whale" | "research" | "realtime";
+type TabType = "dashboard" | "portfolio" | "alpha" | "whale" | "research";
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<TabType>("dashboard");
@@ -95,16 +95,7 @@ export default function Dashboard() {
             >
               <BarChart3 className="w-4 h-4 mr-2 inline" />Research
             </button>
-            <button
-              onClick={() => setActiveTab("realtime")}
-              className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
-                activeTab === "realtime"
-                  ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
-                  : "hover:bg-white/5 text-crypto-silver"
-              }`}
-            >
-              <Brain className="w-4 h-4 mr-2 inline" />Real-Time AI
-            </button>
+
           </div>
         </GlassCard>
       </nav>
@@ -116,7 +107,7 @@ export default function Dashboard() {
         {activeTab === "alpha" && <AlphaSection />}
         {activeTab === "whale" && <WhaleWatchingSection />}
         {activeTab === "research" && <MarketResearchSection />}
-        {activeTab === "realtime" && <RealTimeDashboard portfolioId={1} />}
+
       </div>
     </div>
   );
