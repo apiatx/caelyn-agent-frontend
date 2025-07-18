@@ -20,23 +20,29 @@ export default function AlphaSection() {
     queryKey: ['/api/subnets'],
   });
 
-  const formatNumber = (num: string | number, isUSD = false) => {
+  const formatNumber = (num: string | number | undefined, isUSD = false) => {
+    if (num === undefined || num === null) return isUSD ? '$0.00' : '0';
     const value = typeof num === 'string' ? parseFloat(num) : num;
+    if (isNaN(value)) return isUSD ? '$0.00' : '0';
     if (value >= 1e9) return `${(value / 1e9).toFixed(1)}B`;
     if (value >= 1e6) return `${(value / 1e6).toFixed(1)}M`;
     if (value >= 1e3) return `${(value / 1e3).toFixed(1)}K`;
     return isUSD ? `$${value.toFixed(2)}` : value.toString();
   };
 
-  const getSentimentColor = (sentiment: string) => {
-    const score = parseFloat(sentiment);
+  const getSentimentColor = (sentiment: string | number | undefined) => {
+    if (!sentiment) return "text-crypto-silver";
+    const score = typeof sentiment === 'string' ? parseFloat(sentiment) : sentiment;
+    if (isNaN(score)) return "text-crypto-silver";
     if (score >= 70) return "text-crypto-success";
     if (score >= 40) return "text-crypto-warning";
     return "text-crypto-error";
   };
 
-  const getSentimentBadge = (sentiment: string) => {
-    const score = parseFloat(sentiment);
+  const getSentimentBadge = (sentiment: string | number | undefined) => {
+    if (!sentiment) return "N/A";
+    const score = typeof sentiment === 'string' ? parseFloat(sentiment) : sentiment;
+    if (isNaN(score)) return "N/A";
     if (score >= 70) return "Bullish";
     if (score >= 40) return "Neutral";
     return "Bearish";
