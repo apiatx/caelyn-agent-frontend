@@ -60,6 +60,7 @@ export const whaleTransactions = pgTable("whale_transactions", {
   transactionHash: text("transaction_hash").notNull(),
   fromAddress: text("from_address").notNull(),
   toAddress: text("to_address"),
+  tokenAddress: text("token_address"), // Contract address for the token
   amount: decimal("amount", { precision: 18, scale: 8 }).notNull(),
   amountUsd: decimal("amount_usd", { precision: 18, scale: 8 }).notNull(),
   token: text("token").notNull(),

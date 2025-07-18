@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Crown, Lock, Activity, DollarSign, ExternalLink, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { Crown, Lock, Activity, DollarSign, ExternalLink, ArrowUpRight, ArrowDownRight, ChevronDown, Copy, Eye } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useWhaleWatching } from "@/hooks/use-whale-watching";
 import { CryptoPaymentModal } from "@/components/crypto-payment-modal";
 
@@ -11,6 +12,7 @@ export default function WhaleWatchingSection() {
   const { data: hasAccess, premiumTransactions, freeTransactions } = useWhaleWatching(1);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedPaymentType, setSelectedPaymentType] = useState<'ETH' | 'TAO' | null>(null);
+  const [expandedTx, setExpandedTx] = useState<string | null>(null);
 
   const handlePremiumPayment = (token: 'ETH' | 'TAO') => {
     setSelectedPaymentType(token);
@@ -26,9 +28,28 @@ export default function WhaleWatchingSection() {
     return '#';
   };
 
+  const getAddressExplorerUrl = (network: string, address: string) => {
+    if (network === 'BASE') {
+      return `https://basescan.org/address/${address}`;
+    } else if (network === 'TAO') {
+      return `https://bittensor.com/scan/address/${address}`;
+    }
+    return '#';
+  };
+
+  const getTokenExplorerUrl = (network: string, tokenAddress: string) => {
+    if (network === 'BASE' && tokenAddress) {
+      return `https://basescan.org/token/${tokenAddress}`;
+    }
+    return '#';
+  };
+
   const getTransactionType = (tx: any) => {
-    // Use the action field from the transaction if available, otherwise default to BUY
     return tx.action || (tx.network === 'TAO' ? 'STAKE' : 'BUY');
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
   };
 
   return (
@@ -102,61 +123,199 @@ export default function WhaleWatchingSection() {
                   .map((tx, index) => {
                     const transactionType = getTransactionType(tx);
                     const usdAmount = parseFloat(tx.amountUsd);
+                    const txKey = tx.id || `${tx.transactionHash}-${index}`;
+                    const isExpanded = expandedTx === txKey;
+                    
                     return (
-                      <div key={tx.id || index} className="backdrop-blur-sm bg-white/5 rounded-xl border border-crypto-silver/10 p-5 hover:bg-white/10 transition-all duration-200">
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-sm font-bold text-white">
-                              {tx.token.substring(0, 2)}
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-2 mb-1">
-                                <Badge 
-                                  variant={transactionType === 'BUY' ? 'default' : 'destructive'}
-                                  className={`${transactionType === 'BUY' ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'} text-white font-medium`}
-                                >
-                                  {transactionType === 'BUY' ? (
-                                    <><ArrowUpRight className="w-3 h-3 mr-1" /> BUY</>
-                                  ) : (
-                                    <><ArrowDownRight className="w-3 h-3 mr-1" /> SELL</>
-                                  )}
-                                </Badge>
-                                <h3 className="font-medium text-white">
-                                  {parseFloat(tx.amount).toLocaleString()} ${tx.token}
-                                </h3>
+                      <Collapsible key={txKey} open={isExpanded} onOpenChange={(open) => setExpandedTx(open ? txKey : null)}>
+                        <div className="backdrop-blur-sm bg-white/5 rounded-xl border border-crypto-silver/10 hover:bg-white/10 transition-all duration-200">
+                          <div className="p-5">
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-sm font-bold text-white">
+                                  {tx.token.substring(0, 2)}
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <Badge 
+                                      variant={transactionType === 'BUY' ? 'default' : 'destructive'}
+                                      className={`${transactionType === 'BUY' ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'} text-white font-medium`}
+                                    >
+                                      {transactionType === 'BUY' ? (
+                                        <><ArrowUpRight className="w-3 h-3 mr-1" /> BUY</>
+                                      ) : (
+                                        <><ArrowDownRight className="w-3 h-3 mr-1" /> SELL</>
+                                      )}
+                                    </Badge>
+                                    <h3 className="font-medium text-white">
+                                      {parseFloat(tx.amount).toLocaleString()} ${tx.token}
+                                    </h3>
+                                  </div>
+                                  <p className="text-crypto-silver text-sm">
+                                    BASE Network • {new Date(tx.timestamp).toLocaleTimeString()}
+                                  </p>
+                                </div>
                               </div>
-                              <p className="text-crypto-silver text-sm">
-                                BASE Network • {new Date(tx.timestamp).toLocaleTimeString()}
-                              </p>
+                              <div className="text-right">
+                                <div className="text-2xl font-bold text-crypto-success mb-1">
+                                  ${usdAmount.toLocaleString('en-US', { 
+                                    minimumFractionDigits: 2, 
+                                    maximumFractionDigits: 2 
+                                  })}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <a 
+                                    href={getExplorerUrl(tx.network, tx.transactionHash)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300 text-sm transition-colors"
+                                  >
+                                    Basescan <ExternalLink className="w-3 h-3" />
+                                  </a>
+                                  <CollapsibleTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="text-crypto-silver hover:text-white">
+                                      <Eye className="w-3 h-3 mr-1" />
+                                      Details
+                                      <ChevronDown className={`w-3 h-3 ml-1 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                                    </Button>
+                                  </CollapsibleTrigger>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center justify-between text-crypto-silver text-xs font-mono bg-black/20 rounded-lg p-3">
+                              <div>
+                                <span className="text-crypto-silver/70">From:</span> {tx.fromAddress.slice(0, 8)}...{tx.fromAddress.slice(-6)}
+                              </div>
+                              <div className="text-crypto-silver/50">→</div>
+                              <div>
+                                <span className="text-crypto-silver/70">To:</span> {tx.toAddress?.slice(0, 8)}...{tx.toAddress?.slice(-6)}
+                              </div>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <div className="text-2xl font-bold text-crypto-success mb-1">
-                              ${usdAmount.toLocaleString('en-US', { 
-                                minimumFractionDigits: 2, 
-                                maximumFractionDigits: 2 
-                              })}
+                          
+                          <CollapsibleContent className="border-t border-crypto-silver/10">
+                            <div className="p-5 space-y-4 bg-black/10">
+                              <h4 className="font-semibold text-white mb-3">Transaction Details</h4>
+                              
+                              {/* Transaction Hash */}
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-crypto-silver text-sm">Transaction Hash:</span>
+                                  <div className="flex items-center gap-2">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => copyToClipboard(tx.transactionHash)}
+                                      className="text-crypto-silver hover:text-white"
+                                    >
+                                      <Copy className="w-3 h-3" />
+                                    </Button>
+                                    <a 
+                                      href={getExplorerUrl(tx.network, tx.transactionHash)}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-blue-400 hover:text-blue-300"
+                                    >
+                                      <ExternalLink className="w-3 h-3" />
+                                    </a>
+                                  </div>
+                                </div>
+                                <code className="text-xs text-crypto-silver font-mono bg-black/30 p-2 rounded block break-all">
+                                  {tx.transactionHash}
+                                </code>
+                              </div>
+
+                              {/* From Address */}
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-crypto-silver text-sm">From Address:</span>
+                                  <div className="flex items-center gap-2">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => copyToClipboard(tx.fromAddress)}
+                                      className="text-crypto-silver hover:text-white"
+                                    >
+                                      <Copy className="w-3 h-3" />
+                                    </Button>
+                                    <a 
+                                      href={getAddressExplorerUrl(tx.network, tx.fromAddress)}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-blue-400 hover:text-blue-300"
+                                    >
+                                      <ExternalLink className="w-3 h-3" />
+                                    </a>
+                                  </div>
+                                </div>
+                                <code className="text-xs text-crypto-silver font-mono bg-black/30 p-2 rounded block break-all">
+                                  {tx.fromAddress}
+                                </code>
+                              </div>
+
+                              {/* To Address */}
+                              {tx.toAddress && (
+                                <div className="space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-crypto-silver text-sm">To Address:</span>
+                                    <div className="flex items-center gap-2">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => copyToClipboard(tx.toAddress)}
+                                        className="text-crypto-silver hover:text-white"
+                                      >
+                                        <Copy className="w-3 h-3" />
+                                      </Button>
+                                      <a 
+                                        href={getAddressExplorerUrl(tx.network, tx.toAddress)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-blue-400 hover:text-blue-300"
+                                      >
+                                        <ExternalLink className="w-3 h-3" />
+                                      </a>
+                                    </div>
+                                  </div>
+                                  <code className="text-xs text-crypto-silver font-mono bg-black/30 p-2 rounded block break-all">
+                                    {tx.toAddress}
+                                  </code>
+                                </div>
+                              )}
+
+                              {/* Token Contract Address */}
+                              {tx.tokenAddress && (
+                                <div className="space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-crypto-silver text-sm">Token Contract:</span>
+                                    <div className="flex items-center gap-2">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => copyToClipboard(tx.tokenAddress)}
+                                        className="text-crypto-silver hover:text-white"
+                                      >
+                                        <Copy className="w-3 h-3" />
+                                      </Button>
+                                      <a 
+                                        href={getTokenExplorerUrl(tx.network, tx.tokenAddress)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-blue-400 hover:text-blue-300"
+                                      >
+                                        <ExternalLink className="w-3 h-3" />
+                                      </a>
+                                    </div>
+                                  </div>
+                                  <code className="text-xs text-crypto-silver font-mono bg-black/30 p-2 rounded block break-all">
+                                    {tx.tokenAddress}
+                                  </code>
+                                </div>
+                              )}
                             </div>
-                            <a 
-                              href={getExplorerUrl(tx.network, tx.transactionHash)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300 text-sm transition-colors"
-                            >
-                              View on Basescan <ExternalLink className="w-3 h-3" />
-                            </a>
-                          </div>
+                          </CollapsibleContent>
                         </div>
-                        <div className="flex items-center justify-between text-crypto-silver text-xs font-mono bg-black/20 rounded-lg p-3">
-                          <div>
-                            <span className="text-crypto-silver/70">From:</span> {tx.fromAddress.slice(0, 8)}...{tx.fromAddress.slice(-6)}
-                          </div>
-                          <div className="text-crypto-silver/50">→</div>
-                          <div>
-                            <span className="text-crypto-silver/70">To:</span> {tx.toAddress?.slice(0, 8)}...{tx.toAddress?.slice(-6)}
-                          </div>
-                        </div>
-                      </div>
+                      </Collapsible>
                     );
                   })
               ) : (
@@ -180,57 +339,158 @@ export default function WhaleWatchingSection() {
                   .slice(0, 10)
                   .map((tx, index) => {
                     const usdAmount = parseFloat(tx.amountUsd);
+                    const txKey = tx.id || `${tx.transactionHash}-${index}`;
+                    const isExpanded = expandedTx === txKey;
+                    
                     return (
-                      <div key={tx.id || index} className="backdrop-blur-sm bg-white/5 rounded-xl border border-orange-500/20 p-5 hover:bg-white/10 transition-all duration-200">
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-orange-600 rounded-full flex items-center justify-center text-sm font-bold text-white">
-                              τ
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-2 mb-1">
-                                <Badge 
-                                  variant="default"
-                                  className="bg-orange-500 hover:bg-orange-600 text-white font-medium"
-                                >
-                                  <ArrowUpRight className="w-3 h-3 mr-1" /> STAKE
-                                </Badge>
-                                <h3 className="font-medium text-white">
-                                  {parseFloat(tx.amount).toLocaleString()} TAO
-                                </h3>
+                      <Collapsible key={txKey} open={isExpanded} onOpenChange={(open) => setExpandedTx(open ? txKey : null)}>
+                        <div className="backdrop-blur-sm bg-white/5 rounded-xl border border-orange-500/20 hover:bg-white/10 transition-all duration-200">
+                          <div className="p-5">
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-orange-600 rounded-full flex items-center justify-center text-sm font-bold text-white">
+                                  τ
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <Badge 
+                                      variant="default"
+                                      className="bg-orange-500 hover:bg-orange-600 text-white font-medium"
+                                    >
+                                      <ArrowUpRight className="w-3 h-3 mr-1" /> STAKE
+                                    </Badge>
+                                    <h3 className="font-medium text-white">
+                                      {parseFloat(tx.amount).toLocaleString()} TAO
+                                    </h3>
+                                  </div>
+                                  <p className="text-crypto-silver text-sm">
+                                    TAO Subnet • {new Date(tx.timestamp).toLocaleTimeString()}
+                                  </p>
+                                </div>
                               </div>
-                              <p className="text-crypto-silver text-sm">
-                                TAO Subnet • {new Date(tx.timestamp).toLocaleTimeString()}
-                              </p>
+                              <div className="text-right">
+                                <div className="text-2xl font-bold text-orange-400 mb-1">
+                                  ${usdAmount.toLocaleString('en-US', { 
+                                    minimumFractionDigits: 2, 
+                                    maximumFractionDigits: 2 
+                                  })}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <a 
+                                    href={getExplorerUrl(tx.network, tx.transactionHash)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 text-orange-400 hover:text-orange-300 text-sm transition-colors"
+                                  >
+                                    TaoStats <ExternalLink className="w-3 h-3" />
+                                  </a>
+                                  <CollapsibleTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="text-crypto-silver hover:text-white">
+                                      <Eye className="w-3 h-3 mr-1" />
+                                      Details
+                                      <ChevronDown className={`w-3 h-3 ml-1 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                                    </Button>
+                                  </CollapsibleTrigger>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center justify-between text-crypto-silver text-xs font-mono bg-black/20 rounded-lg p-3">
+                              <div>
+                                <span className="text-crypto-silver/70">Staker:</span> {tx.fromAddress.slice(0, 8)}...{tx.fromAddress.slice(-6)}
+                              </div>
+                              <div className="text-crypto-silver/50">→</div>
+                              <div>
+                                <span className="text-orange-400 font-medium">{tx.toAddress}</span>
+                              </div>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <div className="text-2xl font-bold text-orange-400 mb-1">
-                              ${usdAmount.toLocaleString('en-US', { 
-                                minimumFractionDigits: 2, 
-                                maximumFractionDigits: 2 
-                              })}
+                          
+                          <CollapsibleContent className="border-t border-orange-500/20">
+                            <div className="p-5 space-y-4 bg-black/10">
+                              <h4 className="font-semibold text-white mb-3">TAO Staking Details</h4>
+                              
+                              {/* Transaction Hash */}
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-crypto-silver text-sm">Transaction Hash:</span>
+                                  <div className="flex items-center gap-2">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => copyToClipboard(tx.transactionHash)}
+                                      className="text-crypto-silver hover:text-white"
+                                    >
+                                      <Copy className="w-3 h-3" />
+                                    </Button>
+                                    <a 
+                                      href={getExplorerUrl(tx.network, tx.transactionHash)}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-orange-400 hover:text-orange-300"
+                                    >
+                                      <ExternalLink className="w-3 h-3" />
+                                    </a>
+                                  </div>
+                                </div>
+                                <code className="text-xs text-crypto-silver font-mono bg-black/30 p-2 rounded block break-all">
+                                  {tx.transactionHash}
+                                </code>
+                              </div>
+
+                              {/* Staker Address */}
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-crypto-silver text-sm">Staker Address:</span>
+                                  <div className="flex items-center gap-2">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => copyToClipboard(tx.fromAddress)}
+                                      className="text-crypto-silver hover:text-white"
+                                    >
+                                      <Copy className="w-3 h-3" />
+                                    </Button>
+                                    <a 
+                                      href={getAddressExplorerUrl(tx.network, tx.fromAddress)}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-orange-400 hover:text-orange-300"
+                                    >
+                                      <ExternalLink className="w-3 h-3" />
+                                    </a>
+                                  </div>
+                                </div>
+                                <code className="text-xs text-crypto-silver font-mono bg-black/30 p-2 rounded block break-all">
+                                  {tx.fromAddress}
+                                </code>
+                              </div>
+
+                              {/* Subnet Information */}
+                              {tx.toAddress && (
+                                <div className="space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-crypto-silver text-sm">Target Subnet:</span>
+                                  </div>
+                                  <div className="bg-gradient-to-r from-orange-500/20 to-orange-400/20 border border-orange-500/30 rounded-lg p-3">
+                                    <span className="text-orange-400 font-medium text-sm">{tx.toAddress}</span>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* TAO Amount Details */}
+                              <div className="space-y-2">
+                                <span className="text-crypto-silver text-sm">Stake Amount:</span>
+                                <div className="bg-black/30 rounded-lg p-3">
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-white font-semibold">{parseFloat(tx.amount).toLocaleString()} TAO</span>
+                                    <span className="text-orange-400 font-bold">${usdAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                  </div>
+                                </div>
+                              </div>
                             </div>
-                            <a 
-                              href={getExplorerUrl(tx.network, tx.transactionHash)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-orange-400 hover:text-orange-300 text-sm transition-colors"
-                            >
-                              View on TaoStats <ExternalLink className="w-3 h-3" />
-                            </a>
-                          </div>
+                          </CollapsibleContent>
                         </div>
-                        <div className="flex items-center justify-between text-crypto-silver text-xs font-mono bg-black/20 rounded-lg p-3">
-                          <div>
-                            <span className="text-crypto-silver/70">Staker:</span> {tx.fromAddress.slice(0, 8)}...{tx.fromAddress.slice(-6)}
-                          </div>
-                          <div className="text-crypto-silver/50">→</div>
-                          <div>
-                            <span className="text-orange-400 font-medium">{tx.toAddress}</span>
-                          </div>
-                        </div>
-                      </div>
+                      </Collapsible>
                     );
                   })
               ) : (

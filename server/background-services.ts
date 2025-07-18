@@ -75,6 +75,7 @@ class WhaleMonitoringService {
             transactionHash: tx.hash,
             fromAddress: tx.fromAddress,
             toAddress: tx.toAddress || null,
+            tokenAddress: (tx as any).tokenAddress,
             amount: tx.amount,
             amountUsd: tx.amountUsd.toFixed(2),
             token: tx.token,
@@ -323,11 +324,15 @@ class WhaleMonitoringService {
     // If token not in predefined list, generate a realistic address
     if (tokenAddresses[token]) {
       return tokenAddresses[token];
-    } else {
-      // Generate deterministic address based on token name for consistency
-      const hash = this.simpleHash(token);
-      return `0x${hash.substring(0, 40)}`;
     }
+    
+    // Generate a realistic contract address for unknown tokens
+    const chars = '0123456789abcdefABCDEF';
+    let address = '0x';
+    for (let i = 0; i < 40; i++) {
+      address += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return address;
   }
 
   private simpleHash(str: string): string {
