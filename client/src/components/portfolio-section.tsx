@@ -489,39 +489,54 @@ export default function PortfolioSection() {
             {hasWalletAddresses ? (
               // Show actual wallet holdings when connected
               baseHoldings.length > 0 ? baseHoldings.map((holding) => (
-              <div 
-                key={holding.id} 
-                className="backdrop-blur-sm bg-white/5 rounded-xl border border-crypto-silver/10 p-4 hover:bg-white/10 transition-all duration-200 cursor-pointer hover:scale-105"
-                onClick={() => setSelectedHolding(holding)}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center">
-                    <div className="w-10 h-10 bg-blue-600 rounded-full mr-3 flex items-center justify-center text-sm font-bold">
-                      {holding.symbol}
+                <div 
+                  key={holding.id} 
+                  className="backdrop-blur-sm bg-white/5 rounded-xl border border-crypto-silver/10 p-4 hover:bg-white/10 transition-all duration-200 cursor-pointer hover:scale-105"
+                  onClick={() => setSelectedHolding(holding)}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center">
+                      <div className="w-10 h-10 bg-blue-600 rounded-full mr-3 flex items-center justify-center text-sm font-bold">
+                        {holding.symbol}
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-white">{holding.symbol}</h3>
+                        <p className="text-sm text-crypto-silver">{holding.amount} {holding.symbol}</p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="font-medium text-white">{holding.symbol}</h3>
-                      <p className="text-sm text-crypto-silver">{holding.amount} {holding.symbol}</p>
+                    <div className="text-right">
+                      <div className="text-white font-medium">
+                        ${(parseFloat(holding.amount) * parseFloat(holding.currentPrice)).toFixed(2)}
+                      </div>
+                      <div className={`text-sm ${parseFloat(holding.pnl) >= 0 ? 'text-crypto-success' : 'text-crypto-danger'}`}>
+                        {parseFloat(holding.pnl) >= 0 ? '+' : ''}${holding.pnl}
+                      </div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-white font-medium">
-                      ${(parseFloat(holding.amount) * parseFloat(holding.currentPrice)).toFixed(2)}
-                    </div>
-                    <div className={`text-sm ${parseFloat(holding.pnl) >= 0 ? 'text-crypto-success' : 'text-crypto-danger'}`}>
-                      {parseFloat(holding.pnl) >= 0 ? '+' : ''}${holding.pnl}
-                    </div>
+                  <div className="flex justify-between text-sm text-crypto-silver">
+                    <span>Entry: ${holding.entryPrice}</span>
+                    <span>Current: ${holding.currentPrice}</span>
+                    <span className={parseFloat(holding.pnlPercentage) >= 0 ? 'text-crypto-success' : 'text-crypto-danger'}>
+                      {parseFloat(holding.pnlPercentage) >= 0 ? '+' : ''}{holding.pnlPercentage}%
+                    </span>
                   </div>
                 </div>
-                <div className="flex justify-between text-sm text-crypto-silver">
-                  <span>Entry: ${holding.entryPrice}</span>
-                  <span>Current: ${holding.currentPrice}</span>
-                  <span className={parseFloat(holding.pnlPercentage) >= 0 ? 'text-crypto-success' : 'text-crypto-danger'}>
-                    {parseFloat(holding.pnlPercentage) >= 0 ? '+' : ''}{holding.pnlPercentage}%
-                  </span>
+              )) : (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 bg-crypto-silver/10 rounded-full mx-auto mb-4 flex items-center justify-center">
+                    <Activity className="w-8 h-8 text-crypto-silver" />
+                  </div>
+                  <p className="text-crypto-silver">No BASE holdings found</p>
                 </div>
+              )
+            ) : (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-crypto-silver/10 rounded-full mx-auto mb-4 flex items-center justify-center">
+                  <Wallet className="w-8 h-8 text-crypto-silver" />
+                </div>
+                <p className="text-crypto-silver">Connect wallet to view holdings</p>
               </div>
-            ))}
+            )}
           </div>
         </GlassCard>
 
@@ -607,12 +622,14 @@ export default function PortfolioSection() {
         </GlassCard>
       </div>
 
-
-                </div>
-              </div>
-            </div>
-          ))}
-          
+      {/* Small Holdings Section */}
+      <GlassCard className="p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-semibold text-white">Small Holdings</h2>
+          <div className="text-sm text-crypto-silver">Holdings under $5</div>
+        </div>
+        
+        <div className="space-y-4">
           {/* Small TAO Holdings */}
           {taoHoldings.filter(holding => {
             const value = parseFloat(holding.amount) * parseFloat(holding.currentPrice);
