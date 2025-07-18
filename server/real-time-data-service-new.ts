@@ -53,12 +53,12 @@ class RealTimeDataService {
   async getTop24hMovers(): Promise<TopMover[]> {
     try {
       // Clear old cache entries for fresh data
-      this.cache.delete('dexscreener-base-search');
-      this.cache.delete('dexscreener-base-tokens');
+      this.cache.delete('dexscreener-base-gainers');
+      this.cache.delete('dexscreener-base-trending');
       
-      console.log('🔍 Fetching real BASE chain top movers from DexScreener...');
+      console.log('🔍 Fetching real BASE chain TOP GAINERS from DexScreener...');
       
-      // Use specific BASE token addresses
+      // Get comprehensive list of BASE ecosystem tokens
       const baseTokenAddresses = [
         '0x532f27101965dd16442E59d40670FaF5eBB142E4', // BRETT
         '0x4ed4E862860beD51a9570b96d89aF5E1B0Efefed', // DEGEN  
@@ -69,68 +69,101 @@ class RealTimeDataService {
         '0x3A33473d7990a605a88ac72A78aD4EFC40a54ADB', // TIG
         '0xE3086852A4B125803C815a158249ae468A3254Ca', // MFER
         '0x464eBE77c293E473B48cFe96dDCf88fcF7bFDAC0', // AI16Z
-        '0x0b3e328455c4059EEb9e3f84b5543F74E24e7E1e'  // VIRTUAL
+        '0x0b3e328455c4059EEb9e3f84b5543F74E24e7E1e', // VIRTUAL
+        '0xba5B9B2D2d06a9021EB3190ea5Fb0e02160839A4', // KEYCAT
+        '0xB79DD08EA68A908A97220C76d19A6aA9cBDD4376', // USD
+        '0x2416092f143378750bb29b79eD961ab195CcEea5', // EZETH  
+        '0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb', // DAI
+        '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', // USDC
+        '0x0a93a7BE7e7e426fC046e204C44d6b03A302b631', // PRIME
+        '0xdE12c7959E1a72bbe8a5f7A1dc8f8EeF9Ab011B3', // NORMIE
+        '0x27D2DECb4bFC9C76F0309b8E88dec3a601Fe25a8', // BALD
+        '0x60a3E35Cc302bFA44Cb288Bc5a4F316Fdb1adb42', // MILADYBASE
+        '0xEDC68c4A83712C0308Ff47a5c216D1Cb5a6A2741'  // MOCHI
       ];
       
-      const url = `${this.dexScreenerApiUrl}/dex/tokens/${baseTokenAddresses.join(',')}`;
-      console.log(`📡 Calling DexScreener API: ${url}`);
+      // Use multiple API calls to get comprehensive data
+      const batchSize = 10;
+      const batches = [];
+      for (let i = 0; i < baseTokenAddresses.length; i += batchSize) {
+        batches.push(baseTokenAddresses.slice(i, i + batchSize));
+      }
       
-      const dexScreenerData = await this.fetchWithCache(
-        url,
-        'dexscreener-base-tokens'
-      );
+      let allPairs: any[] = [];
+      for (let i = 0; i < batches.length; i++) {
+        const batch = batches[i];
+        const url = `${this.dexScreenerApiUrl}/dex/tokens/${batch.join(',')}`;
+        console.log(`📡 Fetching batch ${i + 1}/${batches.length} from DexScreener: ${batch.length} tokens`);
+        
+        const batchData = await this.fetchWithCache(url, `dexscreener-batch-${i}`);
+        if (batchData?.pairs) {
+          allPairs = allPairs.concat(batchData.pairs);
+        }
+        
+        // Rate limiting delay
+        if (i < batches.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
 
-      if (!dexScreenerData || !dexScreenerData.pairs) {
-        console.log('⚠️ DexScreener API returned no BASE token data');
+      if (!allPairs || allPairs.length === 0) {
+        console.log('⚠️ No BASE token data retrieved from DexScreener');
         return [];
       }
 
-      console.log(`📊 Processing ${dexScreenerData.pairs.length} BASE token pairs from DexScreener`);
+      console.log(`📊 Processing ${allPairs.length} BASE token pairs from DexScreener`);
       
-      // Filter BASE chain pairs and remove duplicates by token symbol
-      const filteredPairs = dexScreenerData.pairs
+      // Filter for BASE chain pairs with positive gains and proper volume, focusing on top gainers
+      const basePairs = allPairs
         .filter((pair: any) => 
           pair.chainId === 'base' && 
           pair.priceChange?.h24 !== null && 
           pair.priceChange?.h24 !== undefined &&
-          pair.volume?.h24 > 1000 && // Minimum volume filter
+          parseFloat(pair.priceChange?.h24 || '0') > 0 && // Only positive gainers
+          parseFloat(pair.volume?.h24 || '0') > 10000 && // Minimum volume for legitimate tokens
+          parseFloat(pair.marketCap || pair.fdv || '0') > 50000 && // Minimum market cap
           pair.baseToken?.symbol &&
           pair.baseToken?.name &&
           pair.baseToken?.symbol !== 'WETH' &&
           pair.baseToken?.symbol !== 'ETH' &&
           pair.baseToken?.symbol !== 'USDC' &&
-          pair.baseToken?.symbol !== 'DAI'
+          pair.baseToken?.symbol !== 'USDT' &&
+          pair.baseToken?.symbol !== 'DAI' &&
+          pair.baseToken?.symbol !== 'CBETH' &&
+          !pair.baseToken?.symbol.includes('LP') && // Filter out LP tokens
+          !pair.baseToken?.name.toLowerCase().includes('pool') // Filter out pool tokens
         )
-        .sort((a: any, b: any) => (b.priceChange?.h24 || 0) - (a.priceChange?.h24 || 0));
+        .sort((a: any, b: any) => parseFloat(b.priceChange?.h24 || '0') - parseFloat(a.priceChange?.h24 || '0')); // Sort by highest gains first
 
       // Remove duplicates by keeping only the highest volume pair for each token
       const uniqueTokens = new Map<string, any>();
-      for (const pair of filteredPairs) {
+      for (const pair of basePairs) {
         const symbol = pair.baseToken.symbol;
         if (!uniqueTokens.has(symbol) || 
-            (pair.volume?.h24 || 0) > (uniqueTokens.get(symbol)?.volume?.h24 || 0)) {
+            parseFloat(pair.volume?.h24 || '0') > parseFloat(uniqueTokens.get(symbol)?.volume?.h24 || '0')) {
           uniqueTokens.set(symbol, pair);
         }
       }
 
-      const basePairs = Array.from(uniqueTokens.values())
-        .sort((a: any, b: any) => (b.priceChange?.h24 || 0) - (a.priceChange?.h24 || 0))
-        .slice(0, 15); // Top 15 unique movers
+      const topGainers = Array.from(uniqueTokens.values())
+        .sort((a: any, b: any) => parseFloat(b.priceChange?.h24 || '0') - parseFloat(a.priceChange?.h24 || '0'))
+        .slice(0, 15); // Top 15 unique gainers
 
-      const topMovers: TopMover[] = basePairs.map((pair: any) => {
-        console.log(`📈 Processing ${pair.baseToken?.symbol}: ${pair.baseToken?.name}, change: ${pair.priceChange?.h24}%`);
+      const topMovers: TopMover[] = topGainers.map((pair: any) => {
+        const gain = parseFloat(pair.priceChange?.h24 || '0');
+        console.log(`🚀 TOP GAINER ${pair.baseToken?.symbol}: ${pair.baseToken?.name}, 24h gain: +${gain.toFixed(2)}%`);
         return {
           token: pair.baseToken?.name || pair.baseToken?.symbol || 'Unknown Token',
           symbol: pair.baseToken?.symbol || 'UNKNOWN',
           price: parseFloat(pair.priceUsd || '0'),
-          change24h: parseFloat(pair.priceChange?.h24 || '0'),
+          change24h: gain,
           volume24h: parseFloat(pair.volume?.h24 || '0'),
           marketCap: parseFloat(pair.marketCap || pair.fdv || '0'),
           network: 'BASE' as const
         };
       });
 
-      console.log(`📈 Successfully fetched ${topMovers.length} real BASE chain movers with symbols: ${topMovers.map(t => t.symbol).join(', ')}`);
+      console.log(`🚀 Successfully fetched ${topMovers.length} TOP BASE GAINERS with gains: ${topMovers.map(t => `${t.symbol}(+${t.change24h.toFixed(1)}%)`).join(', ')}`);
       return topMovers;
 
     } catch (error) {
