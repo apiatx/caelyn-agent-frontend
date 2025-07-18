@@ -568,9 +568,14 @@ export default function PortfolioSection() {
                 </div>
               </div>
             </div>
-            <button className="text-crypto-silver hover:text-white transition-colors">
-              <ExternalLink className="h-4 w-4" />
-            </button>
+            <a 
+              href="https://dexscreener.com/base"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-crypto-silver hover:text-white transition-colors group"
+            >
+              <ExternalLink className="h-4 w-4 group-hover:scale-110 transition-transform" />
+            </a>
           </div>
 
           {/* BASE Holdings Dropdown */}
@@ -620,10 +625,12 @@ export default function PortfolioSection() {
               const value = parseFloat(holding.amount) * parseFloat(holding.currentPrice);
               return value >= 5; // Only show holdings worth $5 or more
             }).map((holding) => (
-              <div 
+              <a 
                 key={holding.id} 
-                className="backdrop-blur-sm bg-white/5 rounded-xl border border-crypto-silver/10 p-4 hover:bg-white/10 transition-all duration-200 cursor-pointer hover:scale-105"
-                onClick={() => setSelectedHolding(holding)}
+                href={`https://dexscreener.com/base/${holding.symbol}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="backdrop-blur-sm bg-white/5 rounded-xl border border-crypto-silver/10 p-4 hover:bg-white/10 transition-all duration-200 cursor-pointer hover:scale-105 group block"
               >
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center">
@@ -651,7 +658,7 @@ export default function PortfolioSection() {
                     {parseFloat(holding.pnlPercentage) >= 0 ? '+' : ''}{holding.pnlPercentage}%
                   </span>
                 </div>
-              </div>
+              </a>
             ))}
           </div>
         </GlassCard>
@@ -678,9 +685,14 @@ export default function PortfolioSection() {
                 </div>
               </div>
             </div>
-            <button className="text-crypto-silver hover:text-white transition-colors">
-              <ExternalLink className="h-4 w-4" />
-            </button>
+            <a 
+              href="https://x.com/search?q=%23bittensor%20OR%20%23tao"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-crypto-silver hover:text-white transition-colors group"
+            >
+              <ExternalLink className="h-4 w-4 group-hover:scale-110 transition-transform" />
+            </a>
           </div>
 
           {/* Bittensor Holdings Dropdown */}
@@ -729,12 +741,19 @@ export default function PortfolioSection() {
             {taoHoldings.filter(holding => {
               const value = parseFloat(holding.amount) * parseFloat(holding.currentPrice);
               return value >= 5; // Only show holdings worth $5 or more
-            }).map((holding) => (
-              <div 
-                key={holding.id} 
-                className="backdrop-blur-sm bg-white/5 rounded-xl border border-crypto-silver/10 p-4 hover:bg-white/10 transition-all duration-200 cursor-pointer hover:scale-105"
-                onClick={() => setSelectedHolding(holding)}
-              >
+            }).map((holding) => {
+              // Extract subnet number from symbol (e.g., "SN1", "SN27") or use default
+              const subnetMatch = holding.symbol.match(/SN(\d+)/);
+              const subnetNumber = subnetMatch ? subnetMatch[1] : '1';
+              
+              return (
+                <a 
+                  key={holding.id} 
+                  href={`https://x.com/search?q=%23SN${subnetNumber}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="backdrop-blur-sm bg-white/5 rounded-xl border border-crypto-silver/10 p-4 hover:bg-white/10 transition-all duration-200 cursor-pointer hover:scale-105 group block"
+                >
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center">
                     <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mr-3 flex items-center justify-center text-sm font-bold">
@@ -789,8 +808,9 @@ export default function PortfolioSection() {
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+                </a>
+              );
+            })}
           </div>
         </GlassCard>
       </div>

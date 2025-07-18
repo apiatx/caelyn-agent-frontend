@@ -168,7 +168,14 @@ export default function AlphaSection() {
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="text-white font-medium">{project.name}</span>
+                          <a 
+                            href={`https://dexscreener.com/base/${project.ticker}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-white font-medium hover:text-blue-400 transition-colors"
+                          >
+                            {project.name}
+                          </a>
                           <Badge variant="outline" className="border-blue-500/30 text-blue-400">
                             {project.ticker}
                           </Badge>
@@ -179,7 +186,14 @@ export default function AlphaSection() {
                           )}
                         </div>
                         <div className="text-crypto-silver text-sm flex items-center gap-4">
-                          <span>X: {formatNumber(project.mentions || 0)} mentions</span>
+                          <a 
+                            href={`https://x.com/search?q=$${project.ticker}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hover:text-blue-400 transition-colors"
+                          >
+                            X: {formatNumber(project.mentions || 0)} mentions
+                          </a>
                           <span>•</span>
                           <span>Mindshare: {project.trendingScore || 0}/100</span>
                         </div>
@@ -230,7 +244,14 @@ export default function AlphaSection() {
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="text-white font-medium">{subnet.name}</span>
+                          <a 
+                            href={`https://x.com/search?q=%23SN${subnet.netuid}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-white font-medium hover:text-orange-400 transition-colors"
+                          >
+                            {subnet.name}
+                          </a>
                           <Badge variant="outline" className="border-purple-500/30 text-purple-400">
                             SN{subnet.netuid}
                           </Badge>

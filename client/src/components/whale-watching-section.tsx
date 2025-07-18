@@ -132,7 +132,15 @@ export default function WhaleWatchingSection() {
                                     </Badge>
                                     <div>
                                       <h3 className="font-medium text-white">
-                                        {parseFloat(tx.amount).toLocaleString()} {getTokenInfo(tx.token).ticker}
+                                        {parseFloat(tx.amount).toLocaleString()}{' '}
+                                        <a 
+                                          href={`https://dexscreener.com/base/${getTokenInfo(tx.token).ticker}`}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="hover:text-blue-400 transition-colors"
+                                        >
+                                          {getTokenInfo(tx.token).ticker}
+                                        </a>
                                       </h3>
                                       <p className="text-xs text-crypto-silver">
                                         {getTokenInfo(tx.token).name}
@@ -359,7 +367,14 @@ export default function WhaleWatchingSection() {
                                     </h3>
                                   </div>
                                   <p className="text-crypto-silver text-sm">
-                                    TAO Subnet • {new Date(tx.timestamp).toLocaleTimeString()}
+                                    <a 
+                                      href={`https://x.com/search?q=%23${tx.toAddress || 'bittensor'}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="hover:text-orange-400 transition-colors"
+                                    >
+                                      {tx.toAddress || 'TAO Subnet'}
+                                    </a> • {new Date(tx.timestamp).toLocaleTimeString()}
                                   </p>
                                 </div>
                               </div>

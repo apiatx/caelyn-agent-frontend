@@ -31,8 +31,26 @@ export default function MarketResearchSection() {
             <div className="space-y-4">
               <div className="flex items-center justify-between p-4 backdrop-blur-sm bg-white/5 rounded-xl border border-crypto-silver/10">
                 <div>
-                  <h3 className="font-medium text-white">BASE Network</h3>
-                  <p className="text-sm text-crypto-silver">Strong institutional adoption signals</p>
+                  <h3 className="font-medium text-white">
+                    <a 
+                      href="https://dexscreener.com/base"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-blue-400 transition-colors"
+                    >
+                      BASE Network
+                    </a>
+                  </h3>
+                  <p className="text-sm text-crypto-silver">
+                    <a 
+                      href="https://x.com/search?q=%23base%20%23basechain"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-blue-400 transition-colors"
+                    >
+                      Strong institutional adoption signals
+                    </a>
+                  </p>
                 </div>
                 <div className="text-right">
                   <div className="text-crypto-success text-lg font-semibold">Bullish</div>
@@ -42,8 +60,26 @@ export default function MarketResearchSection() {
               
               <div className="flex items-center justify-between p-4 backdrop-blur-sm bg-white/5 rounded-xl border border-crypto-silver/10">
                 <div>
-                  <h3 className="font-medium text-white">Bittensor TAO</h3>
-                  <p className="text-sm text-crypto-silver">AI narrative gaining momentum</p>
+                  <h3 className="font-medium text-white">
+                    <a 
+                      href="https://x.com/search?q=%23bittensor%20%23tao"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-orange-400 transition-colors"
+                    >
+                      Bittensor TAO
+                    </a>
+                  </h3>
+                  <p className="text-sm text-crypto-silver">
+                    <a 
+                      href="https://x.com/search?q=%23AI%20%23bittensor"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-orange-400 transition-colors"
+                    >
+                      AI narrative gaining momentum
+                    </a>
+                  </p>
                 </div>
                 <div className="text-right">
                   <div className="text-crypto-success text-lg font-semibold">Very Bullish</div>

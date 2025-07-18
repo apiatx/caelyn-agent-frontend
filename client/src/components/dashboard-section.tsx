@@ -154,13 +154,19 @@ export default function DashboardSection() {
               </div>
             ) : (
               topMovers?.filter(m => m.network === 'BASE').slice(0, 5).map((token, index) => (
-                <div key={`${token.symbol}-${index}`} className="flex items-center justify-between p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors">
+                <a 
+                  key={`${token.symbol}-${index}`} 
+                  href={`https://dexscreener.com/base/${token.symbol}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer group"
+                >
                   <div className="flex items-center gap-3">
                     <div className="text-sm font-semibold text-crypto-silver">
                       #{index + 1}
                     </div>
                     <div>
-                      <div className="font-medium text-white">${token.symbol}</div>
+                      <div className="font-medium text-white group-hover:text-blue-400 transition-colors">${token.symbol}</div>
                       <div className="text-xs text-crypto-silver">{token.token}</div>
                     </div>
                   </div>
@@ -172,7 +178,7 @@ export default function DashboardSection() {
                       {token.change24h >= 0 ? '+' : ''}{token.change24h.toFixed(2)}%
                     </div>
                   </div>
-                </div>
+                </a>
               ))
             )}
           </div>
@@ -259,7 +265,13 @@ export default function DashboardSection() {
               </div>
             ) : (
               whaleActivity?.slice(0, 4).map((activity, index) => (
-                <div key={activity.id} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                <a 
+                  key={activity.id} 
+                  href={activity.network === 'BASE' ? `https://dexscreener.com/base/${activity.token}` : `https://x.com/search?q=%23SN${activity.token.match(/\d+/)?.[0] || '1'}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer group"
+                >
                   <div className="flex items-center gap-3">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
                       activity.network === 'BASE' ? 'bg-blue-500' : 'bg-gradient-to-r from-orange-500 to-purple-600'
@@ -267,7 +279,7 @@ export default function DashboardSection() {
                       {activity.network === 'BASE' ? 'B' : 'Τ'}
                     </div>
                     <div>
-                      <div className="text-sm font-medium text-white">
+                      <div className="text-sm font-medium text-white group-hover:text-blue-400 transition-colors">
                         {activity.action} {activity.token}
                       </div>
                       <div className="text-xs text-crypto-silver">
@@ -283,7 +295,7 @@ export default function DashboardSection() {
                       {parseFloat(activity.amount).toLocaleString()} {activity.token}
                     </div>
                   </div>
-                </div>
+                </a>
               ))
             )}
           </div>
@@ -311,13 +323,19 @@ export default function DashboardSection() {
               </div>
             ) : (
               socialSentiment?.slice(0, 4).map((pulse, index) => (
-                <div key={`${pulse.token}-${index}`} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                <a 
+                  key={`${pulse.token}-${index}`} 
+                  href={`https://x.com/search?q=$${pulse.token.toLowerCase()}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer group"
+                >
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-xs font-bold">
                       S
                     </div>
                     <div>
-                      <div className="font-medium text-white">${pulse.token}</div>
+                      <div className="font-medium text-white group-hover:text-blue-400 transition-colors">${pulse.token}</div>
                       <div className="text-xs text-crypto-silver">Trending Score: {pulse.trendingScore.toFixed(0)}</div>
                     </div>
                     {pulse.trendingScore > 70 && (
@@ -335,7 +353,7 @@ export default function DashboardSection() {
                       {pulse.sentiment} sentiment
                     </div>
                   </div>
-                </div>
+                </a>
               ))
             )}
           </div>
