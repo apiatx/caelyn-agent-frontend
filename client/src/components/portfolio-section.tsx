@@ -18,7 +18,8 @@ import type { Holding, Subnet } from "@shared/schema";
 
 export default function PortfolioSection() {
   const { data: portfolio, isLoading } = usePortfolio(1);
-  const { data: portfolioHistory, isLoading: isHistoryLoading } = usePortfolioValueHistory(1, 60);
+  const [selectedTimeframe, setSelectedTimeframe] = useState('24h');
+  const { data: portfolioHistory, isLoading: isHistoryLoading } = usePortfolioValueHistory(1, selectedTimeframe);
   const [selectedHolding, setSelectedHolding] = useState<Holding | null>(null);
   const [isEditingWallets, setIsEditingWallets] = useState(false);
   const [baseWalletAddress, setBaseWalletAddress] = useState('');
@@ -80,32 +81,81 @@ export default function PortfolioSection() {
   // Check if wallet addresses are configured
   const hasWalletAddresses = portfolio?.baseWalletAddress || portfolio?.taoWalletAddress;
   
-  // Format portfolio history data for the chart
+  // Format portfolio history data for the chart based on timeframe
   const formatChartData = () => {
     if (!portfolioHistory || portfolioHistory.length === 0) {
-      // Show empty state for chart when no data
       return [{
         time: 'No data',
         value: 0
       }];
     }
 
-    // Sort by timestamp and format for chart
+    // Sort by timestamp
     const sortedHistory = [...portfolioHistory]
-      .sort((a, b) => new Date(a.timestamp!).getTime() - new Date(b.timestamp!).getTime())
-      .slice(-30); // Show last 30 data points
+      .sort((a, b) => new Date(a.timestamp!).getTime() - new Date(b.timestamp!).getTime());
+
+    // Filter data based on timeframe
+    const now = new Date();
+    const getTimeframeCutoff = () => {
+      switch (selectedTimeframe) {
+        case '24h': return new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        case '7d': return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        case '30d': return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        case '90d': return new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+        case 'ytd': return new Date(now.getFullYear(), 0, 1); // January 1st
+        case 'all': return new Date(0); // Beginning of time
+        default: return new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      }
+    };
+
+    const cutoffDate = getTimeframeCutoff();
+    const filteredHistory = sortedHistory.filter(item => 
+      new Date(item.timestamp!) >= cutoffDate
+    );
+
+    // Format time labels based on timeframe
+    const formatTimeLabel = (date: Date) => {
+      switch (selectedTimeframe) {
+        case '24h':
+          return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        case '7d':
+        case '30d':
+          return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+        case '90d':
+        case 'ytd':
+        case 'all':
+          return date.toLocaleDateString([], { month: 'short', day: 'numeric', year: '2-digit' });
+        default:
+          return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      }
+    };
+
+    // Sample data points for better chart visualization
+    const maxDataPoints = selectedTimeframe === '24h' ? 48 : selectedTimeframe === '7d' ? 168 : 100;
+    const sampledHistory = filteredHistory.length > maxDataPoints 
+      ? filteredHistory.filter((_, index) => index % Math.ceil(filteredHistory.length / maxDataPoints) === 0)
+      : filteredHistory;
     
-    return sortedHistory.map(item => {
+    return sampledHistory.map(item => {
       const date = new Date(item.timestamp!);
-      const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       return {
-        time,
-        value: parseFloat(item.totalValue)
+        time: formatTimeLabel(date),
+        value: parseFloat(item.totalValue),
+        fullDate: date.toLocaleString()
       };
     });
   };
 
   const chartData = formatChartData();
+
+  const timeframeOptions = [
+    { value: '24h', label: '24 Hours' },
+    { value: '7d', label: '7 Days' },
+    { value: '30d', label: '30 Days' },
+    { value: '90d', label: '90 Days' },
+    { value: 'ytd', label: 'Year to Date' },
+    { value: 'all', label: 'All Time' }
+  ];
 
   if (isLoading) {
     return (
@@ -348,8 +398,22 @@ export default function PortfolioSection() {
           <div className="flex items-center gap-3 mb-4">
             <BarChart3 className="text-crypto-success w-5 h-5" />
             <h3 className="text-white font-medium">Portfolio Value History</h3>
-            <div className="ml-auto text-sm text-crypto-silver">
-              {isHistoryLoading ? "Loading..." : `${chartData.length} data points • Live tracking`}
+            <div className="ml-auto flex items-center gap-3">
+              <Select value={selectedTimeframe} onValueChange={setSelectedTimeframe}>
+                <SelectTrigger className="w-40 bg-white/5 border-crypto-silver/20 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-crypto-dark border-crypto-silver/20">
+                  {timeframeOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value} className="text-white hover:bg-white/10">
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="text-sm text-crypto-silver">
+                {isHistoryLoading ? "Loading..." : `${chartData.length} data points`}
+              </div>
             </div>
           </div>
           <div className="h-64">
@@ -378,8 +442,14 @@ export default function PortfolioSection() {
                       borderRadius: '8px',
                       color: '#fff'
                     }}
-                    formatter={(value) => [`$${parseFloat(value as string).toFixed(2)}`, 'Portfolio Value']}
-                    labelFormatter={(label) => `Time: ${label}`}
+                    formatter={(value, name, props) => [
+                      `$${parseFloat(value as string).toFixed(2)}`, 
+                      'Portfolio Value'
+                    ]}
+                    labelFormatter={(label, payload) => {
+                      const item = payload?.[0]?.payload;
+                      return item?.fullDate ? `${item.fullDate}` : `Time: ${label}`;
+                    }}
                   />
                   <Line 
                     type="monotone" 
@@ -396,7 +466,7 @@ export default function PortfolioSection() {
           </div>
           <div className="mt-2 text-xs text-crypto-silver text-center">
             {hasWalletAddresses ? 
-              "Real-time portfolio value tracking • Updates every minute" : 
+              `Real-time portfolio value tracking • ${timeframeOptions.find(opt => opt.value === selectedTimeframe)?.label} view • Updates every minute` : 
               "Connect wallet addresses to see portfolio value history"
             }
           </div>

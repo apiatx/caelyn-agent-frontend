@@ -151,3 +151,12 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Multi-Source Sentiment**: Combined X.com sentiment, swordscan mindshare, and TensorPulse data for comprehensive social scoring
 - **Real-time Social Feeds**: Live 30-second refresh intervals for authentic sentiment tracking across multiple platforms
 - **Enhanced Metadata**: Added momentum scores, social scores, DEX volumes, and subnet staking data with trending badges
+
+### July 18, 2025 - Portfolio Performance Chart Enhancement
+- **Real-Time Value Tracking**: Portfolio chart now tracks actual portfolio value over time at minute intervals instead of PnL periods
+- **Multiple Timeframes**: Added timeframe selector with 24h, 7d, 30d, 90d, YTD, and All Time options
+- **Intelligent Data Sampling**: Smart data point sampling based on timeframe (48 points for 24h, 168 for 7d, 100 for longer periods)
+- **Dynamic Time Labels**: Time formatting adapts to timeframe (HH:MM for 24h, MMM DD for 7d/30d, MMM DD YY for longer)
+- **Background Service**: Minute-by-minute portfolio value recording with historical data generation for demo
+- **Enhanced Tooltips**: Full timestamp display on hover with precise portfolio value at specific moments
+- **Live Status Indicators**: Real-time tracking status and data point count display in chart header
