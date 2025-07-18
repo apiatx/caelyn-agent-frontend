@@ -1,4 +1,5 @@
 import { storage } from "./storage";
+import { realTimeDataService } from './real-time-data-service';
 import type { Portfolio } from "@shared/schema";
 import type { InsertWhaleTransaction } from "@shared/schema";
 

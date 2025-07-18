@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { realTimeDataService } from './real-time-data-service';
 import { z } from "zod";
 import { insertPremiumAccessSchema } from "@shared/schema";
 
@@ -340,5 +341,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const httpServer = createServer(app);
+  // Real-time market data endpoints
+  app.get('/api/real-time/top-movers', async (req, res) => {
+    try {
+      const topMovers = await realTimeDataService.getTop24hMovers();
+      res.json(topMovers);
+    } catch (error) {
+      console.error('Error fetching top movers:', error);
+      res.status(500).json({ error: 'Failed to fetch top movers' });
+    }
+  });
+
+  app.get('/api/real-time/whale-activity', async (req, res) => {
+    try {
+      const whaleActivity = await realTimeDataService.getLargeWalletActivity();
+      res.json(whaleActivity);
+    } catch (error) {
+      console.error('Error fetching whale activity:', error);
+      res.status(500).json({ error: 'Failed to fetch whale activity' });
+    }
+  });
+
+  app.get('/api/real-time/social-sentiment', async (req, res) => {
+    try {
+      const socialSentiment = await realTimeDataService.getSocialSentimentData();
+      res.json(socialSentiment);
+    } catch (error) {
+      console.error('Error fetching social sentiment:', error);
+      res.status(500).json({ error: 'Failed to fetch social sentiment' });
+    }
+  });
+
+  app.get('/api/real-time/market-analysis', async (req, res) => {
+    try {
+      const marketAnalysis = await realTimeDataService.getMarketAnalysis();
+      res.json(marketAnalysis);
+    } catch (error) {
+      console.error('Error fetching market analysis:', error);
+      res.status(500).json({ error: 'Failed to fetch market analysis' });
+    }
+  });
+
+  app.get('/api/real-time/portfolio-optimization/:portfolioId', async (req, res) => {
+    try {
+      const portfolioId = Number(req.params.portfolioId);
+      const portfolio = await storage.getPortfolioByUserId(portfolioId);
+      const optimization = await realTimeDataService.getPortfolioOptimization(portfolio);
+      res.json(optimization);
+    } catch (error) {
+      console.error('Error fetching portfolio optimization:', error);
+      res.status(500).json({ error: 'Failed to fetch portfolio optimization' });
+    }
+  });
+
   return httpServer;
 }
