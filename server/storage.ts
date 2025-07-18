@@ -1,9 +1,10 @@
 import { 
-  users, portfolios, holdings, subnets, whaleTransactions, premiumAccess, marketInsights, tradeSignals, mindshareProjects,
+  users, portfolios, holdings, subnets, whaleTransactions, premiumAccess, marketInsights, tradeSignals, mindshareProjects, portfolioValueHistory,
   type User, type InsertUser, type Portfolio, type InsertPortfolio, type Holding, type InsertHolding,
   type Subnet, type InsertSubnet, type WhaleTransaction, type InsertWhaleTransaction,
   type PremiumAccess, type InsertPremiumAccess, type MarketInsight, type InsertMarketInsight,
-  type TradeSignal, type InsertTradeSignal, type MindshareProject, type InsertMindshareProject
+  type TradeSignal, type InsertTradeSignal, type MindshareProject, type InsertMindshareProject,
+  type PortfolioValueHistory, type InsertPortfolioValueHistory
 } from "@shared/schema";
 
 export interface IStorage {
@@ -15,6 +16,7 @@ export interface IStorage {
   // Portfolio methods
   getPortfolioByUserId(userId: number): Promise<Portfolio | undefined>;
   getPortfolioById(portfolioId: number): Promise<Portfolio | undefined>;
+  getAllPortfolios(): Promise<Portfolio[]>;
   createPortfolio(portfolio: InsertPortfolio): Promise<Portfolio>;
   updatePortfolio(id: number, portfolio: Partial<InsertPortfolio>): Promise<Portfolio | undefined>;
 
@@ -47,6 +49,10 @@ export interface IStorage {
   // Mindshare methods
   getMindshareProjects(): Promise<MindshareProject[]>;
   createMindshareProject(project: InsertMindshareProject): Promise<MindshareProject>;
+
+  // Portfolio value history methods
+  getPortfolioValueHistory(portfolioId: number, limit?: number): Promise<PortfolioValueHistory[]>;
+  createPortfolioValueHistory(history: InsertPortfolioValueHistory): Promise<PortfolioValueHistory>;
 }
 
 export class MemStorage implements IStorage {
@@ -59,6 +65,7 @@ export class MemStorage implements IStorage {
   private marketInsights: Map<number, MarketInsight>;
   private tradeSignals: Map<number, TradeSignal>;
   private mindshareProjects: Map<number, MindshareProject>;
+  private portfolioValueHistory: Map<number, PortfolioValueHistory>;
   
   private currentUserId: number;
   private currentPortfolioId: number;
@@ -69,6 +76,7 @@ export class MemStorage implements IStorage {
   private currentMarketInsightId: number;
   private currentTradeSignalId: number;
   private currentMindshareProjectId: number;
+  private currentPortfolioValueHistoryId: number;
 
   constructor() {
     this.users = new Map();
@@ -80,6 +88,7 @@ export class MemStorage implements IStorage {
     this.marketInsights = new Map();
     this.tradeSignals = new Map();
     this.mindshareProjects = new Map();
+    this.portfolioValueHistory = new Map();
     
     this.currentUserId = 1;
     this.currentPortfolioId = 1;
@@ -90,6 +99,7 @@ export class MemStorage implements IStorage {
     this.currentMarketInsightId = 1;
     this.currentTradeSignalId = 1;
     this.currentMindshareProjectId = 1;
+    this.currentPortfolioValueHistoryId = 1;
 
     this.seedData();
   }
@@ -485,6 +495,10 @@ export class MemStorage implements IStorage {
     return this.portfolios.get(portfolioId);
   }
 
+  async getAllPortfolios(): Promise<Portfolio[]> {
+    return Array.from(this.portfolios.values());
+  }
+
   async createPortfolio(insertPortfolio: InsertPortfolio): Promise<Portfolio> {
     const id = this.currentPortfolioId++;
     const portfolio: Portfolio = { 
@@ -636,6 +650,25 @@ export class MemStorage implements IStorage {
     };
     this.mindshareProjects.set(id, project);
     return project;
+  }
+
+  // Portfolio value history methods
+  async getPortfolioValueHistory(portfolioId: number, limit?: number): Promise<PortfolioValueHistory[]> {
+    const history = Array.from(this.portfolioValueHistory.values())
+      .filter(h => h.portfolioId === portfolioId)
+      .sort((a, b) => new Date(b.timestamp!).getTime() - new Date(a.timestamp!).getTime());
+    
+    return limit ? history.slice(0, limit) : history;
+  }
+
+  async createPortfolioValueHistory(history: InsertPortfolioValueHistory, customTimestamp?: Date): Promise<PortfolioValueHistory> {
+    const portfolioHistory: PortfolioValueHistory = {
+      id: this.currentPortfolioValueHistoryId++,
+      ...history,
+      timestamp: customTimestamp || new Date(),
+    };
+    this.portfolioValueHistory.set(portfolioHistory.id, portfolioHistory);
+    return portfolioHistory;
   }
 }
 

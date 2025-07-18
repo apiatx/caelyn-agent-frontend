@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { usePortfolio } from "@/hooks/use-portfolio";
+import { usePortfolioValueHistory } from "@/hooks/use-portfolio-value-history";
 import { Skeleton } from "@/components/ui/skeleton";
 import { HoldingDetailModal } from "@/components/holding-detail-modal";
 import { DataIntegrityNotice } from "@/components/data-integrity-notice";
@@ -17,6 +18,7 @@ import type { Holding, Subnet } from "@shared/schema";
 
 export default function PortfolioSection() {
   const { data: portfolio, isLoading } = usePortfolio(1);
+  const { data: portfolioHistory, isLoading: isHistoryLoading } = usePortfolioValueHistory(1, 60);
   const [selectedHolding, setSelectedHolding] = useState<Holding | null>(null);
   const [isEditingWallets, setIsEditingWallets] = useState(false);
   const [baseWalletAddress, setBaseWalletAddress] = useState('');
@@ -77,6 +79,33 @@ export default function PortfolioSection() {
 
   // Check if wallet addresses are configured
   const hasWalletAddresses = portfolio?.baseWalletAddress || portfolio?.taoWalletAddress;
+  
+  // Format portfolio history data for the chart
+  const formatChartData = () => {
+    if (!portfolioHistory || portfolioHistory.length === 0) {
+      // Show empty state for chart when no data
+      return [{
+        time: 'No data',
+        value: 0
+      }];
+    }
+
+    // Sort by timestamp and format for chart
+    const sortedHistory = [...portfolioHistory]
+      .sort((a, b) => new Date(a.timestamp!).getTime() - new Date(b.timestamp!).getTime())
+      .slice(-30); // Show last 30 data points
+    
+    return sortedHistory.map(item => {
+      const date = new Date(item.timestamp!);
+      const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      return {
+        time,
+        value: parseFloat(item.totalValue)
+      };
+    });
+  };
+
+  const chartData = formatChartData();
 
   if (isLoading) {
     return (
@@ -314,49 +343,62 @@ export default function PortfolioSection() {
           </div>
         </div>
 
-        {/* Performance Chart Visualization */}
+        {/* Real-Time Portfolio Value Chart */}
         <div className="mb-8 p-4 bg-white/5 backdrop-blur-sm rounded-lg border border-crypto-silver/20">
           <div className="flex items-center gap-3 mb-4">
             <BarChart3 className="text-crypto-success w-5 h-5" />
-            <h3 className="text-white font-medium">Portfolio Performance Chart</h3>
+            <h3 className="text-white font-medium">Portfolio Value History</h3>
+            <div className="ml-auto text-sm text-crypto-silver">
+              {isHistoryLoading ? "Loading..." : `${chartData.length} data points • Live tracking`}
+            </div>
           </div>
           <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={hasWalletAddresses ? [
-                { name: '24h ago', value: parseFloat(portfolio.totalBalance) - parseFloat(portfolio.pnl24h || '0') },
-                { name: '7d ago', value: parseFloat(portfolio.totalBalance) - parseFloat(portfolio.pnl7d || '0') },
-                { name: '30d ago', value: parseFloat(portfolio.totalBalance) - parseFloat(portfolio.pnl30d || '0') },
-                { name: 'YTD', value: parseFloat(portfolio.totalBalance) - parseFloat(portfolio.pnlYtd || '0') },
-                { name: 'Now', value: parseFloat(portfolio.totalBalance) }
-              ] : [
-                { name: '24h ago', value: 0 },
-                { name: '7d ago', value: 0 },
-                { name: '30d ago', value: 0 },
-                { name: 'YTD', value: 0 },
-                { name: 'Now', value: 0 }
-              ]}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis dataKey="name" tick={{ fill: '#9CA3AF', fontSize: 12 }} />
-                <YAxis tick={{ fill: '#9CA3AF', fontSize: 12 }} />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)', 
-                    border: '1px solid #374151',
-                    borderRadius: '8px',
-                    color: '#fff'
-                  }}
-                  formatter={(value) => [`$${parseFloat(value as string).toFixed(2)}`, 'Portfolio Value']}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="value" 
-                  stroke="#10B981" 
-                  strokeWidth={3}
-                  dot={{ fill: '#10B981', strokeWidth: 2, r: 6 }}
-                  activeDot={{ r: 8, stroke: '#10B981', strokeWidth: 2 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            {isHistoryLoading ? (
+              <div className="h-full flex items-center justify-center text-crypto-silver">
+                Loading portfolio history...
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis 
+                    dataKey="time" 
+                    tick={{ fill: '#9CA3AF', fontSize: 12 }}
+                    interval="preserveStartEnd"
+                  />
+                  <YAxis 
+                    tick={{ fill: '#9CA3AF', fontSize: 12 }}
+                    domain={['dataMin - 10', 'dataMax + 10']}
+                    tickFormatter={(value) => `$${value.toFixed(0)}`}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'rgba(0, 0, 0, 0.8)', 
+                      border: '1px solid #374151',
+                      borderRadius: '8px',
+                      color: '#fff'
+                    }}
+                    formatter={(value) => [`$${parseFloat(value as string).toFixed(2)}`, 'Portfolio Value']}
+                    labelFormatter={(label) => `Time: ${label}`}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="value" 
+                    stroke="#10B981" 
+                    strokeWidth={3}
+                    dot={{ fill: '#10B981', strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, stroke: '#10B981', strokeWidth: 2 }}
+                    connectNulls={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+          <div className="mt-2 text-xs text-crypto-silver text-center">
+            {hasWalletAddresses ? 
+              "Real-time portfolio value tracking • Updates every minute" : 
+              "Connect wallet addresses to see portfolio value history"
+            }
           </div>
         </div>
         

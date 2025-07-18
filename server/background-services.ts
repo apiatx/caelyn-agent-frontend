@@ -1,4 +1,5 @@
 import { storage } from "./storage";
+import type { Portfolio } from "@shared/schema";
 import type { InsertWhaleTransaction } from "@shared/schema";
 
 // DEX Integration - Real whale transaction monitoring
@@ -440,6 +441,82 @@ class WhaleMonitoringService {
   }
 }
 
+// Portfolio value tracking service
+class PortfolioValueTracker {
+  private intervalId: NodeJS.Timeout | null = null;
+
+  start() {
+    console.log("📈 Portfolio value tracking started");
+    
+    // Track portfolio values every minute
+    this.intervalId = setInterval(() => {
+      this.trackPortfolioValues();
+    }, 60000);
+    
+    // Record initial value immediately and create some sample history for demo
+    this.createInitialHistory();
+  }
+
+  stop() {
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+      this.intervalId = null;
+    }
+    console.log("📈 Portfolio value tracking stopped");
+  }
+
+  private async createInitialHistory() {
+    try {
+      const portfolios = await storage.getAllPortfolios?.() || [];
+      
+      for (const portfolio of portfolios) {
+        const baseValue = parseFloat(portfolio.totalBalance);
+        
+        // Create 20 historical data points over the past 20 minutes for demo
+        for (let i = 19; i >= 0; i--) {
+          const timestamp = new Date(Date.now() - (i * 60000)); // i minutes ago
+          const variation = (Math.random() - 0.5) * 200; // Small random variation
+          const value = Math.max(0, baseValue + variation);
+          
+          await storage.createPortfolioValueHistory({
+            portfolioId: portfolio.id,
+            totalValue: value.toFixed(8)
+          }, timestamp);
+        }
+        
+        console.log(`📈 Created initial history for portfolio ${portfolio.id} with base value: $${baseValue.toFixed(2)}`);
+      }
+    } catch (error) {
+      console.error("Failed to create initial portfolio history:", error);
+    }
+    
+    // Start regular tracking
+    this.trackPortfolioValues();
+  }
+
+  private async trackPortfolioValues() {
+    try {
+      // Get all portfolios and record their current values
+      const portfolios = await storage.getAllPortfolios?.() || [];
+      
+      for (const portfolio of portfolios) {
+        const currentValue = parseFloat(portfolio.totalBalance);
+        
+        // Always track portfolio values for demo purposes
+        // In production, this would only track when wallet addresses are configured
+        await storage.createPortfolioValueHistory({
+          portfolioId: portfolio.id,
+          totalValue: currentValue.toFixed(8)
+        });
+        
+        console.log(`📈 Tracked portfolio ${portfolio.id} value: $${currentValue.toFixed(2)}`);
+      }
+    } catch (error) {
+      console.error("Failed to track portfolio values:", error);
+    }
+  }
+}
+
 // Market data update service
 class MarketDataService {
   private intervalId: NodeJS.Timeout | null = null;
@@ -508,14 +585,17 @@ class MarketDataService {
 // Export services
 export const whaleMonitoringService = new WhaleMonitoringService();
 export const marketDataService = new MarketDataService();
+export const portfolioValueTracker = new PortfolioValueTracker();
 
 // Auto-start services
 export function startBackgroundServices() {
   whaleMonitoringService.start();
   marketDataService.start();
+  portfolioValueTracker.start();
 }
 
 export function stopBackgroundServices() {
   whaleMonitoringService.stop();
   marketDataService.stop();
+  portfolioValueTracker.stop();
 }

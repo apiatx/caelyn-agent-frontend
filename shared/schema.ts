@@ -24,6 +24,13 @@ export const portfolios = pgTable("portfolios", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+export const portfolioValueHistory = pgTable("portfolio_value_history", {
+  id: serial("id").primaryKey(),
+  portfolioId: integer("portfolio_id").notNull(),
+  totalValue: decimal("total_value", { precision: 18, scale: 8 }).notNull(),
+  timestamp: timestamp("timestamp").defaultNow(),
+});
+
 export const holdings = pgTable("holdings", {
   id: serial("id").primaryKey(),
   portfolioId: integer("portfolio_id").notNull(),
@@ -147,9 +154,17 @@ export const insertMindshareProjectSchema = createInsertSchema(mindshareProjects
   lastUpdated: true,
 });
 
+export const insertPortfolioValueHistorySchema = createInsertSchema(portfolioValueHistory).omit({
+  id: true,
+  timestamp: true,
+});
+
 // Type exports
 export type MindshareProject = typeof mindshareProjects.$inferSelect;
 export type InsertMindshareProject = z.infer<typeof insertMindshareProjectSchema>;
+
+export type PortfolioValueHistory = typeof portfolioValueHistory.$inferSelect;
+export type InsertPortfolioValueHistory = z.infer<typeof insertPortfolioValueHistorySchema>;
 
 // Types
 export type User = typeof users.$inferSelect;

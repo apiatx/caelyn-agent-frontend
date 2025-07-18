@@ -303,6 +303,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Portfolio value history endpoint
+  app.get("/api/portfolio/:portfolioId/value-history", async (req, res) => {
+    try {
+      const portfolioId = Number(req.params.portfolioId);
+      const limit = req.query.limit ? Number(req.query.limit) : 100;
+      
+      const history = await storage.getPortfolioValueHistory(portfolioId, limit);
+      res.json(history);
+    } catch (error) {
+      console.error("Error fetching portfolio value history:", error);
+      res.status(500).json({ error: "Failed to fetch portfolio value history" });
+    }
+  });
+
   // Price updates endpoint (simulated)
   app.post("/api/update-prices", async (req, res) => {
     try {
