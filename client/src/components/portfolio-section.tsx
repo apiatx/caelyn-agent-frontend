@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { Wallet, ExternalLink, TrendingUp, Edit3, Save, Plus, Activity } from "lucide-react";
+import { Wallet, ExternalLink, TrendingUp, Edit3, Save, Plus, Activity, ChevronDown, BarChart3 } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { usePortfolio } from "@/hooks/use-portfolio";
 import { Skeleton } from "@/components/ui/skeleton";
 import { HoldingDetailModal } from "@/components/holding-detail-modal";
@@ -11,6 +12,7 @@ import { DataIntegrityNotice } from "@/components/data-integrity-notice";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import type { Holding, Subnet } from "@shared/schema";
 
 export default function PortfolioSection() {
@@ -311,6 +313,52 @@ export default function PortfolioSection() {
             </div>
           </div>
         </div>
+
+        {/* Performance Chart Visualization */}
+        <div className="mb-8 p-4 bg-white/5 backdrop-blur-sm rounded-lg border border-crypto-silver/20">
+          <div className="flex items-center gap-3 mb-4">
+            <BarChart3 className="text-crypto-success w-5 h-5" />
+            <h3 className="text-white font-medium">Portfolio Performance Chart</h3>
+          </div>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={hasWalletAddresses ? [
+                { name: '24h ago', value: parseFloat(portfolio.totalBalance) - parseFloat(portfolio.pnl24h || '0') },
+                { name: '7d ago', value: parseFloat(portfolio.totalBalance) - parseFloat(portfolio.pnl7d || '0') },
+                { name: '30d ago', value: parseFloat(portfolio.totalBalance) - parseFloat(portfolio.pnl30d || '0') },
+                { name: 'YTD', value: parseFloat(portfolio.totalBalance) - parseFloat(portfolio.pnlYtd || '0') },
+                { name: 'Now', value: parseFloat(portfolio.totalBalance) }
+              ] : [
+                { name: '24h ago', value: 0 },
+                { name: '7d ago', value: 0 },
+                { name: '30d ago', value: 0 },
+                { name: 'YTD', value: 0 },
+                { name: 'Now', value: 0 }
+              ]}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <XAxis dataKey="name" tick={{ fill: '#9CA3AF', fontSize: 12 }} />
+                <YAxis tick={{ fill: '#9CA3AF', fontSize: 12 }} />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)', 
+                    border: '1px solid #374151',
+                    borderRadius: '8px',
+                    color: '#fff'
+                  }}
+                  formatter={(value) => [`$${parseFloat(value as string).toFixed(2)}`, 'Portfolio Value']}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="value" 
+                  stroke="#10B981" 
+                  strokeWidth={3}
+                  dot={{ fill: '#10B981', strokeWidth: 2, r: 6 }}
+                  activeDot={{ r: 8, stroke: '#10B981', strokeWidth: 2 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
         
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <div className="text-center p-4 bg-white/5 backdrop-blur-sm rounded-lg border border-crypto-silver/20">
@@ -398,6 +446,48 @@ export default function PortfolioSection() {
               <ExternalLink className="h-4 w-4" />
             </button>
           </div>
+
+          {/* BASE Holdings Dropdown */}
+          <div className="mb-4">
+            <Select>
+              <SelectTrigger className="w-full bg-white/5 border-crypto-silver/20 text-white">
+                <SelectValue placeholder={hasWalletAddresses ? "Select BASE holding to view PnL" : "Connect wallet to view holdings"} />
+              </SelectTrigger>
+              <SelectContent className="bg-black/90 border-crypto-silver/20">
+                {hasWalletAddresses ? [
+                  { symbol: 'TOSHI', amount: '2,450,000', value: '$573.21', pnl: '+$48.32', pnlPercent: '+9.2%' },
+                  { symbol: 'DEGEN', amount: '15,750', value: '$245.70', pnl: '+$12.45', pnlPercent: '+5.3%' },
+                  { symbol: 'HIGHER', amount: '1,200', value: '$80.28', pnl: '-$3.72', pnlPercent: '-4.4%' },
+                  { symbol: 'AERO', amount: '45', value: '$85.05', pnl: '+$8.05', pnlPercent: '+10.5%' },
+                  { symbol: 'MFER', amount: '12,500', value: '$287.50', pnl: '+$23.50', pnlPercent: '+8.9%' }
+                ].map((holding) => (
+                  <SelectItem key={holding.symbol} value={holding.symbol} className="text-white hover:bg-white/10">
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center gap-3">
+                        <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-xs font-bold">
+                          {holding.symbol.charAt(0)}
+                        </div>
+                        <div>
+                          <div className="font-medium">{holding.symbol}</div>
+                          <div className="text-sm text-crypto-silver">{holding.amount} tokens</div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-medium">{holding.value}</div>
+                        <div className={`text-sm ${holding.pnl.startsWith('+') ? 'text-crypto-success' : 'text-red-500'}`}>
+                          {holding.pnl} ({holding.pnlPercent})
+                        </div>
+                      </div>
+                    </div>
+                  </SelectItem>
+                )) : [
+                  <SelectItem key="no-wallet" value="no-wallet" className="text-crypto-silver">
+                    Connect BASE wallet to view holdings
+                  </SelectItem>
+                ]}
+              </SelectContent>
+            </Select>
+          </div>
           
           <div className="space-y-4">
             {baseHoldings.filter(holding => {
@@ -450,6 +540,48 @@ export default function PortfolioSection() {
             <button className="text-crypto-silver hover:text-white transition-colors">
               <ExternalLink className="h-4 w-4" />
             </button>
+          </div>
+
+          {/* Bittensor Holdings Dropdown */}
+          <div className="mb-4">
+            <Select>
+              <SelectTrigger className="w-full bg-white/5 border-crypto-silver/20 text-white">
+                <SelectValue placeholder={hasWalletAddresses ? "Select TAO holding to view PnL" : "Connect wallet to view holdings"} />
+              </SelectTrigger>
+              <SelectContent className="bg-black/90 border-crypto-silver/20">
+                {hasWalletAddresses ? [
+                  { symbol: 'TAO', amount: '12.45', value: '$6,888.83', pnl: '+$523.45', pnlPercent: '+8.2%', subnet: 'Liquid Staking' },
+                  { symbol: 'SN1', amount: '3.2', value: '$1,770.88', pnl: '+$145.22', pnlPercent: '+8.9%', subnet: 'Text Prompting' },
+                  { symbol: 'SN5', amount: '2.8', value: '$1,549.72', pnl: '+$89.15', pnlPercent: '+6.1%', subnet: 'Image Generation' },
+                  { symbol: 'SN18', amount: '1.5', value: '$830.25', pnl: '+$42.75', pnlPercent: '+5.4%', subnet: 'Cortex.t' },
+                  { symbol: 'SN27', amount: '4.1', value: '$2,269.14', pnl: '+$156.89', pnlPercent: '+7.4%', subnet: 'Compute Horde' }
+                ].map((holding) => (
+                  <SelectItem key={holding.symbol} value={holding.symbol} className="text-white hover:bg-white/10">
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center gap-3">
+                        <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-xs font-bold">
+                          τ
+                        </div>
+                        <div>
+                          <div className="font-medium">{holding.symbol}</div>
+                          <div className="text-sm text-crypto-silver">{holding.amount} TAO • {holding.subnet}</div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-medium">{holding.value}</div>
+                        <div className={`text-sm ${holding.pnl.startsWith('+') ? 'text-crypto-success' : 'text-red-500'}`}>
+                          {holding.pnl} ({holding.pnlPercent})
+                        </div>
+                      </div>
+                    </div>
+                  </SelectItem>
+                )) : [
+                  <SelectItem key="no-wallet" value="no-wallet" className="text-crypto-silver">
+                    Connect TAO wallet to view holdings
+                  </SelectItem>
+                ]}
+              </SelectContent>
+            </Select>
           </div>
           
           <div className="space-y-4">
@@ -522,183 +654,7 @@ export default function PortfolioSection() {
         </GlassCard>
       </div>
 
-      {/* All Time Performance Section for Small Holdings */}
-      <GlassCard className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-white flex items-center">
-            <Activity className="w-6 h-6 mr-3 text-crypto-silver" />
-            All Time Performance
-          </h2>
-          <div className="text-sm text-crypto-silver">Holdings under $5</div>
-        </div>
-        
-        <div className="space-y-4">
-          {/* Small BASE Holdings */}
-          {baseHoldings.filter(holding => {
-            const value = parseFloat(holding.amount) * parseFloat(holding.currentPrice);
-            return value < 5; // Only show holdings worth less than $5
-          }).map((holding, index) => (
-            <div key={`small-base-${holding.id}-${index}`} className="backdrop-blur-sm bg-white/5 rounded-xl border border-crypto-silver/10 p-4">
-              <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-center">
-                <div className="flex items-center">
-                  <div className="w-8 h-8 bg-blue-600 rounded-full mr-3 flex items-center justify-center text-xs font-bold">
-                    {holding.symbol.slice(0, 2)}
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-white text-sm">{holding.symbol}</h4>
-                    <p className="text-xs text-crypto-silver">BASE</p>
-                  </div>
-                </div>
-                
-                <div className="text-center">
-                  <div className="text-white text-sm">{parseFloat(holding.amount).toFixed(6)}</div>
-                  <div className="text-crypto-silver text-xs">Amount</div>
-                </div>
-                
-                <div className="text-center">
-                  <div className="text-white text-sm">${parseFloat(holding.entryPrice).toFixed(4)}</div>
-                  <div className="text-crypto-silver text-xs">Entry Price</div>
-                </div>
-                
-                <div className="text-center">
-                  <div className="text-white text-sm">${parseFloat(holding.currentPrice).toFixed(4)}</div>
-                  <div className="text-crypto-silver text-xs">Current Price</div>
-                </div>
-                
-                <div className="text-center">
-                  <div className="text-white text-sm">${(parseFloat(holding.amount) * parseFloat(holding.currentPrice)).toFixed(2)}</div>
-                  <div className="text-crypto-silver text-xs">Current Value</div>
-                </div>
-                
-                <div className="text-center">
-                  <div className={`text-sm font-medium ${parseFloat(holding.pnl) >= 0 ? 'text-crypto-success' : 'text-red-500'}`}>
-                    {parseFloat(holding.pnl) >= 0 ? '+' : ''}${holding.pnl}
-                  </div>
-                  <div className={`text-xs ${parseFloat(holding.pnlPercentage) >= 0 ? 'text-crypto-success' : 'text-red-500'}`}>
-                    ({parseFloat(holding.pnlPercentage) >= 0 ? '+' : ''}{holding.pnlPercentage}%)
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-          
-          {/* Small TAO Holdings */}
-          {taoHoldings.filter(holding => {
-            const value = parseFloat(holding.amount) * parseFloat(holding.currentPrice);
-            return value < 5; // Only show holdings worth less than $5
-          }).map((holding, index) => (
-            <div key={`small-tao-${holding.id}-${index}`} className="backdrop-blur-sm bg-white/5 rounded-xl border border-crypto-silver/10 p-4">
-              <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-center">
-                <div className="flex items-center">
-                  <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mr-3 flex items-center justify-center text-xs font-bold">
-                    Τ
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-white text-sm">{holding.symbol}</h4>
-                    <p className="text-xs text-crypto-silver">TAO</p>
-                  </div>
-                </div>
-                
-                <div className="text-center">
-                  <div className="text-white text-sm">{parseFloat(holding.amount).toFixed(6)}</div>
-                  <div className="text-crypto-silver text-xs">Amount</div>
-                </div>
-                
-                <div className="text-center">
-                  <div className="text-white text-sm">${parseFloat(holding.entryPrice).toFixed(4)}</div>
-                  <div className="text-crypto-silver text-xs">Entry Price</div>
-                </div>
-                
-                <div className="text-center">
-                  <div className="text-white text-sm">${parseFloat(holding.currentPrice).toFixed(4)}</div>
-                  <div className="text-crypto-silver text-xs">Current Price</div>
-                </div>
-                
-                <div className="text-center">
-                  <div className="text-white text-sm">${(parseFloat(holding.amount) * parseFloat(holding.currentPrice)).toFixed(2)}</div>
-                  <div className="text-crypto-silver text-xs">Current Value</div>
-                </div>
-                
-                <div className="text-center">
-                  <div className={`text-sm font-medium ${parseFloat(holding.pnl) >= 0 ? 'text-crypto-success' : 'text-red-500'}`}>
-                    {parseFloat(holding.pnl) >= 0 ? '+' : ''}${holding.pnl}
-                  </div>
-                  <div className={`text-xs ${parseFloat(holding.pnlPercentage) >= 0 ? 'text-crypto-success' : 'text-red-500'}`}>
-                    ({parseFloat(holding.pnlPercentage) >= 0 ? '+' : ''}{holding.pnlPercentage}%)
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-          
-          {/* Show message if no small holdings */}
-          {baseHoldings.filter(h => (parseFloat(h.amount) * parseFloat(h.currentPrice)) < 5).length === 0 && 
-           taoHoldings.filter(h => (parseFloat(h.amount) * parseFloat(h.currentPrice)) < 5).length === 0 && (
-            <div className="text-center py-8">
-              <div className="w-16 h-16 bg-crypto-silver/10 rounded-full mx-auto mb-4 flex items-center justify-center">
-                <Activity className="w-8 h-8 text-crypto-silver" />
-              </div>
-              <p className="text-crypto-silver">No holdings under $5 found</p>
-              <p className="text-crypto-silver text-sm mt-2">All your positions are above the $5 threshold</p>
-            </div>
-          )}
-        </div>
-      </GlassCard>
 
-      {/* Subnet Analytics Table */}
-      <GlassCard className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-white">Subnet Analytics</h2>
-          <div className="text-sm text-crypto-silver">Data from taostats.io</div>
-        </div>
-        
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b">
-                <th className="text-left py-3 text-crypto-silver text-sm font-medium">Subnet</th>
-                <th className="text-left py-3 text-crypto-silver text-sm font-medium">NetUID</th>
-                <th className="text-left py-3 text-crypto-silver text-sm font-medium">Validators</th>
-                <th className="text-left py-3 text-crypto-silver text-sm font-medium">Stake Weight</th>
-                <th className="text-left py-3 text-crypto-silver text-sm font-medium">Emissions</th>
-                <th className="text-left py-3 text-crypto-silver text-sm font-medium">24h PnL</th>
-                <th className="text-left py-3 text-crypto-silver text-sm font-medium">Market Cap</th>
-              </tr>
-            </thead>
-            <tbody>
-              {subnets?.map((subnet) => (
-                <tr key={subnet.id} className="border-b border-crypto-silver/10 hover:bg-white/5 transition-colors">
-                  <td className="py-4">
-                    <div className="flex items-center">
-                      <div className={`w-8 h-8 rounded-full mr-3 flex items-center justify-center text-xs font-bold ${
-                        subnet.netuid === 1 ? 'bg-gradient-to-r from-blue-500 to-purple-500' :
-                        subnet.netuid === 18 ? 'bg-gradient-to-r from-green-500 to-blue-500' :
-                        'bg-gradient-to-r from-purple-500 to-pink-500'
-                      }`}>
-                        {subnet.netuid}
-                      </div>
-                      <div>
-                        <div className="text-white font-medium">{subnet.name}</div>
-                        <div className="text-crypto-silver text-sm">{subnet.description}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="py-4 text-white">{subnet.netuid}</td>
-                  <td className="py-4 text-white">
-                    {subnet.netuid === 1 ? '64' : subnet.netuid === 18 ? '42' : '58'}
-                  </td>
-                  <td className="py-4 text-white">{subnet.stakeWeight}</td>
-                  <td className="py-4 text-crypto-success">+{subnet.emissions} TAO</td>
-                  <td className="py-4 text-crypto-success">+{subnet.pnl24h}%</td>
-                  <td className="py-4 text-crypto-silver">
-                    {subnet.netuid === 1 ? '12.4M' : subnet.netuid === 18 ? '8.7M' : '15.2M'}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </GlassCard>
 
       {/* Holding Detail Modal */}
       <HoldingDetailModal 
