@@ -77,7 +77,7 @@ export default function WhaleWatchingSection() {
           <TabsContent value="base">
             <div className="space-y-4">
               <div className="text-sm text-crypto-silver mb-4">
-                🔴 LIVE: Tracking altcoin whale purchases over $10,000 on BASE Network
+                🔴 LIVE: Tracking altcoin whale purchases over $2,500 from wallets holding $50k+
                 <br />Monitoring: SKI, TIG, GIZA, VIRTUAL, HIGHER, MFER, TOSHI, AERO, DEGEN
               </div>
               {freeTransactions && freeTransactions.length > 0 ? (
@@ -158,8 +158,11 @@ export default function WhaleWatchingSection() {
                     </div>
                     <div className="text-crypto-silver text-xs font-mono">
                       Staker: {tx.fromAddress.slice(0, 6)}...{tx.fromAddress.slice(-4)}
-                      {' → '}
-                      SN{tx.toAddress ? tx.toAddress.slice(-2) : '??'}
+                      {tx.toAddress && (
+                        <div className="text-orange-400 text-xs mt-1">
+                          → {tx.toAddress}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))

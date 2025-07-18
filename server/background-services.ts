@@ -68,7 +68,7 @@ class WhaleMonitoringService {
         const isAltcoin = !excludedTokens.includes(tx.token.toUpperCase());
         const isTaoStaking = tx.token === 'TAO' && tx.amountUsd >= 2500; // TAO staking over $2.5k (≈4.5+ TAO)
         
-        if ((tx.amountUsd >= 10000 && isAltcoin) || isTaoStaking) { // $10k+ altcoins or TAO staking
+        if ((tx.amountUsd >= 2500 && isAltcoin) || isTaoStaking) { // $2.5k+ altcoins or TAO staking
           const transaction: InsertWhaleTransaction = {
             network: tx.network,
             transactionHash: tx.hash,
@@ -227,7 +227,7 @@ class WhaleMonitoringService {
       // Generate realistic whale amounts for altcoins and TAO staking
       const baseAmount = token === 'TAO' ? 
         2500 + Math.random() * 97500 : // TAO: $2.5k-$100k (staking amounts)
-        10000 + Math.random() * 90000;   // Altcoins: $10k-$100k
+        2500 + Math.random() * 97500;   // Altcoins: $2.5k-$100k
       let amount: string;
 
       if (token === 'TAO') {
@@ -245,7 +245,7 @@ class WhaleMonitoringService {
       return [{
         hash: this.generateTxHash(),
         fromAddress: this.generateAddress(network),
-        toAddress: this.generateAddress(network),
+        toAddress: token === 'TAO' ? this.generateSubnetName() : this.generateAddress(network),
         tokenAddress: this.generateTokenAddress(token),
         amount,
         amountUsd: baseAmount,
@@ -273,6 +273,20 @@ class WhaleMonitoringService {
     return tokenAddresses[token as keyof typeof tokenAddresses] || '0x0000000000000000000000000000000000000000';
   }
 
+  private generateSubnetName(): string {
+    const subnets = [
+      'SN1 - Prompting', 'SN2 - Machine Translation', 'SN3 - Data Scraping', 'SN4 - Multi Modality',
+      'SN5 - Image Generation', 'SN6 - Compute', 'SN7 - Storage', 'SN8 - Time Series Prediction',
+      'SN9 - Pre-training', 'SN10 - Map Reduce', 'SN11 - Text Prompting', 'SN12 - Compute',
+      'SN13 - Data Universe', 'SN14 - LLM Defender', 'SN15 - Blockchain Insights', 'SN16 - Audio',
+      'SN17 - Three Gen', 'SN18 - Cortex.t', 'SN19 - Vision', 'SN20 - Bitagent',
+      'SN21 - FileTao', 'SN22 - Mining', 'SN23 - NicheImage', 'SN24 - Omega Labs',
+      'SN25 - Tensor', 'SN26 - Sturdy', 'SN27 - Compute Horde', 'SN28 - Foundry S&P',
+      'SN29 - Fractal', 'SN30 - Eden', 'SN31 - Wombo', 'SN32 - MyShell TTS'
+    ];
+    return subnets[Math.floor(Math.random() * subnets.length)];
+  }
+
   private simulateWhaleTransaction() {
     // Fallback simulation when APIs unavailable - focus on altcoins only
     if (Math.random() < 0.2) {
@@ -285,7 +299,7 @@ class WhaleMonitoringService {
       
       const baseAmount = token === 'TAO' ? 
         2500 + Math.random() * 47500 : // TAO staking amounts ($2.5k-$50k)
-        10000 + Math.random() * 50000;   // Altcoin purchases
+        2500 + Math.random() * 47500;   // Altcoin purchases ($2.5k-$50k)
       let amount: string;
 
       if (token === 'TAO') {
@@ -301,7 +315,7 @@ class WhaleMonitoringService {
         network,
         transactionHash: this.generateTxHash(),
         fromAddress: this.generateAddress(network),
-        toAddress: token === 'TAO' ? `SN${Math.floor(Math.random() * 32) + 1}` : (Math.random() > 0.3 ? this.generateAddress(network) : null),
+        toAddress: token === 'TAO' ? this.generateSubnetName() : (Math.random() > 0.3 ? this.generateAddress(network) : null),
         amount,
         amountUsd: baseAmount.toFixed(2),
         token

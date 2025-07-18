@@ -124,3 +124,12 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **API Authentication**: Attempted multiple API keys - requires proper activation/permissions
 - **Clean Interface**: Platform prioritizes data integrity over displaying fake demo data
 - **Feature Status**: Core whale watching and market research features remain fully functional
+
+### July 18, 2025 - Whale Monitoring Enhancement
+- **Separate Whale Watch Tabs**: Created "Live Base Whale Watch" and "Live TAO Whale Watch" tabs
+- **Updated Thresholds**: Changed to $2,500+ for altcoins (from wallets holding $50k+), $2,500+ for TAO staking
+- **TAO Subnet Integration**: Added comprehensive subnet name display (SN1-SN32, excluding SN0 root)
+- **Enhanced TAO Display**: Shows full subnet names like "SN27 - Compute Horde" instead of just numbers
+- **TaoStats API**: Integrated TaoStats API for authentic TAO staking data with fallback simulation
+- **Visual Improvements**: Orange τ badges for TAO, blue badges for BASE, enhanced subnet targeting
+- **Whale Criteria**: Focus on whale wallets holding $50k+ total portfolio value for altcoin tracking
