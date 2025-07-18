@@ -259,11 +259,11 @@ export default function AlphaSection() {
                     
                     <div className="flex items-center gap-4">
                       <div className="text-center">
-                        <div className="text-purple-400 text-sm font-medium">{(subnet.stakeWeight * 100).toFixed(1)}%</div>
+                        <div className="text-purple-400 text-sm font-medium">{typeof subnet.stakeWeight === 'number' ? (subnet.stakeWeight * 100).toFixed(1) : subnet.stakeWeight || '0.0'}%</div>
                         <div className="text-crypto-silver text-xs">Stake Weight</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-crypto-success text-sm font-medium">{subnet.emissions.toFixed(1)}</div>
+                        <div className="text-crypto-success text-sm font-medium">{typeof subnet.emissions === 'number' ? subnet.emissions.toFixed(1) : subnet.emissions || '0.0'}</div>
                         <div className="text-crypto-silver text-xs">Daily τ</div>
                       </div>
                     </div>
