@@ -19,6 +19,7 @@ import type { Holding, Subnet } from "@shared/schema";
 export default function PortfolioSection() {
   const { data: portfolio, isLoading } = usePortfolio(1);
   const [selectedTimeframe, setSelectedTimeframe] = useState('24h');
+  const [selectedWallet, setSelectedWallet] = useState('total'); // 'total', 'base', 'tao'
   const { data: portfolioHistory, isLoading: isHistoryLoading } = usePortfolioValueHistory(1, selectedTimeframe);
   const [selectedHolding, setSelectedHolding] = useState<Holding | null>(null);
   const [isEditingWallets, setIsEditingWallets] = useState(false);
@@ -138,9 +139,18 @@ export default function PortfolioSection() {
     
     return sampledHistory.map(item => {
       const date = new Date(item.timestamp!);
+      let value = parseFloat(item.totalValue);
+      
+      // Filter by wallet type
+      if (selectedWallet === 'base') {
+        value = parseFloat(portfolio?.baseHoldings || '0');
+      } else if (selectedWallet === 'tao') {
+        value = parseFloat(portfolio?.taoHoldings || '0');
+      }
+      
       return {
         time: formatTimeLabel(date),
-        value: parseFloat(item.totalValue),
+        value: value,
         fullDate: date.toLocaleString()
       };
     });
@@ -155,6 +165,12 @@ export default function PortfolioSection() {
     { value: '90d', label: '90 Days' },
     { value: 'ytd', label: 'Year to Date' },
     { value: 'all', label: 'All Time' }
+  ];
+
+  const walletOptions = [
+    { value: 'total', label: 'Total Portfolio', icon: '💼' },
+    { value: 'base', label: 'BASE Network', icon: 'B' },
+    { value: 'tao', label: 'Bittensor', icon: 'Τ' }
   ];
 
   if (isLoading) {
@@ -309,30 +325,6 @@ export default function PortfolioSection() {
 
         <GlassCard className="p-6 hover:shadow-2xl transition-all duration-300 cursor-pointer hover:scale-105">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-crypto-silver text-sm font-medium">24h PnL</h3>
-            <TrendingUp className="text-crypto-success h-5 w-5" />
-          </div>
-          <div className={`text-2xl font-bold mb-2 ${
-            hasWalletAddresses && portfolio.pnl24h && parseFloat(portfolio.pnl24h) >= 0 
-              ? 'text-crypto-success' 
-              : hasWalletAddresses ? 'text-red-500' : 'text-crypto-silver'
-          }`}>
-            {hasWalletAddresses ? 
-              `${portfolio.pnl24h && parseFloat(portfolio.pnl24h) >= 0 ? '+' : ''}$${portfolio.pnl24h}` :
-              '$0.00'
-            }
-          </div>
-          <div className="flex items-center text-sm">
-            <span className={hasWalletAddresses ? "text-crypto-success" : "text-crypto-silver"}>
-              {hasWalletAddresses ? "+1.47%" : "0%"}
-            </span>
-            <span className="text-crypto-silver ml-2">vs yesterday</span>
-          </div>
-        </GlassCard>
-
-        {/* 24h PnL (moved to replace the removed cards) */}
-        <GlassCard className="p-6 hover:shadow-2xl transition-all duration-300 cursor-pointer hover:scale-105">
-          <div className="flex items-center justify-between mb-4">
             <h3 className="text-crypto-silver text-sm font-medium">24h Performance</h3>
             <TrendingUp className="text-crypto-success h-5 w-5" />
           </div>
@@ -391,6 +383,21 @@ export default function PortfolioSection() {
             <BarChart3 className="text-crypto-success w-5 h-5" />
             <h3 className="text-white font-medium">Portfolio Value History</h3>
             <div className="ml-auto flex items-center gap-3">
+              <Select value={selectedWallet} onValueChange={setSelectedWallet}>
+                <SelectTrigger className="w-44 bg-white/5 border-crypto-silver/20 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-crypto-dark border-crypto-silver/20">
+                  {walletOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value} className="text-white hover:bg-white/10">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">{option.icon}</span>
+                        {option.label}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Select value={selectedTimeframe} onValueChange={setSelectedTimeframe}>
                 <SelectTrigger className="w-40 bg-white/5 border-crypto-silver/20 text-white">
                   <SelectValue />
@@ -458,7 +465,7 @@ export default function PortfolioSection() {
           </div>
           <div className="mt-2 text-xs text-crypto-silver text-center">
             {hasWalletAddresses ? 
-              `Real-time portfolio value tracking • ${timeframeOptions.find(opt => opt.value === selectedTimeframe)?.label} view • Updates every minute` : 
+              `Real-time ${walletOptions.find(opt => opt.value === selectedWallet)?.label.toLowerCase()} tracking • ${timeframeOptions.find(opt => opt.value === selectedTimeframe)?.label} view • Updates every minute` : 
               "Connect wallet addresses to see portfolio value history"
             }
           </div>

@@ -168,3 +168,11 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Interactive Holdings**: Click individual coins within network cards to view detailed PnL information
 - **$5+ Filtering**: Holdings breakdown only displays assets worth $5 or more for cleaner interface
 - **Network Branding**: Clear BASE (blue) and TAO (purple gradient) visual distinction with proper iconography
+
+### July 18, 2025 - Chart Filtering & Interface Cleanup
+- **Consolidated 24h Performance**: Removed duplicate 24h PnL cards, merged into single "24h Performance" display
+- **Wallet-Specific Chart Filtering**: Added wallet selector to portfolio value history chart
+- **Multi-Network View**: Chart can display Total Portfolio, BASE Network only, or Bittensor only
+- **Enhanced Chart Controls**: Dual selector interface with wallet type and timeframe options
+- **Dynamic Chart Labels**: Chart description updates based on selected wallet and timeframe
+- **Streamlined Interface**: Cleaner portfolio overview cards without redundant information
