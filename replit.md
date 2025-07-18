@@ -204,14 +204,15 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Clean Token Display**: Extract clean symbols from pool names for better user experience
 - **Authentic Market Data**: Platform now displays real market movements from GeckoTerminal's BASE network pools
 
-### July 18, 2025 - DexScreener Contract Address Fix & BRETT Exclusion
-- **Fixed DexScreener Links**: Corrected BASE top movers to use verified contract addresses from official sources
-- **Verified Contract Addresses**: BENJI (0xBC45647eA894030a4E9801Ec03479739FA2485F0), fBOMB (0x74ccbe53f77b08632ce0cb91d3a545bf6b8e0979), BASE (0xd07379a755a8f11b57610154861d694b2a0f615a), LINK (0x88Fb150BDc53A65fe94Dea0c9BA0a6dAf8C6e196)
+### July 18, 2025 - Dynamic Contract Address Integration & DexScreener Fix
+- **Dynamic Contract Extraction**: Implemented real-time contract address extraction from GeckoTerminal API included token data
+- **Authentic DexScreener Links**: All BASE top movers now use live contract addresses from API response, not static mappings
+- **Real-time Link Generation**: DexScreener URLs dynamically generated using `https://dexscreener.com/base/[CONTRACT_ADDRESS]` format
+- **Multi-source Address Resolution**: Fallback extraction from pool relationships, included token data, and pool ID parsing
+- **Live Data Integration**: Contract addresses update automatically with changing top movers every 60 seconds
 - **Removed AI Market Sentiment**: Eliminated AI sentiment section from dashboard, replaced with Network Activity summary
-- **Authentic Blockchain Links**: Added legitimate Basescan and TaoScan transaction links for whale activity monitoring
 - **BRETT Complete Exclusion**: Removed BRETT from all whale monitoring systems including token lists, price mappings, and address mappings
-- **Enhanced Link Authentication**: All whale transactions now link to proper blockchain explorers using real transaction hashes
-- **Official Chainlink Integration**: Used official Chainlink documentation for BASE network LINK token contract address
+- **Enhanced Blockchain Links**: All whale transactions link to proper blockchain explorers using real transaction hashes
 - **Network Activity Dashboard**: Real-time BASE token count and whale transaction metrics replacing AI sentiment display
 
 ### July 18, 2025 - Comprehensive Social Intelligence Enhancement  

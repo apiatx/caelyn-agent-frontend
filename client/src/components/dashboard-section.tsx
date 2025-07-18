@@ -154,27 +154,8 @@ export default function DashboardSection() {
               </div>
             ) : (
               topMovers?.filter(m => m.network === 'BASE').slice(0, 5).map((token, index) => {
-                // Map BASE tokens to their authentic verified contract addresses for DexScreener links
-                const tokenAddresses: { [key: string]: string } = {
-                  // Verified BASE token contract addresses from official sources
-                  'BENJI': '0xBC45647eA894030a4E9801Ec03479739FA2485F0',  // Basenji verified on BaseScan
-                  'fBOMB': '0x74ccbe53f77b08632ce0cb91d3a545bf6b8e0979',  // Fantom Bomb verified on BaseScan  
-                  'BASE': '0xd07379a755a8f11b57610154861d694b2a0f615a',   // BASE token verified on BaseScan
-                  'LINK': '0x88Fb150BDc53A65fe94Dea0c9BA0a6dAf8C6e196',   // Chainlink official BASE contract
-                  'SLAP': '0xf107edabf59ba696e38de62ad5327415bd4d4236',   // CatSlap (SLAP) verified contract (Ethereum)
-                  'Bonk': '0x1bfD67037B42Cf73acF2047067bd4F2C47D9BfD6',  // Bonk on BASE
-                  'SKI': '0x5364dc963c402aAF150700f38a8ef52C1D7D7F14',
-                  'TIG': '0x3A33473d7990a605a88ac72A78aD4EFC40a54ADB',
-                  'VIRTUAL': '0x0b3e328455c4059EEb9e3f84b5543F74E24e7E1e',
-                  'HIGHER': '0x0578d8A44db98B23BF096A382e016e29a5Ce0ffe',
-                  'MFER': '0xE3086852A4B125803C815a158249ae468A3254Ca',
-                  'TOSHI': '0xAC1Bd2486aAf3B5C0fc3Fd868558b082a531B2B4',
-                  'AERO': '0x940181a94A35A4569E4529A3CDfB74E38FD98631',
-                  'DEGEN': '0x4ed4E862860beD51a9570b96d89aF5E1B0Efefed',
-                  'BASED': '0xBa5E6fa2f33f3955f0cef50c63dCC84861eAb663'
-                };
-                // Use verified contract address if available, otherwise disable link
-                const contractAddress = tokenAddresses[token.symbol] || tokenAddresses[token.token];
+                // Use contract address from API response for real-time DexScreener links
+                const contractAddress = token.contractAddress;
                 const dexScreenerUrl = contractAddress ? `https://dexscreener.com/base/${contractAddress}` : null;
                 
                 return (

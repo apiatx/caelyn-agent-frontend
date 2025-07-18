@@ -8,6 +8,7 @@ export interface TopMover {
   volume24h: number;
   marketCap: number;
   network: 'BASE' | 'ETH';
+  contractAddress?: string; // Add contract address for DexScreener links
 }
 
 export interface WhaleTransaction {
@@ -69,10 +70,14 @@ class RealTimeDataService {
       console.log('📡 Fetching multiple BASE pool datasets from GeckoTerminal API...');
       
       let allPools: any[] = [];
+      let allIncluded: any[] = []; // Store included data (tokens) for contract address lookup
       for (const url of urls) {
         const data = await this.fetchWithCache(url, `geckoterminal-${Date.now()}-${Math.random()}`);
         if (data?.data) {
           allPools = allPools.concat(data.data);
+          if (data.included) {
+            allIncluded = allIncluded.concat(data.included);
+          }
         }
         await new Promise(resolve => setTimeout(resolve, 50)); // Rate limiting
       }
@@ -83,6 +88,8 @@ class RealTimeDataService {
       }
 
       console.log(`📊 Processing ${allPools.length} BASE pools from GeckoTerminal`);
+      
+      // Debug logging removed - contract address extraction working correctly
       
       // Filter for positive gainers with proper volume, excluding major pairs
       const basePools = allPools
@@ -166,6 +173,33 @@ class RealTimeDataService {
           tokenName = poolName;
         }
         
+        // Extract contract address from the pool data using included token information
+        let contractAddress = null;
+        
+        // Try to find contract address from the included token data
+        const baseTokenId = pool.relationships?.base_token?.data?.id;
+        if (baseTokenId && allIncluded) {
+          const baseTokenData = allIncluded.find((item: any) => 
+            item.type === 'token' && item.id === baseTokenId
+          );
+          if (baseTokenData?.attributes?.address) {
+            contractAddress = baseTokenData.attributes.address;
+          }
+        }
+        
+        // Fallback: try other extraction methods
+        if (!contractAddress) {
+          if (pool.attributes?.base_token_address) {
+            contractAddress = pool.attributes.base_token_address;
+          } else if (pool.id && pool.id.includes('_')) {
+            // GeckoTerminal pool IDs are often formatted as "network_contractaddress_pairaddress"
+            const poolIdParts = pool.id.split('_');
+            if (poolIdParts.length >= 2) {
+              contractAddress = poolIdParts[1]; // Second part is usually the base token contract
+            }
+          }
+        }
+        
         console.log(`🚀 TOP GAINER ${tokenName}: 24h gain: +${gain.toFixed(2)}%`);
         
         return {
@@ -175,7 +209,8 @@ class RealTimeDataService {
           change24h: gain,
           volume24h: volume24h,
           marketCap: marketCap,
-          network: 'BASE' as const
+          network: 'BASE' as const,
+          contractAddress: contractAddress
         };
       });
 

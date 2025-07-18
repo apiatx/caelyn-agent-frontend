@@ -8,6 +8,7 @@ export interface TopMover {
   volume24h: number;
   marketCap: number;
   network: 'BASE' | 'ETH';
+  contractAddress?: string;
 }
 
 export interface WhaleTransaction {
