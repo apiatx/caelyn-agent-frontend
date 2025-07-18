@@ -1,18 +1,13 @@
 import { useState } from "react";
-import { Crown, Lock, Activity, DollarSign, MessageCircle, TrendingUp, TrendingDown, BarChart3 } from "lucide-react";
+import { TrendingUp, MessageCircle, BarChart3, Filter } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { useWhaleWatching } from "@/hooks/use-whale-watching";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery } from "@tanstack/react-query";
-import { CryptoPaymentModal } from "@/components/crypto-payment-modal";
-
 
 export default function AlphaSection() {
-  const { data: hasAccess, premiumTransactions } = useWhaleWatching(1);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [selectedPaymentType, setSelectedPaymentType] = useState<'ETH' | 'TAO' | null>(null);
+  const [networkFilter, setNetworkFilter] = useState<'all' | 'base' | 'tao'>('all');
 
   // Fetch comprehensive mindshare data with X.com and swordscan integration
   const { data: mindshareProjects } = useQuery({
@@ -24,11 +19,6 @@ export default function AlphaSection() {
   const { data: subnets } = useQuery({
     queryKey: ['/api/subnets'],
   });
-
-  const handlePremiumPayment = (token: 'ETH' | 'TAO') => {
-    setSelectedPaymentType(token);
-    setShowPaymentModal(true);
-  };
 
   const formatNumber = (num: string | number, isUSD = false) => {
     const value = typeof num === 'string' ? parseFloat(num) : num;
@@ -52,293 +42,238 @@ export default function AlphaSection() {
     return "Bearish";
   };
 
+  // Filter mindshare data based on network selection
+  const filteredMindshareData = mindshareProjects?.filter((project: any) => {
+    if (networkFilter === 'all') return true;
+    if (networkFilter === 'base') return project.network === 'BASE';
+    if (networkFilter === 'tao') return project.network === 'TAO';
+    return true;
+  }) || [];
+
   return (
     <div className="space-y-8">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 bg-gradient-to-r from-crypto-warning to-yellow-400 rounded-xl flex items-center justify-center">
-          <Crown className="text-crypto-black text-xl" />
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-gradient-to-r from-crypto-warning to-yellow-400 rounded-xl flex items-center justify-center">
+            <TrendingUp className="text-crypto-black text-xl" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-white">Alpha Intelligence</h1>
+            <p className="text-crypto-silver">Market sentiment and social intelligence analysis</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-2xl font-bold text-white">Alpha Intelligence</h1>
-          <p className="text-crypto-silver">Premium whale monitoring and social sentiment tracking</p>
+        
+        {/* Network Filter */}
+        <div className="flex items-center gap-3">
+          <Filter className="w-4 h-4 text-crypto-silver" />
+          <Select value={networkFilter} onValueChange={(value: 'all' | 'base' | 'tao') => setNetworkFilter(value)}>
+            <SelectTrigger className="w-48 bg-white/5 backdrop-blur-sm border-crypto-silver/20 text-white">
+              <SelectValue placeholder="Select Network" />
+            </SelectTrigger>
+            <SelectContent className="bg-crypto-black/90 backdrop-blur-sm border-crypto-silver/20">
+              <SelectItem value="all" className="text-white hover:bg-white/10">All Networks (Base + TAO)</SelectItem>
+              <SelectItem value="base" className="text-white hover:bg-white/10">Base Network</SelectItem>
+              <SelectItem value="tao" className="text-white hover:bg-white/10">TAO Network</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
-      <Tabs defaultValue="whale-watch" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 bg-white/5 backdrop-blur-sm border border-crypto-silver/20">
+      <Tabs defaultValue="top-mentioned" className="w-full">
+        <TabsList className="grid w-full grid-cols-3 bg-white/5 backdrop-blur-sm border border-crypto-silver/20">
           <TabsTrigger 
-            value="whale-watch"
+            value="top-mentioned"
             className="data-[state=active]:bg-crypto-warning data-[state=active]:text-crypto-black text-crypto-silver"
           >
-            <Activity className="w-4 h-4 mr-2" />
-            Whale Watch
+            <BarChart3 className="w-4 h-4 mr-2" />
+            Top Mentioned
           </TabsTrigger>
           <TabsTrigger 
-            value="mindshare"
+            value="base-social"
             className="data-[state=active]:bg-crypto-warning data-[state=active]:text-crypto-black text-crypto-silver"
           >
             <MessageCircle className="w-4 h-4 mr-2" />
-            Mindshare
+            BASE Social Intelligence
+          </TabsTrigger>
+          <TabsTrigger 
+            value="tao-social"
+            className="data-[state=active]:bg-crypto-warning data-[state=active]:text-crypto-black text-crypto-silver"
+          >
+            <MessageCircle className="w-4 h-4 mr-2" />
+            TAO Social Intelligence
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="whale-watch" className="space-y-6">
-            <GlassCard className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-white">Live Whale Transactions</h2>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-crypto-success rounded-full animate-pulse"></div>
-                  <span className="text-crypto-success text-sm">Live</span>
-                </div>
+        {/* Top Mentioned Tokens/Subnets Chart */}
+        <TabsContent value="top-mentioned" className="space-y-6">
+          <GlassCard className="p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-white">Top Mentioned Tokens & Subnets</h2>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-crypto-success rounded-full animate-pulse"></div>
+                <span className="text-crypto-success text-sm">Live Social Data</span>
               </div>
-              
-              <div className="space-y-4">
-                {premiumTransactions?.map((tx) => (
-                  <div key={tx.id} className="backdrop-blur-sm bg-white/5 rounded-lg p-4 border border-crypto-silver/10">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-3 h-3 rounded-full ${tx.network === 'BASE' ? 'bg-blue-500' : 'bg-purple-500'}`}></div>
-                        <span className="text-white font-medium">{tx.network}</span>
-                        <Badge variant="outline" className="border-crypto-silver/30 text-crypto-silver">
-                          {tx.network === 'TAO' && tx.toAddress ? tx.toAddress : tx.token}
-                        </Badge>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-white font-semibold">{formatNumber(tx.amountUsd, true)}</div>
-                        <div className="text-crypto-silver text-sm">{tx.amount} {tx.token}</div>
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {filteredMindshareData?.slice(0, 10).map((project: any, index: number) => (
+                <div key={project.id} className="backdrop-blur-sm bg-white/5 rounded-lg p-4 border border-crypto-silver/10">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="text-lg font-bold text-crypto-warning">#{index + 1}</div>
+                      <div className={`w-3 h-3 rounded-full ${project.network === 'BASE' ? 'bg-blue-500' : 'bg-purple-500'}`}></div>
+                      <div>
+                        <div className="text-white font-semibold">{project.name}</div>
+                        <div className="text-crypto-silver text-sm">{project.ticker}</div>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="text-crypto-silver">
-                        {tx.fromAddress.slice(0, 8)}...{tx.fromAddress.slice(-6)}
+                    {project.trending && (
+                      <Badge className="bg-crypto-warning/20 text-crypto-warning border-crypto-warning/30">
+                        🔥 Trending
+                      </Badge>
+                    )}
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-4 mb-3">
+                    <div className="text-center">
+                      <div className="text-white font-semibold">{formatNumber(project.mentions)}</div>
+                      <div className="text-crypto-silver text-xs">Mentions</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-white font-semibold">{project.socialScore}%</div>
+                      <div className="text-crypto-silver text-xs">Social Score</div>
+                    </div>
+                    <div className="text-center">
+                      <div className={`font-semibold ${getSentimentColor(project.sentiment)}`}>
+                        {getSentimentBadge(project.sentiment)}
                       </div>
-                      <div className="text-crypto-silver">
-                        {new Date(tx.timestamp).toLocaleTimeString()}
+                      <div className="text-crypto-silver text-xs">Sentiment</div>
+                    </div>
+                  </div>
+                  
+                  {project.marketCap && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-crypto-silver">Market Cap:</span>
+                      <span className="text-white">{formatNumber(project.marketCap, true)}</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </GlassCard>
+        </TabsContent>
+
+        {/* BASE Network Social Intelligence */}
+        <TabsContent value="base-social" className="space-y-6">
+          <GlassCard className="p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-white">BASE Network Social Intelligence</h3>
+              <div className="text-sm text-crypto-silver">X.com + swordscan.com • Live feed</div>
+            </div>
+            
+            <div className="grid gap-4">
+              {mindshareProjects?.filter(p => p.network === 'BASE').map((project) => (
+                <div key={project.id} className="backdrop-blur-sm bg-white/5 rounded-lg p-4 border border-crypto-silver/10 hover:bg-white/10 transition-all">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold bg-gradient-to-r from-blue-500 to-purple-500">
+                        {project.symbol?.substring(0, 2) || project.ticker?.substring(0, 2)}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-white font-medium">{project.name}</span>
+                          <Badge variant="outline" className="border-blue-500/30 text-blue-400">
+                            {project.ticker}
+                          </Badge>
+                          {project.trending && (
+                            <Badge variant="outline" className="border-crypto-warning/30 text-crypto-warning">
+                              🔥 Trending
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="text-crypto-silver text-sm flex items-center gap-4">
+                          <span>X: {formatNumber(project.mentions || 0)} mentions</span>
+                          <span>•</span>
+                          <span>Mindshare: {project.trendingScore || 0}/100</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-4">
+                      <div className="text-center">
+                        <div className={`text-sm font-medium ${getSentimentColor(project.sentiment)}`}>
+                          {project.sentiment || 0}%
+                        </div>
+                        <div className="text-crypto-silver text-xs">Sentiment</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-crypto-warning text-sm font-medium">{project.socialScore || 0}/100</div>
+                        <div className="text-crypto-silver text-xs">Social Score</div>
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            </GlassCard>
+                  
+                  {project.marketCap && (
+                    <div className="flex justify-between text-sm pt-2 border-t border-crypto-silver/10">
+                      <span className="text-crypto-silver">Market Cap:</span>
+                      <span className="text-white">{formatNumber(project.marketCap, true)}</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </GlassCard>
         </TabsContent>
 
-        <TabsContent value="mindshare" className="space-y-6">
-          <Tabs defaultValue="base-mindshare" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 bg-white/5 backdrop-blur-sm border border-crypto-silver/20">
-              <TabsTrigger 
-                value="base-mindshare"
-                className="data-[state=active]:bg-blue-500 data-[state=active]:text-white text-crypto-silver"
-              >
-                BASE Network
-              </TabsTrigger>
-              <TabsTrigger 
-                value="tao-mindshare"
-                className="data-[state=active]:bg-purple-500 data-[state=active]:text-white text-crypto-silver"
-              >
-                TAO Subnets
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="base-mindshare" className="space-y-6">
-              <GlassCard className="p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-semibold text-white">BASE Network Social Intelligence</h3>
-                  <div className="text-sm text-crypto-silver">X.com + swordscan.com • Live feed</div>
-                </div>
-                
-                <div className="grid gap-4">
-                  {mindshareProjects?.filter(p => p.network === 'BASE').map((project) => (
-                    <div key={project.id} className="backdrop-blur-sm bg-white/5 rounded-lg p-4 border border-crypto-silver/10 hover:bg-white/10 transition-all">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold bg-gradient-to-r from-blue-500 to-purple-500">
-                            {project.symbol.substring(0, 2)}
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-white font-medium">{project.name}</span>
-                              <Badge variant="outline" className="border-blue-500/30 text-blue-400">
-                                ${project.symbol}
-                              </Badge>
-                              {project.swordscanTrending && (
-                                <Badge variant="outline" className="border-crypto-warning/30 text-crypto-warning">
-                                  🔥 Trending
-                                </Badge>
-                              )}
-                            </div>
-                            <div className="text-crypto-silver text-sm flex items-center gap-4">
-                              <span>X: {formatNumber(project.xMentions || 0)} mentions</span>
-                              <span>•</span>
-                              <span>Swordscan: {project.swordscanVolume || 0} vol</span>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center gap-4">
-                          <div className="text-center">
-                            <div className={`text-sm font-medium ${(project.xSentiment || 0) >= 80 ? 'text-crypto-success' : (project.xSentiment || 0) >= 60 ? 'text-crypto-warning' : 'text-red-500'}`}>
-                              {project.xSentiment || 0}%
-                            </div>
-                            <div className="text-crypto-silver text-xs">X Sentiment</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-purple-400 text-sm font-medium">{project.swordscanMindshare || 0}/100</div>
-                            <div className="text-crypto-silver text-xs">Mindshare</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-crypto-warning text-sm font-medium">{project.socialScore || 0}/100</div>
-                            <div className="text-crypto-silver text-xs">Social Score</div>
-                          </div>
-                        </div>
+        {/* TAO Network Social Intelligence */}
+        <TabsContent value="tao-social" className="space-y-6">
+          <GlassCard className="p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-white">TAO Subnet Social Intelligence</h3>
+              <div className="text-sm text-crypto-silver">TensorPulse + X.com • Live subnet tracking</div>
+            </div>
+            
+            <div className="grid gap-4">
+              {subnets?.slice(0, 10).map((subnet) => (
+                <div key={subnet.id} className="backdrop-blur-sm bg-white/5 rounded-lg p-4 border border-crypto-silver/10 hover:bg-white/10 transition-all">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold bg-gradient-to-r from-purple-500 to-pink-500">
+                        τ{subnet.netuid}
                       </div>
-                      
-                      {/* X.com Hashtag Tracking */}
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="text-crypto-silver text-xs">Tracking:</span>
-                        {project.xHashtags?.map((hashtag, index) => (
-                          <Badge key={index} variant="outline" className="border-blue-500/20 text-blue-400 text-xs">
-                            {hashtag}
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-white font-medium">{subnet.name}</span>
+                          <Badge variant="outline" className="border-purple-500/30 text-purple-400">
+                            SN{subnet.netuid}
                           </Badge>
-                        ))}
-                      </div>
-                      
-                      {project.marketCap && (
-                        <div className="flex items-center justify-between pt-3 border-t border-crypto-silver/10">
-                          <div className="flex items-center gap-6 text-sm">
-                            <div>
-                              <span className="text-crypto-silver">Market Cap: </span>
-                              <span className="text-white">{formatNumber(project.marketCap, true)}</span>
-                            </div>
-                            {project.dexVolume && (
-                              <div>
-                                <span className="text-crypto-silver">DEX Vol: </span>
-                                <span className="text-white">{formatNumber(project.dexVolume, true)}</span>
-                              </div>
-                            )}
-                            <div>
-                              <span className="text-crypto-silver">Momentum: </span>
-                              <span className={`${(project.momentumScore || 0) >= 70 ? 'text-crypto-success' : (project.momentumScore || 0) >= 40 ? 'text-crypto-warning' : 'text-red-500'}`}>
-                                {project.momentumScore || 0}/100
-                              </span>
-                            </div>
-                          </div>
+                          {subnet.netuid <= 5 && (
+                            <Badge variant="outline" className="border-crypto-warning/30 text-crypto-warning">
+                              🔥 Top Tier
+                            </Badge>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </GlassCard>
-            </TabsContent>
-
-            <TabsContent value="tao-mindshare" className="space-y-6">
-              {/* TAO Subnet Social Intelligence */}
-              <GlassCard className="p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-semibold text-white">TAO Subnet Social Intelligence</h3>
-                  <div className="text-sm text-crypto-silver">X.com + TensorPulse + swordscan.com</div>
-                </div>
-                
-                <div className="grid gap-4">
-                  {mindshareProjects?.filter(p => p.network === 'TAO').map((project) => (
-                    <div key={project.id} className="backdrop-blur-sm bg-white/5 rounded-lg p-4 border border-crypto-silver/10 hover:bg-white/10 transition-all">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold bg-gradient-to-r from-purple-500 to-pink-500">
-                            {project.symbol.replace('SN', '')}
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-white font-medium">{project.name}</span>
-                              <Badge variant="outline" className="border-purple-500/30 text-purple-400">
-                                {project.symbol}
-                              </Badge>
-                              {project.tensorpulseRanking && project.tensorpulseRanking <= 5 && (
-                                <Badge variant="outline" className="border-crypto-warning/30 text-crypto-warning">
-                                  ⭐ Top 5
-                                </Badge>
-                              )}
-                            </div>
-                            <div className="text-crypto-silver text-sm flex items-center gap-4">
-                              <span>X: {formatNumber(project.xMentions || 0)} mentions</span>
-                              <span>•</span>
-                              <span>Staking: {project.subnetStaking || 'N/A'}</span>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center gap-4">
-                          <div className="text-center">
-                            <div className={`text-sm font-medium ${(project.xSentiment || 0) >= 80 ? 'text-crypto-success' : (project.xSentiment || 0) >= 60 ? 'text-crypto-warning' : 'text-red-500'}`}>
-                              {project.xSentiment || 0}%
-                            </div>
-                            <div className="text-crypto-silver text-xs">X Sentiment</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-purple-400 text-sm font-medium">{project.tensorpulseMindshare || 0}/100</div>
-                            <div className="text-crypto-silver text-xs">TensorPulse</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-crypto-warning text-sm font-medium">#{project.tensorpulseRanking || 'N/A'}</div>
-                            <div className="text-crypto-silver text-xs">Ranking</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-blue-400 text-sm font-medium">{project.socialScore || 0}/100</div>
-                            <div className="text-crypto-silver text-xs">Social Score</div>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {/* Hashtag Tracking for TAO Subnets */}
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="text-crypto-silver text-xs">Tracking:</span>
-                        {project.xHashtags?.map((hashtag, index) => (
-                          <Badge key={index} variant="outline" className="border-purple-500/20 text-purple-400 text-xs">
-                            {hashtag}
-                          </Badge>
-                        ))}
-                      </div>
-                      
-                      {/* TAO-specific metrics */}
-                      <div className="flex items-center justify-between pt-3 border-t border-crypto-silver/10">
-                        <div className="flex items-center gap-6 text-sm">
-                          <div>
-                            <span className="text-crypto-silver">Swordscan Vol: </span>
-                            <span className="text-white">{project.swordscanVolume || 0}</span>
-                          </div>
-                          <div>
-                            <span className="text-crypto-silver">Momentum: </span>
-                            <span className={`${(project.momentumScore || 0) >= 70 ? 'text-crypto-success' : (project.momentumScore || 0) >= 40 ? 'text-crypto-warning' : 'text-red-500'}`}>
-                              {project.momentumScore || 0}/100
-                            </span>
-                          </div>
-                          <div>
-                            <span className="text-crypto-silver">Mindshare Trend: </span>
-                            <span className={`${project.swordscanTrending ? 'text-crypto-success' : 'text-crypto-silver'}`}>
-                              {project.swordscanTrending ? '📈 Rising' : '➡️ Stable'}
-                            </span>
-                          </div>
-                        </div>
+                        <div className="text-crypto-silver text-sm">{subnet.description}</div>
                       </div>
                     </div>
-                  ))}
+                    
+                    <div className="flex items-center gap-4">
+                      <div className="text-center">
+                        <div className="text-purple-400 text-sm font-medium">{(subnet.stakeWeight * 100).toFixed(1)}%</div>
+                        <div className="text-crypto-silver text-xs">Stake Weight</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-crypto-success text-sm font-medium">{subnet.emissions.toFixed(1)}</div>
+                        <div className="text-crypto-silver text-xs">Daily τ</div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </GlassCard>
-
-
-            </TabsContent>
-          </Tabs>
+              ))}
+            </div>
+          </GlassCard>
         </TabsContent>
       </Tabs>
-
-
-
-      <CryptoPaymentModal
-        isOpen={showPaymentModal}
-        onClose={() => setShowPaymentModal(false)}
-        paymentType={selectedPaymentType}
-        amount={selectedPaymentType === 'ETH' ? '0.1' : '1'}
-        feature="whale_watching"
-      />
     </div>
   );
 }

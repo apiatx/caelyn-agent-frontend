@@ -1,13 +1,14 @@
 import { useState } from "react";
-import { ChartLine, Settings, Activity } from "lucide-react";
+import { ChartLine, Settings, Activity, Eye, TrendingUp, BarChart3 } from "lucide-react";
 import DashboardSection from "@/components/dashboard-section";
 import PortfolioSection from "@/components/portfolio-section";
 import AlphaSection from "@/components/alpha-section";
+import WhaleWatchingSection from "@/components/whale-watching-section";
 import MarketResearchSection from "@/components/market-research-section";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 
-type TabType = "dashboard" | "portfolio" | "whale" | "research";
+type TabType = "dashboard" | "portfolio" | "alpha" | "whale" | "research";
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<TabType>("dashboard");
@@ -64,6 +65,16 @@ export default function Dashboard() {
               <i className="fas fa-wallet mr-2"></i>Portfolio Tracker
             </button>
             <button
+              onClick={() => setActiveTab("alpha")}
+              className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
+                activeTab === "alpha"
+                  ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                  : "hover:bg-white/5 text-crypto-silver"
+              }`}
+            >
+              <TrendingUp className="w-4 h-4 mr-2 inline" />Alpha
+            </button>
+            <button
               onClick={() => setActiveTab("whale")}
               className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
                 activeTab === "whale"
@@ -71,7 +82,7 @@ export default function Dashboard() {
                   : "hover:bg-white/5 text-crypto-silver"
               }`}
             >
-              <i className="fas fa-search-dollar mr-2"></i>Alpha
+              <Eye className="w-4 h-4 mr-2 inline" />Whale Watch
             </button>
             <button
               onClick={() => setActiveTab("research")}
@@ -81,7 +92,7 @@ export default function Dashboard() {
                   : "hover:bg-white/5 text-crypto-silver"
               }`}
             >
-              <i className="fas fa-chart-bar mr-2"></i>Market Research
+              <BarChart3 className="w-4 h-4 mr-2 inline" />Research
             </button>
           </div>
         </GlassCard>
@@ -91,7 +102,8 @@ export default function Dashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
         {activeTab === "dashboard" && <DashboardSection />}
         {activeTab === "portfolio" && <PortfolioSection />}
-        {activeTab === "whale" && <AlphaSection />}
+        {activeTab === "alpha" && <AlphaSection />}
+        {activeTab === "whale" && <WhaleWatchingSection />}
         {activeTab === "research" && <MarketResearchSection />}
       </div>
     </div>
