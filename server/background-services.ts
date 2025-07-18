@@ -77,7 +77,8 @@ class WhaleMonitoringService {
             toAddress: tx.toAddress || null,
             amount: tx.amount,
             amountUsd: tx.amountUsd.toFixed(2),
-            token: tx.token
+            token: tx.token,
+            action: (tx as any).action || (tx.network === 'TAO' ? 'STAKE' : 'BUY')
           };
 
           try {
@@ -287,7 +288,8 @@ class WhaleMonitoringService {
         dex,
         network,
         token,
-        type: transactionType // Add transaction type for better tracking
+        type: transactionType, // Add transaction type for better tracking
+        action: transactionType // Also add as action field for frontend use
       }];
     }
     return [];

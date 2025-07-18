@@ -63,6 +63,7 @@ export const whaleTransactions = pgTable("whale_transactions", {
   amount: decimal("amount", { precision: 18, scale: 8 }).notNull(),
   amountUsd: decimal("amount_usd", { precision: 18, scale: 8 }).notNull(),
   token: text("token").notNull(),
+  action: text("action"), // BUY, SELL, STAKE
   timestamp: timestamp("timestamp").defaultNow(),
 });
 

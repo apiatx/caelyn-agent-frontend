@@ -227,6 +227,7 @@ export class MemStorage implements IStorage {
         amount: "20.5",
         amountUsd: "47823.45",
         token: "ETH",
+        action: "BUY",
         timestamp: new Date(Date.now() - 120000), // 2 minutes ago
       },
       {
@@ -238,6 +239,7 @@ export class MemStorage implements IStorage {
         amount: "161.2",
         amountUsd: "89156.78",
         token: "TAO",
+        action: "STAKE",
         timestamp: new Date(Date.now() - 480000), // 8 minutes ago
       },
       {
@@ -249,6 +251,7 @@ export class MemStorage implements IStorage {
         amount: "8.7",
         amountUsd: "20234.67",
         token: "ETH",
+        action: "SELL",
         timestamp: new Date(Date.now() - 900000), // 15 minutes ago
       }
     ];

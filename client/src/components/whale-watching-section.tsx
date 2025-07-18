@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Crown, Lock, Activity, DollarSign } from "lucide-react";
+import { Crown, Lock, Activity, DollarSign, ExternalLink, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { useWhaleWatching } from "@/hooks/use-whale-watching";
 import { CryptoPaymentModal } from "@/components/crypto-payment-modal";
 
@@ -14,6 +15,20 @@ export default function WhaleWatchingSection() {
   const handlePremiumPayment = (token: 'ETH' | 'TAO') => {
     setSelectedPaymentType(token);
     setShowPaymentModal(true);
+  };
+
+  const getExplorerUrl = (network: string, txHash: string) => {
+    if (network === 'BASE') {
+      return `https://basescan.org/tx/${txHash}`;
+    } else if (network === 'TAO') {
+      return `https://taostats.io/tx/${txHash}`;
+    }
+    return '#';
+  };
+
+  const getTransactionType = (tx: any) => {
+    // Use the action field from the transaction if available, otherwise default to BUY
+    return tx.action || (tx.network === 'TAO' ? 'STAKE' : 'BUY');
   };
 
   return (
@@ -77,43 +92,73 @@ export default function WhaleWatchingSection() {
           <TabsContent value="base">
             <div className="space-y-4">
               <div className="text-sm text-crypto-silver mb-4">
-                🔴 LIVE: Tracking altcoin whale purchases over $2,500 from wallets holding $50k+
-                <br />Monitoring: SKI, TIG, GIZA, VIRTUAL, HIGHER, MFER, TOSHI, AERO, DEGEN
+                🔴 LIVE: Tracking ALL BASE altcoin whale transactions over $2,500
+                <br />Monitoring: 47+ tokens including SKI, BRETT, NORMIE, AI16Z, PEPE, BONK, WIF, GOAT
               </div>
               {freeTransactions && freeTransactions.length > 0 ? (
                 freeTransactions
                   .filter(tx => tx.network === 'BASE')
                   .slice(0, 10)
-                  .map((tx, index) => (
-                  <div key={tx.id || index} className="backdrop-blur-sm bg-white/5 rounded-xl border border-crypto-silver/10 p-4 hover:bg-white/10 transition-all duration-200">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center">
-                        <div className="w-8 h-8 bg-blue-500 rounded-full mr-3 flex items-center justify-center text-xs font-bold">
-                          B
+                  .map((tx, index) => {
+                    const transactionType = getTransactionType(tx);
+                    const usdAmount = parseFloat(tx.amountUsd);
+                    return (
+                      <div key={tx.id || index} className="backdrop-blur-sm bg-white/5 rounded-xl border border-crypto-silver/10 p-5 hover:bg-white/10 transition-all duration-200">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-sm font-bold text-white">
+                              {tx.token.substring(0, 2)}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2 mb-1">
+                                <Badge 
+                                  variant={transactionType === 'BUY' ? 'default' : 'destructive'}
+                                  className={`${transactionType === 'BUY' ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'} text-white font-medium`}
+                                >
+                                  {transactionType === 'BUY' ? (
+                                    <><ArrowUpRight className="w-3 h-3 mr-1" /> BUY</>
+                                  ) : (
+                                    <><ArrowDownRight className="w-3 h-3 mr-1" /> SELL</>
+                                  )}
+                                </Badge>
+                                <h3 className="font-medium text-white">
+                                  {parseFloat(tx.amount).toLocaleString()} ${tx.token}
+                                </h3>
+                              </div>
+                              <p className="text-crypto-silver text-sm">
+                                BASE Network • {new Date(tx.timestamp).toLocaleTimeString()}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-2xl font-bold text-crypto-success mb-1">
+                              ${usdAmount.toLocaleString('en-US', { 
+                                minimumFractionDigits: 2, 
+                                maximumFractionDigits: 2 
+                              })}
+                            </div>
+                            <a 
+                              href={getExplorerUrl(tx.network, tx.transactionHash)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300 text-sm transition-colors"
+                            >
+                              View on Basescan <ExternalLink className="w-3 h-3" />
+                            </a>
+                          </div>
                         </div>
-                        <div>
-                          <h3 className="font-medium text-white">
-                            {tx.amount} ${tx.token}
-                          </h3>
-                          <p className="text-crypto-silver text-sm">
-                            BASE Network • ${parseFloat(tx.amountUsd).toLocaleString()}
-                          </p>
+                        <div className="flex items-center justify-between text-crypto-silver text-xs font-mono bg-black/20 rounded-lg p-3">
+                          <div>
+                            <span className="text-crypto-silver/70">From:</span> {tx.fromAddress.slice(0, 8)}...{tx.fromAddress.slice(-6)}
+                          </div>
+                          <div className="text-crypto-silver/50">→</div>
+                          <div>
+                            <span className="text-crypto-silver/70">To:</span> {tx.toAddress?.slice(0, 8)}...{tx.toAddress?.slice(-6)}
+                          </div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="text-crypto-success font-semibold">${parseFloat(tx.amountUsd).toLocaleString()}</div>
-                        <div className="text-crypto-silver text-xs">
-                          {new Date(tx.timestamp).toLocaleTimeString()}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-crypto-silver text-xs font-mono">
-                      From: {tx.fromAddress.slice(0, 6)}...{tx.fromAddress.slice(-4)}
-                      {' → '}
-                      To: {tx.toAddress.slice(0, 6)}...{tx.toAddress.slice(-4)}
-                    </div>
-                  </div>
-                ))
+                    );
+                  })
               ) : (
                 <div className="text-center py-8">
                   <Activity className="w-12 h-12 text-crypto-silver mx-auto mb-4" />
@@ -127,45 +172,67 @@ export default function WhaleWatchingSection() {
             <div className="space-y-4">
               <div className="text-sm text-crypto-silver mb-4">
                 🔴 LIVE: Monitoring TAO subnet staking events over $2,500
-                <br />Tracking whale stakes across all Bittensor subnets (SN1-SN32+)
+                <br />Tracking ALL Bittensor subnet whale stakes (SN1-SN32+)
               </div>
               {freeTransactions && freeTransactions.length > 0 ? (
                 freeTransactions
                   .filter(tx => tx.network === 'TAO')
                   .slice(0, 10)
-                  .map((tx, index) => (
-                  <div key={tx.id || index} className="backdrop-blur-sm bg-white/5 rounded-xl border border-orange-500/20 p-4 hover:bg-white/10 transition-all duration-200">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center">
-                        <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-orange-600 rounded-full mr-3 flex items-center justify-center text-xs font-bold">
-                          τ
+                  .map((tx, index) => {
+                    const usdAmount = parseFloat(tx.amountUsd);
+                    return (
+                      <div key={tx.id || index} className="backdrop-blur-sm bg-white/5 rounded-xl border border-orange-500/20 p-5 hover:bg-white/10 transition-all duration-200">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-orange-600 rounded-full flex items-center justify-center text-sm font-bold text-white">
+                              τ
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2 mb-1">
+                                <Badge 
+                                  variant="default"
+                                  className="bg-orange-500 hover:bg-orange-600 text-white font-medium"
+                                >
+                                  <ArrowUpRight className="w-3 h-3 mr-1" /> STAKE
+                                </Badge>
+                                <h3 className="font-medium text-white">
+                                  {parseFloat(tx.amount).toLocaleString()} TAO
+                                </h3>
+                              </div>
+                              <p className="text-crypto-silver text-sm">
+                                TAO Subnet • {new Date(tx.timestamp).toLocaleTimeString()}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-2xl font-bold text-orange-400 mb-1">
+                              ${usdAmount.toLocaleString('en-US', { 
+                                minimumFractionDigits: 2, 
+                                maximumFractionDigits: 2 
+                              })}
+                            </div>
+                            <a 
+                              href={getExplorerUrl(tx.network, tx.transactionHash)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-orange-400 hover:text-orange-300 text-sm transition-colors"
+                            >
+                              View on TaoStats <ExternalLink className="w-3 h-3" />
+                            </a>
+                          </div>
                         </div>
-                        <div>
-                          <h3 className="font-medium text-white">
-                            {tx.amount} TAO
-                          </h3>
-                          <p className="text-crypto-silver text-sm">
-                            Subnet Stake • ${parseFloat(tx.amountUsd).toLocaleString()}
-                          </p>
+                        <div className="flex items-center justify-between text-crypto-silver text-xs font-mono bg-black/20 rounded-lg p-3">
+                          <div>
+                            <span className="text-crypto-silver/70">Staker:</span> {tx.fromAddress.slice(0, 8)}...{tx.fromAddress.slice(-6)}
+                          </div>
+                          <div className="text-crypto-silver/50">→</div>
+                          <div>
+                            <span className="text-orange-400 font-medium">{tx.toAddress}</span>
+                          </div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="text-orange-400 font-semibold">${parseFloat(tx.amountUsd).toLocaleString()}</div>
-                        <div className="text-crypto-silver text-xs">
-                          {new Date(tx.timestamp).toLocaleTimeString()}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-crypto-silver text-xs font-mono">
-                      Staker: {tx.fromAddress.slice(0, 6)}...{tx.fromAddress.slice(-4)}
-                      {tx.toAddress && (
-                        <div className="text-orange-400 text-xs mt-1">
-                          → {tx.toAddress}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))
+                    );
+                  })
               ) : (
                 <div className="text-center py-8">
                   <Activity className="w-12 h-12 text-crypto-silver mx-auto mb-4" />
