@@ -153,14 +153,31 @@ export default function DashboardSection() {
                 <p className="text-crypto-silver text-sm">Loading live movers...</p>
               </div>
             ) : (
-              topMovers?.filter(m => m.network === 'BASE').slice(0, 5).map((token, index) => (
-                <a 
-                  key={`${token.symbol}-${index}`} 
-                  href={`https://dexscreener.com/base/${token.symbol}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer group"
-                >
+              topMovers?.filter(m => m.network === 'BASE').slice(0, 5).map((token, index) => {
+                // Map common BASE tokens to their contract addresses for DexScreener links
+                const tokenAddresses: { [key: string]: string } = {
+                  'SKI': '0x5364dc963c402aAF150700f38a8ef52C1D7D7F14',
+                  'TIG': '0x3A33473d7990a605a88ac72A78aD4EFC40a54ADB',
+                  'VIRTUAL': '0x0b3e328455c4059EEb9e3f84b5543F74E24e7E1e',
+                  'HIGHER': '0x0578d8A44db98B23BF096A382e016e29a5Ce0ffe',
+                  'MFER': '0xE3086852A4B125803C815a158249ae468A3254Ca',
+                  'TOSHI': '0xAC1Bd2486aAf3B5C0fc3Fd868558b082a531B2B4',
+                  'AERO': '0x940181a94A35A4569E4529A3CDfB74E38FD98631',
+                  'DEGEN': '0x4ed4E862860beD51a9570b96d89aF5E1B0Efefed',
+                  'BRETT': '0x532f27101965dd16442E59d40670FaF5eBB142E4',
+                  'BASED': '0xBa5E6fa2f33f3955f0cef50c63dCC84861eAb663'
+                };
+                const contractAddress = tokenAddresses[token.symbol] || token.symbol.toLowerCase();
+                const dexScreenerUrl = `https://dexscreener.com/base/${contractAddress}`;
+                
+                return (
+                  <a 
+                    key={`${token.symbol}-${index}`} 
+                    href={dexScreenerUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer group"
+                  >
                   <div className="flex items-center gap-3">
                     <div className="text-sm font-semibold text-crypto-silver">
                       #{index + 1}
@@ -178,65 +195,52 @@ export default function DashboardSection() {
                       {token.change24h >= 0 ? '+' : ''}{token.change24h.toFixed(2)}%
                     </div>
                   </div>
-                </a>
-              ))
+                  </a>
+                );
+              })
             )}
           </div>
         </GlassCard>
 
-        {/* AI Market Sentiment Analysis */}
+        {/* Network Activity Summary */}
         <GlassCard className="p-6">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-white flex items-center">
-              <Brain className="w-4 h-4 mr-2" />
-              AI Market Sentiment
+              <TrendingUp className="w-4 h-4 mr-2" />
+              Network Activity
             </h3>
-            <Badge className="bg-gradient-to-r from-pink-500/20 to-purple-500/20 text-pink-400 border-pink-500/30">
-              AI POWERED
+            <Badge className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-400 border-blue-500/30">
+              LIVE DATA
             </Badge>
           </div>
           <div className="space-y-4">
-            {loadingAnalysis ? (
-              <div className="text-center py-4">
-                <Brain className="w-6 h-6 text-crypto-silver mx-auto mb-2 animate-spin" />
-                <p className="text-crypto-silver text-sm">AI analyzing market...</p>
-              </div>
-            ) : marketAnalysis?.aiAnalysis ? (
-              <>
-                <div className="p-3 bg-white/5 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-crypto-silver">Overall Sentiment</span>
-                    <Badge 
-                      className={`${
-                        marketAnalysis.aiAnalysis.sentiment.overall === 'bullish' 
-                          ? 'bg-green-500/20 text-green-400 border-green-500/30' 
-                          : marketAnalysis.aiAnalysis.sentiment.overall === 'bearish' 
-                          ? 'bg-red-500/20 text-red-400 border-red-500/30' 
-                          : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
-                      }`}
-                    >
-                      {marketAnalysis.aiAnalysis.sentiment.overall.toUpperCase()}
-                    </Badge>
-                  </div>
-                  <div className="text-sm text-white mb-2">
-                    Confidence: {Math.round(marketAnalysis.aiAnalysis.sentiment.confidence * 100)}%
-                  </div>
-                  <p className="text-xs text-crypto-silver">{marketAnalysis.aiAnalysis.sentiment.analysis}</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-3 bg-white/5 rounded-lg">
+                <div className="text-sm text-crypto-silver mb-1">BASE Network</div>
+                <div className="text-lg font-semibold text-blue-400">
+                  {topMovers?.filter(m => m.network === 'BASE').length || 0} Tokens
                 </div>
-                <div className="space-y-2">
-                  <span className="text-sm text-crypto-silver">Key Signals:</span>
-                  {marketAnalysis.aiAnalysis.sentiment.signals.map((signal, i) => (
-                    <div key={i} className="text-xs text-white bg-black/20 rounded px-2 py-1">
-                      • {signal}
-                    </div>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <div className="text-center py-4">
-                <p className="text-crypto-silver text-sm">AI analysis loading...</p>
+                <div className="text-xs text-crypto-silver">Active today</div>
               </div>
-            )}
+              <div className="p-3 bg-white/5 rounded-lg">
+                <div className="text-sm text-crypto-silver mb-1">Whale Activity</div>
+                <div className="text-lg font-semibold text-orange-400">
+                  {whaleActivity?.length || 0} Transactions
+                </div>
+                <div className="text-xs text-crypto-silver">Last 24h</div>
+              </div>
+            </div>
+            <div className="p-3 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-lg border border-blue-500/20">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-white">Market Status</span>
+                <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                  ACTIVE
+                </Badge>
+              </div>
+              <div className="text-xs text-crypto-silver mt-1">
+                Real-time data from BASE network and TAO ecosystem
+              </div>
+            </div>
           </div>
         </GlassCard>
       </div>
@@ -267,7 +271,7 @@ export default function DashboardSection() {
               whaleActivity?.slice(0, 4).map((activity, index) => (
                 <a 
                   key={activity.id} 
-                  href={activity.network === 'BASE' ? `https://basescan.org/tx/${activity.txHash}` : `https://taoscan.org/transaction/${activity.txHash}`}
+                  href={activity.network === 'BASE' ? `https://basescan.org/tx/${activity.transactionHash}` : `https://www.taoscan.org/extrinsic/${activity.transactionHash}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-between p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer group"

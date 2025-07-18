@@ -227,9 +227,9 @@ class WhaleMonitoringService {
       // Comprehensive BASE altcoin tracking (ALL BASE tokens) or TAO staking
       const tokens = network === 'BASE' ? 
         [
-          // Core BASE ecosystem tokens only (NO Solana)
+          // Core BASE ecosystem tokens only (NO Solana, NO BRETT)
           'SKI', 'TIG', 'VIRTUAL', 'HIGHER', 'MFER', 'TOSHI', 'AERO', 'DEGEN',
-          'KEYCAT', 'BRETT', 'NORMIE', 'BASEDOG', 'BASED', 'BASEDAI', 'ONCHAIN',
+          'KEYCAT', 'NORMIE', 'BASEDOG', 'BASED', 'BASEDAI', 'ONCHAIN',
           // BASE DeFi tokens
           'BENJI', 'PUMP', 'MOONWELL', 'SEAMLESS', 'EXTRA', 'PRIME', 'ROCK', 'BLUE', 'BALD',
           // BASE native memecoins (NOT Solana versions)
@@ -254,10 +254,10 @@ class WhaleMonitoringService {
       } else {
         // Comprehensive altcoin price mapping for realistic whale amounts
         const tokenPrices: { [key: string]: number } = {
-          // Established BASE tokens
+          // Established BASE tokens (BRETT excluded)
           'SKI': 0.156, 'TIG': 2.34, 'GIZA': 0.89, 'VIRTUAL': 12.45, 'HIGHER': 0.67,
           'MFER': 0.023, 'TOSHI': 0.000234, 'AERO': 1.89, 'DEGEN': 0.0156,
-          'KEYCAT': 0.045, 'BRETT': 0.089, 'NORMIE': 0.034, 'BASEDOG': 0.012,
+          'KEYCAT': 0.045, 'NORMIE': 0.034, 'BASEDOG': 0.012,
           // DeFi tokens on BASE
           'BASED': 1.23, 'BASEDAI': 0.567, 'ONCHAIN': 0.234, 'BENJI': 0.078,
           'PUMP': 0.456, 'MOONWELL': 0.123, 'SEAMLESS': 0.789, 'EXTRA': 0.345,
@@ -314,7 +314,7 @@ class WhaleMonitoringService {
       'TAO': '0x77E06c9eCCf2E797fd462A92B6D7642EF85b0A44',
       // Additional BASE ecosystem tokens (realistic contract addresses)
       'KEYCAT': '0x1A2B3C4D5E6F789012345678901234567890ABCD',
-      'BRETT': '0x2B3C4D5E6F789012345678901234567890ABCDEF',
+
       'NORMIE': '0x3C4D5E6F789012345678901234567890ABCDEF12',
       'BASEDOG': '0x4D5E6F789012345678901234567890ABCDEF1234',
       'BASED': '0x5E6F789012345678901234567890ABCDEF123456',
@@ -371,7 +371,7 @@ class WhaleMonitoringService {
       const tokens = network === 'BASE' ? 
         [
           'SKI', 'TIG', 'GIZA', 'VIRTUAL', 'HIGHER', 'MFER', 'TOSHI', 'AERO', 'DEGEN',
-          'KEYCAT', 'BRETT', 'NORMIE', 'BASEDOG', 'BASED', 'BASEDAI', 'ONCHAIN',
+          'KEYCAT', 'NORMIE', 'BASEDOG', 'BASED', 'BASEDAI', 'ONCHAIN',
           'BENJI', 'PUMP', 'MOONWELL', 'SEAMLESS', 'EXTRA', 'PRIME', 'ROCK',
           'BLUE', 'BALD', 'TAB', 'DUCKY', 'JESUS', 'USA', 'MOCHI', 'WOJAK',
           'SHIBA', 'FLOKI', 'PEPE', 'DOGE', 'APU', 'BONK', 'WIF', 'POPCAT',
@@ -392,7 +392,7 @@ class WhaleMonitoringService {
         const tokenPrices: { [key: string]: number } = {
           'SKI': 0.156, 'TIG': 2.34, 'GIZA': 0.89, 'VIRTUAL': 12.45, 'HIGHER': 0.67,
           'MFER': 0.023, 'TOSHI': 0.000234, 'AERO': 1.89, 'DEGEN': 0.0156,
-          'KEYCAT': 0.045, 'BRETT': 0.089, 'NORMIE': 0.034, 'BASEDOG': 0.012,
+          'KEYCAT': 0.045, 'NORMIE': 0.034, 'BASEDOG': 0.012,
           'BASED': 1.23, 'BASEDAI': 0.567, 'ONCHAIN': 0.234, 'BENJI': 0.078
         };
         const price = tokenPrices[token] || (Math.random() * 5 + 0.001);
