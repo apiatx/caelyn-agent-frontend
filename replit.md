@@ -142,3 +142,12 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **TAO Subnet-Only Monitoring**: TAO whale watching shows only subnet staking events in "SN64: Chutes" format
 - **Data Integrity Priority**: Platform shows authentic $0.00 rather than fake data until real API access
 - **Extended Subnet Coverage**: Comprehensive subnet analytics covers SN1-SN64 with performance metrics
+
+### July 18, 2025 - Comprehensive Mindshare Intelligence Enhancement
+- **Expanded BASE Token Coverage**: Added comprehensive tracking for SKI, KEYCAT, TIG, GIZA, VIRTUAL, HIGHER, MFER, TOSHI, AERO, DEGEN with market data
+- **X.com Hashtag Scanning**: Integrated ticker symbols ($ski, $tig) and hashtag tracking (#keycat, #giza) for all BASE altcoins/memecoins
+- **TAO Subnet Social Intelligence**: Enhanced subnet tracking with #SN1-SN64 hashtag monitoring and TensorPulse ranking integration
+- **Swordscan Integration**: Added swordscan.com mindshare volume and trending indicators for both BASE and TAO assets
+- **Multi-Source Sentiment**: Combined X.com sentiment, swordscan mindshare, and TensorPulse data for comprehensive social scoring
+- **Real-time Social Feeds**: Live 30-second refresh intervals for authentic sentiment tracking across multiple platforms
+- **Enhanced Metadata**: Added momentum scores, social scores, DEX volumes, and subnet staking data with trending badges

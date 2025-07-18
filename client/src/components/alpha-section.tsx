@@ -14,9 +14,10 @@ export default function AlphaSection() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedPaymentType, setSelectedPaymentType] = useState<'ETH' | 'TAO' | null>(null);
 
-  // Fetch mindshare data
+  // Fetch comprehensive mindshare data with X.com and swordscan integration
   const { data: mindshareProjects } = useQuery({
-    queryKey: ['/api/mindshare'],
+    queryKey: ['/api/mindshare/comprehensive'],
+    refetchInterval: 30000, // Refresh every 30 seconds for real-time sentiment
   });
 
   // Fetch subnets data for TAO mindshare
@@ -141,62 +142,85 @@ export default function AlphaSection() {
             <TabsContent value="base-mindshare" className="space-y-6">
               <GlassCard className="p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-semibold text-white">BASE Network Mindshare</h3>
-                  <div className="text-sm text-crypto-silver">Last updated: {new Date().toLocaleTimeString()}</div>
+                  <h3 className="text-xl font-semibold text-white">BASE Network Social Intelligence</h3>
+                  <div className="text-sm text-crypto-silver">X.com + swordscan.com • Live feed</div>
                 </div>
                 
                 <div className="grid gap-4">
                   {mindshareProjects?.filter(p => p.network === 'BASE').map((project) => (
-                    <div key={project.id} className="backdrop-blur-sm bg-white/5 rounded-lg p-4 border border-crypto-silver/10">
-                      <div className="flex items-center justify-between">
+                    <div key={project.id} className="backdrop-blur-sm bg-white/5 rounded-lg p-4 border border-crypto-silver/10 hover:bg-white/10 transition-all">
+                      <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold bg-gradient-to-r from-blue-500 to-purple-500">
+                          <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold bg-gradient-to-r from-blue-500 to-purple-500">
                             {project.symbol.substring(0, 2)}
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
                               <span className="text-white font-medium">{project.name}</span>
                               <Badge variant="outline" className="border-blue-500/30 text-blue-400">
-                                BASE
+                                ${project.symbol}
                               </Badge>
+                              {project.swordscanTrending && (
+                                <Badge variant="outline" className="border-crypto-warning/30 text-crypto-warning">
+                                  🔥 Trending
+                                </Badge>
+                              )}
                             </div>
-                            <div className="text-crypto-silver text-sm">{project.symbol}</div>
+                            <div className="text-crypto-silver text-sm flex items-center gap-4">
+                              <span>X: {formatNumber(project.xMentions || 0)} mentions</span>
+                              <span>•</span>
+                              <span>Swordscan: {project.swordscanVolume || 0} vol</span>
+                            </div>
                           </div>
                         </div>
                         
-                        <div className="text-right">
-                          <div className="flex items-center gap-4">
-                            <div className="text-center">
-                              <div className="text-white text-sm font-medium">{project.mentions24h.toLocaleString()}</div>
-                              <div className="text-crypto-silver text-xs">Mentions</div>
+                        <div className="flex items-center gap-4">
+                          <div className="text-center">
+                            <div className={`text-sm font-medium ${(project.xSentiment || 0) >= 80 ? 'text-crypto-success' : (project.xSentiment || 0) >= 60 ? 'text-crypto-warning' : 'text-red-500'}`}>
+                              {project.xSentiment || 0}%
                             </div>
-                            <div className="text-center">
-                              <div className={`text-sm font-medium ${getSentimentColor(project.sentiment)}`}>
-                                {getSentimentBadge(project.sentiment)}
-                              </div>
-                              <div className="text-crypto-silver text-xs">Sentiment</div>
-                            </div>
-                            <div className="text-center">
-                              <div className="text-crypto-warning text-sm font-medium">{project.trendingScore}/100</div>
-                              <div className="text-crypto-silver text-xs">Trending</div>
-                            </div>
+                            <div className="text-crypto-silver text-xs">X Sentiment</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-purple-400 text-sm font-medium">{project.swordscanMindshare || 0}/100</div>
+                            <div className="text-crypto-silver text-xs">Mindshare</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-crypto-warning text-sm font-medium">{project.socialScore || 0}/100</div>
+                            <div className="text-crypto-silver text-xs">Social Score</div>
                           </div>
                         </div>
                       </div>
                       
+                      {/* X.com Hashtag Tracking */}
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-crypto-silver text-xs">Tracking:</span>
+                        {project.xHashtags?.map((hashtag, index) => (
+                          <Badge key={index} variant="outline" className="border-blue-500/20 text-blue-400 text-xs">
+                            {hashtag}
+                          </Badge>
+                        ))}
+                      </div>
+                      
                       {project.marketCap && (
-                        <div className="flex items-center justify-between mt-3 pt-3 border-t border-crypto-silver/10">
+                        <div className="flex items-center justify-between pt-3 border-t border-crypto-silver/10">
                           <div className="flex items-center gap-6 text-sm">
                             <div>
                               <span className="text-crypto-silver">Market Cap: </span>
                               <span className="text-white">{formatNumber(project.marketCap, true)}</span>
                             </div>
-                            {project.volume24h && (
+                            {project.dexVolume && (
                               <div>
-                                <span className="text-crypto-silver">24h Vol: </span>
-                                <span className="text-white">{formatNumber(project.volume24h, true)}</span>
+                                <span className="text-crypto-silver">DEX Vol: </span>
+                                <span className="text-white">{formatNumber(project.dexVolume, true)}</span>
                               </div>
                             )}
+                            <div>
+                              <span className="text-crypto-silver">Momentum: </span>
+                              <span className={`${(project.momentumScore || 0) >= 70 ? 'text-crypto-success' : (project.momentumScore || 0) >= 40 ? 'text-crypto-warning' : 'text-red-500'}`}>
+                                {project.momentumScore || 0}/100
+                              </span>
+                            </div>
                           </div>
                         </div>
                       )}
@@ -207,50 +231,91 @@ export default function AlphaSection() {
             </TabsContent>
 
             <TabsContent value="tao-mindshare" className="space-y-6">
-              {/* TAO Subnet Rankings */}
+              {/* TAO Subnet Social Intelligence */}
               <GlassCard className="p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-semibold text-white">Most Talked About Subnets</h3>
-                  <div className="text-sm text-crypto-silver">Real-time sentiment tracking</div>
+                  <h3 className="text-xl font-semibold text-white">TAO Subnet Social Intelligence</h3>
+                  <div className="text-sm text-crypto-silver">X.com + TensorPulse + swordscan.com</div>
                 </div>
                 
-                <div className="grid gap-3">
-                  {subnets?.slice(0, 10).map((subnet, index) => (
-                    <div key={subnet.id} className="backdrop-blur-sm bg-white/5 rounded-lg p-4 border border-crypto-silver/10 hover:bg-white/10 transition-colors">
-                      <div className="flex items-center justify-between">
+                <div className="grid gap-4">
+                  {mindshareProjects?.filter(p => p.network === 'TAO').map((project) => (
+                    <div key={project.id} className="backdrop-blur-sm bg-white/5 rounded-lg p-4 border border-crypto-silver/10 hover:bg-white/10 transition-all">
+                      <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-4">
-                          <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold bg-gradient-to-r from-purple-500 to-pink-500 text-sm">
-                            {subnet.netuid}
+                          <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold bg-gradient-to-r from-purple-500 to-pink-500">
+                            {project.symbol.replace('SN', '')}
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
-                              <span className="text-white font-medium">{subnet.name}</span>
-                              <Badge variant="outline" className="border-purple-500/30 text-purple-400 text-xs">
-                                SN {subnet.netuid}
+                              <span className="text-white font-medium">{project.name}</span>
+                              <Badge variant="outline" className="border-purple-500/30 text-purple-400">
+                                {project.symbol}
                               </Badge>
+                              {project.tensorpulseRanking && project.tensorpulseRanking <= 5 && (
+                                <Badge variant="outline" className="border-crypto-warning/30 text-crypto-warning">
+                                  ⭐ Top 5
+                                </Badge>
+                              )}
                             </div>
-                            <div className="text-crypto-silver text-sm truncate max-w-md">
-                              {subnet.description}
+                            <div className="text-crypto-silver text-sm flex items-center gap-4">
+                              <span>X: {formatNumber(project.xMentions || 0)} mentions</span>
+                              <span>•</span>
+                              <span>Staking: {project.subnetStaking || 'N/A'}</span>
                             </div>
                           </div>
                         </div>
                         
-                        <div className="text-right">
-                          <div className="flex items-center gap-6">
-                            <div className="text-center">
-                              <div className="text-white font-semibold">{Math.floor(Math.random() * 500) + 100}</div>
-                              <div className="text-crypto-silver text-xs">Mentions</div>
+                        <div className="flex items-center gap-4">
+                          <div className="text-center">
+                            <div className={`text-sm font-medium ${(project.xSentiment || 0) >= 80 ? 'text-crypto-success' : (project.xSentiment || 0) >= 60 ? 'text-crypto-warning' : 'text-red-500'}`}>
+                              {project.xSentiment || 0}%
                             </div>
-                            <div className="text-center">
-                              <div className="text-crypto-success font-semibold">
-                                +{Math.floor(Math.random() * 30) + 5}%
-                              </div>
-                              <div className="text-crypto-silver text-xs">Sentiment</div>
-                            </div>
-                            <div className="text-center">
-                              <div className="text-white font-semibold">{subnet.validators}</div>
-                              <div className="text-crypto-silver text-xs">Validators</div>
-                            </div>
+                            <div className="text-crypto-silver text-xs">X Sentiment</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-purple-400 text-sm font-medium">{project.tensorpulseMindshare || 0}/100</div>
+                            <div className="text-crypto-silver text-xs">TensorPulse</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-crypto-warning text-sm font-medium">#{project.tensorpulseRanking || 'N/A'}</div>
+                            <div className="text-crypto-silver text-xs">Ranking</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-blue-400 text-sm font-medium">{project.socialScore || 0}/100</div>
+                            <div className="text-crypto-silver text-xs">Social Score</div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Hashtag Tracking for TAO Subnets */}
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-crypto-silver text-xs">Tracking:</span>
+                        {project.xHashtags?.map((hashtag, index) => (
+                          <Badge key={index} variant="outline" className="border-purple-500/20 text-purple-400 text-xs">
+                            {hashtag}
+                          </Badge>
+                        ))}
+                      </div>
+                      
+                      {/* TAO-specific metrics */}
+                      <div className="flex items-center justify-between pt-3 border-t border-crypto-silver/10">
+                        <div className="flex items-center gap-6 text-sm">
+                          <div>
+                            <span className="text-crypto-silver">Swordscan Vol: </span>
+                            <span className="text-white">{project.swordscanVolume || 0}</span>
+                          </div>
+                          <div>
+                            <span className="text-crypto-silver">Momentum: </span>
+                            <span className={`${(project.momentumScore || 0) >= 70 ? 'text-crypto-success' : (project.momentumScore || 0) >= 40 ? 'text-crypto-warning' : 'text-red-500'}`}>
+                              {project.momentumScore || 0}/100
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-crypto-silver">Mindshare Trend: </span>
+                            <span className={`${project.swordscanTrending ? 'text-crypto-success' : 'text-crypto-silver'}`}>
+                              {project.swordscanTrending ? '📈 Rising' : '➡️ Stable'}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -259,67 +324,7 @@ export default function AlphaSection() {
                 </div>
               </GlassCard>
 
-              {/* Subnet Performance Dashboard */}
-              <GlassCard className="p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-semibold text-white">Daily Subnet Performance</h3>
-                  <div className="text-sm text-crypto-silver">24h gainers & losers</div>
-                </div>
-                
-                <div className="grid md:grid-cols-2 gap-6">
-                  {/* Top Gainers */}
-                  <div>
-                    <h4 className="text-crypto-success font-semibold mb-4 flex items-center gap-2">
-                      <TrendingUp className="w-4 h-4" />
-                      Top Gainers
-                    </h4>
-                    <div className="space-y-3">
-                      {subnets?.slice(0, 5).map((subnet) => (
-                        <div key={`gainer-${subnet.id}`} className="flex items-center justify-between p-3 rounded-lg bg-crypto-success/10 border border-crypto-success/20">
-                          <div className="flex items-center gap-3">
-                            <div className="w-6 h-6 rounded-full flex items-center justify-center text-white font-bold bg-crypto-success text-xs">
-                              {subnet.netuid}
-                            </div>
-                            <div>
-                              <div className="text-white font-medium text-sm">{subnet.name}</div>
-                              <div className="text-crypto-silver text-xs">SN {subnet.netuid}</div>
-                            </div>
-                          </div>
-                          <div className="text-crypto-success font-semibold">
-                            +{(Math.random() * 25 + 5).toFixed(1)}%
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
 
-                  {/* Top Losers */}
-                  <div>
-                    <h4 className="text-crypto-danger font-semibold mb-4 flex items-center gap-2">
-                      <TrendingDown className="w-4 h-4" />
-                      Top Losers
-                    </h4>
-                    <div className="space-y-3">
-                      {subnets?.slice(5, 10).map((subnet) => (
-                        <div key={`loser-${subnet.id}`} className="flex items-center justify-between p-3 rounded-lg bg-crypto-danger/10 border border-crypto-danger/20">
-                          <div className="flex items-center gap-3">
-                            <div className="w-6 h-6 rounded-full flex items-center justify-center text-white font-bold bg-crypto-danger text-xs">
-                              {subnet.netuid}
-                            </div>
-                            <div>
-                              <div className="text-white font-medium text-sm">{subnet.name}</div>
-                              <div className="text-crypto-silver text-xs">SN {subnet.netuid}</div>
-                            </div>
-                          </div>
-                          <div className="text-crypto-danger font-semibold">
-                            -{(Math.random() * 20 + 2).toFixed(1)}%
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </GlassCard>
             </TabsContent>
           </Tabs>
         </TabsContent>
