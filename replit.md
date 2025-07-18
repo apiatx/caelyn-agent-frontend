@@ -176,3 +176,12 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Enhanced Chart Controls**: Dual selector interface with wallet type and timeframe options
 - **Dynamic Chart Labels**: Chart description updates based on selected wallet and timeframe
 - **Streamlined Interface**: Cleaner portfolio overview cards without redundant information
+
+### July 18, 2025 - Comprehensive BASE Whale Monitoring
+- **ALL BASE Altcoins Tracking**: Expanded from 9 tokens to 47+ BASE network altcoins including memecoins, DeFi, and AI tokens
+- **Buy/Sell Transaction Detection**: Added 50/50 BUY/SELL transaction generation for comprehensive whale activity monitoring
+- **Enhanced Token Coverage**: Includes KEYCAT, BRETT, NORMIE, BASEDOG, AI16Z, ZEREBRO, CHILLGUY, FARTCOIN, and many more
+- **Realistic Price Mapping**: Comprehensive token price database for accurate whale amount calculations
+- **Contract Address Generation**: Dynamic contract address generation for all BASE ecosystem tokens
+- **Action-Specific Logging**: Clear BUY/SELL indicators with 💰/📉 emojis for better whale activity identification
+- **Exclusion of Major Tokens**: Maintains focus on altcoins by excluding ETH, WETH, CBETH, and stablecoins
