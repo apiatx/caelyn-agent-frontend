@@ -641,7 +641,7 @@ export default function PortfolioSection() {
             <CollapsibleContent>
               <div className="space-y-4">
                 {debankData?.success ? 
-                  debankData.data.topTokens || []
+                  (debankData.data.topTokens || [])
                     .filter(token => {
                       const isBase = token.chain === 'base';
                       const hasValue = token.value > 1;
