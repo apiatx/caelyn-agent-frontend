@@ -14,6 +14,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useDeBankPortfolio } from "@/hooks/use-debank-portfolio";
+import { useStakingData } from "@/hooks/use-staking-data";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -33,6 +34,11 @@ export default function PortfolioSection() {
 
   // Get DeBank portfolio data using the BASE wallet address
   const { data: debankData, isLoading: isDebankLoading } = useDeBankPortfolio(
+    portfolio?.baseWalletAddress || baseWalletAddress
+  );
+
+  // Get staking data for the wallet
+  const { data: stakingData, isLoading: isStakingLoading } = useStakingData(
     portfolio?.baseWalletAddress || baseWalletAddress
   );
 
@@ -352,7 +358,7 @@ export default function PortfolioSection() {
           </div>
           <div className="text-2xl font-bold text-white mb-2">
             {debankData?.success ? 
-              `$${(debankData.data.totalValue || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` :
+              `$${((debankData.data.totalValue || 0) + (stakingData?.totalStakedValue || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` :
               hasWalletAddresses ? `$${portfolio.totalBalance}` : '$0.00'
             }
           </div>
@@ -726,6 +732,86 @@ export default function PortfolioSection() {
           </GlassCard>
         </Collapsible>
 
+        {/* Staking Positions */}
+        {stakingData && stakingData.totalStakedValue > 0 && (
+          <GlassCard className="p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center">
+                <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full mr-3 flex items-center justify-center text-sm font-bold">🔒</div>
+                <div className="text-left">
+                  <h2 className="text-xl font-semibold text-white">Staked Positions</h2>
+                  <div className="flex items-center gap-4 mt-2">
+                    <div className="text-xl font-bold text-white">
+                      ${stakingData.totalStakedValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
+                    <Badge variant="secondary" className="bg-orange-500/20 text-orange-400 border-orange-500/30">
+                      {stakingData.protocols.length} protocols
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {stakingData.protocols.map((protocol, index) => (
+                <div key={index} className="backdrop-blur-sm bg-white/5 rounded-xl border border-crypto-silver/10 p-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center">
+                      <a 
+                        href={protocol.protocolUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-white font-medium hover:text-crypto-success transition-colors flex items-center gap-2"
+                      >
+                        {protocol.protocol}
+                        <ExternalLink className="h-4 w-4" />
+                      </a>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-white font-medium">
+                        ${protocol.totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </div>
+                      <div className="text-sm text-crypto-silver">
+                        {protocol.positions.length} positions
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    {protocol.positions.map((position, posIndex) => (
+                      <div key={posIndex} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                        <div className="flex items-center">
+                          <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mr-3 flex items-center justify-center text-xs font-bold">
+                            {position.symbol}
+                          </div>
+                          <div>
+                            <h4 className="font-medium text-white">{position.token}</h4>
+                            <p className="text-sm text-crypto-silver">
+                              {position.amount.toFixed(2)} {position.symbol}
+                              {position.unlockTime && (
+                                <span className="ml-2 text-orange-400">
+                                  🔒 Until {position.unlockTime}
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-white font-medium">
+                            ${position.value.toFixed(2)}
+                          </div>
+                          <div className="text-sm text-crypto-silver">
+                            ${position.price.toFixed(6)}/token
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </GlassCard>
+        )}
 
         {/* TAO Network Holdings */}
         <Collapsible open={isTaoHoldingsOpen} onOpenChange={setIsTaoHoldingsOpen}>

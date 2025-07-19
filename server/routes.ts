@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { realTimeDataService } from './real-time-data-service-new';
 import { debankService } from './debank-service';
+import { getStakingData } from './staking-service';
 import { z } from "zod";
 import { insertPremiumAccessSchema } from "@shared/schema";
 
@@ -92,7 +93,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-
+  // Staking data endpoint
+  app.get("/api/staking/:walletAddress", async (req, res) => {
+    try {
+      const { walletAddress } = req.params;
+      const stakingData = await getStakingData(walletAddress);
+      res.json(stakingData);
+    } catch (error) {
+      console.error('Staking data fetch error:', error);
+      res.status(500).json({ 
+        message: "Failed to fetch staking data",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
 
   // Holdings endpoints
   app.get("/api/holdings/:portfolioId", async (req, res) => {
