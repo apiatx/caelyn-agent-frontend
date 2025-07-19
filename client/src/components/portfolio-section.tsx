@@ -13,7 +13,10 @@ import { DataIntegrityNotice } from "@/components/data-integrity-notice";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useDeBankPortfolio } from "@/hooks/use-debank-portfolio";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Badge } from "@/components/ui/badge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import type { Holding, Subnet } from "@shared/schema";
 
 export default function PortfolioSection() {
@@ -25,6 +28,13 @@ export default function PortfolioSection() {
   const [isEditingWallets, setIsEditingWallets] = useState(false);
   const [baseWalletAddress, setBaseWalletAddress] = useState('');
   const [taoWalletAddress, setTaoWalletAddress] = useState('');
+  const [isBaseHoldingsOpen, setIsBaseHoldingsOpen] = useState(true);
+  const [isTaoHoldingsOpen, setIsTaoHoldingsOpen] = useState(false);
+
+  // Get DeBank portfolio data using the BASE wallet address
+  const { data: debankData, isLoading: isDebankLoading } = useDeBankPortfolio(
+    portfolio?.baseWalletAddress || baseWalletAddress
+  );
 
   const getTokenContractAddress = (ticker: string): string => {
     const contractAddresses: { [key: string]: string } = {
@@ -341,16 +351,29 @@ export default function PortfolioSection() {
             <Wallet className="text-crypto-silver h-5 w-5" />
           </div>
           <div className="text-2xl font-bold text-white mb-2">
-            ${hasWalletAddresses ? portfolio.totalBalance : '0.00'}
+            {debankData?.success ? 
+              `$${debankData.data.totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` :
+              hasWalletAddresses ? `$${portfolio.totalBalance}` : '$0.00'
+            }
           </div>
           <div className="flex items-center text-sm">
-            <span className={hasWalletAddresses ? "text-crypto-success" : "text-crypto-silver"}>
-              {hasWalletAddresses ? "+$5,234.21" : "$0.00"}
+            <span className={debankData?.success || hasWalletAddresses ? "text-crypto-success" : "text-crypto-silver"}>
+              {debankData?.success || hasWalletAddresses ? "+$5,234.21" : "$0.00"}
             </span>
             <span className="text-crypto-silver ml-2">
-              {hasWalletAddresses ? "(+4.27%)" : "(0%)"}
+              {debankData?.success || hasWalletAddresses ? "(+4.27%)" : "(0%)"}
             </span>
           </div>
+          {debankData?.success && (
+            <div className="mt-2 text-xs text-crypto-silver flex items-center gap-2">
+              <Badge variant="secondary" className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+                BASE: ${debankData.data.baseValue.toFixed(2)}
+              </Badge>
+              <Badge variant="secondary" className="bg-purple-500/20 text-purple-400 border-purple-500/30">
+                TAO: ${debankData.data.taoValue.toFixed(2)}
+              </Badge>
+            </div>
+          )}
         </GlassCard>
 
         <GlassCard className="p-6 hover:shadow-2xl transition-all duration-300 cursor-pointer hover:scale-105">
@@ -575,199 +598,167 @@ export default function PortfolioSection() {
       </GlassCard>
 
       {/* Holdings Breakdown */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="space-y-6">
         {/* BASE Network Holdings */}
-        <GlassCard className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-xl font-semibold text-white flex items-center">
-                <div className="w-8 h-8 bg-blue-500 rounded-full mr-3 flex items-center justify-center text-sm font-bold">B</div>
-                BASE Network Holdings
-              </h2>
-              <div className="flex items-center gap-4 mt-2">
-                <div className="text-2xl font-bold text-white">
-                  ${hasWalletAddresses ? portfolio.baseHoldings : '0.00'}
+        <Collapsible open={isBaseHoldingsOpen} onOpenChange={setIsBaseHoldingsOpen}>
+          <GlassCard className="p-6">
+            <CollapsibleTrigger className="w-full">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center">
+                  <div className="w-8 h-8 bg-blue-500 rounded-full mr-3 flex items-center justify-center text-sm font-bold">B</div>
+                  <div className="text-left">
+                    <h2 className="text-xl font-semibold text-white">BASE Network Holdings</h2>
+                    <div className="flex items-center gap-4 mt-2">
+                      <div className="text-xl font-bold text-white">
+                        {debankData?.success ? 
+                          `$${debankData.data.baseValue.toFixed(2)}` :
+                          hasWalletAddresses ? `$${portfolio.baseHoldings}` : '$0.00'
+                        }
+                      </div>
+                      {debankData?.success && (
+                        <Badge variant="secondary" className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+                          {debankData.data.topTokens.filter(t => t.chain === 'base').length} tokens
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center text-sm">
-                  <span className={hasWalletAddresses ? "text-crypto-success" : "text-crypto-silver"}>
-                    {hasWalletAddresses ? "+$2,156.34" : "$0.00"}
-                  </span>
-                  <span className="text-crypto-silver ml-2">
-                    {hasWalletAddresses ? "(+4.78%)" : "(0%)"}
-                  </span>
+                <div className="flex items-center gap-2">
+                  <a 
+                    href="https://dexscreener.com/base"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-crypto-silver hover:text-white transition-colors group"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <ExternalLink className="h-4 w-4 group-hover:scale-110 transition-transform" />
+                  </a>
+                  <ChevronDown className={`h-5 w-5 text-crypto-silver transition-transform ${isBaseHoldingsOpen ? 'rotate-180' : ''}`} />
                 </div>
               </div>
-            </div>
-            <a 
-              href="https://dexscreener.com/base"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-crypto-silver hover:text-white transition-colors group"
-            >
-              <ExternalLink className="h-4 w-4 group-hover:scale-110 transition-transform" />
-            </a>
-          </div>
+            </CollapsibleTrigger>
 
-          {/* BASE Holdings Dropdown */}
-          <div className="mb-4">
-            <Select>
-              <SelectTrigger className="w-full bg-white/5 border-crypto-silver/20 text-white">
-                <SelectValue placeholder={hasWalletAddresses ? "Select BASE holding to view PnL" : "Connect wallet to view holdings"} />
-              </SelectTrigger>
-              <SelectContent className="bg-black/90 border-crypto-silver/20">
-                {hasWalletAddresses ? [
-                  { symbol: 'TOSHI', amount: '2,450,000', value: '$573.21', pnl: '+$48.32', pnlPercent: '+9.2%' },
-                  { symbol: 'DEGEN', amount: '15,750', value: '$245.70', pnl: '+$12.45', pnlPercent: '+5.3%' },
-                  { symbol: 'HIGHER', amount: '1,200', value: '$80.28', pnl: '-$3.72', pnlPercent: '-4.4%' },
-                  { symbol: 'AERO', amount: '45', value: '$85.05', pnl: '+$8.05', pnlPercent: '+10.5%' },
-                  { symbol: 'MFER', amount: '12,500', value: '$287.50', pnl: '+$23.50', pnlPercent: '+8.9%' }
-                ].map((holding) => (
-                  <SelectItem key={holding.symbol} value={holding.symbol} className="text-white hover:bg-white/10">
-                    <div className="flex items-center justify-between w-full">
-                      <div className="flex items-center gap-3">
-                        <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-xs font-bold">
-                          {holding.symbol.charAt(0)}
+            <CollapsibleContent>
+              <div className="space-y-4">
+                {debankData?.success ? 
+                  debankData.data.topTokens
+                    .filter(token => token.chain === 'base' && token.value >= 1)
+                    .map((token, index) => (
+                    <a 
+                      key={index} 
+                      href={`https://dexscreener.com/base/${token.symbol.toLowerCase()}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="backdrop-blur-sm bg-white/5 rounded-xl border border-crypto-silver/10 p-4 hover:bg-white/10 transition-all duration-200 cursor-pointer hover:scale-105 group block"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <img 
+                            src={token.logo} 
+                            alt={token.symbol}
+                            className="w-10 h-10 rounded-full mr-3"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40'><rect width='40' height='40' fill='%233B82F6'/><text x='20' y='25' text-anchor='middle' fill='white' font-size='12' font-weight='bold'>${token.symbol.charAt(0)}</text></svg>`;
+                            }}
+                          />
+                          <div>
+                            <h3 className="font-medium text-white">{token.symbol}</h3>
+                            <p className="text-sm text-crypto-silver">{token.amount.toFixed(2)} {token.symbol}</p>
+                          </div>
                         </div>
-                        <div>
-                          <div className="font-medium">{holding.symbol}</div>
-                          <div className="text-sm text-crypto-silver">{holding.amount} tokens</div>
+                        <div className="text-right">
+                          <div className="text-white font-medium">
+                            ${token.value.toFixed(2)}
+                          </div>
+                          <div className="text-sm text-crypto-silver">
+                            ${token.price.toFixed(4)}/token
+                          </div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="font-medium">{holding.value}</div>
-                        <div className={`text-sm ${holding.pnl.startsWith('+') ? 'text-crypto-success' : 'text-red-500'}`}>
-                          {holding.pnl} ({holding.pnlPercent})
+                    </a>
+                  )) :
+                  hasWalletAddresses ? 
+                    baseHoldings.filter(holding => {
+                      const value = parseFloat(holding.amount) * parseFloat(holding.currentPrice);
+                      return value >= 5;
+                    }).map((holding) => (
+                      <a 
+                        key={holding.id} 
+                        href={`https://dexscreener.com/base/${getTokenContractAddress(holding.symbol)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="backdrop-blur-sm bg-white/5 rounded-xl border border-crypto-silver/10 p-4 hover:bg-white/10 transition-all duration-200 cursor-pointer hover:scale-105 group block"
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center">
+                            <div className="w-10 h-10 bg-blue-600 rounded-full mr-3 flex items-center justify-center text-sm font-bold">
+                              {holding.symbol}
+                            </div>
+                            <div>
+                              <h3 className="font-medium text-white">{holding.symbol}</h3>
+                              <p className="text-sm text-crypto-silver">{holding.amount} {holding.symbol}</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-white font-medium">
+                              ${(parseFloat(holding.amount) * parseFloat(holding.currentPrice)).toFixed(2)}
+                            </div>
+                            <div className={`text-sm ${parseFloat(holding.pnl) >= 0 ? 'text-crypto-success' : 'text-crypto-danger'}`}>
+                              {parseFloat(holding.pnl) >= 0 ? '+' : ''}${holding.pnl}
+                            </div>
+                          </div>
                         </div>
-                      </div>
+                      </a>
+                    )) :
+                    <div className="text-center py-8">
+                      <div className="text-crypto-silver">Connect your BASE wallet to view holdings</div>
                     </div>
-                  </SelectItem>
-                )) : [
-                  <SelectItem key="no-wallet" value="no-wallet" className="text-crypto-silver">
-                    Connect BASE wallet to view holdings
-                  </SelectItem>
-                ]}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="space-y-4">
-            {baseHoldings.filter(holding => {
-              const value = parseFloat(holding.amount) * parseFloat(holding.currentPrice);
-              return value >= 5; // Only show holdings worth $5 or more
-            }).map((holding) => (
-              <a 
-                key={holding.id} 
-                href={`https://dexscreener.com/base/${getTokenContractAddress(holding.symbol)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="backdrop-blur-sm bg-white/5 rounded-xl border border-crypto-silver/10 p-4 hover:bg-white/10 transition-all duration-200 cursor-pointer hover:scale-105 group block"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center">
-                    <div className="w-10 h-10 bg-blue-600 rounded-full mr-3 flex items-center justify-center text-sm font-bold">
-                      {holding.symbol}
-                    </div>
-                    <div>
-                      <h3 className="font-medium text-white">{holding.symbol}</h3>
-                      <p className="text-sm text-crypto-silver">{holding.amount} {holding.symbol}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-white font-medium">
-                      ${(parseFloat(holding.amount) * parseFloat(holding.currentPrice)).toFixed(2)}
-                    </div>
-                    <div className={`text-sm ${parseFloat(holding.pnl) >= 0 ? 'text-crypto-success' : 'text-crypto-danger'}`}>
-                      {parseFloat(holding.pnl) >= 0 ? '+' : ''}${holding.pnl}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex justify-between text-sm text-crypto-silver">
-                  <span>Entry: ${holding.entryPrice}</span>
-                  <span>Current: ${holding.currentPrice}</span>
-                  <span className={parseFloat(holding.pnlPercentage) >= 0 ? 'text-crypto-success' : 'text-crypto-danger'}>
-                    {parseFloat(holding.pnlPercentage) >= 0 ? '+' : ''}{holding.pnlPercentage}%
-                  </span>
-                </div>
-              </a>
-            ))}
-          </div>
-        </GlassCard>
+                }
+              </div>
+            </CollapsibleContent>
+          </GlassCard>
+        </Collapsible>
+
 
         {/* TAO Network Holdings */}
-        <GlassCard className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-xl font-semibold text-white flex items-center">
-                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mr-3 flex items-center justify-center text-sm font-bold">Τ</div>
-                Bittensor Holdings
-              </h2>
-              <div className="flex items-center gap-4 mt-2">
-                <div className="text-2xl font-bold text-white">
-                  ${hasWalletAddresses ? portfolio.taoHoldings : '0.00'}
+        <Collapsible open={isTaoHoldingsOpen} onOpenChange={setIsTaoHoldingsOpen}>
+          <GlassCard className="p-6">
+            <CollapsibleTrigger className="w-full">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center">
+                  <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mr-3 flex items-center justify-center text-sm font-bold">Τ</div>
+                  <div className="text-left">
+                    <h2 className="text-xl font-semibold text-white">Bittensor Holdings</h2>
+                    <div className="flex items-center gap-4 mt-2">
+                      <div className="text-xl font-bold text-white">
+                        {debankData?.success ? 
+                          `$${debankData.data.taoValue.toFixed(2)}` :
+                          hasWalletAddresses ? `$${portfolio.taoHoldings}` : '$0.00'
+                        }
+                      </div>
+                      <Badge variant="secondary" className="bg-purple-500/20 text-purple-400 border-purple-500/30">
+                        TAO Network
+                      </Badge>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center text-sm">
-                  <span className={hasWalletAddresses ? "text-crypto-success" : "text-crypto-silver"}>
-                    {hasWalletAddresses ? "+$3,077.87" : "$0.00"}
-                  </span>
-                  <span className="text-crypto-silver ml-2">
-                    {hasWalletAddresses ? "(+3.97%)" : "(0%)"}
-                  </span>
+                <div className="flex items-center gap-2">
+                  <a 
+                    href="https://x.com/search?q=%23bittensor%20OR%20%23tao"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-crypto-silver hover:text-white transition-colors group"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <ExternalLink className="h-4 w-4 group-hover:scale-110 transition-transform" />
+                  </a>
+                  <ChevronDown className={`h-5 w-5 text-crypto-silver transition-transform ${isTaoHoldingsOpen ? 'rotate-180' : ''}`} />
                 </div>
               </div>
-            </div>
-            <a 
-              href="https://x.com/search?q=%23bittensor%20OR%20%23tao"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-crypto-silver hover:text-white transition-colors group"
-            >
-              <ExternalLink className="h-4 w-4 group-hover:scale-110 transition-transform" />
-            </a>
-          </div>
+            </CollapsibleTrigger>
 
-          {/* Bittensor Holdings Dropdown */}
-          <div className="mb-4">
-            <Select>
-              <SelectTrigger className="w-full bg-white/5 border-crypto-silver/20 text-white">
-                <SelectValue placeholder={hasWalletAddresses ? "Select TAO holding to view PnL" : "Connect wallet to view holdings"} />
-              </SelectTrigger>
-              <SelectContent className="bg-black/90 border-crypto-silver/20">
-                {hasWalletAddresses ? [
-                  { symbol: 'TAO', amount: '12.45', value: '$6,888.83', pnl: '+$523.45', pnlPercent: '+8.2%', subnet: 'Liquid Staking' },
-                  { symbol: 'SN1', amount: '3.2', value: '$1,770.88', pnl: '+$145.22', pnlPercent: '+8.9%', subnet: 'Text Prompting' },
-                  { symbol: 'SN5', amount: '2.8', value: '$1,549.72', pnl: '+$89.15', pnlPercent: '+6.1%', subnet: 'Image Generation' },
-                  { symbol: 'SN18', amount: '1.5', value: '$830.25', pnl: '+$42.75', pnlPercent: '+5.4%', subnet: 'Cortex.t' },
-                  { symbol: 'SN27', amount: '4.1', value: '$2,269.14', pnl: '+$156.89', pnlPercent: '+7.4%', subnet: 'Compute Horde' }
-                ].map((holding) => (
-                  <SelectItem key={holding.symbol} value={holding.symbol} className="text-white hover:bg-white/10">
-                    <div className="flex items-center justify-between w-full">
-                      <div className="flex items-center gap-3">
-                        <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-xs font-bold">
-                          τ
-                        </div>
-                        <div>
-                          <div className="font-medium">{holding.symbol}</div>
-                          <div className="text-sm text-crypto-silver">{holding.amount} TAO • {holding.subnet}</div>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-medium">{holding.value}</div>
-                        <div className={`text-sm ${holding.pnl.startsWith('+') ? 'text-crypto-success' : 'text-red-500'}`}>
-                          {holding.pnl} ({holding.pnlPercent})
-                        </div>
-                      </div>
-                    </div>
-                  </SelectItem>
-                )) : [
-                  <SelectItem key="no-wallet" value="no-wallet" className="text-crypto-silver">
-                    Connect TAO wallet to view holdings
-                  </SelectItem>
-                ]}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="space-y-4">
+            <CollapsibleContent>
+              <div className="space-y-4">
             {taoHoldings.filter(holding => {
               const value = parseFloat(holding.amount) * parseFloat(holding.currentPrice);
               return value >= 5; // Only show holdings worth $5 or more
@@ -841,8 +832,10 @@ export default function PortfolioSection() {
                 </a>
               );
             })}
-          </div>
-        </GlassCard>
+              </div>
+            </CollapsibleContent>
+          </GlassCard>
+        </Collapsible>
       </div>
 
 
