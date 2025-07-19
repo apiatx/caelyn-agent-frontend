@@ -531,7 +531,7 @@ export class DeBankĀService {
       token.name.toLowerCase().includes('bittensor')
     );
 
-    const baseValue = baseTokens.reduce((sum, token) => sum + (token.amount * token.price), 0);
+    const baseValue = portfolio.chain_list.find(chain => chain.id === 'base')?.usd_value || 0;
     const taoValue = taoTokens.reduce((sum, token) => sum + (token.amount * token.price), 0);
 
     return {
@@ -553,7 +553,7 @@ export class DeBankĀService {
           chain: token.chain,
           logo: token.logo_url,
         }))
-        .filter(token => token.value >= 1.0) // Only show holdings worth $1 or more
+        .filter(token => token.value > 1.0) // Only show holdings worth more than $1
         .sort((a, b) => b.value - a.value), // Sort by value highest to lowest
     };
   }

@@ -611,7 +611,7 @@ export default function PortfolioSection() {
                     <div className="flex items-center gap-4 mt-2">
                       <div className="text-xl font-bold text-white">
                         {debankData?.success ? 
-                          `$${debankData.data.baseValue.toFixed(2)}` :
+                          `$${debankData.data.baseValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` :
                           hasWalletAddresses ? `$${portfolio.baseHoldings}` : '$0.00'
                         }
                       </div>
@@ -642,7 +642,7 @@ export default function PortfolioSection() {
               <div className="space-y-4">
                 {debankData?.success ? 
                   debankData.data.topTokens
-                    .filter(token => token.chain === 'base' && token.value >= 1)
+                    .filter(token => token.chain === 'base' && token.value > 1)
                     .map((token, index) => (
                     <a 
                       key={index} 
