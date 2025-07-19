@@ -124,20 +124,14 @@ class DeBankService {
       
       // Use the DeBank portfolio data directly with real-time price updates
       const portfolio = await this.getPortfolio(walletAddress);
-      
-      if (!portfolio || !portfolio.topTokens) {
-        console.log(`⚠️ No valid portfolio data found, using fallback value`);
-        const baseValue = 16386;
-        const variance = (Math.random() - 0.5) * 200; // ±$100 variance for volatility
-        return baseValue + variance;
-      }
+      const formattedData = this.formatPortfolioForApp(portfolio);
       
       // Calculate total using real-time prices
       let totalValue = 0;
       
-      for (const token of portfolio.topTokens) {
+      for (const token of formattedData.topTokens) {
         // Get real-time price update
-        const currentPrice = realTimePriceService.getCurrentPrice(token.symbol);
+        const currentPrice = await realTimePriceService.getTokenPrice(token.symbol);
         const tokenValue = token.amount * currentPrice;
         totalValue += tokenValue;
         

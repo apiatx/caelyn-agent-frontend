@@ -58,17 +58,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`🏦 Fetching DeBank portfolio for: ${walletAddress}`);
       
       const portfolio = await debankService.getPortfolio(walletAddress);
-      console.log(`📊 About to format portfolio with ${portfolio.token_list.length} tokens...`);
-      const formattedData = debankService.formatPortfolioForApp(portfolio);
-      console.log(`📊 Formatted data has ${formattedData.topTokens.length} tokens after filtering`);
       
-      // REAL-TIME: Fetch current wallet value from blockchain APIs
-      console.log(`📡 Fetching REAL-TIME wallet value from blockchain APIs...`);
+      if (!portfolio || !portfolio.tokens) {
+        throw new Error('Portfolio data is incomplete');
+      }
+      
+      // REAL-TIME: Fetch current wallet value with live price updates
+      console.log(`📡 Fetching REAL-TIME wallet value with live price updates...`);
       const realTimeValue = await debankService.getRealTimeWalletValue(walletAddress);
       console.log(`💰 LIVE wallet value: $${realTimeValue.toFixed(2)}`);
       
-      formattedData.totalValue = realTimeValue;
-      formattedData.baseValue = realTimeValue; // All holdings are on BASE network
+      // Format data for app display
+      const formattedData = {
+        totalValue: realTimeValue,
+        baseValue: realTimeValue,
+        topTokens: portfolio.topTokens || [],
+        tokenCount: portfolio.tokens ? portfolio.tokens.length : 0,
+        displayTokens: portfolio.tokens ? portfolio.tokens.filter(token => token.value > 1) : []
+      };
       
       res.json({
         success: true,
@@ -85,56 +92,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get DeBank token list for a wallet address
-  app.get("/api/debank/tokens/:walletAddress", async (req, res) => {
-    try {
-      const { walletAddress } = req.params;
-      const { chainId } = req.query;
-      
-      if (!walletAddress) {
-        return res.status(400).json({ message: "Wallet address is required" });
-      }
 
-      const tokens = await debankService.getTokenList(walletAddress, chainId as string);
-      
-      res.json({
-        success: true,
-        data: tokens
-      });
-    } catch (error) {
-      console.error('DeBank token list fetch error:', error);
-      res.status(500).json({ 
-        success: false,
-        message: "Failed to fetch DeBank token list",
-        error: error instanceof Error ? error.message : "Unknown error"
-      });
-    }
-  });
-
-  // Get DeBank protocol positions for a wallet address  
-  app.get("/api/debank/protocols/:walletAddress", async (req, res) => {
-    try {
-      const { walletAddress } = req.params;
-      
-      if (!walletAddress) {
-        return res.status(400).json({ message: "Wallet address is required" });
-      }
-
-      const protocols = await debankService.getProtocolList(walletAddress);
-      
-      res.json({
-        success: true,
-        data: protocols
-      });
-    } catch (error) {
-      console.error('DeBank protocol list fetch error:', error);
-      res.status(500).json({ 
-        success: false,
-        message: "Failed to fetch DeBank protocol list",
-        error: error instanceof Error ? error.message : "Unknown error"
-      });
-    }
-  });
 
   // Holdings endpoints
   app.get("/api/holdings/:portfolioId", async (req, res) => {
