@@ -123,29 +123,36 @@ export class DeBankĀService {
 
   private async fetchBaseTokens(walletAddress: string): Promise<any[]> {
     try {
-      // Use Basescan API for BASE network tokens
-      const basescanApiKey = process.env.BASESCAN_API_KEY;
-      if (!basescanApiKey) {
-        console.log('No Basescan API key, using ETH balance only');
+      // Use Etherscan API key since Etherscan now provides multi-chain access
+      const etherscanApiKey = process.env.ETHERSCAN_API_KEY;
+      if (!etherscanApiKey) {
+        console.log('No Etherscan API key, skipping BASE tokens');
         return [];
       }
 
+      console.log(`🔍 Fetching BASE tokens for wallet: ${walletAddress}`);
+      const tokens = [];
+
       // Get ETH balance on BASE
       const ethBalanceResponse = await fetch(
-        `https://api.basescan.org/api?module=account&action=balance&address=${walletAddress}&tag=latest&apikey=${basescanApiKey}`
+        `https://api.basescan.org/api?module=account&action=balance&address=${walletAddress}&tag=latest&apikey=${etherscanApiKey}`
       );
       const ethBalanceData = await ethBalanceResponse.json();
       
-      // Get current ETH price
-      const ethPriceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
-      const ethPriceData = await ethPriceResponse.json();
-      const ethPrice = ethPriceData.ethereum?.usd || 0;
+      // Get ERC-20 token balances on BASE
+      const tokenBalanceResponse = await fetch(
+        `https://api.basescan.org/api?module=account&action=tokentx&address=${walletAddress}&page=1&offset=100&sort=desc&apikey=${etherscanApiKey}`
+      );
+      const tokenBalanceData = await tokenBalanceResponse.json();
+
+      // Get current crypto prices
+      const priceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum,usd-coin,tether&vs_currencies=usd');
+      const priceData = await priceResponse.json();
       
-      const tokens = [];
-      
-      if (ethBalanceData.result) {
+      // Add ETH balance
+      if (ethBalanceData.result && ethBalanceData.status === '1') {
         const ethBalance = parseFloat(ethBalanceData.result) / 1e18;
-        if (ethBalance > 0.001) { // Only show if > 0.001 ETH
+        if (ethBalance > 0.0001) {
           tokens.push({
             id: 'base-eth',
             chain: 'base',
@@ -154,15 +161,80 @@ export class DeBankĀService {
             display_symbol: 'ETH',
             decimals: 18,
             logo_url: 'https://static.debank.com/image/coin/logo_url/eth/6460e1f6c2206e0b3e19e07d4e98d8f2.png',
-            price: ethPrice,
+            price: priceData.ethereum?.usd || 0,
             amount: ethBalance,
-            value: ethBalance * ethPrice,
+            value: ethBalance * (priceData.ethereum?.usd || 0),
             is_verified: true,
             is_core: true,
           });
         }
       }
 
+      // Process ERC-20 tokens
+      if (tokenBalanceData.result && Array.isArray(tokenBalanceData.result)) {
+        console.log(`📊 Found ${tokenBalanceData.result.length} token transactions`);
+        
+        // Get unique token contracts and their latest balances
+        const tokenContracts = new Map();
+        
+        for (const tx of tokenBalanceData.result) {
+          const contractAddress = tx.contractAddress?.toLowerCase();
+          const tokenSymbol = tx.tokenSymbol;
+          const tokenName = tx.tokenName;
+          const decimals = parseInt(tx.tokenDecimal) || 18;
+          
+          if (contractAddress && tokenSymbol) {
+            // Check current balance for this token
+            try {
+              const balanceResponse = await fetch(
+                `https://api.basescan.org/api?module=account&action=tokenbalance&contractaddress=${contractAddress}&address=${walletAddress}&tag=latest&apikey=${etherscanApiKey}`
+              );
+              const balanceData = await balanceResponse.json();
+              
+              if (balanceData.result && balanceData.status === '1') {
+                const balance = parseFloat(balanceData.result) / Math.pow(10, decimals);
+                
+                if (balance > 0.01) { // Only include tokens with meaningful balance
+                  // Estimate price (simplified - real implementation would need token price API)
+                  let estimatedPrice = 0;
+                  if (tokenSymbol.toLowerCase().includes('usdc') || tokenSymbol.toLowerCase().includes('usdt')) {
+                    estimatedPrice = 1; // Stablecoins
+                  } else if (tokenSymbol.toLowerCase().includes('weth')) {
+                    estimatedPrice = priceData.ethereum?.usd || 0;
+                  } else {
+                    estimatedPrice = 0.10; // Conservative estimate for other tokens
+                  }
+                  
+                  tokenContracts.set(contractAddress, {
+                    id: `base-${contractAddress}`,
+                    chain: 'base',
+                    name: tokenName,
+                    symbol: tokenSymbol,
+                    display_symbol: tokenSymbol,
+                    decimals,
+                    logo_url: `https://static.debank.com/image/coin/logo_url/generic/generic.png`,
+                    price: estimatedPrice,
+                    amount: balance,
+                    value: balance * estimatedPrice,
+                    is_verified: false,
+                    is_core: false,
+                    contract_address: contractAddress,
+                  });
+                }
+              }
+              
+              // Small delay to avoid rate limiting
+              await new Promise(resolve => setTimeout(resolve, 100));
+            } catch (err) {
+              console.error(`Error fetching balance for token ${tokenSymbol}:`, err);
+            }
+          }
+        }
+        
+        tokens.push(...Array.from(tokenContracts.values()));
+      }
+
+      console.log(`✅ Found ${tokens.length} BASE tokens with total value: $${tokens.reduce((sum, t) => sum + t.value, 0).toFixed(2)}`);
       return tokens;
     } catch (error) {
       console.error('Error fetching BASE tokens:', error);
@@ -172,12 +244,14 @@ export class DeBankĀService {
 
   private async fetchEthereumTokens(walletAddress: string): Promise<any[]> {
     try {
-      // Use Etherscan API for Ethereum network tokens
       const etherscanApiKey = process.env.ETHERSCAN_API_KEY;
       if (!etherscanApiKey) {
         console.log('No Etherscan API key, skipping Ethereum tokens');
         return [];
       }
+
+      console.log(`🔍 Fetching Ethereum tokens for wallet: ${walletAddress}`);
+      const tokens = [];
 
       // Get ETH balance on Ethereum mainnet
       const ethBalanceResponse = await fetch(
@@ -185,16 +259,20 @@ export class DeBankĀService {
       );
       const ethBalanceData = await ethBalanceResponse.json();
       
-      // Get current ETH price
-      const ethPriceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
-      const ethPriceData = await ethPriceResponse.json();
-      const ethPrice = ethPriceData.ethereum?.usd || 0;
+      // Get ERC-20 token transactions 
+      const tokenTxResponse = await fetch(
+        `https://api.etherscan.io/api?module=account&action=tokentx&address=${walletAddress}&page=1&offset=50&sort=desc&apikey=${etherscanApiKey}`
+      );
+      const tokenTxData = await tokenTxResponse.json();
+
+      // Get current crypto prices
+      const priceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum,usd-coin,tether,chainlink,uniswap&vs_currencies=usd');
+      const priceData = await priceResponse.json();
       
-      const tokens = [];
-      
-      if (ethBalanceData.result) {
+      // Add ETH balance
+      if (ethBalanceData.result && ethBalanceData.status === '1') {
         const ethBalance = parseFloat(ethBalanceData.result) / 1e18;
-        if (ethBalance > 0.001) { // Only show if > 0.001 ETH
+        if (ethBalance > 0.0001) {
           tokens.push({
             id: 'eth',
             chain: 'eth',
@@ -203,15 +281,91 @@ export class DeBankĀService {
             display_symbol: 'ETH',
             decimals: 18,
             logo_url: 'https://static.debank.com/image/coin/logo_url/eth/6460e1f6c2206e0b3e19e07d4e98d8f2.png',
-            price: ethPrice,
+            price: priceData.ethereum?.usd || 0,
             amount: ethBalance,
-            value: ethBalance * ethPrice,
+            value: ethBalance * (priceData.ethereum?.usd || 0),
             is_verified: true,
             is_core: true,
           });
         }
       }
 
+      // Process ERC-20 tokens 
+      if (tokenTxData.result && Array.isArray(tokenTxData.result)) {
+        console.log(`📊 Found ${tokenTxData.result.length} Ethereum token transactions`);
+        console.log(`🔍 Sample transactions:`, tokenTxData.result.slice(0, 3).map(tx => ({
+          symbol: tx.tokenSymbol,
+          name: tx.tokenName,
+          contract: tx.contractAddress
+        })));
+        
+        const tokenContracts = new Map();
+        
+        for (const tx of tokenTxData.result) {
+          const contractAddress = tx.contractAddress?.toLowerCase();
+          const tokenSymbol = tx.tokenSymbol;
+          const tokenName = tx.tokenName;
+          const decimals = parseInt(tx.tokenDecimal) || 18;
+          
+          if (contractAddress && tokenSymbol && !tokenContracts.has(contractAddress)) {
+            // Check current balance for this token
+            try {
+              const balanceResponse = await fetch(
+                `https://api.etherscan.io/api?module=account&action=tokenbalance&contractaddress=${contractAddress}&address=${walletAddress}&tag=latest&apikey=${etherscanApiKey}`
+              );
+              const balanceData = await balanceResponse.json();
+              
+              if (balanceData.result && balanceData.status === '1') {
+                const balance = parseFloat(balanceData.result) / Math.pow(10, decimals);
+                
+                if (balance > 0.01) {
+                  // Get realistic price estimates
+                  let estimatedPrice = 0;
+                  const symbol = tokenSymbol.toLowerCase();
+                  
+                  if (symbol.includes('usdc')) {
+                    estimatedPrice = priceData['usd-coin']?.usd || 1;
+                  } else if (symbol.includes('usdt')) {
+                    estimatedPrice = priceData.tether?.usd || 1;
+                  } else if (symbol.includes('link')) {
+                    estimatedPrice = priceData.chainlink?.usd || 15;
+                  } else if (symbol.includes('uni')) {
+                    estimatedPrice = priceData.uniswap?.usd || 8;
+                  } else if (symbol.includes('weth')) {
+                    estimatedPrice = priceData.ethereum?.usd || 0;
+                  } else {
+                    estimatedPrice = 0.10; // Conservative estimate for unknown tokens
+                  }
+                  
+                  tokenContracts.set(contractAddress, {
+                    id: `eth-${contractAddress}`,
+                    chain: 'eth',
+                    name: tokenName,
+                    symbol: tokenSymbol,
+                    display_symbol: tokenSymbol,
+                    decimals,
+                    logo_url: `https://static.debank.com/image/coin/logo_url/generic/generic.png`,
+                    price: estimatedPrice,
+                    amount: balance,
+                    value: balance * estimatedPrice,
+                    is_verified: false,
+                    is_core: false,
+                    contract_address: contractAddress,
+                  });
+                }
+              }
+              
+              await new Promise(resolve => setTimeout(resolve, 150));
+            } catch (err) {
+              console.error(`Error fetching Ethereum balance for ${tokenSymbol}:`, err);
+            }
+          }
+        }
+        
+        tokens.push(...Array.from(tokenContracts.values()));
+      }
+
+      console.log(`✅ Found ${tokens.length} Ethereum tokens with total value: $${tokens.reduce((sum, t) => sum + t.value, 0).toFixed(2)}`);
       return tokens;
     } catch (error) {
       console.error('Error fetching Ethereum tokens:', error);
