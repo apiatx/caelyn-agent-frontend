@@ -525,6 +525,7 @@ export class DeBankĀService {
 
   // Format portfolio data for our application
   formatPortfolioForApp(portfolio: DeBankĀPortfolio) {
+    console.log(`📊 Formatting portfolio data with ${portfolio.token_list.length} tokens...`);
     const baseTokens = portfolio.token_list.filter(token => token.chain === 'base');
     const taoTokens = portfolio.token_list.filter(token => 
       token.symbol.toLowerCase().includes('tao') || 
@@ -544,16 +545,22 @@ export class DeBankĀService {
         logo: chain.logo_url,
       })),
       topTokens: portfolio.token_list
-        .map(token => ({
-          symbol: token.display_symbol || token.symbol,
-          name: token.name,
-          amount: token.amount,
-          price: token.price,
-          value: token.amount * token.price,
-          chain: token.chain,
-          logo: token.logo_url,
-        }))
-        .filter(token => token.value > 1.0) // Only show holdings worth more than $1
+        .map(token => {
+          const calculatedValue = token.amount * token.price;
+          return {
+            symbol: token.display_symbol || token.symbol,
+            name: token.name,
+            amount: token.amount,
+            price: token.price,
+            value: calculatedValue,
+            chain: token.chain,
+            logo: token.logo_url,
+          };
+        })
+        .filter(token => {
+          console.log(`🪙 ${token.symbol} (${token.chain}): $${token.value.toFixed(2)} = ${token.amount.toFixed(2)} × $${token.price.toFixed(6)}`);
+          return token.value > 1.0; // Only show holdings worth more than $1
+        })
         .sort((a, b) => b.value - a.value), // Sort by value highest to lowest
     };
   }

@@ -58,7 +58,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`🏦 Fetching DeBank portfolio for: ${walletAddress}`);
       
       const portfolio = await debankService.getPortfolio(walletAddress);
+      console.log(`📊 About to format portfolio with ${portfolio.token_list.length} tokens...`);
       const formattedData = debankService.formatPortfolioForApp(portfolio);
+      console.log(`📊 Formatted data has ${formattedData.topTokens.length} tokens after filtering`);
       
       res.json({
         success: true,

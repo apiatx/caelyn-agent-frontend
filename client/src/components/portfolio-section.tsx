@@ -642,7 +642,14 @@ export default function PortfolioSection() {
               <div className="space-y-4">
                 {debankData?.success ? 
                   debankData.data.topTokens
-                    .filter(token => token.chain === 'base' && token.value > 1)
+                    .filter(token => {
+                      const isBase = token.chain === 'base';
+                      const hasValue = token.value > 1;
+                      if (isBase) {
+                        console.log(`🪙 ${token.symbol}: $${token.value.toFixed(2)} - ${hasValue ? '✅ Showing' : '❌ Filtering out'}`);
+                      }
+                      return isBase && hasValue;
+                    })
                     .map((token, index) => (
                     <a 
                       key={index} 
