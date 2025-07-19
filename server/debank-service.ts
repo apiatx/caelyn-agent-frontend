@@ -123,27 +123,28 @@ export class DeBankĀService {
 
   private async fetchBaseTokens(walletAddress: string): Promise<any[]> {
     try {
-      // Use Etherscan API key since Etherscan now provides multi-chain access
-      const etherscanApiKey = process.env.ETHERSCAN_API_KEY;
-      if (!etherscanApiKey) {
-        console.log('No Etherscan API key, skipping BASE tokens');
-        return [];
-      }
+      // Use the provided multi-chain Etherscan API key for BASE network
+      const etherscanApiKey = 'XZ3N3FVGBRHBKKR1AKFY7471QX675GXRIQ';
+      console.log(`🔑 Using multi-chain Etherscan API key: ${etherscanApiKey.slice(0, 8)}...`);
 
       console.log(`🔍 Fetching BASE tokens for wallet: ${walletAddress}`);
       const tokens = [];
 
-      // Get ETH balance on BASE
+      // Get ETH balance on BASE using Etherscan V2 multi-chain API
       const ethBalanceResponse = await fetch(
-        `https://api.basescan.org/api?module=account&action=balance&address=${walletAddress}&tag=latest&apikey=${etherscanApiKey}`
+        `https://api.etherscan.io/v2/api?chainid=8453&module=account&action=balance&address=${walletAddress}&tag=latest&apikey=${etherscanApiKey}`
       );
       const ethBalanceData = await ethBalanceResponse.json();
       
-      // Get ERC-20 token balances on BASE
+      console.log(`🔍 BASE ETH balance (V2 API):`, ethBalanceData);
+      
+      // Get ERC-20 token transactions on BASE using Etherscan V2 multi-chain API
       const tokenBalanceResponse = await fetch(
-        `https://api.basescan.org/api?module=account&action=tokentx&address=${walletAddress}&page=1&offset=100&sort=desc&apikey=${etherscanApiKey}`
+        `https://api.etherscan.io/v2/api?chainid=8453&module=account&action=tokentx&address=${walletAddress}&page=1&offset=100&sort=desc&apikey=${etherscanApiKey}`
       );
       const tokenBalanceData = await tokenBalanceResponse.json();
+      
+      console.log(`🔍 BASE token response (V2 API):`, tokenBalanceData.status, 'result length:', tokenBalanceData.result?.length);
 
       // Get current crypto prices
       const priceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum,usd-coin,tether&vs_currencies=usd');
@@ -172,7 +173,12 @@ export class DeBankĀService {
 
       // Process ERC-20 tokens
       if (tokenBalanceData.result && Array.isArray(tokenBalanceData.result)) {
-        console.log(`📊 Found ${tokenBalanceData.result.length} token transactions`);
+        console.log(`📊 Found ${tokenBalanceData.result.length} BASE token transactions`);
+      } else {
+        console.log(`❌ BASE token data:`, tokenBalanceData);
+      }
+      
+      if (tokenBalanceData.result && Array.isArray(tokenBalanceData.result)) {
         
         // Get unique token contracts and their latest balances
         const tokenContracts = new Map();
@@ -187,7 +193,7 @@ export class DeBankĀService {
             // Check current balance for this token
             try {
               const balanceResponse = await fetch(
-                `https://api.basescan.org/api?module=account&action=tokenbalance&contractaddress=${contractAddress}&address=${walletAddress}&tag=latest&apikey=${etherscanApiKey}`
+                `https://api.etherscan.io/v2/api?chainid=8453&module=account&action=tokenbalance&contractaddress=${contractAddress}&address=${walletAddress}&tag=latest&apikey=${etherscanApiKey}`
               );
               const balanceData = await balanceResponse.json();
               
@@ -195,14 +201,20 @@ export class DeBankĀService {
                 const balance = parseFloat(balanceData.result) / Math.pow(10, decimals);
                 
                 if (balance > 0.01) { // Only include tokens with meaningful balance
-                  // Estimate price (simplified - real implementation would need token price API)
+                  // Better price estimation for BASE tokens
                   let estimatedPrice = 0;
-                  if (tokenSymbol.toLowerCase().includes('usdc') || tokenSymbol.toLowerCase().includes('usdt')) {
+                  const symbol = tokenSymbol.toLowerCase();
+                  
+                  if (symbol.includes('usdc') || symbol.includes('usdt')) {
                     estimatedPrice = 1; // Stablecoins
-                  } else if (tokenSymbol.toLowerCase().includes('weth')) {
+                  } else if (symbol.includes('weth') || symbol.includes('eth')) {
                     estimatedPrice = priceData.ethereum?.usd || 0;
+                  } else if (symbol.includes('brett') || symbol.includes('mog')) {
+                    estimatedPrice = 0.05; // Popular BASE memecoins
+                  } else if (symbol.includes('degen') || symbol.includes('based')) {
+                    estimatedPrice = 0.02; // Other BASE tokens
                   } else {
-                    estimatedPrice = 0.10; // Conservative estimate for other tokens
+                    estimatedPrice = 0.001; // Very conservative for unknown tokens
                   }
                   
                   tokenContracts.set(contractAddress, {
@@ -333,8 +345,12 @@ export class DeBankĀService {
                     estimatedPrice = priceData.uniswap?.usd || 8;
                   } else if (symbol.includes('weth')) {
                     estimatedPrice = priceData.ethereum?.usd || 0;
+                  } else if (symbol.includes('data')) {
+                    estimatedPrice = 0.05; // DATA token estimate
+                  } else if (symbol.includes('iris')) {
+                    estimatedPrice = 0.10; // IRIS token estimate  
                   } else {
-                    estimatedPrice = 0.10; // Conservative estimate for unknown tokens
+                    estimatedPrice = 0.01; // Conservative estimate for unknown tokens
                   }
                   
                   tokenContracts.set(contractAddress, {
