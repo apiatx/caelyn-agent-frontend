@@ -77,9 +77,11 @@ export function DeBankPortfolioSection({ initialWalletAddress = '' }: DeBankPort
               )}
             </div>
             <div className="text-xs text-gray-400 space-y-1">
-              <div>Try examples:</div>
-              <div>• Your wallet: 0x1677B97859620CcbF4eEcF33f6feB1b7bEA8D97E</div>
-              <div>• Vitalik: 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045</div>
+              <div>Your wallet is pre-loaded and ready to track!</div>
+              <div className="text-green-400">
+                ✓ Currently tracking: {initialWalletAddress ? initialWalletAddress.slice(0, 10) + '...' : 'No wallet set'}
+              </div>
+              <div>Alternative: 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045 (Vitalik)</div>
             </div>
           </div>
         </CardContent>

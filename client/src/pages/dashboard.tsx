@@ -115,7 +115,7 @@ export default function Dashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
         {activeTab === "dashboard" && <DashboardSection />}
         {activeTab === "portfolio" && <PortfolioSection />}
-        {activeTab === "debank" && <DeBankPortfolioSection />}
+        {activeTab === "debank" && <DeBankPortfolioSection initialWalletAddress="0x1677B97859620CcbF4eEcF33f6feB1b7bEA8D97E" />}
         {activeTab === "alpha" && <AlphaSection />}
         {activeTab === "whale" && <WhaleWatchingSection />}
         {activeTab === "research" && <MarketResearchSection />}
