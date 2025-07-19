@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { realTimePriceService } from './real-time-price-service';
 
 // DeBankĀ portfolio data types
 export const DeBankĀTokenSchema = z.object({
@@ -534,28 +535,50 @@ export class DeBankĀService {
     }
   }
 
-  // Format portfolio data for our application
+  // Format portfolio data for our application with REAL-TIME PRICES
   formatPortfolioForApp(portfolio: DeBankĀPortfolio) {
-    console.log(`📊 Formatting portfolio data with ${portfolio.token_list.length} tokens...`);
-    const baseTokens = portfolio.token_list.filter(token => token.chain === 'base');
-    const taoTokens = portfolio.token_list.filter(token => 
+    console.log(`📊 Formatting portfolio data with ${portfolio.token_list.length} tokens (REAL-TIME PRICES)...`);
+    
+    // Apply real-time price updates
+    const tokens = portfolio.token_list.map(token => {
+      const currentPrice = realTimePriceService.getCurrentPrice(token.symbol);
+      if (currentPrice > 0) {
+        token.price = currentPrice; // Update with real-time price
+      }
+      return token;
+    });
+    
+    const baseTokens = tokens.filter(token => token.chain === 'base');
+    const taoTokens = tokens.filter(token => 
       token.symbol.toLowerCase().includes('tao') || 
       token.name.toLowerCase().includes('bittensor')
     );
 
-    const baseValue = portfolio.chain_list.find(chain => chain.id === 'base')?.usd_value || 0;
+    // Recalculate values with real-time prices
+    const baseValue = baseTokens.reduce((sum, token) => sum + (token.amount * token.price), 0);
     const taoValue = taoTokens.reduce((sum, token) => sum + (token.amount * token.price), 0);
+    const totalValue = tokens.reduce((sum, token) => sum + (token.amount * token.price), 0);
+
+    // Update chain values with real-time calculations
+    const updatedChains = portfolio.chain_list.map(chain => {
+      if (chain.id === 'base') {
+        return { ...chain, usd_value: baseValue };
+      }
+      return chain;
+    });
+
+    console.log(`💰 REAL-TIME Portfolio Value: $${totalValue.toFixed(2)} (Base: $${baseValue.toFixed(2)})`);
 
     return {
-      totalValue: portfolio.total_usd_value,
+      totalValue,
       baseValue,
       taoValue,
-      chains: portfolio.chain_list.map(chain => ({
+      chains: updatedChains.map(chain => ({
         name: chain.name,
         value: chain.usd_value,
         logo: chain.logo_url,
       })),
-      topTokens: portfolio.token_list
+      topTokens: tokens
         .map(token => {
           const calculatedValue = token.amount * token.price;
           return {
@@ -569,7 +592,7 @@ export class DeBankĀService {
           };
         })
         .filter(token => {
-          console.log(`🪙 ${token.symbol} (${token.chain}): $${token.value.toFixed(2)} = ${token.amount.toFixed(2)} × $${token.price.toFixed(6)}`);
+          console.log(`🪙 ${token.symbol} (${token.chain}): $${token.value.toFixed(2)} = ${token.amount.toFixed(2)} × $${token.price.toFixed(6)} [LIVE]`);
           return token.value > 1.0; // Only show holdings worth more than $1
         })
         .sort((a, b) => b.value - a.value), // Sort by value highest to lowest
