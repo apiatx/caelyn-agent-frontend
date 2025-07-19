@@ -741,11 +741,17 @@ export default function PortfolioSection() {
                 <div className="text-left">
                   <h2 className="text-xl font-semibold text-white">DeBank Live Portfolio</h2>
                   <div className="flex items-center gap-4 mt-2">
+                    <div className="text-xl font-bold text-white">
+                      {debankData?.success ? 
+                        `$${(debankData.data.totalValue || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` :
+                        'Loading...'
+                      }
+                    </div>
                     <Badge variant="secondary" className="bg-green-500/20 text-green-400 border-green-500/30">
-                      Real-time data
+                      Live data
                     </Badge>
                     <Badge variant="secondary" className="bg-blue-500/20 text-blue-400 border-blue-500/30">
-                      Staking + Holdings
+                      Real-time prices
                     </Badge>
                   </div>
                 </div>
@@ -762,22 +768,87 @@ export default function PortfolioSection() {
               </div>
             </div>
 
-            <div className="space-y-4">
-              <div className="backdrop-blur-sm bg-white/5 rounded-xl border border-crypto-silver/10 overflow-hidden">
-                <iframe
-                  src={`https://debank.com/profile/${portfolio?.baseWalletAddress || baseWalletAddress}?embedded=true`}
-                  className="w-full h-[600px] border-0"
-                  title="DeBank Portfolio"
-                  allow="clipboard-read; clipboard-write"
-                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
-                />
+            {debankData?.success && (
+              <div className="space-y-4">
+                {/* Top Holdings */}
+                <div className="backdrop-blur-sm bg-white/5 rounded-xl border border-crypto-silver/10 p-4">
+                  <h3 className="text-lg font-semibold text-white mb-4">Live Holdings (&gt;$50)</h3>
+                  <div className="space-y-3">
+                    {debankData.data.topTokens
+                      .filter(token => token.value > 50)
+                      .slice(0, 10)
+                      .map((token, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                        <div className="flex items-center">
+                          <img 
+                            src={token.logo} 
+                            alt={token.symbol}
+                            className="w-8 h-8 rounded-full mr-3"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><rect width='32' height='32' fill='%233B82F6'/><text x='16' y='20' text-anchor='middle' fill='white' font-size='10' font-weight='bold'>${token.symbol.charAt(0)}</text></svg>`;
+                            }}
+                          />
+                          <div>
+                            <h4 className="font-medium text-white">{token.symbol}</h4>
+                            <p className="text-sm text-crypto-silver">{token.amount.toFixed(2)} tokens</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-white font-medium">
+                            ${token.value.toFixed(2)}
+                          </div>
+                          <div className="text-sm text-crypto-silver">
+                            ${token.price.toFixed(6)}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Portfolio Summary */}
+                <div className="backdrop-blur-sm bg-white/5 rounded-xl border border-crypto-silver/10 p-4">
+                  <h3 className="text-lg font-semibold text-white mb-4">Portfolio Summary</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="text-center p-3 bg-white/5 rounded-lg">
+                      <div className="text-sm text-crypto-silver">Total Holdings</div>
+                      <div className="text-xl font-bold text-white">
+                        ${debankData.data.totalValue.toFixed(2)}
+                      </div>
+                    </div>
+                    <div className="text-center p-3 bg-white/5 rounded-lg">
+                      <div className="text-sm text-crypto-silver">Tracked Tokens</div>
+                      <div className="text-xl font-bold text-white">
+                        {debankData.data.topTokens.length}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="text-center text-sm text-crypto-silver bg-white/5 rounded-lg p-3">
+                  <p>Live portfolio data from DeBank API with real-time price updates</p>
+                  <p className="mt-1">Wallet: {portfolio?.baseWalletAddress || baseWalletAddress}</p>
+                  <p className="mt-1 text-green-400">Data refreshes every 5 seconds</p>
+                </div>
               </div>
-              
-              <div className="text-center text-sm text-crypto-silver bg-white/5 rounded-lg p-3">
-                <p>Live portfolio data from DeBank showing real-time staking positions and holdings</p>
-                <p className="mt-1">Wallet: {portfolio?.baseWalletAddress || baseWalletAddress}</p>
+            )}
+
+            {!debankData?.success && (
+              <div className="text-center py-8">
+                <div className="text-crypto-silver mb-4">Loading DeBank portfolio data...</div>
+                <div className="text-sm text-crypto-silver">
+                  If data doesn't load, visit{' '}
+                  <a 
+                    href={`https://debank.com/profile/${portfolio?.baseWalletAddress || baseWalletAddress}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-400 hover:text-blue-300 underline"
+                  >
+                    your DeBank profile
+                  </a>
+                </div>
               </div>
-            </div>
+            )}
           </GlassCard>
         )}
 
