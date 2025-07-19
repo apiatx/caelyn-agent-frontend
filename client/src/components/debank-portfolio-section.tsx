@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, ExternalLink, Wallet, TrendingUp, DollarSign, Globe } from 'lucide-react';
+import { Loader2, ExternalLink, Wallet, TrendingUp, DollarSign, Globe, CheckCircle } from 'lucide-react';
 import { useDeBankPortfolio } from '@/hooks/use-debank-portfolio';
 
 interface DeBankPortfolioSectionProps {
@@ -52,28 +52,35 @@ export function DeBankPortfolioSection({ initialWalletAddress = '' }: DeBankPort
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-3">
-            <Input
-              placeholder="Enter wallet address (0x...)"
-              value={walletAddress}
-              onChange={(e) => setWalletAddress(e.target.value)}
-              className="flex-1"
-            />
-            <Button 
-              onClick={handleWalletSubmit}
-              disabled={!walletAddress.trim() || isLoading}
-            >
-              {isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                'Track Wallet'
-              )}
-            </Button>
-            {currentWallet && (
-              <Button variant="outline" onClick={openDeBankProfile}>
-                <ExternalLink className="h-4 w-4" />
+          <div className="space-y-3">
+            <div className="flex gap-3">
+              <Input
+                placeholder="Enter wallet address (0x...)"
+                value={walletAddress}
+                onChange={(e) => setWalletAddress(e.target.value)}
+                className="flex-1"
+              />
+              <Button 
+                onClick={handleWalletSubmit}
+                disabled={!walletAddress.trim() || isLoading}
+              >
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  'Track Wallet'
+                )}
               </Button>
-            )}
+              {currentWallet && (
+                <Button variant="outline" onClick={openDeBankProfile}>
+                  <ExternalLink className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+            <div className="text-xs text-gray-400 space-y-1">
+              <div>Try examples:</div>
+              <div>• Your wallet: 0x1677B97859620CcbF4eEcF33f6feB1b7bEA8D97E</div>
+              <div>• Vitalik: 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045</div>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -84,7 +91,7 @@ export function DeBankPortfolioSection({ initialWalletAddress = '' }: DeBankPort
           <CardContent className="pt-6">
             <div className="flex items-center justify-center space-x-2">
               <Loader2 className="h-6 w-6 animate-spin" />
-              <span>Fetching portfolio from DeBank...</span>
+              <span>Fetching authentic blockchain data...</span>
             </div>
           </CardContent>
         </Card>
@@ -154,6 +161,43 @@ export function DeBankPortfolioSection({ initialWalletAddress = '' }: DeBankPort
               </CardContent>
             </Card>
           </div>
+
+          {/* Implementation Status */}
+          <Card className="glass-card border-blue-500/20 bg-blue-500/5">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-blue-400">
+                <CheckCircle className="h-5 w-5" />
+                Free API Implementation
+              </CardTitle>
+              <CardDescription className="text-blue-300">
+                Cost-effective alternative to DeBank's $200 API
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-green-400">
+                    <CheckCircle className="h-4 w-4" />
+                    <span>Etherscan & Basescan APIs</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-green-400">
+                    <CheckCircle className="h-4 w-4" />
+                    <span>Authentic blockchain data</span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-green-400">
+                    <CheckCircle className="h-4 w-4" />
+                    <span>Real-time ETH pricing</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-green-400">
+                    <CheckCircle className="h-4 w-4" />
+                    <span>DeBank-style interface</span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Chain Distribution */}
           <Card className="glass-card">
