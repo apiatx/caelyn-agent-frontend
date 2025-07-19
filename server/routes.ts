@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { realTimeDataService } from './real-time-data-service-new';
 import { debankService } from './debank-service';
-import { getStakingData } from './staking-service';
+import { debankStakingService } from './debank-staking-service';
 import { z } from "zod";
 import { insertPremiumAccessSchema } from "@shared/schema";
 
@@ -93,11 +93,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Staking data endpoint
+  // Staking data endpoint - using authentic DeBank API
   app.get("/api/staking/:walletAddress", async (req, res) => {
     try {
       const { walletAddress } = req.params;
-      const stakingData = await getStakingData(walletAddress);
+      const stakingData = await debankStakingService.getStakingData(walletAddress);
       res.json(stakingData);
     } catch (error) {
       console.error('Staking data fetch error:', error);

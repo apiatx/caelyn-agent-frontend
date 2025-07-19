@@ -1,6 +1,6 @@
 import fetch from 'node-fetch';
 import { realTimePriceService } from './real-time-price-service.js';
-import { getStakingData } from './staking-service';
+import { debankStakingService } from './debank-staking-service';
 
 export interface DeBankPortfolioToken {
   id: string;
@@ -147,8 +147,8 @@ class DeBankService {
         }
       }
       
-      // Add staking data to total portfolio value
-      const stakingData = await getStakingData(walletAddress);
+      // Add authentic staking data from DeBank to total portfolio value
+      const stakingData = await debankStakingService.getStakingData(walletAddress);
       const totalWithStaking = totalValue + stakingData.totalStakedValue;
       
       console.log(`💰 TOTAL PORTFOLIO VALUE (DEBANK DATA + LIVE PRICES): $${totalValue.toFixed(2)}`);
