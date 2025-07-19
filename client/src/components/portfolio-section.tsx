@@ -732,83 +732,51 @@ export default function PortfolioSection() {
           </GlassCard>
         </Collapsible>
 
-        {/* Staking Positions */}
-        {stakingData && stakingData.totalStakedValue > 0 && (
+        {/* Real-Time DeBank Portfolio Integration */}
+        {(portfolio?.baseWalletAddress || baseWalletAddress) && (
           <GlassCard className="p-6">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center">
-                <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full mr-3 flex items-center justify-center text-sm font-bold">🔒</div>
+                <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-blue-500 rounded-full mr-3 flex items-center justify-center text-sm font-bold">DB</div>
                 <div className="text-left">
-                  <h2 className="text-xl font-semibold text-white">Staked Positions</h2>
+                  <h2 className="text-xl font-semibold text-white">DeBank Live Portfolio</h2>
                   <div className="flex items-center gap-4 mt-2">
-                    <div className="text-xl font-bold text-white">
-                      ${stakingData.totalStakedValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </div>
-                    <Badge variant="secondary" className="bg-orange-500/20 text-orange-400 border-orange-500/30">
-                      {stakingData.protocols.length} protocols
+                    <Badge variant="secondary" className="bg-green-500/20 text-green-400 border-green-500/30">
+                      Real-time data
+                    </Badge>
+                    <Badge variant="secondary" className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+                      Staking + Holdings
                     </Badge>
                   </div>
                 </div>
               </div>
+              <div className="flex items-center gap-2">
+                <a 
+                  href={`https://debank.com/profile/${portfolio?.baseWalletAddress || baseWalletAddress}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-crypto-silver hover:text-white transition-colors group"
+                >
+                  <ExternalLink className="h-4 w-4 group-hover:scale-110 transition-transform" />
+                </a>
+              </div>
             </div>
 
             <div className="space-y-4">
-              {stakingData.protocols.map((protocol, index) => (
-                <div key={index} className="backdrop-blur-sm bg-white/5 rounded-xl border border-crypto-silver/10 p-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center">
-                      <a 
-                        href={protocol.protocolUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-white font-medium hover:text-crypto-success transition-colors flex items-center gap-2"
-                      >
-                        {protocol.protocol}
-                        <ExternalLink className="h-4 w-4" />
-                      </a>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-white font-medium">
-                        ${protocol.totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </div>
-                      <div className="text-sm text-crypto-silver">
-                        {protocol.positions.length} positions
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    {protocol.positions.map((position, posIndex) => (
-                      <div key={posIndex} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
-                        <div className="flex items-center">
-                          <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mr-3 flex items-center justify-center text-xs font-bold">
-                            {position.symbol}
-                          </div>
-                          <div>
-                            <h4 className="font-medium text-white">{position.token}</h4>
-                            <p className="text-sm text-crypto-silver">
-                              {position.amount.toFixed(2)} {position.symbol}
-                              {position.unlockTime && (
-                                <span className="ml-2 text-orange-400">
-                                  🔒 Until {position.unlockTime}
-                                </span>
-                              )}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-white font-medium">
-                            ${position.value.toFixed(2)}
-                          </div>
-                          <div className="text-sm text-crypto-silver">
-                            ${position.price.toFixed(6)}/token
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
+              <div className="backdrop-blur-sm bg-white/5 rounded-xl border border-crypto-silver/10 overflow-hidden">
+                <iframe
+                  src={`https://debank.com/profile/${portfolio?.baseWalletAddress || baseWalletAddress}?embedded=true`}
+                  className="w-full h-[600px] border-0"
+                  title="DeBank Portfolio"
+                  allow="clipboard-read; clipboard-write"
+                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+                />
+              </div>
+              
+              <div className="text-center text-sm text-crypto-silver bg-white/5 rounded-lg p-3">
+                <p>Live portfolio data from DeBank showing real-time staking positions and holdings</p>
+                <p className="mt-1">Wallet: {portfolio?.baseWalletAddress || baseWalletAddress}</p>
+              </div>
             </div>
           </GlassCard>
         )}
