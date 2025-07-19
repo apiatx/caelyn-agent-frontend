@@ -37,6 +37,27 @@ export default function PortfolioSection() {
     portfolio?.baseWalletAddress || baseWalletAddress
   );
 
+  // Debug logging to see what data we're getting
+  useEffect(() => {
+    console.log('🔍 Portfolio State:', {
+      portfolioWallet: portfolio?.baseWalletAddress,
+      localWallet: baseWalletAddress,
+      finalWallet: portfolio?.baseWalletAddress || baseWalletAddress,
+      timestamp: new Date().toLocaleTimeString()
+    });
+  }, [portfolio, baseWalletAddress]);
+
+  useEffect(() => {
+    if (debankData) {
+      console.log('🔍 DeBank Data Received:', {
+        success: debankData.success,
+        totalValue: debankData.data?.totalValue,
+        tokensCount: debankData.data?.topTokens?.length,
+        timestamp: new Date().toLocaleTimeString()
+      });
+    }
+  }, [debankData]);
+
   // Get staking data for the wallet
   const { data: stakingData, isLoading: isStakingLoading } = useStakingData(
     portfolio?.baseWalletAddress || baseWalletAddress

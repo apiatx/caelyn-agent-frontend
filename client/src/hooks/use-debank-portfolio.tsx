@@ -36,7 +36,8 @@ export function useDeBankPortfolio(walletAddress: string | null) {
   return useQuery<DeBankPortfolioResponse>({
     queryKey: ['/api/debank/portfolio', walletAddress],
     enabled: !!walletAddress && walletAddress.length > 0,
-    refetchInterval: 30000, // Refresh every 30 seconds
+    refetchInterval: 5000, // Refresh every 5 seconds for real-time updates
+    staleTime: 0, // Always consider data stale
     retry: 3,
   });
 }
