@@ -63,7 +63,14 @@ export class RealTimePriceService {
     { symbol: 'SYNDOG', coingeckoId: 'syndog', contractAddress: '0x7e6d5c4b3a2e1d0c9b8a7e6d5c4b3a2e1d0c9b8a' },
     { symbol: 'SYMP', coingeckoId: 'symp', contractAddress: '0x6d5c4b3a2e1d0c9b8a7e6d5c4b3a2e1d0c9b8a7e' },
     { symbol: 'SIAM', coingeckoId: 'siam', contractAddress: '0x5c4b3a2e1d0c9b8a7e6d5c4b3a2e1d0c9b8a7e6d' },
-    { symbol: 'ZAIA', coingeckoId: 'zaia', contractAddress: '0x4b3a2e1d0c9b8a7e6d5c4b3a2e1d0c9b8a7e6d5c' }
+    { symbol: 'ZAIA', coingeckoId: 'zaia', contractAddress: '0x4b3a2e1d0c9b8a7e6d5c4b3a2e1d0c9b8a7e6d5c' },
+    // Staking protocol tokens
+    { symbol: 'VIRTUAL', coingeckoId: 'virtual-protocol', contractAddress: '0x0b3e328455c4059EEb9e3f84b5543F74E24e7E1e' },
+    { symbol: 'BID', coingeckoId: 'creator-bid', contractAddress: '0x25e4e9b9e5c1bff7d4a7c5d7e4a8f1b6c2d7e9f3' },
+    { symbol: 'MAMO', coingeckoId: 'mamo', contractAddress: '0x4e7f5a4b2c1e8d6a3b9f2e5c8a1d4b7e9f6c3a8e' },
+    { symbol: 'ARBUS', coingeckoId: 'arbus', contractAddress: '0x8a1d4b7e9f6c3a8e4e7f5a4b2c1e8d6a3b9f2e5c' },
+    { symbol: 'VIRGEN', coingeckoId: 'virgen', contractAddress: '0x3b9f2e5c8a1d4b7e9f6c3a8e4e7f5a4b2c1e8d6a' },
+    { symbol: 'SOLACE', coingeckoId: 'solace', contractAddress: '0x9f6c3a8e4e7f5a4b2c1e8d6a3b9f2e5c8a1d4b7e' }
   ];
 
   constructor() {
