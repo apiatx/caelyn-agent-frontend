@@ -440,7 +440,32 @@ export class DeBankĀService {
             { id: 'okayeg', chain: 'base', name: 'OKAYEG', symbol: 'OKAYEG', decimals: 18, price: 0.00001285, amount: 30535283.1930, optimized_symbol: 'OKAYEG', is_verified: true, is_core: false, is_wallet: true, logo_url: 'https://static.debank.com/image/base_token/logo_url/0xdb6e0e5094a25a052ab6845a9f1e486b9a9b3dde/eedca66db64b0a7118ddf904d3686b17.png' },
             { id: 'simmi', chain: 'base', name: 'SIMMI', symbol: 'SIMMI', decimals: 18, price: 0.00004264, amount: 8190501.5543, optimized_symbol: 'SIMMI', is_verified: true, is_core: false, is_wallet: true, logo_url: 'https://static.debank.com/image/base_token/logo_url/0x161e113b8e9bbaefb846f73f31624f6f9607bd44/5848d4c47cb67b4dfd8459ee4732f57e.png' },
             { id: 'game', chain: 'base', name: 'GAME', symbol: 'GAME', decimals: 18, price: 0.0440, amount: 6847.9671, optimized_symbol: 'GAME', is_verified: true, is_core: false, is_wallet: true, logo_url: 'https://static.debank.com/image/base_token/logo_url/0x1c4cca7c5db003824208adda61bd749e55f463a3/bc5c742f88ed0b9836f775fac81fee8d.png' },
-            { id: 'torus', chain: 'base', name: 'TORUS', symbol: 'TORUS', decimals: 18, price: 0.4147, amount: 669.8966, optimized_symbol: 'TORUS', is_verified: true, is_core: false, is_wallet: true, logo_url: 'https://static.debank.com/image/base_token/logo_url/0x78ec15c5fd8efc5e924e9eebb9e549e29c785867/aad8a4cb8c8a4d464be9f6fd5b3e8915.png' }
+            { id: 'torus', chain: 'base', name: 'TORUS', symbol: 'TORUS', decimals: 18, price: 0.4147, amount: 669.8966, optimized_symbol: 'TORUS', is_verified: true, is_core: false, is_wallet: true, logo_url: 'https://static.debank.com/image/base_token/logo_url/0x78ec15c5fd8efc5e924e9eebb9e549e29c785867/aad8a4cb8c8a4d464be9f6fd5b3e8915.png' },
+            { id: 'skicat', chain: 'base', name: 'SKICAT', symbol: 'SKICAT', decimals: 18, price: 0.0019, amount: 145686.9654, optimized_symbol: 'SKICAT', is_verified: true, is_core: false, is_wallet: true, logo_url: 'https://static.debank.com/image/base_token/logo_url/0xa6f774051dfb6b54869227fda2df9cb46f296c09/020b4b013f1950a6ea201d70a6b65e00.png' },
+            { id: 'cdx', chain: 'base', name: 'CDX', symbol: 'CDX', decimals: 18, price: 0.0464, amount: 5725.2334, optimized_symbol: 'CDX', is_verified: true, is_core: false, is_wallet: true, logo_url: 'https://static.debank.com/image/base_token/logo_url/0xc0d3700000c0e32716863323bfd936b54a1633d1/623efa536d958928e294e88aec9a2d25.png' },
+            { id: 'giza', chain: 'base', name: 'GIZA', symbol: 'GIZA', decimals: 18, price: 0.1502, amount: 1676.3752, optimized_symbol: 'GIZA', is_verified: true, is_core: false, is_wallet: true, logo_url: 'https://static.debank.com/image/eth_token/logo_url/0x590830dfdf9a3f68afcdde2694773debdf267774/72d7ade8f86dddaa068846f33ddac888.png' },
+            { id: 'lay', chain: 'base', name: 'LAY', symbol: 'LAY', decimals: 18, price: 0.0116, amount: 20388.9439, optimized_symbol: 'LAY', is_verified: true, is_core: false, is_wallet: true, logo_url: 'https://static.debank.com/image/base_token/logo_url/0xb89d354ad1b0d95a48b3de4607f75a8cd710c1ba/beb1dc6cafb2f37fd517f5931037c337.png' },
+            { id: 'heu', chain: 'base', name: 'HEU', symbol: 'HEU', decimals: 18, price: 0.0295, amount: 7834.2865, optimized_symbol: 'HEU', is_verified: true, is_core: false, is_wallet: true, logo_url: 'https://static.debank.com/image/base_token/logo_url/0xef22cb48b8483df6152e1423b19df5553bbd818b/77d40c704c8f776146344ff1d002e061.png' },
+            { id: 'mochi', chain: 'base', name: 'MOCHI', symbol: 'MOCHI', decimals: 18, price: 0.00001154, amount: 19317705.6056, optimized_symbol: 'MOCHI', is_verified: true, is_core: false, is_wallet: true, logo_url: 'https://static.debank.com/image/base_token/logo_url/0xf6e932ca12afa26665dc4dde7e27be02a7c02e50/f3dc9753d4c417d3f6e385c29f3dfb48.png' },
+            { id: 'shogun', chain: 'base', name: 'SHOGUN', symbol: 'SHOGUN', decimals: 18, price: 0.1098, amount: 1920.4407, optimized_symbol: 'SHOGUN', is_verified: true, is_core: false, is_wallet: true, logo_url: 'https://static.debank.com/image/base_token/logo_url/0xd63aaeec20f9b74d49f8dd8e319b6edd564a7dd0/c2dcb62b4c03f9aea38db8d160cf388b.png' },
+            { id: 'aion', chain: 'base', name: 'AION', symbol: 'AION', decimals: 18, price: 0.4223, amount: 477.7119, optimized_symbol: 'AION', is_verified: true, is_core: false, is_wallet: true, logo_url: 'https://static.debank.com/image/base_token/logo_url/0xfc48314ad4ad5bd36a84e8307b86a68a01d95d9c/241039ae45c958c635a5183a6cf8cd16.png' },
+            { id: 'veil', chain: 'base', name: 'VEIL', symbol: 'VEIL', decimals: 18, price: 0.0432, amount: 4452.7913, optimized_symbol: 'VEIL', is_verified: true, is_core: false, is_wallet: true, logo_url: 'https://static.debank.com/image/base_token/logo_url/0x767a739d1a152639e9ea1d8c1bd55fdc5b217d7f/10950fdd30a3eb507113c824f7f023de.png' },
+            { id: 'riz', chain: 'base', name: 'RIZ', symbol: 'RIZ', decimals: 18, price: 0.0027, amount: 68388.9183, optimized_symbol: 'RIZ', is_verified: true, is_core: false, is_wallet: true, logo_url: 'https://static.debank.com/image/base_token/logo_url/0x67543cf0304c19ca62ac95ba82fd4f4b40788dc1/1b0d96601cfdc62bb8221055e4f28289.png' },
+            { id: 'zfi', chain: 'base', name: 'ZFI', symbol: 'ZFI', decimals: 18, price: 0.0163, amount: 10917.7828, optimized_symbol: 'ZFI', is_verified: true, is_core: false, is_wallet: true, logo_url: 'https://static.debank.com/image/base_token/logo_url/0xd080ed3c74a20250a2c9821885203034acd2d5ae/d1bd6aa01f57ba5ef1cf92746981d100.png' },
+            { id: 'normilio', chain: 'base', name: 'NORMILIO', symbol: 'NORMILIO', decimals: 18, price: 0.0006, amount: 289361.0312, optimized_symbol: 'NORMILIO', is_verified: true, is_core: false, is_wallet: true, logo_url: 'https://static.debank.com/image/base_token/logo_url/0xcde90558fc317c69580deeaf3efc509428df9080/acf48e1364886101cdc368c7e3d51b79.png' },
+            { id: 'archai', chain: 'base', name: 'archai', symbol: 'archai', decimals: 18, price: 0.0047, amount: 37263.1058, optimized_symbol: 'archai', is_verified: true, is_core: false, is_wallet: true, logo_url: 'https://static.debank.com/image/base_token/logo_url/0xd3b0b58ec9516e4b875a075328e2cb059d4d54db/b5eb266aecc84cad46b67d7aba32e068.png' },
+            { id: 'rfl', chain: 'base', name: 'RFL', symbol: 'RFL', decimals: 18, price: 0.2377, amount: 730.3865, optimized_symbol: 'RFL', is_verified: true, is_core: false, is_wallet: true, logo_url: 'https://static.debank.com/image/base_token/logo_url/0x6e2c81b6c2c0e02360f00a0da694e489acb0b05e/8736a3de6de1c47747b74b812fb3f8cf.png' },
+            { id: 'trc', chain: 'base', name: 'TRC', symbol: 'TRC', decimals: 18, price: 0.0029, amount: 57740.9167, optimized_symbol: 'TRC', is_verified: true, is_core: false, is_wallet: true, logo_url: 'https://static.debank.com/image/base_token/logo_url/0xc23e4352cdba6fc951398bf274619c4529eac867/b105c4f7f5fc557f501f9d0ecd93bb7e.png' },
+            { id: 'a0t', chain: 'base', name: 'A0T', symbol: 'A0T', decimals: 18, price: 1.6942, amount: 95.0823, optimized_symbol: 'A0T', is_verified: true, is_core: false, is_wallet: true, logo_url: 'https://static.debank.com/image/base_token/logo_url/0xcc4adb618253ed0d4d8a188fb901d70c54735e03/1f5b597f6eabb453f6309eaae96d3f78.png' },
+            { id: 'agent', chain: 'base', name: 'AGENT (AgentAlgo)', symbol: 'AGENT', decimals: 18, price: 0.1115, amount: 1401.7929, optimized_symbol: 'AGENT', is_verified: true, is_core: false, is_wallet: true, logo_url: 'https://static.debank.com/image/base_token/logo_url/0xd98832e8a59156acbee4744b9a94a9989a728f36/ccefb8afc42094e94f3a50f284b5de67.png' },
+            { id: 'bps', chain: 'base', name: 'BPS', symbol: 'BPS', decimals: 18, price: 0.0006, amount: 232499.9995, optimized_symbol: 'BPS', is_verified: true, is_core: false, is_wallet: true, logo_url: 'https://static.debank.com/image/base_token/logo_url/0xda761a290e01c69325d12d82ac402e5a73d62e81/37e53784cb591d2508e84e46f601e9ad.png' },
+            { id: 'cj', chain: 'base', name: 'CJ', symbol: 'CJ', decimals: 18, price: 0.0000036, amount: 40059356.0097, optimized_symbol: 'CJ', is_verified: true, is_core: false, is_wallet: true, logo_url: 'https://static.debank.com/image/base_token/logo_url/0x0f884a04d15a3cf4aecda7de0288c3a611326839/949d549dfa8b0e4607762b55e6188477.png' },
+            { id: 'sim', chain: 'base', name: 'SIM', symbol: 'SIM', decimals: 18, price: 0.0038, amount: 37406.9265, optimized_symbol: 'SIM', is_verified: true, is_core: false, is_wallet: true, logo_url: 'https://static.debank.com/image/base_token/logo_url/0x749e5334752466cda899b302ed4176b8573dc877/4cc7ab1bd75848926bab8439832bcc24.png' },
+            { id: 'beats', chain: 'base', name: 'BEATS', symbol: 'BEATS', decimals: 18, price: 0.0009, amount: 157102.3685, optimized_symbol: 'BEATS', is_verified: true, is_core: false, is_wallet: true, logo_url: 'https://static.debank.com/image/base_token/logo_url/0x315b8c9a1123c10228d469551033440441b41f0b/c365a63a3d1a6192229c1741716fc715.png' },
+            { id: 'bario', chain: 'base', name: 'BARIO', symbol: 'BARIO', decimals: 18, price: 0.0021, amount: 61969.2979, optimized_symbol: 'BARIO', is_verified: true, is_core: false, is_wallet: true, logo_url: 'https://static.debank.com/image/base_token/logo_url/0x814fe70e85025bec87d4ad3f3b713bdcaac0579b/df78c92c1a07ef3c66cff85a8a0b9d51.png' },
+            { id: 'base-for-everyone', chain: 'base', name: 'Base is for everyone', symbol: 'BFE', decimals: 18, price: 0.0050, amount: 25205.4969, optimized_symbol: 'BFE', is_verified: true, is_core: false, is_wallet: true, logo_url: 'https://static.debank.com/image/base_token/logo_url/0xd769d56f479e9e72a77bb1523e866a33098feec5/9553f7fcc96c833fa318af8994c2f660.png' },
+            { id: 'russell', chain: 'base', name: 'RUSSELL', symbol: 'RUSSELL', decimals: 18, price: 0.0022, amount: 54868.5466, optimized_symbol: 'RUSSELL', is_verified: true, is_core: false, is_wallet: true, logo_url: 'https://static.debank.com/image/base_token/logo_url/0x0c5142bc58f9a61ab8c3d2085dd2f4e550c5ce0b/d164beddc5f2ea72556d1c1b95d28c0a.png' },
+            { id: 'timi', chain: 'base', name: 'TIMI', symbol: 'TIMI', decimals: 18, price: 0.0003, amount: 435171.9157, optimized_symbol: 'TIMI', is_verified: true, is_core: false, is_wallet: true, logo_url: 'https://static.debank.com/image/base_token/logo_url/0x9beec80e62aa257ced8b0edd8692f79ee8783777/7f9d4efb665df0f6de5d7609d96c355b.png' }
           ],
           protocol_list: []
         };
@@ -449,7 +474,7 @@ export class DeBankĀService {
         
         console.log(`💰 Portfolio total value: $${portfolio.total_usd_value.toFixed(2)}`);
         console.log(`🔗 Chains: ${portfolio.chain_list.map(c => `${c.name} ($${c.usd_value.toFixed(2)})`).join(', ')}`);
-        console.log(`🪙 Tokens: ${portfolio.token_list.length} total`);
+        console.log(`🪙 Tokens: ${portfolio.token_list.length} total (all holdings >$1 from DeBank profile)`);
         
         return portfolio;
       }
@@ -519,8 +544,6 @@ export class DeBankĀService {
         logo: chain.logo_url,
       })),
       topTokens: portfolio.token_list
-        .sort((a, b) => (b.amount * b.price) - (a.amount * a.price))
-        .slice(0, 10)
         .map(token => ({
           symbol: token.display_symbol || token.symbol,
           name: token.name,
@@ -529,7 +552,9 @@ export class DeBankĀService {
           value: token.amount * token.price,
           chain: token.chain,
           logo: token.logo_url,
-        })),
+        }))
+        .filter(token => token.value >= 1.0) // Only show holdings worth $1 or more
+        .sort((a, b) => b.value - a.value), // Sort by value highest to lowest
     };
   }
 }
