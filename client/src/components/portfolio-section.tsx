@@ -367,10 +367,10 @@ export default function PortfolioSection() {
           {debankData?.success && (
             <div className="mt-2 text-xs text-crypto-silver flex items-center gap-2">
               <Badge variant="secondary" className="bg-blue-500/20 text-blue-400 border-blue-500/30">
-                BASE: ${debankData.data.baseValue.toFixed(2)}
+                BASE: ${(debankData.data.baseValue || 0).toFixed(2)}
               </Badge>
               <Badge variant="secondary" className="bg-purple-500/20 text-purple-400 border-purple-500/30">
-                TAO: ${debankData.data.taoValue.toFixed(2)}
+                Live Prices: ${debankData.data.tokenCount || 0} tokens
               </Badge>
             </div>
           )}
