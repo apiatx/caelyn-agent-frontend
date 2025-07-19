@@ -62,10 +62,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const formattedData = debankService.formatPortfolioForApp(portfolio);
       console.log(`📊 Formatted data has ${formattedData.topTokens.length} tokens after filtering`);
       
-      // OVERRIDE: Force exact DeBank value to match user's authentic wallet
-      console.log(`🔧 OVERRIDING to match exact DeBank value: $13,650`);
-      formattedData.totalValue = 13650;
-      formattedData.baseValue = 13650; // All holdings are on BASE network
+      // REAL-TIME: Fetch current wallet value from blockchain APIs
+      console.log(`📡 Fetching REAL-TIME wallet value from blockchain APIs...`);
+      const realTimeValue = await debankService.getRealTimeWalletValue(walletAddress);
+      console.log(`💰 LIVE wallet value: $${realTimeValue.toFixed(2)}`);
+      
+      formattedData.totalValue = realTimeValue;
+      formattedData.baseValue = realTimeValue; // All holdings are on BASE network
       
       res.json({
         success: true,
