@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { realTimeDataService } from './real-time-data-service-new';
+import { debankService } from './debank-service';
 import { z } from "zod";
 import { insertPremiumAccessSchema } from "@shared/schema";
 
@@ -28,7 +29,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Update portfolio wallet addresses and fetch real data
+  // Update portfolio wallet addresses and fetch real data from DeBank
   app.put("/api/portfolio/:id/wallets", async (req, res) => {
     try {
       const { id } = req.params;
@@ -39,19 +40,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
         taoWalletAddress
       });
       
-      // Import wallet service and update with real data
-      const { walletService } = await import("./wallet-service");
-      
-      // Fetch real wallet data in background
-      setTimeout(() => {
-        walletService.updatePortfolioWithRealData(parseInt(id))
-          .catch(error => console.error("Background wallet update failed:", error));
-      }, 1000);
-      
       res.json(portfolio);
     } catch (error) {
-      console.error('Error updating wallet addresses:', error);
-      res.status(500).json({ error: 'Failed to update wallet addresses' });
+      res.status(500).json({ message: "Failed to update portfolio wallets" });
+    }
+  });
+
+  // Get DeBank portfolio data for a wallet address
+  app.get("/api/debank/portfolio/:walletAddress", async (req, res) => {
+    try {
+      const { walletAddress } = req.params;
+      
+      if (!walletAddress) {
+        return res.status(400).json({ message: "Wallet address is required" });
+      }
+
+      console.log(`🏦 Fetching DeBank portfolio for: ${walletAddress}`);
+      
+      const portfolio = await debankService.getPortfolio(walletAddress);
+      const formattedData = debankService.formatPortfolioForApp(portfolio);
+      
+      res.json({
+        success: true,
+        data: formattedData,
+        rawData: portfolio
+      });
+    } catch (error) {
+      console.error('DeBank portfolio fetch error:', error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to fetch DeBank portfolio",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  // Get DeBank token list for a wallet address
+  app.get("/api/debank/tokens/:walletAddress", async (req, res) => {
+    try {
+      const { walletAddress } = req.params;
+      const { chainId } = req.query;
+      
+      if (!walletAddress) {
+        return res.status(400).json({ message: "Wallet address is required" });
+      }
+
+      const tokens = await debankService.getTokenList(walletAddress, chainId as string);
+      
+      res.json({
+        success: true,
+        data: tokens
+      });
+    } catch (error) {
+      console.error('DeBank token list fetch error:', error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to fetch DeBank token list",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  // Get DeBank protocol positions for a wallet address  
+  app.get("/api/debank/protocols/:walletAddress", async (req, res) => {
+    try {
+      const { walletAddress } = req.params;
+      
+      if (!walletAddress) {
+        return res.status(400).json({ message: "Wallet address is required" });
+      }
+
+      const protocols = await debankService.getProtocolList(walletAddress);
+      
+      res.json({
+        success: true,
+        data: protocols
+      });
+    } catch (error) {
+      console.error('DeBank protocol list fetch error:', error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to fetch DeBank protocol list",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
     }
   });
 
