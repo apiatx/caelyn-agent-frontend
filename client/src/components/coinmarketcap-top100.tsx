@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { TrendingUp, TrendingDown, DollarSign, BarChart3, Globe } from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, BarChart3, Globe, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { GlassCard } from './glass-card';
 import { Badge } from '@/components/ui/badge';
+import { useState, useMemo } from 'react';
 
 interface CoinMarketCapCrypto {
   id: number;
@@ -16,17 +17,105 @@ interface CoinMarketCapCrypto {
       percent_change_1h: number;
       percent_change_24h: number;
       percent_change_7d: number;
+      percent_change_30d: number;
+      percent_change_60d: number;
+      percent_change_90d: number;
       market_cap: number;
     };
   };
 }
 
+type SortField = 'rank' | 'name' | 'price' | 'market_cap' | 'volume_24h' | 'percent_change_24h' | 'percent_change_7d' | 'percent_change_30d' | 'percent_change_90d';
+type SortDirection = 'asc' | 'desc';
+
 export function CoinMarketCapTop100() {
+  const [sortField, setSortField] = useState<SortField>('rank');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+
   const { data: cryptos, isLoading, error, refetch } = useQuery<CoinMarketCapCrypto[]>({
     queryKey: ['/api/coinmarketcap/top100'],
     refetchInterval: 300000, // Refresh every 5 minutes
     staleTime: 240000 // 4 minutes
   });
+
+  const sortedCryptos = useMemo(() => {
+    if (!cryptos) return [];
+
+    return [...cryptos].sort((a, b) => {
+      let aValue: number | string;
+      let bValue: number | string;
+
+      switch (sortField) {
+        case 'rank':
+          aValue = a.cmc_rank;
+          bValue = b.cmc_rank;
+          break;
+        case 'name':
+          aValue = a.name;
+          bValue = b.name;
+          break;
+        case 'price':
+          aValue = a.quote.USD.price;
+          bValue = b.quote.USD.price;
+          break;
+        case 'market_cap':
+          aValue = a.quote.USD.market_cap;
+          bValue = b.quote.USD.market_cap;
+          break;
+        case 'volume_24h':
+          aValue = a.quote.USD.volume_24h;
+          bValue = b.quote.USD.volume_24h;
+          break;
+        case 'percent_change_24h':
+          aValue = a.quote.USD.percent_change_24h || 0;
+          bValue = b.quote.USD.percent_change_24h || 0;
+          break;
+        case 'percent_change_7d':
+          aValue = a.quote.USD.percent_change_7d || 0;
+          bValue = b.quote.USD.percent_change_7d || 0;
+          break;
+        case 'percent_change_30d':
+          aValue = a.quote.USD.percent_change_30d || 0;
+          bValue = b.quote.USD.percent_change_30d || 0;
+          break;
+        case 'percent_change_90d':
+          aValue = a.quote.USD.percent_change_90d || 0;
+          bValue = b.quote.USD.percent_change_90d || 0;
+          break;
+        default:
+          aValue = a.cmc_rank;
+          bValue = b.cmc_rank;
+      }
+
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        return sortDirection === 'asc' 
+          ? aValue.localeCompare(bValue)
+          : bValue.localeCompare(aValue);
+      }
+
+      return sortDirection === 'asc' 
+        ? (aValue as number) - (bValue as number)
+        : (bValue as number) - (aValue as number);
+    });
+  }, [cryptos, sortField, sortDirection]);
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection(field === 'rank' ? 'asc' : 'desc');
+    }
+  };
+
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field) {
+      return <ArrowUpDown className="w-3 h-3 text-crypto-silver/50" />;
+    }
+    return sortDirection === 'asc' 
+      ? <ArrowUp className="w-3 h-3 text-blue-400" />
+      : <ArrowDown className="w-3 h-3 text-blue-400" />;
+  };
 
   const formatPrice = (price: number) => {
     if (price < 0.01) return `$${price.toFixed(6)}`;
@@ -129,21 +218,68 @@ export function CoinMarketCapTop100() {
           {/* Desktop Table View */}
           <div className="hidden lg:block">
             <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-              <div className="grid grid-cols-8 gap-4 p-4 bg-black/30 border-b border-crypto-silver/20">
-                <div className="text-gray-400 font-semibold">#</div>
-                <div className="text-gray-400 font-semibold col-span-2">Name</div>
-                <div className="text-gray-400 font-semibold text-right">Price</div>
-                <div className="text-gray-400 font-semibold text-right">1h %</div>
-                <div className="text-gray-400 font-semibold text-right">24h %</div>
-                <div className="text-gray-400 font-semibold text-right">7d %</div>
-                <div className="text-gray-400 font-semibold text-right">Market Cap</div>
+              <div className="grid grid-cols-10 gap-4 p-4 bg-black/30 border-b border-crypto-silver/20">
+                <button 
+                  onClick={() => handleSort('rank')}
+                  className="flex items-center gap-1 text-gray-400 font-semibold hover:text-white transition-colors"
+                >
+                  # {getSortIcon('rank')}
+                </button>
+                <button 
+                  onClick={() => handleSort('name')}
+                  className="flex items-center gap-1 text-gray-400 font-semibold col-span-2 hover:text-white transition-colors"
+                >
+                  Name {getSortIcon('name')}
+                </button>
+                <button 
+                  onClick={() => handleSort('price')}
+                  className="flex items-center gap-1 text-gray-400 font-semibold text-right hover:text-white transition-colors justify-end"
+                >
+                  Price {getSortIcon('price')}
+                </button>
+                <button 
+                  onClick={() => handleSort('percent_change_24h')}
+                  className="flex items-center gap-1 text-gray-400 font-semibold text-right hover:text-white transition-colors justify-end"
+                >
+                  24h % {getSortIcon('percent_change_24h')}
+                </button>
+                <button 
+                  onClick={() => handleSort('percent_change_7d')}
+                  className="flex items-center gap-1 text-gray-400 font-semibold text-right hover:text-white transition-colors justify-end"
+                >
+                  7d % {getSortIcon('percent_change_7d')}
+                </button>
+                <button 
+                  onClick={() => handleSort('percent_change_30d')}
+                  className="flex items-center gap-1 text-gray-400 font-semibold text-right hover:text-white transition-colors justify-end"
+                >
+                  30d % {getSortIcon('percent_change_30d')}
+                </button>
+                <button 
+                  onClick={() => handleSort('percent_change_90d')}
+                  className="flex items-center gap-1 text-gray-400 font-semibold text-right hover:text-white transition-colors justify-end"
+                >
+                  YTD % {getSortIcon('percent_change_90d')}
+                </button>
+                <button 
+                  onClick={() => handleSort('market_cap')}
+                  className="flex items-center gap-1 text-gray-400 font-semibold text-right hover:text-white transition-colors justify-end"
+                >
+                  Market Cap {getSortIcon('market_cap')}
+                </button>
+                <button 
+                  onClick={() => handleSort('volume_24h')}
+                  className="flex items-center gap-1 text-gray-400 font-semibold text-right hover:text-white transition-colors justify-end"
+                >
+                  Volume {getSortIcon('volume_24h')}
+                </button>
               </div>
               <div className="max-h-96 overflow-y-auto">
-                {cryptos.slice(0, 50).map((crypto) => (
+                {sortedCryptos.slice(0, 50).map((crypto) => (
                   <div
                     key={crypto.id}
                     onClick={() => openCoinMarketCap(crypto.slug)}
-                    className="grid grid-cols-8 gap-4 p-4 border-b border-crypto-silver/10 hover:bg-black/20 cursor-pointer transition-colors"
+                    className="grid grid-cols-10 gap-4 p-4 border-b border-crypto-silver/10 hover:bg-black/20 cursor-pointer transition-colors"
                   >
                     <div className="text-gray-300 font-medium">{crypto.cmc_rank}</div>
                     <div className="col-span-2">
@@ -160,17 +296,23 @@ export function CoinMarketCapTop100() {
                     <div className="text-right font-semibold text-white">
                       {formatPrice(crypto.quote.USD.price)}
                     </div>
-                    <div className={`text-right font-semibold ${getPercentageColor(crypto.quote.USD.percent_change_1h)}`}>
-                      {formatPercentage(crypto.quote.USD.percent_change_1h)}
-                    </div>
                     <div className={`text-right font-semibold ${getPercentageColor(crypto.quote.USD.percent_change_24h)}`}>
                       {formatPercentage(crypto.quote.USD.percent_change_24h)}
                     </div>
                     <div className={`text-right font-semibold ${getPercentageColor(crypto.quote.USD.percent_change_7d)}`}>
                       {formatPercentage(crypto.quote.USD.percent_change_7d)}
                     </div>
+                    <div className={`text-right font-semibold ${getPercentageColor(crypto.quote.USD.percent_change_30d || 0)}`}>
+                      {formatPercentage(crypto.quote.USD.percent_change_30d || 0)}
+                    </div>
+                    <div className={`text-right font-semibold ${getPercentageColor(crypto.quote.USD.percent_change_90d || 0)}`}>
+                      {formatPercentage(crypto.quote.USD.percent_change_90d || 0)}
+                    </div>
                     <div className="text-right font-semibold text-white">
                       {formatMarketCap(crypto.quote.USD.market_cap)}
+                    </div>
+                    <div className="text-right font-semibold text-white">
+                      {formatVolume(crypto.quote.USD.volume_24h)}
                     </div>
                   </div>
                 ))}
@@ -180,7 +322,7 @@ export function CoinMarketCapTop100() {
 
           {/* Mobile Card View */}
           <div className="lg:hidden grid gap-2 sm:gap-3 max-h-80 sm:max-h-96 overflow-y-auto">
-            {cryptos.slice(0, 50).map((crypto) => (
+            {sortedCryptos.slice(0, 50).map((crypto) => (
               <div
                 key={crypto.id}
                 onClick={() => openCoinMarketCap(crypto.slug)}
@@ -204,7 +346,7 @@ export function CoinMarketCapTop100() {
                     </p>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="grid grid-cols-2 gap-4 text-sm mb-3">
                   <div>
                     <span className="text-gray-400">Market Cap:</span>
                     <p className="text-white font-semibold">{formatMarketCap(crypto.quote.USD.market_cap)}</p>
@@ -212,6 +354,32 @@ export function CoinMarketCapTop100() {
                   <div>
                     <span className="text-gray-400">Volume:</span>
                     <p className="text-white font-semibold">{formatVolume(crypto.quote.USD.volume_24h)}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-4 gap-2 text-xs">
+                  <div className="text-center">
+                    <span className="text-gray-400 block">7d</span>
+                    <p className={`font-semibold ${getPercentageColor(crypto.quote.USD.percent_change_7d)}`}>
+                      {formatPercentage(crypto.quote.USD.percent_change_7d)}
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <span className="text-gray-400 block">30d</span>
+                    <p className={`font-semibold ${getPercentageColor(crypto.quote.USD.percent_change_30d || 0)}`}>
+                      {formatPercentage(crypto.quote.USD.percent_change_30d || 0)}
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <span className="text-gray-400 block">90d</span>
+                    <p className={`font-semibold ${getPercentageColor(crypto.quote.USD.percent_change_60d || 0)}`}>
+                      {formatPercentage(crypto.quote.USD.percent_change_60d || 0)}
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <span className="text-gray-400 block">YTD</span>
+                    <p className={`font-semibold ${getPercentageColor(crypto.quote.USD.percent_change_90d || 0)}`}>
+                      {formatPercentage(crypto.quote.USD.percent_change_90d || 0)}
+                    </p>
                   </div>
                 </div>
               </div>

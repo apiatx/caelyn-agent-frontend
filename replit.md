@@ -351,10 +351,15 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Flexible Layout Systems**: Grid layouts and components automatically adjust for mobile, tablet, and desktop views
 - **Touch-Friendly Interfaces**: Mobile-optimized buttons, spacing, and interactive elements for optimal user experience
 
-### July 20, 2025 - DeBank Portfolio Integration
+### July 20, 2025 - DeBank Portfolio Integration & Enhanced CoinMarketCap
 - **DeBank Portfolio Access**: Added dedicated DeBank portfolio section with external link to user's specific profile
 - **Iframe Security Handling**: Resolved X-Frame-Options restrictions by creating attractive call-to-action interface
 - **Multi-Chain Showcase**: Professional landing area highlighting DeBank's 30+ blockchain portfolio tracking
 - **Mobile-Responsive Design**: Adaptive layout with green-blue gradient background and feature highlights
 - **Direct Profile Access**: One-click external link to specific DeBank profile (0x1677b97859620ccbf4eecf33f6feb1b7bea8d97e)
 - **Professional Presentation**: Green-blue gradient branding with DeFi and NFT feature bullets
+- **Enhanced CoinMarketCap Data**: Added 30d, 60d, and 90d (YTD) price change percentages to cryptocurrency tracking
+- **Advanced Sorting System**: Implemented sortable table columns for all timeframes (24h, 7d, 30d, YTD) with visual indicators
+- **Comprehensive Desktop View**: Expanded table with 10 columns including price, market cap, volume, and all timeframe changes
+- **Enhanced Mobile Display**: Added 4-column timeframe grid (7d, 30d, 90d, YTD) for comprehensive mobile performance tracking
+- **Real-time API Integration**: Updated CoinMarketCap service with aux parameters for extended timeframe data fetching
