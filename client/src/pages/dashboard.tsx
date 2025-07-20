@@ -129,10 +129,10 @@ export default function Dashboard() {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
-        {activeTab === "dashboard" && <DashboardSection />}
+        {activeTab === "dashboard" && <div className="text-white text-center py-20"><h2 className="text-2xl font-bold">Welcome to CryptoHippo</h2><p className="text-crypto-silver mt-4">Select a section from the navigation above to get started.</p></div>}
         {activeTab === "portfolio" && <PortfolioSection />}
         {activeTab === "alpha" && <AlphaSection />}
-        {activeTab === "base" && <div className="text-white text-center py-20"><h2 className="text-2xl font-bold">Base Section - Content Coming Soon</h2></div>}
+        {activeTab === "base" && <DashboardSection />}
         {activeTab === "bittensor" && <BittensorDashboardSection />}
         {activeTab === "whale" && <WhaleWatchingSection />}
         {activeTab === "research" && <MarketResearchSection />}
