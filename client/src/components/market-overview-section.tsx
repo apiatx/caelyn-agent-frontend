@@ -281,61 +281,64 @@ export function MarketOverviewSection() {
               </div>
             </div>
 
-            {/* Historical Values */}
-            <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-4">
-              <h4 className="text-white text-lg font-bold mb-3">Historical Values</h4>
-              
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-400 text-sm">Yesterday</span>
-                  <span className="bg-gray-600 text-white px-2 py-1 rounded-full text-xs font-medium">
-                    {altSeasonIndex.historical.yesterday}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-400 text-sm">Last Week</span>
-                  <span className="bg-gray-600 text-white px-2 py-1 rounded-full text-xs font-medium">
-                    {altSeasonIndex.historical.last_week}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-400 text-sm">Last Month</span>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    altSeasonIndex.historical.last_month > 75 ? 'bg-blue-500 text-white' : 
-                    altSeasonIndex.historical.last_month > 25 ? 'bg-gray-600 text-white' : 'bg-orange-500 text-white'
-                  }`}>
-                    {altSeasonIndex.historical.last_month_description} - {altSeasonIndex.historical.last_month}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Yearly High and Low */}
-            <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-4">
-              <h4 className="text-white text-lg font-bold mb-3">Yearly High and Low</h4>
-              
-              <div className="space-y-3">
-                <div>
+            {/* Historical Values and Yearly High/Low side by side */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {/* Historical Values */}
+              <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-4">
+                <h4 className="text-white text-lg font-bold mb-3">Historical Values</h4>
+                
+                <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <div>
-                      <p className="text-white font-medium text-sm">Yearly High</p>
-                      <p className="text-gray-400 text-xs">({altSeasonIndex.yearly.high_date})</p>
-                    </div>
-                    <span className="bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-medium">
-                      {altSeasonIndex.yearly.high_description} - {altSeasonIndex.yearly.high}
+                    <span className="text-gray-400 text-sm">Yesterday</span>
+                    <span className="bg-gray-600 text-white px-2 py-1 rounded-full text-xs font-medium">
+                      {altSeasonIndex.historical.yesterday}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400 text-sm">Last Week</span>
+                    <span className="bg-gray-600 text-white px-2 py-1 rounded-full text-xs font-medium">
+                      {altSeasonIndex.historical.last_week}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400 text-sm">Last Month</span>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      altSeasonIndex.historical.last_month > 75 ? 'bg-blue-500 text-white' : 
+                      altSeasonIndex.historical.last_month > 25 ? 'bg-gray-600 text-white' : 'bg-orange-500 text-white'
+                    }`}>
+                      {altSeasonIndex.historical.last_month_description} - {altSeasonIndex.historical.last_month}
                     </span>
                   </div>
                 </div>
+              </div>
+
+              {/* Yearly High and Low */}
+              <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-4">
+                <h4 className="text-white text-lg font-bold mb-3">Yearly High and Low</h4>
                 
-                <div>
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <p className="text-white font-medium text-sm">Yearly Low</p>
-                      <p className="text-gray-400 text-xs">({altSeasonIndex.yearly.low_date})</p>
+                <div className="space-y-3">
+                  <div>
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="text-white font-medium text-sm">Yearly High</p>
+                        <p className="text-gray-400 text-xs">({altSeasonIndex.yearly.high_date})</p>
+                      </div>
+                      <span className="bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-medium">
+                        {altSeasonIndex.yearly.high_description} - {altSeasonIndex.yearly.high}
+                      </span>
                     </div>
-                    <span className="bg-orange-500 text-white px-2 py-1 rounded-full text-xs font-medium">
-                      {altSeasonIndex.yearly.low_description} - {altSeasonIndex.yearly.low}
-                    </span>
+                  </div>
+                  
+                  <div>
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="text-white font-medium text-sm">Yearly Low</p>
+                        <p className="text-gray-400 text-xs">({altSeasonIndex.yearly.low_date})</p>
+                      </div>
+                      <span className="bg-orange-500 text-white px-2 py-1 rounded-full text-xs font-medium">
+                        {altSeasonIndex.yearly.low_description} - {altSeasonIndex.yearly.low}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
