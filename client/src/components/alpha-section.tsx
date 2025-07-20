@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, Star, Zap, DollarSign, Wallet } from "lucide-react";
+import { TrendingUp, Star, Zap, DollarSign, Wallet, TrendingDown } from "lucide-react";
 
 // Glass card component for alpha section
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
@@ -107,15 +107,35 @@ export default function AlphaSection() {
             <p className="text-gray-400 text-sm">DeBank Portfolio Analysis</p>
           </button>
         </div>
+      </GlassCard>
 
-        <div className="text-center py-4">
-          <div className="w-16 h-16 bg-gradient-to-r from-green-500/10 to-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Wallet className="w-8 h-8 text-green-400" />
+      {/* Social Signal */}
+      <GlassCard className="p-6">
+        <div className="flex items-center gap-2 mb-6">
+          <div className="w-6 h-6 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
+            <TrendingDown className="w-4 h-4 text-white" />
           </div>
-          <h4 className="text-lg font-semibold text-white mb-2">More Smart Wallets</h4>
-          <p className="text-crypto-silver text-sm max-w-md mx-auto">
-            Additional wallet management and DeFi automation tools will be available here soon.
-          </p>
+          <h3 className="text-xl font-semibold text-white">Social Signal</h3>
+          <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 text-xs">
+            ANALYTICS
+          </Badge>
+        </div>
+        
+        <div className="w-full">
+          <iframe
+            src="https://app.kolytics.pro/leaderboard"
+            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+            title="Kolytics Social Signal Leaderboard"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+          />
+          <div className="mt-3 text-center">
+            <button
+              onClick={() => openInNewTab('https://app.kolytics.pro/leaderboard')}
+              className="text-orange-400 hover:text-orange-300 text-sm"
+            >
+              Open Full View →
+            </button>
+          </div>
         </div>
       </GlassCard>
     </div>
