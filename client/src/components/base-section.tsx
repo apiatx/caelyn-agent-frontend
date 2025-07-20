@@ -295,29 +295,24 @@ export default function BaseSection() {
           <span className="px-2 py-1 bg-emerald-500/20 text-emerald-400 text-xs rounded-full font-medium">
             CREATOR AGENTS
           </span>
-        </div>
-        
-        {/* Call-to-action for Creator.bid */}
-        <div className="bg-gradient-to-br from-emerald-500/10 to-teal-600/10 border border-emerald-500/20 rounded-lg p-8 text-center">
-          <div className="w-16 h-16 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full mx-auto mb-4 flex items-center justify-center">
-            <span className="text-white text-2xl font-bold">CB</span>
-          </div>
-          <h4 className="text-2xl font-bold text-white mb-3">Creator.bid Agent Platform</h4>
-          <p className="text-gray-300 mb-6 max-w-md mx-auto">
-            Access the full Creator.bid agent marketplace with AI-powered creator tools, bidding systems, and agent management.
-          </p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 text-sm">
-            <div className="text-emerald-400">• AI Creator Agents</div>
-            <div className="text-emerald-400">• Bidding System</div>
-            <div className="text-emerald-400">• Agent Marketplace</div>
-            <div className="text-emerald-400">• Creator Tools</div>
-          </div>
           <button
             onClick={() => window.open('https://creator.bid/agents', '_blank')}
-            className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold py-3 px-8 rounded-lg transition-all duration-200 transform hover:scale-105"
+            className="ml-auto text-emerald-400 hover:text-emerald-300 text-xs"
           >
-            Open Creator.bid Platform →
+            Open in New Tab →
           </button>
+        </div>
+        <div className="w-full">
+          <iframe
+            src="https://creator.bid/agents"
+            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+            title="Creator.bid Agents"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+            style={{
+              background: '#000000',
+              colorScheme: 'dark'
+            }}
+          />
         </div>
       </GlassCard>
     </div>
