@@ -1003,20 +1003,38 @@ export default function PortfolioSection() {
               ON-CHAIN INTELLIGENCE
             </Badge>
           </div>
-          <button
-            onClick={() => window.open('https://app.nansen.ai/portfolio', '_blank', 'noopener,noreferrer')}
-            className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm sm:ml-auto"
-          >
-            Open in New Tab →
-          </button>
         </div>
         <div className="w-full">
-          <iframe
-            src="https://app.nansen.ai/portfolio"
-            className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
-            title="Nansen Portfolio Analytics"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-          />
+          <div className="h-[300px] sm:h-[350px] lg:h-[400px] rounded-lg border border-crypto-silver/20 bg-gradient-to-br from-blue-900/20 to-purple-900/20 flex flex-col items-center justify-center p-8 text-center">
+            <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center mb-6">
+              <Activity className="w-8 h-8 text-white" />
+            </div>
+            <h4 className="text-xl font-semibold text-white mb-3">Professional On-Chain Intelligence</h4>
+            <p className="text-crypto-silver mb-6 max-w-md">
+              Nansen provides advanced portfolio analytics with real-time on-chain data, whale tracking, and smart money insights.
+            </p>
+            <div className="space-y-3 text-sm text-crypto-silver mb-6">
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                <span>Real-time portfolio tracking across all chains</span>
+              </div>
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
+                <span>Advanced wallet labeling and analytics</span>
+              </div>
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                <span>Smart money flow analysis</span>
+              </div>
+            </div>
+            <button
+              onClick={() => window.open('https://app.nansen.ai/portfolio', '_blank', 'noopener,noreferrer')}
+              className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 hover:scale-105 flex items-center gap-2"
+            >
+              <ExternalLink className="w-4 h-4" />
+              Access Nansen Portfolio
+            </button>
+          </div>
         </div>
       </GlassCard>
 
