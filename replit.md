@@ -261,7 +261,8 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 ### July 20, 2025 - Enhanced Bittensor Analytics & Logo Update
 - **TaoStats Homepage Integration**: Updated Bittensor Dashboard iframe to show full https://taostats.io/ homepage
 - **Swordscan TensorPulse Integration**: Added new "swordscan" section with https://swordscan.com/tensorpulse-mindshare iframe
-- **Dual Analytics Platform**: Bittensor Dashboard now features both TaoStats and Swordscan analytics in dedicated sections
+- **TaoHub Portfolio Integration**: Added new TaoHub Portfolio section with https://www.taohub.info/portfolio iframe for TAO portfolio tracking
+- **Triple Analytics Platform**: Bittensor Dashboard now features TaoStats, Swordscan, and TaoHub analytics in dedicated sections
 - **Visual Enhancement**: Added purple "TensorPulse" badge for Swordscan section distinction from orange TaoStats badge
 - **Moo Deng Logo Implementation**: Replaced ChartLine icon with custom Moo Deng SVG logo featuring pink hippo design
 - **Logo Styling**: Created cute Moo Deng character with pink gradient background, detailed features including eyes, snout, ears, legs, and tail
