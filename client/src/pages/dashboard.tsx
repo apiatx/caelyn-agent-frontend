@@ -6,6 +6,7 @@ import AlphaSection from "@/components/alpha-section";
 import WhaleWatchingSection from "@/components/whale-watching-section";
 import MarketResearchSection from "@/components/market-research-section";
 import BittensorDashboardSection from "@/components/bittensor-dashboard-section";
+import BaseSection from "@/components/base-section";
 import cryptoHippoImage from "@assets/image_1752975467353.png";
 
 import { GlassCard } from "@/components/ui/glass-card";
@@ -132,7 +133,7 @@ export default function Dashboard() {
         {activeTab === "dashboard" && <div className="text-white text-center py-20"><h2 className="text-2xl font-bold">Welcome to CryptoHippo</h2><p className="text-crypto-silver mt-4">Select a section from the navigation above to get started.</p></div>}
         {activeTab === "portfolio" && <PortfolioSection />}
         {activeTab === "alpha" && <AlphaSection />}
-        {activeTab === "base" && <DashboardSection />}
+        {activeTab === "base" && <BaseSection />}
         {activeTab === "bittensor" && <BittensorDashboardSection />}
         {activeTab === "whale" && <WhaleWatchingSection />}
         {activeTab === "research" && <MarketResearchSection />}
