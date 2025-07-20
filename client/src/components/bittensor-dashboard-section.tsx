@@ -20,7 +20,7 @@ export default function BittensorDashboardSection() {
       </div>
 
       <div className="grid grid-cols-1 gap-6">
-        {/* Top Subnet Movers - TaoStats Integration */}
+        {/* TaoStats Integration */}
         <GlassCard className="p-6">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-white flex items-center">
@@ -56,6 +56,46 @@ export default function BittensorDashboardSection() {
             />
             <div className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
               Live Bittensor Data
+            </div>
+          </div>
+        </GlassCard>
+
+        {/* Swordscan TensorPulse Integration */}
+        <GlassCard className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-white flex items-center">
+              <Brain className="w-4 h-4 mr-2" />
+              swordscan
+            </h3>
+            <div className="flex items-center gap-2">
+              <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
+                TensorPulse
+              </Badge>
+              <a 
+                href="https://swordscan.com/tensorpulse-mindshare"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-crypto-silver hover:text-white transition-colors group"
+              >
+                <ExternalLink className="h-4 w-4 group-hover:scale-110 transition-transform" />
+              </a>
+            </div>
+          </div>
+          
+          <div className="relative w-full">
+            <iframe
+              src="https://swordscan.com/tensorpulse-mindshare"
+              className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+              title="Swordscan TensorPulse Mindshare"
+              frameBorder="0"
+              loading="lazy"
+              style={{
+                background: 'transparent',
+                colorScheme: 'dark'
+              }}
+            />
+            <div className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+              Live Mindshare Analytics
             </div>
           </div>
         </GlassCard>
