@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Wallet, ExternalLink, TrendingUp, Edit3, Save, Plus, Activity, ChevronDown, BarChart3 } from "lucide-react";
+import { Wallet, ExternalLink, TrendingUp, Edit3, Save, Plus, Activity, ChevronDown, BarChart3, Brain } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -432,8 +432,45 @@ export default function PortfolioSection() {
           </GlassCard>
         )}
 
-
-
+      {/* TaoHub Portfolio Integration */}
+      <GlassCard className="p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-semibold text-white flex items-center">
+            <Brain className="w-4 h-4 mr-2" />
+            TaoHub Portfolio
+          </h3>
+          <div className="flex items-center gap-2">
+            <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+              Portfolio Tracker
+            </Badge>
+            <a 
+              href="https://www.taohub.info/portfolio"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-crypto-silver hover:text-white transition-colors group"
+            >
+              <ExternalLink className="h-4 w-4 group-hover:scale-110 transition-transform" />
+            </a>
+          </div>
+        </div>
+        
+        <div className="relative w-full">
+          <iframe
+            src="https://www.taohub.info/portfolio"
+            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+            title="TaoHub Portfolio"
+            frameBorder="0"
+            loading="lazy"
+            style={{
+              background: 'transparent',
+              colorScheme: 'dark'
+            }}
+          />
+          <div className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+            TAO Portfolio Analytics
+          </div>
+        </div>
+      </GlassCard>
 
       {/* DeBank Portfolio Analytics */}
       <GlassCard className="p-3 sm:p-4 lg:p-6">
