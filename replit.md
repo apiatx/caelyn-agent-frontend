@@ -376,5 +376,5 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **DexScreener Dark Theme Fix**: Removed brightness/contrast filters from DexScreener portfolio iframe, relying on native ?theme=dark parameter for proper dark mode display
 - **Streamlined Portfolio Layout**: Portfolio page now features DexScreener, TaoHub Portfolio, and DeBank analytics sections for comprehensive multi-platform tracking
 - **Improved Visual Consistency**: Enhanced dark theme integration across all iframe sections with consistent styling and external link access
-- **Velvet Capital DApp Integration**: Added Velvet Capital call-to-action card (https://dapp.velvet.capital/) to Dashboard page with purple gradient branding and "Portfolio Management" badge
-- **Iframe Security Resolution**: Replaced blocked iframe with professional landing card due to X-Frame-Options restrictions, featuring automated strategies, multi-chain support, and institutional-grade tools
+- **Velvet Capital Quick Access**: Added Velvet Capital button to "More Analytics" section for streamlined access to DeFi portfolio management platform
+- **Interface Consolidation**: Moved Velvet Capital from standalone section to grouped analytics buttons for cleaner dashboard organization

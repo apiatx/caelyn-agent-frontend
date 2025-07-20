@@ -170,59 +170,6 @@ export default function CryptoDashboardSection() {
         </div>
       </GlassCard>
 
-      {/* Velvet Capital DApp */}
-      <GlassCard className="p-3 sm:p-4 lg:p-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-              <Wallet className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-            </div>
-            <h3 className="text-lg sm:text-xl font-semibold text-white">Velvet Capital DApp</h3>
-            <Badge className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-400 border-purple-500/30 text-xs">
-              PORTFOLIO MANAGEMENT
-            </Badge>
-          </div>
-          <button
-            onClick={() => openInNewTab('https://dapp.velvet.capital/')}
-            className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm sm:ml-auto"
-          >
-            Open in New Tab →
-          </button>
-        </div>
-        <div className="w-full">
-          <div className="bg-gradient-to-br from-purple-900/20 to-pink-900/20 rounded-lg border border-purple-500/30 backdrop-blur-sm p-8 sm:p-12 text-center">
-            <div className="w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Wallet className="w-10 h-10 text-white" />
-            </div>
-            <h3 className="text-2xl font-bold text-white mb-4">Velvet Capital DApp</h3>
-            <p className="text-gray-300 mb-6 max-w-2xl mx-auto text-lg">
-              Professional DeFi portfolio management platform with automated strategies, multi-chain support, and institutional-grade tools for cryptocurrency investments.
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 max-w-3xl mx-auto">
-              <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4">
-                <h4 className="text-purple-400 font-semibold mb-2">Automated Strategies</h4>
-                <p className="text-gray-400 text-sm">AI-powered portfolio rebalancing and yield optimization</p>
-              </div>
-              <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4">
-                <h4 className="text-purple-400 font-semibold mb-2">Multi-Chain</h4>
-                <p className="text-gray-400 text-sm">Support for Ethereum, Polygon, Arbitrum, and more</p>
-              </div>
-              <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4">
-                <h4 className="text-purple-400 font-semibold mb-2">Institutional Grade</h4>
-                <p className="text-gray-400 text-sm">Professional tools and advanced analytics</p>
-              </div>
-            </div>
-            <button
-              onClick={() => openInNewTab('https://dapp.velvet.capital/')}
-              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-8 py-4 rounded-lg font-semibold transition-all duration-200 text-lg shadow-lg"
-            >
-              Launch Velvet Capital DApp →
-            </button>
-            <p className="text-gray-500 text-sm mt-4">Opens in a new tab for secure wallet connection</p>
-          </div>
-        </div>
-      </GlassCard>
-
       {/* Market Overview from CoinMarketCap */}
       <MarketOverviewSection />
 
@@ -282,6 +229,13 @@ export default function CryptoDashboardSection() {
           >
             <h4 className="text-pink-400 font-semibold mb-1">Cookie.fun 🍪</h4>
             <p className="text-gray-400 text-sm">Fun Platform</p>
+          </button>
+          <button
+            onClick={() => openInNewTab('https://dapp.velvet.capital/')}
+            className="p-4 bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-lg hover:from-purple-500/20 hover:to-pink-500/20 transition-colors"
+          >
+            <h4 className="text-purple-400 font-semibold mb-1">Velvet Capital</h4>
+            <p className="text-gray-400 text-sm">Portfolio Management</p>
           </button>
         </div>
       </GlassCard>
