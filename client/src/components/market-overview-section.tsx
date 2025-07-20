@@ -46,6 +46,20 @@ interface AltSeasonData {
   timestamp: string;
   is_alt_season: boolean;
   description: string;
+  historical: {
+    yesterday: number;
+    last_week: number;
+    last_month: number;
+    last_month_description: string;
+  };
+  yearly: {
+    high: number;
+    high_date: string;
+    high_description: string;
+    low: number;
+    low_date: string;
+    low_description: string;
+  };
 }
 
 interface ETFNetflow {
@@ -242,31 +256,89 @@ export function MarketOverviewSection() {
             </button>
           </h3>
           
-          <div className={`bg-gradient-to-r ${getAltSeasonBgColor(altSeasonIndex.index_value)} rounded-lg p-6 mb-4`}>
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-2xl sm:text-3xl font-bold text-white mb-1">
-                  {altSeasonIndex.index_value.toFixed(0)}
-                </p>
-                <p className={`text-sm font-medium ${getAltSeasonColor(altSeasonIndex.index_value)}`}>
-                  {altSeasonIndex.description}
-                </p>
+          <div className="space-y-4">
+            {/* CMC Altcoin Season Index */}
+            <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-6">
+              <h4 className="text-white text-xl font-bold mb-4">CMC Altcoin Season Index</h4>
+              
+              <div className="flex items-baseline gap-2 mb-6">
+                <span className="text-white text-5xl font-bold">{altSeasonIndex.index_value}</span>
+                <span className="text-gray-400 text-xl">/ 100</span>
               </div>
-              <div className="text-right">
-                <div className={`w-16 h-16 rounded-full border-4 ${
-                  altSeasonIndex.is_alt_season ? 'border-green-400' : altSeasonIndex.index_value > 25 ? 'border-yellow-400' : 'border-red-400'
-                } flex items-center justify-center`}>
-                  <span className={`text-xs font-bold ${getAltSeasonColor(altSeasonIndex.index_value)}`}>
-                    {altSeasonIndex.is_alt_season ? 'ALT' : altSeasonIndex.index_value > 25 ? 'MIX' : 'BTC'}
+              
+              {/* Progress Bar */}
+              <div className="mb-6">
+                <div className="flex justify-between text-sm text-gray-400 mb-2">
+                  <span>Bitcoin Season</span>
+                  <span>Altcoin Season</span>
+                </div>
+                <div className="relative h-6 bg-gradient-to-r from-orange-500 via-orange-300 to-blue-500 rounded-full">
+                  <div 
+                    className="absolute top-1/2 transform -translate-y-1/2 w-4 h-4 bg-white rounded-full border-2 border-gray-700 shadow-lg"
+                    style={{ left: `calc(${altSeasonIndex.index_value}% - 8px)` }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Historical Values */}
+            <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-6">
+              <h4 className="text-white text-xl font-bold mb-4">Historical Values</h4>
+              
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-400">Yesterday</span>
+                  <span className="bg-gray-600 text-white px-3 py-1 rounded-full text-sm font-medium">
+                    {altSeasonIndex.historical.yesterday}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-400">Last Week</span>
+                  <span className="bg-gray-600 text-white px-3 py-1 rounded-full text-sm font-medium">
+                    {altSeasonIndex.historical.last_week}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-400">Last Month</span>
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    altSeasonIndex.historical.last_month > 75 ? 'bg-blue-500 text-white' : 
+                    altSeasonIndex.historical.last_month > 25 ? 'bg-gray-600 text-white' : 'bg-orange-500 text-white'
+                  }`}>
+                    {altSeasonIndex.historical.last_month_description} - {altSeasonIndex.historical.last_month}
                   </span>
                 </div>
               </div>
             </div>
-            
-            <div className="space-y-2 text-sm text-gray-300">
-              <p>• 75+ = Alt Season (altcoins outperforming Bitcoin)</p>
-              <p>• 25-75 = Mixed market conditions</p>
-              <p>• &lt;25 = Bitcoin Season (Bitcoin dominance)</p>
+
+            {/* Yearly High and Low */}
+            <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-6">
+              <h4 className="text-white text-xl font-bold mb-4">Yearly High and Low</h4>
+              
+              <div className="space-y-4">
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <div>
+                      <p className="text-white font-semibold">Yearly High</p>
+                      <p className="text-gray-400 text-sm">({altSeasonIndex.yearly.high_date})</p>
+                    </div>
+                    <span className="bg-blue-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                      {altSeasonIndex.yearly.high_description} - {altSeasonIndex.yearly.high}
+                    </span>
+                  </div>
+                </div>
+                
+                <div>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-white font-semibold">Yearly Low</p>
+                      <p className="text-gray-400 text-sm">({altSeasonIndex.yearly.low_date})</p>
+                    </div>
+                    <span className="bg-orange-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                      {altSeasonIndex.yearly.low_description} - {altSeasonIndex.yearly.low}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
