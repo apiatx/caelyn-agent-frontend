@@ -223,7 +223,7 @@ export default function CryptoDashboardSection() {
             onClick={() => openInNewTab('https://app.elfa.ai/leaderboard/token')}
             className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
           >
-            <h4 className="text-purple-400 font-semibold mb-1">Elfa.ai Leaderboard</h4>
+            <h4 className="text-purple-400 font-semibold mb-1">Mindshare by Elfi</h4>
             <p className="text-gray-400 text-sm">AI Token Analytics</p>
           </button>
         </div>
