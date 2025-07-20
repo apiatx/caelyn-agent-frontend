@@ -332,24 +332,17 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **DexScreener Dark Mode**: Enabled dark theme for Base and Solana DexScreener iframes using ?theme=dark parameter
 - **Comprehensive Dashboard**: Dashboard combines live trading widgets with specialized analytics access for professional crypto analysis
 
-### July 20, 2025 - Multi-Chain Portfolio Tracker & CoinMarketCap Integration
-- **Mobula API Integration**: Added comprehensive Mobula.io API service with user-provided API key (3371ca28-c28d-4b0f-908e-9529c27dfa4d)
-- **Multi-Chain Portfolio Tracker**: Built advanced portfolio tracker combining Mobula pricing with Etherscan/Basescan blockchain data
-- **Multi-Chain Service**: Created comprehensive service supporting Ethereum and Base networks with native and ERC-20 token tracking
-- **Live Blockchain Data**: Integrated Etherscan and Basescan APIs for authentic on-chain token balance verification
-- **Enhanced Portfolio Analysis**: Real-time portfolio tracking across multiple chains with live pricing from Mobula
-- **API Endpoints**: Created multi-chain portfolio endpoint combining blockchain data with market pricing
-- **Professional Interface**: Designed comprehensive multi-chain UI with chain-specific breakdowns and external links
-- **Mindshare by Elfi Integration**: Added "Mindshare by Elfi" link in More Analytics section due to X-Frame-Options blocking iframe
-- **CoinMarketCap Integration**: Added CoinMarketCap API service with user-provided API key (7d9a361e-596d-4914-87e2-f1124da24897)
-- **Top 100 Cryptocurrencies**: Created comprehensive top 100 crypto display with live prices, market caps, and percentage changes
-- **Real-time Market Data**: CoinMarketCap section updates every 5 minutes with authentic market data and trading volumes
-- **Comprehensive Mobile Optimization**: Implemented mobile-first responsive design across all dashboard pages and components
-- **Mobile Navigation**: Added horizontal scrolling mobile navigation with compact tab design
-- **Responsive Headers**: Adaptive header with mobile-friendly portfolio display and logo sizing
-- **Mobile-Optimized Charts**: TradingView iframe heights adapt to screen size (400px mobile, 500px tablet, 600px desktop)
-- **Flexible Layout Systems**: Grid layouts and components automatically adjust for mobile, tablet, and desktop views
-- **Touch-Friendly Interfaces**: Mobile-optimized buttons, spacing, and interactive elements for optimal user experience
+### July 20, 2025 - CoinMarketCap Portfolio Integration & API Resolution
+- **CMC Portfolio Service**: Successfully integrated CoinMarketCap API (7d9a361e-596d-4914-87e2-f1124da24897) for Multi-Chain Portfolio Tracker
+- **API Permission Resolution**: Resolved 400 Bad Request errors by adapting to CMC Basic plan limitations (contract address lookup not supported)
+- **Symbol-Based Pricing**: Implemented symbol-based token pricing for major cryptocurrencies compatible with CMC Basic plan
+- **Real ETH Price Integration**: Added authentic ETH price fetching from CoinMarketCap ($3,704.55 live pricing)
+- **Blockchain Data Combination**: Enhanced multi-chain service combining Etherscan/Basescan token data with CMC pricing
+- **Portfolio Structure Update**: Updated Multi-Chain Portfolio Tracker frontend to work with new CMC portfolio data structure
+- **Major Token Support**: Added support for 20+ major tokens (ETH, USDC, USDT, DAI, WETH, UNI, AAVE, etc.) via CMC symbol lookup
+- **Enhanced Token Display**: Added CMC token logos, 24h price changes, and authentic market data to portfolio interface
+- **Error Handling**: Implemented proper fallbacks for tokens not available in CMC Basic plan with graceful degradation
+- **API Credit Management**: CMC API integration shows 9,842 credits remaining out of 10,000 monthly limit with efficient usage
 
 ### July 20, 2025 - DeBank Portfolio Integration & Enhanced CoinMarketCap
 - **DeBank Portfolio Access**: Added dedicated DeBank portfolio section with external link to user's specific profile
