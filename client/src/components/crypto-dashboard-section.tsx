@@ -76,18 +76,18 @@ export default function CryptoDashboardSection() {
         </div>
       </GlassCard>
 
-      {/* TradingView XRP Chart */}
+      {/* TradingView Solana Chart */}
       <GlassCard className="p-6">
         <div className="flex items-center gap-2 mb-4">
           <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
             <Activity className="w-4 h-4 text-white" />
           </div>
-          <h3 className="text-xl font-semibold text-white">TradingView XRP Chart</h3>
+          <h3 className="text-xl font-semibold text-white">TradingView Solana Chart</h3>
           <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
-            XRP
+            SOLANA
           </Badge>
           <button
-            onClick={() => openInNewTab('https://www.tradingview.com/chart/?symbol=XRPUSD')}
+            onClick={() => openInNewTab('https://www.tradingview.com/chart/?symbol=SOLUSD')}
             className="ml-auto text-purple-400 hover:text-purple-300 text-sm"
           >
             Open in New Tab →
@@ -95,9 +95,9 @@ export default function CryptoDashboardSection() {
         </div>
         <div className="w-full">
           <iframe
-            src="https://www.tradingview.com/widgetembed/?frameElementId=tradingview_xrp&symbol=XRPUSD&interval=D&hidesidetoolbar=1&hidetoptoolbar=1&symboledit=1&saveimage=1&toolbarbg=F1F3F6&studies=[]&hideideas=1&theme=Dark&style=1&timezone=Etc%2FUTC&studies_overrides={}&overrides={}&enabled_features=[]&disabled_features=[]&locale=en&utm_source=localhost&utm_medium=widget&utm_campaign=chart&utm_term=XRPUSD"
+            src="https://www.tradingview.com/widgetembed/?frameElementId=tradingview_sol&symbol=SOLUSD&interval=D&hidesidetoolbar=1&hidetoptoolbar=1&symboledit=1&saveimage=1&toolbarbg=F1F3F6&studies=[]&hideideas=1&theme=Dark&style=1&timezone=Etc%2FUTC&studies_overrides={}&overrides={}&enabled_features=[]&disabled_features=[]&locale=en&utm_source=localhost&utm_medium=widget&utm_campaign=chart&utm_term=SOLUSD"
             className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            title="TradingView XRP Chart"
+            title="TradingView Solana Chart"
             sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
           />
         </div>
