@@ -301,8 +301,7 @@ export default function PortfolioSection() {
             sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
             style={{
               background: '#000000',
-              colorScheme: 'dark',
-              filter: 'brightness(0.8) contrast(1.1)'
+              colorScheme: 'dark'
             }}
           />
         </div>

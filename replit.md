@@ -370,3 +370,9 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Comprehensive Desktop View**: Expanded table with 10 columns including price, market cap, volume, and all timeframe changes
 - **Enhanced Mobile Display**: Added 4-column timeframe grid (7d, 30d, 90d, YTD) for comprehensive mobile performance tracking
 - **Real-time API Integration**: Updated CoinMarketCap service with aux parameters for extended timeframe data fetching
+
+### July 20, 2025 - Portfolio Interface Enhancements & TaoHub Integration
+- **TaoHub Portfolio Addition**: Added TaoHub Portfolio section from Bittensor page to main Portfolio page with Brain icon and "Portfolio Tracker" badge
+- **DexScreener Dark Theme Fix**: Removed brightness/contrast filters from DexScreener portfolio iframe, relying on native ?theme=dark parameter for proper dark mode display
+- **Streamlined Portfolio Layout**: Portfolio page now features DexScreener, TaoHub Portfolio, and DeBank analytics sections for comprehensive multi-platform tracking
+- **Improved Visual Consistency**: Enhanced dark theme integration across all iframe sections with consistent styling and external link access
