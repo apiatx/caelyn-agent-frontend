@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, BarChart3, DollarSign, Activity, Eye, Globe } from "lucide-react";
+import { TrendingUp, BarChart3, DollarSign, Activity, Eye, Globe, Wallet } from "lucide-react";
 
 
 import { MarketOverviewSection } from './market-overview-section';
@@ -170,9 +170,38 @@ export default function CryptoDashboardSection() {
         </div>
       </GlassCard>
 
-
-
-
+      {/* Velvet Capital DApp */}
+      <GlassCard className="p-3 sm:p-4 lg:p-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+              <Wallet className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+            </div>
+            <h3 className="text-lg sm:text-xl font-semibold text-white">Velvet Capital DApp</h3>
+            <Badge className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-400 border-purple-500/30 text-xs">
+              PORTFOLIO MANAGEMENT
+            </Badge>
+          </div>
+          <button
+            onClick={() => openInNewTab('https://dapp.velvet.capital/')}
+            className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm sm:ml-auto"
+          >
+            Open in New Tab →
+          </button>
+        </div>
+        <div className="w-full">
+          <iframe
+            src="https://dapp.velvet.capital/"
+            className="w-full h-[600px] sm:h-[700px] lg:h-[800px] rounded-lg border border-crypto-silver/20"
+            title="Velvet Capital DApp"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+            style={{
+              background: 'transparent',
+              colorScheme: 'dark'
+            }}
+          />
+        </div>
+      </GlassCard>
 
       {/* Market Overview from CoinMarketCap */}
       <MarketOverviewSection />
