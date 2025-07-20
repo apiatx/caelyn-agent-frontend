@@ -455,8 +455,8 @@ export function MarketOverviewSection() {
                 
                 {/* Index Value and Classification */}
                 <div className="text-center">
-                  <div className="text-6xl font-bold text-white mb-2">{fearGreedIndex.index_value}</div>
-                  <div className="text-gray-400 text-xl">{fearGreedIndex.classification}</div>
+                  <div className="text-4xl font-bold text-white mb-1">{fearGreedIndex.index_value}</div>
+                  <div className="text-gray-400 text-lg">{fearGreedIndex.classification}</div>
                 </div>
               </div>
             </div>
