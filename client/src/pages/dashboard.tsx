@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChartLine, Settings, Activity, Eye, TrendingUp, BarChart3, Brain, Wallet } from "lucide-react";
+import { ChartLine, Settings, Activity, Eye, TrendingUp, BarChart3, Brain, Wallet, Zap } from "lucide-react";
 import DashboardSection from "@/components/dashboard-section";
 import PortfolioSection from "@/components/portfolio-section";
 import AlphaSection from "@/components/alpha-section";
@@ -7,12 +7,13 @@ import WhaleWatchingSection from "@/components/whale-watching-section";
 import MarketResearchSection from "@/components/market-research-section";
 import BittensorDashboardSection from "@/components/bittensor-dashboard-section";
 import BaseSection from "@/components/base-section";
+import SolanaSection from "@/components/solana-section";
 import cryptoHippoImage from "@assets/image_1752975467353.png";
 
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 
-type TabType = "dashboard" | "portfolio" | "alpha" | "whale" | "research" | "bittensor" | "base";
+type TabType = "dashboard" | "portfolio" | "alpha" | "whale" | "research" | "bittensor" | "base" | "solana";
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<TabType>("dashboard");
@@ -94,6 +95,16 @@ export default function Dashboard() {
               <ChartLine className="w-4 h-4 mr-2 inline" />Base
             </button>
             <button
+              onClick={() => setActiveTab("solana")}
+              className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
+                activeTab === "solana"
+                  ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                  : "hover:bg-white/5 text-crypto-silver"
+              }`}
+            >
+              <Zap className="w-4 h-4 mr-2 inline" />Solana
+            </button>
+            <button
               onClick={() => setActiveTab("bittensor")}
               className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
                 activeTab === "bittensor"
@@ -134,6 +145,7 @@ export default function Dashboard() {
         {activeTab === "portfolio" && <PortfolioSection />}
         {activeTab === "alpha" && <AlphaSection />}
         {activeTab === "base" && <BaseSection />}
+        {activeTab === "solana" && <SolanaSection />}
         {activeTab === "bittensor" && <BittensorDashboardSection />}
         {activeTab === "whale" && <WhaleWatchingSection />}
         {activeTab === "research" && <MarketResearchSection />}
