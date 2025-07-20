@@ -33,72 +33,66 @@ export class CoinbasePortfolioService {
   // Alternative API endpoints for multi-chain data
   private moralisApiKey = process.env.MORALIS_API_KEY || '';
   private alchemyApiKey = process.env.ALCHEMY_API_KEY || '';
+  private covalentApiKey = 'cqt_rQtCkjKfCWmjVyBK4yPJcJf47Rtv';
 
-  // BASE network tokens via Coinbase Developer API
-  async getBaseTokensViaCoinbase(walletAddress: string): Promise<TokenBalance[]> {
+  // BASE network tokens via Covalent Goldrush API
+  async getBaseTokensViaCovalent(walletAddress: string): Promise<TokenBalance[]> {
     try {
-      console.log(`🔍 [BASE COINBASE] Scanning BASE via Coinbase Developer API...`);
+      console.log(`🔍 [COVALENT BASE] Scanning BASE network via Covalent Goldrush API...`);
       
-      // Known BASE network major tokens
-      const baseTokens = [
-        { address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', symbol: 'USDC', name: 'USD Coin', decimals: 6 },
-        { address: '0x4200000000000000000000000000000000000006', symbol: 'WETH', name: 'Wrapped Ether', decimals: 18 },
-        { address: '0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb', symbol: 'DEGEN', name: 'Degen', decimals: 18 },
-        { address: '0x940181a94A35A4569E4529A3CDfB74e38FD98631', symbol: 'AERO', name: 'Aerodrome Finance', decimals: 18 },
-        { address: '0x0578d8A44db98B23BF096A382e016e29a5Ce0ffe', symbol: 'HIGHER', name: 'Higher', decimals: 18 },
-        { address: '0x532f27101965dd16442E59d40670FaF5eBB142E4', symbol: 'BRETT', name: 'Brett', decimals: 18 }
-      ];
+      // Use Covalent API to get token balances on BASE network (chain ID 8453)
+      const response = await fetch(
+        `https://api.covalenthq.com/v1/base-mainnet/address/${walletAddress}/balances_v2/?key=${this.covalentApiKey}`,
+        {
+          headers: {
+            'Accept': 'application/json'
+          }
+        }
+      );
+      
+      if (!response.ok) {
+        throw new Error(`Covalent API error: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json() as any;
+      console.log(`🔍 [COVALENT BASE] API Response status: ${response.status}`);
+      
+      if (data.error) {
+        throw new Error(`Covalent API error: ${data.error_message}`);
+      }
       
       const tokens: TokenBalance[] = [];
       
-      for (const token of baseTokens) {
-        try {
-          // Use Coinbase Developer API RPC
-          const response = await fetch('https://api.developer.coinbase.com/rpc/v1/base/8bbe4752-c30f-4c16-ab89-b9906369c832', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${this.coinbaseApiKey}`
-            },
-            body: JSON.stringify({
-              jsonrpc: '2.0',
-              method: 'eth_call',
-              params: [{
-                to: token.address,
-                data: `0x70a08231000000000000000000000000${walletAddress.slice(2)}`
-              }, 'latest'],
-              id: 1
-            })
-          });
-          
-          if (response.ok) {
-            const data = await response.json() as any;
-            if (data.result && data.result !== '0x' && data.result !== '0x0') {
-              const balance = parseInt(data.result, 16) / Math.pow(10, token.decimals);
-              if (balance > 0) {
-                tokens.push({
-                  token: token.name,
-                  symbol: token.symbol,
-                  balance: balance.toString(),
-                  decimals: token.decimals,
-                  value: 0,
-                  contractAddress: token.address,
-                  chain: 'Base',
-                  price: 0,
-                  change24h: 0
-                });
-                console.log(`💎 [BASE COINBASE] Found ${token.symbol}: ${balance.toLocaleString()}`);
-              }
+      if (data.data && data.data.items) {
+        console.log(`💰 [COVALENT BASE] Found ${data.data.items.length} token entries`);
+        
+        for (const item of data.data.items) {
+          if (item.balance && item.balance !== '0') {
+            const balance = parseFloat(item.balance) / Math.pow(10, item.contract_decimals || 18);
+            
+            if (balance > 0.000001) { // Filter out dust
+              tokens.push({
+                token: item.contract_name || 'Unknown Token',
+                symbol: item.contract_ticker_symbol || 'UNKNOWN',
+                balance: balance.toString(),
+                decimals: item.contract_decimals || 18,
+                value: item.quote || 0,
+                contractAddress: item.contract_address === '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee' ? 'native' : item.contract_address,
+                chain: 'Base',
+                price: item.quote_rate || 0,
+                change24h: item.quote_24h_delta || 0
+              });
+              
+              console.log(`💎 [COVALENT BASE] ${item.contract_ticker_symbol}: ${balance.toLocaleString()} ($${item.quote?.toFixed(2) || '0.00'})`);
             }
           }
-        } catch (error) {
-          console.log(`❌ [BASE COINBASE] Error checking ${token.symbol}:`, error);
         }
       }
       
+      console.log(`✅ [COVALENT BASE] Total tokens found: ${tokens.length}`);
       return tokens;
     } catch (error) {
-      console.error(`❌ [BASE COINBASE] Error:`, error);
+      console.error(`❌ [COVALENT BASE] Error:`, error);
       return [];
     }
   }
@@ -682,10 +676,10 @@ export class CoinbasePortfolioService {
         console.log(`⚠️ [BASE] Basescan API rate limited, switching to Coinbase Developer API...`);
       }
       
-      // Always try Coinbase Developer API for BASE network as fallback/supplement
-      console.log(`🔄 [BASE] Adding Coinbase Developer API scan for comprehensive BASE coverage...`);
-      const coinbaseBaseTokens = await this.getBaseTokensViaCoinbase(walletAddress);
-      baseTokens = [...baseTokens, ...coinbaseBaseTokens];
+      // Always use Covalent Goldrush API for comprehensive BASE network data
+      console.log(`🔄 [BASE] Using Covalent Goldrush API for authentic BASE network data...`);
+      const covalentBaseTokens = await this.getBaseTokensViaCovalent(walletAddress);
+      baseTokens = [...baseTokens, ...covalentBaseTokens];
       
       console.log(`🔍 [BASE] Found ${baseTokens.length} tokens on BASE network`);
       const baseAllTokens = [...(baseNative ? [baseNative] : []), ...baseTokens];
