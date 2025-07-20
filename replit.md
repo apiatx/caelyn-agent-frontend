@@ -350,3 +350,10 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Mobile-Optimized Charts**: TradingView iframe heights adapt to screen size (400px mobile, 500px tablet, 600px desktop)
 - **Flexible Layout Systems**: Grid layouts and components automatically adjust for mobile, tablet, and desktop views
 - **Touch-Friendly Interfaces**: Mobile-optimized buttons, spacing, and interactive elements for optimal user experience
+
+### July 20, 2025 - Nansen Portfolio Integration
+- **Nansen Portfolio Analytics**: Added comprehensive Nansen portfolio iframe integration to Portfolio section
+- **On-Chain Intelligence**: Direct access to Nansen's advanced on-chain analytics and wallet tracking tools
+- **Mobile-Responsive Design**: Nansen iframe adapts to screen size (500px mobile, 600px tablet, 700px desktop)
+- **External Navigation**: One-click access to open Nansen portfolio in new tab for full functionality
+- **Professional Analytics**: Integrated professional-grade on-chain intelligence platform for portfolio analysis

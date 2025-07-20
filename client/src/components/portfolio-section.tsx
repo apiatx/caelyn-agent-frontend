@@ -991,7 +991,34 @@ export default function PortfolioSection() {
         </Collapsible>
       </div>
 
-
+      {/* Nansen Portfolio Analytics */}
+      <GlassCard className="p-3 sm:p-4 lg:p-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+              <Activity className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+            </div>
+            <h3 className="text-lg sm:text-xl font-semibold text-white">Nansen Portfolio Analytics</h3>
+            <Badge className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-300 border-blue-500/30 text-xs">
+              ON-CHAIN INTELLIGENCE
+            </Badge>
+          </div>
+          <button
+            onClick={() => window.open('https://app.nansen.ai/portfolio', '_blank', 'noopener,noreferrer')}
+            className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm sm:ml-auto"
+          >
+            Open in New Tab →
+          </button>
+        </div>
+        <div className="w-full">
+          <iframe
+            src="https://app.nansen.ai/portfolio"
+            className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+            title="Nansen Portfolio Analytics"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+          />
+        </div>
+      </GlassCard>
 
       {/* Holding Detail Modal */}
       <HoldingDetailModal 
