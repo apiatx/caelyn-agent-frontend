@@ -99,7 +99,7 @@ export default function SolanaSection() {
 
         {/* OKX Leaderboard */}
         <GlassCard className="p-6">
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center gap-2 mb-6">
             <div className="w-6 h-6 bg-gradient-to-r from-red-500 to-orange-500 rounded-full flex items-center justify-center">
               <TrendingDown className="w-4 h-4 text-white" />
             </div>
@@ -108,13 +108,20 @@ export default function SolanaSection() {
               TRADING LEADERS
             </Badge>
           </div>
-          <div className="w-full">
-            <iframe
-              src="https://web3.okx.com/leaderboard"
-              className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-              title="OKX Trading Leaderboard"
-              sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-            />
+          
+          <div className="grid grid-cols-1 gap-4">
+            <button
+              onClick={() => window.open('https://web3.okx.com/leaderboard', '_blank', 'noopener,noreferrer')}
+              className="p-4 bg-gradient-to-r from-red-500/10 to-orange-500/10 border border-red-500/20 rounded-lg hover:from-red-500/20 hover:to-orange-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-gradient-to-r from-red-500 to-orange-500 rounded-full flex items-center justify-center">
+                  <TrendingDown className="w-4 h-4 text-white" />
+                </div>
+                <h4 className="text-red-400 font-semibold">OKX Web3 Leaderboard</h4>
+              </div>
+              <p className="text-gray-400 text-sm">Trading Performance Rankings & Analytics</p>
+            </button>
           </div>
         </GlassCard>
       </div>

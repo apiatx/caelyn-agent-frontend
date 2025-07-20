@@ -447,3 +447,5 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Trading Leaders Badge**: OKX Leaderboard features "TRADING LEADERS" badge with red gradient styling
 - **Enhanced Solana Analytics**: Solana page now includes DexScreener, Jupiter, Moby Screener, and OKX Leaderboard
 - **Section Organization**: Trench section positioned as dedicated trading analytics area within Solana ecosystem
+- **OKX Iframe Security Fix**: Converted OKX Leaderboard from iframe to clickable link button due to X-Frame-Options restrictions
+- **Consistent Security Pattern**: OKX now follows same clickable button approach as AIxVC when iframe embedding is blocked by security headers
