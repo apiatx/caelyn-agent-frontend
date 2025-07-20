@@ -93,13 +93,28 @@ export default function AlphaSection() {
           </Badge>
         </div>
         
-        <div className="text-center py-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+          <button
+            onClick={() => openInNewTab('https://debank.com/profile/0x3f135ba020d0ed288d8dd85cd3d600451b121013')}
+            className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                <Wallet className="w-4 h-4 text-white" />
+              </div>
+              <h4 className="text-green-400 font-semibold">WhaleAI</h4>
+            </div>
+            <p className="text-gray-400 text-sm">DeBank Portfolio Analysis</p>
+          </button>
+        </div>
+
+        <div className="text-center py-4">
           <div className="w-16 h-16 bg-gradient-to-r from-green-500/10 to-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
             <Wallet className="w-8 h-8 text-green-400" />
           </div>
-          <h4 className="text-lg font-semibold text-white mb-2">Smart Wallet Integration</h4>
+          <h4 className="text-lg font-semibold text-white mb-2">More Smart Wallets</h4>
           <p className="text-crypto-silver text-sm max-w-md mx-auto">
-            Advanced wallet management and DeFi automation tools will be available here soon.
+            Additional wallet management and DeFi automation tools will be available here soon.
           </p>
         </div>
       </GlassCard>
