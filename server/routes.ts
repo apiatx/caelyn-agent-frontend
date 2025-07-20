@@ -6,6 +6,7 @@ import { debankService } from './debank-service';
 import { debankStakingService } from './debank-staking-service';
 import { mobulaService } from './mobula-service';
 import { MultiChainService } from './multi-chain-service';
+import { coinMarketCapService } from './coinmarketcap-service';
 import { z } from "zod";
 import { insertPremiumAccessSchema } from "@shared/schema";
 
@@ -348,6 +349,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error(`❌ [MULTI-CHAIN] Failed to fetch portfolio for ${req.params.address}:`, error);
       res.status(500).json({ message: 'Failed to fetch multi-chain portfolio' });
+    }
+  });
+
+  // CoinMarketCap top 100 cryptocurrencies endpoint
+  app.get('/api/coinmarketcap/top100', async (req, res) => {
+    try {
+      console.log('🔍 [API] Fetching top 100 cryptocurrencies from CoinMarketCap...');
+      const cryptos = await coinMarketCapService.getTop100Cryptocurrencies();
+      
+      console.log(`✅ [API] Successfully retrieved ${cryptos.length} cryptocurrencies from CoinMarketCap`);
+      res.json(cryptos);
+    } catch (error) {
+      console.error('❌ [API] Failed to fetch top 100 cryptocurrencies from CoinMarketCap:', error);
+      res.status(500).json({ message: 'Failed to fetch top 100 cryptocurrencies' });
+    }
+  });
+
+  // CoinMarketCap specific cryptocurrency endpoint
+  app.get('/api/coinmarketcap/crypto/:symbol', async (req, res) => {
+    try {
+      const { symbol } = req.params;
+      console.log(`🔍 [API] Fetching CoinMarketCap data for ${symbol}...`);
+      const crypto = await coinMarketCapService.getSpecificCryptocurrency(symbol.toUpperCase());
+      
+      if (!crypto) {
+        return res.status(404).json({ message: `Cryptocurrency ${symbol} not found` });
+      }
+      
+      console.log(`✅ [API] Successfully retrieved CoinMarketCap data for ${symbol}`);
+      res.json(crypto);
+    } catch (error) {
+      console.error(`❌ [API] Failed to fetch CoinMarketCap data for ${req.params.symbol}:`, error);
+      res.status(500).json({ message: 'Failed to fetch cryptocurrency data' });
     }
   });
 
