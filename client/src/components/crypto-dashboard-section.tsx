@@ -216,27 +216,7 @@ export default function CryptoDashboardSection() {
             <h4 className="text-cyan-400 font-semibold mb-1">SoSo Value</h4>
             <p className="text-gray-400 text-sm">Crypto Index</p>
           </button>
-          <button
-            onClick={() => openInNewTab('https://app.elfa.ai/leaderboard/token')}
-            className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
-          >
-            <h4 className="text-purple-400 font-semibold mb-1">Mindshare by Elfi</h4>
-            <p className="text-gray-400 text-sm">AI Token Analytics</p>
-          </button>
-          <button
-            onClick={() => openInNewTab('https://www.cookie.fun/')}
-            className="p-4 bg-pink-500/10 border border-pink-500/20 rounded-lg hover:bg-pink-500/20 transition-colors"
-          >
-            <h4 className="text-pink-400 font-semibold mb-1">Cookie.fun 🍪</h4>
-            <p className="text-gray-400 text-sm">Fun Platform</p>
-          </button>
-          <button
-            onClick={() => openInNewTab('https://dapp.velvet.capital/')}
-            className="p-4 bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-lg hover:from-purple-500/20 hover:to-pink-500/20 transition-colors"
-          >
-            <h4 className="text-purple-400 font-semibold mb-1">Velvet Capital</h4>
-            <p className="text-gray-400 text-sm">Portfolio Management</p>
-          </button>
+
         </div>
       </GlassCard>
     </div>
