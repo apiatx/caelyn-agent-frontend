@@ -351,10 +351,10 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Flexible Layout Systems**: Grid layouts and components automatically adjust for mobile, tablet, and desktop views
 - **Touch-Friendly Interfaces**: Mobile-optimized buttons, spacing, and interactive elements for optimal user experience
 
-### July 20, 2025 - Nansen Portfolio Integration
-- **Nansen Portfolio Access**: Added dedicated Nansen portfolio section with external link integration
-- **Iframe Security Handling**: Resolved X-Frame-Options restrictions by creating attractive call-to-action interface
-- **Feature Showcase**: Professional landing area highlighting Nansen's on-chain intelligence capabilities
-- **Mobile-Responsive Design**: Adaptive layout with gradient background and feature highlights
-- **One-Click Access**: Direct external link to Nansen portfolio with security-compliant approach
-- **Professional Presentation**: Blue-purple gradient branding with feature bullets and call-to-action button
+### July 20, 2025 - DeBank Portfolio Integration
+- **DeBank Portfolio Analytics**: Added comprehensive DeBank portfolio iframe integration to Portfolio section
+- **Multi-Chain Portfolio Tracking**: Direct access to DeBank's advanced multi-chain portfolio analytics
+- **Live Portfolio Data**: Real-time portfolio tracking across Ethereum, BSC, Polygon, Arbitrum, and more
+- **Mobile-Responsive Design**: DeBank iframe adapts to screen size (500px mobile, 600px tablet, 700px desktop)
+- **External Profile Access**: One-click access to full DeBank profile for comprehensive portfolio analysis
+- **Professional Integration**: Green-blue gradient branding matching DeBank's multi-chain focus
