@@ -157,39 +157,6 @@ export default function CryptoDashboardSection() {
         </div>
       </GlassCard>
 
-      {/* BitBo Charts */}
-      <GlassCard className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
-            <BarChart3 className="w-4 h-4 text-white" />
-          </div>
-          <h3 className="text-xl font-semibold text-white">BitBo Charts</h3>
-          <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30">
-            INDICES
-          </Badge>
-          <button
-            onClick={() => openInNewTab('https://charts.bitbo.io/index/')}
-            className="ml-auto text-orange-400 hover:text-orange-300 text-sm"
-          >
-            Open in New Tab →
-          </button>
-        </div>
-        <div className="w-full">
-          <iframe
-            src="https://bitbo.io/index/"
-            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            title="BitBo Charts"
-            allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-            loading="lazy"
-            style={{
-              background: '#ffffff',
-              border: 'none'
-            }}
-          />
-        </div>
-      </GlassCard>
-
       {/* More Analytics */}
       <GlassCard className="p-6">
         <div className="flex items-center gap-2 mb-4">
@@ -224,11 +191,11 @@ export default function CryptoDashboardSection() {
             <p className="text-gray-400 text-sm">Trading Volume</p>
           </button>
           <button
-            onClick={() => openInNewTab('https://www.tradingview.com/chart/e5l95XgZ/?symbol=CRYPTOCAP%3AOTHERS.D')}
+            onClick={() => openInNewTab('https://charts.bitbo.io/index/')}
             className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
           >
-            <h4 className="text-purple-400 font-semibold mb-1">others.d</h4>
-            <p className="text-gray-400 text-sm">Altcoin Dominance</p>
+            <h4 className="text-purple-400 font-semibold mb-1">BitBo Charts</h4>
+            <p className="text-gray-400 text-sm">Crypto Indices</p>
           </button>
           <button
             onClick={() => openInNewTab('https://coinalyze.net/futures-data/global-charts/')}
