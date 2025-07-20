@@ -138,6 +138,38 @@ export default function BaseSection() {
         </div>
       </GlassCard>
 
+      {/* Aerodrome Finance Swap */}
+      <GlassCard className="p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-6 h-6 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center">
+            <span className="text-white text-xs font-bold">A</span>
+          </div>
+          <h3 className="text-xl font-semibold text-white">Aerodrome Finance Swap</h3>
+          <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-full font-medium">
+            BASE DEX
+          </span>
+          <button
+            onClick={() => window.open('https://aerodrome.finance/swap?from=eth&to=0x940181a94a35a4569e4529a3cdfb74e38fd98631&chain0=8453&chain1=8453', '_blank')}
+            className="ml-auto text-green-400 hover:text-green-300 text-xs"
+          >
+            Open in New Tab →
+          </button>
+        </div>
+        <div className="w-full">
+          <iframe
+            src="https://aerodrome.finance/swap?from=eth&to=0x940181a94a35a4569e4529a3cdfb74e38fd98631&chain0=8453&chain1=8453"
+            className="w-full h-[600px] sm:h-[700px] lg:h-[800px] rounded-lg border border-crypto-silver/20"
+            title="Aerodrome Finance Swap"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-top-navigation"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+            style={{
+              background: 'transparent',
+              colorScheme: 'dark'
+            }}
+          />
+        </div>
+      </GlassCard>
+
       {/* Base Social Sentiment */}
       <GlassCard className="p-6">
         <div className="flex items-center justify-between mb-6">

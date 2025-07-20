@@ -378,3 +378,7 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Improved Visual Consistency**: Enhanced dark theme integration across all iframe sections with consistent styling and external link access
 - **Velvet Capital Quick Access**: Added Velvet Capital button to "More Analytics" section for streamlined access to DeFi portfolio management platform
 - **Interface Consolidation**: Moved Velvet Capital from standalone section to grouped analytics buttons for cleaner dashboard organization
+
+### July 20, 2025 - Aerodrome Finance Integration
+- **Aerodrome Swap Integration**: Added Aerodrome Finance swap iframe to Base page with ETH to token swap functionality
+- **DeFi Trading Interface**: Direct access to BASE network's leading DEX with wallet connection support
