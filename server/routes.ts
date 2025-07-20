@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { realTimeDataService } from './real-time-data-service-new';
 import { debankService } from './debank-service';
 import { debankStakingService } from './debank-staking-service';
+import { mobulaService } from './mobula-service';
 import { z } from "zod";
 import { insertPremiumAccessSchema } from "@shared/schema";
 
@@ -253,6 +254,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error fetching comprehensive subnet data:', error);
       res.status(500).json({ message: 'Failed to fetch subnet data' });
+    }
+  });
+
+  // Mobula API endpoints
+  app.get('/api/mobula/top100', async (req, res) => {
+    try {
+      console.log('🔍 [API] Fetching top 100 cryptos from Mobula...');
+      const cryptos = await mobulaService.getTop100Cryptos();
+      
+      if (!cryptos || cryptos.length === 0) {
+        return res.status(404).json({ message: 'No cryptocurrency data available' });
+      }
+      
+      console.log(`✅ [API] Successfully retrieved ${cryptos.length} cryptocurrencies`);
+      res.json(cryptos);
+    } catch (error) {
+      console.error('❌ [API] Failed to fetch top 100 cryptos:', error);
+      res.status(500).json({ message: 'Failed to fetch cryptocurrency data' });
+    }
+  });
+
+  app.get('/api/mobula/wallet/:address', async (req, res) => {
+    try {
+      const { address } = req.params;
+      console.log(`🔍 [API] Fetching wallet portfolio from Mobula for: ${address.slice(0, 8)}...`);
+      
+      const portfolio = await mobulaService.getWalletPortfolio(address);
+      
+      if (!portfolio) {
+        return res.status(404).json({ message: 'Wallet portfolio not found' });
+      }
+      
+      console.log(`✅ [API] Retrieved portfolio with $${portfolio.total_balance_usd.toFixed(2)} total value`);
+      res.json(portfolio);
+    } catch (error) {
+      console.error(`❌ [API] Failed to fetch wallet portfolio for ${req.params.address}:`, error);
+      res.status(500).json({ message: 'Failed to fetch wallet portfolio' });
+    }
+  });
+
+  app.get('/api/mobula/prices', async (req, res) => {
+    try {
+      const { assets } = req.query;
+      
+      if (!assets || typeof assets !== 'string') {
+        return res.status(400).json({ message: 'Assets parameter is required' });
+      }
+      
+      const assetList = assets.split(',').map(a => a.trim()).filter(Boolean);
+      console.log(`🔍 [API] Fetching prices for ${assetList.length} assets from Mobula...`);
+      
+      const prices = await mobulaService.getMultipleAssetPrices(assetList);
+      
+      console.log(`✅ [API] Retrieved prices for ${Object.keys(prices).length} assets`);
+      res.json(prices);
+    } catch (error) {
+      console.error('❌ [API] Failed to fetch asset prices:', error);
+      res.status(500).json({ message: 'Failed to fetch asset prices' });
+    }
+  });
+
+  app.get('/api/mobula/search', async (req, res) => {
+    try {
+      const { q } = req.query;
+      
+      if (!q || typeof q !== 'string') {
+        return res.status(400).json({ message: 'Search query (q) is required' });
+      }
+      
+      console.log(`🔍 [API] Searching assets on Mobula for: "${q}"`);
+      const results = await mobulaService.searchAssets(q);
+      
+      console.log(`✅ [API] Found ${results.length} search results`);
+      res.json(results);
+    } catch (error) {
+      console.error(`❌ [API] Failed to search assets for "${req.query.q}":`, error);
+      res.status(500).json({ message: 'Failed to search assets' });
     }
   });
 

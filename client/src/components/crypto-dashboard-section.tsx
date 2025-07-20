@@ -2,6 +2,8 @@ import React from 'react';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, BarChart3, DollarSign, Activity, Eye, Globe } from "lucide-react";
+import { Top100Cryptos } from './top-100-cryptos';
+import { MobulaPortfolioTracker } from './mobula-portfolio-tracker';
 
 // Glass card component for crypto dashboard
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
@@ -156,6 +158,12 @@ export default function CryptoDashboardSection() {
           />
         </div>
       </GlassCard>
+
+      {/* Mobula Top 100 Cryptos */}
+      <Top100Cryptos />
+
+      {/* Mobula Portfolio Tracker */}
+      <MobulaPortfolioTracker />
 
       {/* More Analytics */}
       <GlassCard className="p-6">
