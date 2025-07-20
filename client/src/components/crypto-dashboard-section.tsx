@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, BarChart3, DollarSign, Activity, Eye, Globe } from "lucide-react";
 
-import { MultiChainPortfolioTracker } from './multi-chain-portfolio-tracker';
+
 import { MarketOverviewSection } from './market-overview-section';
 
 // Glass card component for crypto dashboard
@@ -170,8 +170,7 @@ export default function CryptoDashboardSection() {
         </div>
       </GlassCard>
 
-      {/* Multi-Chain Portfolio Tracker */}
-      <MultiChainPortfolioTracker />
+
 
       {/* Market Overview from CoinMarketCap */}
       <MarketOverviewSection />

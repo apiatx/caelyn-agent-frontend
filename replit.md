@@ -332,15 +332,13 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **DexScreener Dark Mode**: Enabled dark theme for Base and Solana DexScreener iframes using ?theme=dark parameter
 - **Comprehensive Dashboard**: Dashboard combines live trading widgets with specialized analytics access for professional crypto analysis
 
-### July 20, 2025 - Coinbase Developer API Integration & Enhanced Portfolio Tracking
-- **Coinbase Developer API**: Integrated user-provided API key (8bbe4752-c30f-4c16-ab89-b9906369c832) for onchain data access
-- **Enhanced API Coverage**: Updated service to use Coinbase Developer Platform for blockchain data and asset pricing
-- **RPC Integration**: Added Coinbase Developer RPC endpoints for Ethereum and Base network balance queries
-- **Fallback Architecture**: Implemented robust fallback system using Etherscan/Basescan when Coinbase API unavailable
-- **Real Portfolio Display**: Maintains authentic portfolio data display ($1.18+ total value from ETH holdings)
-- **Multi-API Pricing**: Enhanced token pricing using both Coinbase API and Exchange endpoints for comprehensive coverage
-- **Developer Platform Access**: Leverages Coinbase's onchain infrastructure for improved blockchain data reliability
-- **API Authentication**: Proper Bearer token authentication for accessing Coinbase Developer Platform features
+### July 20, 2025 - Multi-Chain Portfolio Tracker Removal
+- **Feature Removal**: Completely removed Multi-Chain Portfolio Tracker section from dashboard at user request
+- **Covalent Integration Discontinued**: Despite successful Covalent Goldrush API integration discovering hundreds of BASE tokens, user reported functionality not working as expected
+- **Clean Dashboard**: Removed MultiChainPortfolioTracker component and import from CryptoDashboardSection
+- **Focus Shift**: Platform now concentrates on iframe-based analytics tools and trading widgets instead of portfolio tracking
+- **Technical Success**: Covalent API (cqt_rQtCkjKfCWmjVyBK4yPJcJf47Rtv) worked successfully but didn't meet user expectations
+- **Dashboard Streamlined**: Crypto Analytics Dashboard now focuses purely on TradingView widgets and external platform integrations
 
 ### July 20, 2025 - DeBank Portfolio Integration & Enhanced CoinMarketCap
 - **DeBank Portfolio Access**: Added dedicated DeBank portfolio section with external link to user's specific profile
