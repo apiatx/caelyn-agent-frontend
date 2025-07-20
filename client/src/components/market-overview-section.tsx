@@ -277,24 +277,7 @@ export function MarketOverviewSection() {
           <p className="text-lg sm:text-xl font-bold text-white">{globalMetrics.eth_dominance.toFixed(1)}%</p>
         </div>
 
-        <div className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 rounded-lg p-3 sm:p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <LineChart className="w-4 h-4 text-cyan-400" />
-            <span className="text-cyan-400 font-semibold text-xs sm:text-sm">DeFi Market Cap</span>
-          </div>
-          <p className="text-lg sm:text-xl font-bold text-white">{formatCurrency(usd.defi_market_cap)}</p>
-          <p className={`text-xs ${getPercentageColor(usd.defi_24h_percentage_change)}`}>
-            {formatPercentage(usd.defi_24h_percentage_change)} 24h
-          </p>
-        </div>
 
-        <div className="bg-gradient-to-r from-gray-500/10 to-slate-500/10 border border-gray-500/20 rounded-lg p-3 sm:p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Activity className="w-4 h-4 text-gray-400" />
-            <span className="text-gray-400 font-semibold text-xs sm:text-sm">Active Cryptos</span>
-          </div>
-          <p className="text-lg sm:text-xl font-bold text-white">{globalMetrics.active_cryptocurrencies.toLocaleString()}</p>
-        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
