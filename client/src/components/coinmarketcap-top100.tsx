@@ -223,7 +223,7 @@ export function CoinMarketCapTop100() {
           <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg p-4 mb-4">
             <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-blue-400" />
-              Interactive Sorting Controls
+              Sort By
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
               <button 
@@ -361,77 +361,7 @@ export function CoinMarketCapTop100() {
             </div>
           </div>
 
-          {/* Mobile Sorting Controls */}
-          <div className="lg:hidden mb-4">
-            <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg p-3">
-              <h3 className="text-white font-semibold mb-3 text-sm flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-blue-400" />
-                Sort By
-              </h3>
-              <div className="grid grid-cols-2 gap-2">
-                <button 
-                  onClick={() => handleSort('market_cap')}
-                  className={`flex items-center justify-center gap-1 px-2 py-2 rounded-lg border transition-all text-sm ${
-                    sortField === 'market_cap' 
-                      ? 'bg-blue-500/20 border-blue-500/50 text-blue-400' 
-                      : 'bg-black/20 border-crypto-silver/20 text-gray-400 hover:text-white hover:border-crypto-silver/40'
-                  }`}
-                >
-                  Market Cap {getSortIcon('market_cap')}
-                </button>
-                <button 
-                  onClick={() => handleSort('volume_24h')}
-                  className={`flex items-center justify-center gap-1 px-2 py-2 rounded-lg border transition-all text-sm ${
-                    sortField === 'volume_24h' 
-                      ? 'bg-blue-500/20 border-blue-500/50 text-blue-400' 
-                      : 'bg-black/20 border-crypto-silver/20 text-gray-400 hover:text-white hover:border-crypto-silver/40'
-                  }`}
-                >
-                  Volume {getSortIcon('volume_24h')}
-                </button>
-                <button 
-                  onClick={() => handleSort('percent_change_7d')}
-                  className={`flex items-center justify-center gap-1 px-2 py-2 rounded-lg border transition-all text-sm ${
-                    sortField === 'percent_change_7d' 
-                      ? 'bg-blue-500/20 border-blue-500/50 text-blue-400' 
-                      : 'bg-black/20 border-crypto-silver/20 text-gray-400 hover:text-white hover:border-crypto-silver/40'
-                  }`}
-                >
-                  7d % {getSortIcon('percent_change_7d')}
-                </button>
-                <button 
-                  onClick={() => handleSort('percent_change_30d')}
-                  className={`flex items-center justify-center gap-1 px-2 py-2 rounded-lg border transition-all text-sm ${
-                    sortField === 'percent_change_30d' 
-                      ? 'bg-blue-500/20 border-blue-500/50 text-blue-400' 
-                      : 'bg-black/20 border-crypto-silver/20 text-gray-400 hover:text-white hover:border-crypto-silver/40'
-                  }`}
-                >
-                  30d % {getSortIcon('percent_change_30d')}
-                </button>
-                <button 
-                  onClick={() => handleSort('percent_change_90d')}
-                  className={`flex items-center justify-center gap-1 px-2 py-2 rounded-lg border transition-all text-sm ${
-                    sortField === 'percent_change_90d' 
-                      ? 'bg-blue-500/20 border-blue-500/50 text-blue-400' 
-                      : 'bg-black/20 border-crypto-silver/20 text-gray-400 hover:text-white hover:border-crypto-silver/40'
-                  }`}
-                >
-                  90d % {getSortIcon('percent_change_90d')}
-                </button>
-                <button 
-                  onClick={() => handleSort('rank')}
-                  className={`flex items-center justify-center gap-1 px-2 py-2 rounded-lg border transition-all text-sm ${
-                    sortField === 'rank' 
-                      ? 'bg-blue-500/20 border-blue-500/50 text-blue-400' 
-                      : 'bg-black/20 border-crypto-silver/20 text-gray-400 hover:text-white hover:border-crypto-silver/40'
-                  }`}
-                >
-                  Rank {getSortIcon('rank')}
-                </button>
-              </div>
-            </div>
-          </div>
+
 
           {/* Mobile Card View */}
           <div className="lg:hidden grid gap-2 sm:gap-3 max-h-80 sm:max-h-96 overflow-y-auto">
