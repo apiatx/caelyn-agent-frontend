@@ -256,51 +256,51 @@ export function MarketOverviewSection() {
             </button>
           </h3>
           
-          <div className="space-y-4">
+          <div className="space-y-3">
             {/* CMC Altcoin Season Index */}
-            <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-6">
-              <h4 className="text-white text-xl font-bold mb-4">CMC Altcoin Season Index</h4>
+            <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-4">
+              <h4 className="text-white text-lg font-bold mb-3">CMC Altcoin Season Index</h4>
               
-              <div className="flex items-baseline gap-2 mb-6">
-                <span className="text-white text-5xl font-bold">{altSeasonIndex.index_value}</span>
-                <span className="text-gray-400 text-xl">/ 100</span>
+              <div className="flex items-baseline gap-1 mb-4">
+                <span className="text-white text-3xl font-bold">{altSeasonIndex.index_value}</span>
+                <span className="text-gray-400 text-lg">/ 100</span>
               </div>
               
               {/* Progress Bar */}
-              <div className="mb-6">
-                <div className="flex justify-between text-sm text-gray-400 mb-2">
+              <div className="mb-3">
+                <div className="flex justify-between text-xs text-gray-400 mb-1">
                   <span>Bitcoin Season</span>
                   <span>Altcoin Season</span>
                 </div>
-                <div className="relative h-6 bg-gradient-to-r from-orange-500 via-orange-300 to-blue-500 rounded-full">
+                <div className="relative h-4 bg-gradient-to-r from-orange-500 via-orange-300 to-blue-500 rounded-full">
                   <div 
-                    className="absolute top-1/2 transform -translate-y-1/2 w-4 h-4 bg-white rounded-full border-2 border-gray-700 shadow-lg"
-                    style={{ left: `calc(${altSeasonIndex.index_value}% - 8px)` }}
+                    className="absolute top-1/2 transform -translate-y-1/2 w-3 h-3 bg-white rounded-full border border-gray-700 shadow-lg"
+                    style={{ left: `calc(${altSeasonIndex.index_value}% - 6px)` }}
                   />
                 </div>
               </div>
             </div>
 
             {/* Historical Values */}
-            <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-6">
-              <h4 className="text-white text-xl font-bold mb-4">Historical Values</h4>
+            <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-4">
+              <h4 className="text-white text-lg font-bold mb-3">Historical Values</h4>
               
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-400">Yesterday</span>
-                  <span className="bg-gray-600 text-white px-3 py-1 rounded-full text-sm font-medium">
+                  <span className="text-gray-400 text-sm">Yesterday</span>
+                  <span className="bg-gray-600 text-white px-2 py-1 rounded-full text-xs font-medium">
                     {altSeasonIndex.historical.yesterday}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-400">Last Week</span>
-                  <span className="bg-gray-600 text-white px-3 py-1 rounded-full text-sm font-medium">
+                  <span className="text-gray-400 text-sm">Last Week</span>
+                  <span className="bg-gray-600 text-white px-2 py-1 rounded-full text-xs font-medium">
                     {altSeasonIndex.historical.last_week}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-400">Last Month</span>
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                  <span className="text-gray-400 text-sm">Last Month</span>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                     altSeasonIndex.historical.last_month > 75 ? 'bg-blue-500 text-white' : 
                     altSeasonIndex.historical.last_month > 25 ? 'bg-gray-600 text-white' : 'bg-orange-500 text-white'
                   }`}>
@@ -311,17 +311,17 @@ export function MarketOverviewSection() {
             </div>
 
             {/* Yearly High and Low */}
-            <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-6">
-              <h4 className="text-white text-xl font-bold mb-4">Yearly High and Low</h4>
+            <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-4">
+              <h4 className="text-white text-lg font-bold mb-3">Yearly High and Low</h4>
               
-              <div className="space-y-4">
+              <div className="space-y-3">
                 <div>
-                  <div className="flex justify-between items-center mb-2">
+                  <div className="flex justify-between items-center">
                     <div>
-                      <p className="text-white font-semibold">Yearly High</p>
-                      <p className="text-gray-400 text-sm">({altSeasonIndex.yearly.high_date})</p>
+                      <p className="text-white font-medium text-sm">Yearly High</p>
+                      <p className="text-gray-400 text-xs">({altSeasonIndex.yearly.high_date})</p>
                     </div>
-                    <span className="bg-blue-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                    <span className="bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-medium">
                       {altSeasonIndex.yearly.high_description} - {altSeasonIndex.yearly.high}
                     </span>
                   </div>
@@ -330,10 +330,10 @@ export function MarketOverviewSection() {
                 <div>
                   <div className="flex justify-between items-center">
                     <div>
-                      <p className="text-white font-semibold">Yearly Low</p>
-                      <p className="text-gray-400 text-sm">({altSeasonIndex.yearly.low_date})</p>
+                      <p className="text-white font-medium text-sm">Yearly Low</p>
+                      <p className="text-gray-400 text-xs">({altSeasonIndex.yearly.low_date})</p>
                     </div>
-                    <span className="bg-orange-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                    <span className="bg-orange-500 text-white px-2 py-1 rounded-full text-xs font-medium">
                       {altSeasonIndex.yearly.low_description} - {altSeasonIndex.yearly.low}
                     </span>
                   </div>
