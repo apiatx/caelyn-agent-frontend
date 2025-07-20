@@ -130,6 +130,33 @@ export default function CryptoDashboardSection() {
         </div>
       </GlassCard>
 
+      {/* DexScreener */}
+      <GlassCard className="p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-6 h-6 bg-indigo-500 rounded-full flex items-center justify-center">
+            <BarChart3 className="w-4 h-4 text-white" />
+          </div>
+          <h3 className="text-xl font-semibold text-white">DexScreener</h3>
+          <Badge className="bg-indigo-500/20 text-indigo-400 border-indigo-500/30">
+            DEX ANALYTICS
+          </Badge>
+          <button
+            onClick={() => openInNewTab('https://dexscreener.com/')}
+            className="ml-auto text-indigo-400 hover:text-indigo-300 text-sm"
+          >
+            Open in New Tab →
+          </button>
+        </div>
+        <div className="w-full">
+          <iframe
+            src="https://dexscreener.com/"
+            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+            title="DexScreener"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+          />
+        </div>
+      </GlassCard>
+
       {/* Artemis Analytics Netflows */}
       <GlassCard className="p-6">
         <div className="flex items-center gap-2 mb-4">
