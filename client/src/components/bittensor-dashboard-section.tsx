@@ -25,14 +25,14 @@ export default function BittensorDashboardSection() {
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-white flex items-center">
               <Brain className="w-4 h-4 mr-2" />
-              Top Subnet Movers
+              taostats
             </h3>
             <div className="flex items-center gap-2">
               <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30">
                 τ TaoStats
               </Badge>
               <a 
-                href="https://taostats.io/subnets"
+                href="https://taostats.io/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-crypto-silver hover:text-white transition-colors group"
@@ -44,9 +44,9 @@ export default function BittensorDashboardSection() {
           
           <div className="relative w-full">
             <iframe
-              src="https://taostats.io/subnets"
+              src="https://taostats.io/"
               className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-              title="TaoStats Subnet Movers"
+              title="TaoStats"
               frameBorder="0"
               loading="lazy"
               style={{
@@ -55,7 +55,7 @@ export default function BittensorDashboardSection() {
               }}
             />
             <div className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
-              Live Bittensor Subnet Data
+              Live Bittensor Data
             </div>
           </div>
         </GlassCard>
