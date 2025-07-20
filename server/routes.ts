@@ -7,10 +7,12 @@ import { debankStakingService } from './debank-staking-service';
 import { mobulaService } from './mobula-service';
 import { MultiChainService } from './multi-chain-service';
 import { coinMarketCapService } from './coinmarketcap-service';
+import { MarketOverviewService } from './market-overview-service';
 import { z } from "zod";
 import { insertPremiumAccessSchema } from "@shared/schema";
 
 const multiChainService = new MultiChainService();
+const marketOverviewService = new MarketOverviewService();
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
@@ -363,6 +365,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('❌ [API] Failed to fetch top 100 cryptocurrencies from CoinMarketCap:', error);
       res.status(500).json({ message: 'Failed to fetch top 100 cryptocurrencies' });
+    }
+  });
+
+  // CoinMarketCap market overview endpoint
+  app.get('/api/coinmarketcap/market-overview', async (req, res) => {
+    try {
+      console.log('🔍 [API] Fetching market overview from CoinMarketCap...');
+      const overview = await marketOverviewService.getMarketOverview();
+      
+      console.log('✅ [API] Successfully retrieved market overview from CoinMarketCap');
+      console.log('📊 [API] Global metrics sample:', {
+        totalMarketCap: overview.globalMetrics?.quote?.USD?.total_market_cap,
+        btcDominance: overview.globalMetrics?.btc_dominance,
+        trendingCount: overview.trending?.length
+      });
+      
+      res.json(overview);
+    } catch (error) {
+      console.error('❌ [API] Failed to fetch market overview from CoinMarketCap:', error);
+      res.status(500).json({ message: 'Failed to fetch market overview' });
     }
   });
 

@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { TrendingUp, BarChart3, DollarSign, Activity, Eye, Globe } from "lucide-react";
 
 import { MultiChainPortfolioTracker } from './multi-chain-portfolio-tracker';
-import { CoinMarketCapTop100 } from './coinmarketcap-top100';
+import { MarketOverviewSection } from './market-overview-section';
 
 // Glass card component for crypto dashboard
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
@@ -173,8 +173,8 @@ export default function CryptoDashboardSection() {
       {/* Multi-Chain Portfolio Tracker */}
       <MultiChainPortfolioTracker />
 
-      {/* CoinMarketCap Top 100 Cryptocurrencies */}
-      <CoinMarketCapTop100 />
+      {/* Market Overview from CoinMarketCap */}
+      <MarketOverviewSection />
 
       {/* More Analytics */}
       <GlassCard className="p-3 sm:p-4 lg:p-6">
