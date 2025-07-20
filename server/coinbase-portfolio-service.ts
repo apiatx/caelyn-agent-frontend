@@ -28,7 +28,192 @@ interface CoinbasePortfolioResponse {
 export class CoinbasePortfolioService {
   private coinbaseApiKey = '8bbe4752-c30f-4c16-ab89-b9906369c832';
   private etherscanApiKey = process.env.ETHERSCAN_API_KEY!;
-  private basescanApiKey = process.env.BASESCAN_API_KEY!
+  private basescanApiKey = process.env.BASESCAN_API_KEY!;
+  
+  // Alternative API endpoints for multi-chain data
+  private moralisApiKey = process.env.MORALIS_API_KEY || '';
+  private alchemyApiKey = process.env.ALCHEMY_API_KEY || '';
+
+  // BASE network tokens via Coinbase Developer API
+  async getBaseTokensViaCoinbase(walletAddress: string): Promise<TokenBalance[]> {
+    try {
+      console.log(`🔍 [BASE COINBASE] Scanning BASE via Coinbase Developer API...`);
+      
+      // Known BASE network major tokens
+      const baseTokens = [
+        { address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', symbol: 'USDC', name: 'USD Coin', decimals: 6 },
+        { address: '0x4200000000000000000000000000000000000006', symbol: 'WETH', name: 'Wrapped Ether', decimals: 18 },
+        { address: '0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb', symbol: 'DEGEN', name: 'Degen', decimals: 18 },
+        { address: '0x940181a94A35A4569E4529A3CDfB74e38FD98631', symbol: 'AERO', name: 'Aerodrome Finance', decimals: 18 },
+        { address: '0x0578d8A44db98B23BF096A382e016e29a5Ce0ffe', symbol: 'HIGHER', name: 'Higher', decimals: 18 },
+        { address: '0x532f27101965dd16442E59d40670FaF5eBB142E4', symbol: 'BRETT', name: 'Brett', decimals: 18 }
+      ];
+      
+      const tokens: TokenBalance[] = [];
+      
+      for (const token of baseTokens) {
+        try {
+          // Use Coinbase Developer API RPC
+          const response = await fetch('https://api.developer.coinbase.com/rpc/v1/base/8bbe4752-c30f-4c16-ab89-b9906369c832', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${this.coinbaseApiKey}`
+            },
+            body: JSON.stringify({
+              jsonrpc: '2.0',
+              method: 'eth_call',
+              params: [{
+                to: token.address,
+                data: `0x70a08231000000000000000000000000${walletAddress.slice(2)}`
+              }, 'latest'],
+              id: 1
+            })
+          });
+          
+          if (response.ok) {
+            const data = await response.json() as any;
+            if (data.result && data.result !== '0x' && data.result !== '0x0') {
+              const balance = parseInt(data.result, 16) / Math.pow(10, token.decimals);
+              if (balance > 0) {
+                tokens.push({
+                  token: token.name,
+                  symbol: token.symbol,
+                  balance: balance.toString(),
+                  decimals: token.decimals,
+                  value: 0,
+                  contractAddress: token.address,
+                  chain: 'Base',
+                  price: 0,
+                  change24h: 0
+                });
+                console.log(`💎 [BASE COINBASE] Found ${token.symbol}: ${balance.toLocaleString()}`);
+              }
+            }
+          }
+        } catch (error) {
+          console.log(`❌ [BASE COINBASE] Error checking ${token.symbol}:`, error);
+        }
+      }
+      
+      return tokens;
+    } catch (error) {
+      console.error(`❌ [BASE COINBASE] Error:`, error);
+      return [];
+    }
+  }
+
+  // Solana network token scanning
+  async getSolanaTokens(walletAddress: string): Promise<TokenBalance[]> {
+    try {
+      console.log(`🔍 [SOLANA] Scanning Solana SPL tokens...`);
+      
+      // Try Solana RPC for SPL tokens
+      const response = await fetch('https://api.mainnet-beta.solana.com', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'getTokenAccountsByOwner',
+          params: [
+            walletAddress,
+            { programId: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' },
+            { encoding: 'jsonParsed' }
+          ]
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json() as any;
+        if (data.result && data.result.value && data.result.value.length > 0) {
+          console.log(`💰 [SOLANA] Found ${data.result.value.length} SPL token accounts`);
+          
+          // Process SPL tokens (would need to implement token metadata lookup)
+          const tokens: TokenBalance[] = [];
+          
+          for (const tokenAccount of data.result.value.slice(0, 10)) { // Limit to 10 for testing
+            try {
+              const tokenData = tokenAccount.account.data.parsed.info;
+              const balance = parseFloat(tokenData.tokenAmount.uiAmount || '0');
+              
+              if (balance > 0) {
+                tokens.push({
+                  token: `SPL Token ${tokenData.mint.slice(0, 8)}...`,
+                  symbol: 'SPL',
+                  balance: balance.toString(),
+                  decimals: tokenData.tokenAmount.decimals,
+                  value: 0,
+                  contractAddress: tokenData.mint,
+                  chain: 'Solana',
+                  price: 0,
+                  change24h: 0
+                });
+              }
+            } catch (error) {
+              console.log(`⚠️ [SOLANA] Error processing token:`, error);
+            }
+          }
+          
+          return tokens;
+        }
+      }
+      
+      return [];
+    } catch (error) {
+      console.error(`❌ [SOLANA] Error:`, error);
+      return [];
+    }
+  }
+
+  // Alternative token pricing for tokens not supported by Coinbase
+  async getAlternativeTokenPrice(symbol: string, contractAddress: string): Promise<number> {
+    try {
+      // Try DexScreener for real-time pricing
+      const response = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${contractAddress}`);
+      
+      if (response.ok) {
+        const data = await response.json() as any;
+        
+        if (data.pairs && data.pairs.length > 0) {
+          // Find the pair with highest liquidity
+          const bestPair = data.pairs.reduce((best: any, current: any) => {
+            return (current.liquidity?.usd || 0) > (best.liquidity?.usd || 0) ? current : best;
+          });
+          
+          if (bestPair.priceUsd) {
+            const price = parseFloat(bestPair.priceUsd);
+            console.log(`🔍 [DEXSCREENER] Found ${symbol} price: $${price.toFixed(8)}`);
+            return price;
+          }
+        }
+      }
+      
+      // Try CoinGecko as backup for Ethereum tokens
+      if (contractAddress.startsWith('0x')) {
+        try {
+          const geckoResponse = await fetch(`https://api.coingecko.com/api/v3/simple/token_price/ethereum?contract_addresses=${contractAddress}&vs_currencies=usd`);
+          
+          if (geckoResponse.ok) {
+            const geckoData = await geckoResponse.json() as any;
+            const price = geckoData[contractAddress.toLowerCase()]?.usd;
+            
+            if (price) {
+              console.log(`🦎 [COINGECKO] Found ${symbol} price: $${price.toFixed(8)}`);
+              return price;
+            }
+          }
+        } catch (geckoError) {
+          console.log(`⚠️ [COINGECKO] Error for ${symbol}:`, geckoError);
+        }
+      }
+      
+      return 0;
+    } catch (error) {
+      console.error(`❌ [ALT PRICE] Error getting alternative price for ${symbol}:`, error);
+      return 0;
+    }
+  }
 
   // Get ETH price from Coinbase Developer Platform API
   async getETHPrice(): Promise<number> {
@@ -219,59 +404,249 @@ export class CoinbasePortfolioService {
     }
   }
 
-  // Get ERC-20 token balances
+  // Get comprehensive ERC-20 token balances using multiple methods
   async getTokenBalances(walletAddress: string, chainName: string, apiUrl: string, apiKey: string): Promise<TokenBalance[]> {
     try {
-      const response = await fetch(
-        `${apiUrl}?module=account&action=tokentx&address=${walletAddress}&page=1&offset=100&sort=desc&apikey=${apiKey}`
-      );
-      
-      const data = await response.json() as any;
       const tokens: TokenBalance[] = [];
       const seenTokens = new Set<string>();
       
-      if (data.status === '1' && Array.isArray(data.result)) {
-        // Get unique tokens from transaction history
-        for (const tx of data.result) {
-          if (!seenTokens.has(tx.contractAddress) && tx.tokenSymbol && tx.tokenName) {
+      console.log(`🔍 [Coinbase Portfolio] Scanning ${chainName} for all token holdings...`);
+      
+      // Method 1: Get recent token transactions (expanded to 1000 records)
+      const txResponse = await fetch(
+        `${apiUrl}?module=account&action=tokentx&address=${walletAddress}&page=1&offset=1000&sort=desc&apikey=${apiKey}`
+      );
+      
+      const txData = await txResponse.json() as any;
+      
+      if (txData.status === '1' && Array.isArray(txData.result)) {
+        console.log(`📊 [Coinbase Portfolio] Found ${txData.result.length} token transactions to analyze`);
+        
+        // Collect unique tokens from transaction history
+        for (const tx of txData.result) {
+          if (!seenTokens.has(tx.contractAddress) && tx.tokenSymbol && tx.tokenName && tx.contractAddress) {
             seenTokens.add(tx.contractAddress);
             
-            // Get current balance for this token
             try {
+              // Get current balance for each token
               const balanceResponse = await fetch(
                 `${apiUrl}?module=account&action=tokenbalance&contractaddress=${tx.contractAddress}&address=${walletAddress}&tag=latest&apikey=${apiKey}`
               );
               
               const balanceData = await balanceResponse.json() as any;
               
-              if (balanceData.status === '1' && balanceData.result !== '0') {
+              console.log(`🔍 [BALANCE CHECK] ${tx.tokenSymbol}: status=${balanceData.status}, result=${balanceData.result}`);
+              
+              if (balanceData.status === '1' && balanceData.result && balanceData.result !== '0') {
                 const decimals = parseInt(tx.tokenDecimal) || 18;
-                const balance = parseFloat(balanceData.result) / Math.pow(10, decimals);
+                const rawBalance = balanceData.result;
+                const balance = parseFloat(rawBalance) / Math.pow(10, decimals);
                 
+                console.log(`🔍 [BALANCE CALC] ${tx.tokenSymbol}: rawBalance=${rawBalance}, decimals=${decimals}, balance=${balance}`);
+                
+                // Include ALL tokens with any balance for debugging
                 if (balance > 0) {
                   tokens.push({
                     token: tx.tokenName,
                     symbol: tx.tokenSymbol,
-                    balance: balance.toFixed(6),
+                    balance: balance.toString(),
                     decimals: decimals,
-                    value: 0, // Will be updated with Coinbase price
+                    value: 0, // Will be updated with pricing
                     contractAddress: tx.contractAddress,
                     chain: chainName,
                     price: 0,
                     change24h: 0
                   });
                   
-                  console.log(`🪙 [Coinbase Portfolio] Found ${tx.tokenSymbol}: ${balance.toFixed(6)} tokens`);
+                  console.log(`💰 [FOUND TOKEN] ${tx.tokenSymbol}: ${balance.toLocaleString()} tokens (${tx.tokenName})`);
+                } else {
+                  console.log(`❌ [ZERO BALANCE] ${tx.tokenSymbol}: balance is ${balance}`);
                 }
+              } else {
+                console.log(`❌ [API ERROR] ${tx.tokenSymbol}: status=${balanceData.status}, result=${balanceData.result}`);
               }
             } catch (error) {
-              console.error(`❌ [Coinbase Portfolio] Error fetching balance for ${tx.contractAddress}:`, error);
+              console.log(`⚠️ [Coinbase Portfolio] Error checking balance for ${tx.tokenSymbol}:`, error);
             }
           }
         }
       }
       
-      console.log(`✅ [Coinbase Portfolio] Found ${tokens.length} tokens on ${chainName}`);
+      // Method 2: Get comprehensive token list using multiple pages
+      console.log(`🔍 [Coinbase Portfolio] Scanning additional transaction pages for ${chainName}...`);
+      
+      // Scan multiple pages to catch more tokens
+      for (let page = 2; page <= 5; page++) {
+        try {
+          const pageResponse = await fetch(
+            `${apiUrl}?module=account&action=tokentx&address=${walletAddress}&page=${page}&offset=1000&sort=desc&apikey=${apiKey}`
+          );
+          
+          const pageData = await pageResponse.json() as any;
+          
+          if (pageData.status === '1' && Array.isArray(pageData.result) && pageData.result.length > 0) {
+            console.log(`📊 [Coinbase Portfolio] Page ${page}: Found ${pageData.result.length} additional transactions`);
+            
+            for (const tx of pageData.result) {
+              if (!seenTokens.has(tx.contractAddress) && tx.tokenSymbol && tx.tokenName && tx.contractAddress) {
+                seenTokens.add(tx.contractAddress);
+                
+                try {
+                  const balanceResponse = await fetch(
+                    `${apiUrl}?module=account&action=tokenbalance&contractaddress=${tx.contractAddress}&address=${walletAddress}&tag=latest&apikey=${apiKey}`
+                  );
+                  
+                  const balanceData = await balanceResponse.json() as any;
+                  
+                  if (balanceData.status === '1' && balanceData.result && balanceData.result !== '0') {
+                    const decimals = parseInt(tx.tokenDecimal) || 18;
+                    const balance = parseFloat(balanceData.result) / Math.pow(10, decimals);
+                    
+                    if (balance > 0.000001) {
+                      tokens.push({
+                        token: tx.tokenName,
+                        symbol: tx.tokenSymbol,
+                        balance: balance.toString(),
+                        decimals: decimals,
+                        value: 0,
+                        contractAddress: tx.contractAddress,
+                        chain: chainName,
+                        price: 0,
+                        change24h: 0
+                      });
+                      
+                      console.log(`💰 [Coinbase Portfolio] Page ${page} - ${tx.tokenSymbol}: ${balance.toLocaleString()} tokens`);
+                    }
+                  }
+                } catch (error) {
+                  console.log(`⚠️ [Coinbase Portfolio] Page ${page} error checking ${tx.tokenSymbol}:`, error);
+                }
+              }
+            }
+          } else {
+            console.log(`📊 [Coinbase Portfolio] Page ${page}: No more transactions found`);
+            break;
+          }
+        } catch (error) {
+          console.log(`❌ [Coinbase Portfolio] Error scanning page ${page}:`, error);
+          break;
+        }
+      }
+      
+      // Method 3: Direct check for known valuable tokens from transaction history
+      console.log(`🔍 [Coinbase Portfolio] Direct checking valuable tokens from transactions for ${chainName}...`);
+      
+      const knownValuableTokens = chainName === 'Ethereum' 
+        ? [
+            { address: '0xea87148a703adc0de89db2ac2b6b381093ae8ee0', symbol: 'IRIS', name: 'I.R.I.S by Virtuals', decimals: 18 },
+            { address: '0xb551b43af192965f74e3dfaa476c890b403cad95', symbol: 'DATA', name: 'Data bot', decimals: 9 },
+            { address: '0xdaa7699352ac8709f3d2fd092226d3dd7da40474', symbol: 'OPCAT', name: 'OP_CAT', decimals: 18 },
+            { address: '0x1495bc9e44af1f8bcb62278d2bec4540cf0c05ea', symbol: 'DEAI', name: 'Zero1 Token', decimals: 18 },
+            { address: '0xa562912e1328eea987e04c2650efb5703757850c', symbol: 'DROPS', name: 'Drops', decimals: 18 },
+            { address: '0x069d89974f4edabde69450f9cf5cf7d8cbd2568d', symbol: 'BVM', name: 'BVM', decimals: 18 },
+            { address: '0x6b448aeb3bfd1dcbe337d59f6dee159daab52768', symbol: 'TOR', name: 'Resistor AI', decimals: 18 }
+          ]
+        : [
+            // BASE network valuable tokens
+            { address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', symbol: 'USDC', name: 'USD Coin', decimals: 6 },
+            { address: '0x4200000000000000000000000000000000000006', symbol: 'WETH', name: 'Wrapped Ether', decimals: 18 },
+            { address: '0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb', symbol: 'DEGEN', name: 'Degen', decimals: 18 },
+            { address: '0x60a3E35Cc302bFA44Cb288Bc5a4F316Fdb1adb42', symbol: 'EURC', name: 'Euro Coin', decimals: 6 },
+            { address: '0x940181a94A35A4569E4529A3CDfB74e38FD98631', symbol: 'AERO', name: 'Aerodrome Finance', decimals: 18 },
+            { address: '0x0578d8A44db98B23BF096A382e016e29a5Ce0ffe', symbol: 'HIGHER', name: 'Higher', decimals: 18 },
+            { address: '0x532f27101965dd16442E59d40670FaF5eBB142E4', symbol: 'BRETT', name: 'Brett', decimals: 18 },
+            { address: '0x4ed4E862860beD51a9570b96d89aF5E1B0Efefed', symbol: 'DEGEN', name: 'Degen Base', decimals: 18 }
+          ];
+      
+      for (const token of knownValuableTokens) {
+        if (!seenTokens.has(token.address)) {
+          try {
+            console.log(`🔍 [DIRECT CHECK] Testing ${token.symbol} at ${token.address}...`);
+            
+            const balanceResponse = await fetch(
+              `${apiUrl}?module=account&action=tokenbalance&contractaddress=${token.address}&address=${walletAddress}&tag=latest&apikey=${apiKey}`
+            );
+            
+            const balanceData = await balanceResponse.json() as any;
+            console.log(`🔍 [DIRECT RESULT] ${token.symbol}: status=${balanceData.status}, result=${balanceData.result}`);
+            
+            if (balanceData.status === '1' && balanceData.result && balanceData.result !== '0') {
+              const balance = parseFloat(balanceData.result) / Math.pow(10, token.decimals);
+              
+              if (balance > 0) {
+                tokens.push({
+                  token: token.name,
+                  symbol: token.symbol,
+                  balance: balance.toString(),
+                  decimals: token.decimals,
+                  value: 0,
+                  contractAddress: token.address,
+                  chain: chainName,
+                  price: 0,
+                  change24h: 0
+                });
+                
+                console.log(`💎 [DIRECT FOUND] ${token.symbol}: ${balance.toLocaleString()} tokens`);
+              }
+            }
+          } catch (error) {
+            console.log(`❌ [DIRECT ERROR] Error checking ${token.symbol}:`, error);
+          }
+        }
+      }
+      
+      // Method 4: Try major tokens if still not enough
+      if (tokens.length < 10) {
+        console.log(`🔍 [Coinbase Portfolio] Checking additional major tokens for ${chainName}...`);
+        
+        const majorTokens = chainName === 'Ethereum' 
+          ? [
+              { address: '0xA0b86a33E6441e4adCf4d61c72EE1dcc0f8cd17b', symbol: 'USDC', name: 'USD Coin', decimals: 6 },
+              { address: '0xdac17f958d2ee523a2206206994597c13d831ec7', symbol: 'USDT', name: 'Tether USD', decimals: 6 },
+              { address: '0x6b175474e89094c44da98b954eedeac495271d0f', symbol: 'DAI', name: 'Dai Stablecoin', decimals: 18 },
+              { address: '0x1f9840a85d5af5bf1d1762f925bdaddc4201f984', symbol: 'UNI', name: 'Uniswap', decimals: 18 }
+            ]
+          : [
+              { address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', symbol: 'USDC', name: 'USD Coin', decimals: 6 },
+              { address: '0x4200000000000000000000000000000000000006', symbol: 'WETH', name: 'Wrapped Ether', decimals: 18 }
+            ];
+        
+        for (const token of majorTokens) {
+          if (!seenTokens.has(token.address)) {
+            try {
+              const balanceResponse = await fetch(
+                `${apiUrl}?module=account&action=tokenbalance&contractaddress=${token.address}&address=${walletAddress}&tag=latest&apikey=${apiKey}`
+              );
+              
+              const balanceData = await balanceResponse.json() as any;
+              
+              if (balanceData.status === '1' && balanceData.result && balanceData.result !== '0') {
+                const balance = parseFloat(balanceData.result) / Math.pow(10, token.decimals);
+                
+                if (balance > 0.01) {
+                  tokens.push({
+                    token: token.name,
+                    symbol: token.symbol,
+                    balance: balance.toString(),
+                    decimals: token.decimals,
+                    value: 0,
+                    contractAddress: token.address,
+                    chain: chainName,
+                    price: 0,
+                    change24h: 0
+                  });
+                  
+                  console.log(`💎 [Coinbase Portfolio] Major token ${token.symbol}: ${balance.toLocaleString()}`);
+                }
+              }
+            } catch (error) {
+              console.log(`⚠️ [Coinbase Portfolio] Error checking ${token.symbol}:`, error);
+            }
+          }
+        }
+      }
+      
+      console.log(`✅ [Coinbase Portfolio] Total found ${tokens.length} tokens on ${chainName}`);
       return tokens;
     } catch (error) {
       console.error(`❌ [Coinbase Portfolio] Error fetching ${chainName} token balances:`, error);
@@ -290,28 +665,59 @@ export class CoinbasePortfolioService {
       const ethPrice = await this.getETHPrice();
       
       // Ethereum
-      console.log(`🔗 [Coinbase Portfolio] Scanning Ethereum network using Coinbase Developer API...`);
+      console.log(`🔗 [Coinbase Portfolio] Comprehensive Ethereum scan for wallet ${walletAddress}...`);
       const ethNative = await this.getNativeBalance(walletAddress, 'Ethereum');
       const ethTokens = await this.getTokenBalances(walletAddress, 'Ethereum', 'https://api.etherscan.io/api', this.etherscanApiKey);
       
       const ethAllTokens = [...(ethNative ? [ethNative] : []), ...ethTokens];
       
-      // Base
-      console.log(`🔗 [Coinbase Portfolio] Scanning Base network using Coinbase Developer API...`);
+      // BASE Network (with API fallback and alternative methods)
+      console.log(`🔗 [BASE] Comprehensive BASE network scan for wallet ${walletAddress}...`);
       const baseNative = await this.getNativeBalance(walletAddress, 'Base');
-      const baseTokens = await this.getTokenBalances(walletAddress, 'Base', 'https://api.basescan.org/api', this.basescanApiKey);
+      let baseTokens: TokenBalance[] = [];
       
+      try {
+        baseTokens = await this.getTokenBalances(walletAddress, 'Base', 'https://api.basescan.org/api', this.basescanApiKey);
+      } catch (error) {
+        console.log(`⚠️ [BASE] Basescan API rate limited, switching to Coinbase Developer API...`);
+      }
+      
+      // Always try Coinbase Developer API for BASE network as fallback/supplement
+      console.log(`🔄 [BASE] Adding Coinbase Developer API scan for comprehensive BASE coverage...`);
+      const coinbaseBaseTokens = await this.getBaseTokensViaCoinbase(walletAddress);
+      baseTokens = [...baseTokens, ...coinbaseBaseTokens];
+      
+      console.log(`🔍 [BASE] Found ${baseTokens.length} tokens on BASE network`);
       const baseAllTokens = [...(baseNative ? [baseNative] : []), ...baseTokens];
       
-      // Get symbols for major tokens supported by Coinbase
-      const allTokens = [...ethAllTokens, ...baseAllTokens];
-      const coinbaseSymbols = allTokens
-        .map(t => t.symbol)
-        .filter(symbol => ['ETH', 'BTC', 'USDC', 'USDT', 'UNI', 'LINK', 'AAVE', 'MKR', 'COMP', 'CRV'].includes(symbol))
-        .filter((symbol, index, arr) => arr.indexOf(symbol) === index); // Remove duplicates
+      // Solana Network Scan
+      console.log(`🔗 [SOLANA] Scanning Solana network for wallet ${walletAddress}...`);
+      const solanaTokens = await this.getSolanaTokens(walletAddress);
+      console.log(`🔍 [SOLANA] Found ${solanaTokens.length} tokens on Solana network`);
       
-      // Fetch Coinbase price data
-      const coinbasePriceData = await this.getCoinbaseTokenPrices(coinbaseSymbols);
+      console.log(`📊 [MULTI-CHAIN] SCAN SUMMARY:`);
+      console.log(`📊 [MULTI-CHAIN] - Ethereum: ${ethAllTokens.length} tokens found`);
+      console.log(`📊 [MULTI-CHAIN] - Base: ${baseAllTokens.length} tokens found`);
+      console.log(`📊 [MULTI-CHAIN] - Solana: ${solanaTokens.length} tokens found`);
+      
+      // Log all found tokens for debugging
+      ethAllTokens.forEach(token => {
+        console.log(`🔍 [Coinbase Portfolio] ETH Token: ${token.symbol} (${token.token}) - Balance: ${token.balance} - Contract: ${token.contractAddress}`);
+      });
+      
+      baseAllTokens.forEach(token => {
+        console.log(`🔍 [Coinbase Portfolio] BASE Token: ${token.symbol} (${token.token}) - Balance: ${token.balance} - Contract: ${token.contractAddress}`);
+      });
+      
+      // Combine all chain tokens for comprehensive analysis  
+      const allTokens = [...ethAllTokens, ...baseAllTokens, ...solanaTokens];
+      const allSymbols = Array.from(new Set(allTokens.map(t => t.symbol.toLowerCase())));
+      
+      console.log(`🔍 [Coinbase Portfolio] ALL TOKENS FOUND: ${allSymbols.join(', ')}`);
+      console.log(`🔍 [Coinbase Portfolio] TOTAL TOKEN COUNT: ${allTokens.length}`);
+      
+      // Fetch Coinbase price data for ALL found tokens
+      const coinbasePriceData = await this.getCoinbaseTokenPrices(allSymbols);
       
       // Update token values with Coinbase data
       const updateTokensWithCoinbaseData = (tokens: TokenBalance[], chainName: string) => {
@@ -329,16 +735,19 @@ export class CoinbasePortfolioService {
               token.value = parseFloat(token.balance) * token.price;
               console.log(`💰 [Coinbase Portfolio] ${token.symbol} on ${chainName}: ${token.balance} × $${token.price.toFixed(4)} = $${token.value.toFixed(2)}`);
             } else {
-              // For tokens not supported by Coinbase, keep minimal data
+              // Try alternative pricing sources for tokens not supported by Coinbase
               token.price = 0;
               token.value = 0;
               token.change24h = 0;
-              console.log(`⚠️ [Coinbase Portfolio] ${token.symbol} not supported by Coinbase API`);
+              
+              // Note: Alternative pricing will be implemented in next iteration
+              console.log(`❌ [NO PRICE] ${token.symbol} (${token.token}) - Balance: ${parseFloat(token.balance).toLocaleString()} - Contract: ${token.contractAddress}`);
+
             }
           }
           
           return token;
-        }).filter(token => token.value >= 0.01); // Only show tokens with value >= $0.01
+        }); // Show ALL tokens including those without pricing
       };
       
       // Process chains
