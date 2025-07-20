@@ -22,18 +22,18 @@ export default function CryptoDashboardSection() {
         <p className="text-crypto-silver">Comprehensive crypto market data from leading analytics platforms</p>
       </div>
 
-      {/* CoinMarketCap Main */}
+      {/* CoinGecko Market Data */}
       <GlassCard className="p-6">
         <div className="flex items-center gap-2 mb-4">
           <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
             <Globe className="w-4 h-4 text-white" />
           </div>
-          <h3 className="text-xl font-semibold text-white">CoinMarketCap</h3>
+          <h3 className="text-xl font-semibold text-white">CoinGecko Market Data</h3>
           <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
             MARKET DATA
           </Badge>
           <button
-            onClick={() => openInNewTab('https://coinmarketcap.com/')}
+            onClick={() => openInNewTab('https://www.coingecko.com/')}
             className="ml-auto text-blue-400 hover:text-blue-300 text-sm"
           >
             Open in New Tab →
@@ -41,26 +41,26 @@ export default function CryptoDashboardSection() {
         </div>
         <div className="w-full">
           <iframe
-            src="https://coinmarketcap.com/"
+            src="https://www.coingecko.com/"
             className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            title="CoinMarketCap Market Data"
+            title="CoinGecko Market Data"
             sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
           />
         </div>
       </GlassCard>
 
-      {/* CoinMarketCap Volume */}
+      {/* DexScreener Base Network */}
       <GlassCard className="p-6">
         <div className="flex items-center gap-2 mb-4">
           <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
             <BarChart3 className="w-4 h-4 text-white" />
           </div>
-          <h3 className="text-xl font-semibold text-white">Monthly Volume Rankings</h3>
+          <h3 className="text-xl font-semibold text-white">DexScreener Base Network</h3>
           <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-            VOLUME DATA
+            BASE DATA
           </Badge>
           <button
-            onClick={() => openInNewTab('https://coinmarketcap.com/currencies/volume/monthly/')}
+            onClick={() => openInNewTab('https://dexscreener.com/base')}
             className="ml-auto text-green-400 hover:text-green-300 text-sm"
           >
             Open in New Tab →
@@ -68,26 +68,26 @@ export default function CryptoDashboardSection() {
         </div>
         <div className="w-full">
           <iframe
-            src="https://coinmarketcap.com/currencies/volume/monthly/"
+            src="https://dexscreener.com/base"
             className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            title="CoinMarketCap Monthly Volume"
+            title="DexScreener Base Network"
             sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
           />
         </div>
       </GlassCard>
 
-      {/* TradingView Crypto Total Market Cap */}
+      {/* TradingView Bitcoin Chart */}
       <GlassCard className="p-6">
         <div className="flex items-center gap-2 mb-4">
           <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
             <TrendingUp className="w-4 h-4 text-white" />
           </div>
-          <h3 className="text-xl font-semibold text-white">Crypto Total Market Cap</h3>
+          <h3 className="text-xl font-semibold text-white">TradingView Bitcoin Chart</h3>
           <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30">
             TRADINGVIEW
           </Badge>
           <button
-            onClick={() => openInNewTab('https://www.tradingview.com/chart/e5l95XgZ/?symbol=CRYPTOCAP%3AOTHERS.D')}
+            onClick={() => openInNewTab('https://www.tradingview.com/chart/?symbol=BTCUSD')}
             className="ml-auto text-orange-400 hover:text-orange-300 text-sm"
           >
             Open in New Tab →
@@ -95,9 +95,9 @@ export default function CryptoDashboardSection() {
         </div>
         <div className="w-full">
           <iframe
-            src="https://www.tradingview.com/chart/e5l95XgZ/?symbol=CRYPTOCAP%3AOTHERS.D"
+            src="https://www.tradingview.com/widgetembed/?frameElementId=tradingview_76d87&symbol=BTCUSD&interval=D&hidesidetoolbar=1&hidetoptoolbar=1&symboledit=1&saveimage=1&toolbarbg=F1F3F6&studies=[]&hideideas=1&theme=Dark&style=1&timezone=Etc%2FUTC&studies_overrides={}&overrides={}&enabled_features=[]&disabled_features=[]&locale=en&utm_source=localhost&utm_medium=widget&utm_campaign=chart&utm_term=BTCUSD"
             className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            title="TradingView Crypto Market Cap"
+            title="TradingView Bitcoin Chart"
             sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
           />
         </div>

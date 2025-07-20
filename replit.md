@@ -322,8 +322,8 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 
 ### July 20, 2025 - Comprehensive Dashboard Analytics Integration
 - **Multi-Platform Dashboard**: Transformed Dashboard tab into comprehensive crypto analytics hub with six major iframe integrations
-- **Full Iframe Implementation**: All six platforms (CoinMarketCap, TradingView, Artemis Analytics, Coinalyze, SoSoValue) embedded as 600px height iframes
-- **Fallback Navigation**: Each iframe section includes "Open in New Tab" button for platforms with X-Frame-Options restrictions
-- **Complete Analytics Suite**: CoinMarketCap main page, monthly volume rankings, TradingView market cap, Artemis flows, Coinalyze futures, and SoSoValue index
-- **Unified Iframe Experience**: All platforms display in consistent iframe format with glass card styling and security sandbox settings
-- **Comprehensive Coverage**: Dashboard provides complete crypto market analytics from institutional-grade data sources
+- **Alternative Platform Selection**: Replaced CoinMarketCap (X-Frame-Options blocked) with CoinGecko and DexScreener Base for better iframe compatibility
+- **Embedded Analytics Suite**: CoinGecko market data, DexScreener Base network, TradingView Bitcoin chart, Artemis flows, Coinalyze futures, and SoSoValue index
+- **Working Iframe Integration**: Selected platforms that support iframe embedding for seamless user experience
+- **Fallback Navigation**: Each iframe section includes "Open in New Tab" button for additional platform access
+- **Unified Analytics Experience**: All platforms display in consistent 600px iframe format with glass card styling and security sandbox settings
