@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BarChart3, Activity, Zap } from "lucide-react";
+import { BarChart3, Activity, Zap, TrendingDown } from "lucide-react";
 
 // Glass card component for Solana section
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
@@ -84,6 +84,40 @@ export default function SolanaSection() {
           />
         </div>
       </GlassCard>
+
+      {/* Trench Section */}
+      <div className="space-y-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-gradient-to-r from-red-500 to-orange-500 rounded-xl flex items-center justify-center">
+            <TrendingDown className="text-white text-xl" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-white">Trench</h2>
+            <p className="text-crypto-silver">Advanced Trading Leaderboard & Analytics</p>
+          </div>
+        </div>
+
+        {/* OKX Leaderboard */}
+        <GlassCard className="p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-6 h-6 bg-gradient-to-r from-red-500 to-orange-500 rounded-full flex items-center justify-center">
+              <TrendingDown className="w-4 h-4 text-white" />
+            </div>
+            <h3 className="text-xl font-semibold text-white">OKX Leaderboard</h3>
+            <Badge className="bg-gradient-to-r from-red-500/20 to-orange-500/20 text-red-400 border-red-500/30">
+              TRADING LEADERS
+            </Badge>
+          </div>
+          <div className="w-full">
+            <iframe
+              src="https://web3.okx.com/leaderboard"
+              className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+              title="OKX Trading Leaderboard"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+            />
+          </div>
+        </GlassCard>
+      </div>
     </div>
   );
 }
