@@ -170,6 +170,38 @@ export default function BaseSection() {
         </div>
       </GlassCard>
 
+      {/* Uniswap DEX */}
+      <GlassCard className="p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-6 h-6 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full flex items-center justify-center">
+            <span className="text-white text-xs font-bold">U</span>
+          </div>
+          <h3 className="text-xl font-semibold text-white">Uniswap DEX</h3>
+          <span className="px-2 py-1 bg-pink-500/20 text-pink-400 text-xs rounded-full font-medium">
+            MULTI-CHAIN
+          </span>
+          <button
+            onClick={() => window.open('https://app.uniswap.org/', '_blank')}
+            className="ml-auto text-pink-400 hover:text-pink-300 text-xs"
+          >
+            Open in New Tab →
+          </button>
+        </div>
+        <div className="w-full">
+          <iframe
+            src="https://app.uniswap.org/"
+            className="w-full h-[600px] sm:h-[700px] lg:h-[800px] rounded-lg border border-crypto-silver/20"
+            title="Uniswap DEX"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-top-navigation"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+            style={{
+              background: 'transparent',
+              colorScheme: 'dark'
+            }}
+          />
+        </div>
+      </GlassCard>
+
       {/* Base Social Sentiment */}
       <GlassCard className="p-6">
         <div className="flex items-center justify-between mb-6">
