@@ -332,13 +332,14 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **DexScreener Dark Mode**: Enabled dark theme for Base and Solana DexScreener iframes using ?theme=dark parameter
 - **Comprehensive Dashboard**: Dashboard combines live trading widgets with specialized analytics access for professional crypto analysis
 
-### July 20, 2025 - Cookie.fun Platform Integration & Iframe Fix
-- **Cookie.fun Integration**: Added Cookie.fun platform section (https://www.cookie.fun/) to the main dashboard page
-- **Iframe Security Resolution**: Fixed "refused to connect" error by creating attractive call-to-action interface due to X-Frame-Options restrictions
-- **Interactive Landing Area**: Created beautiful gradient background with large cookie emoji and direct access button
-- **User Experience Enhancement**: Clear messaging explaining embedding limitations with prominent "Visit Cookie.fun" button
-- **Visual Branding**: Pink/purple gradient design matching Cookie.fun aesthetic with professional presentation
-- **Dashboard Enhancement**: Positioned Cookie.fun section between Artemis Analytics and Market Overview for optimal placement
+### July 20, 2025 - DexScreener Portfolio Integration & Cookie.fun Relocation
+- **DexScreener Portfolio Iframe**: Replaced portfolio page wallet addresses section with DexScreener portfolio iframe (https://dexscreener.com/portfolio/0x1677B97859620CcbF4eEcF33f6feB1b7bEA8D97E)
+- **Portfolio Page Streamlined**: Removed wallet connection interface, total balance cards, and 24h performance displays
+- **Real-time Portfolio Display**: DexScreener iframe shows authentic portfolio data with 600-800px responsive height
+- **External Access**: Added "Open Full View" button for complete DexScreener portfolio experience
+- **Cookie.fun Relocated**: Moved Cookie.fun from dedicated dashboard section to "More Analytics" section as compact button
+- **Clean Integration**: Portfolio page now features single DexScreener iframe for authentic portfolio tracking
+- **User Experience**: Simplified portfolio interface prioritizing external platform integration over in-house features
 
 ### July 20, 2025 - Base Section Streamlined with Bankr.bot Terminal Integration  
 - **Live Base Movers Removal**: Removed "Live Base Movers" section from Base page that displayed real-time BASE network top gainers

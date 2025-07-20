@@ -271,177 +271,42 @@ export default function PortfolioSection() {
       {/* Data Integrity Notice */}
       {hasNoData && <DataIntegrityNotice />}
       
-      {/* Wallet Address Management */}
+      {/* DexScreener Portfolio */}
       <GlassCard className="p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-crypto-silver to-white rounded-xl flex items-center justify-center">
-              <Wallet className="text-crypto-black text-xl" />
+            <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-blue-500 rounded-xl flex items-center justify-center">
+              <Wallet className="text-white text-xl" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-white">Wallet Addresses</h2>
-              <p className="text-crypto-silver text-sm">Connect your BASE and TAO wallets to track real holdings</p>
+              <h2 className="text-xl font-semibold text-white">Portfolio Overview</h2>
+              <p className="text-crypto-silver text-sm">Real-time portfolio tracking via DexScreener</p>
             </div>
           </div>
           <Button
             variant="outline"
             size="sm"
             className="border-crypto-silver/30 hover:bg-white/10"
-            onClick={() => {
-              if (isEditingWallets) {
-                handleSaveWallets();
-              } else {
-                setIsEditingWallets(true);
-                setBaseWalletAddress(portfolio?.baseWalletAddress || '');
-                setTaoWalletAddress(portfolio?.taoWalletAddress || '');
-              }
-            }}
-            disabled={updateWalletsMutation.isPending}
+            onClick={() => window.open('https://dexscreener.com/portfolio/0x1677B97859620CcbF4eEcF33f6feB1b7bEA8D97E', '_blank')}
           >
-            {isEditingWallets ? (
-              <>
-                <Save className="w-4 h-4 mr-2" />
-                {updateWalletsMutation.isPending ? 'Saving...' : 'Save'}
-              </>
-            ) : (
-              <>
-                <Edit3 className="w-4 h-4 mr-2" />
-                Edit
-              </>
-            )}
+            <ExternalLink className="w-4 h-4 mr-2" />
+            Open Full View
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <Label htmlFor="base-wallet" className="text-crypto-silver">BASE Network Wallet</Label>
-            {isEditingWallets ? (
-              <Input
-                id="base-wallet"
-                value={baseWalletAddress}
-                onChange={(e) => setBaseWalletAddress(e.target.value)}
-                placeholder="0x... (Enter your BASE wallet address)"
-                className="bg-white/5 border-crypto-silver/30 text-white"
-              />
-            ) : (
-              <div className="px-3 py-2 bg-white/5 rounded-md border border-crypto-silver/30 text-white min-h-10 flex items-center">
-                {portfolio?.baseWalletAddress ? (
-                  <span className="font-mono text-sm">
-                    {portfolio.baseWalletAddress.slice(0, 6)}...{portfolio.baseWalletAddress.slice(-4)}
-                  </span>
-                ) : (
-                  <span className="text-crypto-silver">No wallet connected</span>
-                )}
-              </div>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="tao-wallet" className="text-crypto-silver">TAO Network Wallet</Label>
-            {isEditingWallets ? (
-              <Input
-                id="tao-wallet"
-                value={taoWalletAddress}
-                onChange={(e) => setTaoWalletAddress(e.target.value)}
-                placeholder="5... (Enter your TAO wallet address)"
-                className="bg-white/5 border-crypto-silver/30 text-white"
-              />
-            ) : (
-              <div className="px-3 py-2 bg-white/5 rounded-md border border-crypto-silver/30 text-white min-h-10 flex items-center">
-                {portfolio?.taoWalletAddress ? (
-                  <span className="font-mono text-sm">
-                    {portfolio.taoWalletAddress.slice(0, 6)}...{portfolio.taoWalletAddress.slice(-4)}
-                  </span>
-                ) : (
-                  <span className="text-crypto-silver">No wallet connected</span>
-                )}
-              </div>
-            )}
-          </div>
+        <div className="w-full">
+          <iframe
+            src="https://dexscreener.com/portfolio/0x1677B97859620CcbF4eEcF33f6feB1b7bEA8D97E"
+            className="w-full h-[600px] sm:h-[700px] lg:h-[800px] rounded-lg border border-crypto-silver/20"
+            title="DexScreener Portfolio"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+            style={{
+              background: '#000000',
+              colorScheme: 'dark'
+            }}
+          />
         </div>
-
-        {isEditingWallets && (
-          <div className="mt-4 p-3 bg-crypto-warning/10 border border-crypto-warning/30 rounded-lg">
-            <p className="text-crypto-warning text-sm">
-              <strong>Note:</strong> Once you add wallet addresses, the platform will fetch your real holdings from the blockchain. 
-              This replaces the demo data with your actual cryptocurrency balances.
-            </p>
-          </div>
-        )}
       </GlassCard>
-
-      {/* Portfolio Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <GlassCard className="p-6 hover:shadow-2xl transition-all duration-300 cursor-pointer hover:scale-105">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-crypto-silver text-sm font-medium">Total Balance</h3>
-            <Wallet className="text-crypto-silver h-5 w-5" />
-          </div>
-          <div className="text-2xl font-bold text-white mb-2">
-            {debankData?.success ? 
-              `$${((debankData.data.totalValue || 0) + (stakingData?.totalStakedValue || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` :
-              hasWalletAddresses ? `$${portfolio.totalBalance}` : '$0.00'
-            }
-          </div>
-          <div className="flex items-center text-sm">
-            <span className={debankData?.success || hasWalletAddresses ? "text-crypto-success" : "text-crypto-silver"}>
-              {debankData?.success || hasWalletAddresses ? "+$5,234.21" : "$0.00"}
-            </span>
-            <span className="text-crypto-silver ml-2">
-              {debankData?.success || hasWalletAddresses ? "(+4.27%)" : "(0%)"}
-            </span>
-          </div>
-          {debankData?.success && (
-            <div className="mt-2 text-xs text-crypto-silver flex items-center gap-2">
-              <Badge variant="secondary" className="bg-blue-500/20 text-blue-400 border-blue-500/30">
-                BASE: ${(debankData.data.baseValue || 0).toFixed(2)}
-              </Badge>
-              <Badge variant="secondary" className="bg-purple-500/20 text-purple-400 border-purple-500/30">
-                Live Prices: ${debankData.data.tokenCount || 0} tokens
-              </Badge>
-            </div>
-          )}
-        </GlassCard>
-
-        <GlassCard className="p-6 hover:shadow-2xl transition-all duration-300 cursor-pointer hover:scale-105">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-crypto-silver text-sm font-medium">24h Performance</h3>
-            <TrendingUp className="text-crypto-success h-5 w-5" />
-          </div>
-          <div className={`text-2xl font-bold mb-2 ${
-            hasWalletAddresses && portfolio.pnl24h && parseFloat(portfolio.pnl24h) >= 0 
-              ? 'text-crypto-success' 
-              : hasWalletAddresses ? 'text-red-500' : 'text-crypto-silver'
-          }`}>
-            {hasWalletAddresses ? 
-              `${portfolio.pnl24h && parseFloat(portfolio.pnl24h) >= 0 ? '+' : ''}$${portfolio.pnl24h}` :
-              '$0.00'
-            }
-          </div>
-          <div className="flex items-center text-sm">
-            <span className={hasWalletAddresses ? "text-crypto-success" : "text-crypto-silver"}>
-              {hasWalletAddresses ? "+1.47%" : "0%"}
-            </span>
-            <span className="text-crypto-silver ml-2">vs yesterday</span>
-          </div>
-        </GlassCard>
-
-        {/* Total Holdings (moved to replace the removed cards) */}
-        <GlassCard className="p-6 hover:shadow-2xl transition-all duration-300 cursor-pointer hover:scale-105">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-crypto-silver text-sm font-medium">Total Holdings</h3>
-            <Wallet className="text-crypto-silver h-5 w-5" />
-          </div>
-          <div className="text-2xl font-bold text-white mb-2">
-            {baseHoldings.length + taoHoldings.length} assets
-          </div>
-          <div className="flex items-center text-sm">
-            <span className="text-crypto-silver">
-              {baseHoldings.filter(h => (parseFloat(h.amount) * parseFloat(h.currentPrice)) >= 5).length} BASE + {taoHoldings.filter(h => (parseFloat(h.amount) * parseFloat(h.currentPrice)) >= 5).length} TAO
-            </span>
-          </div>
-        </GlassCard>
-      </div>
 
       {/* Extended PnL Timeline */}
       <GlassCard className="p-6">

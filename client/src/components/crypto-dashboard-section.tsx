@@ -172,46 +172,7 @@ export default function CryptoDashboardSection() {
 
 
 
-      {/* Cookie.fun Platform */}
-      <GlassCard className="p-3 sm:p-4 lg:p-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-pink-500 rounded-full flex items-center justify-center">
-              <span className="text-white text-xs font-bold">🍪</span>
-            </div>
-            <h3 className="text-lg sm:text-xl font-semibold text-white">Cookie.fun</h3>
-            <Badge className="bg-pink-500/20 text-pink-400 border-pink-500/30 text-xs">
-              FUN PLATFORM
-            </Badge>
-          </div>
-          <button
-            onClick={() => openInNewTab('https://www.cookie.fun/')}
-            className="text-pink-400 hover:text-pink-300 text-xs sm:text-sm sm:ml-auto"
-          >
-            Open in New Tab →
-          </button>
-        </div>
-        <div className="w-full">
-          <div className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20 bg-gradient-to-br from-pink-900/20 to-purple-900/20 flex flex-col items-center justify-center text-center p-8">
-            <div className="mb-6">
-              <span className="text-6xl mb-4 block">🍪</span>
-              <h3 className="text-2xl font-bold text-white mb-2">Cookie.fun Platform</h3>
-              <p className="text-pink-400 mb-4">This platform doesn't support embedding</p>
-            </div>
-            <div className="space-y-4">
-              <button
-                onClick={() => openInNewTab('https://www.cookie.fun/')}
-                className="bg-gradient-to-r from-pink-500 to-purple-500 text-white px-6 py-3 rounded-lg font-semibold hover:from-pink-600 hover:to-purple-600 transition-all duration-200 shadow-lg"
-              >
-                Visit Cookie.fun →
-              </button>
-              <p className="text-crypto-silver text-sm max-w-md">
-                Click above to access Cookie.fun in a new tab for the full interactive experience
-              </p>
-            </div>
-          </div>
-        </div>
-      </GlassCard>
+
 
       {/* Market Overview from CoinMarketCap */}
       <MarketOverviewSection />
@@ -265,6 +226,13 @@ export default function CryptoDashboardSection() {
           >
             <h4 className="text-purple-400 font-semibold mb-1">Mindshare by Elfi</h4>
             <p className="text-gray-400 text-sm">AI Token Analytics</p>
+          </button>
+          <button
+            onClick={() => openInNewTab('https://www.cookie.fun/')}
+            className="p-4 bg-pink-500/10 border border-pink-500/20 rounded-lg hover:bg-pink-500/20 transition-colors"
+          >
+            <h4 className="text-pink-400 font-semibold mb-1">Cookie.fun 🍪</h4>
+            <p className="text-gray-400 text-sm">Fun Platform</p>
           </button>
         </div>
       </GlassCard>
