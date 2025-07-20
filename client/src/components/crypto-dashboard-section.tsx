@@ -197,20 +197,7 @@ export default function CryptoDashboardSection() {
             <h4 className="text-blue-400 font-semibold mb-1 text-sm sm:text-base">CMC Leaderboard</h4>
             <p className="text-gray-400 text-xs sm:text-sm">Market Rankings</p>
           </button>
-          <button
-            onClick={() => openInNewTab('https://coinmarketcap.com/charts/')}
-            className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
-          >
-            <h4 className="text-green-400 font-semibold mb-1">CMC Indicators</h4>
-            <p className="text-gray-400 text-sm">Technical Analysis</p>
-          </button>
-          <button
-            onClick={() => openInNewTab('https://coinmarketcap.com/currencies/volume/monthly/')}
-            className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg hover:bg-yellow-500/20 transition-colors"
-          >
-            <h4 className="text-yellow-400 font-semibold mb-1">Altcoin Volume Timeframes</h4>
-            <p className="text-gray-400 text-sm">Trading Volume</p>
-          </button>
+
           <button
             onClick={() => openInNewTab('https://charts.bitbo.io/index/')}
             className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
