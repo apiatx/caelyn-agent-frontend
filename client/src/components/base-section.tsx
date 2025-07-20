@@ -253,6 +253,68 @@ export default function BaseSection() {
           />
         </div>
       </GlassCard>
+
+      {/* Virtuals.io Platform */}
+      <GlassCard className="p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-full flex items-center justify-center">
+            <span className="text-white text-xs font-bold">V</span>
+          </div>
+          <h3 className="text-xl font-semibold text-white">Virtuals.io Platform</h3>
+          <span className="px-2 py-1 bg-purple-500/20 text-purple-400 text-xs rounded-full font-medium">
+            AI AGENTS
+          </span>
+          <button
+            onClick={() => window.open('https://app.virtuals.io/', '_blank')}
+            className="ml-auto text-purple-400 hover:text-purple-300 text-xs"
+          >
+            Open in New Tab →
+          </button>
+        </div>
+        <div className="w-full">
+          <iframe
+            src="https://app.virtuals.io/"
+            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+            title="Virtuals.io Platform"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+            style={{
+              background: '#000000',
+              colorScheme: 'dark'
+            }}
+          />
+        </div>
+      </GlassCard>
+
+      {/* Creator.bid Agents */}
+      <GlassCard className="p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-6 h-6 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full flex items-center justify-center">
+            <span className="text-white text-xs font-bold">CB</span>
+          </div>
+          <h3 className="text-xl font-semibold text-white">Creator.bid Agents</h3>
+          <span className="px-2 py-1 bg-emerald-500/20 text-emerald-400 text-xs rounded-full font-medium">
+            CREATOR AGENTS
+          </span>
+          <button
+            onClick={() => window.open('https://creator.bid/agents', '_blank')}
+            className="ml-auto text-emerald-400 hover:text-emerald-300 text-xs"
+          >
+            Open in New Tab →
+          </button>
+        </div>
+        <div className="w-full">
+          <iframe
+            src="https://creator.bid/agents"
+            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+            title="Creator.bid Agents"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+            style={{
+              background: '#000000',
+              colorScheme: 'dark'
+            }}
+          />
+        </div>
+      </GlassCard>
     </div>
   );
 }
