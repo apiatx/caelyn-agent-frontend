@@ -25,7 +25,7 @@ interface CoinMarketCapCrypto {
   };
 }
 
-type SortField = 'rank' | 'name' | 'price' | 'market_cap' | 'volume_24h' | 'percent_change_24h' | 'percent_change_7d' | 'percent_change_30d' | 'percent_change_90d';
+type SortField = 'rank' | 'name' | 'price' | 'market_cap' | 'volume_24h' | 'percent_change_24h' | 'percent_change_7d' | 'percent_change_30d' | 'percent_change_60d' | 'percent_change_90d';
 type SortDirection = 'asc' | 'desc';
 
 export function CoinMarketCapTop100() {
@@ -77,6 +77,10 @@ export function CoinMarketCapTop100() {
         case 'percent_change_30d':
           aValue = a.quote.USD.percent_change_30d || 0;
           bValue = b.quote.USD.percent_change_30d || 0;
+          break;
+        case 'percent_change_60d':
+          aValue = a.quote.USD.percent_change_60d || 0;
+          bValue = b.quote.USD.percent_change_60d || 0;
           break;
         case 'percent_change_90d':
           aValue = a.quote.USD.percent_change_90d || 0;
