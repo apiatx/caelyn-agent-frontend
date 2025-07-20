@@ -41,15 +41,22 @@ class CoinMarketCapService {
   async getTop100Cryptocurrencies(): Promise<CoinMarketCapCrypto[]> {
     try {
       console.log('🔍 [CMC] Fetching top 100 cryptocurrencies from CoinMarketCap...');
+      const url = `${this.baseUrl}/cryptocurrency/listings/latest?start=1&limit=100&convert=USD`;
+      console.log('🔍 [CMC] API URL:', url);
+      console.log('🔍 [CMC] API Key:', this.apiKey ? '***KEY_SET***' : 'NO_KEY');
       
-      const response = await fetch(`${this.baseUrl}/cryptocurrency/listings/latest?start=1&limit=100&convert=USD&aux=percent_change_1h,percent_change_24h,percent_change_7d,percent_change_30d,percent_change_60d,percent_change_90d`, {
+      const response = await fetch(url, {
         headers: {
           'X-CMC_PRO_API_KEY': this.apiKey,
           'Accept': 'application/json',
         },
       });
 
+      console.log('🔍 [CMC] Response status:', response.status, response.statusText);
+
       if (!response.ok) {
+        const errorText = await response.text();
+        console.log('🔍 [CMC] Error response body:', errorText);
         throw new Error(`CoinMarketCap API error: ${response.status} ${response.statusText}`);
       }
 
