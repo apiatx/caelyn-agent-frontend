@@ -1,9 +1,9 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowUpRight, ArrowDownRight, TrendingUp, Eye, Users, MessageCircle, Brain, Activity } from "lucide-react";
+import { TrendingUp, MessageCircle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { useTopMovers, useMarketAnalysis, useSocialSentiment, useWhaleActivity } from "@/hooks/use-real-time-data";
-import { formatCurrency, formatPercentage } from "@/lib/utils";
+import { useSocialSentiment } from "@/hooks/use-real-time-data";
+
 
 interface DashboardData {
   portfolioValue: number;
@@ -49,28 +49,19 @@ const GlassCard = ({ children, className = "" }: { children: React.ReactNode; cl
 );
 
 export default function BaseSection() {
-  // Use real-time AI data hooks with 5-minute refresh for current top movers
-  const topMoversQuery = useTopMovers();
-  const marketAnalysisQuery = useMarketAnalysis();
+  // Use real-time AI data hooks for social sentiment
   const socialSentimentQuery = useSocialSentiment();
-  const whaleActivityQuery = useWhaleActivity();
   
-  const topMovers = topMoversQuery.data || [];
-  const marketAnalysis = marketAnalysisQuery.data;
   const socialSentiment = socialSentimentQuery.data || [];
-  const whaleActivity = whaleActivityQuery.data || [];
   
-  const loadingMovers = topMoversQuery.isLoading;
-  const loadingAnalysis = marketAnalysisQuery.isLoading;
   const loadingSocial = socialSentimentQuery.isLoading;
-  const loadingWhales = whaleActivityQuery.isLoading;
   
   const { data: dashboardData, isLoading: loadingDashboard } = useQuery<DashboardData>({
     queryKey: ['/api/dashboard'],
-    refetchInterval: 300000 // Refresh every 5 minutes to match top movers
+    refetchInterval: 300000 // Refresh every 5 minutes
   });
 
-  const isLoading = loadingDashboard || loadingMovers || loadingAnalysis;
+  const isLoading = loadingDashboard;
 
   if (isLoading || !dashboardData) {
     return (
@@ -122,111 +113,28 @@ export default function BaseSection() {
         </div>
       </GlassCard>
 
-      {/* Live Base Movers */}
+      {/* Bankr.bot Integration */}
       <GlassCard className="p-6">
         <div className="flex items-center gap-2 mb-4">
-          <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+          <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
             <span className="text-white text-xs font-bold">B</span>
           </div>
-          <h3 className="text-xl font-semibold text-white">Live Base Movers</h3>
-          <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-full font-medium">
-            5min refresh
+          <h3 className="text-xl font-semibold text-white">Bankr.bot Analytics</h3>
+          <span className="px-2 py-1 bg-purple-500/20 text-purple-400 text-xs rounded-full font-medium">
+            Live Data
           </span>
         </div>
-        {loadingMovers ? (
-          <div className="text-crypto-silver">Loading top movers...</div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Array.isArray(topMovers) && topMovers.slice(0, 12).map((token, index) => {
-              if (!token || typeof token !== 'object') return null;
-              return (
-                <div key={`token-${index}-${token.symbol || Math.random()}`} className="bg-white/5 rounded-lg p-4 border border-crypto-silver/20">
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <div className="text-white font-medium">{token.symbol || 'Unknown'}</div>
-                      <div className="text-crypto-silver text-sm">{token.token || 'N/A'}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-crypto-success font-bold">+{token.priceChange || 0}%</div>
-                      <div className="text-crypto-silver text-sm">${token.price ? Number(token.price).toFixed(6) : '0.00'}</div>
-                    </div>
-                  </div>
-                  <div className="text-crypto-silver text-xs">
-                    Vol: ${token.volume24h ? Number(token.volume24h).toLocaleString() : 'N/A'}
-                  </div>
-                  {token.contractAddress && (
-                    <a 
-                      href={`https://dexscreener.com/base/${token.contractAddress}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-400 hover:text-blue-300 text-xs mt-1 inline-block"
-                    >
-                      View on DexScreener →
-                    </a>
-                  )}
-                </div>
-              );
-            }).filter(Boolean)}
-          </div>
-        )}
-      </GlassCard>
-
-      {/* Recent Base Whale Activity */}
-      <GlassCard className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-white flex items-center">
-            <Eye className="w-4 h-4 mr-2" />
-            Recent Base Whale Activity
-          </h3>
-          <div className="flex items-center space-x-2">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-              LIVE
-            </Badge>
-          </div>
-        </div>
-        <div className="space-y-3">
-          {loadingWhales ? (
-            <div className="text-center py-4">
-              <Eye className="w-6 h-6 text-crypto-silver mx-auto mb-2 animate-spin" />
-              <p className="text-crypto-silver text-sm">Monitoring whale activity...</p>
-            </div>
-          ) : (
-            Array.isArray(whaleActivity) && whaleActivity.slice(0, 8).map((activity, index) => {
-              if (!activity || typeof activity !== 'object') return null;
-              return (
-                <a 
-                  key={`activity-${index}-${activity.id || Math.random()}`} 
-                  href={`https://basescan.org/tx/${activity.id || ''}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer group"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center text-xs font-bold">
-                      {activity.action === 'BUY' ? '💰' : '📉'}
-                    </div>
-                    <div>
-                      <div className="font-medium text-white group-hover:text-blue-400 transition-colors">
-                        {activity.action || 'TRADE'} {activity.token || 'TOKEN'}
-                      </div>
-                      <div className="text-xs text-crypto-silver">
-                        {activity.timestamp ? new Date(activity.timestamp).toLocaleTimeString() : 'Recent'}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-medium text-green-400">
-                      ${activity.amountUsd ? Number(activity.amountUsd).toLocaleString() : '0'}
-                    </div>
-                    <div className="text-xs text-crypto-silver">
-                      {activity.amount ? Number(activity.amount).toLocaleString() : '0'} {activity.token || 'TOKEN'}
-                    </div>
-                  </div>
-                </a>
-              );
-            }).filter(Boolean)
-          )}
+        <div className="w-full">
+          <iframe
+            src="https://bankr.bot/"
+            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+            title="Bankr.bot Analytics"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+            style={{
+              background: '#000000',
+              colorScheme: 'dark'
+            }}
+          />
         </div>
       </GlassCard>
 
