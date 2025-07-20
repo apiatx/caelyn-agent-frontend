@@ -71,19 +71,21 @@ export function MultiChainPortfolioTracker() {
   };
 
   return (
-    <GlassCard className="p-6">
-      <div className="flex items-center gap-2 mb-6">
-        <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-          <Wallet className="w-5 h-5 text-white" />
+    <GlassCard className="p-3 sm:p-4 lg:p-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-4 lg:mb-6">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+            <Wallet className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+          </div>
+          <h3 className="text-lg sm:text-xl lg:text-2xl font-semibold text-white">Multi-Chain Portfolio Tracker</h3>
         </div>
-        <h3 className="text-2xl font-semibold text-white">Multi-Chain Portfolio Tracker</h3>
-        <Badge className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-300 border-blue-500/30">
+        <Badge className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-300 border-blue-500/30 text-xs">
           ETHEREUM + BASE
         </Badge>
       </div>
 
       {/* Search Input */}
-      <div className="flex gap-3 mb-6">
+      <div className="flex flex-col sm:flex-row gap-3 mb-4 lg:mb-6">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           <Input
@@ -92,13 +94,13 @@ export function MultiChainPortfolioTracker() {
             value={walletAddress}
             onChange={(e) => setWalletAddress(e.target.value)}
             onKeyPress={handleKeyPress}
-            className="pl-10 bg-black/20 border-crypto-silver/30 text-white placeholder-gray-400"
+            className="pl-10 bg-black/20 border-crypto-silver/30 text-white placeholder-gray-400 text-sm sm:text-base"
           />
         </div>
         <Button
           onClick={handleSearch}
           disabled={!walletAddress.trim() || walletAddress.length !== 42}
-          className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
+          className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 w-full sm:w-auto px-6"
         >
           Track Portfolio
         </Button>
@@ -123,31 +125,31 @@ export function MultiChainPortfolioTracker() {
       {portfolio && (
         <div className="space-y-6">
           {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20 rounded-lg p-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+            <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20 rounded-lg p-3 sm:p-4">
               <div className="flex items-center gap-2 mb-2">
-                <DollarSign className="w-5 h-5 text-green-400" />
-                <span className="text-green-400 font-semibold">Total Value</span>
+                <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />
+                <span className="text-green-400 font-semibold text-sm sm:text-base">Total Value</span>
               </div>
-              <p className="text-2xl font-bold text-white">
+              <p className="text-xl sm:text-2xl font-bold text-white">
                 ${portfolio.totalValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}
               </p>
             </div>
 
-            <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg p-4">
+            <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg p-3 sm:p-4">
               <div className="flex items-center gap-2 mb-2">
-                <TrendingUp className="w-5 h-5 text-blue-400" />
-                <span className="text-blue-400 font-semibold">Total Chains</span>
+                <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
+                <span className="text-blue-400 font-semibold text-sm sm:text-base">Total Chains</span>
               </div>
-              <p className="text-2xl font-bold text-white">{portfolio.summary.length}</p>
+              <p className="text-xl sm:text-2xl font-bold text-white">{portfolio.summary.length}</p>
             </div>
 
-            <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-lg p-4">
+            <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-lg p-3 sm:p-4">
               <div className="flex items-center gap-2 mb-2">
-                <Wallet className="w-5 h-5 text-purple-400" />
-                <span className="text-purple-400 font-semibold">Total Assets</span>
+                <Wallet className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
+                <span className="text-purple-400 font-semibold text-sm sm:text-base">Total Assets</span>
               </div>
-              <p className="text-2xl font-bold text-white">
+              <p className="text-xl sm:text-2xl font-bold text-white">
                 {portfolio.summary.reduce((sum, chain) => sum + chain.tokenCount, 0)}
               </p>
             </div>

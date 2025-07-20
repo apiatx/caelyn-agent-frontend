@@ -62,18 +62,22 @@ export function CoinMarketCapTop100() {
   };
 
   return (
-    <GlassCard className="p-6">
-      <div className="flex items-center gap-2 mb-6">
-        <div className="w-8 h-8 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full flex items-center justify-center">
-          <BarChart3 className="w-5 h-5 text-white" />
+    <GlassCard className="p-3 sm:p-4 lg:p-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-4 lg:mb-6">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full flex items-center justify-center">
+            <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+          </div>
+          <h3 className="text-lg sm:text-xl lg:text-2xl font-semibold text-white">Top 100 Cryptocurrencies</h3>
         </div>
-        <h3 className="text-2xl font-semibold text-white">Top 100 Cryptocurrencies</h3>
-        <Badge className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 text-yellow-300 border-yellow-500/30">
-          COINMARKETCAP
-        </Badge>
-        <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
-          5MIN REFRESH
-        </Badge>
+        <div className="flex gap-2">
+          <Badge className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 text-yellow-300 border-yellow-500/30 text-xs">
+            COINMARKETCAP
+          </Badge>
+          <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
+            5MIN REFRESH
+          </Badge>
+        </div>
       </div>
 
       {isLoading && (
@@ -92,33 +96,33 @@ export function CoinMarketCapTop100() {
       {cryptos && (
         <div className="space-y-4">
           {/* Summary Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20 rounded-lg p-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4 lg:mb-6">
+            <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20 rounded-lg p-3 sm:p-4">
               <div className="flex items-center gap-2 mb-2">
-                <DollarSign className="w-5 h-5 text-green-400" />
-                <span className="text-green-400 font-semibold">Total Market Cap</span>
+                <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />
+                <span className="text-green-400 font-semibold text-sm sm:text-base">Total Market Cap</span>
               </div>
-              <p className="text-xl font-bold text-white">
+              <p className="text-lg sm:text-xl font-bold text-white">
                 {formatMarketCap(cryptos.reduce((sum, crypto) => sum + crypto.quote.USD.market_cap, 0))}
               </p>
             </div>
 
-            <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg p-4">
+            <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg p-3 sm:p-4">
               <div className="flex items-center gap-2 mb-2">
-                <BarChart3 className="w-5 h-5 text-blue-400" />
-                <span className="text-blue-400 font-semibold">24h Volume</span>
+                <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
+                <span className="text-blue-400 font-semibold text-sm sm:text-base">24h Volume</span>
               </div>
-              <p className="text-xl font-bold text-white">
+              <p className="text-lg sm:text-xl font-bold text-white">
                 {formatVolume(cryptos.reduce((sum, crypto) => sum + crypto.quote.USD.volume_24h, 0))}
               </p>
             </div>
 
-            <div className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/20 rounded-lg p-4">
+            <div className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/20 rounded-lg p-3 sm:p-4">
               <div className="flex items-center gap-2 mb-2">
-                <Globe className="w-5 h-5 text-yellow-400" />
-                <span className="text-yellow-400 font-semibold">Cryptocurrencies</span>
+                <Globe className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400" />
+                <span className="text-yellow-400 font-semibold text-sm sm:text-base">Cryptocurrencies</span>
               </div>
-              <p className="text-xl font-bold text-white">{cryptos.length}</p>
+              <p className="text-lg sm:text-xl font-bold text-white">{cryptos.length}</p>
             </div>
           </div>
 
@@ -175,8 +179,8 @@ export function CoinMarketCapTop100() {
           </div>
 
           {/* Mobile Card View */}
-          <div className="lg:hidden grid gap-3 max-h-96 overflow-y-auto">
-            {cryptos.slice(0, 30).map((crypto) => (
+          <div className="lg:hidden grid gap-2 sm:gap-3 max-h-80 sm:max-h-96 overflow-y-auto">
+            {cryptos.slice(0, 50).map((crypto) => (
               <div
                 key={crypto.id}
                 onClick={() => openCoinMarketCap(crypto.slug)}
