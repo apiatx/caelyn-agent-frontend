@@ -309,3 +309,13 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Moby Screener**: Added https://www.mobyscreener.com/ for advanced Solana analytics and screening tools
 - **Navigation Update**: Added Solana tab with lightning bolt icon between Base and Bittensor sections
 - **Multi-Platform Access**: Users can now access three essential Solana tools directly within CryptoHippo platform
+
+### July 20, 2025 - Bitcoin & Global M2 Analysis Page
+- **New Bitcoin Section**: Created comprehensive Bitcoin analysis page with TradingView integration
+- **Global M2 Overlay**: Implemented Bitcoin chart with Global M2 money supply overlay analysis
+- **Pine Script Integration**: Included complete Pine Script v6 code for Global M2 12-Week Lead indicator
+- **Multi-Country M2 Data**: Covers 18 major economies including USA, Eurozone, China, Japan, UK, Canada, Australia, India, South Korea, Brazil, Russia, Switzerland, Mexico, Indonesia, Turkey, Saudi Arabia, Argentina, and South Africa
+- **TradingView Widget**: Embedded live Bitcoin chart with dark theme and customizable Global M2 indicator
+- **Educational Content**: Added detailed explanations of Global M2 indicator, included countries, and usage instructions
+- **12-Week Forward Projection**: Indicator includes configurable 12-week lead analysis for Bitcoin price prediction
+- **Navigation Enhancement**: Added Bitcoin tab with Bitcoin icon between Solana and Bittensor sections
