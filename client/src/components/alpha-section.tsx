@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, Star, Zap, DollarSign } from "lucide-react";
+import { TrendingUp, Star, Zap, DollarSign, Wallet } from "lucide-react";
 
 // Glass card component for alpha section
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
@@ -23,7 +23,7 @@ export default function AlphaSection() {
         </div>
         <div>
           <h1 className="text-2xl font-bold text-white">Alpha Intelligence</h1>
-          <p className="text-crypto-silver">Advanced market intelligence and analytics platforms</p>
+          <p className="text-crypto-silver">Advanced market intelligence and analytics</p>
         </div>
       </div>
 
@@ -78,6 +78,29 @@ export default function AlphaSection() {
             </div>
             <p className="text-gray-400 text-sm">DeFi Portfolio Management</p>
           </button>
+        </div>
+      </GlassCard>
+
+      {/* Smart Wallets */}
+      <GlassCard className="p-6">
+        <div className="flex items-center gap-2 mb-6">
+          <div className="w-6 h-6 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center">
+            <Wallet className="w-4 h-4 text-white" />
+          </div>
+          <h3 className="text-xl font-semibold text-white">Smart Wallets</h3>
+          <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
+            COMING SOON
+          </Badge>
+        </div>
+        
+        <div className="text-center py-8">
+          <div className="w-16 h-16 bg-gradient-to-r from-green-500/10 to-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Wallet className="w-8 h-8 text-green-400" />
+          </div>
+          <h4 className="text-lg font-semibold text-white mb-2">Smart Wallet Integration</h4>
+          <p className="text-crypto-silver text-sm max-w-md mx-auto">
+            Advanced wallet management and DeFi automation tools will be available here soon.
+          </p>
         </div>
       </GlassCard>
     </div>
