@@ -136,12 +136,12 @@ export default function CryptoDashboardSection() {
           <div className="w-6 h-6 bg-cyan-500 rounded-full flex items-center justify-center">
             <Eye className="w-4 h-4 text-white" />
           </div>
-          <h3 className="text-xl font-semibold text-white">Artemis Analytics - Netflows</h3>
+          <h3 className="text-xl font-semibold text-white">Artemis Analytics - Home</h3>
           <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30">
-            NETFLOWS
+            ANALYTICS
           </Badge>
           <button
-            onClick={() => openInNewTab('https://app.artemis.xyz/flows')}
+            onClick={() => openInNewTab('https://app.artemisanalytics.com/home')}
             className="ml-auto text-cyan-400 hover:text-cyan-300 text-sm"
           >
             Open in New Tab →
@@ -149,9 +149,9 @@ export default function CryptoDashboardSection() {
         </div>
         <div className="w-full">
           <iframe
-            src="https://app.artemis.xyz/flows"
+            src="https://app.artemisanalytics.com/home"
             className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            title="Artemis Analytics Netflows"
+            title="Artemis Analytics Home"
             sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
           />
         </div>
