@@ -295,13 +295,14 @@ export default function PortfolioSection() {
 
         <div className="w-full">
           <iframe
-            src="https://dexscreener.com/portfolio/0x1677B97859620CcbF4eEcF33f6feB1b7bEA8D97E?theme=dark"
+            src="https://dexscreener.com/portfolio/0x1677B97859620CcbF4eEcF33f6feB1b7bEA8D97E"
             className="w-full h-[600px] sm:h-[700px] lg:h-[800px] rounded-lg border border-crypto-silver/20 bg-black"
             title="DexScreener Portfolio"
             sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
             style={{
               background: '#000000',
-              colorScheme: 'dark'
+              colorScheme: 'dark',
+              filter: 'invert(1) hue-rotate(180deg) brightness(0.9) contrast(1.2)'
             }}
           />
         </div>
