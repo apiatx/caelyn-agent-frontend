@@ -323,8 +323,8 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 ### July 20, 2025 - TradingView Widget-Based Dashboard Implementation
 - **TradingView Widget Focus**: Replaced blocked iframe platforms with TradingView widgets that support embedding
 - **Multi-Asset Coverage**: TradingView charts for Bitcoin, Ethereum, Solana, XRP with dedicated widgets for each major cryptocurrency
-- **DexScreener Integration**: Added full DexScreener platform iframe for comprehensive DEX analytics and token tracking
 - **Artemis Netflows Integration**: Added back Artemis Analytics netflows iframe for blockchain flow monitoring
 - **Specialized Analytics Links**: "More Analytics" section with CMC Leaderboard, CMC Indicators, Altcoin Volume Timeframes, others.d chart, Open Interest, and SoSo Value
 - **Custom Chart Integration**: Replaced crypto screener with custom TradingView XRP chart using specific chart URL
+- **Streamlined Dashboard**: Removed DexScreener iframe to maintain focus on core analytics widgets
 - **Comprehensive Dashboard**: Dashboard combines live trading widgets with specialized analytics access for professional crypto analysis
