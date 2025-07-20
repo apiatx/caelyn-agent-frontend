@@ -172,6 +172,39 @@ export default function CryptoDashboardSection() {
 
 
 
+      {/* Cookie.fun Platform */}
+      <GlassCard className="p-3 sm:p-4 lg:p-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-pink-500 rounded-full flex items-center justify-center">
+              <span className="text-white text-xs font-bold">🍪</span>
+            </div>
+            <h3 className="text-lg sm:text-xl font-semibold text-white">Cookie.fun</h3>
+            <Badge className="bg-pink-500/20 text-pink-400 border-pink-500/30 text-xs">
+              FUN PLATFORM
+            </Badge>
+          </div>
+          <button
+            onClick={() => openInNewTab('https://www.cookie.fun/')}
+            className="text-pink-400 hover:text-pink-300 text-xs sm:text-sm sm:ml-auto"
+          >
+            Open in New Tab →
+          </button>
+        </div>
+        <div className="w-full">
+          <iframe
+            src="https://www.cookie.fun/"
+            className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
+            title="Cookie.fun Platform"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+            style={{
+              background: '#000000',
+              colorScheme: 'dark'
+            }}
+          />
+        </div>
+      </GlassCard>
+
       {/* Market Overview from CoinMarketCap */}
       <MarketOverviewSection />
 
