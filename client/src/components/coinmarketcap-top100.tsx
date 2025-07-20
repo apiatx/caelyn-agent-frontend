@@ -282,12 +282,14 @@ export function CoinMarketCapTop100() {
                 {sortedCryptos.slice(0, 50).map((crypto) => (
                   <div
                     key={crypto.id}
-                    onClick={() => openCoinMarketCap(crypto.slug)}
-                    className="grid grid-cols-10 gap-4 p-4 border-b border-crypto-silver/10 hover:bg-black/20 cursor-pointer transition-colors"
+                    className="grid grid-cols-10 gap-4 p-4 border-b border-crypto-silver/10 hover:bg-black/20 transition-colors"
                   >
                     <div className="text-gray-300 font-medium">{crypto.cmc_rank}</div>
                     <div className="col-span-2">
-                      <div className="flex items-center gap-2">
+                      <div 
+                        onClick={() => openCoinMarketCap(crypto.slug)}
+                        className="flex items-center gap-2 cursor-pointer hover:text-blue-400 transition-colors"
+                      >
                         <div className="w-8 h-8 bg-gradient-to-r from-gray-600 to-gray-700 rounded-full flex items-center justify-center">
                           <span className="text-white font-bold text-xs">{crypto.symbol.substring(0, 2)}</span>
                         </div>
@@ -329,11 +331,13 @@ export function CoinMarketCapTop100() {
             {sortedCryptos.slice(0, 50).map((crypto) => (
               <div
                 key={crypto.id}
-                onClick={() => openCoinMarketCap(crypto.slug)}
-                className="bg-black/20 border border-crypto-silver/20 rounded-lg p-4 cursor-pointer hover:bg-black/30 transition-colors"
+                className="bg-black/20 border border-crypto-silver/20 rounded-lg p-4 hover:bg-black/30 transition-colors"
               >
                 <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
+                  <div 
+                    onClick={() => openCoinMarketCap(crypto.slug)}
+                    className="flex items-center gap-3 cursor-pointer hover:text-blue-400 transition-colors"
+                  >
                     <span className="text-gray-400 font-medium">#{crypto.cmc_rank}</span>
                     <div className="w-8 h-8 bg-gradient-to-r from-gray-600 to-gray-700 rounded-full flex items-center justify-center">
                       <span className="text-white font-bold text-xs">{crypto.symbol.substring(0, 2)}</span>
