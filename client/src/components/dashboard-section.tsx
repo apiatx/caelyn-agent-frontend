@@ -350,48 +350,6 @@ export default function DashboardSection() {
             )}
           </div>
         </GlassCard>
-
-        {/* Top Subnet Movers - TaoStats Integration */}
-        <GlassCard className="p-6 col-span-full">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-white flex items-center">
-              <Brain className="w-4 h-4 mr-2" />
-              Top Subnet Movers
-            </h3>
-            <div className="flex items-center gap-2">
-              <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30">
-                τ TaoStats
-              </Badge>
-              <a 
-                href="https://taostats.io/subnets"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-crypto-silver hover:text-white transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-              </a>
-            </div>
-          </div>
-          
-          <div className="relative w-full">
-            <iframe
-              src="https://taostats.io/subnets"
-              className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-              title="TaoStats Subnet Movers"
-              frameBorder="0"
-              loading="lazy"
-              style={{
-                background: 'transparent',
-                colorScheme: 'dark'
-              }}
-            />
-            <div className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
-              Live Bittensor Subnet Data
-            </div>
-          </div>
-        </GlassCard>
       </div>
     </div>
   );

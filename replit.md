@@ -248,3 +248,12 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Direct Profile Links**: One-click access to full DeBank profile page
 - **Authentic Data Only**: Completely replaced iframe approach with working API integration
 - **User Requirement Met**: Real-time fluctuating portfolio data without iframe security restrictions
+
+### July 19, 2025 - Bittensor Dashboard Implementation
+- **New Dedicated Tab**: Created "Bittensor Dashboard" tab in main navigation with Brain icon
+- **TaoStats Integration**: Moved "Top Subnet Movers" section from main dashboard to dedicated Bittensor tab
+- **Clean Separation**: Main dashboard now focuses on BASE/general crypto data, Bittensor tab for TAO-specific content
+- **Full-Width TaoStats Iframe**: Embedded https://taostats.io/subnets at 600px height for comprehensive subnet analytics
+- **Improved Navigation**: Added 6th tab between Alpha and Whale Watch for better organization
+- **Consistent Styling**: Maintained glass card design and dark theme across new Bittensor dashboard
+- **Live Subnet Data**: Direct access to authentic TaoStats subnet performance and analytics
