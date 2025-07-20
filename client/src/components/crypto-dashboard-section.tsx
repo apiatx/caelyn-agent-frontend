@@ -22,18 +22,18 @@ export default function CryptoDashboardSection() {
         <p className="text-crypto-silver">Comprehensive crypto market data from leading analytics platforms</p>
       </div>
 
-      {/* CoinGecko Market Data */}
+      {/* CryptoCompare Market Data */}
       <GlassCard className="p-6">
         <div className="flex items-center gap-2 mb-4">
           <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
             <Globe className="w-4 h-4 text-white" />
           </div>
-          <h3 className="text-xl font-semibold text-white">CoinGecko Market Data</h3>
+          <h3 className="text-xl font-semibold text-white">CryptoCompare Market Data</h3>
           <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
             MARKET DATA
           </Badge>
           <button
-            onClick={() => openInNewTab('https://www.coingecko.com/')}
+            onClick={() => openInNewTab('https://www.cryptocompare.com/')}
             className="ml-auto text-blue-400 hover:text-blue-300 text-sm"
           >
             Open in New Tab →
@@ -41,9 +41,9 @@ export default function CryptoDashboardSection() {
         </div>
         <div className="w-full">
           <iframe
-            src="https://www.coingecko.com/"
+            src="https://www.cryptocompare.com/"
             className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            title="CoinGecko Market Data"
+            title="CryptoCompare Market Data"
             sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
           />
         </div>
@@ -130,18 +130,18 @@ export default function CryptoDashboardSection() {
         </div>
       </GlassCard>
 
-      {/* Coinalyze Futures Data */}
+      {/* DefiLlama - DeFi Analytics */}
       <GlassCard className="p-6">
         <div className="flex items-center gap-2 mb-4">
           <div className="w-6 h-6 bg-cyan-500 rounded-full flex items-center justify-center">
             <Eye className="w-4 h-4 text-white" />
           </div>
-          <h3 className="text-xl font-semibold text-white">Coinalyze - Futures Data</h3>
+          <h3 className="text-xl font-semibold text-white">DefiLlama - DeFi Analytics</h3>
           <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30">
-            FUTURES
+            DEFI DATA
           </Badge>
           <button
-            onClick={() => openInNewTab('https://coinalyze.net/futures-data/global-charts/')}
+            onClick={() => openInNewTab('https://defillama.com/')}
             className="ml-auto text-cyan-400 hover:text-cyan-300 text-sm"
           >
             Open in New Tab →
@@ -149,26 +149,26 @@ export default function CryptoDashboardSection() {
         </div>
         <div className="w-full">
           <iframe
-            src="https://coinalyze.net/futures-data/global-charts/"
+            src="https://defillama.com/"
             className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            title="Coinalyze Futures Data"
+            title="DefiLlama DeFi Analytics"
             sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
           />
         </div>
       </GlassCard>
 
-      {/* SoSoValue Crypto Index */}
+      {/* Dune Analytics - On-chain Data */}
       <GlassCard className="p-6">
         <div className="flex items-center gap-2 mb-4">
           <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
             <DollarSign className="w-4 h-4 text-white" />
           </div>
-          <h3 className="text-xl font-semibold text-white">SoSoValue - Crypto Index</h3>
+          <h3 className="text-xl font-semibold text-white">Dune Analytics - On-chain Data</h3>
           <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
-            INDEX DATA
+            ON-CHAIN DATA
           </Badge>
           <button
-            onClick={() => openInNewTab('https://sosovalue.com/assets/cryptoindex')}
+            onClick={() => openInNewTab('https://dune.com/')}
             className="ml-auto text-red-400 hover:text-red-300 text-sm"
           >
             Open in New Tab →
@@ -176,9 +176,9 @@ export default function CryptoDashboardSection() {
         </div>
         <div className="w-full">
           <iframe
-            src="https://sosovalue.com/assets/cryptoindex"
+            src="https://dune.com/"
             className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            title="SoSoValue Crypto Index"
+            title="Dune Analytics On-chain Data"
             sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
           />
         </div>
