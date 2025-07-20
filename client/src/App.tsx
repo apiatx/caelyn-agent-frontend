@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Dashboard from "@/pages/dashboard";
 import SolanaPage from "@/pages/solana";
+import DeFiPage from "@/pages/defi";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -12,6 +13,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Dashboard} />
       <Route path="/solana" component={SolanaPage} />
+      <Route path="/defi" component={DeFiPage} />
       <Route component={NotFound} />
     </Switch>
   );

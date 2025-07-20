@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChartLine, Settings, Activity, Eye, TrendingUp, BarChart3, Brain, Wallet, Zap } from "lucide-react";
+import { ChartLine, Settings, Activity, Eye, TrendingUp, BarChart3, Brain, Wallet, Zap, DollarSign } from "lucide-react";
 import CryptoDashboardSection from "@/components/crypto-dashboard-section";
 import PortfolioSection from "@/components/portfolio-section";
 import AlphaSection from "@/components/alpha-section";
@@ -8,6 +8,7 @@ import MarketResearchSection from "@/components/market-research-section";
 import BittensorDashboardSection from "@/components/bittensor-dashboard-section";
 import BaseSection from "@/components/base-section";
 import SolanaSection from "@/components/solana-section";
+import DeFiSection from "@/components/defi-section";
 import cryptoHippoImage from "@assets/image_1752975467353.png";
 
 import { GlassCard } from "@/components/ui/glass-card";
@@ -108,7 +109,16 @@ export default function Dashboard() {
             >
               <Zap className="w-4 h-4 mr-2 inline" />Solana
             </button>
-
+            <button
+              onClick={() => setActiveTab("defi")}
+              className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
+                activeTab === "defi"
+                  ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                  : "hover:bg-white/5 text-crypto-silver"
+              }`}
+            >
+              <DollarSign className="w-4 h-4 mr-2 inline" />DeFi
+            </button>
             <button
               onClick={() => setActiveTab("bittensor")}
               className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
@@ -194,7 +204,16 @@ export default function Dashboard() {
               >
                 <Zap className="w-4 h-4 mr-1 inline" />Solana
               </button>
-
+              <button
+                onClick={() => setActiveTab("defi")}
+                className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+                  activeTab === "defi"
+                    ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                    : "hover:bg-white/5 text-crypto-silver"
+                }`}
+              >
+                <DollarSign className="w-4 h-4 mr-1 inline" />DeFi
+              </button>
               <button
                 onClick={() => setActiveTab("bittensor")}
                 className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
@@ -237,7 +256,7 @@ export default function Dashboard() {
         {activeTab === "alpha" && <AlphaSection />}
         {activeTab === "base" && <BaseSection />}
         {activeTab === "solana" && <SolanaSection />}
-
+        {activeTab === "defi" && <DeFiSection />}
         {activeTab === "bittensor" && <BittensorDashboardSection />}
         {activeTab === "whale" && <WhaleWatchingSection />}
         {activeTab === "research" && <MarketResearchSection />}
