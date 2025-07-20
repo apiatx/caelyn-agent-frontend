@@ -111,7 +111,7 @@ export default function DeFiSection() {
 
         {/* AIxVC */}
         <GlassCard className="p-6">
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center gap-2 mb-6">
             <div className="w-6 h-6 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
               <Brain className="w-4 h-4 text-white" />
             </div>
@@ -119,19 +119,22 @@ export default function DeFiSection() {
             <Badge className="bg-gradient-to-r from-orange-500/20 to-red-500/20 text-orange-400 border-orange-500/30">
               AI VENTURE
             </Badge>
+          </div>
+          
+          <div className="grid grid-cols-1 gap-4">
             <button
               onClick={() => openInNewTab('https://www.aixvc.io/axelrod')}
-              className="text-orange-400 hover:text-orange-300 text-sm ml-auto"
+              className="p-4 bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/20 rounded-lg hover:from-orange-500/20 hover:to-red-500/20 transition-colors"
             >
-              Open Full View →
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
+                  <Brain className="w-4 h-4 text-white" />
+                </div>
+                <h4 className="text-orange-400 font-semibold">AIxVC Axelrod</h4>
+              </div>
+              <p className="text-gray-400 text-sm">AI Venture Capital Analytics Platform</p>
             </button>
           </div>
-          <iframe
-            src="https://www.aixvc.io/axelrod"
-            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            title="AIxVC Axelrod"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-          />
         </GlassCard>
       </div>
 

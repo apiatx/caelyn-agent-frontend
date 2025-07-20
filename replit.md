@@ -437,3 +437,5 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Enhanced Organization**: DeFi page now features Peapods Finance standalone and dedicated DeFAI section
 - **Brain Icon Integration**: DeFAI section uses Brain icon with purple-pink gradient branding
 - **AI Venture Badge**: AIxVC features special "AI VENTURE" badge with orange-red gradient styling
+- **AIxVC Iframe Security Fix**: Converted AIxVC from iframe to clickable link button due to X-Frame-Options restrictions
+- **Consistent Pattern**: AIxVC now follows same clickable button pattern as social analytics platforms when iframe embedding is blocked
