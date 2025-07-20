@@ -121,44 +121,32 @@ export default function AlphaSection() {
           </Badge>
         </div>
         
-        <div className="space-y-6">
-          {/* Kaito Iframe */}
-          <div className="w-full">
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="text-lg font-semibold text-white">Kaito AI Social Analytics</h4>
-              <button
-                onClick={() => openInNewTab('https://yaps.kaito.ai/')}
-                className="text-orange-400 hover:text-orange-300 text-sm"
-              >
-                Open Full View →
-              </button>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <button
+            onClick={() => openInNewTab('https://yaps.kaito.ai/')}
+            className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
+                <TrendingDown className="w-4 h-4 text-white" />
+              </div>
+              <h4 className="text-orange-400 font-semibold">Kaito AI Social Analytics</h4>
             </div>
-            <iframe
-              src="https://yaps.kaito.ai/"
-              className="w-full h-[500px] rounded-lg border border-crypto-silver/20"
-              title="Kaito AI Social Analytics"
-              sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-            />
-          </div>
+            <p className="text-gray-400 text-sm">AI-Powered Social Intelligence</p>
+          </button>
 
-          {/* Kolytics Iframe */}
-          <div className="w-full">
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="text-lg font-semibold text-white">Kolytics Leaderboard</h4>
-              <button
-                onClick={() => openInNewTab('https://app.kolytics.pro/leaderboard')}
-                className="text-orange-400 hover:text-orange-300 text-sm"
-              >
-                Open Full View →
-              </button>
+          <button
+            onClick={() => openInNewTab('https://app.kolytics.pro/leaderboard')}
+            className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg hover:bg-red-500/20 transition-colors"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
+                <TrendingUp className="w-4 h-4 text-white" />
+              </div>
+              <h4 className="text-red-400 font-semibold">Kolytics Leaderboard</h4>
             </div>
-            <iframe
-              src="https://app.kolytics.pro/leaderboard"
-              className="w-full h-[500px] rounded-lg border border-crypto-silver/20"
-              title="Kolytics Social Signal Leaderboard"
-              sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-            />
-          </div>
+            <p className="text-gray-400 text-sm">Social Signal Analytics</p>
+          </button>
         </div>
       </GlassCard>
     </div>
