@@ -11,34 +11,6 @@ const GlassCard = ({ children, className = "" }: { children: React.ReactNode; cl
 );
 
 export default function BitcoinSection() {
-  // TradingView widget configuration for Bitcoin with Global M2 overlay
-  const tradingViewWidget = `
-<!-- TradingView Widget BEGIN -->
-<div class="tradingview-widget-container" style="height:100%;width:100%">
-  <div class="tradingview-widget-container__widget" style="height:calc(100% - 32px);width:100%"></div>
-  <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
-  {
-  "autosize": true,
-  "symbol": "BINANCE:BTCUSDT",
-  "interval": "D",
-  "timezone": "Etc/UTC",
-  "theme": "dark",
-  "style": "1",
-  "locale": "en",
-  "enable_publishing": false,
-  "backgroundColor": "rgba(0, 0, 0, 0.5)",
-  "gridColor": "rgba(255, 255, 255, 0.1)",
-  "hide_top_toolbar": false,
-  "hide_legend": false,
-  "save_image": false,
-  "calendar": false,
-  "hide_volume": false,
-  "support_host": "https://www.tradingview.com"
-  }
-  </script>
-</div>
-<!-- TradingView Widget END -->
-  `;
 
   return (
     <div className="space-y-8">
@@ -120,23 +92,10 @@ export default function BitcoinSection() {
           </div>
           <div className="h-[600px] w-full">
             <iframe
-              srcDoc={`
-                <!DOCTYPE html>
-                <html>
-                <head>
-                  <style>
-                    body { margin: 0; padding: 0; background: transparent; }
-                    .tradingview-widget-container { height: 100vh; width: 100%; }
-                  </style>
-                </head>
-                <body>
-                  ${tradingViewWidget}
-                </body>
-                </html>
-              `}
+              src="https://www.tradingview.com/widgetembed/?frameElementId=tradingview_76d87&symbol=BINANCE%3ABTCUSDT&interval=D&hidesidetoolbar=1&hidetoptoolbar=0&symboledit=1&saveimage=1&toolbarbg=F1F3F6&studies=%5B%5D&hideideas=1&theme=dark&style=1&timezone=Etc%2FUTC&studies_overrides=%7B%7D&overrides=%7B%7D&enabled_features=%5B%5D&disabled_features=%5B%5D&locale=en&utm_source=www.tradingview.com&utm_medium=widget&utm_campaign=chart&utm_term=BINANCE%3ABTCUSDT"
               className="w-full h-full rounded-lg border border-crypto-silver/20"
               title="Bitcoin TradingView Chart"
-              sandbox="allow-scripts allow-same-origin"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
             />
           </div>
         </div>
