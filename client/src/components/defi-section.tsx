@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { DollarSign, TrendingUp, BarChart3, Wallet } from "lucide-react";
+import { DollarSign, TrendingUp, BarChart3 } from "lucide-react";
 
 // Glass card component for DeFi section
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
@@ -97,30 +97,7 @@ export default function DeFiSection() {
         />
       </GlassCard>
 
-      {/* Arcadia Finance Farm */}
-      <GlassCard className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
-            <Wallet className="w-4 h-4 text-white" />
-          </div>
-          <h3 className="text-xl font-semibold text-white">Arcadia Finance Farm</h3>
-          <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30">
-            FARMING PROTOCOL
-          </Badge>
-          <button
-            onClick={() => openInNewTab('https://arcadia.finance/farm')}
-            className="text-orange-400 hover:text-orange-300 text-sm ml-auto"
-          >
-            Open Full View →
-          </button>
-        </div>
-        <iframe
-          src="https://arcadia.finance/farm"
-          className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-          title="Arcadia Finance Farm"
-          sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-        />
-      </GlassCard>
+
     </div>
   );
 }

@@ -414,3 +414,12 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Arcadia Finance Farm**: Integrated farming protocol with orange branding and Wallet icon
 - **Navigation Enhancement**: Added DeFi tab with DollarSign icon between Solana and Bittensor sections
 - **Consistent Design**: All DeFi platforms feature 600px height iframes with branded badges and external link access
+
+### July 20, 2025 - Navigation Restructuring & DeFi Updates
+- **Arcadia Finance Removed**: Removed Arcadia Finance Farm section from DeFi page per user request
+- **Alpha Renamed to Onchain**: Changed "Alpha" tab to "Onchain" across desktop and mobile navigation
+- **Major Navigation Reordering**: Restructured tabs to Dashboard, Onchain, Base, Bittensor, Solana, DeFi, Portfolio, Whale Watch, Research
+- **Desktop Navigation Updated**: Reordered all desktop navigation buttons to match new sequence
+- **Mobile Navigation Updated**: Applied same ordering and "Onchain" renaming to mobile horizontal scroll navigation
+- **Consistent Branding**: All navigation elements now reflect "Onchain" instead of "Alpha" for chain-agnostic analytics
+- **DeFi Streamlined**: DeFi page now features three platforms: Peapods Finance, Arma Protocol, and ZYF AI Dashboard

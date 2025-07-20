@@ -69,17 +69,6 @@ export default function Dashboard() {
               <Activity className="w-4 h-4 mr-2 inline" />Dashboard
             </button>
             <button
-              onClick={() => setActiveTab("portfolio")}
-              className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
-                activeTab === "portfolio"
-                  ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
-                  : "hover:bg-white/5 text-crypto-silver"
-              }`}
-            >
-              <i className="fas fa-wallet mr-2"></i>Portfolio Tracker
-            </button>
-
-            <button
               onClick={() => setActiveTab("alpha")}
               className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
                 activeTab === "alpha"
@@ -87,7 +76,7 @@ export default function Dashboard() {
                   : "hover:bg-white/5 text-crypto-silver"
               }`}
             >
-              <TrendingUp className="w-4 h-4 mr-2 inline" />Alpha
+              <TrendingUp className="w-4 h-4 mr-2 inline" />Onchain
             </button>
             <button
               onClick={() => setActiveTab("base")}
@@ -98,6 +87,16 @@ export default function Dashboard() {
               }`}
             >
               <ChartLine className="w-4 h-4 mr-2 inline" />Base
+            </button>
+            <button
+              onClick={() => setActiveTab("bittensor")}
+              className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
+                activeTab === "bittensor"
+                  ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                  : "hover:bg-white/5 text-crypto-silver"
+              }`}
+            >
+              <Brain className="w-4 h-4 mr-2 inline" />Bittensor
             </button>
             <button
               onClick={() => setActiveTab("solana")}
@@ -120,14 +119,14 @@ export default function Dashboard() {
               <DollarSign className="w-4 h-4 mr-2 inline" />DeFi
             </button>
             <button
-              onClick={() => setActiveTab("bittensor")}
+              onClick={() => setActiveTab("portfolio")}
               className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
-                activeTab === "bittensor"
+                activeTab === "portfolio"
                   ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
                   : "hover:bg-white/5 text-crypto-silver"
               }`}
             >
-              <Brain className="w-4 h-4 mr-2 inline" />Bittensor
+              <Wallet className="w-4 h-4 mr-2 inline" />Portfolio
             </button>
             <button
               onClick={() => setActiveTab("whale")}
@@ -165,16 +164,6 @@ export default function Dashboard() {
                 <Activity className="w-4 h-4 mr-1 inline" />Dashboard
               </button>
               <button
-                onClick={() => setActiveTab("portfolio")}
-                className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
-                  activeTab === "portfolio"
-                    ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
-                    : "hover:bg-white/5 text-crypto-silver"
-                }`}
-              >
-                <Wallet className="w-4 h-4 mr-1 inline" />Portfolio
-              </button>
-              <button
                 onClick={() => setActiveTab("alpha")}
                 className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                   activeTab === "alpha"
@@ -182,7 +171,7 @@ export default function Dashboard() {
                     : "hover:bg-white/5 text-crypto-silver"
                 }`}
               >
-                <TrendingUp className="w-4 h-4 mr-1 inline" />Alpha
+                <TrendingUp className="w-4 h-4 mr-1 inline" />Onchain
               </button>
               <button
                 onClick={() => setActiveTab("base")}
@@ -193,6 +182,16 @@ export default function Dashboard() {
                 }`}
               >
                 <ChartLine className="w-4 h-4 mr-1 inline" />Base
+              </button>
+              <button
+                onClick={() => setActiveTab("bittensor")}
+                className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+                  activeTab === "bittensor"
+                    ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                    : "hover:bg-white/5 text-crypto-silver"
+                }`}
+              >
+                <Brain className="w-4 h-4 mr-1 inline" />Bittensor
               </button>
               <button
                 onClick={() => setActiveTab("solana")}
@@ -215,14 +214,14 @@ export default function Dashboard() {
                 <DollarSign className="w-4 h-4 mr-1 inline" />DeFi
               </button>
               <button
-                onClick={() => setActiveTab("bittensor")}
+                onClick={() => setActiveTab("portfolio")}
                 className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
-                  activeTab === "bittensor"
+                  activeTab === "portfolio"
                     ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
                     : "hover:bg-white/5 text-crypto-silver"
                 }`}
               >
-                <Brain className="w-4 h-4 mr-1 inline" />Bittensor
+                <Wallet className="w-4 h-4 mr-1 inline" />Portfolio
               </button>
               <button
                 onClick={() => setActiveTab("whale")}
