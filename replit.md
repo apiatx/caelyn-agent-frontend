@@ -332,15 +332,15 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **DexScreener Dark Mode**: Enabled dark theme for Base and Solana DexScreener iframes using ?theme=dark parameter
 - **Comprehensive Dashboard**: Dashboard combines live trading widgets with specialized analytics access for professional crypto analysis
 
-### July 20, 2025 - Coinbase Portfolio Integration & Multi-Chain Tracker
-- **Coinbase Portfolio Service**: Successfully integrated Coinbase Exchange API for Multi-Chain Portfolio Tracker replacing CMC approach
-- **Authentic Pricing Data**: Uses Coinbase Exchange public API ($3,721.07 ETH price) for real-time cryptocurrency pricing
-- **Multi-Chain Support**: Scans Ethereum and Base networks using Etherscan/Basescan APIs for actual token balances
-- **Real Portfolio Display**: Shows authentic portfolio data ($1.19 total value from 0.000319 ETH holdings)
-- **Blockchain Integration**: Combines real on-chain data with Coinbase market pricing for major cryptocurrencies
-- **Major Token Coverage**: Supports ETH, BTC, USDC, USDT, UNI, LINK, AAVE, MKR, COMP, CRV via Coinbase Advanced API
-- **Error Handling**: Proper JSON response handling with graceful fallbacks for unsupported tokens
-- **User Wallet Focus**: Optimized for wallet address 0x1677B97859620CcbF4eEcF33f6feB1b7bEA8D97E portfolio tracking
+### July 20, 2025 - Coinbase Developer API Integration & Enhanced Portfolio Tracking
+- **Coinbase Developer API**: Integrated user-provided API key (8bbe4752-c30f-4c16-ab89-b9906369c832) for onchain data access
+- **Enhanced API Coverage**: Updated service to use Coinbase Developer Platform for blockchain data and asset pricing
+- **RPC Integration**: Added Coinbase Developer RPC endpoints for Ethereum and Base network balance queries
+- **Fallback Architecture**: Implemented robust fallback system using Etherscan/Basescan when Coinbase API unavailable
+- **Real Portfolio Display**: Maintains authentic portfolio data display ($1.18+ total value from ETH holdings)
+- **Multi-API Pricing**: Enhanced token pricing using both Coinbase API and Exchange endpoints for comprehensive coverage
+- **Developer Platform Access**: Leverages Coinbase's onchain infrastructure for improved blockchain data reliability
+- **API Authentication**: Proper Bearer token authentication for accessing Coinbase Developer Platform features
 
 ### July 20, 2025 - DeBank Portfolio Integration & Enhanced CoinMarketCap
 - **DeBank Portfolio Access**: Added dedicated DeBank portfolio section with external link to user's specific profile

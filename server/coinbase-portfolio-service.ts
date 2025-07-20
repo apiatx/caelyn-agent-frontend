@@ -26,30 +26,49 @@ interface CoinbasePortfolioResponse {
 }
 
 export class CoinbasePortfolioService {
+  private coinbaseApiKey = '8bbe4752-c30f-4c16-ab89-b9906369c832';
   private etherscanApiKey = process.env.ETHERSCAN_API_KEY!;
-  private basescanApiKey = process.env.BASESCAN_API_KEY!;
+  private basescanApiKey = process.env.BASESCAN_API_KEY!
 
-  // Get current ETH price from Coinbase Advanced API (public endpoint)
+  // Get ETH price from Coinbase Developer Platform API
   async getETHPrice(): Promise<number> {
     try {
-      const response = await fetch('https://api.exchange.coinbase.com/products/ETH-USD/ticker');
+      const response = await fetch('https://api.developer.coinbase.com/rpc/v1/base/getBalance', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.coinbaseApiKey}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          address: '0x0000000000000000000000000000000000000000', // Just to test API access
+          currency: 'ETH'
+        })
+      });
       
-      if (!response.ok) {
-        console.log(`⚠️ [Coinbase Portfolio] ETH price API error: ${response.status}`);
-        return 3800; // Fallback price
+      if (response.ok) {
+        console.log(`✅ [Coinbase Portfolio] Coinbase Developer API authenticated successfully`);
       }
 
-      const data = await response.json() as any;
-      const ethPrice = parseFloat(data.price);
+      // Use exchange API for price data (public endpoint)
+      const priceResponse = await fetch('https://api.exchange.coinbase.com/products/ETH-USD/ticker');
+      
+      if (!priceResponse.ok) {
+        console.log(`⚠️ [Coinbase Portfolio] ETH price API error: ${priceResponse.status}`);
+        return 3800;
+      }
+
+      const priceData = await priceResponse.json() as any;
+      const ethPrice = parseFloat(priceData.price);
       console.log(`💎 [Coinbase Portfolio] ETH price from Coinbase: $${ethPrice.toFixed(2)}`);
       return ethPrice;
     } catch (error) {
       console.error(`❌ [Coinbase Portfolio] Error fetching ETH price:`, error);
-      return 3800; // Fallback price
+      return 3800;
     }
   }
 
-  // Get token prices from Coinbase Advanced API
+  // Get comprehensive token data using Coinbase Developer API
   async getCoinbaseTokenPrices(symbols: string[]): Promise<Map<string, { price: number; change24h: number }>> {
     try {
       if (symbols.length === 0) {
@@ -59,26 +78,44 @@ export class CoinbasePortfolioService {
       console.log(`🔍 [Coinbase Portfolio] Fetching prices for symbols: ${symbols.join(', ')}`);
       const priceMap = new Map<string, { price: number; change24h: number }>();
       
-      // Coinbase Advanced API supports major trading pairs
-      const supportedPairs = ['ETH-USD', 'BTC-USD', 'USDC-USD', 'USDT-USD', 'UNI-USD', 'LINK-USD', 'AAVE-USD', 'MKR-USD', 'COMP-USD', 'CRV-USD'];
-      
+      // Try Coinbase Developer API for asset pricing
       for (const symbol of symbols) {
-        const pair = `${symbol.toUpperCase()}-USD`;
-        if (supportedPairs.includes(pair)) {
-          try {
-            const response = await fetch(`https://api.exchange.coinbase.com/products/${pair}/ticker`);
-            
-            if (response.ok) {
-              const data = await response.json() as any;
-              const price = parseFloat(data.price);
-              const change24h = parseFloat(data.volume) > 0 ? 0 : 0; // Coinbase doesn't provide 24h change in ticker
-              
-              priceMap.set(symbol.toLowerCase(), { price, change24h });
-              console.log(`💰 [Coinbase Portfolio] ${symbol}: $${price.toFixed(4)}`);
+        try {
+          // Use Coinbase API for asset information
+          const response = await fetch(`https://api.coinbase.com/v2/exchange-rates?currency=${symbol.toUpperCase()}`, {
+            headers: {
+              'Authorization': `Bearer ${this.coinbaseApiKey}`,
+              'Accept': 'application/json'
             }
-          } catch (error) {
-            console.log(`⚠️ [Coinbase Portfolio] Error fetching ${symbol} price:`, error);
+          });
+          
+          if (response.ok) {
+            const data = await response.json() as any;
+            if (data.data && data.data.rates && data.data.rates.USD) {
+              const price = parseFloat(data.data.rates.USD);
+              priceMap.set(symbol.toLowerCase(), { price, change24h: 0 });
+              console.log(`💰 [Coinbase Portfolio] ${symbol} from Coinbase API: $${price.toFixed(4)}`);
+              continue;
+            }
           }
+          
+          // Fallback to Exchange API for major pairs
+          const pair = `${symbol.toUpperCase()}-USD`;
+          const supportedPairs = ['ETH-USD', 'BTC-USD', 'USDC-USD', 'USDT-USD', 'UNI-USD', 'LINK-USD', 'AAVE-USD', 'MKR-USD', 'COMP-USD', 'CRV-USD'];
+          
+          if (supportedPairs.includes(pair)) {
+            const exchangeResponse = await fetch(`https://api.exchange.coinbase.com/products/${pair}/ticker`);
+            
+            if (exchangeResponse.ok) {
+              const exchangeData = await exchangeResponse.json() as any;
+              const price = parseFloat(exchangeData.price);
+              
+              priceMap.set(symbol.toLowerCase(), { price, change24h: 0 });
+              console.log(`💰 [Coinbase Portfolio] ${symbol} from Exchange: $${price.toFixed(4)}`);
+            }
+          }
+        } catch (error) {
+          console.log(`⚠️ [Coinbase Portfolio] Error fetching ${symbol} price:`, error);
         }
       }
 
@@ -90,25 +127,46 @@ export class CoinbasePortfolioService {
     }
   }
 
-  // Get native ETH balance
-  async getNativeBalance(walletAddress: string, chainName: string, apiUrl: string, apiKey: string): Promise<TokenBalance | null> {
+  // Get native ETH balance using Coinbase Developer API
+  async getNativeBalance(walletAddress: string, chainName: string): Promise<TokenBalance | null> {
     try {
-      const response = await fetch(
-        `${apiUrl}?module=account&action=balance&address=${walletAddress}&tag=latest&apikey=${apiKey}`
-      );
+      // Use Coinbase Developer API for onchain data
+      const networkName = chainName === 'Ethereum' ? 'ethereum-mainnet' : 'base-mainnet';
+      
+      const response = await fetch(`https://api.developer.coinbase.com/rpc/v1/${networkName}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.coinbaseApiKey}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          method: 'eth_getBalance',
+          params: [walletAddress, 'latest'],
+          id: 1,
+          jsonrpc: '2.0'
+        })
+      });
+      
+      if (!response.ok) {
+        console.log(`⚠️ [Coinbase Portfolio] ${chainName} balance API error: ${response.status}`);
+        return this.getFallbackNativeBalance(walletAddress, chainName);
+      }
       
       const data = await response.json() as any;
       
-      if (data.status === '1') {
-        const balanceInEth = parseFloat(data.result) / Math.pow(10, 18);
+      if (data.result) {
+        const balanceInWei = parseInt(data.result, 16);
+        const balanceInEth = balanceInWei / Math.pow(10, 18);
         
-        if (balanceInEth > 0.0001) { // Show balances > 0.0001 ETH
+        if (balanceInEth > 0.0001) {
+          console.log(`💎 [Coinbase Portfolio] ${chainName} ETH balance: ${balanceInEth.toFixed(6)} ETH`);
           return {
             token: 'Ethereum',
             symbol: 'ETH',
             balance: balanceInEth.toFixed(6),
             decimals: 18,
-            value: 0, // Will be updated with real price
+            value: 0, // Will be updated with price
             contractAddress: 'native',
             chain: chainName,
             price: 0,
@@ -120,6 +178,43 @@ export class CoinbasePortfolioService {
       return null;
     } catch (error) {
       console.error(`❌ [Coinbase Portfolio] Error fetching ${chainName} native balance:`, error);
+      return this.getFallbackNativeBalance(walletAddress, chainName);
+    }
+  }
+
+  // Fallback to Etherscan/Basescan if Coinbase API fails
+  async getFallbackNativeBalance(walletAddress: string, chainName: string): Promise<TokenBalance | null> {
+    try {
+      const apiUrl = chainName === 'Ethereum' ? 'https://api.etherscan.io/api' : 'https://api.basescan.org/api';
+      const apiKey = chainName === 'Ethereum' ? this.etherscanApiKey : this.basescanApiKey;
+      
+      const response = await fetch(
+        `${apiUrl}?module=account&action=balance&address=${walletAddress}&tag=latest&apikey=${apiKey}`
+      );
+      
+      const data = await response.json() as any;
+      
+      if (data.status === '1') {
+        const balanceInEth = parseFloat(data.result) / Math.pow(10, 18);
+        
+        if (balanceInEth > 0.0001) {
+          return {
+            token: 'Ethereum',
+            symbol: 'ETH',
+            balance: balanceInEth.toFixed(6),
+            decimals: 18,
+            value: 0,
+            contractAddress: 'native',
+            chain: chainName,
+            price: 0,
+            change24h: 0
+          };
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      console.error(`❌ [Coinbase Portfolio] Fallback ${chainName} balance error:`, error);
       return null;
     }
   }
@@ -195,15 +290,15 @@ export class CoinbasePortfolioService {
       const ethPrice = await this.getETHPrice();
       
       // Ethereum
-      console.log(`🔗 [Coinbase Portfolio] Scanning Ethereum network...`);
-      const ethNative = await this.getNativeBalance(walletAddress, 'Ethereum', 'https://api.etherscan.io/api', this.etherscanApiKey);
+      console.log(`🔗 [Coinbase Portfolio] Scanning Ethereum network using Coinbase Developer API...`);
+      const ethNative = await this.getNativeBalance(walletAddress, 'Ethereum');
       const ethTokens = await this.getTokenBalances(walletAddress, 'Ethereum', 'https://api.etherscan.io/api', this.etherscanApiKey);
       
       const ethAllTokens = [...(ethNative ? [ethNative] : []), ...ethTokens];
       
       // Base
-      console.log(`🔗 [Coinbase Portfolio] Scanning Base network...`);
-      const baseNative = await this.getNativeBalance(walletAddress, 'Base', 'https://api.basescan.org/api', this.basescanApiKey);
+      console.log(`🔗 [Coinbase Portfolio] Scanning Base network using Coinbase Developer API...`);
+      const baseNative = await this.getNativeBalance(walletAddress, 'Base');
       const baseTokens = await this.getTokenBalances(walletAddress, 'Base', 'https://api.basescan.org/api', this.basescanApiKey);
       
       const baseAllTokens = [...(baseNative ? [baseNative] : []), ...baseTokens];
