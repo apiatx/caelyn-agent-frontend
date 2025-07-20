@@ -165,7 +165,7 @@ export default function CryptoDashboardSection() {
           </div>
           <h3 className="text-xl font-semibold text-white">BitBo Charts</h3>
           <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30">
-            INDICES
+            BLOCKED IFRAME
           </Badge>
           <button
             onClick={() => openInNewTab('https://charts.bitbo.io/index/')}
@@ -174,13 +174,18 @@ export default function CryptoDashboardSection() {
             Open in New Tab →
           </button>
         </div>
-        <div className="w-full">
-          <iframe
-            src="https://charts.bitbo.io/index/"
-            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            title="BitBo Index Charts"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-          />
+        <div className="w-full h-[400px] flex items-center justify-center bg-gray-900/50 rounded-lg border border-crypto-silver/20">
+          <div className="text-center">
+            <BarChart3 className="w-16 h-16 text-orange-400 mx-auto mb-4" />
+            <h4 className="text-xl font-semibold text-white mb-2">BitBo Charts</h4>
+            <p className="text-crypto-silver mb-4">This site doesn't allow iframe embedding for security.</p>
+            <button
+              onClick={() => openInNewTab('https://charts.bitbo.io/index/')}
+              className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-colors"
+            >
+              View BitBo Charts →
+            </button>
+          </div>
         </div>
       </GlassCard>
 
