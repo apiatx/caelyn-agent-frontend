@@ -219,64 +219,99 @@ export function CoinMarketCapTop100() {
             </div>
           </div>
 
+          {/* Interactive Sorting Header Row */}
+          <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg p-4 mb-4">
+            <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-blue-400" />
+              Interactive Sorting Controls
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
+              <button 
+                onClick={() => handleSort('market_cap')}
+                className={`flex items-center justify-center gap-1 px-3 py-2 rounded-lg border transition-all ${
+                  sortField === 'market_cap' 
+                    ? 'bg-blue-500/20 border-blue-500/50 text-blue-400' 
+                    : 'bg-black/20 border-crypto-silver/20 text-gray-400 hover:text-white hover:border-crypto-silver/40'
+                }`}
+              >
+                Market Cap {getSortIcon('market_cap')}
+              </button>
+              <button 
+                onClick={() => handleSort('volume_24h')}
+                className={`flex items-center justify-center gap-1 px-3 py-2 rounded-lg border transition-all ${
+                  sortField === 'volume_24h' 
+                    ? 'bg-blue-500/20 border-blue-500/50 text-blue-400' 
+                    : 'bg-black/20 border-crypto-silver/20 text-gray-400 hover:text-white hover:border-crypto-silver/40'
+                }`}
+              >
+                24h Volume {getSortIcon('volume_24h')}
+              </button>
+              <button 
+                onClick={() => handleSort('percent_change_7d')}
+                className={`flex items-center justify-center gap-1 px-3 py-2 rounded-lg border transition-all ${
+                  sortField === 'percent_change_7d' 
+                    ? 'bg-blue-500/20 border-blue-500/50 text-blue-400' 
+                    : 'bg-black/20 border-crypto-silver/20 text-gray-400 hover:text-white hover:border-crypto-silver/40'
+                }`}
+              >
+                7d % {getSortIcon('percent_change_7d')}
+              </button>
+              <button 
+                onClick={() => handleSort('percent_change_30d')}
+                className={`flex items-center justify-center gap-1 px-3 py-2 rounded-lg border transition-all ${
+                  sortField === 'percent_change_30d' 
+                    ? 'bg-blue-500/20 border-blue-500/50 text-blue-400' 
+                    : 'bg-black/20 border-crypto-silver/20 text-gray-400 hover:text-white hover:border-crypto-silver/40'
+                }`}
+              >
+                30d % {getSortIcon('percent_change_30d')}
+              </button>
+              <button 
+                onClick={() => handleSort('percent_change_90d')}
+                className={`flex items-center justify-center gap-1 px-3 py-2 rounded-lg border transition-all ${
+                  sortField === 'percent_change_90d' 
+                    ? 'bg-blue-500/20 border-blue-500/50 text-blue-400' 
+                    : 'bg-black/20 border-crypto-silver/20 text-gray-400 hover:text-white hover:border-crypto-silver/40'
+                }`}
+              >
+                90d % {getSortIcon('percent_change_90d')}
+              </button>
+              <button 
+                onClick={() => handleSort('price')}
+                className={`flex items-center justify-center gap-1 px-3 py-2 rounded-lg border transition-all ${
+                  sortField === 'price' 
+                    ? 'bg-blue-500/20 border-blue-500/50 text-blue-400' 
+                    : 'bg-black/20 border-crypto-silver/20 text-gray-400 hover:text-white hover:border-crypto-silver/40'
+                }`}
+              >
+                Price {getSortIcon('price')}
+              </button>
+              <button 
+                onClick={() => handleSort('rank')}
+                className={`flex items-center justify-center gap-1 px-3 py-2 rounded-lg border transition-all ${
+                  sortField === 'rank' 
+                    ? 'bg-blue-500/20 border-blue-500/50 text-blue-400' 
+                    : 'bg-black/20 border-crypto-silver/20 text-gray-400 hover:text-white hover:border-crypto-silver/40'
+                }`}
+              >
+                Rank {getSortIcon('rank')}
+              </button>
+            </div>
+          </div>
+
           {/* Desktop Table View */}
           <div className="hidden lg:block">
             <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
               <div className="grid grid-cols-10 gap-4 p-4 bg-black/30 border-b border-crypto-silver/20">
-                <button 
-                  onClick={() => handleSort('rank')}
-                  className="flex items-center gap-1 text-gray-400 font-semibold hover:text-white transition-colors"
-                >
-                  # {getSortIcon('rank')}
-                </button>
-                <button 
-                  onClick={() => handleSort('name')}
-                  className="flex items-center gap-1 text-gray-400 font-semibold col-span-2 hover:text-white transition-colors"
-                >
-                  Name {getSortIcon('name')}
-                </button>
-                <button 
-                  onClick={() => handleSort('price')}
-                  className="flex items-center gap-1 text-gray-400 font-semibold text-right hover:text-white transition-colors justify-end"
-                >
-                  Price {getSortIcon('price')}
-                </button>
-                <button 
-                  onClick={() => handleSort('percent_change_24h')}
-                  className="flex items-center gap-1 text-gray-400 font-semibold text-right hover:text-white transition-colors justify-end"
-                >
-                  24h % {getSortIcon('percent_change_24h')}
-                </button>
-                <button 
-                  onClick={() => handleSort('percent_change_7d')}
-                  className="flex items-center gap-1 text-gray-400 font-semibold text-right hover:text-white transition-colors justify-end"
-                >
-                  7d % {getSortIcon('percent_change_7d')}
-                </button>
-                <button 
-                  onClick={() => handleSort('percent_change_30d')}
-                  className="flex items-center gap-1 text-gray-400 font-semibold text-right hover:text-white transition-colors justify-end"
-                >
-                  30d % {getSortIcon('percent_change_30d')}
-                </button>
-                <button 
-                  onClick={() => handleSort('percent_change_90d')}
-                  className="flex items-center gap-1 text-gray-400 font-semibold text-right hover:text-white transition-colors justify-end"
-                >
-                  YTD % {getSortIcon('percent_change_90d')}
-                </button>
-                <button 
-                  onClick={() => handleSort('market_cap')}
-                  className="flex items-center gap-1 text-gray-400 font-semibold text-right hover:text-white transition-colors justify-end"
-                >
-                  Market Cap {getSortIcon('market_cap')}
-                </button>
-                <button 
-                  onClick={() => handleSort('volume_24h')}
-                  className="flex items-center gap-1 text-gray-400 font-semibold text-right hover:text-white transition-colors justify-end"
-                >
-                  Volume {getSortIcon('volume_24h')}
-                </button>
+                <div className="text-gray-400 font-semibold">#</div>
+                <div className="text-gray-400 font-semibold col-span-2">Name</div>
+                <div className="text-gray-400 font-semibold text-right">Price</div>
+                <div className="text-gray-400 font-semibold text-right">24h %</div>
+                <div className="text-gray-400 font-semibold text-right">7d %</div>
+                <div className="text-gray-400 font-semibold text-right">30d %</div>
+                <div className="text-gray-400 font-semibold text-right">YTD %</div>
+                <div className="text-gray-400 font-semibold text-right">Market Cap</div>
+                <div className="text-gray-400 font-semibold text-right">Volume</div>
               </div>
               <div className="max-h-96 overflow-y-auto">
                 {sortedCryptos.slice(0, 50).map((crypto) => (
@@ -322,6 +357,78 @@ export function CoinMarketCapTop100() {
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile Sorting Controls */}
+          <div className="lg:hidden mb-4">
+            <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg p-3">
+              <h3 className="text-white font-semibold mb-3 text-sm flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-blue-400" />
+                Sort By
+              </h3>
+              <div className="grid grid-cols-2 gap-2">
+                <button 
+                  onClick={() => handleSort('market_cap')}
+                  className={`flex items-center justify-center gap-1 px-2 py-2 rounded-lg border transition-all text-sm ${
+                    sortField === 'market_cap' 
+                      ? 'bg-blue-500/20 border-blue-500/50 text-blue-400' 
+                      : 'bg-black/20 border-crypto-silver/20 text-gray-400 hover:text-white hover:border-crypto-silver/40'
+                  }`}
+                >
+                  Market Cap {getSortIcon('market_cap')}
+                </button>
+                <button 
+                  onClick={() => handleSort('volume_24h')}
+                  className={`flex items-center justify-center gap-1 px-2 py-2 rounded-lg border transition-all text-sm ${
+                    sortField === 'volume_24h' 
+                      ? 'bg-blue-500/20 border-blue-500/50 text-blue-400' 
+                      : 'bg-black/20 border-crypto-silver/20 text-gray-400 hover:text-white hover:border-crypto-silver/40'
+                  }`}
+                >
+                  Volume {getSortIcon('volume_24h')}
+                </button>
+                <button 
+                  onClick={() => handleSort('percent_change_7d')}
+                  className={`flex items-center justify-center gap-1 px-2 py-2 rounded-lg border transition-all text-sm ${
+                    sortField === 'percent_change_7d' 
+                      ? 'bg-blue-500/20 border-blue-500/50 text-blue-400' 
+                      : 'bg-black/20 border-crypto-silver/20 text-gray-400 hover:text-white hover:border-crypto-silver/40'
+                  }`}
+                >
+                  7d % {getSortIcon('percent_change_7d')}
+                </button>
+                <button 
+                  onClick={() => handleSort('percent_change_30d')}
+                  className={`flex items-center justify-center gap-1 px-2 py-2 rounded-lg border transition-all text-sm ${
+                    sortField === 'percent_change_30d' 
+                      ? 'bg-blue-500/20 border-blue-500/50 text-blue-400' 
+                      : 'bg-black/20 border-crypto-silver/20 text-gray-400 hover:text-white hover:border-crypto-silver/40'
+                  }`}
+                >
+                  30d % {getSortIcon('percent_change_30d')}
+                </button>
+                <button 
+                  onClick={() => handleSort('percent_change_90d')}
+                  className={`flex items-center justify-center gap-1 px-2 py-2 rounded-lg border transition-all text-sm ${
+                    sortField === 'percent_change_90d' 
+                      ? 'bg-blue-500/20 border-blue-500/50 text-blue-400' 
+                      : 'bg-black/20 border-crypto-silver/20 text-gray-400 hover:text-white hover:border-crypto-silver/40'
+                  }`}
+                >
+                  90d % {getSortIcon('percent_change_90d')}
+                </button>
+                <button 
+                  onClick={() => handleSort('rank')}
+                  className={`flex items-center justify-center gap-1 px-2 py-2 rounded-lg border transition-all text-sm ${
+                    sortField === 'rank' 
+                      ? 'bg-blue-500/20 border-blue-500/50 text-blue-400' 
+                      : 'bg-black/20 border-crypto-silver/20 text-gray-400 hover:text-white hover:border-crypto-silver/40'
+                  }`}
+                >
+                  Rank {getSortIcon('rank')}
+                </button>
               </div>
             </div>
           </div>
