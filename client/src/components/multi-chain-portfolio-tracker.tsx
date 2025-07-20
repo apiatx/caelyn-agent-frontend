@@ -36,7 +36,7 @@ export function MultiChainPortfolioTracker() {
   const [searchAddress, setSearchAddress] = useState('');
 
   const { data: portfolio, isLoading, error, refetch } = useQuery<CMCPortfolio>({
-    queryKey: ['/api/cmc/portfolio', searchAddress],
+    queryKey: ['/api/coinbase/portfolio', searchAddress],
     enabled: !!searchAddress && searchAddress.length === 42, // Valid Ethereum address length
     refetchInterval: 30000, // Refresh every 30 seconds
     staleTime: 25000
@@ -234,7 +234,7 @@ export function MultiChainPortfolioTracker() {
 
           {/* Refresh Info */}
           <div className="text-center text-sm text-gray-400 border-t border-crypto-silver/20 pt-4">
-            Portfolio data refreshes every 30 seconds • Powered by CoinMarketCap + Blockchain APIs
+            Portfolio data refreshes every 30 seconds • Powered by Coinbase + Blockchain APIs
           </div>
         </div>
       )}

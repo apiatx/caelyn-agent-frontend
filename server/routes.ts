@@ -9,6 +9,7 @@ import { MultiChainService } from './multi-chain-service';
 import { coinMarketCapService } from './coinmarketcap-service';
 import { MarketOverviewService } from './market-overview-service';
 import { cmcPortfolioService } from './cmc-portfolio-service';
+import { coinbasePortfolioService } from './coinbase-portfolio-service';
 import { z } from "zod";
 import { insertPremiumAccessSchema } from "@shared/schema";
 
@@ -366,6 +367,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('❌ [API] Error fetching CMC portfolio:', error);
       res.status(500).json({ message: 'Failed to fetch CMC portfolio' });
+    }
+  });
+
+  // Coinbase-powered portfolio tracker
+  app.get('/api/coinbase/portfolio/:address', async (req, res) => {
+    try {
+      console.log(`🏦 [API] Fetching Coinbase portfolio for: ${req.params.address}`);
+      
+      // Set proper JSON response headers
+      res.setHeader('Content-Type', 'application/json');
+      
+      const portfolio = await coinbasePortfolioService.getPortfolio(req.params.address);
+      
+      console.log(`✅ [API] Coinbase portfolio retrieved: $${portfolio.totalValue.toFixed(2)} across ${portfolio.chains.length} chains`);
+      return res.json(portfolio);
+    } catch (error) {
+      console.error('❌ [API] Error fetching Coinbase portfolio:', error);
+      res.setHeader('Content-Type', 'application/json');
+      return res.status(500).json({ 
+        message: 'Failed to fetch Coinbase portfolio',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 
