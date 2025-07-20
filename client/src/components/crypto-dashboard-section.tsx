@@ -132,34 +132,6 @@ export default function CryptoDashboardSection() {
         </div>
       </GlassCard>
 
-{/* Elfa.ai Token Leaderboard */}
-      <GlassCard className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
-            <TrendingUp className="w-4 h-4 text-white" />
-          </div>
-          <h3 className="text-xl font-semibold text-white">Elfa.ai Token Leaderboard</h3>
-          <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
-            AI ANALYTICS
-          </Badge>
-          <button
-            onClick={() => openInNewTab('https://app.elfa.ai/leaderboard/token')}
-            className="ml-auto text-purple-400 hover:text-purple-300 text-sm"
-          >
-            Open in New Tab →
-          </button>
-        </div>
-        <div className="w-full">
-          <iframe
-            src="https://app.elfa.ai/leaderboard/token"
-            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            title="Elfa.ai Token Leaderboard"
-            frameBorder="0"
-            loading="lazy"
-          />
-        </div>
-      </GlassCard>
-
       {/* Artemis Analytics Netflows */}
       <GlassCard className="p-6">
         <div className="flex items-center gap-2 mb-4">
@@ -246,6 +218,13 @@ export default function CryptoDashboardSection() {
           >
             <h4 className="text-cyan-400 font-semibold mb-1">SoSo Value</h4>
             <p className="text-gray-400 text-sm">Crypto Index</p>
+          </button>
+          <button
+            onClick={() => openInNewTab('https://app.elfa.ai/leaderboard/token')}
+            className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
+          >
+            <h4 className="text-purple-400 font-semibold mb-1">Elfa.ai Leaderboard</h4>
+            <p className="text-gray-400 text-sm">AI Token Analytics</p>
           </button>
         </div>
       </GlassCard>
