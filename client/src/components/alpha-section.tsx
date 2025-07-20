@@ -121,20 +121,43 @@ export default function AlphaSection() {
           </Badge>
         </div>
         
-        <div className="w-full">
-          <iframe
-            src="https://app.kolytics.pro/leaderboard"
-            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            title="Kolytics Social Signal Leaderboard"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-          />
-          <div className="mt-3 text-center">
-            <button
-              onClick={() => openInNewTab('https://app.kolytics.pro/leaderboard')}
-              className="text-orange-400 hover:text-orange-300 text-sm"
-            >
-              Open Full View →
-            </button>
+        <div className="space-y-6">
+          {/* Kaito Iframe */}
+          <div className="w-full">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-lg font-semibold text-white">Kaito AI Social Analytics</h4>
+              <button
+                onClick={() => openInNewTab('https://yaps.kaito.ai/')}
+                className="text-orange-400 hover:text-orange-300 text-sm"
+              >
+                Open Full View →
+              </button>
+            </div>
+            <iframe
+              src="https://yaps.kaito.ai/"
+              className="w-full h-[500px] rounded-lg border border-crypto-silver/20"
+              title="Kaito AI Social Analytics"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+            />
+          </div>
+
+          {/* Kolytics Iframe */}
+          <div className="w-full">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-lg font-semibold text-white">Kolytics Leaderboard</h4>
+              <button
+                onClick={() => openInNewTab('https://app.kolytics.pro/leaderboard')}
+                className="text-orange-400 hover:text-orange-300 text-sm"
+              >
+                Open Full View →
+              </button>
+            </div>
+            <iframe
+              src="https://app.kolytics.pro/leaderboard"
+              className="w-full h-[500px] rounded-lg border border-crypto-silver/20"
+              title="Kolytics Social Signal Leaderboard"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+            />
           </div>
         </div>
       </GlassCard>
