@@ -6,7 +6,7 @@ import AlphaSection from "@/components/alpha-section";
 import WhaleWatchingSection from "@/components/whale-watching-section";
 import MarketResearchSection from "@/components/market-research-section";
 import BittensorDashboardSection from "@/components/bittensor-dashboard-section";
-import mooDengImage from "@assets/image_1752975221480.png";
+import cryptoHippoImage from "@assets/image_1752975467353.png";
 
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
@@ -25,13 +25,13 @@ export default function Dashboard() {
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 rounded-lg overflow-hidden">
                 <img 
-                  src={mooDengImage}
-                  alt="Moo Deng"
+                  src={cryptoHippoImage}
+                  alt="CryptoHippo"
                   className="w-full h-full object-cover"
                 />
               </div>
               <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-crypto-silver bg-clip-text text-transparent">
-                CryptoVault Pro
+                CryptoHippo
               </h1>
             </div>
             <div className="flex items-center space-x-4">
