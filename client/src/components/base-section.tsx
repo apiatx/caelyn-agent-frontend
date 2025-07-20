@@ -137,21 +137,21 @@ export default function BaseSection() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {topMovers?.slice(0, 12).map((token, index) => (
-              <div key={index} className="bg-white/5 rounded-lg p-4 border border-crypto-silver/20">
+              <div key={`${token?.symbol || 'token'}-${index}`} className="bg-white/5 rounded-lg p-4 border border-crypto-silver/20">
                 <div className="flex justify-between items-start mb-2">
                   <div>
-                    <div className="text-white font-medium">{token.symbol}</div>
-                    <div className="text-crypto-silver text-sm">{token.token}</div>
+                    <div className="text-white font-medium">{token?.symbol || 'Unknown'}</div>
+                    <div className="text-crypto-silver text-sm">{token?.token || 'N/A'}</div>
                   </div>
                   <div className="text-right">
-                    <div className="text-crypto-success font-bold">+{token.priceChange}%</div>
-                    <div className="text-crypto-silver text-sm">${parseFloat(token.price).toFixed(6)}</div>
+                    <div className="text-crypto-success font-bold">+{token?.priceChange || 0}%</div>
+                    <div className="text-crypto-silver text-sm">${token?.price ? parseFloat(token.price.toString()).toFixed(6) : '0.00'}</div>
                   </div>
                 </div>
                 <div className="text-crypto-silver text-xs">
-                  Vol: ${token.volume24h ? parseFloat(token.volume24h).toLocaleString() : 'N/A'}
+                  Vol: ${token?.volume24h ? parseFloat(token.volume24h.toString()).toLocaleString() : 'N/A'}
                 </div>
-                {token.contractAddress && (
+                {token?.contractAddress && (
                   <a 
                     href={`https://dexscreener.com/base/${token.contractAddress}`}
                     target="_blank"
@@ -190,31 +190,31 @@ export default function BaseSection() {
           ) : (
             whaleActivity?.slice(0, 8).map((activity, index) => (
               <a 
-                key={`${activity.id}-${index}`} 
-                href={`https://basescan.org/tx/${activity.id}`}
+                key={`${activity?.id || 'activity'}-${index}`} 
+                href={`https://basescan.org/tx/${activity?.id || ''}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-between p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer group"
               >
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center text-xs font-bold">
-                    {activity.action === 'BUY' ? '💰' : '📉'}
+                    {activity?.action === 'BUY' ? '💰' : '📉'}
                   </div>
                   <div>
                     <div className="font-medium text-white group-hover:text-blue-400 transition-colors">
-                      {activity.action} {activity.token}
+                      {activity?.action || 'TRADE'} {activity?.token || 'TOKEN'}
                     </div>
                     <div className="text-xs text-crypto-silver">
-                      {new Date(activity.timestamp).toLocaleTimeString()}
+                      {activity?.timestamp ? new Date(activity.timestamp).toLocaleTimeString() : 'Recent'}
                     </div>
                   </div>
                 </div>
                 <div className="text-right">
                   <div className="text-sm font-medium text-green-400">
-                    ${parseFloat(activity.amountUsd).toLocaleString()}
+                    ${activity?.amountUsd ? parseFloat(activity.amountUsd.toString()).toLocaleString() : '0'}
                   </div>
                   <div className="text-xs text-crypto-silver">
-                    {parseFloat(activity.amount).toLocaleString()} {activity.token}
+                    {activity?.amount ? parseFloat(activity.amount.toString()).toLocaleString() : '0'} {activity?.token || 'TOKEN'}
                   </div>
                 </div>
               </a>
@@ -244,10 +244,10 @@ export default function BaseSection() {
               <p className="text-crypto-silver text-sm">Analyzing social sentiment...</p>
             </div>
           ) : (
-            socialSentiment?.filter(pulse => pulse.platform === 'base-sentiment').slice(0, 6).map((pulse, index) => (
+            socialSentiment?.filter(pulse => pulse?.platform === 'base-sentiment').slice(0, 6).map((pulse, index) => (
               <a 
-                key={`${pulse.ticker || pulse.token || index}`} 
-                href={`https://x.com/search?q=$${(pulse.ticker || pulse.token || '').toLowerCase()}`}
+                key={`${pulse?.ticker || pulse?.token || 'sentiment'}-${index}`} 
+                href={`https://x.com/search?q=$${(pulse?.ticker || pulse?.token || '').toLowerCase()}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-between p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer group"
@@ -257,22 +257,22 @@ export default function BaseSection() {
                     B
                   </div>
                   <div>
-                    <div className="font-medium text-white group-hover:text-blue-400 transition-colors">${pulse.ticker || pulse.token}</div>
-                    <div className="text-xs text-crypto-silver">Trending Score: {pulse.trendingScore?.toFixed(0) || 'N/A'}</div>
+                    <div className="font-medium text-white group-hover:text-blue-400 transition-colors">${pulse?.ticker || pulse?.token || 'Unknown'}</div>
+                    <div className="text-xs text-crypto-silver">Trending Score: {pulse?.trendingScore?.toFixed(0) || 'N/A'}</div>
                   </div>
-                  {(pulse.trendingScore || 0) > 70 && (
+                  {(pulse?.trendingScore || 0) > 70 && (
                     <TrendingUp className="w-4 h-4 text-orange-400" />
                   )}
                 </div>
                 <div className="text-right">
                   <div className="text-sm font-medium text-white">
-                    {(pulse.mentions || 0).toLocaleString()} mentions
+                    {(pulse?.mentions || 0).toLocaleString()} mentions
                   </div>
                   <div className={`text-xs font-medium ${
-                    pulse.sentiment === 'positive' ? 'text-green-400' : 
-                    pulse.sentiment === 'negative' ? 'text-red-400' : 'text-yellow-400'
+                    pulse?.sentiment === 'positive' ? 'text-green-400' : 
+                    pulse?.sentiment === 'negative' ? 'text-red-400' : 'text-yellow-400'
                   }`}>
-                    {pulse.sentiment || 'neutral'} sentiment
+                    {pulse?.sentiment || 'neutral'} sentiment
                   </div>
                 </div>
               </a>
