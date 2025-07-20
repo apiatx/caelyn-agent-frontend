@@ -192,16 +192,24 @@ export default function CryptoDashboardSection() {
           </button>
         </div>
         <div className="w-full">
-          <iframe
-            src="https://www.cookie.fun/"
-            className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
-            title="Cookie.fun Platform"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-            style={{
-              background: '#000000',
-              colorScheme: 'dark'
-            }}
-          />
+          <div className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20 bg-gradient-to-br from-pink-900/20 to-purple-900/20 flex flex-col items-center justify-center text-center p-8">
+            <div className="mb-6">
+              <span className="text-6xl mb-4 block">🍪</span>
+              <h3 className="text-2xl font-bold text-white mb-2">Cookie.fun Platform</h3>
+              <p className="text-pink-400 mb-4">This platform doesn't support embedding</p>
+            </div>
+            <div className="space-y-4">
+              <button
+                onClick={() => openInNewTab('https://www.cookie.fun/')}
+                className="bg-gradient-to-r from-pink-500 to-purple-500 text-white px-6 py-3 rounded-lg font-semibold hover:from-pink-600 hover:to-purple-600 transition-all duration-200 shadow-lg"
+              >
+                Visit Cookie.fun →
+              </button>
+              <p className="text-crypto-silver text-sm max-w-md">
+                Click above to access Cookie.fun in a new tab for the full interactive experience
+              </p>
+            </div>
+          </div>
         </div>
       </GlassCard>
 
