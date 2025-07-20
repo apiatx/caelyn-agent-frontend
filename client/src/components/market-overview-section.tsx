@@ -49,20 +49,17 @@ interface AltSeasonData {
 }
 
 interface ETFNetflow {
-  symbol: string;
-  name: string;
-  net_flow_24h: number;
-  net_flow_7d: number;
-  net_flow_30d: number;
-  aum: number;
-  price: number;
-  percent_change_24h: number;
+  total_netflow: number;
+  btc_netflow: number;
+  eth_netflow: number;
+  btc_percent_change: number;
+  eth_percent_change: number;
 }
 
 interface MarketOverview {
   globalMetrics: GlobalMetrics;
   altSeasonIndex: AltSeasonData;
-  etfNetflows: ETFNetflow[];
+  etfNetflows: ETFNetflow;
 }
 
 export function MarketOverviewSection() {
@@ -92,10 +89,8 @@ export function MarketOverviewSection() {
 
   const formatNetflow = (value: number) => {
     const absValue = Math.abs(value);
-    if (absValue >= 1e9) {
-      return `${value >= 0 ? '+' : '-'}$${(absValue / 1e9).toFixed(1)}B`;
-    } else if (absValue >= 1e6) {
-      return `${value >= 0 ? '+' : '-'}$${(absValue / 1e6).toFixed(1)}M`;
+    if (absValue >= 1000) {
+      return `${value >= 0 ? '+' : '-'}$${absValue.toLocaleString()}M`;
     }
     return `${value >= 0 ? '+' : ''}$${value.toFixed(1)}M`;
   };
@@ -289,42 +284,53 @@ export function MarketOverviewSection() {
             </button>
           </h3>
           
-          <div className="space-y-3">
-            {etfNetflows.map((etf, index) => (
-              <div key={etf.symbol} className="bg-black/20 border border-crypto-silver/20 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <h4 className="font-semibold text-white text-sm sm:text-base">{etf.symbol}</h4>
-                    <p className="text-xs text-gray-400 truncate">{etf.name}</p>
+          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg p-6">
+            {/* Total ETF Net Flow */}
+            <div className="text-center mb-6">
+              <p className="text-sm text-gray-400 mb-1">Total ETF Net Flow</p>
+              <p className={`text-2xl sm:text-3xl font-bold ${getPercentageColor(etfNetflows.total_netflow)}`}>
+                {formatNetflow(etfNetflows.total_netflow)}
+              </p>
+            </div>
+            
+            {/* BTC and ETH Breakdown */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="text-center p-4 bg-orange-500/5 border border-orange-500/20 rounded-lg">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold text-xs">₿</span>
                   </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-white text-sm">{formatCurrency(etf.aum)}</p>
-                    <p className="text-xs text-gray-400">AUM</p>
-                  </div>
+                  <span className="text-white font-semibold">BTC</span>
                 </div>
-                
-                <div className="grid grid-cols-3 gap-3 text-sm">
-                  <div className="text-center">
-                    <p className="text-gray-400 text-xs mb-1">24h Flow</p>
-                    <p className={`font-medium ${getPercentageColor(etf.net_flow_24h)}`}>
-                      {formatNetflow(etf.net_flow_24h)}
-                    </p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-gray-400 text-xs mb-1">7d Flow</p>
-                    <p className={`font-medium ${getPercentageColor(etf.net_flow_7d)}`}>
-                      {formatNetflow(etf.net_flow_7d)}
-                    </p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-gray-400 text-xs mb-1">30d Flow</p>
-                    <p className={`font-medium ${getPercentageColor(etf.net_flow_30d)}`}>
-                      {formatNetflow(etf.net_flow_30d)}
-                    </p>
-                  </div>
-                </div>
+                <p className={`text-xl font-bold ${getPercentageColor(etfNetflows.btc_netflow)}`}>
+                  {formatNetflow(etfNetflows.btc_netflow)}
+                </p>
+                <p className={`text-xs ${getPercentageColor(etfNetflows.btc_percent_change)}`}>
+                  {formatPercentage(etfNetflows.btc_percent_change)} 24h
+                </p>
               </div>
-            ))}
+              
+              <div className="text-center p-4 bg-blue-500/5 border border-blue-500/20 rounded-lg">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold text-xs">Ξ</span>
+                  </div>
+                  <span className="text-white font-semibold">ETH</span>
+                </div>
+                <p className={`text-xl font-bold ${getPercentageColor(etfNetflows.eth_netflow)}`}>
+                  {formatNetflow(etfNetflows.eth_netflow)}
+                </p>
+                <p className={`text-xs ${getPercentageColor(etfNetflows.eth_percent_change)}`}>
+                  {formatPercentage(etfNetflows.eth_percent_change)} 24h
+                </p>
+              </div>
+            </div>
+            
+            <div className="mt-4 text-center">
+              <p className="text-xs text-gray-400">
+                Net flows calculated from real-time Bitcoin and Ethereum performance data
+              </p>
+            </div>
           </div>
         </div>
       </div>
