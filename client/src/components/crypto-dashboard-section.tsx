@@ -122,7 +122,7 @@ export default function CryptoDashboardSection() {
         </div>
         <div className="w-full">
           <iframe
-            src="https://www.tradingview.com/chart/e5l95XgZ/?symbol=BITSTAMP%3AXRPUSD"
+            src="https://www.tradingview.com/widgetembed/?frameElementId=tradingview_xrp&symbol=BITSTAMP%3AXRPUSD&interval=D&hidesidetoolbar=1&hidetoptoolbar=1&symboledit=1&saveimage=1&toolbarbg=F1F3F6&studies=[]&hideideas=1&theme=Dark&style=1&timezone=Etc%2FUTC&studies_overrides={}&overrides={}&enabled_features=[]&disabled_features=[]&locale=en&utm_source=localhost&utm_medium=widget&utm_campaign=chart&utm_term=BITSTAMP%3AXRPUSD"
             className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
             title="TradingView XRP Chart"
             sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
