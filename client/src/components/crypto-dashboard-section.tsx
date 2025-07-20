@@ -190,16 +190,36 @@ export default function CryptoDashboardSection() {
           </button>
         </div>
         <div className="w-full">
-          <iframe
-            src="https://dapp.velvet.capital/"
-            className="w-full h-[600px] sm:h-[700px] lg:h-[800px] rounded-lg border border-crypto-silver/20"
-            title="Velvet Capital DApp"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-            style={{
-              background: 'transparent',
-              colorScheme: 'dark'
-            }}
-          />
+          <div className="bg-gradient-to-br from-purple-900/20 to-pink-900/20 rounded-lg border border-purple-500/30 backdrop-blur-sm p-8 sm:p-12 text-center">
+            <div className="w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Wallet className="w-10 h-10 text-white" />
+            </div>
+            <h3 className="text-2xl font-bold text-white mb-4">Velvet Capital DApp</h3>
+            <p className="text-gray-300 mb-6 max-w-2xl mx-auto text-lg">
+              Professional DeFi portfolio management platform with automated strategies, multi-chain support, and institutional-grade tools for cryptocurrency investments.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 max-w-3xl mx-auto">
+              <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4">
+                <h4 className="text-purple-400 font-semibold mb-2">Automated Strategies</h4>
+                <p className="text-gray-400 text-sm">AI-powered portfolio rebalancing and yield optimization</p>
+              </div>
+              <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4">
+                <h4 className="text-purple-400 font-semibold mb-2">Multi-Chain</h4>
+                <p className="text-gray-400 text-sm">Support for Ethereum, Polygon, Arbitrum, and more</p>
+              </div>
+              <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4">
+                <h4 className="text-purple-400 font-semibold mb-2">Institutional Grade</h4>
+                <p className="text-gray-400 text-sm">Professional tools and advanced analytics</p>
+              </div>
+            </div>
+            <button
+              onClick={() => openInNewTab('https://dapp.velvet.capital/')}
+              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-8 py-4 rounded-lg font-semibold transition-all duration-200 text-lg shadow-lg"
+            >
+              Launch Velvet Capital DApp →
+            </button>
+            <p className="text-gray-500 text-sm mt-4">Opens in a new tab for secure wallet connection</p>
+          </div>
         </div>
       </GlassCard>
 
