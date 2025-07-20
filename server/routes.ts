@@ -8,6 +8,7 @@ import { mobulaService } from './mobula-service';
 import { MultiChainService } from './multi-chain-service';
 import { coinMarketCapService } from './coinmarketcap-service';
 import { MarketOverviewService } from './market-overview-service';
+import { cmcPortfolioService } from './cmc-portfolio-service';
 import { z } from "zod";
 import { insertPremiumAccessSchema } from "@shared/schema";
 
@@ -351,6 +352,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error(`❌ [MULTI-CHAIN] Failed to fetch portfolio for ${req.params.address}:`, error);
       res.status(500).json({ message: 'Failed to fetch multi-chain portfolio' });
+    }
+  });
+
+  // CoinMarketCap-powered portfolio tracker
+  app.get('/api/cmc/portfolio/:address', async (req, res) => {
+    try {
+      console.log(`🏦 [API] Fetching CMC portfolio for: ${req.params.address}`);
+      const portfolio = await cmcPortfolioService.getPortfolio(req.params.address);
+      
+      console.log(`✅ [API] CMC portfolio retrieved: $${portfolio.totalValue.toFixed(2)} across ${portfolio.chains.length} chains`);
+      res.json(portfolio);
+    } catch (error) {
+      console.error('❌ [API] Error fetching CMC portfolio:', error);
+      res.status(500).json({ message: 'Failed to fetch CMC portfolio' });
     }
   });
 

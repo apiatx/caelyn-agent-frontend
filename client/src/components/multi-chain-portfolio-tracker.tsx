@@ -11,15 +11,23 @@ interface TokenBalance {
   symbol: string;
   balance: string;
   decimals: number;
-  value?: number;
+  value: number;
   logo?: string;
   contractAddress?: string;
   chain: string;
+  price: number;
+  change24h: number;
 }
 
-interface MultiChainPortfolio {
+interface ChainBalance {
+  chain: string;
   totalValue: number;
-  chains: { [key: string]: TokenBalance[] };
+  tokens: TokenBalance[];
+}
+
+interface CMCPortfolio {
+  totalValue: number;
+  chains: ChainBalance[];
   summary: { chain: string; value: number; tokenCount: number }[];
 }
 
@@ -27,8 +35,8 @@ export function MultiChainPortfolioTracker() {
   const [walletAddress, setWalletAddress] = useState('');
   const [searchAddress, setSearchAddress] = useState('');
 
-  const { data: portfolio, isLoading, error, refetch } = useQuery<MultiChainPortfolio>({
-    queryKey: ['/api/multichain/portfolio', searchAddress],
+  const { data: portfolio, isLoading, error, refetch } = useQuery<CMCPortfolio>({
+    queryKey: ['/api/cmc/portfolio', searchAddress],
     enabled: !!searchAddress && searchAddress.length === 42, // Valid Ethereum address length
     refetchInterval: 30000, // Refresh every 30 seconds
     staleTime: 25000
@@ -141,7 +149,7 @@ export function MultiChainPortfolioTracker() {
                 <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
                 <span className="text-blue-400 font-semibold text-sm sm:text-base">Total Chains</span>
               </div>
-              <p className="text-xl sm:text-2xl font-bold text-white">{portfolio.summary.length}</p>
+              <p className="text-xl sm:text-2xl font-bold text-white">{portfolio.chains.length}</p>
             </div>
 
             <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-lg p-3 sm:p-4">
@@ -150,50 +158,60 @@ export function MultiChainPortfolioTracker() {
                 <span className="text-purple-400 font-semibold text-sm sm:text-base">Total Assets</span>
               </div>
               <p className="text-xl sm:text-2xl font-bold text-white">
-                {portfolio.summary.reduce((sum, chain) => sum + chain.tokenCount, 0)}
+                {portfolio.chains.reduce((sum, chain) => sum + chain.tokens.length, 0)}
               </p>
             </div>
           </div>
 
           {/* Chain Breakdown */}
-          {portfolio.summary.map((chainSummary) => (
-            <div key={chainSummary.chain} className="space-y-4">
+          {portfolio.chains.map((chainData) => (
+            <div key={chainData.chain} className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <Badge className={`bg-${getChainColor(chainSummary.chain)}-500/20 text-${getChainColor(chainSummary.chain)}-400 border-${getChainColor(chainSummary.chain)}-500/30`}>
-                    {chainSummary.chain.toUpperCase()}
+                  <Badge className={`bg-${getChainColor(chainData.chain)}-500/20 text-${getChainColor(chainData.chain)}-400 border-${getChainColor(chainData.chain)}-500/30`}>
+                    {chainData.chain.toUpperCase()}
                   </Badge>
                   <span className="text-xl font-semibold text-white">
-                    ${chainSummary.value.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                    ${chainData.totalValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                   </span>
-                  <span className="text-gray-400">({chainSummary.tokenCount} assets)</span>
+                  <span className="text-gray-400">({chainData.tokens.length} assets)</span>
                 </div>
               </div>
 
               {/* Token List */}
               <div className="grid gap-3">
-                {portfolio.chains[chainSummary.chain]
-                  ?.filter(token => (token.value || 0) >= 1) // Only show tokens worth $1+
-                  ?.sort((a, b) => (b.value || 0) - (a.value || 0))
+                {chainData.tokens
+                  ?.filter(token => token.value >= 1) // Only show tokens worth $1+
+                  ?.sort((a, b) => b.value - a.value)
                   ?.map((token, index) => (
                   <div key={`${token.contractAddress}-${index}`} className="bg-black/20 border border-crypto-silver/20 rounded-lg p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-r from-gray-600 to-gray-700 rounded-full flex items-center justify-center">
-                          <span className="text-white font-bold text-sm">
-                            {token.symbol.substring(0, 2)}
-                          </span>
-                        </div>
+                        {token.logo ? (
+                          <img src={token.logo} alt={token.symbol} className="w-10 h-10 rounded-full" />
+                        ) : (
+                          <div className="w-10 h-10 bg-gradient-to-r from-gray-600 to-gray-700 rounded-full flex items-center justify-center">
+                            <span className="text-white font-bold text-sm">
+                              {token.symbol.substring(0, 2)}
+                            </span>
+                          </div>
+                        )}
                         <div>
                           <p className="font-semibold text-white">{token.symbol}</p>
                           <p className="text-sm text-gray-400">{formatBalance(token.balance)}</p>
+                          <p className="text-xs text-gray-500">${token.price.toFixed(4)}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
                         <div className="text-right">
                           <p className="font-semibold text-white">
-                            ${(token.value || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                            ${token.value.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                           </p>
+                          {token.change24h !== 0 && (
+                            <p className={`text-sm ${token.change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                              {token.change24h >= 0 ? '+' : ''}{token.change24h.toFixed(2)}%
+                            </p>
+                          )}
                           <p className="text-sm text-gray-400">{token.chain}</p>
                         </div>
                         {token.contractAddress !== 'native' && (
@@ -216,7 +234,7 @@ export function MultiChainPortfolioTracker() {
 
           {/* Refresh Info */}
           <div className="text-center text-sm text-gray-400 border-t border-crypto-silver/20 pt-4">
-            Portfolio data refreshes every 30 seconds • Powered by Mobula + Multi-Chain APIs
+            Portfolio data refreshes every 30 seconds • Powered by CoinMarketCap + Blockchain APIs
           </div>
         </div>
       )}
