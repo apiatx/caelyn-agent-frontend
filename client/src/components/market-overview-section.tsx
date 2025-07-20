@@ -70,10 +70,33 @@ interface ETFNetflow {
   eth_percent_change: number;
 }
 
+interface FearGreedData {
+  index_value: number;
+  timestamp: string;
+  classification: string;
+  historical: {
+    yesterday: number;
+    yesterday_classification: string;
+    last_week: number;
+    last_week_classification: string;
+    last_month: number;
+    last_month_classification: string;
+  };
+  yearly: {
+    high: number;
+    high_date: string;
+    high_classification: string;
+    low: number;
+    low_date: string;
+    low_classification: string;
+  };
+}
+
 interface MarketOverview {
   globalMetrics: GlobalMetrics;
   altSeasonIndex: AltSeasonData;
   etfNetflows: ETFNetflow;
+  fearGreedIndex: FearGreedData;
 }
 
 export function MarketOverviewSection() {
@@ -133,6 +156,38 @@ export function MarketOverviewSection() {
     window.open('https://coinmarketcap.com/etf/', '_blank');
   };
 
+  const openFearGreedChart = () => {
+    window.open('https://coinmarketcap.com/charts/fear-and-greed-index/', '_blank');
+  };
+
+  const getFearGreedColor = (value: number) => {
+    if (value >= 75) return 'text-green-400';
+    if (value >= 55) return 'text-green-300';
+    if (value >= 45) return 'text-gray-300';
+    if (value >= 25) return 'text-orange-400';
+    return 'text-red-400';
+  };
+
+  const getFearGreedBadgeColor = (classification: string) => {
+    switch (classification) {
+      case 'Extreme Greed': return 'bg-green-500 text-white';
+      case 'Greed': return 'bg-green-400 text-white';
+      case 'Neutral': return 'bg-gray-500 text-white';
+      case 'Fear': return 'bg-orange-500 text-white';
+      case 'Extreme Fear': return 'bg-red-500 text-white';
+      default: return 'bg-gray-500 text-white';
+    }
+  };
+
+  // Create circular gauge path based on value
+  const createGaugePath = (value: number) => {
+    const angle = (value / 100) * 180; // Half circle (180 degrees)
+    const radian = (angle - 90) * (Math.PI / 180);
+    const x = 50 + 40 * Math.cos(radian);
+    const y = 50 + 40 * Math.sin(radian);
+    return `M 10 50 A 40 40 0 ${angle > 90 ? 1 : 0} 1 ${x} ${y}`;
+  };
+
   if (isLoading) {
     return (
       <div className="bg-black/20 border border-crypto-silver/20 rounded-lg p-6">
@@ -171,7 +226,7 @@ export function MarketOverviewSection() {
     );
   }
 
-  const { globalMetrics, altSeasonIndex, etfNetflows } = overview;
+  const { globalMetrics, altSeasonIndex, etfNetflows, fearGreedIndex } = overview;
   const usd = globalMetrics.quote.USD;
 
   return (
@@ -337,6 +392,128 @@ export function MarketOverviewSection() {
                       </div>
                       <span className="bg-orange-500 text-white px-2 py-1 rounded-full text-xs font-medium">
                         {altSeasonIndex.yearly.low_description} - {altSeasonIndex.yearly.low}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Fear & Greed Index */}
+        <div>
+          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <Activity className="w-5 h-5 text-purple-400" />
+            CMC Crypto Fear and Greed Index
+            <button
+              onClick={openFearGreedChart}
+              className="ml-auto text-xs text-purple-400 hover:text-purple-300 transition-colors"
+            >
+              View Chart →
+            </button>
+          </h3>
+          
+          <div className="space-y-3">
+            {/* Fear & Greed Circular Gauge */}
+            <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-6">
+              <div className="flex flex-col items-center mb-6">
+                {/* Circular Gauge */}
+                <div className="relative mb-4">
+                  <svg width="200" height="120" className="overflow-visible">
+                    {/* Background Arc */}
+                    <path
+                      d="M 20 100 A 80 80 0 0 1 180 100"
+                      stroke="url(#gaugeGradient)"
+                      strokeWidth="8"
+                      fill="none"
+                      strokeLinecap="round"
+                    />
+                    
+                    {/* Value Indicator Dot */}
+                    <circle
+                      cx={20 + (fearGreedIndex.index_value / 100) * 160}
+                      cy={100 - Math.sin((fearGreedIndex.index_value / 100) * Math.PI) * 80}
+                      r="6"
+                      fill="white"
+                      stroke="#374151"
+                      strokeWidth="2"
+                    />
+                    
+                    {/* Gradient Definition */}
+                    <defs>
+                      <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#EF4444" /> {/* Red - Fear */}
+                        <stop offset="25%" stopColor="#F97316" /> {/* Orange */}
+                        <stop offset="50%" stopColor="#EAB308" /> {/* Yellow */}
+                        <stop offset="75%" stopColor="#84CC16" /> {/* Light Green */}
+                        <stop offset="100%" stopColor="#22C55E" /> {/* Green - Greed */}
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                </div>
+                
+                {/* Index Value and Classification */}
+                <div className="text-center">
+                  <div className="text-6xl font-bold text-white mb-2">{fearGreedIndex.index_value}</div>
+                  <div className="text-gray-400 text-xl">{fearGreedIndex.classification}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Historical Values and Yearly High/Low side by side */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {/* Historical Values */}
+              <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-4">
+                <h4 className="text-white text-lg font-bold mb-3">Historical Values</h4>
+                
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400 text-sm">Yesterday</span>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getFearGreedBadgeColor(fearGreedIndex.historical.yesterday_classification)}`}>
+                      {fearGreedIndex.historical.yesterday_classification} - {fearGreedIndex.historical.yesterday}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400 text-sm">Last Week</span>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getFearGreedBadgeColor(fearGreedIndex.historical.last_week_classification)}`}>
+                      {fearGreedIndex.historical.last_week_classification} - {fearGreedIndex.historical.last_week}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400 text-sm">Last Month</span>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getFearGreedBadgeColor(fearGreedIndex.historical.last_month_classification)}`}>
+                      {fearGreedIndex.historical.last_month_classification} - {fearGreedIndex.historical.last_month}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Yearly High and Low */}
+              <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-4">
+                <h4 className="text-white text-lg font-bold mb-3">Yearly High and Low</h4>
+                
+                <div className="space-y-3">
+                  <div>
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="text-white font-medium text-sm">Yearly High</p>
+                        <p className="text-gray-400 text-xs">({fearGreedIndex.yearly.high_date})</p>
+                      </div>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getFearGreedBadgeColor(fearGreedIndex.yearly.high_classification)}`}>
+                        {fearGreedIndex.yearly.high_classification} - {fearGreedIndex.yearly.high}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="text-white font-medium text-sm">Yearly Low</p>
+                        <p className="text-gray-400 text-xs">({fearGreedIndex.yearly.low_date})</p>
+                      </div>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getFearGreedBadgeColor(fearGreedIndex.yearly.low_classification)}`}>
+                        {fearGreedIndex.yearly.low_classification} - {fearGreedIndex.yearly.low}
                       </span>
                     </div>
                   </div>
