@@ -423,3 +423,9 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Mobile Navigation Updated**: Applied same ordering and "Onchain" renaming to mobile horizontal scroll navigation
 - **Consistent Branding**: All navigation elements now reflect "Onchain" instead of "Alpha" for chain-agnostic analytics
 - **DeFi Streamlined**: DeFi page now features three platforms: Peapods Finance, Arma Protocol, and ZYF AI Dashboard
+
+### July 20, 2025 - Onchain Section Title Updates
+- **Signal Section**: Renamed "Chain-Agnostic Analytics Platforms" to "Signal" for cleaner branding
+- **Social Section**: Renamed "Social Signal" to "Social" for simplified navigation
+- **Streamlined Headers**: Onchain page now features "Signal", "Smart Wallets", and "Social" sections
+- **Consistent Terminology**: Updated section titles to match user preferences for concise naming

@@ -33,7 +33,7 @@ export default function AlphaSection() {
           <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
             <Star className="w-4 h-4 text-white" />
           </div>
-          <h3 className="text-xl font-semibold text-white">Chain-Agnostic Analytics Platforms</h3>
+          <h3 className="text-xl font-semibold text-white">Signal</h3>
           <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-xs">
             MULTI-CHAIN
           </Badge>
@@ -109,13 +109,13 @@ export default function AlphaSection() {
         </div>
       </GlassCard>
 
-      {/* Social Signal */}
+      {/* Social */}
       <GlassCard className="p-6">
         <div className="flex items-center gap-2 mb-6">
           <div className="w-6 h-6 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
             <TrendingDown className="w-4 h-4 text-white" />
           </div>
-          <h3 className="text-xl font-semibold text-white">Social Signal</h3>
+          <h3 className="text-xl font-semibold text-white">Social</h3>
           <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 text-xs">
             ANALYTICS
           </Badge>
