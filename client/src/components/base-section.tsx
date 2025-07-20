@@ -87,7 +87,7 @@ export default function BaseSection() {
         <p className="text-crypto-silver">Live BASE network analytics and DexScreener integration</p>
       </div>
 
-      {/* DexScreener Base Network Iframe */}
+      {/* DexScreener Base Network Link */}
       <GlassCard className="p-6">
         <div className="flex items-center gap-2 mb-4">
           <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
@@ -98,13 +98,26 @@ export default function BaseSection() {
             Live Data
           </span>
         </div>
-        <div className="bg-white/5 rounded-lg overflow-hidden border border-crypto-silver/20">
-          <iframe
-            src="https://dexscreener.com/base"
-            className="w-full h-[600px]"
-            frameBorder="0"
-            title="DexScreener Base Network"
-          />
+        <div className="bg-white/5 rounded-lg p-8 border border-crypto-silver/20 text-center">
+          <div className="mb-4">
+            <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Activity className="w-8 h-8 text-white" />
+            </div>
+            <h4 className="text-xl font-semibold text-white mb-2">Live Base Network Analytics</h4>
+            <p className="text-crypto-silver mb-6">
+              Access real-time trading data, price charts, and liquidity information for all Base network tokens
+            </p>
+          </div>
+          <a
+            href="https://dexscreener.com/base"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-medium px-6 py-3 rounded-lg transition-colors"
+          >
+            <Activity className="w-4 h-4" />
+            Open DexScreener Base
+            <ArrowUpRight className="w-4 h-4" />
+          </a>
         </div>
       </GlassCard>
 
