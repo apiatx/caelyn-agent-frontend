@@ -24,8 +24,8 @@ export default function CryptoDashboardSection() {
 
       {/* Quick Access Links Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <GlassCard 
-          className="p-6 cursor-pointer hover:bg-white/5 transition-all duration-300"
+        <div 
+          className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-lg p-6 cursor-pointer hover:bg-white/5 transition-all duration-300"
           onClick={() => openInNewTab('https://coinmarketcap.com/')}
         >
           <div className="flex items-center gap-3 mb-3">
@@ -38,10 +38,10 @@ export default function CryptoDashboardSection() {
           <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
             MARKET DATA
           </Badge>
-        </GlassCard>
+        </div>
 
-        <GlassCard 
-          className="p-6 cursor-pointer hover:bg-white/5 transition-all duration-300"
+        <div 
+          className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-lg p-6 cursor-pointer hover:bg-white/5 transition-all duration-300"
           onClick={() => openInNewTab('https://coinmarketcap.com/currencies/volume/monthly/')}
         >
           <div className="flex items-center gap-3 mb-3">
@@ -54,10 +54,10 @@ export default function CryptoDashboardSection() {
           <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
             VOLUME DATA
           </Badge>
-        </GlassCard>
+        </div>
 
-        <GlassCard 
-          className="p-6 cursor-pointer hover:bg-white/5 transition-all duration-300"
+        <div 
+          className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-lg p-6 cursor-pointer hover:bg-white/5 transition-all duration-300"
           onClick={() => openInNewTab('https://www.tradingview.com/chart/e5l95XgZ/?symbol=CRYPTOCAP%3AOTHERS.D')}
         >
           <div className="flex items-center gap-3 mb-3">
@@ -70,10 +70,10 @@ export default function CryptoDashboardSection() {
           <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30">
             TRADINGVIEW
           </Badge>
-        </GlassCard>
+        </div>
 
-        <GlassCard 
-          className="p-6 cursor-pointer hover:bg-white/5 transition-all duration-300"
+        <div 
+          className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-lg p-6 cursor-pointer hover:bg-white/5 transition-all duration-300"
           onClick={() => openInNewTab('https://coinalyze.net/futures-data/global-charts/')}
         >
           <div className="flex items-center gap-3 mb-3">
@@ -86,10 +86,10 @@ export default function CryptoDashboardSection() {
           <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30">
             FUTURES
           </Badge>
-        </GlassCard>
+        </div>
 
-        <GlassCard 
-          className="p-6 cursor-pointer hover:bg-white/5 transition-all duration-300"
+        <div 
+          className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-lg p-6 cursor-pointer hover:bg-white/5 transition-all duration-300"
           onClick={() => openInNewTab('https://sosovalue.com/assets/cryptoindex')}
         >
           <div className="flex items-center gap-3 mb-3">
@@ -102,7 +102,7 @@ export default function CryptoDashboardSection() {
           <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
             INDEX DATA
           </Badge>
-        </GlassCard>
+        </div>
       </div>
 
       {/* Artemis Analytics Flows - Embedded */}
