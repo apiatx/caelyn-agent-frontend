@@ -119,16 +119,16 @@ export default function BaseSection() {
           <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
             <span className="text-white text-xs font-bold">B</span>
           </div>
-          <h3 className="text-xl font-semibold text-white">Bankr.bot Analytics</h3>
+          <h3 className="text-xl font-semibold text-white">Bankr.bot Terminal</h3>
           <span className="px-2 py-1 bg-purple-500/20 text-purple-400 text-xs rounded-full font-medium">
             Live Data
           </span>
         </div>
         <div className="w-full">
           <iframe
-            src="https://bankr.bot/"
+            src="https://bankr.bot/terminal"
             className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            title="Bankr.bot Analytics"
+            title="Bankr.bot Terminal"
             sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
             style={{
               background: '#000000',

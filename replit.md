@@ -332,11 +332,12 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **DexScreener Dark Mode**: Enabled dark theme for Base and Solana DexScreener iframes using ?theme=dark parameter
 - **Comprehensive Dashboard**: Dashboard combines live trading widgets with specialized analytics access for professional crypto analysis
 
-### July 20, 2025 - Base Section Streamlined with Bankr.bot Integration  
+### July 20, 2025 - Base Section Streamlined with Bankr.bot Terminal Integration  
 - **Live Base Movers Removal**: Removed "Live Base Movers" section from Base page that displayed real-time BASE network top gainers
 - **Whale Activity Removal**: Removed "Recent Base Whale Activity" section that showed live BASE network whale transactions
-- **Bankr.bot Integration**: Added new bankr.bot iframe (https://bankr.bot/) replacing the removed sections
-- **Clean Base Page**: Base section now features DexScreener BASE network, bankr.bot analytics, and social sentiment
+- **Bankr.bot Terminal Integration**: Added new bankr.bot terminal iframe (https://bankr.bot/terminal) for focused chat-only experience
+- **Chat-Focused Interface**: Terminal version provides streamlined chat interface without activity, deposit, wallet, or NFTs sections
+- **Clean Base Page**: Base section now features DexScreener BASE network, bankr.bot terminal, and social sentiment
 - **Streamlined Focus**: Base page optimized for essential analytics tools with external platform integrations
 - **Import Cleanup**: Removed unused hooks and imports (useTopMovers, useWhaleActivity, useMarketAnalysis) for better performance
 
