@@ -5,8 +5,11 @@ import { realTimeDataService } from './real-time-data-service-new';
 import { debankService } from './debank-service';
 import { debankStakingService } from './debank-staking-service';
 import { mobulaService } from './mobula-service';
+import { MultiChainService } from './multi-chain-service';
 import { z } from "zod";
 import { insertPremiumAccessSchema } from "@shared/schema";
+
+const multiChainService = new MultiChainService();
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
@@ -331,6 +334,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error(`❌ [API] Failed to search assets for "${req.query.q}":`, error);
       res.status(500).json({ message: 'Failed to search assets' });
+    }
+  });
+
+  // Multi-chain portfolio tracker endpoint
+  app.get('/api/multichain/portfolio/:address', async (req, res) => {
+    try {
+      console.log(`🔗 [API] Fetching multi-chain portfolio for: ${req.params.address}`);
+      const portfolio = await multiChainService.getMultiChainPortfolio(req.params.address);
+      
+      console.log(`✅ [API] Multi-chain portfolio retrieved: $${portfolio.totalValue.toFixed(2)} across ${portfolio.summary.length} chains`);
+      res.json(portfolio);
+    } catch (error) {
+      console.error(`❌ [MULTI-CHAIN] Failed to fetch portfolio for ${req.params.address}:`, error);
+      res.status(500).json({ message: 'Failed to fetch multi-chain portfolio' });
     }
   });
 
