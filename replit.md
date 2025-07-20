@@ -387,4 +387,5 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Section Reorganization**: Moved Bankr.bot Terminal to bottom of page for better flow
 - **Social Sentiment Removal**: Removed Base Social Sentiment section to streamline page layout
 - **AI Agent Platforms**: Added Virtuals.io and Creator.bid agent platforms at bottom of Base page
+- **Creator.bid Iframe Fix**: Replaced failing iframe with professional call-to-action card due to X-Frame-Options restrictions
 - **DeFi Trading Suite**: Base page now features comprehensive DEX access with both BASE-native and multi-chain trading options
