@@ -147,13 +147,19 @@ export default function CryptoDashboardSection() {
             Open in New Tab →
           </button>
         </div>
-        <div className="w-full">
+        <div className="w-full relative">
           <iframe
             src="https://dexscreener.com/"
-            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            title="DexScreener"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+            className="w-full h-[800px] rounded-lg border border-crypto-silver/20"
+            title="DexScreener - Full Platform"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-top-navigation"
+            allow="fullscreen"
+            style={{ minHeight: '800px' }}
+            onError={() => console.log('DexScreener iframe failed to load')}
           />
+          <div className="absolute top-4 right-4 text-xs text-gray-400 bg-black/50 px-2 py-1 rounded">
+            If content doesn't load, click "Open in New Tab" above
+          </div>
         </div>
       </GlassCard>
 
