@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ChartLine, Settings, Activity, Eye, TrendingUp, BarChart3, Brain, Wallet, Zap, Bitcoin } from "lucide-react";
-import DashboardSection from "@/components/dashboard-section";
+import CryptoDashboardSection from "@/components/crypto-dashboard-section";
 import PortfolioSection from "@/components/portfolio-section";
 import AlphaSection from "@/components/alpha-section";
 import WhaleWatchingSection from "@/components/whale-watching-section";
@@ -152,7 +152,7 @@ export default function Dashboard() {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
-        {activeTab === "dashboard" && <div className="text-white text-center py-20"><h2 className="text-2xl font-bold">Welcome to CryptoHippo</h2><p className="text-crypto-silver mt-4">Select a section from the navigation above to get started.</p></div>}
+        {activeTab === "dashboard" && <CryptoDashboardSection />}
         {activeTab === "portfolio" && <PortfolioSection />}
         {activeTab === "alpha" && <AlphaSection />}
         {activeTab === "base" && <BaseSection />}
