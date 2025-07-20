@@ -134,6 +134,37 @@ export default function BaseSection() {
         </div>
       </GlassCard>
 
+      {/* Checkr.social */}
+      <GlassCard className="p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-cyan-600 rounded-full flex items-center justify-center">
+            <span className="text-white text-xs font-bold">CS</span>
+          </div>
+          <h3 className="text-xl font-semibold text-white">Checkr.social</h3>
+          <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs rounded-full font-medium">
+            SOCIAL ANALYTICS
+          </span>
+          <button
+            onClick={() => window.open('https://checkr.social/', '_blank')}
+            className="ml-auto text-blue-400 hover:text-blue-300 text-xs"
+          >
+            Open in New Tab →
+          </button>
+        </div>
+        <div className="w-full">
+          <iframe
+            src="https://checkr.social/"
+            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+            title="Checkr.social"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+            style={{
+              background: '#000000',
+              colorScheme: 'dark'
+            }}
+          />
+        </div>
+      </GlassCard>
+
       {/* BlockCreeper Explorer */}
       <GlassCard className="p-6">
         <div className="flex items-center gap-2 mb-4">

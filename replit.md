@@ -383,6 +383,7 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Aerodrome Swap Integration**: Added Aerodrome Finance swap iframe to Base page with ETH to token swap functionality
 - **Uniswap DEX Integration**: Added Uniswap interface below Aerodrome for multi-chain trading access
 - **Terminal.co Analytics**: Added Terminal.co Base analytics iframe positioned underneath DexScreener section
+- **Checkr.social Integration**: Added Checkr.social iframe for social analytics positioned above BlockCreeper Explorer
 - **BlockCreeper Explorer**: Added blockchain explorer iframe for detailed transaction and block analysis
 - **Section Reorganization**: Moved Bankr.bot Terminal to bottom of page for better flow
 - **Social Sentiment Removal**: Removed Base Social Sentiment section to streamline page layout
