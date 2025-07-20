@@ -2,7 +2,7 @@ import React from 'react';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, BarChart3, DollarSign, Activity, Eye, Globe } from "lucide-react";
-import { Top100Cryptos } from './top-100-cryptos';
+
 import { MultiChainPortfolioTracker } from './multi-chain-portfolio-tracker';
 
 // Glass card component for crypto dashboard
@@ -158,9 +158,6 @@ export default function CryptoDashboardSection() {
           />
         </div>
       </GlassCard>
-
-      {/* Mobula Top 100 Cryptos */}
-      <Top100Cryptos />
 
       {/* Multi-Chain Portfolio Tracker */}
       <MultiChainPortfolioTracker />

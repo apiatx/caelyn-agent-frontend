@@ -334,7 +334,6 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 
 ### July 20, 2025 - Multi-Chain Portfolio Tracker Integration
 - **Mobula API Integration**: Added comprehensive Mobula.io API service with user-provided API key (3371ca28-c28d-4b0f-908e-9529c27dfa4d)
-- **Top 100 Crypto Tracker**: Created real-time top 100 cryptocurrencies display with live prices, 24h changes, and market cap data
 - **Multi-Chain Portfolio Tracker**: Built advanced portfolio tracker combining Mobula pricing with Etherscan/Basescan blockchain data
 - **Multi-Chain Service**: Created comprehensive service supporting Ethereum and Base networks with native and ERC-20 token tracking
 - **Live Blockchain Data**: Integrated Etherscan and Basescan APIs for authentic on-chain token balance verification
@@ -342,3 +341,4 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **API Endpoints**: Created multi-chain portfolio endpoint combining blockchain data with market pricing
 - **Professional Interface**: Designed comprehensive multi-chain UI with chain-specific breakdowns and external links
 - **Mindshare by Elfi Integration**: Added "Mindshare by Elfi" link in More Analytics section due to X-Frame-Options blocking iframe
+- **Removed Top 100 Cryptos**: Removed Top 100 Cryptocurrencies section from dashboard per user request
