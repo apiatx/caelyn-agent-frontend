@@ -41,26 +41,28 @@ interface GlobalMetrics {
   };
 }
 
-interface TrendingCrypto {
-  id: number;
-  name: string;
+interface AltSeasonData {
+  index_value: number;
+  timestamp: string;
+  is_alt_season: boolean;
+  description: string;
+}
+
+interface ETFNetflow {
   symbol: string;
-  slug: string;
-  cmc_rank: number;
-  quote: {
-    USD: {
-      price: number;
-      percent_change_24h: number;
-      percent_change_7d: number;
-      market_cap: number;
-      volume_24h: number;
-    };
-  };
+  name: string;
+  net_flow_24h: number;
+  net_flow_7d: number;
+  net_flow_30d: number;
+  aum: number;
+  price: number;
+  percent_change_24h: number;
 }
 
 interface MarketOverview {
   globalMetrics: GlobalMetrics;
-  trending: TrendingCrypto[];
+  altSeasonIndex: AltSeasonData;
+  etfNetflows: ETFNetflow[];
 }
 
 export function MarketOverviewSection() {
@@ -88,12 +90,38 @@ export function MarketOverviewSection() {
     return value >= 0 ? `+${formatted}%` : `${formatted}%`;
   };
 
+  const formatNetflow = (value: number) => {
+    const absValue = Math.abs(value);
+    if (absValue >= 1e9) {
+      return `${value >= 0 ? '+' : '-'}$${(absValue / 1e9).toFixed(1)}B`;
+    } else if (absValue >= 1e6) {
+      return `${value >= 0 ? '+' : '-'}$${(absValue / 1e6).toFixed(1)}M`;
+    }
+    return `${value >= 0 ? '+' : ''}$${value.toFixed(1)}M`;
+  };
+
   const getPercentageColor = (value: number) => {
     return value >= 0 ? 'text-green-400' : 'text-red-400';
   };
 
-  const openCoinMarketCap = (slug: string) => {
-    window.open(`https://coinmarketcap.com/currencies/${slug}/`, '_blank');
+  const getAltSeasonColor = (value: number) => {
+    if (value > 75) return 'text-green-400';
+    if (value > 25) return 'text-yellow-400';
+    return 'text-red-400';
+  };
+
+  const getAltSeasonBgColor = (value: number) => {
+    if (value > 75) return 'from-green-500/10 to-emerald-500/10 border-green-500/20';
+    if (value > 25) return 'from-yellow-500/10 to-orange-500/10 border-yellow-500/20';
+    return 'from-red-500/10 to-rose-500/10 border-red-500/20';
+  };
+
+  const openAltSeasonChart = () => {
+    window.open('https://coinmarketcap.com/charts/altcoin-season-index/', '_blank');
+  };
+
+  const openETFPage = () => {
+    window.open('https://coinmarketcap.com/etf/', '_blank');
   };
 
   if (isLoading) {
@@ -134,7 +162,7 @@ export function MarketOverviewSection() {
     );
   }
 
-  const { globalMetrics, trending } = overview;
+  const { globalMetrics, altSeasonIndex, etfNetflows } = overview;
   const usd = globalMetrics.quote.USD;
 
   return (
@@ -205,106 +233,99 @@ export function MarketOverviewSection() {
         </div>
       </div>
 
-      {/* Trending Cryptocurrencies */}
-      <div>
-        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-          <TrendingUp className="w-5 h-5 text-green-400" />
-          Top Performing Cryptocurrencies
-        </h3>
-
-        {/* Desktop Table View */}
-        <div className="hidden lg:block">
-          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-            <div className="grid grid-cols-7 gap-4 p-4 bg-black/30 border-b border-crypto-silver/20">
-              <div className="text-gray-400 font-semibold">#</div>
-              <div className="text-gray-400 font-semibold col-span-2">Name</div>
-              <div className="text-gray-400 font-semibold text-right">Price</div>
-              <div className="text-gray-400 font-semibold text-right">24h %</div>
-              <div className="text-gray-400 font-semibold text-right">7d %</div>
-              <div className="text-gray-400 font-semibold text-right">Market Cap</div>
-            </div>
-            <div className="max-h-80 overflow-y-auto">
-              {trending.map((crypto) => (
-                <div
-                  key={crypto.id}
-                  className="grid grid-cols-7 gap-4 p-4 border-b border-crypto-silver/10 hover:bg-black/20 transition-colors"
-                >
-                  <div className="text-gray-300 font-medium">{crypto.cmc_rank}</div>
-                  <div className="col-span-2">
-                    <div 
-                      onClick={() => openCoinMarketCap(crypto.slug)}
-                      className="flex items-center gap-2 cursor-pointer hover:text-blue-400 transition-colors"
-                    >
-                      <div className="w-8 h-8 bg-gradient-to-r from-gray-600 to-gray-700 rounded-full flex items-center justify-center">
-                        <span className="text-white font-bold text-xs">{crypto.symbol.substring(0, 2)}</span>
-                      </div>
-                      <div>
-                        <p className="font-semibold text-white">{crypto.name}</p>
-                        <p className="text-sm text-gray-400">{crypto.symbol}</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-right font-semibold text-white">
-                    {formatCurrency(crypto.quote.USD.price)}
-                  </div>
-                  <div className={`text-right font-semibold ${getPercentageColor(crypto.quote.USD.percent_change_24h)}`}>
-                    {formatPercentage(crypto.quote.USD.percent_change_24h)}
-                  </div>
-                  <div className={`text-right font-semibold ${getPercentageColor(crypto.quote.USD.percent_change_7d || 0)}`}>
-                    {formatPercentage(crypto.quote.USD.percent_change_7d || 0)}
-                  </div>
-                  <div className="text-right font-semibold text-white">
-                    {formatCurrency(crypto.quote.USD.market_cap)}
-                  </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Alt Season Index */}
+        <div>
+          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-blue-400" />
+            Alt Season Index
+            <button
+              onClick={openAltSeasonChart}
+              className="ml-auto text-xs text-blue-400 hover:text-blue-300 transition-colors"
+            >
+              View Chart →
+            </button>
+          </h3>
+          
+          <div className={`bg-gradient-to-r ${getAltSeasonBgColor(altSeasonIndex.index_value)} rounded-lg p-6 mb-4`}>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <p className="text-2xl sm:text-3xl font-bold text-white mb-1">
+                  {altSeasonIndex.index_value.toFixed(0)}
+                </p>
+                <p className={`text-sm font-medium ${getAltSeasonColor(altSeasonIndex.index_value)}`}>
+                  {altSeasonIndex.description}
+                </p>
+              </div>
+              <div className="text-right">
+                <div className={`w-16 h-16 rounded-full border-4 ${
+                  altSeasonIndex.is_alt_season ? 'border-green-400' : altSeasonIndex.index_value > 25 ? 'border-yellow-400' : 'border-red-400'
+                } flex items-center justify-center`}>
+                  <span className={`text-xs font-bold ${getAltSeasonColor(altSeasonIndex.index_value)}`}>
+                    {altSeasonIndex.is_alt_season ? 'ALT' : altSeasonIndex.index_value > 25 ? 'MIX' : 'BTC'}
+                  </span>
                 </div>
-              ))}
+              </div>
+            </div>
+            
+            <div className="space-y-2 text-sm text-gray-300">
+              <p>• 75+ = Alt Season (altcoins outperforming Bitcoin)</p>
+              <p>• 25-75 = Mixed market conditions</p>
+              <p>• &lt;25 = Bitcoin Season (Bitcoin dominance)</p>
             </div>
           </div>
         </div>
 
-        {/* Mobile Card View */}
-        <div className="lg:hidden grid gap-3 max-h-80 overflow-y-auto">
-          {trending.map((crypto) => (
-            <div
-              key={crypto.id}
-              className="bg-black/20 border border-crypto-silver/20 rounded-lg p-4 hover:bg-black/30 transition-colors"
+        {/* ETF Netflows */}
+        <div>
+          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <BarChart3 className="w-5 h-5 text-green-400" />
+            ETF Net Flows
+            <button
+              onClick={openETFPage}
+              className="ml-auto text-xs text-green-400 hover:text-green-300 transition-colors"
             >
-              <div className="flex items-center justify-between mb-3">
-                <div 
-                  onClick={() => openCoinMarketCap(crypto.slug)}
-                  className="flex items-center gap-3 cursor-pointer hover:text-blue-400 transition-colors"
-                >
-                  <span className="text-gray-400 font-medium">#{crypto.cmc_rank}</span>
-                  <div className="w-8 h-8 bg-gradient-to-r from-gray-600 to-gray-700 rounded-full flex items-center justify-center">
-                    <span className="text-white font-bold text-xs">{crypto.symbol.substring(0, 2)}</span>
-                  </div>
+              View All ETFs →
+            </button>
+          </h3>
+          
+          <div className="space-y-3">
+            {etfNetflows.map((etf, index) => (
+              <div key={etf.symbol} className="bg-black/20 border border-crypto-silver/20 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
                   <div>
-                    <p className="font-semibold text-white">{crypto.name}</p>
-                    <p className="text-sm text-gray-400">{crypto.symbol}</p>
+                    <h4 className="font-semibold text-white text-sm sm:text-base">{etf.symbol}</h4>
+                    <p className="text-xs text-gray-400 truncate">{etf.name}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold text-white text-sm">{formatCurrency(etf.aum)}</p>
+                    <p className="text-xs text-gray-400">AUM</p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="font-semibold text-white">{formatCurrency(crypto.quote.USD.price)}</p>
-                  <p className={`text-sm font-medium ${getPercentageColor(crypto.quote.USD.percent_change_24h)}`}>
-                    {formatPercentage(crypto.quote.USD.percent_change_24h)}
-                  </p>
+                
+                <div className="grid grid-cols-3 gap-3 text-sm">
+                  <div className="text-center">
+                    <p className="text-gray-400 text-xs mb-1">24h Flow</p>
+                    <p className={`font-medium ${getPercentageColor(etf.net_flow_24h)}`}>
+                      {formatNetflow(etf.net_flow_24h)}
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-gray-400 text-xs mb-1">7d Flow</p>
+                    <p className={`font-medium ${getPercentageColor(etf.net_flow_7d)}`}>
+                      {formatNetflow(etf.net_flow_7d)}
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-gray-400 text-xs mb-1">30d Flow</p>
+                    <p className={`font-medium ${getPercentageColor(etf.net_flow_30d)}`}>
+                      {formatNetflow(etf.net_flow_30d)}
+                    </p>
+                  </div>
                 </div>
               </div>
-              
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-gray-400">7d Change:</span>
-                  <span className={`ml-2 font-medium ${getPercentageColor(crypto.quote.USD.percent_change_7d || 0)}`}>
-                    {formatPercentage(crypto.quote.USD.percent_change_7d || 0)}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-gray-400">Market Cap:</span>
-                  <span className="ml-2 font-medium text-white">{formatCurrency(crypto.quote.USD.market_cap)}</span>
-                </div>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </div>

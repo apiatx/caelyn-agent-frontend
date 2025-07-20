@@ -375,10 +375,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const overview = await marketOverviewService.getMarketOverview();
       
       console.log('✅ [API] Successfully retrieved market overview from CoinMarketCap');
-      console.log('📊 [API] Global metrics sample:', {
+      console.log('📊 [API] Market overview sample:', {
         totalMarketCap: overview.globalMetrics?.quote?.USD?.total_market_cap,
         btcDominance: overview.globalMetrics?.btc_dominance,
-        trendingCount: overview.trending?.length
+        altSeasonIndex: overview.altSeasonIndex?.index_value,
+        etfCount: overview.etfNetflows?.length
       });
       
       res.json(overview);
