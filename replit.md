@@ -341,3 +341,4 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Enhanced Dashboard**: Added two new Mobula-powered sections to main dashboard for comprehensive crypto tracking
 - **Real-time Pricing**: Portfolio tracker shows live token balances, USD values, and individual asset breakdowns
 - **Professional Interface**: Designed glassmorphism UI components matching platform aesthetic for Mobula features
+- **Elfa.ai Integration**: Added Elfa.ai Token Leaderboard iframe (https://app.elfa.ai/leaderboard/token) to dashboard

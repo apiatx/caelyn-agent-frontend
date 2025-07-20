@@ -132,7 +132,35 @@ export default function CryptoDashboardSection() {
         </div>
       </GlassCard>
 
-{/* Artemis Analytics Netflows */}
+{/* Elfa.ai Token Leaderboard */}
+      <GlassCard className="p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
+            <TrendingUp className="w-4 h-4 text-white" />
+          </div>
+          <h3 className="text-xl font-semibold text-white">Elfa.ai Token Leaderboard</h3>
+          <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
+            AI ANALYTICS
+          </Badge>
+          <button
+            onClick={() => openInNewTab('https://app.elfa.ai/leaderboard/token')}
+            className="ml-auto text-purple-400 hover:text-purple-300 text-sm"
+          >
+            Open in New Tab →
+          </button>
+        </div>
+        <div className="w-full">
+          <iframe
+            src="https://app.elfa.ai/leaderboard/token"
+            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+            title="Elfa.ai Token Leaderboard"
+            frameBorder="0"
+            loading="lazy"
+          />
+        </div>
+      </GlassCard>
+
+      {/* Artemis Analytics Netflows */}
       <GlassCard className="p-6">
         <div className="flex items-center gap-2 mb-4">
           <div className="w-6 h-6 bg-cyan-500 rounded-full flex items-center justify-center">
