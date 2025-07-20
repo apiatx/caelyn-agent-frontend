@@ -110,10 +110,14 @@ export default function BaseSection() {
         </div>
         <div className="w-full">
           <iframe
-            src="https://dexscreener.com/base"
+            src="https://dexscreener.com/base?theme=dark"
             className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
             title="DexScreener Base Network"
             sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+            style={{
+              background: '#000000',
+              colorScheme: 'dark'
+            }}
           />
         </div>
       </GlassCard>

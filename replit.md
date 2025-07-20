@@ -328,4 +328,5 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Specialized Analytics Links**: "More Analytics" section with CMC Leaderboard, CMC Indicators, Altcoin Volume Timeframes, others.d chart, Open Interest, and SoSo Value
 - **Custom Chart Integration**: Replaced crypto screener with custom TradingView XRP chart using specific chart URL
 - **Streamlined Dashboard**: Removed DexScreener iframe to maintain focus on core analytics widgets
+- **DexScreener Dark Mode**: Enabled dark theme for Base and Solana DexScreener iframes using ?theme=dark parameter
 - **Comprehensive Dashboard**: Dashboard combines live trading widgets with specialized analytics access for professional crypto analysis
