@@ -385,4 +385,5 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Terminal.co Analytics**: Added Terminal.co Base analytics iframe positioned underneath DexScreener section
 - **BlockCreeper Explorer**: Added blockchain explorer iframe for detailed transaction and block analysis
 - **Section Reorganization**: Moved Bankr.bot Terminal to bottom of page for better flow
+- **Social Sentiment Removal**: Removed Base Social Sentiment section to streamline page layout
 - **DeFi Trading Suite**: Base page now features comprehensive DEX access with both BASE-native and multi-chain trading options

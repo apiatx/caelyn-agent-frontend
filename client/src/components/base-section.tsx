@@ -1,8 +1,5 @@
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { TrendingUp, MessageCircle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { useSocialSentiment } from "@/hooks/use-real-time-data";
 
 
 interface DashboardData {
@@ -49,13 +46,6 @@ const GlassCard = ({ children, className = "" }: { children: React.ReactNode; cl
 );
 
 export default function BaseSection() {
-  // Use real-time AI data hooks for social sentiment
-  const socialSentimentQuery = useSocialSentiment();
-  
-  const socialSentiment = socialSentimentQuery.data || [];
-  
-  const loadingSocial = socialSentimentQuery.isLoading;
-  
   const { data: dashboardData, isLoading: loadingDashboard } = useQuery<DashboardData>({
     queryKey: ['/api/dashboard'],
     refetchInterval: 300000 // Refresh every 5 minutes
@@ -236,67 +226,6 @@ export default function BaseSection() {
               colorScheme: 'dark'
             }}
           />
-        </div>
-      </GlassCard>
-
-      {/* Base Social Sentiment */}
-      <GlassCard className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-white flex items-center">
-            <MessageCircle className="w-4 h-4 mr-2" />
-            Base Social Sentiment
-          </h3>
-          <div className="flex items-center space-x-2">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
-              TRENDING
-            </Badge>
-          </div>
-        </div>
-        <div className="space-y-3">
-          {loadingSocial ? (
-            <div className="text-center py-4">
-              <MessageCircle className="w-6 h-6 text-crypto-silver mx-auto mb-2 animate-spin" />
-              <p className="text-crypto-silver text-sm">Analyzing social sentiment...</p>
-            </div>
-          ) : (
-            Array.isArray(socialSentiment) && socialSentiment
-              .filter(pulse => pulse && typeof pulse === 'object' && pulse.platform === 'base-sentiment')
-              .slice(0, 6)
-              .map((pulse, index) => (
-                <a 
-                  key={`sentiment-${index}-${pulse.ticker || pulse.token || Math.random()}`} 
-                  href={`https://x.com/search?q=$${(pulse.ticker || pulse.token || '').toLowerCase()}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer group"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center text-xs font-bold">
-                      B
-                    </div>
-                    <div>
-                      <div className="font-medium text-white group-hover:text-blue-400 transition-colors">${pulse.ticker || pulse.token || 'Unknown'}</div>
-                      <div className="text-xs text-crypto-silver">Trending Score: {pulse.trendingScore ? Number(pulse.trendingScore).toFixed(0) : 'N/A'}</div>
-                    </div>
-                    {(pulse.trendingScore || 0) > 70 && (
-                      <TrendingUp className="w-4 h-4 text-orange-400" />
-                    )}
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-medium text-white">
-                      {(pulse.mentions || 0).toLocaleString()} mentions
-                    </div>
-                    <div className={`text-xs font-medium ${
-                      pulse.sentiment === 'positive' ? 'text-green-400' : 
-                      pulse.sentiment === 'negative' ? 'text-red-400' : 'text-yellow-400'
-                    }`}>
-                      {pulse.sentiment || 'neutral'} sentiment
-                    </div>
-                  </div>
-                </a>
-              ))
-          )}
         </div>
       </GlassCard>
 
