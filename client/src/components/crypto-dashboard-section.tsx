@@ -103,18 +103,18 @@ export default function CryptoDashboardSection() {
         </div>
       </GlassCard>
 
-      {/* TradingView Crypto Market Overview */}
+      {/* TradingView XRP Chart */}
       <GlassCard className="p-6">
         <div className="flex items-center gap-2 mb-4">
           <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
             <BarChart3 className="w-4 h-4 text-white" />
           </div>
-          <h3 className="text-xl font-semibold text-white">TradingView Crypto Screener</h3>
+          <h3 className="text-xl font-semibold text-white">TradingView XRP Chart</h3>
           <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-            MARKET SCREENER
+            XRP
           </Badge>
           <button
-            onClick={() => openInNewTab('https://www.tradingview.com/screener/')}
+            onClick={() => openInNewTab('https://www.tradingview.com/chart/e5l95XgZ/?symbol=BITSTAMP%3AXRPUSD')}
             className="ml-auto text-green-400 hover:text-green-300 text-sm"
           >
             Open in New Tab →
@@ -122,9 +122,9 @@ export default function CryptoDashboardSection() {
         </div>
         <div className="w-full">
           <iframe
-            src="https://www.tradingview.com/widgetembed/?frameElementId=tradingview_screener&locale=en&colorTheme=dark&isTransparent=false&autosize=false&width=100%25&height=600&utm_source=localhost&utm_medium=widget_new&utm_campaign=screener&page-uri=localhost"
+            src="https://www.tradingview.com/chart/e5l95XgZ/?symbol=BITSTAMP%3AXRPUSD"
             className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            title="TradingView Crypto Screener"
+            title="TradingView XRP Chart"
             sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
           />
         </div>
