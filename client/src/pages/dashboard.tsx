@@ -23,8 +23,45 @@ export default function Dashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-crypto-silver to-white rounded-lg flex items-center justify-center">
-                <ChartLine className="text-crypto-black text-lg" />
+              <div className="w-10 h-10 bg-gradient-to-r from-pink-400 to-pink-600 rounded-lg flex items-center justify-center">
+                <svg 
+                  width="24" 
+                  height="24" 
+                  viewBox="0 0 100 100" 
+                  className="text-white"
+                >
+                  {/* Moo Deng's body */}
+                  <ellipse cx="50" cy="65" rx="25" ry="18" fill="#FFB6C1" stroke="#FF69B4" strokeWidth="2"/>
+                  
+                  {/* Moo Deng's head */}
+                  <circle cx="50" cy="40" r="20" fill="#FFB6C1" stroke="#FF69B4" strokeWidth="2"/>
+                  
+                  {/* Eyes */}
+                  <circle cx="43" cy="35" r="3" fill="#000"/>
+                  <circle cx="57" cy="35" r="3" fill="#000"/>
+                  <circle cx="44" cy="34" r="1" fill="#FFF"/>
+                  <circle cx="58" cy="34" r="1" fill="#FFF"/>
+                  
+                  {/* Snout */}
+                  <ellipse cx="50" cy="45" rx="6" ry="4" fill="#FF91A4"/>
+                  
+                  {/* Nostrils */}
+                  <ellipse cx="48" cy="44" rx="1" ry="1.5" fill="#000"/>
+                  <ellipse cx="52" cy="44" rx="1" ry="1.5" fill="#000"/>
+                  
+                  {/* Ears */}
+                  <ellipse cx="35" cy="30" rx="4" ry="8" fill="#FFB6C1" stroke="#FF69B4" strokeWidth="1"/>
+                  <ellipse cx="65" cy="30" rx="4" ry="8" fill="#FFB6C1" stroke="#FF69B4" strokeWidth="1"/>
+                  
+                  {/* Legs */}
+                  <ellipse cx="35" cy="80" rx="4" ry="8" fill="#FFB6C1"/>
+                  <ellipse cx="45" cy="80" rx="4" ry="8" fill="#FFB6C1"/>
+                  <ellipse cx="55" cy="80" rx="4" ry="8" fill="#FFB6C1"/>
+                  <ellipse cx="65" cy="80" rx="4" ry="8" fill="#FFB6C1"/>
+                  
+                  {/* Tail */}
+                  <ellipse cx="25" cy="65" rx="3" ry="6" fill="#FFB6C1" transform="rotate(-30 25 65)"/>
+                </svg>
               </div>
               <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-crypto-silver bg-clip-text text-transparent">
                 CryptoVault Pro
