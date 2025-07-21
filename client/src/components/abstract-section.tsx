@@ -56,47 +56,19 @@ export default function AbstractSection() {
         </div>
       </GlassCard>
 
-      {/* PudgyInvest */}
-      <GlassCard className="p-3 sm:p-4 lg:p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-            <span className="text-white text-sm font-bold">P</span>
-          </div>
-          <h3 className="text-xl font-semibold text-white">PudgyInvest</h3>
-          <Badge className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-400 border-purple-500/30 text-xs">
-            INVESTMENT
-          </Badge>
-        </div>
-        
-        <div className="grid grid-cols-1">
-          <button
-            onClick={() => openInNewTab('https://pudgyinvest.com/')}
-            className="p-4 bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-lg hover:from-purple-500/20 hover:to-pink-500/20 transition-colors"
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-bold">P</span>
-              </div>
-              <h4 className="text-purple-400 font-semibold">PudgyInvest Platform</h4>
-            </div>
-            <p className="text-gray-400 text-sm">Investment platform for Abstract ecosystem</p>
-          </button>
-        </div>
-      </GlassCard>
-
-      {/* Abstract Portal Link */}
+      {/* Resources */}
       <GlassCard className="p-3 sm:p-4 lg:p-6">
         <div className="flex items-center gap-2 mb-4">
           <div className="w-6 h-6 bg-indigo-500 rounded-full flex items-center justify-center">
             <Layers className="w-4 h-4 text-white" />
           </div>
-          <h3 className="text-xl font-semibold text-white">Abstract Portal</h3>
+          <h3 className="text-xl font-semibold text-white">Resources</h3>
           <Badge className="bg-indigo-500/20 text-indigo-400 border-indigo-500/30 text-xs">
             DISCOVER
           </Badge>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <button
             onClick={() => openInNewTab('https://portal.abs.xyz/discover')}
             className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-lg hover:bg-indigo-500/20 transition-colors"
@@ -121,6 +93,19 @@ export default function AbstractSection() {
               <h4 className="text-blue-400 font-semibold">Abstract_Eco</h4>
             </div>
             <p className="text-gray-400 text-sm">Follow Abstract ecosystem updates</p>
+          </button>
+          
+          <button
+            onClick={() => openInNewTab('https://pudgyinvest.com/')}
+            className="p-4 bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-lg hover:from-purple-500/20 hover:to-pink-500/20 transition-colors"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-sm font-bold">P</span>
+              </div>
+              <h4 className="text-purple-400 font-semibold">PudgyInvest</h4>
+            </div>
+            <p className="text-gray-400 text-sm">Investment platform for Abstract ecosystem</p>
           </button>
         </div>
       </GlassCard>
