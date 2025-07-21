@@ -58,30 +58,29 @@ export default function AbstractSection() {
 
       {/* PudgyInvest */}
       <GlassCard className="p-3 sm:p-4 lg:p-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-              <span className="text-white text-xs sm:text-sm font-bold">P</span>
-            </div>
-            <h3 className="text-lg sm:text-xl font-semibold text-white">PudgyInvest</h3>
-            <Badge className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-400 border-purple-500/30 text-xs">
-              INVESTMENT
-            </Badge>
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+            <span className="text-white text-sm font-bold">P</span>
           </div>
+          <h3 className="text-xl font-semibold text-white">PudgyInvest</h3>
+          <Badge className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-400 border-purple-500/30 text-xs">
+            INVESTMENT
+          </Badge>
+        </div>
+        
+        <div className="grid grid-cols-1">
           <button
             onClick={() => openInNewTab('https://pudgyinvest.com/')}
-            className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm sm:ml-auto"
+            className="p-4 bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-lg hover:from-purple-500/20 hover:to-pink-500/20 transition-colors"
           >
-            Open in New Tab →
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-sm font-bold">P</span>
+              </div>
+              <h4 className="text-purple-400 font-semibold">PudgyInvest Platform</h4>
+            </div>
+            <p className="text-gray-400 text-sm">Investment platform for Abstract ecosystem</p>
           </button>
-        </div>
-        <div className="w-full">
-          <iframe
-            src="https://pudgyinvest.com/"
-            className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
-            title="PudgyInvest Platform"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-          />
         </div>
       </GlassCard>
 
