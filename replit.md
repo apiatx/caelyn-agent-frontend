@@ -341,10 +341,17 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Clean Integration**: Portfolio page now features single DexScreener iframe for authentic portfolio tracking
 - **User Experience**: Simplified portfolio interface prioritizing external platform integration over in-house features
 
+### July 21, 2025 - Charts Section & PENGU Integration
+- **Charts Page Addition**: Created new "Charts" section between Alpha and Base featuring DexScreener multicharts
+- **DexScreener Multicharts**: Added comprehensive multicharts iframe for multi-chain market analysis
+- **PENGU Chart Integration**: Added TradingView PENGU chart to Dashboard positioned after XRP chart
+- **Navigation Expansion**: Updated both desktop and mobile navigation to include Charts tab with LineChart icon
+- **Enhanced Trading Tools**: Charts section provides advanced charting capabilities with dark theme integration
+
 ### July 21, 2025 - Navigation Simplification & News Integration
 - **News Section Addition**: Added dedicated News section to bottom of Dashboard page with Cointelegraph integration
 - **Research & Whale Watch Removal**: Completely removed Research and Whale Watch pages from navigation
-- **Streamlined Navigation**: Platform now focuses on 8 core tabs: Dashboard, Alpha, Base, Bittensor, Abstract, Solana, DeFi, Portfolio
+- **Streamlined Navigation**: Platform now focuses on 9 core tabs: Dashboard, Alpha, Charts, Base, Bittensor, Abstract, Solana, DeFi, Portfolio
 - **Cointelegraph Migration**: Moved Cointelegraph news access from Research page to Dashboard News section
 - **Interface Cleanup**: Simplified navigation reduces cognitive load and focuses on essential platform features
 - **News Integration**: Dashboard now provides direct access to crypto news alongside market analytics
