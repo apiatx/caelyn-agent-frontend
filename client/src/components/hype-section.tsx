@@ -141,23 +141,28 @@ export function HypeSection() {
         <div className="mb-6">
           <div className="flex items-center justify-between mb-3">
             <h4 className="text-md font-medium text-green-400">Liqd.ag</h4>
-            <a
-              href="https://liqd.ag/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-green-400 hover:text-green-300 transition-colors flex items-center gap-1"
-            >
-              Open Full View <ExternalLink className="w-3 h-3" />
-            </a>
           </div>
-          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-            <iframe
-              src="https://liqd.ag/"
-              className="w-full h-[600px] border-0"
-              title="Liqd.ag"
-              allow="clipboard-read; clipboard-write"
-              sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation-by-user-activation"
-            />
+          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg p-8">
+            <div className="text-center">
+              <div className="mb-4">
+                <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <span className="text-white font-bold text-xl">L</span>
+                </div>
+                <h3 className="text-lg font-semibold text-white mb-2">Liqd.ag</h3>
+                <p className="text-gray-400 text-sm mb-4">
+                  Advanced liquidity management and analytics platform for HyperEVM DeFi
+                </p>
+              </div>
+              <a
+                href="https://liqd.ag/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 hover:scale-105"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Open Liqd.ag Platform
+              </a>
+            </div>
           </div>
         </div>
         

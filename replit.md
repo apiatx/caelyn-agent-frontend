@@ -377,7 +377,7 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Hyperdash Analytics Addition**: Added https://hyperdash.info/analytics iframe below trading interface
 - **HyperEVM DeFi Integration**: Added https://dexscreener.com/hyperevm iframe as third section for DeFi ecosystem coverage
 - **HyperSwap Integration**: Added https://app.hyperswap.exchange/#/swap iframe for DEX trading functionality
-- **Liqd.ag Integration**: Added https://liqd.ag/ iframe for liquidity management and analytics
+- **Liqd.ag Integration**: Added https://liqd.ag/ as clickable button due to iframe restrictions (liquidlaunch.app X-Frame-Options)
 - **Dark Mode DexScreener**: Enabled dark theme for HyperEVM DexScreener using ?theme=dark parameter
 - **Comprehensive HyperEVM Suite**: HyperEVM section now features DexScreener analytics, HyperSwap trading, and Liqd.ag liquidity tools
 - **Triple Interface Design**: Hype page features HYPE trading, Hyperliquid analytics, and complete HyperEVM DeFi ecosystem
