@@ -38,6 +38,17 @@ export default function DeFiSection() {
               <div className="text-sm text-crypto-silver">Cross-chain asset bridging</div>
             </div>
           </Button>
+          <Button
+            variant="outline"
+            onClick={() => openInNewTab('https://aerodrome.finance/swap?from=eth&to=0x940181a94a35a4569e4529a3cdfb74e38fd98631&chain0=8453&chain1=8453')}
+            className="bg-black/20 border-crypto-silver/20 hover:bg-green-500/20 hover:border-green-500/30 text-white justify-start p-4 h-auto"
+          >
+            <ArrowLeftRight className="w-4 h-4 mr-2" />
+            <div className="text-left">
+              <div className="font-semibold">Aerodrome Finance</div>
+              <div className="text-sm text-crypto-silver">BASE network DEX trading</div>
+            </div>
+          </Button>
         </div>
       </div>
 

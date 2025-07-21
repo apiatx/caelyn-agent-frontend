@@ -406,6 +406,14 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Smart Wallets Expansion**: Smart Wallets section now provides access to both HyperLiquid and DeBank whale tracking platforms
 - **Enhanced Trader Analytics**: Users can now access comprehensive whale trading data across multiple platforms and networks
 
+### July 21, 2025 - Navigation Restructure & Aerodrome Migration
+- **Aerodrome Iframe Removal**: Removed Aerodrome Finance iframe from Base page for cleaner interface
+- **Aerodrome Link Addition**: Added Aerodrome Finance as clickable link in DeFi page Swap section
+- **Hype Navigation Reordering**: Moved Hype page between Bittensor and Abstract in both desktop and mobile navigation
+- **Final Navigation Order**: Dashboard | Alpha | Base | Bittensor | Hype | Abstract | Solana | DeFi | Portfolio
+- **Streamlined Base Page**: Base page now focuses on analytics and ecosystem platforms without large DEX iframes
+- **Enhanced DeFi Swap Section**: DeFi page Swap section now includes both Relay Bridge and Aerodrome Finance links
+
 ### July 21, 2025 - Content Reorganization & Interface Cleanup
 - **Compact Bridge Design**: Converted large Bridge interface to small link button format on DeFi page
 - **Scalable Bridge Layout**: Created responsive grid structure ready for multiple bridge platform additions

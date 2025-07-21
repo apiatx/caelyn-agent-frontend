@@ -106,6 +106,12 @@ export default function Dashboard() {
               <Brain className="w-4 h-4 mr-2 inline" />Bittensor
             </button>
             <button
+              onClick={() => window.location.href = "/hype"}
+              className="flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver"
+            >
+              <TrendingUp className="w-4 h-4 mr-2 inline" />Hype
+            </button>
+            <button
               onClick={() => handleTabChange("abstract")}
               className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
                 activeTab === "abstract"
@@ -144,12 +150,6 @@ export default function Dashboard() {
               }`}
             >
               <Wallet className="w-4 h-4 mr-2 inline" />Portfolio
-            </button>
-            <button
-              onClick={() => window.location.href = "/hype"}
-              className="flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver"
-            >
-              <TrendingUp className="w-4 h-4 mr-2 inline" />Hype
             </button>
 
           </div>
@@ -199,6 +199,12 @@ export default function Dashboard() {
                 <Brain className="w-4 h-4 mr-1 inline" />Bittensor
               </button>
               <button
+                onClick={() => window.location.href = "/hype"}
+                className="whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver"
+              >
+                <TrendingUp className="w-4 h-4 mr-1 inline" />Hype
+              </button>
+              <button
                 onClick={() => handleTabChange("abstract")}
                 className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                   activeTab === "abstract"
@@ -237,12 +243,6 @@ export default function Dashboard() {
                 }`}
               >
                 <Wallet className="w-4 h-4 mr-1 inline" />Portfolio
-              </button>
-              <button
-                onClick={() => window.location.href = "/hype"}
-                className="whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver"
-              >
-                <TrendingUp className="w-4 h-4 mr-1 inline" />Hype
               </button>
 
             </div>
