@@ -258,82 +258,92 @@ export default function CryptoDashboardSection() {
         </div>
       </GlassCard>
 
-      {/* Artemis Analytics */}
+      {/* Crypto Market Overview */}
+      <div className="space-y-4">
+        <div className="text-center px-3 sm:px-0">
+          <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-2">Crypto Market Overview</h2>
+          <p className="text-sm sm:text-base text-crypto-silver">Global market metrics and key indicators</p>
+        </div>
+        <MarketOverviewSection />
+      </div>
+
+      {/* Analytics */}
       <GlassCard className="p-3 sm:p-4 lg:p-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
           <div className="flex items-center gap-2">
             <div className="w-5 h-5 sm:w-6 sm:h-6 bg-cyan-500 rounded-full flex items-center justify-center">
-              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+              <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
             </div>
-            <h3 className="text-lg sm:text-xl font-semibold text-white">Artemis Analytics</h3>
+            <h3 className="text-lg sm:text-xl font-semibold text-white">Analytics</h3>
             <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 text-xs">
-              ANALYTICS
+              COMPREHENSIVE
             </Badge>
           </div>
-          <button
-            onClick={() => openInNewTab('https://app.artemisanalytics.com/home')}
-            className="text-cyan-400 hover:text-cyan-300 text-xs sm:text-sm sm:ml-auto"
-          >
-            Open in New Tab →
-          </button>
         </div>
-        <div className="w-full">
-          <iframe
-            src="https://app.artemisanalytics.com/home"
-            className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
-            title="Artemis Analytics"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-          />
-        </div>
-      </GlassCard>
 
-      {/* Market Overview from CoinMarketCap */}
-      <MarketOverviewSection />
-
-      {/* More Analytics */}
-      <GlassCard className="p-3 sm:p-4 lg:p-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-red-500 rounded-full flex items-center justify-center">
-              <DollarSign className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+        {/* Artemis Analytics Iframe */}
+        <div className="mb-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-cyan-500 rounded-full flex items-center justify-center">
+                <TrendingUp className="w-2.5 h-2.5 text-white" />
+              </div>
+              <h4 className="text-base font-semibold text-white">Artemis Analytics</h4>
+              <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 text-xs">
+                LIVE
+              </Badge>
             </div>
-            <h3 className="text-lg sm:text-xl font-semibold text-white">More Analytics</h3>
-            <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-xs">
-              QUICK ACCESS
-            </Badge>
+            <button
+              onClick={() => openInNewTab('https://app.artemisanalytics.com/home')}
+              className="text-cyan-400 hover:text-cyan-300 text-xs sm:text-sm sm:ml-auto"
+            >
+              Open Full View →
+            </button>
+          </div>
+          <div className="w-full">
+            <iframe
+              src="https://app.artemisanalytics.com/home"
+              className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
+              title="Artemis Analytics"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+            />
           </div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-          <button
-            onClick={() => openInNewTab('https://coinmarketcap.com/')}
-            className="p-3 sm:p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
-          >
-            <h4 className="text-blue-400 font-semibold mb-1 text-sm sm:text-base">CMC Leaderboard</h4>
-            <p className="text-gray-400 text-xs sm:text-sm">Market Rankings</p>
-          </button>
 
-          <button
-            onClick={() => openInNewTab('https://charts.bitbo.io/index/')}
-            className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
-          >
-            <h4 className="text-purple-400 font-semibold mb-1">BitBo Charts</h4>
-            <p className="text-gray-400 text-sm">Crypto Indices</p>
-          </button>
-          <button
-            onClick={() => openInNewTab('https://coinalyze.net/futures-data/global-charts/')}
-            className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
-          >
-            <h4 className="text-orange-400 font-semibold mb-1">Open Interest</h4>
-            <p className="text-gray-400 text-sm">Futures Data</p>
-          </button>
-          <button
-            onClick={() => openInNewTab('https://sosovalue.com/assets/cryptoindex')}
-            className="p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-lg hover:bg-cyan-500/20 transition-colors"
-          >
-            <h4 className="text-cyan-400 font-semibold mb-1">SoSo Value</h4>
-            <p className="text-gray-400 text-sm">Crypto Index</p>
-          </button>
+        {/* Quick Access Analytics */}
+        <div>
+          <h4 className="text-base font-semibold text-white mb-4">Quick Access</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            <button
+              onClick={() => openInNewTab('https://coinmarketcap.com/')}
+              className="p-3 sm:p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+            >
+              <h5 className="text-blue-400 font-semibold mb-1 text-sm sm:text-base">CMC Leaderboard</h5>
+              <p className="text-gray-400 text-xs sm:text-sm">Market Rankings</p>
+            </button>
 
+            <button
+              onClick={() => openInNewTab('https://charts.bitbo.io/index/')}
+              className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
+            >
+              <h5 className="text-purple-400 font-semibold mb-1">BitBo Charts</h5>
+              <p className="text-gray-400 text-sm">Crypto Indices</p>
+            </button>
+            <button
+              onClick={() => openInNewTab('https://coinalyze.net/futures-data/global-charts/')}
+              className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
+            >
+              <h5 className="text-orange-400 font-semibold mb-1">Open Interest</h5>
+              <p className="text-gray-400 text-sm">Futures Data</p>
+            </button>
+            <button
+              onClick={() => openInNewTab('https://sosovalue.com/assets/cryptoindex')}
+              className="p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-lg hover:bg-cyan-500/20 transition-colors"
+            >
+              <h5 className="text-cyan-400 font-semibold mb-1">SoSo Value</h5>
+              <p className="text-gray-400 text-sm">Crypto Index</p>
+            </button>
+          </div>
         </div>
       </GlassCard>
 
