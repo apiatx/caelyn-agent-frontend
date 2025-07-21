@@ -10,11 +10,13 @@ import { coinMarketCapService } from './coinmarketcap-service';
 import { MarketOverviewService } from './market-overview-service';
 import { cmcPortfolioService } from './cmc-portfolio-service';
 import { coinbasePortfolioService } from './coinbase-portfolio-service';
+import { ETFService } from './etf-service';
 import { z } from "zod";
 import { insertPremiumAccessSchema } from "@shared/schema";
 
 const multiChainService = new MultiChainService();
 const marketOverviewService = new MarketOverviewService();
+const etfService = new ETFService();
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
@@ -424,6 +426,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('❌ [API] Failed to fetch market overview from CoinMarketCap:', error);
       res.status(500).json({ message: 'Failed to fetch market overview' });
+    }
+  });
+
+  // ETF Net Flows endpoint with twice-daily caching
+  app.get('/api/etf/flows', async (req, res) => {
+    try {
+      console.log('🔍 [API] Fetching ETF net flows data (cached twice daily)...');
+      const etfData = await etfService.getETFFlows();
+      
+      console.log(`✅ [API] Retrieved ETF flows - BTC: $${etfData.total_btc_flows}M, ETH: $${etfData.total_eth_flows}M`);
+      res.json(etfData);
+    } catch (error) {
+      console.error('❌ [API] Failed to fetch ETF flows:', error);
+      res.status(500).json({ message: 'Failed to fetch ETF flows data' });
     }
   });
 

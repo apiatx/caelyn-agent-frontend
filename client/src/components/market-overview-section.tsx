@@ -70,6 +70,28 @@ interface ETFNetflow {
   eth_percent_change: number;
 }
 
+interface ETFMetrics {
+  symbol: string;
+  name: string;
+  net_assets: number;
+  daily_flows: number;
+  ytd_flows: number;
+  market_cap: number;
+  price: number;
+  price_change_24h: number;
+  volume_24h: number;
+  last_updated: string;
+}
+
+interface ETFData {
+  btc_etfs: ETFMetrics[];
+  eth_etfs: ETFMetrics[];
+  total_btc_flows: number;
+  total_eth_flows: number;
+  last_updated: string;
+  cache_expires: string;
+}
+
 interface FearGreedData {
   index_value: number;
   timestamp: string;
@@ -104,6 +126,14 @@ export function MarketOverviewSection() {
     queryKey: ['/api/coinmarketcap/market-overview'],
     refetchInterval: 300000, // Refresh every 5 minutes
     staleTime: 240000 // 4 minutes
+  });
+
+  // Real-time ETF flows data (cached twice daily to preserve API credits)
+  const { data: etfData, isLoading: etfLoading } = useQuery<ETFData>({
+    queryKey: ['/api/etf/flows'],
+    refetchInterval: 43200000, // 12 hours (twice daily)
+    staleTime: 43200000, // 12 hours
+    retry: 2
   });
 
   const formatCurrency = (value: number) => {
@@ -506,11 +536,14 @@ export function MarketOverviewSection() {
           </div>
         </div>
 
-        {/* ETF Netflows */}
+        {/* Real ETF Net Flows from CoinMarketCap */}
         <div>
           <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-green-400" />
             ETF Net Flows
+            <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded-full border border-green-500/30">
+              CMC REAL-TIME
+            </span>
             <button
               onClick={openETFPage}
               className="ml-auto text-xs text-green-400 hover:text-green-300 transition-colors"
@@ -520,52 +553,69 @@ export function MarketOverviewSection() {
           </h3>
           
           <div className="bg-black/20 border border-crypto-silver/20 rounded-lg p-6">
-            {/* Total ETF Net Flow */}
-            <div className="text-center mb-6">
-              <p className="text-sm text-gray-400 mb-1">Total ETF Net Flow</p>
-              <p className={`text-2xl sm:text-3xl font-bold ${getPercentageColor(etfNetflows.total_netflow)}`}>
-                {formatNetflow(etfNetflows.total_netflow)}
-              </p>
-            </div>
-            
-            {/* BTC and ETH Breakdown */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="text-center p-4 bg-orange-500/5 border border-orange-500/20 rounded-lg">
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
-                    <span className="text-white font-bold text-xs">₿</span>
-                  </div>
-                  <span className="text-white font-semibold">BTC</span>
-                </div>
-                <p className={`text-xl font-bold ${getPercentageColor(etfNetflows.btc_netflow)}`}>
-                  {formatNetflow(etfNetflows.btc_netflow)}
-                </p>
-                <p className={`text-xs ${getPercentageColor(etfNetflows.btc_percent_change)}`}>
-                  {formatPercentage(etfNetflows.btc_percent_change)} 24h
-                </p>
+            {etfLoading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin w-6 h-6 border-2 border-green-400 border-t-transparent rounded-full mx-auto mb-2"></div>
+                <p className="text-sm text-gray-400">Loading real ETF data...</p>
               </div>
-              
-              <div className="text-center p-4 bg-blue-500/5 border border-blue-500/20 rounded-lg">
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                    <span className="text-white font-bold text-xs">Ξ</span>
-                  </div>
-                  <span className="text-white font-semibold">ETH</span>
+            ) : etfData ? (
+              <>
+                {/* Total ETF Net Flow */}
+                <div className="text-center mb-6">
+                  <p className="text-sm text-gray-400 mb-1">Total ETF Net Flow (Daily)</p>
+                  <p className={`text-2xl sm:text-3xl font-bold ${getPercentageColor(etfData.total_btc_flows + etfData.total_eth_flows)}`}>
+                    {formatNetflow(etfData.total_btc_flows + etfData.total_eth_flows)}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Last updated: {new Date(etfData.last_updated).toLocaleString()}
+                  </p>
                 </div>
-                <p className={`text-xl font-bold ${getPercentageColor(etfNetflows.eth_netflow)}`}>
-                  {formatNetflow(etfNetflows.eth_netflow)}
-                </p>
-                <p className={`text-xs ${getPercentageColor(etfNetflows.eth_percent_change)}`}>
-                  {formatPercentage(etfNetflows.eth_percent_change)} 24h
-                </p>
+                
+                {/* BTC and ETH Breakdown */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center p-4 bg-orange-500/5 border border-orange-500/20 rounded-lg">
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
+                        <span className="text-white font-bold text-xs">₿</span>
+                      </div>
+                      <span className="text-white font-semibold">BTC ETFs</span>
+                    </div>
+                    <p className={`text-xl font-bold ${getPercentageColor(etfData.total_btc_flows)}`}>
+                      {formatNetflow(etfData.total_btc_flows)}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      {etfData.btc_etfs.length} BTC ETFs tracked
+                    </p>
+                  </div>
+                  
+                  <div className="text-center p-4 bg-blue-500/5 border border-blue-500/20 rounded-lg">
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                        <span className="text-white font-bold text-xs">Ξ</span>
+                      </div>
+                      <span className="text-white font-semibold">ETH ETFs</span>
+                    </div>
+                    <p className={`text-xl font-bold ${getPercentageColor(etfData.total_eth_flows)}`}>
+                      {formatNetflow(etfData.total_eth_flows)}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      {etfData.eth_etfs.length} ETH ETFs tracked
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="mt-4 text-center">
+                  <p className="text-xs text-gray-400">
+                    Real-time data from CoinMarketCap API • Updates twice daily (8AM/8PM UTC)
+                  </p>
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-sm text-red-400">Unable to load ETF data</p>
+                <p className="text-xs text-gray-400 mt-1">Check API connection</p>
               </div>
-            </div>
-            
-            <div className="mt-4 text-center">
-              <p className="text-xs text-gray-400">
-                Net flows calculated from real-time Bitcoin and Ethereum performance data
-              </p>
-            </div>
+            )}
           </div>
         </div>
       </div>

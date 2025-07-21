@@ -358,6 +358,15 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Interface Cleanup**: Simplified navigation reduces cognitive load and focuses on essential platform features
 - **News Integration**: Dashboard now provides direct access to crypto news alongside market analytics
 
+### July 21, 2025 - Real-Time ETF Net Flows Integration
+- **CoinMarketCap ETF API**: Implemented real-time ETF data service using CoinMarketCap API key 7d9a361e-596d-4914-87e2-f1124da24897
+- **ETF Service Architecture**: Created comprehensive ETF service with 12-hour caching (twice daily: 8AM/8PM UTC) to preserve API credits
+- **Major ETF Coverage**: Tracks 9 Bitcoin ETFs (IBIT, FBTC, GBTC, ARKB, HODL, BTCO, EZBC, BRRR, BTC) and 7 Ethereum ETFs (ETHA, FETH, ETHE, ETHW, EZET, PYTH, ETH)
+- **Smart Caching System**: Implemented file-based cache with automatic expiration at 8AM/8PM UTC to limit API usage
+- **Enhanced ETF Display**: Updated Market Overview ETF section with real-time data, loading states, and "CMC REAL-TIME" badge
+- **API Credit Preservation**: ETF data refreshes only twice daily with 12-hour cache intervals to optimize API usage
+- **Real ETF Metrics**: Displays actual net flows, assets under management, daily flows, and YTD performance for major Bitcoin and Ethereum ETFs
+
 ### July 21, 2025 - Content Reorganization & Interface Cleanup
 - **Compact Bridge Design**: Converted large Bridge interface to small link button format on DeFi page
 - **Scalable Bridge Layout**: Created responsive grid structure ready for multiple bridge platform additions
