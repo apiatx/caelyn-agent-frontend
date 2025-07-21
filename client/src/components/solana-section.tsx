@@ -24,7 +24,7 @@ export default function SolanaSection() {
           <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
             <BarChart3 className="w-4 h-4 text-white" />
           </div>
-          <h3 className="text-xl font-semibold text-white">DexScreener Solana</h3>
+          <h3 className="text-xl font-semibold text-white">Trending</h3>
           <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
             LIVE CHARTS
           </Badge>

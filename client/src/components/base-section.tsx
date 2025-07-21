@@ -85,7 +85,7 @@ export default function BaseSection() {
           <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
             <span className="text-white text-xs font-bold">D</span>
           </div>
-          <h3 className="text-xl font-semibold text-white">DexScreener Base Network</h3>
+          <h3 className="text-xl font-semibold text-white">Trending</h3>
           <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs rounded-full font-medium">
             Live Data
           </span>
