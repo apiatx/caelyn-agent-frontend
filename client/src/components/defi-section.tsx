@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { DollarSign, TrendingUp, BarChart3, Brain } from "lucide-react";
+import { DollarSign, TrendingUp, BarChart3, Brain, ArrowLeftRight } from "lucide-react";
 
 // Glass card component for DeFi section
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
@@ -20,6 +20,44 @@ export default function DeFiSection() {
       <div className="text-center">
         <h2 className="text-3xl font-bold text-white mb-2">DeFi Analytics & Platforms</h2>
         <p className="text-crypto-silver">Comprehensive DeFi protocol access and portfolio management tools</p>
+      </div>
+
+      {/* Bridge Section */}
+      <div className="space-y-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
+            <ArrowLeftRight className="text-white text-xl" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-white">Bridge</h2>
+            <p className="text-crypto-silver">Cross-Chain Asset Bridging Solutions</p>
+          </div>
+        </div>
+
+        {/* Relay Link Bridge */}
+        <GlassCard className="p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
+              <ArrowLeftRight className="w-4 h-4 text-white" />
+            </div>
+            <h3 className="text-xl font-semibold text-white">Relay Bridge</h3>
+            <Badge className="bg-gradient-to-r from-blue-500/20 to-cyan-500/20 text-blue-400 border-blue-500/30">
+              CROSS-CHAIN BRIDGE
+            </Badge>
+            <button
+              onClick={() => openInNewTab('https://www.relay.link/bridge')}
+              className="text-blue-400 hover:text-blue-300 text-sm ml-auto"
+            >
+              Open Full View →
+            </button>
+          </div>
+          <iframe
+            src="https://www.relay.link/bridge"
+            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+            title="Relay Bridge"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+          />
+        </GlassCard>
       </div>
 
       {/* Peapods Finance */}
