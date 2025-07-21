@@ -25,23 +25,19 @@ export default function MarketResearchSection() {
           </Button>
         </div>
         
-        <div className="rounded-xl overflow-hidden border border-crypto-silver/20 bg-gradient-to-br from-blue-500/10 to-purple-600/10 backdrop-blur-sm">
-          <div className="flex flex-col items-center justify-center h-[400px] p-8 text-center">
-            <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mb-6">
-              <ExternalLink className="w-8 h-8 text-white" />
-            </div>
-            <h3 className="text-xl font-semibold text-white mb-3">
-              Latest Crypto News
-            </h3>
-            <p className="text-crypto-silver mb-6 max-w-md">
-              Access the latest cryptocurrency news, market analysis, and blockchain insights from Cointelegraph's comprehensive coverage.
-            </p>
+        <div className="space-y-4">
+          <h3 className="text-xl font-semibold text-white mb-4">News Sources</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <Button
+              variant="outline"
               onClick={() => window.open('https://cointelegraph.com/category/latest-news', '_blank')}
-              className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-3"
+              className="bg-black/20 border-crypto-silver/20 hover:bg-blue-500/20 hover:border-blue-500/30 text-white justify-start p-4 h-auto"
             >
               <ExternalLink className="w-4 h-4 mr-2" />
-              Read Latest News
+              <div className="text-left">
+                <div className="font-semibold">Cointelegraph</div>
+                <div className="text-sm text-crypto-silver">Latest crypto news & analysis</div>
+              </div>
             </Button>
           </div>
         </div>
