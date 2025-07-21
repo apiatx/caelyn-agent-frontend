@@ -41,7 +41,7 @@ export default function AlphaSection() {
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <button
-            onClick={() => openInNewTab('https://app.elfa.ai/leaderboard/token')}
+            onClick={() => openInNewTab('https://app.elfa.ai/leaderboard/token?sortBy=mindshare:change')}
             className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
           >
             <div className="flex items-center gap-2 mb-2">
