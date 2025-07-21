@@ -1,5 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
+import { Globe, ArrowLeftRight } from "lucide-react";
 
 
 interface DashboardData {
@@ -196,156 +197,182 @@ export default function BaseSection() {
         </div>
       </GlassCard>
 
-      {/* Aerodrome Finance Swap */}
-      <GlassCard className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-6 h-6 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center">
-            <span className="text-white text-xs font-bold">A</span>
+      {/* DEX Section */}
+      <div className="space-y-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-blue-500 rounded-xl flex items-center justify-center">
+            <ArrowLeftRight className="text-white text-xl" />
           </div>
-          <h3 className="text-xl font-semibold text-white">Aerodrome Finance Swap</h3>
-          <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-full font-medium">
-            BASE DEX
-          </span>
-          <button
-            onClick={() => window.open('https://aerodrome.finance/swap?from=eth&to=0x940181a94a35a4569e4529a3cdfb74e38fd98631&chain0=8453&chain1=8453', '_blank')}
-            className="ml-auto text-green-400 hover:text-green-300 text-xs"
-          >
-            Open in New Tab →
-          </button>
+          <div>
+            <h2 className="text-2xl font-bold text-white">DEX</h2>
+            <p className="text-crypto-silver">Decentralized Exchange Trading Platforms</p>
+          </div>
         </div>
-        <div className="w-full">
-          <iframe
-            src="https://aerodrome.finance/swap?from=eth&to=0x940181a94a35a4569e4529a3cdfb74e38fd98631&chain0=8453&chain1=8453"
-            className="w-full h-[600px] sm:h-[700px] lg:h-[800px] rounded-lg border border-crypto-silver/20"
-            title="Aerodrome Finance Swap"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-top-navigation"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-            style={{
-              background: 'transparent',
-              colorScheme: 'dark'
-            }}
-          />
-        </div>
-      </GlassCard>
 
-      {/* Uniswap DEX */}
-      <GlassCard className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-6 h-6 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full flex items-center justify-center">
-            <span className="text-white text-xs font-bold">U</span>
+        {/* Aerodrome Finance Swap */}
+        <GlassCard className="p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-6 h-6 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center">
+              <span className="text-white text-xs font-bold">A</span>
+            </div>
+            <h3 className="text-xl font-semibold text-white">Aerodrome Finance Swap</h3>
+            <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-full font-medium">
+              BASE DEX
+            </span>
+            <button
+              onClick={() => window.open('https://aerodrome.finance/swap?from=eth&to=0x940181a94a35a4569e4529a3cdfb74e38fd98631&chain0=8453&chain1=8453', '_blank')}
+              className="ml-auto text-green-400 hover:text-green-300 text-xs"
+            >
+              Open in New Tab →
+            </button>
           </div>
-          <h3 className="text-xl font-semibold text-white">Uniswap DEX</h3>
-          <span className="px-2 py-1 bg-pink-500/20 text-pink-400 text-xs rounded-full font-medium">
-            MULTI-CHAIN
-          </span>
-          <button
-            onClick={() => window.open('https://app.uniswap.org/', '_blank')}
-            className="ml-auto text-pink-400 hover:text-pink-300 text-xs"
-          >
-            Open in New Tab →
-          </button>
-        </div>
-        <div className="w-full">
-          <iframe
-            src="https://app.uniswap.org/"
-            className="w-full h-[600px] sm:h-[700px] lg:h-[800px] rounded-lg border border-crypto-silver/20"
-            title="Uniswap DEX"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-top-navigation"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-            style={{
-              background: 'transparent',
-              colorScheme: 'dark'
-            }}
-          />
-        </div>
-      </GlassCard>
+          <div className="w-full">
+            <iframe
+              src="https://aerodrome.finance/swap?from=eth&to=0x940181a94a35a4569e4529a3cdfb74e38fd98631&chain0=8453&chain1=8453"
+              className="w-full h-[600px] sm:h-[700px] lg:h-[800px] rounded-lg border border-crypto-silver/20"
+              title="Aerodrome Finance Swap"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-top-navigation"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+              style={{
+                background: 'transparent',
+                colorScheme: 'dark'
+              }}
+            />
+          </div>
+        </GlassCard>
 
-      {/* Bankr.bot Integration */}
-      <GlassCard className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
-            <span className="text-white text-xs font-bold">B</span>
+        {/* Uniswap DEX */}
+        <GlassCard className="p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-6 h-6 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full flex items-center justify-center">
+              <span className="text-white text-xs font-bold">U</span>
+            </div>
+            <h3 className="text-xl font-semibold text-white">Uniswap DEX</h3>
+            <span className="px-2 py-1 bg-pink-500/20 text-pink-400 text-xs rounded-full font-medium">
+              MULTI-CHAIN
+            </span>
+            <button
+              onClick={() => window.open('https://app.uniswap.org/', '_blank')}
+              className="ml-auto text-pink-400 hover:text-pink-300 text-xs"
+            >
+              Open in New Tab →
+            </button>
           </div>
-          <h3 className="text-xl font-semibold text-white">Bankr.bot Terminal</h3>
-          <span className="px-2 py-1 bg-purple-500/20 text-purple-400 text-xs rounded-full font-medium">
-            Live Data
-          </span>
-        </div>
-        <div className="w-full">
-          <iframe
-            src="https://bankr.bot/terminal"
-            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            title="Bankr.bot Terminal"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-            style={{
-              background: '#000000',
-              colorScheme: 'dark'
-            }}
-          />
-        </div>
-      </GlassCard>
+          <div className="w-full">
+            <iframe
+              src="https://app.uniswap.org/"
+              className="w-full h-[600px] sm:h-[700px] lg:h-[800px] rounded-lg border border-crypto-silver/20"
+              title="Uniswap DEX"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-top-navigation"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+              style={{
+                background: 'transparent',
+                colorScheme: 'dark'
+              }}
+            />
+          </div>
+        </GlassCard>
+      </div>
 
-      {/* Virtuals.io Platform */}
-      <GlassCard className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-full flex items-center justify-center">
-            <span className="text-white text-xs font-bold">V</span>
+      {/* Ecosystems Section */}
+      <div className="space-y-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-xl flex items-center justify-center">
+            <Globe className="text-white text-xl" />
           </div>
-          <h3 className="text-xl font-semibold text-white">Virtuals.io Platform</h3>
-          <span className="px-2 py-1 bg-purple-500/20 text-purple-400 text-xs rounded-full font-medium">
-            AI AGENTS
-          </span>
-          <button
-            onClick={() => window.open('https://app.virtuals.io/', '_blank')}
-            className="ml-auto text-purple-400 hover:text-purple-300 text-xs"
-          >
-            Open in New Tab →
-          </button>
+          <div>
+            <h2 className="text-2xl font-bold text-white">Ecosystems</h2>
+            <p className="text-crypto-silver">AI Agent Platforms & Trading Tools</p>
+          </div>
         </div>
-        <div className="w-full">
-          <iframe
-            src="https://app.virtuals.io/"
-            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            title="Virtuals.io Platform"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-            style={{
-              background: '#000000',
-              colorScheme: 'dark'
-            }}
-          />
-        </div>
-      </GlassCard>
 
-      {/* Creator.bid Agents */}
-      <GlassCard className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-6 h-6 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full flex items-center justify-center">
-            <span className="text-white text-xs font-bold">CB</span>
+        {/* Virtuals.io Platform */}
+        <GlassCard className="p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-full flex items-center justify-center">
+              <span className="text-white text-xs font-bold">V</span>
+            </div>
+            <h3 className="text-xl font-semibold text-white">Virtuals.io Platform</h3>
+            <span className="px-2 py-1 bg-purple-500/20 text-purple-400 text-xs rounded-full font-medium">
+              AI AGENTS
+            </span>
+            <button
+              onClick={() => window.open('https://app.virtuals.io/', '_blank')}
+              className="ml-auto text-purple-400 hover:text-purple-300 text-xs"
+            >
+              Open in New Tab →
+            </button>
           </div>
-          <h3 className="text-xl font-semibold text-white">Creator.bid Agents</h3>
-          <span className="px-2 py-1 bg-emerald-500/20 text-emerald-400 text-xs rounded-full font-medium">
-            CREATOR AGENTS
-          </span>
-          <button
-            onClick={() => window.open('https://creator.bid/agents', '_blank')}
-            className="ml-auto text-emerald-400 hover:text-emerald-300 text-xs"
-          >
-            Open in New Tab →
-          </button>
-        </div>
-        <div className="w-full">
-          <iframe
-            src="https://creator.bid/agents"
-            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            title="Creator.bid Agents"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-            style={{
-              background: '#000000',
-              colorScheme: 'dark'
-            }}
-          />
-        </div>
-      </GlassCard>
+          <div className="w-full">
+            <iframe
+              src="https://app.virtuals.io/"
+              className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+              title="Virtuals.io Platform"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+              style={{
+                background: '#000000',
+                colorScheme: 'dark'
+              }}
+            />
+          </div>
+        </GlassCard>
+
+        {/* Creator.bid Agents */}
+        <GlassCard className="p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-6 h-6 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full flex items-center justify-center">
+              <span className="text-white text-xs font-bold">CB</span>
+            </div>
+            <h3 className="text-xl font-semibold text-white">Creator.bid Agents</h3>
+            <span className="px-2 py-1 bg-emerald-500/20 text-emerald-400 text-xs rounded-full font-medium">
+              CREATOR AGENTS
+            </span>
+            <button
+              onClick={() => window.open('https://creator.bid/agents', '_blank')}
+              className="ml-auto text-emerald-400 hover:text-emerald-300 text-xs"
+            >
+              Open in New Tab →
+            </button>
+          </div>
+          <div className="w-full">
+            <iframe
+              src="https://creator.bid/agents"
+              className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+              title="Creator.bid Agents"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+              style={{
+                background: '#000000',
+                colorScheme: 'dark'
+              }}
+            />
+          </div>
+        </GlassCard>
+
+        {/* Bankr.bot Integration */}
+        <GlassCard className="p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
+              <span className="text-white text-xs font-bold">B</span>
+            </div>
+            <h3 className="text-xl font-semibold text-white">Bankr.bot Terminal</h3>
+            <span className="px-2 py-1 bg-purple-500/20 text-purple-400 text-xs rounded-full font-medium">
+              Live Data
+            </span>
+          </div>
+          <div className="w-full">
+            <iframe
+              src="https://bankr.bot/terminal"
+              className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+              title="Bankr.bot Terminal"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+              style={{
+                background: '#000000',
+                colorScheme: 'dark'
+              }}
+            />
+          </div>
+        </GlassCard>
+      </div>
     </div>
   );
 }
