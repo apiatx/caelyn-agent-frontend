@@ -374,6 +374,9 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Purple Branding**: Hype page features purple gradient branding with "LIVE TRADING" badge
 - **External Access**: Direct link to open full Hyperliquid interface in new tab
 - **Sandbox Security**: Implemented secure iframe with proper sandbox attributes for safe trading interface
+- **Hyperdash Analytics Addition**: Added https://hyperdash.info/analytics iframe below trading interface
+- **Dual Analytics**: Hype page now features both live HYPE trading and comprehensive Hyperliquid ecosystem analytics
+- **Blue Branding**: Hyperdash section uses blue-cyan gradient with "ANALYTICS" badge for visual distinction
 
 ### July 21, 2025 - Content Reorganization & Interface Cleanup
 - **Compact Bridge Design**: Converted large Bridge interface to small link button format on DeFi page
