@@ -14,10 +14,16 @@ import cryptoHippoImage from "@assets/image_1752975467353.png";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 
-type TabType = "dashboard" | "portfolio" | "alpha" | "whale" | "research" | "bittensor" | "base" | "solana" | "bitcoin";
+type TabType = "dashboard" | "portfolio" | "alpha" | "whale" | "research" | "bittensor" | "base" | "solana" | "defi";
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<TabType>("dashboard");
+
+  const handleTabChange = (tab: TabType) => {
+    setActiveTab(tab);
+    // Reset scroll to top when switching tabs to prevent auto-scrolling issues
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   return (
     <div className="min-h-screen text-white" style={{background: 'linear-gradient(135deg, hsl(0, 0%, 0%) 0%, hsl(0, 0%, 10%) 50%, hsl(0, 0%, 0%) 100%)'}}>
@@ -59,7 +65,7 @@ export default function Dashboard() {
           {/* Desktop Navigation */}
           <div className="hidden lg:flex space-x-2">
             <button
-              onClick={() => setActiveTab("dashboard")}
+              onClick={() => handleTabChange("dashboard")}
               className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
                 activeTab === "dashboard"
                   ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
@@ -69,7 +75,7 @@ export default function Dashboard() {
               <Activity className="w-4 h-4 mr-2 inline" />Dashboard
             </button>
             <button
-              onClick={() => setActiveTab("alpha")}
+              onClick={() => handleTabChange("alpha")}
               className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
                 activeTab === "alpha"
                   ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
@@ -79,7 +85,7 @@ export default function Dashboard() {
               <TrendingUp className="w-4 h-4 mr-2 inline" />Onchain
             </button>
             <button
-              onClick={() => setActiveTab("base")}
+              onClick={() => handleTabChange("base")}
               className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
                 activeTab === "base"
                   ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
@@ -89,7 +95,7 @@ export default function Dashboard() {
               <ChartLine className="w-4 h-4 mr-2 inline" />Base
             </button>
             <button
-              onClick={() => setActiveTab("bittensor")}
+              onClick={() => handleTabChange("bittensor")}
               className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
                 activeTab === "bittensor"
                   ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
@@ -99,7 +105,7 @@ export default function Dashboard() {
               <Brain className="w-4 h-4 mr-2 inline" />Bittensor
             </button>
             <button
-              onClick={() => setActiveTab("solana")}
+              onClick={() => handleTabChange("solana")}
               className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
                 activeTab === "solana"
                   ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
@@ -109,7 +115,7 @@ export default function Dashboard() {
               <Zap className="w-4 h-4 mr-2 inline" />Solana
             </button>
             <button
-              onClick={() => setActiveTab("defi")}
+              onClick={() => handleTabChange("defi")}
               className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
                 activeTab === "defi"
                   ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
@@ -119,7 +125,7 @@ export default function Dashboard() {
               <DollarSign className="w-4 h-4 mr-2 inline" />DeFi
             </button>
             <button
-              onClick={() => setActiveTab("portfolio")}
+              onClick={() => handleTabChange("portfolio")}
               className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
                 activeTab === "portfolio"
                   ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
@@ -129,7 +135,7 @@ export default function Dashboard() {
               <Wallet className="w-4 h-4 mr-2 inline" />Portfolio
             </button>
             <button
-              onClick={() => setActiveTab("whale")}
+              onClick={() => handleTabChange("whale")}
               className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
                 activeTab === "whale"
                   ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
@@ -139,7 +145,7 @@ export default function Dashboard() {
               <Eye className="w-4 h-4 mr-2 inline" />Whale Watch
             </button>
             <button
-              onClick={() => setActiveTab("research")}
+              onClick={() => handleTabChange("research")}
               className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
                 activeTab === "research"
                   ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
@@ -154,7 +160,7 @@ export default function Dashboard() {
           <div className="lg:hidden overflow-x-auto">
             <div className="flex space-x-1 min-w-max pb-2">
               <button
-                onClick={() => setActiveTab("dashboard")}
+                onClick={() => handleTabChange("dashboard")}
                 className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                   activeTab === "dashboard"
                     ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
@@ -164,7 +170,7 @@ export default function Dashboard() {
                 <Activity className="w-4 h-4 mr-1 inline" />Dashboard
               </button>
               <button
-                onClick={() => setActiveTab("alpha")}
+                onClick={() => handleTabChange("alpha")}
                 className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                   activeTab === "alpha"
                     ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
@@ -174,7 +180,7 @@ export default function Dashboard() {
                 <TrendingUp className="w-4 h-4 mr-1 inline" />Onchain
               </button>
               <button
-                onClick={() => setActiveTab("base")}
+                onClick={() => handleTabChange("base")}
                 className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                   activeTab === "base"
                     ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
@@ -184,7 +190,7 @@ export default function Dashboard() {
                 <ChartLine className="w-4 h-4 mr-1 inline" />Base
               </button>
               <button
-                onClick={() => setActiveTab("bittensor")}
+                onClick={() => handleTabChange("bittensor")}
                 className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                   activeTab === "bittensor"
                     ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
@@ -194,7 +200,7 @@ export default function Dashboard() {
                 <Brain className="w-4 h-4 mr-1 inline" />Bittensor
               </button>
               <button
-                onClick={() => setActiveTab("solana")}
+                onClick={() => handleTabChange("solana")}
                 className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                   activeTab === "solana"
                     ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
@@ -204,7 +210,7 @@ export default function Dashboard() {
                 <Zap className="w-4 h-4 mr-1 inline" />Solana
               </button>
               <button
-                onClick={() => setActiveTab("defi")}
+                onClick={() => handleTabChange("defi")}
                 className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                   activeTab === "defi"
                     ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
@@ -214,7 +220,7 @@ export default function Dashboard() {
                 <DollarSign className="w-4 h-4 mr-1 inline" />DeFi
               </button>
               <button
-                onClick={() => setActiveTab("portfolio")}
+                onClick={() => handleTabChange("portfolio")}
                 className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                   activeTab === "portfolio"
                     ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
@@ -224,7 +230,7 @@ export default function Dashboard() {
                 <Wallet className="w-4 h-4 mr-1 inline" />Portfolio
               </button>
               <button
-                onClick={() => setActiveTab("whale")}
+                onClick={() => handleTabChange("whale")}
                 className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                   activeTab === "whale"
                     ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
@@ -234,7 +240,7 @@ export default function Dashboard() {
                 <Eye className="w-4 h-4 mr-1 inline" />Whale Watch
               </button>
               <button
-                onClick={() => setActiveTab("research")}
+                onClick={() => handleTabChange("research")}
                 className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                   activeTab === "research"
                     ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
