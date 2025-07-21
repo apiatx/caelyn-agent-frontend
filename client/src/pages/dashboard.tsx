@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChartLine, Settings, Activity, Eye, TrendingUp, BarChart3, Brain, Wallet, Zap, DollarSign } from "lucide-react";
+import { ChartLine, Settings, Activity, Eye, TrendingUp, BarChart3, Brain, Wallet, Zap, DollarSign, Layers } from "lucide-react";
 import CryptoDashboardSection from "@/components/crypto-dashboard-section";
 import PortfolioSection from "@/components/portfolio-section";
 import AlphaSection from "@/components/alpha-section";
@@ -8,13 +8,14 @@ import MarketResearchSection from "@/components/market-research-section";
 import BittensorDashboardSection from "@/components/bittensor-dashboard-section";
 import BaseSection from "@/components/base-section";
 import SolanaSection from "@/components/solana-section";
+import AbstractSection from "@/components/abstract-section";
 import DeFiSection from "@/components/defi-section";
 import cryptoHippoImage from "@assets/image_1752975467353.png";
 
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 
-type TabType = "dashboard" | "portfolio" | "alpha" | "whale" | "research" | "bittensor" | "base" | "solana" | "defi";
+type TabType = "dashboard" | "portfolio" | "alpha" | "whale" | "research" | "bittensor" | "base" | "abstract" | "solana" | "defi";
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<TabType>("dashboard");
@@ -103,6 +104,16 @@ export default function Dashboard() {
               }`}
             >
               <Brain className="w-4 h-4 mr-2 inline" />Bittensor
+            </button>
+            <button
+              onClick={() => handleTabChange("abstract")}
+              className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
+                activeTab === "abstract"
+                  ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                  : "hover:bg-white/5 text-crypto-silver"
+              }`}
+            >
+              <Layers className="w-4 h-4 mr-2 inline" />Abstract
             </button>
             <button
               onClick={() => handleTabChange("solana")}
@@ -200,6 +211,16 @@ export default function Dashboard() {
                 <Brain className="w-4 h-4 mr-1 inline" />Bittensor
               </button>
               <button
+                onClick={() => handleTabChange("abstract")}
+                className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+                  activeTab === "abstract"
+                    ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                    : "hover:bg-white/5 text-crypto-silver"
+                }`}
+              >
+                <Layers className="w-4 h-4 mr-1 inline" />Abstract
+              </button>
+              <button
                 onClick={() => handleTabChange("solana")}
                 className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                   activeTab === "solana"
@@ -260,9 +281,10 @@ export default function Dashboard() {
         {activeTab === "portfolio" && <PortfolioSection />}
         {activeTab === "alpha" && <AlphaSection />}
         {activeTab === "base" && <BaseSection />}
+        {activeTab === "bittensor" && <BittensorDashboardSection />}
+        {activeTab === "abstract" && <AbstractSection />}
         {activeTab === "solana" && <SolanaSection />}
         {activeTab === "defi" && <DeFiSection />}
-        {activeTab === "bittensor" && <BittensorDashboardSection />}
         {activeTab === "whale" && <WhaleWatchingSection />}
         {activeTab === "research" && <MarketResearchSection />}
       </div>
