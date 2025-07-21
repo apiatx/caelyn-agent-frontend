@@ -82,7 +82,7 @@ export default function Dashboard() {
                   : "hover:bg-white/5 text-crypto-silver"
               }`}
             >
-              <TrendingUp className="w-4 h-4 mr-2 inline" />Onchain
+              <TrendingUp className="w-4 h-4 mr-2 inline" />Alpha
             </button>
             <button
               onClick={() => handleTabChange("base")}
@@ -177,7 +177,7 @@ export default function Dashboard() {
                     : "hover:bg-white/5 text-crypto-silver"
                 }`}
               >
-                <TrendingUp className="w-4 h-4 mr-1 inline" />Onchain
+                <TrendingUp className="w-4 h-4 mr-1 inline" />Alpha
               </button>
               <button
                 onClick={() => handleTabChange("base")}

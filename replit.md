@@ -342,15 +342,15 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **User Experience**: Simplified portfolio interface prioritizing external platform integration over in-house features
 
 ### July 21, 2025 - Content Reorganization & Dominance Charts Addition
-- **Artemis Analytics Migration**: Moved Artemis Analytics iframe from Dashboard page to Onchain page for better categorization
+- **Artemis Analytics Migration Back to Dashboard**: Moved Artemis Analytics iframe from Alpha page back to Dashboard below OTHERS Dominance chart
 - **BTC Dominance Chart Addition**: Added TradingView BTC Dominance chart iframe to Dashboard page positioned after XRP chart
 - **OTHERS Dominance Chart Addition**: Added TradingView OTHERS Dominance chart iframe positioned after BTC Dominance chart
 - **Complete Dominance Analysis**: Dashboard now provides comprehensive market dominance tracking with BTC.D and OTHERS.D charts
-- **Enhanced Dashboard Charts**: Dashboard features Bitcoin, Ethereum, Solana, XRP, BTC Dominance, and OTHERS Dominance TradingView widgets
-- **Onchain Platform Expansion**: Onchain page now includes Signal platforms, Smart Wallets, Artemis Analytics, and Social analytics
-- **Improved Content Flow**: Better logical grouping with analytics platforms consolidated on Onchain page
+- **Enhanced Dashboard Charts**: Dashboard features Bitcoin, Ethereum, Solana, XRP, BTC Dominance, OTHERS Dominance, and Artemis Analytics
+- **Navigation Rename**: Changed "Onchain" page back to "Alpha" across both desktop and mobile navigation
+- **Artemis Analytics Rename**: Simplified title from "Artemis Analytics - Home" to just "Artemis Analytics"
 - **Purple Styling Implementation**: OTHERS Dominance chart features purple color scheme with OTHERS.D badge styling
-- **Comprehensive Market Coverage**: Dashboard provides complete cryptocurrency market analysis through six TradingView chart integrations
+- **Comprehensive Market Coverage**: Dashboard provides complete cryptocurrency market analysis through six TradingView chart integrations plus analytics platform
 
 ### July 21, 2025 - Interface Compactification & Scalable Layouts
 - **Compact Bridge Design**: Converted large Bridge interface to small link button format on DeFi page
