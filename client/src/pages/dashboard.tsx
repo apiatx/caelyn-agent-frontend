@@ -3,8 +3,7 @@ import { ChartLine, Settings, Activity, Eye, TrendingUp, BarChart3, Brain, Walle
 import CryptoDashboardSection from "@/components/crypto-dashboard-section";
 import PortfolioSection from "@/components/portfolio-section";
 import AlphaSection from "@/components/alpha-section";
-import WhaleWatchingSection from "@/components/whale-watching-section";
-import MarketResearchSection from "@/components/market-research-section";
+
 import BittensorDashboardSection from "@/components/bittensor-dashboard-section";
 import BaseSection from "@/components/base-section";
 import SolanaSection from "@/components/solana-section";
@@ -15,7 +14,7 @@ import cryptoHippoImage from "@assets/image_1752975467353.png";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 
-type TabType = "dashboard" | "portfolio" | "alpha" | "whale" | "research" | "bittensor" | "base" | "abstract" | "solana" | "defi";
+type TabType = "dashboard" | "portfolio" | "alpha" | "bittensor" | "base" | "abstract" | "solana" | "defi";
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<TabType>("dashboard");
@@ -145,26 +144,7 @@ export default function Dashboard() {
             >
               <Wallet className="w-4 h-4 mr-2 inline" />Portfolio
             </button>
-            <button
-              onClick={() => handleTabChange("whale")}
-              className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
-                activeTab === "whale"
-                  ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
-                  : "hover:bg-white/5 text-crypto-silver"
-              }`}
-            >
-              <Eye className="w-4 h-4 mr-2 inline" />Whale Watch
-            </button>
-            <button
-              onClick={() => handleTabChange("research")}
-              className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
-                activeTab === "research"
-                  ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
-                  : "hover:bg-white/5 text-crypto-silver"
-              }`}
-            >
-              <BarChart3 className="w-4 h-4 mr-2 inline" />Research
-            </button>
+
           </div>
 
           {/* Mobile Navigation - Horizontal Scroll */}
@@ -250,26 +230,7 @@ export default function Dashboard() {
               >
                 <Wallet className="w-4 h-4 mr-1 inline" />Portfolio
               </button>
-              <button
-                onClick={() => handleTabChange("whale")}
-                className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
-                  activeTab === "whale"
-                    ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
-                    : "hover:bg-white/5 text-crypto-silver"
-                }`}
-              >
-                <Eye className="w-4 h-4 mr-1 inline" />Whale Watch
-              </button>
-              <button
-                onClick={() => handleTabChange("research")}
-                className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
-                  activeTab === "research"
-                    ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
-                    : "hover:bg-white/5 text-crypto-silver"
-                }`}
-              >
-                <BarChart3 className="w-4 h-4 mr-1 inline" />Research
-              </button>
+
             </div>
           </div>
         </GlassCard>
@@ -285,8 +246,7 @@ export default function Dashboard() {
         {activeTab === "abstract" && <AbstractSection />}
         {activeTab === "solana" && <SolanaSection />}
         {activeTab === "defi" && <DeFiSection />}
-        {activeTab === "whale" && <WhaleWatchingSection />}
-        {activeTab === "research" && <MarketResearchSection />}
+
       </div>
     </div>
   );

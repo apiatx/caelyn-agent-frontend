@@ -341,6 +341,14 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Clean Integration**: Portfolio page now features single DexScreener iframe for authentic portfolio tracking
 - **User Experience**: Simplified portfolio interface prioritizing external platform integration over in-house features
 
+### July 21, 2025 - Navigation Simplification & News Integration
+- **News Section Addition**: Added dedicated News section to bottom of Dashboard page with Cointelegraph integration
+- **Research & Whale Watch Removal**: Completely removed Research and Whale Watch pages from navigation
+- **Streamlined Navigation**: Platform now focuses on 8 core tabs: Dashboard, Alpha, Base, Bittensor, Abstract, Solana, DeFi, Portfolio
+- **Cointelegraph Migration**: Moved Cointelegraph news access from Research page to Dashboard News section
+- **Interface Cleanup**: Simplified navigation reduces cognitive load and focuses on essential platform features
+- **News Integration**: Dashboard now provides direct access to crypto news alongside market analytics
+
 ### July 21, 2025 - Content Reorganization & Interface Cleanup
 - **Compact Bridge Design**: Converted large Bridge interface to small link button format on DeFi page
 - **Scalable Bridge Layout**: Created responsive grid structure ready for multiple bridge platform additions
