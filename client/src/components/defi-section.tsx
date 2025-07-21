@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { DollarSign, TrendingUp, BarChart3, Brain, ArrowLeftRight } from "lucide-react";
 
 // Glass card component for DeFi section
@@ -23,55 +24,21 @@ export default function DeFiSection() {
       </div>
 
       {/* Bridge Section */}
-      <div className="space-y-6">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
-            <ArrowLeftRight className="text-white text-xl" />
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold text-white">Bridge</h2>
-            <p className="text-crypto-silver">Cross-Chain Asset Bridging Solutions</p>
-          </div>
+      <div className="space-y-4">
+        <h3 className="text-xl font-semibold text-white mb-4">Bridge</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <Button
+            variant="outline"
+            onClick={() => openInNewTab('https://www.relay.link/bridge')}
+            className="bg-black/20 border-crypto-silver/20 hover:bg-blue-500/20 hover:border-blue-500/30 text-white justify-start p-4 h-auto"
+          >
+            <ArrowLeftRight className="w-4 h-4 mr-2" />
+            <div className="text-left">
+              <div className="font-semibold">Relay Bridge</div>
+              <div className="text-sm text-crypto-silver">Cross-chain asset bridging</div>
+            </div>
+          </Button>
         </div>
-
-        {/* Relay Link Bridge */}
-        <GlassCard className="p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
-              <ArrowLeftRight className="w-4 h-4 text-white" />
-            </div>
-            <h3 className="text-xl font-semibold text-white">Relay Bridge</h3>
-            <Badge className="bg-gradient-to-r from-blue-500/20 to-cyan-500/20 text-blue-400 border-blue-500/30">
-              CROSS-CHAIN BRIDGE
-            </Badge>
-            <button
-              onClick={() => openInNewTab('https://www.relay.link/bridge')}
-              className="text-blue-400 hover:text-blue-300 text-sm ml-auto"
-            >
-              Open Full View →
-            </button>
-          </div>
-          <div className="rounded-lg border border-crypto-silver/20 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 backdrop-blur-sm">
-            <div className="flex flex-col items-center justify-center h-[400px] p-8 text-center">
-              <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center mb-6">
-                <ArrowLeftRight className="w-8 h-8 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold text-white mb-3">
-                Cross-Chain Bridge
-              </h3>
-              <p className="text-crypto-silver mb-6 max-w-md">
-                Bridge your assets seamlessly across multiple blockchains with Relay's secure cross-chain infrastructure and instant settlement.
-              </p>
-              <button
-                onClick={() => openInNewTab('https://www.relay.link/bridge')}
-                className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200"
-              >
-                <ArrowLeftRight className="w-4 h-4 mr-2 inline" />
-                Access Bridge
-              </button>
-            </div>
-          </div>
-        </GlassCard>
       </div>
 
       {/* Peapods Finance */}
