@@ -1,9 +1,9 @@
 import { GlassCard } from "@/components/ui/glass-card";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, ExternalLink } from "lucide-react";
+import { TrendingUp, ExternalLink, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export default function ChartsSection() {
+export default function AISection() {
   const openInNewTab = (url: string) => {
     window.open(url, '_blank', 'noopener,noreferrer');
   };
@@ -11,9 +11,42 @@ export default function ChartsSection() {
   return (
     <div className="space-y-8">
       <div className="text-center">
-        <h2 className="text-2xl lg:text-3xl font-bold text-white mb-2">Multi-Chain Charts</h2>
-        <p className="text-crypto-silver">DexScreener multicharts for comprehensive market analysis</p>
+        <h2 className="text-2xl lg:text-3xl font-bold text-white mb-2">AI Analytics</h2>
+        <p className="text-crypto-silver">AI agent data and multi-chain market analysis</p>
       </div>
+
+      {/* AyaOracle AI Agents */}
+      <GlassCard className="p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-3">
+            <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
+              <TrendingUp className="w-4 h-4 text-white" />
+            </div>
+            <h2 className="text-xl font-semibold text-white">AyaOracle AI Agents</h2>
+            <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-xs">
+              AI AGENTS
+            </Badge>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => openInNewTab('https://ayaoracle.xyz/#agents_data')}
+            className="text-crypto-silver hover:text-white"
+          >
+            <ExternalLink className="h-4 w-4 mr-2" />
+            Open Full View
+          </Button>
+        </div>
+        
+        <div className="w-full">
+          <iframe
+            src="https://ayaoracle.xyz/#agents_data"
+            className="w-full h-[600px] lg:h-[800px] rounded-lg border border-crypto-silver/20"
+            title="AyaOracle AI Agents Data"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+          />
+        </div>
+      </GlassCard>
 
       {/* DexScreener Multicharts */}
       <GlassCard className="p-6">
