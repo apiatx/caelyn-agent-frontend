@@ -399,6 +399,13 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **DeFi Page Cleanup**: Removed Aerodrome Finance from DeFi Swap section, maintaining only Relay Bridge
 - **Enhanced Base Navigation**: Base page now offers comprehensive DEX trading alongside analytics tools
 
+### July 21, 2025 - Alpha Page Smart Wallets Enhancement
+- **HyperLiquid Whale Addition**: Added new HyperLiquid Whale link (https://hyperdash.info/trader/0x15b325660a1c4a9582a7d834c31119c0cb9e3a42) to Smart Wallets section
+- **WhaleAI Title Update**: Updated existing WhaleAI button title to "WhaleAI - ETH/BASE" for better clarity
+- **Purple Gradient Branding**: HyperLiquid Whale features purple gradient styling with Hyperdash trader analytics description
+- **Smart Wallets Expansion**: Smart Wallets section now provides access to both HyperLiquid and DeBank whale tracking platforms
+- **Enhanced Trader Analytics**: Users can now access comprehensive whale trading data across multiple platforms and networks
+
 ### July 21, 2025 - Content Reorganization & Interface Cleanup
 - **Compact Bridge Design**: Converted large Bridge interface to small link button format on DeFi page
 - **Scalable Bridge Layout**: Created responsive grid structure ready for multiple bridge platform additions
