@@ -341,6 +341,16 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Clean Integration**: Portfolio page now features single DexScreener iframe for authentic portfolio tracking
 - **User Experience**: Simplified portfolio interface prioritizing external platform integration over in-house features
 
+### July 21, 2025 - Base Page Auto-Scrolling Bug Fix & Research Page Cointelegraph Integration
+- **Critical Base Page Auto-Scrolling Fix**: Resolved auto-scrolling to Aerodrome section by implementing handleTabChange function with scroll reset
+- **Navigation Standardization**: All tab switches (desktop and mobile) now use handleTabChange with smooth scroll-to-top behavior
+- **TypeScript Error Resolution**: Fixed TabType definition to include "defi" instead of deprecated "bitcoin" tab
+- **Comprehensive Scroll Prevention**: Removed problematic iframe attributes and added window.scrollTo reset on all tab navigation
+- **Research Page Cointelegraph Integration**: Replaced market research content with Cointelegraph latest news access
+- **X-Frame-Options Handling**: Converted blocked Cointelegraph iframe to professional clickable interface with external link
+- **Consistent Design Pattern**: Applied same clickable button approach used for other iframe-restricted platforms
+- **User Experience Enhancement**: Base page now loads normally at top without unwanted scrolling behavior
+
 ### July 20, 2025 - Base Section Streamlined with Bankr.bot Terminal Integration  
 - **Live Base Movers Removal**: Removed "Live Base Movers" section from Base page that displayed real-time BASE network top gainers
 - **Whale Activity Removal**: Removed "Recent Base Whale Activity" section that showed live BASE network whale transactions
