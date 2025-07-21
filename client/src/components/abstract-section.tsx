@@ -48,7 +48,7 @@ export default function AbstractSection() {
         </div>
         <div className="w-full">
           <iframe
-            src="https://dexscreener.com/abstract"
+            src="https://dexscreener.com/abstract?theme=dark"
             className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
             title="DexScreener Abstract"
             sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
