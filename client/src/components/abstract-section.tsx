@@ -56,32 +56,31 @@ export default function AbstractSection() {
         </div>
       </GlassCard>
 
-      {/* Abstract Portal */}
+      {/* Abstract Portal Link */}
       <GlassCard className="p-3 sm:p-4 lg:p-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-indigo-500 rounded-full flex items-center justify-center">
-              <Layers className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-            </div>
-            <h3 className="text-lg sm:text-xl font-semibold text-white">Abstract Portal</h3>
-            <Badge className="bg-indigo-500/20 text-indigo-400 border-indigo-500/30 text-xs">
-              DISCOVER
-            </Badge>
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-6 h-6 bg-indigo-500 rounded-full flex items-center justify-center">
+            <Layers className="w-4 h-4 text-white" />
           </div>
+          <h3 className="text-xl font-semibold text-white">Quick Access</h3>
+          <Badge className="bg-indigo-500/20 text-indigo-400 border-indigo-500/30 text-xs">
+            DISCOVER
+          </Badge>
+        </div>
+        
+        <div className="grid grid-cols-1">
           <button
             onClick={() => openInNewTab('https://portal.abs.xyz/discover')}
-            className="text-indigo-400 hover:text-indigo-300 text-xs sm:text-sm sm:ml-auto"
+            className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-lg hover:bg-indigo-500/20 transition-colors"
           >
-            Open in New Tab →
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-indigo-500 rounded-full flex items-center justify-center">
+                <Layers className="w-4 h-4 text-white" />
+              </div>
+              <h4 className="text-indigo-400 font-semibold">Abstract Portal</h4>
+            </div>
+            <p className="text-gray-400 text-sm">Discover the Abstract ecosystem</p>
           </button>
-        </div>
-        <div className="w-full">
-          <iframe
-            src="https://portal.abs.xyz/discover"
-            className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
-            title="Abstract Portal Discover"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-          />
         </div>
       </GlassCard>
     </div>
