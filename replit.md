@@ -341,6 +341,13 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Clean Integration**: Portfolio page now features single DexScreener iframe for authentic portfolio tracking
 - **User Experience**: Simplified portfolio interface prioritizing external platform integration over in-house features
 
+### July 21, 2025 - Bridge Section Addition & Iframe Security Fixes
+- **New Bridge Section**: Added "Bridge" section to top of DeFi page with Relay Link cross-chain bridge integration
+- **X-Frame-Options Resolution**: Converted blocked Relay Link iframe to professional clickable interface with blue-cyan gradient styling
+- **Cross-Chain Functionality**: Bridge section provides access to Relay's secure cross-chain infrastructure and instant settlement
+- **Consistent Security Pattern**: Applied same clickable button fallback used for Cointelegraph and other restricted platforms
+- **Enhanced DeFi Page**: DeFi page now features Bridge, Peapods Finance, and DeFAI sections with logical organization
+
 ### July 21, 2025 - Base Page Auto-Scrolling Bug Fix & Research Page Cointelegraph Integration
 - **Critical Base Page Auto-Scrolling Fix**: Resolved auto-scrolling to Aerodrome section by implementing handleTabChange function with scroll reset
 - **Navigation Standardization**: All tab switches (desktop and mobile) now use handleTabChange with smooth scroll-to-top behavior

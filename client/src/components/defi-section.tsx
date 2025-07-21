@@ -51,12 +51,26 @@ export default function DeFiSection() {
               Open Full View →
             </button>
           </div>
-          <iframe
-            src="https://www.relay.link/bridge"
-            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            title="Relay Bridge"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-          />
+          <div className="rounded-lg border border-crypto-silver/20 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 backdrop-blur-sm">
+            <div className="flex flex-col items-center justify-center h-[400px] p-8 text-center">
+              <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center mb-6">
+                <ArrowLeftRight className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-xl font-semibold text-white mb-3">
+                Cross-Chain Bridge
+              </h3>
+              <p className="text-crypto-silver mb-6 max-w-md">
+                Bridge your assets seamlessly across multiple blockchains with Relay's secure cross-chain infrastructure and instant settlement.
+              </p>
+              <button
+                onClick={() => openInNewTab('https://www.relay.link/bridge')}
+                className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200"
+              >
+                <ArrowLeftRight className="w-4 h-4 mr-2 inline" />
+                Access Bridge
+              </button>
+            </div>
+          </div>
         </GlassCard>
       </div>
 
