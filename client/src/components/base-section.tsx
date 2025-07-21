@@ -177,7 +177,7 @@ export default function BaseSection() {
             BLOCKCHAIN EXPLORER
           </span>
           <button
-            onClick={() => window.open('https://www.blockcreeper.com/explore', '_blank')}
+            onClick={() => window.open('https://www.blockcreeper.com/', '_blank')}
             className="ml-auto text-orange-400 hover:text-orange-300 text-xs"
           >
             Open in New Tab →
@@ -185,7 +185,7 @@ export default function BaseSection() {
         </div>
         <div className="w-full">
           <iframe
-            src="https://www.blockcreeper.com/explore"
+            src="https://www.blockcreeper.com/"
             className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
             title="BlockCreeper Explorer"
             sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
