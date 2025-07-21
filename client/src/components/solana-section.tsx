@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BarChart3, Activity, Zap, TrendingDown } from "lucide-react";
+import { BarChart3, Activity, Zap, TrendingDown, ExternalLink } from "lucide-react";
 
 // Glass card component for Solana section
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
@@ -109,19 +109,78 @@ export default function SolanaSection() {
             </Badge>
           </div>
           
-          <div className="grid grid-cols-1 gap-4">
-            <button
-              onClick={() => window.open('https://web3.okx.com/leaderboard', '_blank', 'noopener,noreferrer')}
-              className="p-4 bg-gradient-to-r from-red-500/10 to-orange-500/10 border border-red-500/20 rounded-lg hover:from-red-500/20 hover:to-orange-500/20 transition-colors"
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <a
+              href="https://web3.okx.com/leaderboard"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-red-500/30 transition-all duration-200 group"
             >
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex items-center gap-3">
                 <div className="w-8 h-8 bg-gradient-to-r from-red-500 to-orange-500 rounded-full flex items-center justify-center">
                   <TrendingDown className="w-4 h-4 text-white" />
                 </div>
-                <h4 className="text-red-400 font-semibold">OKX Web3 Leaderboard</h4>
+                <div>
+                  <h3 className="text-white font-medium text-sm">OKX Leaderboard</h3>
+                  <p className="text-gray-400 text-xs">Trading rankings</p>
+                </div>
               </div>
-              <p className="text-gray-400 text-sm">Trading Performance Rankings & Analytics</p>
-            </button>
+              <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-red-400 transition-colors" />
+            </a>
+
+            <a
+              href="https://bonk.fun"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-orange-500/30 transition-all duration-200 group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-yellow-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">B</span>
+                </div>
+                <div>
+                  <h3 className="text-white font-medium text-sm">BONK.fun</h3>
+                  <p className="text-gray-400 text-xs">Token platform</p>
+                </div>
+              </div>
+              <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-orange-400 transition-colors" />
+            </a>
+
+            <a
+              href="https://pump.fun"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-green-500/30 transition-all duration-200 group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">P</span>
+                </div>
+                <div>
+                  <h3 className="text-white font-medium text-sm">Pump.fun</h3>
+                  <p className="text-gray-400 text-xs">Launch platform</p>
+                </div>
+              </div>
+              <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-green-400 transition-colors" />
+            </a>
+
+            <a
+              href="https://believe.app"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-blue-500/30 transition-all duration-200 group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">B</span>
+                </div>
+                <div>
+                  <h3 className="text-white font-medium text-sm">Believe.app</h3>
+                  <p className="text-gray-400 text-xs">Trading app</p>
+                </div>
+              </div>
+              <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-blue-400 transition-colors" />
+            </a>
           </div>
         </GlassCard>
       </div>
