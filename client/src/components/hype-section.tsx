@@ -76,6 +76,43 @@ export function HypeSection() {
           </p>
         </div>
       </div>
+
+      {/* HyperEVM DexScreener */}
+      <div className="mt-6">
+        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+          <div className="w-6 h-6 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
+            <span className="text-white font-bold text-xs">H</span>
+          </div>
+          HyperEVM
+          <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded-full border border-green-500/30">
+            DEFI
+          </span>
+          <a
+            href="https://dexscreener.com/hyperevm"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ml-auto text-xs text-green-400 hover:text-green-300 transition-colors flex items-center gap-1"
+          >
+            Open Full View <ExternalLink className="w-3 h-3" />
+          </a>
+        </h3>
+        
+        <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+          <iframe
+            src="https://dexscreener.com/hyperevm"
+            className="w-full h-[600px] border-0"
+            title="HyperEVM DexScreener"
+            allow="clipboard-read; clipboard-write"
+            sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation-by-user-activation"
+          />
+        </div>
+        
+        <div className="mt-4 text-center">
+          <p className="text-xs text-gray-400">
+            HyperEVM DeFi ecosystem • Live token prices and trading pairs
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
