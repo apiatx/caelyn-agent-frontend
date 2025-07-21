@@ -170,6 +170,35 @@ export default function CryptoDashboardSection() {
         </div>
       </GlassCard>
 
+      {/* TradingView OTHERS Dominance Chart */}
+      <GlassCard className="p-3 sm:p-4 lg:p-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-purple-500 rounded-full flex items-center justify-center">
+              <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+            </div>
+            <h3 className="text-lg sm:text-xl font-semibold text-white">OTHERS Dominance Chart</h3>
+            <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-xs">
+              OTHERS.D
+            </Badge>
+          </div>
+          <button
+            onClick={() => openInNewTab('https://www.tradingview.com/chart/e5l95XgZ/?symbol=CRYPTOCAP%3AOTHERS.D')}
+            className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm sm:ml-auto"
+          >
+            Open in New Tab →
+          </button>
+        </div>
+        <div className="w-full">
+          <iframe
+            src="https://www.tradingview.com/chart/e5l95XgZ/?symbol=CRYPTOCAP%3AOTHERS.D"
+            className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
+            title="TradingView OTHERS Dominance Chart"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+          />
+        </div>
+      </GlassCard>
+
       {/* Market Overview from CoinMarketCap */}
       <MarketOverviewSection />
 
