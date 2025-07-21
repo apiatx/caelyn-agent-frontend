@@ -141,30 +141,30 @@ export default function CryptoDashboardSection() {
         </div>
       </GlassCard>
 
-      {/* Artemis Analytics Netflows */}
+      {/* TradingView BTC Dominance Chart */}
       <GlassCard className="p-3 sm:p-4 lg:p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-cyan-500 rounded-full flex items-center justify-center">
-              <Eye className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-yellow-500 rounded-full flex items-center justify-center">
+              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
             </div>
-            <h3 className="text-lg sm:text-xl font-semibold text-white">Artemis Analytics - Home</h3>
-            <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 text-xs">
-              ANALYTICS
+            <h3 className="text-lg sm:text-xl font-semibold text-white">BTC Dominance Chart</h3>
+            <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-xs">
+              BTC.D
             </Badge>
           </div>
           <button
-            onClick={() => openInNewTab('https://app.artemisanalytics.com/home')}
-            className="text-cyan-400 hover:text-cyan-300 text-xs sm:text-sm sm:ml-auto"
+            onClick={() => openInNewTab('https://www.tradingview.com/chart/e5l95XgZ/?symbol=CRYPTOCAP%3ABTC.D')}
+            className="text-yellow-400 hover:text-yellow-300 text-xs sm:text-sm sm:ml-auto"
           >
             Open in New Tab →
           </button>
         </div>
         <div className="w-full">
           <iframe
-            src="https://app.artemisanalytics.com/home"
-            className="w-full h-[500px] sm:h-[600px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
-            title="Artemis Analytics Home"
+            src="https://www.tradingview.com/chart/e5l95XgZ/?symbol=CRYPTOCAP%3ABTC.D"
+            className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
+            title="TradingView BTC Dominance Chart"
             sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
           />
         </div>

@@ -341,6 +341,14 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Clean Integration**: Portfolio page now features single DexScreener iframe for authentic portfolio tracking
 - **User Experience**: Simplified portfolio interface prioritizing external platform integration over in-house features
 
+### July 21, 2025 - Content Reorganization & BTC Dominance Addition
+- **Artemis Analytics Migration**: Moved Artemis Analytics iframe from Dashboard page to Onchain page for better categorization
+- **BTC Dominance Chart Addition**: Added TradingView BTC Dominance chart iframe to Dashboard page positioned after XRP chart
+- **Enhanced Dashboard Charts**: Dashboard now features Bitcoin, Ethereum, Solana, XRP, and BTC Dominance TradingView widgets
+- **Onchain Platform Expansion**: Onchain page now includes Signal platforms, Smart Wallets, Artemis Analytics, and Social analytics
+- **Improved Content Flow**: Better logical grouping with analytics platforms consolidated on Onchain page
+- **Yellow Styling Implementation**: BTC Dominance chart features yellow color scheme with BTC.D badge styling
+
 ### July 21, 2025 - Interface Compactification & Scalable Layouts
 - **Compact Bridge Design**: Converted large Bridge interface to small link button format on DeFi page
 - **Scalable Bridge Layout**: Created responsive grid structure ready for multiple bridge platform additions
