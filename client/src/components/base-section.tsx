@@ -197,6 +197,37 @@ export default function BaseSection() {
         </div>
       </GlassCard>
 
+      {/* Aerodrome Finance DEX */}
+      <GlassCard className="p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-6 h-6 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center">
+            <ArrowLeftRight className="w-4 h-4 text-white" />
+          </div>
+          <h3 className="text-xl font-semibold text-white">Aerodrome Finance</h3>
+          <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-full font-medium">
+            BASE DEX
+          </span>
+          <button
+            onClick={() => window.open('https://aerodrome.finance/swap?from=eth&to=0x940181a94a35a4569e4529a3cdfb74e38fd98631&chain0=8453&chain1=8453', '_blank')}
+            className="ml-auto text-green-400 hover:text-green-300 text-xs"
+          >
+            Open in New Tab →
+          </button>
+        </div>
+        <div className="w-full">
+          <iframe
+            src="https://aerodrome.finance/swap?from=eth&to=0x940181a94a35a4569e4529a3cdfb74e38fd98631&chain0=8453&chain1=8453"
+            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+            title="Aerodrome Finance DEX"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+            style={{
+              background: '#000000',
+              colorScheme: 'dark'
+            }}
+          />
+        </div>
+      </GlassCard>
+
       {/* Ecosystems Section */}
       <div className="space-y-6">
         <div className="flex items-center gap-3 mb-6">
@@ -211,7 +242,7 @@ export default function BaseSection() {
 
         {/* Virtuals.io Platform */}
         <GlassCard className="p-6">
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center gap-2 mb-6">
             <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-full flex items-center justify-center">
               <span className="text-white text-xs font-bold">V</span>
             </div>
@@ -219,80 +250,59 @@ export default function BaseSection() {
             <span className="px-2 py-1 bg-purple-500/20 text-purple-400 text-xs rounded-full font-medium">
               AI AGENTS
             </span>
-            <button
-              onClick={() => window.open('https://app.virtuals.io/', '_blank')}
-              className="ml-auto text-purple-400 hover:text-purple-300 text-xs"
-            >
-              Open in New Tab →
-            </button>
           </div>
-          <div className="w-full">
-            <iframe
-              src="https://app.virtuals.io/"
-              className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-              title="Virtuals.io Platform"
-              sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-              style={{
-                background: '#000000',
-                colorScheme: 'dark'
-              }}
-            />
-          </div>
-        </GlassCard>
-
-        {/* Creator.bid Agents */}
-        <GlassCard className="p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-6 h-6 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full flex items-center justify-center">
-              <span className="text-white text-xs font-bold">CB</span>
+          <div className="space-y-4">
+            <div className="w-full">
+              <iframe
+                src="https://app.virtuals.io/"
+                className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+                title="Virtuals.io Platform"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+                style={{
+                  background: '#000000',
+                  colorScheme: 'dark'
+                }}
+              />
             </div>
-            <h3 className="text-xl font-semibold text-white">Creator.bid Agents</h3>
-            <span className="px-2 py-1 bg-emerald-500/20 text-emerald-400 text-xs rounded-full font-medium">
-              CREATOR AGENTS
-            </span>
-            <button
-              onClick={() => window.open('https://creator.bid/agents', '_blank')}
-              className="ml-auto text-emerald-400 hover:text-emerald-300 text-xs"
-            >
-              Open in New Tab →
-            </button>
-          </div>
-          <div className="w-full">
-            <iframe
-              src="https://creator.bid/agents"
-              className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-              title="Creator.bid Agents"
-              sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-              style={{
-                background: '#000000',
-                colorScheme: 'dark'
-              }}
-            />
-          </div>
-        </GlassCard>
+            
+            {/* Related Platforms */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-crypto-silver/10">
+              <a
+                href="https://bankr.bot/terminal"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-purple-500/30 transition-all duration-200 group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">B</span>
+                  </div>
+                  <div>
+                    <h4 className="text-white font-medium text-sm">Bankr.bot</h4>
+                    <p className="text-gray-400 text-xs">Trading terminal</p>
+                  </div>
+                </div>
+                <div className="w-4 h-4 text-gray-400 group-hover:text-purple-400 transition-colors">→</div>
+              </a>
 
-        {/* Bankr.bot Integration */}
-        <GlassCard className="p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
-              <span className="text-white text-xs font-bold">B</span>
+              <a
+                href="https://creator.bid/agents"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-emerald-500/30 transition-all duration-200 group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">C</span>
+                  </div>
+                  <div>
+                    <h4 className="text-white font-medium text-sm">Creator.bid</h4>
+                    <p className="text-gray-400 text-xs">Agent marketplace</p>
+                  </div>
+                </div>
+                <div className="w-4 h-4 text-gray-400 group-hover:text-emerald-400 transition-colors">→</div>
+              </a>
             </div>
-            <h3 className="text-xl font-semibold text-white">Bankr.bot Terminal</h3>
-            <span className="px-2 py-1 bg-purple-500/20 text-purple-400 text-xs rounded-full font-medium">
-              Live Data
-            </span>
-          </div>
-          <div className="w-full">
-            <iframe
-              src="https://bankr.bot/terminal"
-              className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-              title="Bankr.bot Terminal"
-              sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-              style={{
-                background: '#000000',
-                colorScheme: 'dark'
-              }}
-            />
           </div>
         </GlassCard>
       </div>
