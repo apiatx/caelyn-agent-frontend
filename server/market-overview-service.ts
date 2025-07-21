@@ -100,17 +100,79 @@ interface FearGreedData {
 export class MarketOverviewService {
   private apiKey: string;
   private baseUrl = 'https://pro-api.coinmarketcap.com/v1';
+  private globalMetricsCache: { data: GlobalMetrics | null; lastFetch: number | null } = { data: null, lastFetch: null };
+  private altSeasonCache: { data: AltSeasonData | null; lastFetch: number | null } = { data: null, lastFetch: null };
+  private fearGreedCache: { data: FearGreedData | null; lastFetch: number | null } = { data: null, lastFetch: null };
+  
+  // Cache durations
+  private readonly GLOBAL_METRICS_CACHE_DURATION = 60 * 60 * 1000; // 1 hour
+  private readonly ALT_SEASON_CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours (2 API calls total)
+  private readonly FEAR_GREED_CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours (2 API calls total)
 
   constructor() {
     this.apiKey = process.env.COINMARKETCAP_API_KEY || '7d9a361e-596d-4914-87e2-f1124da24897';
   }
 
+  private isBusinessHours(): boolean {
+    const now = new Date();
+    const utcHour = now.getUTCHours();
+    // Business hours: 7am-9pm UTC (14 hours)
+    return utcHour >= 7 && utcHour < 21;
+  }
+
+  private shouldRefreshGlobalMetrics(): boolean {
+    if (!this.globalMetricsCache.data || !this.globalMetricsCache.lastFetch) {
+      return true;
+    }
+    
+    const now = Date.now();
+    const timeSinceLastFetch = now - this.globalMetricsCache.lastFetch;
+    
+    // Only allow refresh during business hours (7am-9pm UTC) and max once per hour
+    if (!this.isBusinessHours()) {
+      return false;
+    }
+    
+    return timeSinceLastFetch >= this.GLOBAL_METRICS_CACHE_DURATION;
+  }
+
+  private shouldRefreshAltSeason(): boolean {
+    if (!this.altSeasonCache.data || !this.altSeasonCache.lastFetch) {
+      return true;
+    }
+    
+    const now = Date.now();
+    const timeSinceLastFetch = now - this.altSeasonCache.lastFetch;
+    
+    // Allow max 2 API calls per day
+    return timeSinceLastFetch >= this.ALT_SEASON_CACHE_DURATION;
+  }
+
+  private shouldRefreshFearGreed(): boolean {
+    if (!this.fearGreedCache.data || !this.fearGreedCache.lastFetch) {
+      return true;
+    }
+    
+    const now = Date.now();
+    const timeSinceLastFetch = now - this.fearGreedCache.lastFetch;
+    
+    // Allow max 2 API calls per day
+    return timeSinceLastFetch >= this.FEAR_GREED_CACHE_DURATION;
+  }
+
   async getGlobalMetrics(): Promise<GlobalMetrics> {
-    console.log('🔍 [Market Overview] Fetching global metrics from CoinMarketCap...');
+    // Check if we should use cached data
+    if (!this.shouldRefreshGlobalMetrics()) {
+      console.log('📦 [Market Overview] Using cached global metrics data (rate limiting active)');
+      return this.globalMetricsCache.data!;
+    }
+
+    console.log('🔍 [Market Overview] Fetching fresh global metrics from CoinMarketCap...');
     
     const url = `${this.baseUrl}/global-metrics/quotes/latest`;
     console.log('🔍 [Market Overview] API URL:', url);
     console.log('🔍 [Market Overview] API Key:', this.apiKey ? '***KEY_SET***' : '***NOT_SET***');
+    console.log('⏰ [Market Overview] Business hours check:', this.isBusinessHours() ? 'YES' : 'NO');
 
     try {
       const response = await fetch(url, {
@@ -129,9 +191,22 @@ export class MarketOverviewService {
       const data: any = await response.json();
       console.log('✅ [Market Overview] Successfully retrieved global metrics');
       
+      // Cache the fresh data
+      this.globalMetricsCache = {
+        data: data.data,
+        lastFetch: Date.now()
+      };
+      
       return data.data;
     } catch (error) {
       console.error('❌ [Market Overview] Failed to fetch global metrics:', error);
+      
+      // If we have cached data, return it as fallback
+      if (this.globalMetricsCache.data) {
+        console.log('📦 [Market Overview] Using cached data as fallback');
+        return this.globalMetricsCache.data;
+      }
+      
       throw error;
     }
   }
@@ -197,7 +272,13 @@ export class MarketOverviewService {
   }
 
   async getAltSeasonIndex(): Promise<AltSeasonData> {
-    console.log('🔍 [Market Overview] Calculating Alt Season Index from CoinMarketCap...');
+    // Check if we should use cached data (max 2 API calls per day)
+    if (!this.shouldRefreshAltSeason()) {
+      console.log('📦 [Market Overview] Using cached Alt Season data (rate limiting: 2 calls/day)');
+      return this.altSeasonCache.data!;
+    }
+
+    console.log('🔍 [Market Overview] Calculating fresh Alt Season Index from CoinMarketCap...');
     
     try {
       // Use basic listings endpoint to get top 50 cryptocurrencies
@@ -242,7 +323,7 @@ export class MarketOverviewService {
       const lastWeek = Math.max(5, indexValue + (Math.random() - 0.5) * 20);
       const lastMonth = Math.max(0, indexValue + (Math.random() - 0.5) * 30);
       
-      return {
+      const altSeasonData = {
         index_value: indexValue,
         timestamp: new Date().toISOString(),
         is_alt_season: isAltSeason,
@@ -262,13 +343,21 @@ export class MarketOverviewService {
           low_description: 'Bitcoin Season'
         }
       };
+      
+      // Cache the fresh data
+      this.altSeasonCache = {
+        data: altSeasonData,
+        lastFetch: Date.now()
+      };
+      
+      return altSeasonData;
     } catch (error) {
       console.error('❌ [Market Overview] Failed to fetch Alt Season Index:', error);
       // Return a calculated fallback based on Bitcoin dominance
       try {
         const btcDominance = await this.getBitcoinDominance();
         const estimatedIndex = Math.max(0, Math.min(100, 100 - btcDominance));
-        return {
+        const estimatedData = {
           index_value: estimatedIndex,
           timestamp: new Date().toISOString(),
           is_alt_season: estimatedIndex > 75,
@@ -288,8 +377,18 @@ export class MarketOverviewService {
             low_description: 'Bitcoin Season'
           }
         };
-      } catch {
-        return {
+        
+        // Cache the estimated data
+        this.altSeasonCache = {
+          data: estimatedData,
+          lastFetch: Date.now()
+        };
+        
+        return estimatedData;
+      } catch (error) {
+        console.error('❌ [Market Overview] Failed to calculate Alt Season Index:', error);
+        
+        const fallbackData = {
           index_value: 25,
           timestamp: new Date().toISOString(),
           is_alt_season: false,
@@ -309,6 +408,14 @@ export class MarketOverviewService {
             low_description: 'Bitcoin Season'
           }
         };
+        
+        // Cache the fallback data
+        this.altSeasonCache = {
+          data: fallbackData,
+          lastFetch: Date.now()
+        };
+        
+        return fallbackData;
       }
     }
   }
@@ -382,6 +489,12 @@ export class MarketOverviewService {
   }
 
   async getFearGreedIndex(): Promise<FearGreedData> {
+    // Check if we should use cached data (max 2 API calls per day)
+    if (!this.shouldRefreshFearGreed()) {
+      console.log('📦 [Market Overview] Using cached Fear & Greed data (rate limiting: 2 calls/day)');
+      return this.fearGreedCache.data!;
+    }
+
     console.log('🔍 [Market Overview] Fetching live Fear & Greed Index from CoinMarketCap...');
     
     try {
@@ -468,7 +581,7 @@ export class MarketOverviewService {
         
         console.log(`✅ [Market Overview] Live Fear & Greed Index: ${indexValue} (${getClassification(indexValue)}) - Market: ${marketCapChange.toFixed(1)}%, BTC: ${btcChange.toFixed(1)}%`);
         
-        return {
+        const fearGreedData = {
           index_value: indexValue,
           timestamp: new Date().toISOString(),
           classification: getClassification(indexValue),
@@ -489,17 +602,25 @@ export class MarketOverviewService {
             low_classification: 'Extreme Fear'
           }
         };
+        
+        // Cache the calculated data
+        this.fearGreedCache = {
+          data: fearGreedData,
+          lastFetch: Date.now()
+        };
+        
+        return fearGreedData;
       }
 
-      const fearGreedData: any = await response.json();
+      const fearGreedResponse: any = await response.json();
       console.log('✅ [Market Overview] Retrieved live Fear & Greed Index from CoinMarketCap API v3');
-      console.log('📊 [Market Overview] Raw Fear & Greed response:', JSON.stringify(fearGreedData, null, 2));
+      console.log('📊 [Market Overview] Raw Fear & Greed response:', JSON.stringify(fearGreedResponse, null, 2));
       
       // Parse CoinMarketCap v3 Fear & Greed response format  
-      if (fearGreedData?.data?.value !== undefined) {
-        const indexValue = fearGreedData.data.value;
-        const classification = fearGreedData.data.value_classification;
-        const updateTime = fearGreedData.data.update_time;
+      if (fearGreedResponse?.data?.value !== undefined) {
+        const indexValue = fearGreedResponse.data.value;
+        const classification = fearGreedResponse.data.value_classification;
+        const updateTime = fearGreedResponse.data.update_time;
         
         console.log(`✅ [Market Overview] Live CMC Fear & Greed Index: ${indexValue} (${classification}) - Updated: ${updateTime}`);
         
@@ -516,7 +637,7 @@ export class MarketOverviewService {
           return 'Extreme Fear';
         };
         
-        return {
+        const fearGreedData = {
           index_value: indexValue,
           timestamp: updateTime || new Date().toISOString(),
           classification: classification,
@@ -537,9 +658,17 @@ export class MarketOverviewService {
             low_classification: 'Extreme Fear'
           }
         };
+        
+        // Cache the fresh data
+        this.fearGreedCache = {
+          data: fearGreedData,
+          lastFetch: Date.now()
+        };
+        
+        return fearGreedData;
       } else {
         console.log('⚠️ [Market Overview] No data in Fear & Greed response, using fallback');
-        return {
+        const fallbackData = {
           index_value: 50,
           timestamp: new Date().toISOString(),
           classification: 'Neutral',
@@ -560,6 +689,14 @@ export class MarketOverviewService {
             low_classification: 'Extreme Fear'
           }
         };
+        
+        // Cache the fallback data
+        this.fearGreedCache = {
+          data: fallbackData,
+          lastFetch: Date.now()
+        };
+        
+        return fallbackData;
       }
     } catch (error) {
       console.error('❌ [Market Overview] Failed to fetch Fear & Greed Index:', error);

@@ -327,7 +327,7 @@ export function MarketOverviewSection() {
           <div className="space-y-3">
             {/* CMC Altcoin Season Index */}
             <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-4">
-              <h4 className="text-white text-lg font-bold mb-3">CMC Altcoin Season Index</h4>
+              <h4 className="text-white text-lg font-bold mb-3">Alt Season Index</h4>
               
               <div className="flex items-baseline gap-1 mb-4">
                 <span className="text-white text-3xl font-bold">{altSeasonIndex.index_value}</span>
@@ -418,7 +418,7 @@ export function MarketOverviewSection() {
         <div>
           <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
             <Activity className="w-5 h-5 text-purple-400" />
-            CMC Crypto Fear and Greed Index
+            Fear and Greed Index
             <button
               onClick={openFearGreedChart}
               className="ml-auto text-xs text-purple-400 hover:text-purple-300 transition-colors"
