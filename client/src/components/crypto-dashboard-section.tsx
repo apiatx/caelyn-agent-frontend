@@ -162,7 +162,7 @@ export default function CryptoDashboardSection() {
         </div>
         <div className="w-full">
           <iframe
-            src="https://www.tradingview.com/chart/e5l95XgZ/?symbol=CRYPTOCAP%3ABTC.D"
+            src="https://www.tradingview.com/widgetembed/?frameElementId=tradingview_btcd&symbol=CRYPTOCAP%3ABTC.D&interval=D&hidesidetoolbar=1&hidetoptoolbar=1&symboledit=1&saveimage=1&toolbarbg=F1F3F6&studies=[]&hideideas=1&theme=Dark&style=1&timezone=Etc%2FUTC&studies_overrides={}&overrides={}&enabled_features=[]&disabled_features=[]&locale=en&utm_source=localhost&utm_medium=widget&utm_campaign=chart&utm_term=CRYPTOCAP%3ABTC.D"
             className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
             title="TradingView BTC Dominance Chart"
             sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
@@ -191,7 +191,7 @@ export default function CryptoDashboardSection() {
         </div>
         <div className="w-full">
           <iframe
-            src="https://www.tradingview.com/chart/e5l95XgZ/?symbol=CRYPTOCAP%3AOTHERS.D"
+            src="https://www.tradingview.com/widgetembed/?frameElementId=tradingview_others&symbol=CRYPTOCAP%3AOTHERS.D&interval=D&hidesidetoolbar=1&hidetoptoolbar=1&symboledit=1&saveimage=1&toolbarbg=F1F3F6&studies=[]&hideideas=1&theme=Dark&style=1&timezone=Etc%2FUTC&studies_overrides={}&overrides={}&enabled_features=[]&disabled_features=[]&locale=en&utm_source=localhost&utm_medium=widget&utm_campaign=chart&utm_term=CRYPTOCAP%3AOTHERS.D"
             className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
             title="TradingView OTHERS Dominance Chart"
             sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
