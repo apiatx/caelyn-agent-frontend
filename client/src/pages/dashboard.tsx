@@ -14,7 +14,7 @@ import cryptoHippoImage from "@assets/image_1752975467353.png";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 
-type TabType = "dashboard" | "portfolio" | "alpha" | "base" | "bittensor" | "abstract" | "solana" | "defi";
+type TabType = "dashboard" | "portfolio" | "alpha" | "base" | "bittensor" | "abstract" | "solana" | "defi" | "hype";
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<TabType>("dashboard");
@@ -145,6 +145,12 @@ export default function Dashboard() {
             >
               <Wallet className="w-4 h-4 mr-2 inline" />Portfolio
             </button>
+            <button
+              onClick={() => window.location.href = "/hype"}
+              className="flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver"
+            >
+              <TrendingUp className="w-4 h-4 mr-2 inline" />Hype
+            </button>
 
           </div>
 
@@ -231,6 +237,12 @@ export default function Dashboard() {
                 }`}
               >
                 <Wallet className="w-4 h-4 mr-1 inline" />Portfolio
+              </button>
+              <button
+                onClick={() => window.location.href = "/hype"}
+                className="whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver"
+              >
+                <TrendingUp className="w-4 h-4 mr-1 inline" />Hype
               </button>
 
             </div>
