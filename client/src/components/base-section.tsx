@@ -229,10 +229,9 @@ export default function BaseSection() {
           <div className="w-full">
             <iframe
               src="https://aerodrome.finance/swap?from=eth&to=0x940181a94a35a4569e4529a3cdfb74e38fd98631&chain0=8453&chain1=8453"
-              className="w-full h-[600px] sm:h-[700px] lg:h-[800px] rounded-lg border border-crypto-silver/20"
+              className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
               title="Aerodrome Finance Swap"
-              sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-top-navigation"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
               style={{
                 background: 'transparent',
                 colorScheme: 'dark'
@@ -261,10 +260,9 @@ export default function BaseSection() {
           <div className="w-full">
             <iframe
               src="https://app.uniswap.org/"
-              className="w-full h-[600px] sm:h-[700px] lg:h-[800px] rounded-lg border border-crypto-silver/20"
+              className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
               title="Uniswap DEX"
-              sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-top-navigation"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
               style={{
                 background: 'transparent',
                 colorScheme: 'dark'
