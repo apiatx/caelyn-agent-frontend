@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { ChartLine, Settings, Activity, Eye, TrendingUp, BarChart3, Brain, Wallet, Zap, DollarSign, Layers, Bot } from "lucide-react";
+import { ChartLine, Settings, Activity, Eye, TrendingUp, BarChart3, Brain, Wallet, Zap, DollarSign, Layers } from "lucide-react";
 import CryptoDashboardSection from "@/components/crypto-dashboard-section";
 import PortfolioSection from "@/components/portfolio-section";
 import AlphaSection from "@/components/alpha-section";
-import AISection from "@/components/charts-section";
+
 import BittensorDashboardSection from "@/components/bittensor-dashboard-section";
 import BaseSection from "@/components/base-section";
 import SolanaSection from "@/components/solana-section";
@@ -14,7 +14,7 @@ import cryptoHippoImage from "@assets/image_1752975467353.png";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 
-type TabType = "dashboard" | "portfolio" | "alpha" | "ai" | "base" | "bittensor" | "abstract" | "solana" | "defi";
+type TabType = "dashboard" | "portfolio" | "alpha" | "base" | "bittensor" | "abstract" | "solana" | "defi";
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<TabType>("dashboard");
@@ -84,16 +84,7 @@ export default function Dashboard() {
             >
               <TrendingUp className="w-4 h-4 mr-2 inline" />Alpha
             </button>
-            <button
-              onClick={() => handleTabChange("ai")}
-              className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
-                activeTab === "ai"
-                  ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
-                  : "hover:bg-white/5 text-crypto-silver"
-              }`}
-            >
-              <Bot className="w-4 h-4 mr-2 inline" />AI
-            </button>
+
             <button
               onClick={() => handleTabChange("base")}
               className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
@@ -180,16 +171,7 @@ export default function Dashboard() {
               >
                 <TrendingUp className="w-4 h-4 mr-1 inline" />Alpha
               </button>
-              <button
-                onClick={() => handleTabChange("ai")}
-                className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
-                  activeTab === "ai"
-                    ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
-                    : "hover:bg-white/5 text-crypto-silver"
-                }`}
-              >
-                <Bot className="w-4 h-4 mr-1 inline" />AI
-              </button>
+
               <button
                 onClick={() => handleTabChange("base")}
                 className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
@@ -261,7 +243,7 @@ export default function Dashboard() {
         {activeTab === "dashboard" && <CryptoDashboardSection />}
         {activeTab === "portfolio" && <PortfolioSection />}
         {activeTab === "alpha" && <AlphaSection />}
-        {activeTab === "ai" && <AISection />}
+
         {activeTab === "base" && <BaseSection />}
         {activeTab === "bittensor" && <BittensorDashboardSection />}
         {activeTab === "abstract" && <AbstractSection />}
