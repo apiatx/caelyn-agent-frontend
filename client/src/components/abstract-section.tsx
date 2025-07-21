@@ -96,7 +96,7 @@ export default function AbstractSection() {
           </Badge>
         </div>
         
-        <div className="grid grid-cols-1">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <button
             onClick={() => openInNewTab('https://portal.abs.xyz/discover')}
             className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-lg hover:bg-indigo-500/20 transition-colors"
@@ -108,6 +108,19 @@ export default function AbstractSection() {
               <h4 className="text-indigo-400 font-semibold">Abstract Portal</h4>
             </div>
             <p className="text-gray-400 text-sm">Discover the Abstract ecosystem</p>
+          </button>
+          
+          <button
+            onClick={() => openInNewTab('https://x.com/Abstract_Eco')}
+            className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-sm font-bold">𝕏</span>
+              </div>
+              <h4 className="text-blue-400 font-semibold">Abstract_Eco</h4>
+            </div>
+            <p className="text-gray-400 text-sm">Follow Abstract ecosystem updates</p>
           </button>
         </div>
       </GlassCard>
