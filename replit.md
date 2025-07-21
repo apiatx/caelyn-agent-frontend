@@ -376,9 +376,13 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Sandbox Security**: Implemented secure iframe with proper sandbox attributes for safe trading interface
 - **Hyperdash Analytics Addition**: Added https://hyperdash.info/analytics iframe below trading interface
 - **HyperEVM DeFi Integration**: Added https://dexscreener.com/hyperevm iframe as third section for DeFi ecosystem coverage
-- **Triple Interface Design**: Hype page features HYPE trading, Hyperliquid analytics, and HyperEVM DeFi in comprehensive layout
+- **HyperSwap Integration**: Added https://app.hyperswap.exchange/#/swap iframe for DEX trading functionality
+- **Liqd.ag Integration**: Added https://liqd.ag/ iframe for liquidity management and analytics
+- **Dark Mode DexScreener**: Enabled dark theme for HyperEVM DexScreener using ?theme=dark parameter
+- **Comprehensive HyperEVM Suite**: HyperEVM section now features DexScreener analytics, HyperSwap trading, and Liqd.ag liquidity tools
+- **Triple Interface Design**: Hype page features HYPE trading, Hyperliquid analytics, and complete HyperEVM DeFi ecosystem
 - **Color-Coded Branding**: Purple "LIVE TRADING", blue "ANALYTICS", and green "DEFI" badges for clear section distinction
-- **Complete Ecosystem Coverage**: Users can trade HYPE, analyze ecosystem metrics, and explore DeFi tokens all in one place
+- **Complete Ecosystem Coverage**: Users can trade HYPE, analyze ecosystem metrics, swap tokens, and manage liquidity all in one place
 
 ### July 21, 2025 - Content Reorganization & Interface Cleanup
 - **Compact Bridge Design**: Converted large Bridge interface to small link button format on DeFi page
