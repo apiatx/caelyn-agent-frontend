@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, Star, Zap, DollarSign, Wallet, TrendingDown } from "lucide-react";
+import { TrendingUp, Star, Zap, DollarSign, Wallet, TrendingDown, Brain } from "lucide-react";
 
 // Glass card component for alpha section
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
@@ -173,6 +173,37 @@ export default function AlphaSection() {
             </div>
             <p className="text-gray-400 text-sm">Social Signal Analytics</p>
           </button>
+        </div>
+      </GlassCard>
+
+      {/* AI Insights */}
+      <GlassCard className="p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-6 h-6 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center">
+            <Brain className="w-4 h-4 text-white" />
+          </div>
+          <h3 className="text-xl font-semibold text-white">AI Insights</h3>
+          <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 text-xs">
+            AI POWERED
+          </Badge>
+          <button
+            onClick={() => openInNewTab('https://chatgpt.com/g/g-ma6mK7m5t-crypto-trading-investing')}
+            className="ml-auto text-cyan-400 hover:text-cyan-300 text-xs"
+          >
+            Open Full View →
+          </button>
+        </div>
+        <div className="w-full">
+          <iframe
+            src="https://chatgpt.com/g/g-ma6mK7m5t-crypto-trading-investing"
+            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+            title="Crypto Trading & Investing AI"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+            style={{
+              background: '#000000',
+              colorScheme: 'dark'
+            }}
+          />
         </div>
       </GlassCard>
     </div>

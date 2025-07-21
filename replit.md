@@ -414,6 +414,13 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Streamlined Base Page**: Base page now focuses on analytics and ecosystem platforms without large DEX iframes
 - **Enhanced DeFi Swap Section**: DeFi page Swap section now includes both Relay Bridge and Aerodrome Finance links
 
+### July 21, 2025 - Alpha Page AI Insights Addition
+- **AI Insights Section**: Added new "AI Insights" section to Alpha page with cyan-blue gradient branding
+- **ChatGPT Integration**: Embedded ChatGPT Crypto Trading & Investing GPT iframe (https://chatgpt.com/g/g-ma6mK7m5t-crypto-trading-investing)
+- **Brain Icon Implementation**: AI Insights features Brain icon with "AI POWERED" badge and external link access
+- **Enhanced Alpha Intelligence**: Alpha page now includes Signal, Smart Wallets, Social, and AI Insights sections
+- **Professional AI Integration**: 600px height iframe with dark theme styling and secure sandbox attributes
+
 ### July 21, 2025 - Content Reorganization & Interface Cleanup
 - **Compact Bridge Design**: Converted large Bridge interface to small link button format on DeFi page
 - **Scalable Bridge Layout**: Created responsive grid structure ready for multiple bridge platform additions
