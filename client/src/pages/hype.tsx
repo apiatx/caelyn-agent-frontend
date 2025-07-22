@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Link, useLocation } from "wouter";
+import { useLocation } from "wouter";
 import { 
-  BarChart3, 
+  Activity, 
   Brain, 
   ChartLine, 
   DollarSign, 
@@ -9,22 +9,21 @@ import {
   Zap, 
   Wallet,
   TrendingUp,
-  Menu,
-  X
+  Settings
 } from "lucide-react";
-import moodengImage from "@assets/image_1752975467353.png";
+import cryptoHippoImage from "@assets/image_1752975467353.png";
 import { HypeSection } from "@/components/hype-section";
+import { GlassCard } from "@/components/ui/glass-card";
+import { Button } from "@/components/ui/button";
 
-type TabType = "dashboard" | "alpha" | "charts" | "base" | "bittensor" | "abstract" | "solana" | "defi" | "portfolio" | "hype";
+type TabType = "dashboard" | "alpha" | "base" | "bittensor" | "hype" | "abstract" | "solana" | "defi" | "portfolio";
 
 export default function HypePage() {
   const [location, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState<TabType>("hype");
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
-    setIsMobileMenuOpen(false);
     
     // Navigate to appropriate route
     switch (tab) {
@@ -49,102 +48,238 @@ export default function HypePage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const tabs = [
-    { id: "dashboard" as TabType, name: "Dashboard", icon: BarChart3 },
-    { id: "alpha" as TabType, name: "Alpha", icon: TrendingUp },
-    { id: "charts" as TabType, name: "Charts", icon: ChartLine },
-    { id: "base" as TabType, name: "Base", icon: ChartLine },
-    { id: "bittensor" as TabType, name: "Bittensor", icon: Brain },
-    { id: "abstract" as TabType, name: "Abstract", icon: Layers },
-    { id: "solana" as TabType, name: "Solana", icon: Zap },
-    { id: "defi" as TabType, name: "DeFi", icon: DollarSign },
-    { id: "portfolio" as TabType, name: "Portfolio", icon: Wallet },
-    { id: "hype" as TabType, name: "Hype", icon: TrendingUp }
-  ];
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900/20 to-black">
+    <div className="min-h-screen text-white" style={{background: 'linear-gradient(135deg, hsl(0, 0%, 0%) 0%, hsl(0, 0%, 10%) 50%, hsl(0, 0%, 0%) 100%)'}}>
       {/* Header */}
-      <header className="border-b border-crypto-silver/20 bg-black/40 backdrop-blur-xl sticky top-0 z-50">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <Link href="/" className="flex items-center space-x-3 hover:opacity-80 transition-opacity">
-              <div className="w-10 h-10 rounded-lg overflow-hidden">
+      <header className="glass-card-dark border-b border-crypto-silver/20 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
+          <div className="flex justify-between items-center py-3 lg:py-4">
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg overflow-hidden">
                 <img 
-                  src={moodengImage} 
-                  alt="CryptoHippo" 
+                  src={cryptoHippoImage}
+                  alt="CryptoHippo"
                   className="w-full h-full object-cover"
                 />
               </div>
-              <div>
-                <h1 className="text-xl font-bold text-white">CryptoHippo</h1>
-                <p className="text-xs text-crypto-silver">Premium Crypto Analytics</p>
-              </div>
-            </Link>
-
-            {/* Desktop Navigation */}
-            <nav className="hidden lg:flex space-x-1">
-              {tabs.map((tab) => {
-                const Icon = tab.icon;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => handleTabChange(tab.id)}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
-                      activeTab === tab.id
-                        ? 'bg-crypto-primary text-white shadow-lg'
-                        : 'text-crypto-silver hover:text-white hover:bg-white/5'
-                    }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                    {tab.name}
-                  </button>
-                );
-              })}
-            </nav>
-
-            {/* Mobile Menu Button */}
-            <button
-              className="lg:hidden text-white p-2"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            >
-              {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
-          </div>
-
-          {/* Mobile Navigation */}
-          {isMobileMenuOpen && (
-            <div className="lg:hidden py-4 border-t border-crypto-silver/20">
-              <div className="flex flex-wrap gap-2">
-                {tabs.map((tab) => {
-                  const Icon = tab.icon;
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => handleTabChange(tab.id)}
-                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
-                        activeTab === tab.id
-                          ? 'bg-crypto-primary text-white'
-                          : 'text-crypto-silver hover:text-white hover:bg-white/5'
-                      }`}
-                    >
-                      <Icon className="w-4 h-4" />
-                      {tab.name}
-                    </button>
-                  );
-                })}
-              </div>
+              <h1 className="text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-white to-crypto-silver bg-clip-text text-transparent">
+                CryptoHippo
+              </h1>
             </div>
-          )}
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <GlassCard className="px-2 py-1 sm:px-3 sm:py-2 hidden sm:block">
+                <span className="text-xs sm:text-sm text-crypto-silver">Portfolio Value</span>
+                <div className="text-sm sm:text-lg font-semibold text-crypto-success">$127,845.32</div>
+              </GlassCard>
+              <GlassCard className="px-2 py-2 sm:hidden">
+                <div className="text-sm font-semibold text-crypto-success">$127.8K</div>
+              </GlassCard>
+              <Button variant="ghost" size="sm" className="p-1 sm:p-2">
+                <Settings className="h-3 w-3 sm:h-4 sm:w-4" />
+              </Button>
+            </div>
+          </div>
         </div>
       </header>
 
+      {/* Navigation */}
+      <nav className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 mt-4 lg:mt-6">
+        <GlassCard className="p-1 sm:p-2">
+          {/* Desktop Navigation */}
+          <div className="hidden lg:flex space-x-2">
+            <button
+              onClick={() => handleTabChange("dashboard")}
+              className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
+                activeTab === "dashboard"
+                  ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                  : "hover:bg-white/5 text-crypto-silver"
+              }`}
+            >
+              <Activity className="w-4 h-4 mr-2 inline" />Dashboard
+            </button>
+            <button
+              onClick={() => handleTabChange("alpha")}
+              className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
+                activeTab === "alpha"
+                  ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                  : "hover:bg-white/5 text-crypto-silver"
+              }`}
+            >
+              <TrendingUp className="w-4 h-4 mr-2 inline" />Alpha
+            </button>
+            <button
+              onClick={() => handleTabChange("base")}
+              className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
+                activeTab === "base"
+                  ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                  : "hover:bg-white/5 text-crypto-silver"
+              }`}
+            >
+              <ChartLine className="w-4 h-4 mr-2 inline" />Base
+            </button>
+            <button
+              onClick={() => handleTabChange("bittensor")}
+              className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
+                activeTab === "bittensor"
+                  ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                  : "hover:bg-white/5 text-crypto-silver"
+              }`}
+            >
+              <Brain className="w-4 h-4 mr-2 inline" />Bittensor
+            </button>
+            <button
+              onClick={() => handleTabChange("hype")}
+              className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
+                activeTab === "hype"
+                  ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                  : "hover:bg-white/5 text-crypto-silver"
+              }`}
+            >
+              <TrendingUp className="w-4 h-4 mr-2 inline" />Hype
+            </button>
+            <button
+              onClick={() => handleTabChange("abstract")}
+              className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
+                activeTab === "abstract"
+                  ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                  : "hover:bg-white/5 text-crypto-silver"
+              }`}
+            >
+              <Layers className="w-4 h-4 mr-2 inline" />Abstract
+            </button>
+            <button
+              onClick={() => handleTabChange("solana")}
+              className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
+                activeTab === "solana"
+                  ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                  : "hover:bg-white/5 text-crypto-silver"
+              }`}
+            >
+              <Zap className="w-4 h-4 mr-2 inline" />Solana
+            </button>
+            <button
+              onClick={() => handleTabChange("defi")}
+              className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
+                activeTab === "defi"
+                  ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                  : "hover:bg-white/5 text-crypto-silver"
+              }`}
+            >
+              <DollarSign className="w-4 h-4 mr-2 inline" />DeFi
+            </button>
+            <button
+              onClick={() => handleTabChange("portfolio")}
+              className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
+                activeTab === "portfolio"
+                  ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                  : "hover:bg-white/5 text-crypto-silver"
+              }`}
+            >
+              <Wallet className="w-4 h-4 mr-2 inline" />Portfolio
+            </button>
+          </div>
+
+          {/* Mobile Navigation - Horizontal Scroll */}
+          <div className="lg:hidden overflow-x-auto">
+            <div className="flex space-x-1 min-w-max pb-2">
+              <button
+                onClick={() => handleTabChange("dashboard")}
+                className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+                  activeTab === "dashboard"
+                    ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                    : "hover:bg-white/5 text-crypto-silver"
+                }`}
+              >
+                <Activity className="w-4 h-4 mr-1 inline" />Dashboard
+              </button>
+              <button
+                onClick={() => handleTabChange("alpha")}
+                className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+                  activeTab === "alpha"
+                    ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                    : "hover:bg-white/5 text-crypto-silver"
+                }`}
+              >
+                <TrendingUp className="w-4 h-4 mr-1 inline" />Alpha
+              </button>
+              <button
+                onClick={() => handleTabChange("base")}
+                className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+                  activeTab === "base"
+                    ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                    : "hover:bg-white/5 text-crypto-silver"
+                }`}
+              >
+                <ChartLine className="w-4 h-4 mr-1 inline" />Base
+              </button>
+              <button
+                onClick={() => handleTabChange("bittensor")}
+                className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+                  activeTab === "bittensor"
+                    ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                    : "hover:bg-white/5 text-crypto-silver"
+                }`}
+              >
+                <Brain className="w-4 h-4 mr-1 inline" />Bittensor
+              </button>
+              <button
+                onClick={() => handleTabChange("hype")}
+                className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+                  activeTab === "hype"
+                    ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                    : "hover:bg-white/5 text-crypto-silver"
+                }`}
+              >
+                <TrendingUp className="w-4 h-4 mr-1 inline" />Hype
+              </button>
+              <button
+                onClick={() => handleTabChange("abstract")}
+                className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+                  activeTab === "abstract"
+                    ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                    : "hover:bg-white/5 text-crypto-silver"
+                }`}
+              >
+                <Layers className="w-4 h-4 mr-1 inline" />Abstract
+              </button>
+              <button
+                onClick={() => handleTabChange("solana")}
+                className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+                  activeTab === "solana"
+                    ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                    : "hover:bg-white/5 text-crypto-silver"
+                }`}
+              >
+                <Zap className="w-4 h-4 mr-1 inline" />Solana
+              </button>
+              <button
+                onClick={() => handleTabChange("defi")}
+                className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+                  activeTab === "defi"
+                    ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                    : "hover:bg-white/5 text-crypto-silver"
+                }`}
+              >
+                <DollarSign className="w-4 h-4 mr-1 inline" />DeFi
+              </button>
+              <button
+                onClick={() => handleTabChange("portfolio")}
+                className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+                  activeTab === "portfolio"
+                    ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                    : "hover:bg-white/5 text-crypto-silver"
+                }`}
+              >
+                <Wallet className="w-4 h-4 mr-1 inline" />Portfolio
+              </button>
+            </div>
+          </div>
+        </GlassCard>
+      </nav>
+
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
-        <div className="max-w-7xl mx-auto">
-          <HypeSection />
-        </div>
+      <main className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 lg:py-8">
+        <HypeSection />
       </main>
     </div>
   );
