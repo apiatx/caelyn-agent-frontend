@@ -2,7 +2,7 @@ import React from 'react';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { DollarSign, TrendingUp, BarChart3, Brain, ArrowLeftRight } from "lucide-react";
+import { DollarSign, TrendingUp, BarChart3, Brain, ArrowLeftRight, Wallet, ExternalLink, Layers, Shield } from "lucide-react";
 
 // Glass card component for DeFi section
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
@@ -78,6 +78,105 @@ export default function DeFiSection() {
 
 
 
+
+      {/* DeFi Section */}
+      <div className="space-y-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-blue-500 rounded-xl flex items-center justify-center">
+            <DollarSign className="text-white text-xl" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-white">DeFi</h2>
+            <p className="text-crypto-silver">Core DeFi protocols and platforms</p>
+          </div>
+        </div>
+        
+        {/* Peadpods Finance Iframe */}
+        <GlassCard className="overflow-hidden">
+          <div className="flex items-center justify-between p-4 border-b border-crypto-silver/20">
+            <div className="flex items-center gap-3">
+              <Wallet className="h-6 w-6 text-green-400" />
+              <h3 className="text-xl font-semibold text-white">Peadpods Finance</h3>
+              <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                LIVE TRADING
+              </Badge>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => openInNewTab('https://peadpods.finance')}
+              className="p-2 hover:bg-crypto-silver/10"
+            >
+              <ExternalLink className="h-5 w-5 text-crypto-silver hover:text-white" />
+            </Button>
+          </div>
+          <iframe
+            src="https://peadpods.finance"
+            className="w-full h-[600px] border-0"
+            title="Peadpods Finance"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+          />
+        </GlassCard>
+
+        {/* DeFi Platform Links */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Button
+            variant="outline"
+            onClick={() => openInNewTab('https://defi.instadapp.io/')}
+            className="bg-black/20 border-crypto-silver/20 hover:bg-green-500/20 hover:border-green-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
+          >
+            <div className="p-3 rounded-lg bg-gradient-to-r from-green-500/20 to-blue-500/20">
+              <Wallet className="h-6 w-6 text-green-400" />
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-lg">Fluid</div>
+              <div className="text-sm text-crypto-silver">DeFi protocol platform</div>
+            </div>
+          </Button>
+
+          <Button
+            variant="outline"
+            onClick={() => openInNewTab('https://app.aave.com/?ampDeviceId=c6075ac5-445d-4e03-b727-5c01b59e4b95')}
+            className="bg-black/20 border-crypto-silver/20 hover:bg-purple-500/20 hover:border-purple-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
+          >
+            <div className="p-3 rounded-lg bg-gradient-to-r from-purple-500/20 to-pink-500/20">
+              <DollarSign className="h-6 w-6 text-purple-400" />
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-lg">Aave</div>
+              <div className="text-sm text-crypto-silver">Lending protocol</div>
+            </div>
+          </Button>
+
+          <Button
+            variant="outline"
+            onClick={() => openInNewTab('https://lido.fi/lido-multichain')}
+            className="bg-black/20 border-crypto-silver/20 hover:bg-blue-500/20 hover:border-blue-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
+          >
+            <div className="p-3 rounded-lg bg-gradient-to-r from-blue-500/20 to-cyan-500/20">
+              <Layers className="h-6 w-6 text-blue-400" />
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-lg">Lido</div>
+              <div className="text-sm text-crypto-silver">Liquid staking</div>
+            </div>
+          </Button>
+
+          <Button
+            variant="outline"
+            onClick={() => openInNewTab('https://app.eigenlayer.xyz/')}
+            className="bg-black/20 border-crypto-silver/20 hover:bg-orange-500/20 hover:border-orange-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
+          >
+            <div className="p-3 rounded-lg bg-gradient-to-r from-orange-500/20 to-red-500/20">
+              <Shield className="h-6 w-6 text-orange-400" />
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-lg">Eigenlayer</div>
+              <div className="text-sm text-crypto-silver">Restaking protocol</div>
+            </div>
+          </Button>
+        </div>
+      </div>
 
       {/* DeFAI Section */}
       <div className="space-y-6">
