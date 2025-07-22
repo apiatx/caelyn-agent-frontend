@@ -64,7 +64,7 @@ export default function HypePage() {
                   className="w-full h-full object-cover"
                 />
               </div>
-              <h1 className="text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-white to-crypto-silver bg-clip-text text-transparent">
+              <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-white">
                 CryptoHippo
               </h1>
             </div>

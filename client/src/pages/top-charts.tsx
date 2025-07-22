@@ -25,21 +25,9 @@ export default function TopChartsPage() {
                   className="w-full h-full object-cover"
                 />
               </div>
-              <h1 className="text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-white to-crypto-silver bg-clip-text text-transparent">
+              <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-white">
                 CryptoHippo
               </h1>
-            </div>
-            <div className="flex items-center space-x-2 sm:space-x-4">
-              <GlassCard className="px-2 py-1 sm:px-3 sm:py-2 hidden sm:block">
-                <span className="text-xs sm:text-sm text-crypto-silver">Portfolio Value</span>
-                <div className="text-sm sm:text-lg font-semibold text-crypto-success">$127,845.32</div>
-              </GlassCard>
-              <GlassCard className="px-2 py-2 sm:hidden">
-                <div className="text-sm font-semibold text-crypto-success">$127.8K</div>
-              </GlassCard>
-              <Button variant="ghost" size="sm" className="p-1 sm:p-2">
-                <Settings className="h-3 w-3 sm:h-4 sm:w-4" />
-              </Button>
             </div>
           </div>
         </div>
