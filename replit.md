@@ -679,6 +679,12 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **New Laser Eyes Hippo Logo**: Updated logo to new laser eyes hippo image across all pages
 - **Larger Logo Size**: Increased logo size from 8x8/10x10 to 10x10/12x12 for better visibility
 
+### July 22, 2025 - Market Overview Page Reorganization
+- **Alt Season Index Repositioned**: Moved Alt Season Index section below ETF Net Flows on Market Overview page
+- **Enhanced Content Flow**: Improved information hierarchy with Fear & Greed Index and ETF Net Flows displayed side-by-side
+- **Alt Season Index Full Width**: Alt Season Index now displays in full-width layout below the two-column sections
+- **Better Visual Organization**: Market overview now flows from global metrics to specific indicators (Fear/Greed + ETF) to broader market analysis (Alt Season)
+
 ### July 21, 2025 - Comprehensive API Rate Limiting & Caching System Implementation
 - **Complete CoinMarketCap Rate Limiting**: Implemented comprehensive caching system for all market overview API calls
 - **Global Metrics Caching**: 1-hour cache duration with business hours restriction (7am-9pm UTC) for hourly API credits conservation
