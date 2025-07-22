@@ -52,6 +52,31 @@ export default function DeFiSection() {
         </div>
       </div>
 
+      {/* Senpi AI */}
+      <GlassCard className="p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-6 h-6 bg-cyan-500 rounded-full flex items-center justify-center">
+            <Brain className="w-4 h-4 text-white" />
+          </div>
+          <h3 className="text-xl font-semibold text-white">Senpi AI</h3>
+          <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30">
+            AI ANALYTICS
+          </Badge>
+          <button
+            onClick={() => openInNewTab('https://senpi.ai/')}
+            className="text-cyan-400 hover:text-cyan-300 text-sm ml-auto"
+          >
+            Open Full View →
+          </button>
+        </div>
+        <iframe
+          src="https://senpi.ai/"
+          className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+          title="Senpi AI"
+          sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+        />
+      </GlassCard>
+
       {/* Peapods Finance */}
       <GlassCard className="p-6">
         <div className="flex items-center gap-2 mb-4">
