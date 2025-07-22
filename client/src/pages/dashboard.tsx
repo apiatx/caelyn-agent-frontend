@@ -5,7 +5,7 @@ import PortfolioSection from "@/components/portfolio-section";
 import AlphaSection from "@/components/alpha-section";
 
 import BittensorDashboardSection from "@/components/bittensor-dashboard-section";
-import BaseSection from "@/components/base-section";
+import BaseSectionSafe from "@/components/base-section-safe";
 import SolanaSection from "@/components/solana-section";
 import AbstractSection from "@/components/abstract-section";
 import DeFiSection from "@/components/defi-section";
@@ -290,7 +290,7 @@ export default function Dashboard() {
           {activeTab === "alpha" && <AlphaSection />}
         </Suspense>
         <Suspense fallback={<SectionLoadingState title="Base Network" />}>
-          {activeTab === "base" && <BaseSection />}
+          {activeTab === "base" && <BaseSectionSafe />}
         </Suspense>
         <Suspense fallback={<SectionLoadingState title="Bittensor" />}>
           {activeTab === "bittensor" && <BittensorDashboardSection />}
