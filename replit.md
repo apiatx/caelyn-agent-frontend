@@ -747,3 +747,11 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Green Gradient Branding**: Indexy features green color scheme with TrendingUp icon for market indexing focus
 - **Enhanced Signal Coverage**: Signal section now provides 6 platforms for comprehensive market intelligence
 - **Responsive Grid Layout**: Maintains clean 3-column responsive design with consistent hover effects
+
+### July 22, 2025 - Navigation Glitch Fix & URL Fragment Handling
+- **Fixed Navigation Bug**: Resolved issue where clicking Alpha, Base, or Abstract tabs from Market Overview required two clicks
+- **URL Fragment Detection**: Implemented proper hash change handling to detect URLs like "/#alpha", "/#base", "/#abstract"
+- **Deep Linking Support**: Added URL hash updates when switching tabs for proper browser back/forward navigation
+- **Consistent Navigation**: Fixed conflict between local state management and URL-based navigation from other pages
+- **Smooth Scrolling**: Maintained scroll-to-top behavior on all tab changes to prevent auto-scrolling issues
+- **Production Ready**: Navigation now works consistently on first click across all platform sections

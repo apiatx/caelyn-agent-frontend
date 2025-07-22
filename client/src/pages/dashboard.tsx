@@ -1,4 +1,4 @@
-import { useState, Suspense } from "react";
+import { useState, Suspense, useEffect } from "react";
 import { ChartLine, Settings, Activity, Eye, TrendingUp, BarChart3, Brain, Wallet, Zap, DollarSign, Layers } from "lucide-react";
 import CryptoDashboardSection from "@/components/crypto-dashboard-section";
 import PortfolioSection from "@/components/portfolio-section";
@@ -20,8 +20,35 @@ type TabType = "dashboard" | "btc" | "alts" | "portfolio" | "alpha" | "base" | "
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<TabType>("dashboard");
 
+  // Handle URL fragments on page load and hash changes
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.slice(1); // Remove the #
+      if (hash && ["alpha", "base", "bittensor", "abstract", "solana", "defi", "portfolio"].includes(hash)) {
+        setActiveTab(hash as TabType);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    };
+
+    // Check initial hash
+    handleHashChange();
+
+    // Listen for hash changes
+    window.addEventListener('hashchange', handleHashChange);
+    
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+    };
+  }, []);
+
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
+    // Update URL hash for deep linking
+    if (tab !== "dashboard") {
+      window.location.hash = tab;
+    } else {
+      window.location.hash = "";
+    }
     // Reset scroll to top when switching tabs to prevent auto-scrolling issues
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
