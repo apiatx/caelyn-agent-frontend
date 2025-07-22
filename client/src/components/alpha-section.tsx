@@ -150,47 +150,6 @@ export default function AlphaSection() {
         </div>
       </GlassCard>
 
-      {/* Social */}
-      <GlassCard className="p-6">
-        <div className="flex items-center gap-2 mb-6">
-          <div className="w-6 h-6 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
-            <TrendingDown className="w-4 h-4 text-white" />
-          </div>
-          <h3 className="text-xl font-semibold text-white">Social</h3>
-          <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 text-xs">
-            ANALYTICS
-          </Badge>
-        </div>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <button
-            onClick={() => openInNewTab('https://yaps.kaito.ai/')}
-            className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
-                <TrendingDown className="w-4 h-4 text-white" />
-              </div>
-              <h4 className="text-orange-400 font-semibold">Kaito AI Social Analytics</h4>
-            </div>
-            <p className="text-gray-400 text-sm">AI-Powered Social Intelligence</p>
-          </button>
-
-          <button
-            onClick={() => openInNewTab('https://app.kolytics.pro/leaderboard')}
-            className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg hover:bg-red-500/20 transition-colors"
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
-                <TrendingUp className="w-4 h-4 text-white" />
-              </div>
-              <h4 className="text-red-400 font-semibold">Kolytics Leaderboard</h4>
-            </div>
-            <p className="text-gray-400 text-sm">Social Signal Analytics</p>
-          </button>
-        </div>
-      </GlassCard>
-
       {/* AI Insights */}
       <GlassCard className="p-6">
         <div className="flex items-center gap-2 mb-6">
@@ -257,6 +216,153 @@ export default function AlphaSection() {
             </div>
             <p className="text-gray-400 text-sm">Token Analytics & Visualization</p>
           </button>
+        </div>
+      </GlassCard>
+
+      {/* Social - Moved to bottom with KOLs and Social Pulse subsections */}
+      <GlassCard className="p-6">
+        <div className="flex items-center gap-2 mb-6">
+          <div className="w-6 h-6 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
+            <TrendingDown className="w-4 h-4 text-white" />
+          </div>
+          <h3 className="text-xl font-semibold text-white">Social</h3>
+          <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 text-xs">
+            INTELLIGENCE
+          </Badge>
+        </div>
+
+        {/* KOLs Subsection */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-5 h-5 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+              <Star className="w-3 h-3 text-white" />
+            </div>
+            <h4 className="text-lg font-semibold text-white">KOLs</h4>
+            <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
+              KEY OPINION LEADERS
+            </Badge>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <button
+              onClick={() => openInNewTab('https://x.com/cobie')}
+              className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-sm font-bold">𝕏</span>
+                </div>
+                <h5 className="text-blue-400 font-semibold">@cobie</h5>
+              </div>
+              <p className="text-gray-400 text-sm">Crypto Trading Insights</p>
+            </button>
+
+            <button
+              onClick={() => openInNewTab('https://x.com/hsaka')}
+              className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-sm font-bold">𝕏</span>
+                </div>
+                <h5 className="text-green-400 font-semibold">@hsaka</h5>
+              </div>
+              <p className="text-gray-400 text-sm">DeFi & Yield Farming</p>
+            </button>
+
+            <button
+              onClick={() => openInNewTab('https://x.com/blknoiz06')}
+              className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-sm font-bold">𝕏</span>
+                </div>
+                <h5 className="text-purple-400 font-semibold">@blknoiz06</h5>
+              </div>
+              <p className="text-gray-400 text-sm">On-Chain Analysis</p>
+            </button>
+
+            <button
+              onClick={() => openInNewTab('https://x.com/DefiIgnas')}
+              className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-sm font-bold">𝕏</span>
+                </div>
+                <h5 className="text-orange-400 font-semibold">@DefiIgnas</h5>
+              </div>
+              <p className="text-gray-400 text-sm">DeFi Research & Alpha</p>
+            </button>
+
+            <button
+              onClick={() => openInNewTab('https://x.com/thedefiedge')}
+              className="p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-lg hover:bg-cyan-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-sm font-bold">𝕏</span>
+                </div>
+                <h5 className="text-cyan-400 font-semibold">@thedefiedge</h5>
+              </div>
+              <p className="text-gray-400 text-sm">DeFi Education & Strategy</p>
+            </button>
+
+            <button
+              onClick={() => openInNewTab('https://x.com/VitalikButerin')}
+              className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-lg hover:bg-indigo-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-indigo-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-sm font-bold">𝕏</span>
+                </div>
+                <h5 className="text-indigo-400 font-semibold">@VitalikButerin</h5>
+              </div>
+              <p className="text-gray-400 text-sm">Ethereum Founder</p>
+            </button>
+          </div>
+        </div>
+
+        {/* Social Pulse Subsection */}
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-5 h-5 bg-gradient-to-r from-red-500 to-pink-500 rounded-full flex items-center justify-center">
+              <TrendingUp className="w-3 h-3 text-white" />
+            </div>
+            <h4 className="text-lg font-semibold text-white">Social Pulse</h4>
+            <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-xs">
+              ANALYTICS
+            </Badge>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <button
+              onClick={() => openInNewTab('https://yaps.kaito.ai/')}
+              className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
+                  <TrendingDown className="w-4 h-4 text-white" />
+                </div>
+                <h5 className="text-orange-400 font-semibold">Kaito AI Social Analytics</h5>
+              </div>
+              <p className="text-gray-400 text-sm">AI-Powered Social Intelligence</p>
+            </button>
+
+            <button
+              onClick={() => openInNewTab('https://app.kolytics.pro/leaderboard')}
+              className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg hover:bg-red-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
+                  <TrendingUp className="w-4 h-4 text-white" />
+                </div>
+                <h5 className="text-red-400 font-semibold">Kolytics Leaderboard</h5>
+              </div>
+              <p className="text-gray-400 text-sm">Social Signal Analytics</p>
+            </button>
+          </div>
         </div>
       </GlassCard>
     </div>
