@@ -676,6 +676,8 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Settings Icon Removal**: Removed settings icons from headers across all pages for sleek minimalist design
 - **Header Simplification**: Headers now feature only logo and CryptoHippo text with no additional UI elements
 - **Consistent Styling**: Applied sleek header design to Dashboard, DeFi, Hype, and Top Charts pages
+- **New Laser Eyes Hippo Logo**: Updated logo to new laser eyes hippo image across all pages
+- **Larger Logo Size**: Increased logo size from 8x8/10x10 to 10x10/12x12 for better visibility
 
 ### July 21, 2025 - Comprehensive API Rate Limiting & Caching System Implementation
 - **Complete CoinMarketCap Rate Limiting**: Implemented comprehensive caching system for all market overview API calls

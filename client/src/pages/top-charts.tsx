@@ -1,7 +1,7 @@
 import React, { Suspense } from 'react';
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, BarChart3, Globe, Activity, Brain, Wallet, Zap, DollarSign, Layers, ChartLine, Settings } from "lucide-react";
-import hippoImage from "@assets/image_1752975467353.png";
+import hippoImage from "@assets/image_1753204691716.png";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 import { SectionLoadingState } from "@/components/loading-screen";
@@ -18,7 +18,7 @@ export default function TopChartsPage() {
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
           <div className="flex justify-between items-center py-3 lg:py-4">
             <div className="flex items-center space-x-2 sm:space-x-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg overflow-hidden">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg overflow-hidden">
                 <img 
                   src={hippoImage}
                   alt="CryptoHippo"
