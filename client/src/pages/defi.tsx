@@ -62,6 +62,31 @@ export default function DeFiPage() {
                 <BarChart3 className="w-4 h-4 mr-2 inline" />Alts
               </button>
             </Link>
+            <Link href="/#alpha">
+              <button className="flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver">
+                <TrendingUp className="w-4 h-4 mr-2 inline" />Alpha
+              </button>
+            </Link>
+            <Link href="/#base">
+              <button className="flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver">
+                <ChartLine className="w-4 h-4 mr-2 inline" />Base
+              </button>
+            </Link>
+            <Link href="/#bittensor">
+              <button className="flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver">
+                <Brain className="w-4 h-4 mr-2 inline" />Bittensor
+              </button>
+            </Link>
+            <Link href="/hype">
+              <button className="flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver">
+                <Eye className="w-4 h-4 mr-2 inline" />Hype
+              </button>
+            </Link>
+            <Link href="/#abstract">
+              <button className="flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver">
+                <Layers className="w-4 h-4 mr-2 inline" />Abstract
+              </button>
+            </Link>
             <Link href="/solana">
               <button className="flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver">
                 <Zap className="w-4 h-4 mr-2 inline" />Solana
@@ -70,42 +95,67 @@ export default function DeFiPage() {
             <button className="flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white">
               <DollarSign className="w-4 h-4 mr-2 inline" />DeFi
             </button>
-            <Link href="/hype">
+            <Link href="/#portfolio">
               <button className="flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver">
-                <Eye className="w-4 h-4 mr-2 inline" />Hype
+                <Wallet className="w-4 h-4 mr-2 inline" />Portfolio
               </button>
             </Link>
           </div>
 
           {/* Mobile Navigation */}
           <div className="lg:hidden overflow-x-auto">
-            <div className="flex space-x-2 min-w-max px-2">
+            <div className="flex space-x-1 min-w-max pb-2">
               <Link href="/">
-                <button className="py-2 px-4 rounded-lg font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver whitespace-nowrap">
+                <button className="whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver">
                   <Activity className="w-4 h-4 mr-1 inline" />Market Overview
                 </button>
               </Link>
               <Link href="/btc">
-                <button className="py-2 px-4 rounded-lg font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver whitespace-nowrap">
+                <button className="whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver">
                   <TrendingUp className="w-4 h-4 mr-1 inline" />BTC
                 </button>
               </Link>
               <Link href="/alts">
-                <button className="py-2 px-4 rounded-lg font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver whitespace-nowrap">
+                <button className="whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver">
                   <BarChart3 className="w-4 h-4 mr-1 inline" />Alts
                 </button>
               </Link>
+              <Link href="/#alpha">
+                <button className="whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver">
+                  <TrendingUp className="w-4 h-4 mr-1 inline" />Alpha
+                </button>
+              </Link>
+              <Link href="/#base">
+                <button className="whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver">
+                  <ChartLine className="w-4 h-4 mr-1 inline" />Base
+                </button>
+              </Link>
+              <Link href="/#bittensor">
+                <button className="whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver">
+                  <Brain className="w-4 h-4 mr-1 inline" />Bittensor
+                </button>
+              </Link>
+              <Link href="/hype">
+                <button className="whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver">
+                  <Eye className="w-4 h-4 mr-1 inline" />Hype
+                </button>
+              </Link>
+              <Link href="/#abstract">
+                <button className="whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver">
+                  <Layers className="w-4 h-4 mr-1 inline" />Abstract
+                </button>
+              </Link>
               <Link href="/solana">
-                <button className="py-2 px-4 rounded-lg font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver whitespace-nowrap">
+                <button className="whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver">
                   <Zap className="w-4 h-4 mr-1 inline" />Solana
                 </button>
               </Link>
-              <button className="py-2 px-4 rounded-lg font-medium transition-all duration-300 bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white whitespace-nowrap">
+              <button className="whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white">
                 <DollarSign className="w-4 h-4 mr-1 inline" />DeFi
               </button>
-              <Link href="/hype">
-                <button className="py-2 px-4 rounded-lg font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver whitespace-nowrap">
-                  <Eye className="w-4 h-4 mr-1 inline" />Hype
+              <Link href="/#portfolio">
+                <button className="whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver">
+                  <Wallet className="w-4 h-4 mr-1 inline" />Portfolio
                 </button>
               </Link>
             </div>
