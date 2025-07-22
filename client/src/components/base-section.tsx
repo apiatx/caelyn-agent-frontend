@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
-import { Globe, ArrowLeftRight } from "lucide-react";
+import { Globe, ArrowLeftRight, TrendingUp } from "lucide-react";
 
 
 interface DashboardData {
@@ -272,6 +273,25 @@ export default function BaseSection() {
                 <div className="w-4 h-4 text-gray-400 group-hover:text-emerald-400 transition-colors">→</div>
               </a>
             </div>
+          </div>
+        </GlassCard>
+      </div>
+
+      {/* X Signal Section */}
+      <div className="space-y-6">
+        <GlassCard className="p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+              <TrendingUp className="w-4 h-4 text-white" />
+            </div>
+            <h3 className="text-xl font-semibold text-white">X Signal</h3>
+            <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
+              BASE SIGNAL
+            </Badge>
+          </div>
+          
+          <div className="text-center py-8">
+            <p className="text-crypto-silver">Coming soon - BASE network social signal intelligence</p>
           </div>
         </GlassCard>
       </div>

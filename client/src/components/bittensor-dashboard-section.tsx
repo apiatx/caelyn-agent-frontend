@@ -266,7 +266,7 @@ export default function BittensorDashboardSection() {
             <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
               <Brain className="w-4 h-4 text-white" />
             </div>
-            <h3 className="text-xl font-semibold text-white">Signal</h3>
+            <h3 className="text-xl font-semibold text-white">X Signal</h3>
             <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-xs">
               TAO SIGNAL
             </Badge>
