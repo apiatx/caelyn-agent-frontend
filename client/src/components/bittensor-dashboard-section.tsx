@@ -245,6 +245,71 @@ export default function BittensorDashboardSection() {
               </div>
               <p className="text-gray-400 text-sm">Bittensor Signal Intelligence</p>
             </button>
+
+            <button
+              onClick={() => window.open('https://x.com/Bitcast_network', '_blank', 'noopener,noreferrer')}
+              className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                  <Brain className="w-4 h-4 text-white" />
+                </div>
+                <h4 className="text-purple-400 font-semibold">Bitcast Network</h4>
+              </div>
+              <p className="text-gray-400 text-sm">TAO Network Analytics</p>
+            </button>
+
+            <button
+              onClick={() => window.open('https://x.com/TaoStacker', '_blank', 'noopener,noreferrer')}
+              className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                  <Brain className="w-4 h-4 text-white" />
+                </div>
+                <h4 className="text-purple-400 font-semibold">TaoStacker</h4>
+              </div>
+              <p className="text-gray-400 text-sm">TAO Staking Insights</p>
+            </button>
+
+            <button
+              onClick={() => window.open('https://x.com/TaoIsTheKey', '_blank', 'noopener,noreferrer')}
+              className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                  <Brain className="w-4 h-4 text-white" />
+                </div>
+                <h4 className="text-purple-400 font-semibold">TaoIsTheKey</h4>
+              </div>
+              <p className="text-gray-400 text-sm">TAO Market Analysis</p>
+            </button>
+
+            <button
+              onClick={() => window.open('https://x.com/varimotrades', '_blank', 'noopener,noreferrer')}
+              className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                  <Brain className="w-4 h-4 text-white" />
+                </div>
+                <h4 className="text-purple-400 font-semibold">VARiMOtrading</h4>
+              </div>
+              <p className="text-gray-400 text-sm">TAO Trading Signals</p>
+            </button>
+
+            <button
+              onClick={() => window.open('https://x.com/_g_x_g', '_blank', 'noopener,noreferrer')}
+              className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                  <Brain className="w-4 h-4 text-white" />
+                </div>
+                <h4 className="text-purple-400 font-semibold">GXG</h4>
+              </div>
+              <p className="text-gray-400 text-sm">Bittensor Intelligence</p>
+            </button>
           </div>
         </GlassCard>
       </div>
