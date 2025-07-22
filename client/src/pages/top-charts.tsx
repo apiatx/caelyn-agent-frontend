@@ -236,6 +236,37 @@ export default function TopChartsPage() {
           </GlassCard>
           </Suspense>
 
+          {/* XRP Chart */}
+          <Suspense fallback={<SectionLoadingState title="XRP Chart" />}>
+            <GlassCard className="p-3 sm:p-4 lg:p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-green-500 rounded-full flex items-center justify-center">
+                  <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-semibold text-white">XRP</h3>
+                <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
+                  XRP
+                </Badge>
+              </div>
+              <button
+                onClick={() => openInNewTab('https://www.tradingview.com/chart/e5l95XgZ/?symbol=BITSTAMP%3AXRPUSD')}
+                className="text-green-400 hover:text-green-300 text-xs sm:text-sm sm:ml-auto"
+              >
+                Open in New Tab →
+              </button>
+            </div>
+            <div className="w-full">
+              <iframe
+                src="https://www.tradingview.com/widgetembed/?frameElementId=tradingview_xrp&symbol=BITSTAMP%3AXRPUSD&interval=D&hidesidetoolbar=1&hidetoptoolbar=1&symboledit=1&saveimage=1&toolbarbg=F1F3F6&studies=[]&hideideas=1&theme=Dark&style=1&timezone=Etc%2FUTC&studies_overrides={}&overrides={}&enabled_features=[]&disabled_features=[]&locale=en&utm_source=localhost&utm_medium=widget&utm_campaign=chart&utm_term=BITSTAMP%3AXRPUSD"
+                className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
+                title="XRP Chart"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+              />
+            </div>
+          </GlassCard>
+          </Suspense>
+
           {/* Solana Chart */}
           <Suspense fallback={<SectionLoadingState title="Solana Chart" />}>
             <GlassCard className="p-3 sm:p-4 lg:p-6">
@@ -267,31 +298,62 @@ export default function TopChartsPage() {
           </GlassCard>
           </Suspense>
 
-          {/* XRP Chart */}
-          <Suspense fallback={<SectionLoadingState title="XRP Chart" />}>
+          {/* BNB Chart */}
+          <Suspense fallback={<SectionLoadingState title="BNB Chart" />}>
             <GlassCard className="p-3 sm:p-4 lg:p-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
               <div className="flex items-center gap-2">
-                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-green-500 rounded-full flex items-center justify-center">
-                  <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-yellow-500 rounded-full flex items-center justify-center">
+                  <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
                 </div>
-                <h3 className="text-lg sm:text-xl font-semibold text-white">XRP</h3>
-                <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
-                  XRP
+                <h3 className="text-lg sm:text-xl font-semibold text-white">BNB</h3>
+                <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-xs">
+                  BNB
                 </Badge>
               </div>
               <button
-                onClick={() => openInNewTab('https://www.tradingview.com/chart/e5l95XgZ/?symbol=BITSTAMP%3AXRPUSD')}
-                className="text-green-400 hover:text-green-300 text-xs sm:text-sm sm:ml-auto"
+                onClick={() => openInNewTab('https://www.tradingview.com/chart/e5l95XgZ/?symbol=BINANCE%3ABNBUSDT')}
+                className="text-yellow-400 hover:text-yellow-300 text-xs sm:text-sm sm:ml-auto"
               >
                 Open in New Tab →
               </button>
             </div>
             <div className="w-full">
               <iframe
-                src="https://www.tradingview.com/widgetembed/?frameElementId=tradingview_xrp&symbol=BITSTAMP%3AXRPUSD&interval=D&hidesidetoolbar=1&hidetoptoolbar=1&symboledit=1&saveimage=1&toolbarbg=F1F3F6&studies=[]&hideideas=1&theme=Dark&style=1&timezone=Etc%2FUTC&studies_overrides={}&overrides={}&enabled_features=[]&disabled_features=[]&locale=en&utm_source=localhost&utm_medium=widget&utm_campaign=chart&utm_term=BITSTAMP%3AXRPUSD"
+                src="https://www.tradingview.com/chart/e5l95XgZ/?symbol=BINANCE%3ABNBUSDT"
                 className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
-                title="XRP Chart"
+                title="BNB Chart"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+              />
+            </div>
+          </GlassCard>
+          </Suspense>
+
+          {/* DOGE Chart */}
+          <Suspense fallback={<SectionLoadingState title="DOGE Chart" />}>
+            <GlassCard className="p-3 sm:p-4 lg:p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-orange-500 rounded-full flex items-center justify-center">
+                  <Activity className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-semibold text-white">DOGE</h3>
+                <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 text-xs">
+                  DOGE
+                </Badge>
+              </div>
+              <button
+                onClick={() => openInNewTab('https://www.tradingview.com/chart/e5l95XgZ/?symbol=COINBASE%3ADOGEUSD')}
+                className="text-orange-400 hover:text-orange-300 text-xs sm:text-sm sm:ml-auto"
+              >
+                Open in New Tab →
+              </button>
+            </div>
+            <div className="w-full">
+              <iframe
+                src="https://www.tradingview.com/chart/e5l95XgZ/?symbol=COINBASE%3ADOGEUSD"
+                className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
+                title="DOGE Chart"
                 sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
               />
             </div>

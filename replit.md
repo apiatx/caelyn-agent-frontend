@@ -685,6 +685,13 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Alt Season Index Full Width**: Alt Season Index now displays in full-width layout below the two-column sections
 - **Better Visual Organization**: Market overview now flows from global metrics to specific indicators (Fear/Greed + ETF) to broader market analysis (Alt Season)
 
+### July 22, 2025 - Top Charts Page Enhancement
+- **Chart Order Reorganization**: Moved XRP chart above Solana chart on Top Charts page
+- **BNB Chart Addition**: Added new BNB (Binance Coin) TradingView chart with yellow branding after Solana
+- **DOGE Chart Addition**: Added new DOGE (Dogecoin) TradingView chart with orange branding after BNB
+- **Enhanced Cryptocurrency Coverage**: Top Charts now displays Bitcoin, Ethereum, XRP, Solana, BNB, DOGE, and PENGU for comprehensive market analysis
+- **Consistent Chart Structure**: All new charts maintain same responsive design and TradingView integration pattern
+
 ### July 21, 2025 - Comprehensive API Rate Limiting & Caching System Implementation
 - **Complete CoinMarketCap Rate Limiting**: Implemented comprehensive caching system for all market overview API calls
 - **Global Metrics Caching**: 1-hour cache duration with business hours restriction (7am-9pm UTC) for hourly API credits conservation
