@@ -636,6 +636,13 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Enhanced Page Structure**: DeFi page now features three main sections: Swap, Trade, and DeFAI for comprehensive DeFi platform access
 - **Purple Branding**: UniversalX features purple gradient hover effects matching trading theme
 
+### July 22, 2025 - Navigation Corrections & Backprop Finance Integration
+- **Alpha Section Removal from Hype**: Completely removed AlphaSection component from Hype page per user correction
+- **Backprop Finance Leaderboard**: Added https://backprop.finance/leaderboard iframe to Bittensor dashboard with green branding
+- **Bittensor Enhancement**: Backprop Finance positioned above TaoHub Portfolio with dedicated "Leaderboard" badge
+- **Interface Cleanup**: Hype page now focuses solely on HypeSection content without Alpha analytics
+- **Comprehensive Bittensor Analytics**: Bittensor dashboard features TaoStats, Swordscan, Backprop Finance, and TaoHub integrations
+
 ### July 21, 2025 - Comprehensive API Rate Limiting & Caching System Implementation
 - **Complete CoinMarketCap Rate Limiting**: Implemented comprehensive caching system for all market overview API calls
 - **Global Metrics Caching**: 1-hour cache duration with business hours restriction (7am-9pm UTC) for hourly API credits conservation

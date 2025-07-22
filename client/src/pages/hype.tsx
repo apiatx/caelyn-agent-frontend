@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import cryptoHippoImage from "@assets/image_1752975467353.png";
 import { HypeSection } from "@/components/hype-section";
-import AlphaSection from "@/components/alpha-section";
+
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 import { SectionLoadingState } from "@/components/loading-screen";
@@ -287,10 +287,7 @@ export default function HypePage() {
             <HypeSection />
           </Suspense>
           
-          {/* Alpha Section */}
-          <Suspense fallback={<SectionLoadingState title="Alpha Analytics" />}>
-            <AlphaSection />
-          </Suspense>
+
         </div>
       </main>
     </div>
