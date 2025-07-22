@@ -662,6 +662,12 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Analytics Tools Section**: Added new "Tools" section at bottom of Alpha page with blue-purple gradient branding featuring Bubblemaps token analytics platform
 - **Enhanced Tool Access**: Tools section provides clean button-based access to analytics platforms when iframe embedding is blocked
 
+### July 22, 2025 - HyperLiquid Rebranding & Subnet Bubbles Integration
+- **HyperLiquid Dashboard Rename**: Changed "Hyperliquid HYPE Trading" to "HyperLiquid Dashboard" on Hype page for cleaner branding
+- **Subnet Bubbles Integration**: Added https://backprop.finance/screener/bubbles iframe between TaoStats and Swordscan sections on Bittensor page
+- **Enhanced Subnet Analytics**: Subnet Bubbles features blue "SUBNET SCREENER" badge with live subnet analytics visualization
+- **Improved Bittensor Flow**: Better organization of Bittensor analytics tools with logical progression from stats to screening to mindshare data
+
 ### July 21, 2025 - Comprehensive API Rate Limiting & Caching System Implementation
 - **Complete CoinMarketCap Rate Limiting**: Implemented comprehensive caching system for all market overview API calls
 - **Global Metrics Caching**: 1-hour cache duration with business hours restriction (7am-9pm UTC) for hourly API credits conservation

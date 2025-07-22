@@ -9,7 +9,7 @@ export function HypeSection() {
           <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
             <span className="text-white font-bold text-xs">H</span>
           </div>
-          Hyperliquid HYPE Trading
+          HyperLiquid Dashboard
           <span className="text-xs bg-purple-500/20 text-purple-400 px-2 py-1 rounded-full border border-purple-500/30">
             LIVE TRADING
           </span>

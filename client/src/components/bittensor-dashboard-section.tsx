@@ -60,6 +60,46 @@ export default function BittensorDashboardSection() {
           </div>
         </GlassCard>
 
+        {/* Subnet Bubbles */}
+        <GlassCard className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-white flex items-center">
+              <Brain className="w-4 h-4 mr-2" />
+              Subnet Bubbles
+            </h3>
+            <div className="flex items-center gap-2">
+              <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+                SUBNET SCREENER
+              </Badge>
+              <a 
+                href="https://backprop.finance/screener/bubbles"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-crypto-silver hover:text-white transition-colors group"
+              >
+                <ExternalLink className="h-4 w-4 group-hover:scale-110 transition-transform" />
+              </a>
+            </div>
+          </div>
+          
+          <div className="relative w-full">
+            <iframe
+              src="https://backprop.finance/screener/bubbles"
+              className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+              title="Subnet Bubbles"
+              frameBorder="0"
+              loading="lazy"
+              style={{
+                background: 'transparent',
+                colorScheme: 'dark'
+              }}
+            />
+            <div className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+              Live Subnet Analytics
+            </div>
+          </div>
+        </GlassCard>
+
         {/* Swordscan TensorPulse Integration */}
         <GlassCard className="p-6">
           <div className="flex items-center justify-between mb-6">
