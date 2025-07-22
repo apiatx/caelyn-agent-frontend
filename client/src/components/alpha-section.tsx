@@ -178,7 +178,7 @@ export default function AlphaSection() {
 
       {/* AI Insights */}
       <GlassCard className="p-6">
-        <div className="flex items-center gap-2 mb-4">
+        <div className="flex items-center gap-2 mb-6">
           <div className="w-6 h-6 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center">
             <Brain className="w-4 h-4 text-white" />
           </div>
@@ -186,24 +186,34 @@ export default function AlphaSection() {
           <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 text-xs">
             AI POWERED
           </Badge>
+        </div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <button
             onClick={() => openInNewTab('https://chatgpt.com/g/g-ma6mK7m5t-crypto-trading-investing')}
-            className="ml-auto text-cyan-400 hover:text-cyan-300 text-xs"
+            className="p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-lg hover:bg-cyan-500/20 transition-colors"
           >
-            Open Full View →
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center">
+                <Brain className="w-4 h-4 text-white" />
+              </div>
+              <h4 className="text-cyan-400 font-semibold">ChatGPT Crypto AI</h4>
+            </div>
+            <p className="text-gray-400 text-sm">Crypto Trading & Investing GPT</p>
           </button>
-        </div>
-        <div className="w-full">
-          <iframe
-            src="https://chatgpt.com/g/g-ma6mK7m5t-crypto-trading-investing"
-            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            title="Crypto Trading & Investing AI"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-            style={{
-              background: '#000000',
-              colorScheme: 'dark'
-            }}
-          />
+
+          <button
+            onClick={() => openInNewTab('https://x.com/cryptohippo_ai')}
+            className="p-4 bg-black/20 border border-gray-500/20 rounded-lg hover:bg-gray-500/10 transition-colors"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center">
+                <span className="text-white text-sm font-bold">𝕏</span>
+              </div>
+              <h4 className="text-gray-300 font-semibold">X (Twitter)</h4>
+            </div>
+            <p className="text-gray-400 text-sm">Follow CryptoHippo Updates</p>
+          </button>
         </div>
       </GlassCard>
     </div>
