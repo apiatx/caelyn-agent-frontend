@@ -24,7 +24,9 @@ export default function Dashboard() {
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.slice(1); // Remove the #
+      console.log('Hash change detected:', hash);
       if (hash && ["alpha", "base", "bittensor", "abstract", "solana", "defi", "portfolio"].includes(hash)) {
+        console.log('Setting active tab to:', hash);
         setActiveTab(hash as TabType);
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
@@ -42,6 +44,7 @@ export default function Dashboard() {
   }, []);
 
   const handleTabChange = (tab: TabType) => {
+    console.log('Handle tab change called with:', tab);
     setActiveTab(tab);
     // Update URL hash for deep linking
     if (tab !== "dashboard") {
@@ -296,7 +299,12 @@ export default function Dashboard() {
           {activeTab === "bittensor" && <BittensorDashboardSection />}
         </Suspense>
         <Suspense fallback={<SectionLoadingState title="Abstract Network" />}>
-          {activeTab === "abstract" && <AbstractSection />}
+          {activeTab === "abstract" && (
+            <div>
+              <p>Debug: Rendering Abstract Section, activeTab is: {activeTab}</p>
+              <AbstractSection />
+            </div>
+          )}
         </Suspense>
         <Suspense fallback={<SectionLoadingState title="Solana Network" />}>
           {activeTab === "solana" && <SolanaSection />}
