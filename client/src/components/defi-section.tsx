@@ -19,7 +19,7 @@ export default function DeFiSection() {
   return (
     <div className="space-y-8">
       <div className="text-center">
-        <h2 className="text-3xl font-bold text-white mb-2">DeFi Analytics & Platforms</h2>
+        <h2 className="text-3xl font-bold text-white mb-2">DeFi Platforms</h2>
         <p className="text-crypto-silver">Comprehensive DeFi protocol access and portfolio management tools</p>
       </div>
 
@@ -55,6 +55,24 @@ export default function DeFiSection() {
 
 
 
+
+      {/* Trade Section */}
+      <div className="space-y-4">
+        <h3 className="text-xl font-semibold text-white mb-4">Trade</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <Button
+            variant="outline"
+            onClick={() => openInNewTab('https://universalx.app/home')}
+            className="bg-black/20 border-crypto-silver/20 hover:bg-purple-500/20 hover:border-purple-500/30 text-white justify-start p-4 h-auto"
+          >
+            <TrendingUp className="w-4 h-4 mr-2" />
+            <div className="text-left">
+              <div className="font-semibold">UniversalX</div>
+              <div className="text-sm text-crypto-silver">Trade any token, on any chain</div>
+            </div>
+          </Button>
+        </div>
+      </div>
 
       {/* DeFAI Section */}
       <div className="space-y-6">
