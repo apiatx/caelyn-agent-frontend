@@ -91,68 +91,15 @@ export default function DeFiSection() {
           </div>
         </div>
 
-        {/* Arma and ZyFAI - Side by Side */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Arma */}
-          <GlassCard className="p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                <TrendingUp className="w-4 h-4 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold text-white">Arma</h3>
-              <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
-                YIELD FARMING
-              </Badge>
-              <button
-                onClick={() => openInNewTab('https://app.arma.xyz/')}
-                className="text-blue-400 hover:text-blue-300 text-sm ml-auto"
-              >
-                Open Full View →
-              </button>
-            </div>
-            <iframe
-              src="https://app.arma.xyz/"
-              className="w-full h-[400px] rounded-lg border border-crypto-silver/20"
-              title="Arma"
-              sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-            />
-          </GlassCard>
-
-          {/* ZyFAI */}
-          <GlassCard className="p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
-                <BarChart3 className="w-4 h-4 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold text-white">ZyFAI</h3>
-              <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
-                AI ANALYTICS
-              </Badge>
-              <button
-                onClick={() => openInNewTab('https://www.zyf.ai/dashboard')}
-                className="text-purple-400 hover:text-purple-300 text-sm ml-auto"
-              >
-                Open Full View →
-              </button>
-            </div>
-            <iframe
-              src="https://www.zyf.ai/dashboard"
-              className="w-full h-[400px] rounded-lg border border-crypto-silver/20"
-              title="ZyFAI"
-              sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-            />
-          </GlassCard>
-        </div>
-
-        {/* AI Links */}
+        {/* DeFAI */}
         <GlassCard className="p-6">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
               <Brain className="text-white text-xl" />
             </div>
             <div>
-              <h3 className="text-xl font-semibold text-white">AI Links</h3>
-              <p className="text-crypto-silver">AI-Powered Analytics Platforms</p>
+              <h3 className="text-xl font-semibold text-white">DeFAI</h3>
+              <p className="text-crypto-silver">AI-Powered DeFi Analytics & Protocols</p>
             </div>
           </div>
           
@@ -166,7 +113,7 @@ export default function DeFiSection() {
               <Brain className="w-4 h-4 mr-2" />
               <div className="text-left">
                 <div className="font-semibold">Senpi AI</div>
-                <div className="text-sm text-crypto-silver">AI analytics platform</div>
+                <div className="text-sm text-crypto-silver">AI trading bot on Base network</div>
               </div>
             </Button>
             
@@ -179,7 +126,33 @@ export default function DeFiSection() {
               <Brain className="w-4 h-4 mr-2" />
               <div className="text-left">
                 <div className="font-semibold">AIxVC</div>
-                <div className="text-sm text-crypto-silver">AI venture capital analytics</div>
+                <div className="text-sm text-crypto-silver">AI venture capital management</div>
+              </div>
+            </Button>
+            
+            {/* Arma */}
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://app.arma.xyz/')}
+              className="bg-black/20 border-crypto-silver/20 hover:bg-blue-500/20 hover:border-blue-500/30 text-white justify-start p-4 h-auto"
+            >
+              <TrendingUp className="w-4 h-4 mr-2" />
+              <div className="text-left">
+                <div className="font-semibold">Arma</div>
+                <div className="text-sm text-crypto-silver">Yield farming protocol</div>
+              </div>
+            </Button>
+            
+            {/* ZyFAI */}
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://www.zyf.ai/dashboard')}
+              className="bg-black/20 border-crypto-silver/20 hover:bg-purple-500/20 hover:border-purple-500/30 text-white justify-start p-4 h-auto"
+            >
+              <BarChart3 className="w-4 h-4 mr-2" />
+              <div className="text-left">
+                <div className="font-semibold">ZyFAI</div>
+                <div className="text-sm text-crypto-silver">AI analytics dashboard</div>
               </div>
             </Button>
           </div>
