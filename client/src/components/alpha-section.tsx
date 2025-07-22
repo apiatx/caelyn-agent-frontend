@@ -100,7 +100,7 @@ export default function AlphaSection() {
               <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
                 <TrendingUp className="w-4 h-4 text-white" />
               </div>
-              <h4 className="text-blue-400 font-semibold">OpenSea NFT Stats</h4>
+              <h4 className="text-blue-400 font-semibold">OpenSea</h4>
             </div>
             <p className="text-gray-400 text-sm">Trending Altcoin Timeframes</p>
           </button>

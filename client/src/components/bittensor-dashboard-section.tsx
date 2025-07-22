@@ -219,6 +219,34 @@ export default function BittensorDashboardSection() {
             </div>
           </div>
         </GlassCard>
+
+        {/* Signal Section */}
+        <GlassCard className="p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+              <Brain className="w-4 h-4 text-white" />
+            </div>
+            <h3 className="text-xl font-semibold text-white">Signal</h3>
+            <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-xs">
+              TAO SIGNAL
+            </Badge>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <button
+              onClick={() => window.open('https://x.com/tao_agent', '_blank', 'noopener,noreferrer')}
+              className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                  <Brain className="w-4 h-4 text-white" />
+                </div>
+                <h4 className="text-purple-400 font-semibold">TAO Agent</h4>
+              </div>
+              <p className="text-gray-400 text-sm">Bittensor Signal Intelligence</p>
+            </button>
+          </div>
+        </GlassCard>
       </div>
     </div>
   );
