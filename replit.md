@@ -658,6 +658,8 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Consistent Design Pattern**: Signal section follows established button-based layout with purple "TAO SIGNAL" badge
 - **TAO Signal Sources Expansion**: Added 5 additional Twitter signal sources (Bitcast Network, TaoStacker, TaoIsTheKey, VARiMOtrading, GXG) for comprehensive Bittensor intelligence gathering
 - **Complete Signal Grid**: Signal section now features 6 Twitter sources with specialized TAO market analysis, staking insights, and trading signals
+- **Bubblemaps Integration**: Added Bubblemaps iframe (https://app.bubblemaps.io/) to bottom of Alpha page with blue-purple gradient branding and "TOKEN ANALYTICS" badge
+- **Enhanced Token Analysis**: Alpha page now includes comprehensive token analytics through Bubblemaps visualization platform for wallet clustering and transaction analysis
 
 ### July 21, 2025 - Comprehensive API Rate Limiting & Caching System Implementation
 - **Complete CoinMarketCap Rate Limiting**: Implemented comprehensive caching system for all market overview API calls
