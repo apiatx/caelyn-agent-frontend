@@ -386,13 +386,352 @@ export default function AlphaSection() {
           </div>
         </div>
 
-        {/* Social Pulse Subsection */}
+        {/* My Favorite X Accounts */}
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-5 h-5 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+              <Star className="w-3 h-3 text-white" />
+            </div>
+            <h4 className="text-lg font-semibold text-white">My Favorite X Accounts</h4>
+            <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
+              PERSONAL PICKS
+            </Badge>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <button
+              onClick={() => openInNewTab('https://x.com/Zer0__')}
+              className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">𝕏</span>
+                </div>
+                <h5 className="text-blue-400 font-semibold text-sm">Zer0</h5>
+              </div>
+            </button>
+
+            <button
+              onClick={() => openInNewTab('https://x.com/VoiceOfTheGods')}
+              className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">𝕏</span>
+                </div>
+                <h5 className="text-purple-400 font-semibold text-sm">Voice of the Gods</h5>
+              </div>
+            </button>
+
+            <button
+              onClick={() => openInNewTab('https://x.com/LitBro__')}
+              className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">𝕏</span>
+                </div>
+                <h5 className="text-green-400 font-semibold text-sm">LitBro</h5>
+              </div>
+            </button>
+
+            <button
+              onClick={() => openInNewTab('https://x.com/WhaleAI_')}
+              className="p-3 bg-cyan-500/10 border border-cyan-500/20 rounded-lg hover:bg-cyan-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-6 h-6 bg-cyan-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">𝕏</span>
+                </div>
+                <h5 className="text-cyan-400 font-semibold text-sm">WhaleAI 🐋</h5>
+              </div>
+            </button>
+
+            <button
+              onClick={() => openInNewTab('https://x.com/0xJeff_')}
+              className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">𝕏</span>
+                </div>
+                <h5 className="text-orange-400 font-semibold text-sm">0xJeff</h5>
+              </div>
+            </button>
+
+            <button
+              onClick={() => openInNewTab('https://x.com/Cryptoman')}
+              className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg hover:bg-red-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">𝕏</span>
+                </div>
+                <h5 className="text-red-400 font-semibold text-sm">Cryptoman</h5>
+              </div>
+            </button>
+
+            <button
+              onClick={() => openInNewTab('https://x.com/Cryptor_')}
+              className="p-3 bg-pink-500/10 border border-pink-500/20 rounded-lg hover:bg-pink-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-6 h-6 bg-pink-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">𝕏</span>
+                </div>
+                <h5 className="text-pink-400 font-semibold text-sm">Cryptor</h5>
+              </div>
+            </button>
+
+            <button
+              onClick={() => openInNewTab('https://x.com/OverkillTrading')}
+              className="p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-lg hover:bg-indigo-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-6 h-6 bg-indigo-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">𝕏</span>
+                </div>
+                <h5 className="text-indigo-400 font-semibold text-sm">Overkill Trading</h5>
+              </div>
+            </button>
+
+            <button
+              onClick={() => openInNewTab('https://x.com/doc_')}
+              className="p-3 bg-teal-500/10 border border-teal-500/20 rounded-lg hover:bg-teal-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-6 h-6 bg-teal-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">𝕏</span>
+                </div>
+                <h5 className="text-teal-400 font-semibold text-sm">doc 🔥</h5>
+              </div>
+            </button>
+
+            <button
+              onClick={() => openInNewTab('https://x.com/DefiFerr')}
+              className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg hover:bg-yellow-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">𝕏</span>
+                </div>
+                <h5 className="text-yellow-400 font-semibold text-sm">DefiFerr</h5>
+              </div>
+            </button>
+
+            <button
+              onClick={() => openInNewTab('https://x.com/mino_')}
+              className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg hover:bg-emerald-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">𝕏</span>
+                </div>
+                <h5 className="text-emerald-400 font-semibold text-sm">mino</h5>
+              </div>
+            </button>
+
+            <button
+              onClick={() => openInNewTab('https://x.com/PrematureAccumulator')}
+              className="p-3 bg-violet-500/10 border border-violet-500/20 rounded-lg hover:bg-violet-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-6 h-6 bg-violet-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">𝕏</span>
+                </div>
+                <h5 className="text-violet-400 font-semibold text-sm">Premature-Accumulator-Neill</h5>
+              </div>
+            </button>
+
+            <button
+              onClick={() => openInNewTab('https://x.com/Shake_')}
+              className="p-3 bg-lime-500/10 border border-lime-500/20 rounded-lg hover:bg-lime-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-6 h-6 bg-lime-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">𝕏</span>
+                </div>
+                <h5 className="text-lime-400 font-semibold text-sm">Shake</h5>
+              </div>
+            </button>
+
+            <button
+              onClick={() => openInNewTab('https://x.com/3DMax_')}
+              className="p-3 bg-sky-500/10 border border-sky-500/20 rounded-lg hover:bg-sky-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-6 h-6 bg-sky-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">𝕏</span>
+                </div>
+                <h5 className="text-sky-400 font-semibold text-sm">3DMax</h5>
+              </div>
+            </button>
+
+            <button
+              onClick={() => openInNewTab('https://x.com/tesseract_')}
+              className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg hover:bg-rose-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-6 h-6 bg-rose-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">𝕏</span>
+                </div>
+                <h5 className="text-rose-400 font-semibold text-sm">tesseract</h5>
+              </div>
+            </button>
+
+            <button
+              onClick={() => openInNewTab('https://x.com/eurosniper')}
+              className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg hover:bg-amber-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">𝕏</span>
+                </div>
+                <h5 className="text-amber-400 font-semibold text-sm">€ u r o S n i p e r</h5>
+              </div>
+            </button>
+
+            <button
+              onClick={() => openInNewTab('https://x.com/Thanos_')}
+              className="p-3 bg-slate-500/10 border border-slate-500/20 rounded-lg hover:bg-slate-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-6 h-6 bg-slate-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">𝕏</span>
+                </div>
+                <h5 className="text-slate-400 font-semibold text-sm">Thanos</h5>
+              </div>
+            </button>
+
+            <button
+              onClick={() => openInNewTab('https://x.com/CBGuru')}
+              className="p-3 bg-stone-500/10 border border-stone-500/20 rounded-lg hover:bg-stone-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-6 h-6 bg-stone-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">𝕏</span>
+                </div>
+                <h5 className="text-stone-400 font-semibold text-sm">💎Guru💎 (Head of CB Listings)</h5>
+              </div>
+            </button>
+
+            <button
+              onClick={() => openInNewTab('https://x.com/DJV_')}
+              className="p-3 bg-neutral-500/10 border border-neutral-500/20 rounded-lg hover:bg-neutral-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-6 h-6 bg-neutral-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">𝕏</span>
+                </div>
+                <h5 className="text-neutral-400 font-semibold text-sm">DJV (early trend spotter)</h5>
+              </div>
+            </button>
+
+            <button
+              onClick={() => openInNewTab('https://x.com/artsch00lreject')}
+              className="p-3 bg-zinc-500/10 border border-zinc-500/20 rounded-lg hover:bg-zinc-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-6 h-6 bg-zinc-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">𝕏</span>
+                </div>
+                <h5 className="text-zinc-400 font-semibold text-sm">artsch00lreject (pumped AURA 50x out of nowhere)</h5>
+              </div>
+            </button>
+
+            <button
+              onClick={() => openInNewTab('https://x.com/TheMemeticMovement')}
+              className="p-3 bg-gray-500/10 border border-gray-500/20 rounded-lg hover:bg-gray-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-6 h-6 bg-gray-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">𝕏</span>
+                </div>
+                <h5 className="text-gray-400 font-semibold text-sm">TheMemeticMovement</h5>
+              </div>
+            </button>
+
+            <button
+              onClick={() => openInNewTab('https://x.com/Lame_')}
+              className="p-3 bg-red-600/10 border border-red-600/20 rounded-lg hover:bg-red-600/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-6 h-6 bg-red-600 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">𝕏</span>
+                </div>
+                <h5 className="text-red-400 font-semibold text-sm">Lame (troll arc)</h5>
+              </div>
+            </button>
+
+            <button
+              onClick={() => openInNewTab('https://x.com/chiron_')}
+              className="p-3 bg-blue-600/10 border border-blue-600/20 rounded-lg hover:bg-blue-600/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">𝕏</span>
+                </div>
+                <h5 className="text-blue-400 font-semibold text-sm">chiron - TAKE THIS GUYS PICKS</h5>
+              </div>
+            </button>
+
+            <button
+              onClick={() => openInNewTab('https://x.com/Agent007_')}
+              className="p-3 bg-purple-600/10 border border-purple-600/20 rounded-lg hover:bg-purple-600/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-6 h-6 bg-purple-600 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">𝕏</span>
+                </div>
+                <h5 className="text-purple-400 font-semibold text-sm">AGENT 007</h5>
+              </div>
+            </button>
+
+            <button
+              onClick={() => openInNewTab('https://x.com/BabysharkAI')}
+              className="p-3 bg-green-600/10 border border-green-600/20 rounded-lg hover:bg-green-600/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">𝕏</span>
+                </div>
+                <h5 className="text-green-400 font-semibold text-sm">Babyshark AI</h5>
+              </div>
+            </button>
+
+            <button
+              onClick={() => openInNewTab('https://x.com/GemInsider')}
+              className="p-3 bg-cyan-600/10 border border-cyan-600/20 rounded-lg hover:bg-cyan-600/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-6 h-6 bg-cyan-600 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">𝕏</span>
+                </div>
+                <h5 className="text-cyan-400 font-semibold text-sm">💎GEM INSIDER💎</h5>
+              </div>
+            </button>
+
+            <button
+              onClick={() => openInNewTab('https://x.com/StacyMuur')}
+              className="p-3 bg-pink-600/10 border border-pink-600/20 rounded-lg hover:bg-pink-600/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-6 h-6 bg-pink-600 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">𝕏</span>
+                </div>
+                <h5 className="text-pink-400 font-semibold text-sm">Stacy Muur</h5>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        {/* Social Sentiment - Top Coins Subsection */}
         <div>
           <div className="flex items-center gap-2 mb-4">
             <div className="w-5 h-5 bg-gradient-to-r from-red-500 to-pink-500 rounded-full flex items-center justify-center">
               <TrendingUp className="w-3 h-3 text-white" />
             </div>
-            <h4 className="text-lg font-semibold text-white">Social Pulse</h4>
+            <h4 className="text-lg font-semibold text-white">Social Sentiment - Top Coins</h4>
             <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-xs">
               24H TRENDING
             </Badge>
