@@ -152,7 +152,20 @@ export default function DeFiSection() {
               <BarChart3 className="w-4 h-4 mr-2" />
               <div className="text-left">
                 <div className="font-semibold">ZyFAI</div>
-                <div className="text-sm text-crypto-silver">AI analytics dashboard</div>
+                <div className="text-sm text-crypto-silver">AI automated yield farming</div>
+              </div>
+            </Button>
+            
+            {/* Mamo */}
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://mamo.bot/onboarding')}
+              className="bg-black/20 border-crypto-silver/20 hover:bg-indigo-500/20 hover:border-indigo-500/30 text-white justify-start p-4 h-auto"
+            >
+              <Brain className="w-4 h-4 mr-2" />
+              <div className="text-left">
+                <div className="font-semibold">Mamo</div>
+                <div className="text-sm text-crypto-silver">Personal finance companion</div>
               </div>
             </Button>
           </div>

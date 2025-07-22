@@ -208,7 +208,7 @@ export default function BTCPage() {
                 <div className="w-5 h-5 sm:w-6 sm:h-6 bg-orange-500 rounded-full flex items-center justify-center">
                   <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
                 </div>
-                <h3 className="text-lg sm:text-xl font-semibold text-white">Bitcoin Chart</h3>
+                <h3 className="text-lg sm:text-xl font-semibold text-white">Bitcoin Price Chart</h3>
                 <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 text-xs">
                   BITCOIN
                 </Badge>
@@ -237,7 +237,7 @@ export default function BTCPage() {
                 <div className="w-5 h-5 sm:w-6 sm:h-6 bg-yellow-500 rounded-full flex items-center justify-center">
                   <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
                 </div>
-                <h3 className="text-lg sm:text-xl font-semibold text-white">BTC Dominance Chart</h3>
+                <h3 className="text-lg sm:text-xl font-semibold text-white">BTC Dominance</h3>
                 <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-xs">
                   BTC.D
                 </Badge>

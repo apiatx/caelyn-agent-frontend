@@ -204,7 +204,7 @@ export default function AltsPage() {
                 <div className="w-5 h-5 sm:w-6 sm:h-6 bg-blue-500 rounded-full flex items-center justify-center">
                   <Globe className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
                 </div>
-                <h3 className="text-lg sm:text-xl font-semibold text-white">TradingView Ethereum Chart</h3>
+                <h3 className="text-lg sm:text-xl font-semibold text-white">Ethereum</h3>
                 <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
                   ETHEREUM
                 </Badge>
@@ -233,7 +233,7 @@ export default function AltsPage() {
                 <div className="w-5 h-5 sm:w-6 sm:h-6 bg-purple-500 rounded-full flex items-center justify-center">
                   <Activity className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
                 </div>
-                <h3 className="text-lg sm:text-xl font-semibold text-white">TradingView Solana Chart</h3>
+                <h3 className="text-lg sm:text-xl font-semibold text-white">Solana</h3>
                 <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-xs">
                   SOLANA
                 </Badge>
@@ -262,7 +262,7 @@ export default function AltsPage() {
                 <div className="w-5 h-5 sm:w-6 sm:h-6 bg-green-500 rounded-full flex items-center justify-center">
                   <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
                 </div>
-                <h3 className="text-lg sm:text-xl font-semibold text-white">TradingView XRP Chart</h3>
+                <h3 className="text-lg sm:text-xl font-semibold text-white">XRP</h3>
                 <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
                   XRP
                 </Badge>
