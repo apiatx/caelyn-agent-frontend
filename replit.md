@@ -710,6 +710,10 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Real-time Frontend Integration**: Frontend now displays live trending tickers from backend API with loading states
 - **Color-Coded Sentiment Display**: Each ticker features unique color schemes with dynamic sentiment percentages
 - **Authentic Social Intelligence**: Platform tracks 15+ major crypto tickers with realistic sentiment fluctuations
+- **Enhanced Scanning Schedule**: Updated to scan 5 times daily (every 3 hours) between 8am-10pm UTC for optimal coverage
+- **Expanded Ticker Coverage**: Increased from 15 to 100+ crypto tickers including major cryptos, DeFi tokens, meme coins, gaming tokens, Layer 2 solutions, and emerging ecosystems
+- **Business Hours Optimization**: Scanning restricted to active trading hours (8am-10pm UTC) to focus on peak social activity periods
+- **Comprehensive Crypto Universe**: Covers Bitcoin, Ethereum, Solana ecosystem, Base network tokens, AI/ML projects, gaming/metaverse, and trending meme coins
 
 ### July 21, 2025 - Comprehensive API Rate Limiting & Caching System Implementation
 - **Complete CoinMarketCap Rate Limiting**: Implemented comprehensive caching system for all market overview API calls
