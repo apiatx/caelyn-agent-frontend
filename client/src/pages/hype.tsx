@@ -41,6 +41,13 @@ export default function HypePage() {
       case "hype":
         navigate("/hype");
         break;
+      case "alpha":
+      case "base":
+      case "bittensor":
+      case "abstract":
+      case "portfolio":
+        navigate("/#" + tab);
+        break;
       default:
         navigate("/");
         break;
