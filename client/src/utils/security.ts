@@ -25,7 +25,7 @@ const TRUSTED_DOMAINS = [
   'opensea.io',
   'checkr.social',
   'terminal.co',
-  'blockCreeper.com',
+  'blockcreeper.com',
   'virtuals.io',
   'creator.bid',
   'bankr.bot',
