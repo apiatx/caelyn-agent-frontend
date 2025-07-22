@@ -5,10 +5,15 @@ import hippoImage from "@assets/image_1753204691716.png";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 import { SectionLoadingState } from "@/components/loading-screen";
+import { openSecureLink, getSecureIframeProps } from "@/utils/security";
 
 export default function TopChartsPage() {
   const openInNewTab = (url: string) => {
-    window.open(url, '_blank', 'noopener,noreferrer');
+    openSecureLink(url);
+  };
+
+  const navigateTo = (url: string) => {
+    window.location.href = url;
   };
 
   return (
@@ -39,7 +44,7 @@ export default function TopChartsPage() {
           {/* Desktop Navigation */}
           <div className="hidden lg:flex space-x-2">
             <button
-              onClick={() => window.location.href = "/"}
+              onClick={() => navigateTo("/")}
               className="flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver"
             >
               <Activity className="w-4 h-4 mr-2 inline" />Market Overview
@@ -50,7 +55,7 @@ export default function TopChartsPage() {
               <BarChart3 className="w-4 h-4 mr-2 inline" />Top Charts
             </button>
             <button
-              onClick={() => window.location.href = "/#alpha"}
+              onClick={() => navigateTo("/#alpha")}
               className="flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver"
             >
               <TrendingUp className="w-4 h-4 mr-2 inline" />Alpha
@@ -68,31 +73,31 @@ export default function TopChartsPage() {
               <Brain className="w-4 h-4 mr-2 inline" />Bittensor
             </button>
             <button
-              onClick={() => window.location.href = "/hype"}
+              onClick={() => navigateTo("/hype")}
               className="flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver"
             >
               <TrendingUp className="w-4 h-4 mr-2 inline" />Hype
             </button>
             <button
-              onClick={() => window.location.href = "/#abstract"}
+              onClick={() => navigateTo("/#abstract")}
               className="flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver"
             >
               <Layers className="w-4 h-4 mr-2 inline" />Abstract
             </button>
             <button
-              onClick={() => window.location.href = "/#solana"}
+              onClick={() => navigateTo("/#solana")}
               className="flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver"
             >
               <Zap className="w-4 h-4 mr-2 inline" />Solana
             </button>
             <button
-              onClick={() => window.location.href = "/#defi"}
+              onClick={() => navigateTo("/#defi")}
               className="flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver"
             >
               <DollarSign className="w-4 h-4 mr-2 inline" />DeFi
             </button>
             <button
-              onClick={() => window.location.href = "/#portfolio"}
+              onClick={() => navigateTo("/#portfolio")}
               className="flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver"
             >
               <Wallet className="w-4 h-4 mr-2 inline" />Portfolio
@@ -103,7 +108,7 @@ export default function TopChartsPage() {
           <div className="lg:hidden overflow-x-auto">
             <div className="flex space-x-1 min-w-max pb-2">
               <button
-                onClick={() => window.location.href = "/"}
+                onClick={() => navigateTo("/")}
                 className="whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver"
               >
                 <Activity className="w-4 h-4 mr-1 inline" />Market Overview
@@ -114,49 +119,49 @@ export default function TopChartsPage() {
                 <BarChart3 className="w-4 h-4 mr-1 inline" />Top Charts
               </button>
               <button
-                onClick={() => window.location.href = "/#alpha"}
+                onClick={() => navigateTo("/#alpha")}
                 className="whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver"
               >
                 <TrendingUp className="w-4 h-4 mr-1 inline" />Alpha
               </button>
               <button
-                onClick={() => window.location.href = "/#base"}
+                onClick={() => navigateTo("/#base")}
                 className="whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver"
               >
                 <ChartLine className="w-4 h-4 mr-1 inline" />Base
               </button>
               <button
-                onClick={() => window.location.href = "/#bittensor"}
+                onClick={() => navigateTo("/#bittensor")}
                 className="whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver"
               >
                 <Brain className="w-4 h-4 mr-1 inline" />Bittensor
               </button>
               <button
-                onClick={() => window.location.href = "/hype"}
+                onClick={() => navigateTo("/hype")}
                 className="whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver"
               >
                 <TrendingUp className="w-4 h-4 mr-1 inline" />Hype
               </button>
               <button
-                onClick={() => window.location.href = "/#abstract"}
+                onClick={() => navigateTo("/#abstract")}
                 className="whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver"
               >
                 <Layers className="w-4 h-4 mr-1 inline" />Abstract
               </button>
               <button
-                onClick={() => window.location.href = "/#solana"}
+                onClick={() => navigateTo("/#solana")}
                 className="whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver"
               >
                 <Zap className="w-4 h-4 mr-1 inline" />Solana
               </button>
               <button
-                onClick={() => window.location.href = "/#defi"}
+                onClick={() => navigateTo("/#defi")}
                 className="whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver"
               >
                 <DollarSign className="w-4 h-4 mr-1 inline" />DeFi
               </button>
               <button
-                onClick={() => window.location.href = "/#portfolio"}
+                onClick={() => navigateTo("/#portfolio")}
                 className="whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver"
               >
                 <Wallet className="w-4 h-4 mr-1 inline" />Portfolio

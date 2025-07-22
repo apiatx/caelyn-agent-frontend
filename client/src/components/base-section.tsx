@@ -2,6 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { Globe, ArrowLeftRight, TrendingUp } from "lucide-react";
+import { openSecureLink, getSecureIframeProps, getSecureLinkProps } from "@/utils/security";
 
 
 interface DashboardData {
@@ -93,10 +94,8 @@ export default function BaseSection() {
         </div>
         <div className="w-full">
           <iframe
-            src="https://dexscreener.com/base?theme=dark"
+            {...getSecureIframeProps('https://dexscreener.com/base?theme=dark', 'DexScreener Base Network')}
             className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            title="DexScreener Base Network"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
             style={{
               background: '#000000',
               colorScheme: 'dark'
@@ -116,7 +115,7 @@ export default function BaseSection() {
             ANALYTICS
           </span>
           <button
-            onClick={() => window.open('https://www.terminal.co/?tab=base', '_blank')}
+            onClick={() => openSecureLink('https://www.terminal.co/?tab=base')}
             className="ml-auto text-cyan-400 hover:text-cyan-300 text-xs"
           >
             Open in New Tab →
@@ -124,10 +123,8 @@ export default function BaseSection() {
         </div>
         <div className="w-full">
           <iframe
-            src="https://www.terminal.co/?tab=base"
+            {...getSecureIframeProps('https://www.terminal.co/?tab=base', 'Terminal.co Base Analytics')}
             className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            title="Terminal.co Base Analytics"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
             style={{
               background: '#000000',
               colorScheme: 'dark'
@@ -147,7 +144,7 @@ export default function BaseSection() {
             SOCIAL ANALYTICS
           </span>
           <button
-            onClick={() => window.open('https://checkr.social/', '_blank')}
+            onClick={() => openSecureLink('https://checkr.social/')}
             className="ml-auto text-blue-400 hover:text-blue-300 text-xs"
           >
             Open in New Tab →
@@ -155,10 +152,8 @@ export default function BaseSection() {
         </div>
         <div className="w-full">
           <iframe
-            src="https://checkr.social/"
+            {...getSecureIframeProps('https://checkr.social/', 'Checkr.social')}
             className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            title="Checkr.social"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
             style={{
               background: '#000000',
               colorScheme: 'dark'
@@ -178,7 +173,7 @@ export default function BaseSection() {
             BLOCKCHAIN EXPLORER
           </span>
           <button
-            onClick={() => window.open('https://www.blockcreeper.com/', '_blank')}
+            onClick={() => openSecureLink('https://www.blockcreeper.com/')}
             className="ml-auto text-orange-400 hover:text-orange-300 text-xs"
           >
             Open in New Tab →
@@ -186,10 +181,8 @@ export default function BaseSection() {
         </div>
         <div className="w-full">
           <iframe
-            src="https://www.blockcreeper.com/"
+            {...getSecureIframeProps('https://www.blockcreeper.com/', 'BlockCreeper Explorer')}
             className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            title="BlockCreeper Explorer"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
             style={{
               background: '#000000',
               colorScheme: 'dark'
@@ -224,10 +217,8 @@ export default function BaseSection() {
           <div className="space-y-4">
             <div className="w-full">
               <iframe
-                src="https://app.virtuals.io/"
+                {...getSecureIframeProps('https://app.virtuals.io/', 'Virtuals.io Platform')}
                 className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-                title="Virtuals.io Platform"
-                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
                 style={{
                   background: '#000000',
                   colorScheme: 'dark'
@@ -238,9 +229,7 @@ export default function BaseSection() {
             {/* Related Platforms */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-crypto-silver/10">
               <a
-                href="https://bankr.bot/terminal"
-                target="_blank"
-                rel="noopener noreferrer"
+                {...getSecureLinkProps('https://bankr.bot/terminal')}
                 className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-purple-500/30 transition-all duration-200 group"
               >
                 <div className="flex items-center gap-3">
@@ -256,9 +245,7 @@ export default function BaseSection() {
               </a>
 
               <a
-                href="https://creator.bid/agents"
-                target="_blank"
-                rel="noopener noreferrer"
+                {...getSecureLinkProps('https://creator.bid/agents')}
                 className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-emerald-500/30 transition-all duration-200 group"
               >
                 <div className="flex items-center gap-3">

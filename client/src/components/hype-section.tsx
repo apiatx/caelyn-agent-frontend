@@ -1,4 +1,5 @@
 import { ExternalLink } from "lucide-react";
+import { getSecureIframeProps, getSecureLinkProps } from "@/utils/security";
 
 export function HypeSection() {
   return (
@@ -14,9 +15,7 @@ export function HypeSection() {
             LIVE TRADING
           </span>
           <a
-            href="https://app.hyperliquid.xyz/trade/HYPE"
-            target="_blank"
-            rel="noopener noreferrer"
+            {...getSecureLinkProps('https://app.hyperliquid.xyz/trade/HYPE')}
             className="ml-auto text-xs text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-1"
           >
             Open Full View <ExternalLink className="w-3 h-3" />
@@ -25,11 +24,8 @@ export function HypeSection() {
         
         <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
           <iframe
-            src="https://app.hyperliquid.xyz/trade/HYPE"
+            {...getSecureIframeProps('https://app.hyperliquid.xyz/trade/HYPE', 'Hyperliquid HYPE Trading')}
             className="w-full h-[600px] border-0"
-            title="Hyperliquid HYPE Trading"
-            allow="clipboard-read; clipboard-write"
-            sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation-by-user-activation"
           />
         </div>
         

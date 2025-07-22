@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, Star, Zap, DollarSign, Wallet, TrendingDown, Brain, Loader2 } from "lucide-react";
 import { useSocialPulse } from "@/hooks/useSocialPulse";
+import { openSecureLink, getSecureLinkProps } from "@/utils/security";
 
 // Glass card component for alpha section
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
@@ -14,8 +15,9 @@ const GlassCard = ({ children, className = "" }: { children: React.ReactNode; cl
 export default function AlphaSection() {
   const { data: socialPulseData, isLoading } = useSocialPulse();
   
+  // Use secure link opening
   const openInNewTab = (url: string) => {
-    window.open(url, '_blank', 'noopener,noreferrer');
+    openSecureLink(url);
   };
 
   const getTickerColor = (index: number) => {

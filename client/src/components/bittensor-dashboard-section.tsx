@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Brain, ExternalLink } from "lucide-react";
+import { getSecureIframeProps, getSecureLinkProps } from "@/utils/security";
 
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
   <Card className={`backdrop-blur-sm bg-gradient-to-br from-white/10 to-white/5 border border-white/20 ${className}`}>
@@ -32,9 +33,7 @@ export default function BittensorDashboardSection() {
                 τ TaoStats
               </Badge>
               <a 
-                href="https://taostats.io/"
-                target="_blank"
-                rel="noopener noreferrer"
+                {...getSecureLinkProps('https://taostats.io/')}
                 className="text-crypto-silver hover:text-white transition-colors group"
               >
                 <ExternalLink className="h-4 w-4 group-hover:scale-110 transition-transform" />
@@ -44,11 +43,8 @@ export default function BittensorDashboardSection() {
           
           <div className="relative w-full">
             <iframe
-              src="https://taostats.io/"
+              {...getSecureIframeProps('https://taostats.io/', 'TaoStats')}
               className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-              title="TaoStats"
-              frameBorder="0"
-              loading="lazy"
               style={{
                 background: 'transparent',
                 colorScheme: 'dark'
@@ -72,9 +68,7 @@ export default function BittensorDashboardSection() {
                 SUBNET SCREENER
               </Badge>
               <a 
-                href="https://backprop.finance/screener/bubbles"
-                target="_blank"
-                rel="noopener noreferrer"
+                {...getSecureLinkProps('https://backprop.finance/screener/bubbles')}
                 className="text-crypto-silver hover:text-white transition-colors group"
               >
                 <ExternalLink className="h-4 w-4 group-hover:scale-110 transition-transform" />
@@ -84,11 +78,8 @@ export default function BittensorDashboardSection() {
           
           <div className="relative w-full">
             <iframe
-              src="https://backprop.finance/screener/bubbles"
+              {...getSecureIframeProps('https://backprop.finance/screener/bubbles', 'Subnet Bubbles')}
               className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-              title="Subnet Bubbles"
-              frameBorder="0"
-              loading="lazy"
               style={{
                 background: 'transparent',
                 colorScheme: 'dark'

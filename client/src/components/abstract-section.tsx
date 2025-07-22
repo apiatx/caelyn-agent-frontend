@@ -2,6 +2,7 @@ import React from 'react';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Layers } from "lucide-react";
+import { openSecureLink, getSecureIframeProps } from "@/utils/security";
 
 // Glass card component for abstract section
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
@@ -12,7 +13,7 @@ const GlassCard = ({ children, className = "" }: { children: React.ReactNode; cl
 
 export default function AbstractSection() {
   const openInNewTab = (url: string) => {
-    window.open(url, '_blank', 'noopener,noreferrer');
+    openSecureLink(url);
   };
 
   return (
@@ -48,10 +49,8 @@ export default function AbstractSection() {
         </div>
         <div className="w-full">
           <iframe
-            src="https://dexscreener.com/abstract?theme=dark"
+            {...getSecureIframeProps('https://dexscreener.com/abstract?theme=dark', 'DexScreener Abstract')}
             className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
-            title="DexScreener Abstract"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
           />
         </div>
       </GlassCard>

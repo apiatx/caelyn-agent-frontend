@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DollarSign, TrendingUp, BarChart3, Brain, ArrowLeftRight, Wallet, ExternalLink, Layers, Shield } from "lucide-react";
+import { openSecureLink, getSecureIframeProps } from "@/utils/security";
 
 // Glass card component for DeFi section
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
@@ -11,8 +12,9 @@ const GlassCard = ({ children, className = "" }: { children: React.ReactNode; cl
   </Card>
 );
 
+// Use secure link opening
 const openInNewTab = (url: string) => {
-  window.open(url, '_blank', 'noopener,noreferrer');
+  openSecureLink(url);
 };
 
 export default function DeFiSection() {

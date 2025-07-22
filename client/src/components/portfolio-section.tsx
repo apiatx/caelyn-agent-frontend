@@ -19,6 +19,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import type { Holding, Subnet } from "@shared/schema";
+import { getSecureIframeProps, getSecureLinkProps } from "@/utils/security";
 
 export default function PortfolioSection() {
   const { data: portfolio, isLoading } = usePortfolio(1);

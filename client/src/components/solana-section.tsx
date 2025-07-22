@@ -2,6 +2,7 @@ import React from 'react';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BarChart3, Activity, Zap, TrendingDown, ExternalLink } from "lucide-react";
+import { openSecureLink, getSecureIframeProps } from "@/utils/security";
 
 // Glass card component for Solana section
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
@@ -31,10 +32,8 @@ export default function SolanaSection() {
         </div>
         <div className="w-full">
           <iframe
-            src="https://dexscreener.com/solana?theme=dark"
+            {...getSecureIframeProps('https://dexscreener.com/solana?theme=dark', 'DexScreener Solana Network')}
             className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            title="DexScreener Solana Network"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
             style={{
               background: '#000000',
               colorScheme: 'dark'
@@ -58,10 +57,8 @@ export default function SolanaSection() {
         </div>
         <div className="w-full">
           <iframe
-            src="https://www.mobyscreener.com/"
+            {...getSecureIframeProps('https://www.mobyscreener.com/', 'Moby Screener Analytics')}
             className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            title="Moby Screener Analytics"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
           />
         </div>
       </GlassCard>
@@ -93,9 +90,8 @@ export default function SolanaSection() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <a
               href="https://web3.okx.com/leaderboard"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-red-500/30 transition-all duration-200 group"
+              onClick={(e) => {e.preventDefault(); openSecureLink('https://web3.okx.com/leaderboard');}}
+              className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-red-500/30 transition-all duration-200 group cursor-pointer"
             >
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 bg-gradient-to-r from-red-500 to-orange-500 rounded-full flex items-center justify-center">
