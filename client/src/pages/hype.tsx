@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useLocation } from "wouter";
 import { 
   Activity, 
@@ -13,8 +13,10 @@ import {
 } from "lucide-react";
 import cryptoHippoImage from "@assets/image_1752975467353.png";
 import { HypeSection } from "@/components/hype-section";
+import AlphaSection from "@/components/alpha-section";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
+import { SectionLoadingState } from "@/components/loading-screen";
 
 type TabType = "dashboard" | "alpha" | "base" | "bittensor" | "hype" | "abstract" | "solana" | "defi" | "portfolio";
 
@@ -279,7 +281,17 @@ export default function HypePage() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 lg:py-8">
-        <HypeSection />
+        <div className="space-y-8">
+          {/* Hype Section */}
+          <Suspense fallback={<SectionLoadingState title="Hyperliquid Trading" />}>
+            <HypeSection />
+          </Suspense>
+          
+          {/* Alpha Section */}
+          <Suspense fallback={<SectionLoadingState title="Alpha Analytics" />}>
+            <AlphaSection />
+          </Suspense>
+        </div>
       </main>
     </div>
   );

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { ChartLine, Settings, Activity, Eye, TrendingUp, BarChart3, Brain, Wallet, Zap, DollarSign, Layers } from "lucide-react";
 import CryptoDashboardSection from "@/components/crypto-dashboard-section";
 import PortfolioSection from "@/components/portfolio-section";
@@ -13,6 +13,7 @@ import cryptoHippoImage from "@assets/image_1752975467353.png";
 
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
+import { LoadingScreen, SectionLoadingState } from "@/components/loading-screen";
 
 type TabType = "dashboard" | "btc" | "alts" | "portfolio" | "alpha" | "base" | "bittensor" | "abstract" | "solana" | "defi" | "hype";
 
@@ -264,16 +265,30 @@ export default function Dashboard() {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 mt-4 lg:mt-8 pb-8">
-        {activeTab === "dashboard" && <CryptoDashboardSection />}
-        {activeTab === "portfolio" && <PortfolioSection />}
-        {activeTab === "alpha" && <AlphaSection />}
-
-        {activeTab === "base" && <BaseSection />}
-        {activeTab === "bittensor" && <BittensorDashboardSection />}
-        {activeTab === "abstract" && <AbstractSection />}
-        {activeTab === "solana" && <SolanaSection />}
-        {activeTab === "defi" && <DeFiSection />}
-
+        <Suspense fallback={<SectionLoadingState title="Market Overview" />}>
+          {activeTab === "dashboard" && <CryptoDashboardSection />}
+        </Suspense>
+        <Suspense fallback={<SectionLoadingState title="Portfolio" />}>
+          {activeTab === "portfolio" && <PortfolioSection />}
+        </Suspense>
+        <Suspense fallback={<SectionLoadingState title="Alpha Analytics" />}>
+          {activeTab === "alpha" && <AlphaSection />}
+        </Suspense>
+        <Suspense fallback={<SectionLoadingState title="Base Network" />}>
+          {activeTab === "base" && <BaseSection />}
+        </Suspense>
+        <Suspense fallback={<SectionLoadingState title="Bittensor" />}>
+          {activeTab === "bittensor" && <BittensorDashboardSection />}
+        </Suspense>
+        <Suspense fallback={<SectionLoadingState title="Abstract Network" />}>
+          {activeTab === "abstract" && <AbstractSection />}
+        </Suspense>
+        <Suspense fallback={<SectionLoadingState title="Solana Network" />}>
+          {activeTab === "solana" && <SolanaSection />}
+        </Suspense>
+        <Suspense fallback={<SectionLoadingState title="DeFi Platforms" />}>
+          {activeTab === "defi" && <DeFiSection />}
+        </Suspense>
       </div>
     </div>
   );

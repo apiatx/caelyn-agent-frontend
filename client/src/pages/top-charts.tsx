@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, BarChart3, Globe, Activity, Brain, Wallet, Zap, DollarSign, Layers, ChartLine, Settings } from "lucide-react";
 import hippoImage from "@assets/image_1752975467353.png";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
+import { SectionLoadingState } from "@/components/loading-screen";
 
 export default function TopChartsPage() {
   const openInNewTab = (url: string) => {
@@ -186,7 +187,8 @@ export default function TopChartsPage() {
           </div>
 
           {/* Bitcoin Chart */}
-          <GlassCard className="p-3 sm:p-4 lg:p-6">
+          <Suspense fallback={<SectionLoadingState title="Bitcoin Chart" />}>
+            <GlassCard className="p-3 sm:p-4 lg:p-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
               <div className="flex items-center gap-2">
                 <div className="w-5 h-5 sm:w-6 sm:h-6 bg-orange-500 rounded-full flex items-center justify-center">
@@ -213,9 +215,11 @@ export default function TopChartsPage() {
               />
             </div>
           </GlassCard>
+          </Suspense>
 
           {/* Ethereum Chart */}
-          <GlassCard className="p-3 sm:p-4 lg:p-6">
+          <Suspense fallback={<SectionLoadingState title="Ethereum Chart" />}>
+            <GlassCard className="p-3 sm:p-4 lg:p-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
               <div className="flex items-center gap-2">
                 <div className="w-5 h-5 sm:w-6 sm:h-6 bg-blue-500 rounded-full flex items-center justify-center">
@@ -242,9 +246,11 @@ export default function TopChartsPage() {
               />
             </div>
           </GlassCard>
+          </Suspense>
 
           {/* Solana Chart */}
-          <GlassCard className="p-3 sm:p-4 lg:p-6">
+          <Suspense fallback={<SectionLoadingState title="Solana Chart" />}>
+            <GlassCard className="p-3 sm:p-4 lg:p-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
               <div className="flex items-center gap-2">
                 <div className="w-5 h-5 sm:w-6 sm:h-6 bg-purple-500 rounded-full flex items-center justify-center">
@@ -271,9 +277,11 @@ export default function TopChartsPage() {
               />
             </div>
           </GlassCard>
+          </Suspense>
 
           {/* XRP Chart */}
-          <GlassCard className="p-3 sm:p-4 lg:p-6">
+          <Suspense fallback={<SectionLoadingState title="XRP Chart" />}>
+            <GlassCard className="p-3 sm:p-4 lg:p-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
               <div className="flex items-center gap-2">
                 <div className="w-5 h-5 sm:w-6 sm:h-6 bg-green-500 rounded-full flex items-center justify-center">
@@ -300,9 +308,11 @@ export default function TopChartsPage() {
               />
             </div>
           </GlassCard>
+          </Suspense>
 
           {/* Pengu Chart */}
-          <GlassCard className="p-3 sm:p-4 lg:p-6">
+          <Suspense fallback={<SectionLoadingState title="PENGU Chart" />}>
+            <GlassCard className="p-3 sm:p-4 lg:p-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
               <div className="flex items-center gap-2">
                 <div className="w-5 h-5 sm:w-6 sm:h-6 bg-cyan-500 rounded-full flex items-center justify-center">
@@ -329,9 +339,11 @@ export default function TopChartsPage() {
               />
             </div>
           </GlassCard>
+          </Suspense>
 
           {/* BTC Dominance Chart */}
-          <GlassCard className="p-3 sm:p-4 lg:p-6">
+          <Suspense fallback={<SectionLoadingState title="BTC Dominance" />}>
+            <GlassCard className="p-3 sm:p-4 lg:p-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
               <div className="flex items-center gap-2">
                 <div className="w-5 h-5 sm:w-6 sm:h-6 bg-yellow-500 rounded-full flex items-center justify-center">
@@ -358,9 +370,11 @@ export default function TopChartsPage() {
               />
             </div>
           </GlassCard>
+          </Suspense>
 
           {/* ETH Dominance Chart */}
-          <GlassCard className="p-3 sm:p-4 lg:p-6">
+          <Suspense fallback={<SectionLoadingState title="ETH Dominance" />}>
+            <GlassCard className="p-3 sm:p-4 lg:p-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
               <div className="flex items-center gap-2">
                 <div className="w-5 h-5 sm:w-6 sm:h-6 bg-blue-600 rounded-full flex items-center justify-center">
@@ -416,6 +430,9 @@ export default function TopChartsPage() {
               />
             </div>
           </GlassCard>
+          </Suspense>
+
+
         </div>
       </div>
     </div>
