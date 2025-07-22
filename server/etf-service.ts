@@ -48,8 +48,8 @@ export class ETFService {
       const now = new Date();
       const currentHour = now.getUTCHours();
       
-      // Only fetch twice daily: 8 AM UTC and 8 PM UTC (12-hour intervals)
-      const isUpdateHour = currentHour === 8 || currentHour === 20;
+      // AGGRESSIVE RATE LIMITING: Only fetch once daily at 8 AM UTC (24-hour intervals)
+      const isUpdateHour = currentHour === 8;
       
       return !isUpdateHour; // Return true if NOT an update hour (cache is valid)
     } catch {
@@ -83,12 +83,10 @@ export class ETFService {
       const now = new Date();
       const expiresAt = new Date(now);
       
-      // Set next expiration to next 12-hour interval (8 AM or 8 PM UTC)
+      // Set next expiration to next 24-hour interval (8 AM UTC only - aggressive rate limiting)
       const currentHour = now.getUTCHours();
       if (currentHour < 8) {
         expiresAt.setUTCHours(8, 0, 0, 0);
-      } else if (currentHour < 20) {
-        expiresAt.setUTCHours(20, 0, 0, 0);
       } else {
         expiresAt.setUTCDate(expiresAt.getUTCDate() + 1);
         expiresAt.setUTCHours(8, 0, 0, 0);

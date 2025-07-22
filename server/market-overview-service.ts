@@ -1,4 +1,6 @@
 import fetch from 'node-fetch';
+import fs from 'fs/promises';
+import path from 'path';
 
 interface GlobalMetrics {
   active_cryptocurrencies: number;
@@ -104,20 +106,55 @@ export class MarketOverviewService {
   private altSeasonCache: { data: AltSeasonData | null; lastFetch: number | null } = { data: null, lastFetch: null };
   private fearGreedCache: { data: FearGreedData | null; lastFetch: number | null } = { data: null, lastFetch: null };
   
-  // Cache durations
-  private readonly GLOBAL_METRICS_CACHE_DURATION = 60 * 60 * 1000; // 1 hour
-  private readonly ALT_SEASON_CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours (2 API calls total)
-  private readonly FEAR_GREED_CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours (2 API calls total)
+  // File-based persistent caching for aggressive rate limiting
+  private readonly cacheFile = path.join(process.cwd(), 'market-overview-cache.json');
+  
+  // Cache durations - AGGRESSIVE RATE LIMITING TO REDUCE FROM 478→<320 DAILY REQUESTS
+  private readonly GLOBAL_METRICS_CACHE_DURATION = 4 * 60 * 60 * 1000; // 4 hours (max 6 API calls/day)
+  private readonly ALT_SEASON_CACHE_DURATION = 48 * 60 * 60 * 1000; // 48 hours (1 API call every 2 days)
+  private readonly FEAR_GREED_CACHE_DURATION = 48 * 60 * 60 * 1000; // 48 hours (1 API call every 2 days)
 
   constructor() {
     this.apiKey = process.env.COINMARKETCAP_API_KEY || '7d9a361e-596d-4914-87e2-f1124da24897';
+    this.loadPersistentCache();
+  }
+  
+  private async loadPersistentCache(): Promise<void> {
+    try {
+      const cacheData = await fs.readFile(this.cacheFile, 'utf-8');
+      const cache = JSON.parse(cacheData);
+      
+      this.globalMetricsCache = cache.globalMetricsCache || { data: null, lastFetch: null };
+      this.altSeasonCache = cache.altSeasonCache || { data: null, lastFetch: null };
+      this.fearGreedCache = cache.fearGreedCache || { data: null, lastFetch: null };
+      
+      console.log('✅ [Market Overview] Loaded persistent cache from disk (aggressive rate limiting)');
+    } catch {
+      console.log('⚠️ [Market Overview] No persistent cache found, starting fresh');
+    }
+  }
+  
+  private async savePersistentCache(): Promise<void> {
+    try {
+      const cache = {
+        globalMetricsCache: this.globalMetricsCache,
+        altSeasonCache: this.altSeasonCache,
+        fearGreedCache: this.fearGreedCache,
+        lastSaved: new Date().toISOString()
+      };
+      
+      await fs.writeFile(this.cacheFile, JSON.stringify(cache, null, 2));
+      console.log('💾 [Market Overview] Saved persistent cache to disk for aggressive rate limiting');
+    } catch (error) {
+      console.error('❌ [Market Overview] Failed to save persistent cache:', error);
+    }
   }
 
   private isBusinessHours(): boolean {
     const now = new Date();
     const utcHour = now.getUTCHours();
-    // Business hours: 7am-9pm UTC (14 hours)
-    return utcHour >= 7 && utcHour < 21;
+    // REDUCED Business hours: 9am-6pm UTC (9 hours) for aggressive rate limiting
+    return utcHour >= 9 && utcHour < 18;
   }
 
   private shouldRefreshGlobalMetrics(): boolean {
@@ -128,7 +165,7 @@ export class MarketOverviewService {
     const now = Date.now();
     const timeSinceLastFetch = now - this.globalMetricsCache.lastFetch;
     
-    // Only allow refresh during business hours (7am-9pm UTC) and max once per hour
+    // Only allow refresh during business hours (9am-6pm UTC) and max every 4 hours
     if (!this.isBusinessHours()) {
       return false;
     }
@@ -144,7 +181,7 @@ export class MarketOverviewService {
     const now = Date.now();
     const timeSinceLastFetch = now - this.altSeasonCache.lastFetch;
     
-    // Allow max 2 API calls per day
+    // Allow max 1 API call every 2 days (aggressive rate limiting)
     return timeSinceLastFetch >= this.ALT_SEASON_CACHE_DURATION;
   }
 
@@ -156,14 +193,14 @@ export class MarketOverviewService {
     const now = Date.now();
     const timeSinceLastFetch = now - this.fearGreedCache.lastFetch;
     
-    // Allow max 2 API calls per day
+    // Allow max 1 API call every 2 days (aggressive rate limiting)
     return timeSinceLastFetch >= this.FEAR_GREED_CACHE_DURATION;
   }
 
   async getGlobalMetrics(): Promise<GlobalMetrics> {
     // Check if we should use cached data
     if (!this.shouldRefreshGlobalMetrics()) {
-      console.log('📦 [Market Overview] Using cached global metrics data (rate limiting active)');
+      console.log('📦 [Market Overview] Using cached global metrics data (AGGRESSIVE rate limiting: 4hr cache)');
       return this.globalMetricsCache.data!;
     }
 
@@ -196,6 +233,9 @@ export class MarketOverviewService {
         data: data.data,
         lastFetch: Date.now()
       };
+      
+      // Save to persistent cache
+      await this.savePersistentCache();
       
       return data.data;
     } catch (error) {
@@ -274,7 +314,7 @@ export class MarketOverviewService {
   async getAltSeasonIndex(): Promise<AltSeasonData> {
     // Check if we should use cached data (max 2 API calls per day)
     if (!this.shouldRefreshAltSeason()) {
-      console.log('📦 [Market Overview] Using cached Alt Season data (rate limiting: 2 calls/day)');
+      console.log('📦 [Market Overview] Using cached Alt Season data (AGGRESSIVE rate limiting: 1 call/2 days)');
       return this.altSeasonCache.data!;
     }
 
@@ -350,6 +390,9 @@ export class MarketOverviewService {
         lastFetch: Date.now()
       };
       
+      // Save to persistent cache
+      await this.savePersistentCache();
+      
       return altSeasonData;
     } catch (error) {
       console.error('❌ [Market Overview] Failed to fetch Alt Season Index:', error);
@@ -383,6 +426,9 @@ export class MarketOverviewService {
           data: estimatedData,
           lastFetch: Date.now()
         };
+        
+        // Save to persistent cache
+        await this.savePersistentCache();
         
         return estimatedData;
       } catch (error) {
@@ -491,7 +537,7 @@ export class MarketOverviewService {
   async getFearGreedIndex(): Promise<FearGreedData> {
     // Check if we should use cached data (max 2 API calls per day)
     if (!this.shouldRefreshFearGreed()) {
-      console.log('📦 [Market Overview] Using cached Fear & Greed data (rate limiting: 2 calls/day)');
+      console.log('📦 [Market Overview] Using cached Fear & Greed data (AGGRESSIVE rate limiting: 1 call/2 days)');
       return this.fearGreedCache.data!;
     }
 
@@ -609,6 +655,9 @@ export class MarketOverviewService {
           lastFetch: Date.now()
         };
         
+        // Save to persistent cache
+        await this.savePersistentCache();
+        
         return fearGreedData;
       }
 
@@ -664,6 +713,9 @@ export class MarketOverviewService {
           data: fearGreedData,
           lastFetch: Date.now()
         };
+        
+        // Save to persistent cache
+        await this.savePersistentCache();
         
         return fearGreedData;
       } else {

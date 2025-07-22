@@ -724,3 +724,12 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Cache Status Logging**: Detailed logging shows cache hits, API calls, and rate limiting status for monitoring
 - **API Credit Conservation**: Total daily API usage reduced from unlimited to maximum 14 calls (1 hourly + 2 indices + 2 Fear/Greed)
 - **Production-Ready Implementation**: Error handling with cached fallbacks ensures platform stability during API issues
+
+### July 22, 2025 - AGGRESSIVE CMC API Rate Limiting Implementation (478→<320 Daily Requests)
+- **CRITICAL Rate Limiting**: Implemented aggressive caching to reduce CMC API usage from 478 to under 320 daily requests for 10k monthly limit
+- **Extended Cache Durations**: Global Metrics 4-hour cache (max 6 API calls/day), Alt Season/Fear & Greed 48-hour cache (1 call every 2 days)
+- **Reduced Business Hours**: Shortened from 7am-9pm to 9am-6pm UTC (9 hours) for further rate limiting
+- **ETF Service Once Daily**: Changed from twice-daily (12hr) to once-daily (24hr) ETF data fetching at 8 AM UTC only
+- **Persistent File Caching**: Added market-overview-cache.json for cross-restart cache persistence to prevent API calls after server restarts
+- **Comprehensive Cache Management**: All cache updates automatically saved to disk with detailed logging for monitoring
+- **Production API Conservation**: Maximum theoretical daily usage: 6 global + 0.5 alt season + 0.5 fear/greed + 1 ETF = 8 API calls/day
