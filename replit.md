@@ -622,9 +622,12 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 ### July 22, 2025 - Chart Label Updates & DeFAI Enhancement
 - **BTC Page Chart Titles**: Updated "Bitcoin Chart" to "Bitcoin Price Chart" and "BTC Dominance Chart" to "BTC Dominance"
 - **Alts Page Chart Titles**: Simplified "TradingView Ethereum Chart" to "Ethereum", "TradingView Solana Chart" to "Solana", "TradingView XRP Chart" to "XRP"
+- **Additional Alts Chart Updates**: "PENGU Chart" to "Pengu", "ETH Dominance Chart" to "ETH Dominance", "OTHERS Dominance Chart" to "OTHERS Dominance"
 - **DeFAI Description Updates**: Changed ZyFAI description from "AI analytics dashboard" to "AI automated yield farming"
 - **Mamo Integration**: Added Mamo personal finance companion link (https://mamo.bot/onboarding) to DeFAI section
 - **Enhanced DeFAI Section**: DeFAI now includes Senpi AI, AIxVC, Arma, ZyFAI, and Mamo for comprehensive AI-powered DeFi tools
+- **DeFAI Section Cleanup**: Removed repetitive "DeFAI" header within the DeFAI section for cleaner interface
+- **DeFi Page Restructure**: Moved Peapods Finance iframe from top to bottom of page for better content flow
 - **Streamlined Chart Navigation**: Cleaner chart titles improve user experience across BTC and Alts pages
 
 ### July 21, 2025 - Comprehensive API Rate Limiting & Caching System Implementation

@@ -54,30 +54,7 @@ export default function DeFiSection() {
 
 
 
-      {/* Peapods Finance */}
-      <GlassCard className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-            <DollarSign className="w-4 h-4 text-white" />
-          </div>
-          <h3 className="text-xl font-semibold text-white">Peapods Finance</h3>
-          <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-            DEFI PROTOCOL
-          </Badge>
-          <button
-            onClick={() => openInNewTab('https://peapods.finance/')}
-            className="text-green-400 hover:text-green-300 text-sm ml-auto"
-          >
-            Open Full View →
-          </button>
-        </div>
-        <iframe
-          src="https://peapods.finance/"
-          className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-          title="Peapods Finance"
-          sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-        />
-      </GlassCard>
+
 
       {/* DeFAI Section */}
       <div className="space-y-6">
@@ -93,15 +70,6 @@ export default function DeFiSection() {
 
         {/* DeFAI */}
         <GlassCard className="p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
-              <Brain className="text-white text-xl" />
-            </div>
-            <div>
-              <h3 className="text-xl font-semibold text-white">DeFAI</h3>
-              <p className="text-crypto-silver">AI-Powered DeFi Analytics & Protocols</p>
-            </div>
-          </div>
           
           <div className="grid grid-cols-1 gap-4">
             {/* Senpi AI */}
@@ -172,6 +140,30 @@ export default function DeFiSection() {
         </GlassCard>
       </div>
 
+      {/* Peapods Finance */}
+      <GlassCard className="p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+            <DollarSign className="w-4 h-4 text-white" />
+          </div>
+          <h3 className="text-xl font-semibold text-white">Peapods Finance</h3>
+          <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+            DEFI PROTOCOL
+          </Badge>
+          <button
+            onClick={() => openInNewTab('https://peapods.finance/')}
+            className="text-green-400 hover:text-green-300 text-sm ml-auto"
+          >
+            Open Full View →
+          </button>
+        </div>
+        <iframe
+          src="https://peapods.finance/"
+          className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+          title="Peapods Finance"
+          sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+        />
+      </GlassCard>
 
     </div>
   );
