@@ -91,37 +91,23 @@ export default function AlphaSection() {
             </div>
             <p className="text-gray-400 text-sm">Crypto AI Agent Analytics</p>
           </button>
+
+          <button
+            onClick={() => openInNewTab('https://opensea.io/stats/tokens')}
+            className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                <TrendingUp className="w-4 h-4 text-white" />
+              </div>
+              <h4 className="text-blue-400 font-semibold">OpenSea NFT Stats</h4>
+            </div>
+            <p className="text-gray-400 text-sm">Trending Altcoin Timeframes</p>
+          </button>
         </div>
       </GlassCard>
 
-      {/* OpenSea NFT Stats */}
-      <GlassCard className="p-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-              <TrendingUp className="w-4 h-4 text-white" />
-            </div>
-            <h3 className="text-xl font-semibold text-white">OpenSea NFT Stats</h3>
-            <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
-              NFT ANALYTICS
-            </Badge>
-          </div>
-          <button
-            onClick={() => openInNewTab('https://opensea.io/stats/tokens')}
-            className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm sm:ml-auto"
-          >
-            Open Full View →
-          </button>
-        </div>
-        <div className="w-full">
-          <iframe
-            src="https://opensea.io/stats/tokens"
-            className="w-full h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
-            title="OpenSea NFT Stats"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-          />
-        </div>
-      </GlassCard>
+
 
       {/* Smart Wallets */}
       <GlassCard className="p-6">

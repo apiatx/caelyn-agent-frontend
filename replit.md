@@ -643,6 +643,13 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Interface Cleanup**: Hype page now focuses solely on HypeSection content without Alpha analytics
 - **Comprehensive Bittensor Analytics**: Bittensor dashboard features TaoStats, Swordscan, Backprop Finance, and TaoHub integrations
 
+### July 22, 2025 - OpenSea Fix & dTAO Wallets Integration
+- **OpenSea NFT Stats Conversion**: Converted problematic OpenSea iframe to clickable link button in Alpha Signal section
+- **Signal Section Enhancement**: Added OpenSea NFT Stats with "Trending Altcoin Timeframes" description for quick access
+- **Top dTAO Wallets Integration**: Added https://taomarketcap.com/blockchain/accounts iframe to Bittensor page with orange τ branding
+- **Enhanced Bittensor Analytics**: Bittensor now features TaoStats, Swordscan, Backprop Finance, Top dTAO Wallets, and TaoHub integrations
+- **Iframe Security Handling**: Replaced blocked iframe with clean button interface maintaining user experience
+
 ### July 21, 2025 - Comprehensive API Rate Limiting & Caching System Implementation
 - **Complete CoinMarketCap Rate Limiting**: Implemented comprehensive caching system for all market overview API calls
 - **Global Metrics Caching**: 1-hour cache duration with business hours restriction (7am-9pm UTC) for hourly API credits conservation
