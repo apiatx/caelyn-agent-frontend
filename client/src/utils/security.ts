@@ -26,6 +26,7 @@ const TRUSTED_DOMAINS = [
   'checkr.social',
   'terminal.co',
   'blockcreeper.com',
+  'www.blockcreeper.com',
   'virtuals.io',
   'creator.bid',
   'bankr.bot',
