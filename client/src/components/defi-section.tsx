@@ -49,17 +49,6 @@ export default function DeFiSection() {
               <div className="text-sm text-crypto-silver">BASE network DEX trading</div>
             </div>
           </Button>
-        </div>
-      </div>
-
-
-
-
-
-      {/* Trade Section */}
-      <div className="space-y-4">
-        <h3 className="text-xl font-semibold text-white mb-4">Trade</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <Button
             variant="outline"
             onClick={() => openInNewTab('https://universalx.app/home')}
@@ -71,8 +60,24 @@ export default function DeFiSection() {
               <div className="text-sm text-crypto-silver">Trade any token, on any chain</div>
             </div>
           </Button>
+          <Button
+            variant="outline"
+            onClick={() => openInNewTab('https://jup.ag/')}
+            className="bg-black/20 border-crypto-silver/20 hover:bg-blue-500/20 hover:border-blue-500/30 text-white justify-start p-4 h-auto"
+          >
+            <ArrowLeftRight className="w-4 h-4 mr-2" />
+            <div className="text-left">
+              <div className="font-semibold">Jupiter</div>
+              <div className="text-sm text-crypto-silver">Solana DEX aggregator</div>
+            </div>
+          </Button>
         </div>
       </div>
+
+
+
+
+
 
       {/* DeFAI Section */}
       <div className="space-y-6">
