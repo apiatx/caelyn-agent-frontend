@@ -1,7 +1,8 @@
 import React, { Suspense } from 'react';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, Star, Zap, DollarSign, Wallet, TrendingDown, Brain } from "lucide-react";
+import { TrendingUp, Star, Zap, DollarSign, Wallet, TrendingDown, Brain, Loader2 } from "lucide-react";
+import { useSocialPulse } from "@/hooks/useSocialPulse";
 
 // Glass card component for alpha section
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
@@ -11,8 +12,25 @@ const GlassCard = ({ children, className = "" }: { children: React.ReactNode; cl
 );
 
 export default function AlphaSection() {
+  const { data: socialPulseData, isLoading } = useSocialPulse();
+  
   const openInNewTab = (url: string) => {
     window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  const getTickerColor = (index: number) => {
+    const colors = [
+      { bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', hover: 'hover:bg-yellow-500/20', icon: 'bg-yellow-500', text: 'text-yellow-400' },
+      { bg: 'bg-blue-500/10', border: 'border-blue-500/20', hover: 'hover:bg-blue-500/20', icon: 'bg-blue-500', text: 'text-blue-400' },
+      { bg: 'bg-purple-500/10', border: 'border-purple-500/20', hover: 'hover:bg-purple-500/20', icon: 'bg-purple-500', text: 'text-purple-400' },
+      { bg: 'bg-green-500/10', border: 'border-green-500/20', hover: 'hover:bg-green-500/20', icon: 'bg-green-500', text: 'text-green-400' },
+      { bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', hover: 'hover:bg-emerald-500/20', icon: 'bg-emerald-500', text: 'text-emerald-400' },
+      { bg: 'bg-orange-500/10', border: 'border-orange-500/20', hover: 'hover:bg-orange-500/20', icon: 'bg-orange-500', text: 'text-orange-400' },
+      { bg: 'bg-indigo-500/10', border: 'border-indigo-500/20', hover: 'hover:bg-indigo-500/20', icon: 'bg-indigo-500', text: 'text-indigo-400' },
+      { bg: 'bg-red-500/10', border: 'border-red-500/20', hover: 'hover:bg-red-500/20', icon: 'bg-red-500', text: 'text-red-400' },
+      { bg: 'bg-cyan-500/10', border: 'border-cyan-500/20', hover: 'hover:bg-cyan-500/20', icon: 'bg-cyan-500', text: 'text-cyan-400' }
+    ];
+    return colors[index % colors.length];
   };
 
   return (
@@ -367,124 +385,35 @@ export default function AlphaSection() {
             </Badge>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <button
-              onClick={() => openInNewTab('https://x.com/search?q=%24BTC&src=typed_query&f=live')}
-              className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg hover:bg-yellow-500/20 transition-colors"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm font-bold">$</span>
-                </div>
-                <h5 className="text-yellow-400 font-semibold">$BTC</h5>
-              </div>
-              <p className="text-gray-400 text-sm">24hr Sentiment +18%</p>
-            </button>
-
-            <button
-              onClick={() => openInNewTab('https://x.com/search?q=%24ETH&src=typed_query&f=live')}
-              className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm font-bold">$</span>
-                </div>
-                <h5 className="text-blue-400 font-semibold">$ETH</h5>
-              </div>
-              <p className="text-gray-400 text-sm">24hr Sentiment +12%</p>
-            </button>
-
-            <button
-              onClick={() => openInNewTab('https://x.com/search?q=%24SOL&src=typed_query&f=live')}
-              className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm font-bold">$</span>
-                </div>
-                <h5 className="text-purple-400 font-semibold">$SOL</h5>
-              </div>
-              <p className="text-gray-400 text-sm">24hr Sentiment +24%</p>
-            </button>
-
-            <button
-              onClick={() => openInNewTab('https://x.com/search?q=%24XRP&src=typed_query&f=live')}
-              className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm font-bold">$</span>
-                </div>
-                <h5 className="text-green-400 font-semibold">$XRP</h5>
-              </div>
-              <p className="text-gray-400 text-sm">24hr Sentiment +31%</p>
-            </button>
-
-            <button
-              onClick={() => openInNewTab('https://x.com/search?q=%24PEPE&src=typed_query&f=live')}
-              className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg hover:bg-emerald-500/20 transition-colors"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm font-bold">$</span>
-                </div>
-                <h5 className="text-emerald-400 font-semibold">$PEPE</h5>
-              </div>
-              <p className="text-gray-400 text-sm">24hr Sentiment +15%</p>
-            </button>
-
-            <button
-              onClick={() => openInNewTab('https://x.com/search?q=%24DOGE&src=typed_query&f=live')}
-              className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm font-bold">$</span>
-                </div>
-                <h5 className="text-orange-400 font-semibold">$DOGE</h5>
-              </div>
-              <p className="text-gray-400 text-sm">24hr Sentiment +8%</p>
-            </button>
-
-            <button
-              onClick={() => openInNewTab('https://x.com/search?q=%24ADA&src=typed_query&f=live')}
-              className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-lg hover:bg-indigo-500/20 transition-colors"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-indigo-500 rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm font-bold">$</span>
-                </div>
-                <h5 className="text-indigo-400 font-semibold">$ADA</h5>
-              </div>
-              <p className="text-gray-400 text-sm">24hr Sentiment +22%</p>
-            </button>
-
-            <button
-              onClick={() => openInNewTab('https://x.com/search?q=%24AVAX&src=typed_query&f=live')}
-              className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg hover:bg-red-500/20 transition-colors"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm font-bold">$</span>
-                </div>
-                <h5 className="text-red-400 font-semibold">$AVAX</h5>
-              </div>
-              <p className="text-gray-400 text-sm">24hr Sentiment +17%</p>
-            </button>
-
-            <button
-              onClick={() => openInNewTab('https://x.com/search?q=%24PENGU&src=typed_query&f=live')}
-              className="p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-lg hover:bg-cyan-500/20 transition-colors"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm font-bold">$</span>
-                </div>
-                <h5 className="text-cyan-400 font-semibold">$PENGU</h5>
-              </div>
-              <p className="text-gray-400 text-sm">24hr Sentiment +42%</p>
-            </button>
-          </div>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+              <span className="ml-2 text-gray-400">Loading trending tickers...</span>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {socialPulseData?.map((ticker, index) => {
+                const colors = getTickerColor(index);
+                return (
+                  <button
+                    key={ticker.symbol}
+                    onClick={() => openInNewTab(`https://x.com/search?q=%24${ticker.symbol}&src=typed_query&f=live`)}
+                    className={`p-4 ${colors.bg} border ${colors.border} rounded-lg ${colors.hover} transition-colors`}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className={`w-8 h-8 ${colors.icon} rounded-full flex items-center justify-center`}>
+                        <span className="text-white text-sm font-bold">$</span>
+                      </div>
+                      <h5 className={`${colors.text} font-semibold`}>${ticker.symbol}</h5>
+                    </div>
+                    <p className="text-gray-400 text-sm">
+                      24hr Sentiment {ticker.sentiment > 0 ? '+' : ''}{ticker.sentiment}%
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       </GlassCard>
     </div>

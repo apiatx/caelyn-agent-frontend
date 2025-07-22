@@ -244,6 +244,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Social Pulse endpoint - Dynamic trending crypto tickers
+  app.get("/api/social-pulse", async (req, res) => {
+    try {
+      const { getSocialPulseData } = await import('./services/social-pulse.js');
+      const tickers = await getSocialPulseData();
+      res.json(tickers);
+    } catch (error) {
+      console.error('❌ [Social Pulse] Failed to fetch trending tickers:', error);
+      res.status(500).json({ message: "Failed to fetch social pulse data" });
+    }
+  });
+
   // Get comprehensive subnet analytics data with TaoStats API integration
   app.get('/api/subnets/comprehensive', async (req, res) => {
     try {
