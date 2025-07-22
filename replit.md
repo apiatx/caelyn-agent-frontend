@@ -667,6 +667,8 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Subnet Bubbles Integration**: Added https://backprop.finance/screener/bubbles iframe between TaoStats and Swordscan sections on Bittensor page
 - **Enhanced Subnet Analytics**: Subnet Bubbles features blue "SUBNET SCREENER" badge with live subnet analytics visualization
 - **Improved Bittensor Flow**: Better organization of Bittensor analytics tools with logical progression from stats to screening to mindshare data
+- **Betting Markets Section**: Added new "Betting Markets" section to bottom of DeFi page with Polymarket crypto iframe integration
+- **Prediction Markets Integration**: Polymarket crypto markets with orange-red gradient branding and "PREDICTION MARKETS" badge for crypto betting access
 
 ### July 21, 2025 - Comprehensive API Rate Limiting & Caching System Implementation
 - **Complete CoinMarketCap Rate Limiting**: Implemented comprehensive caching system for all market overview API calls
