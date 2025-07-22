@@ -605,8 +605,9 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Maintained Analytics**: DexScreener, Terminal.co, Checkr.social, and BlockCreeper remain as standalone analytics tools
 
 ### July 22, 2025 - Senpi AI Integration & DeFi Layout Optimization
-- **Senpi AI Addition**: Added new Senpi AI iframe integration above Peapods Finance on DeFi page with cyan branding
-- **AI Analytics Platform**: Positioned as dedicated AI analytics tool with Brain icon and "AI ANALYTICS" badge
+- **Senpi AI Iframe Issue Fixed**: Converted problematic Senpi AI iframe to clickable link due to connection refusal
+- **AI Links Section Created**: Replaced large AIxVC section with streamlined "AI Links" section containing Senpi AI and AIxVC buttons
+- **Button Layout**: Positioned Senpi AI above AIxVC as clickable buttons with consistent styling matching Swap section
 - **DeFi Layout Optimization**: Made Arma and ZyFAI iframes smaller (400px height) and positioned side by side in responsive grid
 - **Simplified Naming**: Renamed "Arma Protocol" to "Arma" and "ZYF AI Dashboard" to "ZyFAI" for cleaner branding
 - **Hype Page Navigation Fix**: Resolved critical navigation bug where menu disappeared and turned into dropdown on Hype page

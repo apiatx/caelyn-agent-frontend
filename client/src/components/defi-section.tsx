@@ -52,30 +52,7 @@ export default function DeFiSection() {
         </div>
       </div>
 
-      {/* Senpi AI */}
-      <GlassCard className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-6 h-6 bg-cyan-500 rounded-full flex items-center justify-center">
-            <Brain className="w-4 h-4 text-white" />
-          </div>
-          <h3 className="text-xl font-semibold text-white">Senpi AI</h3>
-          <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30">
-            AI ANALYTICS
-          </Badge>
-          <button
-            onClick={() => openInNewTab('https://senpi.ai/')}
-            className="text-cyan-400 hover:text-cyan-300 text-sm ml-auto"
-          >
-            Open Full View →
-          </button>
-        </div>
-        <iframe
-          src="https://senpi.ai/"
-          className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-          title="Senpi AI"
-          sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-        />
-      </GlassCard>
+
 
       {/* Peapods Finance */}
       <GlassCard className="p-6">
@@ -167,31 +144,44 @@ export default function DeFiSection() {
           </GlassCard>
         </div>
 
-        {/* AIxVC */}
+        {/* AI Links */}
         <GlassCard className="p-6">
-          <div className="flex items-center gap-2 mb-6">
-            <div className="w-6 h-6 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
-              <Brain className="w-4 h-4 text-white" />
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+              <Brain className="text-white text-xl" />
             </div>
-            <h3 className="text-xl font-semibold text-white">AIxVC</h3>
-            <Badge className="bg-gradient-to-r from-orange-500/20 to-red-500/20 text-orange-400 border-orange-500/30">
-              AI VENTURE
-            </Badge>
+            <div>
+              <h3 className="text-xl font-semibold text-white">AI Links</h3>
+              <p className="text-crypto-silver">AI-Powered Analytics Platforms</p>
+            </div>
           </div>
           
           <div className="grid grid-cols-1 gap-4">
-            <button
-              onClick={() => openInNewTab('https://www.aixvc.io/axelrod')}
-              className="p-4 bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/20 rounded-lg hover:from-orange-500/20 hover:to-red-500/20 transition-colors"
+            {/* Senpi AI */}
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://senpi.ai/')}
+              className="bg-black/20 border-crypto-silver/20 hover:bg-cyan-500/20 hover:border-cyan-500/30 text-white justify-start p-4 h-auto"
             >
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
-                  <Brain className="w-4 h-4 text-white" />
-                </div>
-                <h4 className="text-orange-400 font-semibold">AIxVC Axelrod</h4>
+              <Brain className="w-4 h-4 mr-2" />
+              <div className="text-left">
+                <div className="font-semibold">Senpi AI</div>
+                <div className="text-sm text-crypto-silver">AI analytics platform</div>
               </div>
-              <p className="text-gray-400 text-sm">AI Venture Capital Analytics Platform</p>
-            </button>
+            </Button>
+            
+            {/* AIxVC */}
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://www.aixvc.io/axelrod')}
+              className="bg-black/20 border-crypto-silver/20 hover:bg-orange-500/20 hover:border-orange-500/30 text-white justify-start p-4 h-auto"
+            >
+              <Brain className="w-4 h-4 mr-2" />
+              <div className="text-left">
+                <div className="font-semibold">AIxVC</div>
+                <div className="text-sm text-crypto-silver">AI venture capital analytics</div>
+              </div>
+            </Button>
           </div>
         </GlassCard>
       </div>
