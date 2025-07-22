@@ -4,8 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Dashboard from "@/pages/dashboard";
-import BTCPage from "@/pages/btc";
-import AltsPage from "@/pages/alts";
+import TopChartsPage from "@/pages/top-charts";
 import SolanaPage from "@/pages/solana";
 import DeFiPage from "@/pages/defi";
 import HypePage from "@/pages/hype";
@@ -15,8 +14,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
-      <Route path="/btc" component={BTCPage} />
-      <Route path="/alts" component={AltsPage} />
+      <Route path="/top-charts" component={TopChartsPage} />
       <Route path="/solana" component={SolanaPage} />
       <Route path="/defi" component={DeFiPage} />
       <Route path="/hype" component={HypePage} />
