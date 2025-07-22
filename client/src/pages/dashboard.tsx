@@ -14,7 +14,7 @@ import cryptoHippoImage from "@assets/image_1752975467353.png";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 
-type TabType = "dashboard" | "portfolio" | "alpha" | "base" | "bittensor" | "abstract" | "solana" | "defi" | "hype";
+type TabType = "dashboard" | "btc" | "alts" | "portfolio" | "alpha" | "base" | "bittensor" | "abstract" | "solana" | "defi" | "hype";
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<TabType>("dashboard");
@@ -72,7 +72,19 @@ export default function Dashboard() {
                   : "hover:bg-white/5 text-crypto-silver"
               }`}
             >
-              <Activity className="w-4 h-4 mr-2 inline" />Dashboard
+              <Activity className="w-4 h-4 mr-2 inline" />Market Overview
+            </button>
+            <button
+              onClick={() => window.location.href = "/btc"}
+              className="flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver"
+            >
+              <TrendingUp className="w-4 h-4 mr-2 inline" />BTC
+            </button>
+            <button
+              onClick={() => window.location.href = "/alts"}
+              className="flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver"
+            >
+              <BarChart3 className="w-4 h-4 mr-2 inline" />Alts
             </button>
             <button
               onClick={() => handleTabChange("alpha")}
@@ -165,7 +177,19 @@ export default function Dashboard() {
                     : "hover:bg-white/5 text-crypto-silver"
                 }`}
               >
-                <Activity className="w-4 h-4 mr-1 inline" />Dashboard
+                <Activity className="w-4 h-4 mr-1 inline" />Market Overview
+              </button>
+              <button
+                onClick={() => window.location.href = "/btc"}
+                className="whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver"
+              >
+                <TrendingUp className="w-4 h-4 mr-1 inline" />BTC
+              </button>
+              <button
+                onClick={() => window.location.href = "/alts"}
+                className="whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver"
+              >
+                <BarChart3 className="w-4 h-4 mr-1 inline" />Alts
               </button>
               <button
                 onClick={() => handleTabChange("alpha")}

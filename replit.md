@@ -604,17 +604,20 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Enhanced Organization**: Base page now features logical platform groupings for better user navigation
 - **Maintained Analytics**: DexScreener, Terminal.co, Checkr.social, and BlockCreeper remain as standalone analytics tools
 
-### July 22, 2025 - DeFi Page Complete Restructure & DeFAI Section
+### July 22, 2025 - Navigation Restructure & Chart Redistribution
+- **Dashboard Renamed**: Changed "Dashboard" page to "Market Overview" across all navigation elements
+- **New BTC Page**: Created dedicated BTC page with Bitcoin Chart and BTC Dominance Chart from dashboard
+- **New Alts Page**: Created Alts page with Ethereum, Solana, XRP, PENGU, ETH Dominance, and OTHERS Dominance charts
+- **Chart Redistribution**: Moved all TradingView charts from Market Overview to specialized BTC and Alts pages
+- **Navigation Update**: Added BTC and Alts tabs after Market Overview in both desktop and mobile navigation
+- **Market Overview Focus**: Market Overview page now shows only global market metrics and analytics platform access
+- **Enhanced Organization**: Charts categorized by asset type for better user experience and content discovery
+- **Performance Improvement**: Market Overview loads faster without heavy TradingView chart iframes
 - **Complete DeFi Restructure**: Removed all iframes and converted to streamlined link-based layout for better performance
 - **DeFAI Section Created**: Consolidated all AI platforms into single "DeFAI" section with four clickable buttons
 - **Custom Descriptions**: Updated Senpi AI to "AI trading bot on Base network" and AIxVC to "AI venture capital management"
 - **Platform Consolidation**: Arma and ZyFAI converted from side-by-side iframes to simple links within DeFAI section
 - **Consistent Button Layout**: All four platforms (Senpi AI, AIxVC, Arma, ZyFAI) use uniform button styling with hover effects
-- **Performance Optimization**: Removed heavy iframe loading in favor of direct external links for faster page performance
-- **Hype Page Navigation Fix**: Resolved critical navigation bug where menu disappeared and turned into dropdown on Hype page
-- **Consistent Navigation**: Updated Hype page to use same navigation system as all other pages with proper tab ordering
-- **Alpha Page AI Updates**: Converted ChatGPT iframe to clickable link button and added X (Twitter) link below it
-- **Market Overview Branding**: Renamed "Global Crypto Market Overview" to cleaner "Crypto Market Overview" title
 
 ### July 21, 2025 - Comprehensive API Rate Limiting & Caching System Implementation
 - **Complete CoinMarketCap Rate Limiting**: Implemented comprehensive caching system for all market overview API calls
