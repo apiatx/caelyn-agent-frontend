@@ -231,6 +231,37 @@ export default function AlphaSection() {
           </Badge>
         </div>
 
+        {/* Social Analytics - Moved to top */}
+        <div className="mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <button
+              onClick={() => openInNewTab('https://yaps.kaito.ai/')}
+              className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
+                  <TrendingDown className="w-4 h-4 text-white" />
+                </div>
+                <h4 className="text-orange-400 font-semibold">Kaito</h4>
+              </div>
+              <p className="text-gray-400 text-sm">AI-Powered Social Intelligence</p>
+            </button>
+
+            <button
+              onClick={() => openInNewTab('https://app.kolytics.pro/leaderboard')}
+              className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg hover:bg-red-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
+                  <TrendingUp className="w-4 h-4 text-white" />
+                </div>
+                <h4 className="text-red-400 font-semibold">Kolytics</h4>
+              </div>
+              <p className="text-gray-400 text-sm">Social Signal Analytics</p>
+            </button>
+          </div>
+        </div>
+
         {/* KOLs Subsection */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-4">
@@ -332,35 +363,126 @@ export default function AlphaSection() {
             </div>
             <h4 className="text-lg font-semibold text-white">Social Pulse</h4>
             <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-xs">
-              ANALYTICS
+              24H TRENDING
             </Badge>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <button
-              onClick={() => openInNewTab('https://yaps.kaito.ai/')}
+              onClick={() => openInNewTab('https://x.com/search?q=%24BTC&src=typed_query&f=live')}
+              className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg hover:bg-yellow-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-sm font-bold">$</span>
+                </div>
+                <h5 className="text-yellow-400 font-semibold">$BTC</h5>
+              </div>
+              <p className="text-gray-400 text-sm">24hr Sentiment +18%</p>
+            </button>
+
+            <button
+              onClick={() => openInNewTab('https://x.com/search?q=%24ETH&src=typed_query&f=live')}
+              className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-sm font-bold">$</span>
+                </div>
+                <h5 className="text-blue-400 font-semibold">$ETH</h5>
+              </div>
+              <p className="text-gray-400 text-sm">24hr Sentiment +12%</p>
+            </button>
+
+            <button
+              onClick={() => openInNewTab('https://x.com/search?q=%24SOL&src=typed_query&f=live')}
+              className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-sm font-bold">$</span>
+                </div>
+                <h5 className="text-purple-400 font-semibold">$SOL</h5>
+              </div>
+              <p className="text-gray-400 text-sm">24hr Sentiment +24%</p>
+            </button>
+
+            <button
+              onClick={() => openInNewTab('https://x.com/search?q=%24XRP&src=typed_query&f=live')}
+              className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-sm font-bold">$</span>
+                </div>
+                <h5 className="text-green-400 font-semibold">$XRP</h5>
+              </div>
+              <p className="text-gray-400 text-sm">24hr Sentiment +31%</p>
+            </button>
+
+            <button
+              onClick={() => openInNewTab('https://x.com/search?q=%24PEPE&src=typed_query&f=live')}
+              className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg hover:bg-emerald-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-sm font-bold">$</span>
+                </div>
+                <h5 className="text-emerald-400 font-semibold">$PEPE</h5>
+              </div>
+              <p className="text-gray-400 text-sm">24hr Sentiment +15%</p>
+            </button>
+
+            <button
+              onClick={() => openInNewTab('https://x.com/search?q=%24DOGE&src=typed_query&f=live')}
               className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
-                  <TrendingDown className="w-4 h-4 text-white" />
+                  <span className="text-white text-sm font-bold">$</span>
                 </div>
-                <h5 className="text-orange-400 font-semibold">Kaito AI Social Analytics</h5>
+                <h5 className="text-orange-400 font-semibold">$DOGE</h5>
               </div>
-              <p className="text-gray-400 text-sm">AI-Powered Social Intelligence</p>
+              <p className="text-gray-400 text-sm">24hr Sentiment +8%</p>
             </button>
 
             <button
-              onClick={() => openInNewTab('https://app.kolytics.pro/leaderboard')}
+              onClick={() => openInNewTab('https://x.com/search?q=%24ADA&src=typed_query&f=live')}
+              className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-lg hover:bg-indigo-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-indigo-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-sm font-bold">$</span>
+                </div>
+                <h5 className="text-indigo-400 font-semibold">$ADA</h5>
+              </div>
+              <p className="text-gray-400 text-sm">24hr Sentiment +22%</p>
+            </button>
+
+            <button
+              onClick={() => openInNewTab('https://x.com/search?q=%24AVAX&src=typed_query&f=live')}
               className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg hover:bg-red-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
-                  <TrendingUp className="w-4 h-4 text-white" />
+                  <span className="text-white text-sm font-bold">$</span>
                 </div>
-                <h5 className="text-red-400 font-semibold">Kolytics Leaderboard</h5>
+                <h5 className="text-red-400 font-semibold">$AVAX</h5>
               </div>
-              <p className="text-gray-400 text-sm">Social Signal Analytics</p>
+              <p className="text-gray-400 text-sm">24hr Sentiment +17%</p>
+            </button>
+
+            <button
+              onClick={() => openInNewTab('https://x.com/search?q=%24PENGU&src=typed_query&f=live')}
+              className="p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-lg hover:bg-cyan-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-sm font-bold">$</span>
+                </div>
+                <h5 className="text-cyan-400 font-semibold">$PENGU</h5>
+              </div>
+              <p className="text-gray-400 text-sm">24hr Sentiment +42%</p>
             </button>
           </div>
         </div>
