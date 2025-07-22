@@ -691,6 +691,7 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **DOGE Chart Addition**: Added new DOGE (Dogecoin) TradingView chart with orange branding after BNB
 - **Enhanced Cryptocurrency Coverage**: Top Charts now displays Bitcoin, Ethereum, XRP, Solana, BNB, DOGE, and PENGU for comprehensive market analysis
 - **Consistent Chart Structure**: All new charts maintain same responsive design and TradingView integration pattern
+- **CloudFront 403 Error Fix**: Updated BNB and DOGE iframes to use proper TradingView widget embed URLs instead of blocked direct chart URLs
 
 ### July 21, 2025 - Comprehensive API Rate Limiting & Caching System Implementation
 - **Complete CoinMarketCap Rate Limiting**: Implemented comprehensive caching system for all market overview API calls

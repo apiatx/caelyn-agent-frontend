@@ -312,7 +312,7 @@ export default function TopChartsPage() {
                 </Badge>
               </div>
               <button
-                onClick={() => openInNewTab('https://www.tradingview.com/chart/e5l95XgZ/?symbol=BINANCE%3ABNBUSDT')}
+                onClick={() => openInNewTab('https://www.tradingview.com/chart/?symbol=BNBUSDT')}
                 className="text-yellow-400 hover:text-yellow-300 text-xs sm:text-sm sm:ml-auto"
               >
                 Open in New Tab →
@@ -320,7 +320,7 @@ export default function TopChartsPage() {
             </div>
             <div className="w-full">
               <iframe
-                src="https://www.tradingview.com/chart/e5l95XgZ/?symbol=BINANCE%3ABNBUSDT"
+                src="https://www.tradingview.com/widgetembed/?frameElementId=tradingview_bnb&symbol=BINANCE%3ABNBUSDT&interval=D&hidesidetoolbar=1&hidetoptoolbar=1&symboledit=1&saveimage=1&toolbarbg=F1F3F6&studies=[]&hideideas=1&theme=Dark&style=1&timezone=Etc%2FUTC&studies_overrides={}&overrides={}&enabled_features=[]&disabled_features=[]&locale=en&utm_source=localhost&utm_medium=widget&utm_campaign=chart&utm_term=BINANCE%3ABNBUSDT"
                 className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
                 title="BNB Chart"
                 sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
@@ -343,7 +343,7 @@ export default function TopChartsPage() {
                 </Badge>
               </div>
               <button
-                onClick={() => openInNewTab('https://www.tradingview.com/chart/e5l95XgZ/?symbol=COINBASE%3ADOGEUSD')}
+                onClick={() => openInNewTab('https://www.tradingview.com/chart/?symbol=DOGEUSD')}
                 className="text-orange-400 hover:text-orange-300 text-xs sm:text-sm sm:ml-auto"
               >
                 Open in New Tab →
@@ -351,7 +351,7 @@ export default function TopChartsPage() {
             </div>
             <div className="w-full">
               <iframe
-                src="https://www.tradingview.com/chart/e5l95XgZ/?symbol=COINBASE%3ADOGEUSD"
+                src="https://www.tradingview.com/widgetembed/?frameElementId=tradingview_doge&symbol=COINBASE%3ADOGEUSD&interval=D&hidesidetoolbar=1&hidetoptoolbar=1&symboledit=1&saveimage=1&toolbarbg=F1F3F6&studies=[]&hideideas=1&theme=Dark&style=1&timezone=Etc%2FUTC&studies_overrides={}&overrides={}&enabled_features=[]&disabled_features=[]&locale=en&utm_source=localhost&utm_medium=widget&utm_campaign=chart&utm_term=COINBASE%3ADOGEUSD"
                 className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
                 title="DOGE Chart"
                 sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
