@@ -650,13 +650,11 @@ export default function AlphaSection() {
                 <h5 className="text-gray-400 font-semibold text-sm">stacy_muur</h5>
               </div>
             </button>
-
-
           </div>
         </div>
 
-        {/* Social Sentiment - Top Coins Subsection */}
-        <div>
+        {/* X Sentiment - Top Coins Subsection */}
+        <div className="mt-8">
           <div className="flex items-center gap-2 mb-4">
             <div className="w-5 h-5 bg-gradient-to-r from-red-500 to-pink-500 rounded-full flex items-center justify-center">
               <TrendingUp className="w-3 h-3 text-white" />
