@@ -232,32 +232,31 @@ export default function AlphaSection() {
         </div>
       </GlassCard>
 
-      {/* Bubblemaps */}
+      {/* Tools */}
       <GlassCard className="p-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-              <TrendingUp className="w-4 h-4 text-white" />
-            </div>
-            <h3 className="text-xl font-semibold text-white">Bubblemaps</h3>
-            <Badge className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-400 border-blue-500/30 text-xs">
-              TOKEN ANALYTICS
-            </Badge>
+        <div className="flex items-center gap-2 mb-6">
+          <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+            <TrendingUp className="w-4 h-4 text-white" />
           </div>
-          <button
-            onClick={() => openInNewTab('https://app.bubblemaps.io/')}
-            className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm sm:ml-auto"
-          >
-            Open Full View →
-          </button>
+          <h3 className="text-xl font-semibold text-white">Tools</h3>
+          <Badge className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-400 border-blue-500/30 text-xs">
+            ANALYTICS TOOLS
+          </Badge>
         </div>
-        <div className="w-full">
-          <iframe
-            src="https://app.bubblemaps.io/"
-            className="w-full h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
-            title="Bubblemaps Token Analytics"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-          />
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <button
+            onClick={() => window.open('https://app.bubblemaps.io/', '_blank', 'noopener,noreferrer')}
+            className="p-4 bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg hover:from-blue-500/20 hover:to-purple-500/20 transition-colors"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                <TrendingUp className="w-4 h-4 text-white" />
+              </div>
+              <h4 className="text-blue-400 font-semibold">Bubblemaps</h4>
+            </div>
+            <p className="text-gray-400 text-sm">Token Analytics & Visualization</p>
+          </button>
         </div>
       </GlassCard>
     </div>
