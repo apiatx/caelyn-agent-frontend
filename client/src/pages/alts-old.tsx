@@ -1,14 +1,12 @@
 import React, { useState } from 'react';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, Activity, BarChart3, Brain, Wallet, Zap, DollarSign, Layers, ChartLine, Settings } from "lucide-react";
+import { TrendingUp, BarChart3, Globe, Activity, Brain, Wallet, Zap, DollarSign, Layers, ChartLine, Settings } from "lucide-react";
 import hippoImage from "@assets/image_1752975467353.png";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 
-
-
-export default function BTCPage() {
+export default function AltsPage() {
   const openInNewTab = (url: string) => {
     window.open(url, '_blank', 'noopener,noreferrer');
   };
@@ -59,13 +57,13 @@ export default function BTCPage() {
               <Activity className="w-4 h-4 mr-2 inline" />Market Overview
             </button>
             <button
-              className="flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+              onClick={() => window.location.href = "/btc"}
+              className="flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver"
             >
               <TrendingUp className="w-4 h-4 mr-2 inline" />BTC
             </button>
             <button
-              onClick={() => window.location.href = "/alts"}
-              className="flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver"
+              className="flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
             >
               <BarChart3 className="w-4 h-4 mr-2 inline" />Alts
             </button>
@@ -129,13 +127,13 @@ export default function BTCPage() {
                 <Activity className="w-4 h-4 mr-1 inline" />Market Overview
               </button>
               <button
-                className="whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                onClick={() => window.location.href = "/btc"}
+                className="whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver"
               >
                 <TrendingUp className="w-4 h-4 mr-1 inline" />BTC
               </button>
               <button
-                onClick={() => window.location.href = "/alts"}
-                className="whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver"
+                className="whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
               >
                 <BarChart3 className="w-4 h-4 mr-1 inline" />Alts
               </button>
@@ -197,63 +195,179 @@ export default function BTCPage() {
 
         <div className="space-y-4 lg:space-y-8">
           <div className="text-center px-3 sm:px-0">
-            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-2">Bitcoin Analytics</h2>
-            <p className="text-sm sm:text-base text-crypto-silver">Bitcoin price action and dominance analysis</p>
+            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-2">Altcoin Analytics</h2>
+            <p className="text-sm sm:text-base text-crypto-silver">Major altcoins and market dominance analysis</p>
           </div>
 
-          {/* Bitcoin Chart */}
+          {/* Ethereum Chart */}
           <GlassCard className="p-3 sm:p-4 lg:p-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
               <div className="flex items-center gap-2">
-                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-orange-500 rounded-full flex items-center justify-center">
-                  <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                  <Globe className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
                 </div>
-                <h3 className="text-lg sm:text-xl font-semibold text-white">Bitcoin Chart</h3>
-                <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 text-xs">
-                  BITCOIN
+                <h3 className="text-lg sm:text-xl font-semibold text-white">TradingView Ethereum Chart</h3>
+                <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
+                  ETHEREUM
                 </Badge>
               </div>
               <button
-                onClick={() => openInNewTab('https://www.tradingview.com/chart/?symbol=BTCUSD')}
-                className="text-orange-400 hover:text-orange-300 text-xs sm:text-sm sm:ml-auto"
+                onClick={() => openInNewTab('https://www.tradingview.com/chart/?symbol=ETHUSD')}
+                className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm sm:ml-auto"
               >
                 Open in New Tab →
               </button>
             </div>
             <div className="w-full">
               <iframe
-                src="https://www.tradingview.com/widgetembed/?frameElementId=tradingview_76d87&symbol=BTCUSD&interval=D&hidesidetoolbar=1&hidetoptoolbar=1&symboledit=1&saveimage=1&toolbarbg=F1F3F6&studies=[]&hideideas=1&theme=Dark&style=1&timezone=Etc%2FUTC&studies_overrides={}&overrides={}&enabled_features=[]&disabled_features=[]&locale=en&utm_source=localhost&utm_medium=widget&utm_campaign=chart&utm_term=BTCUSD"
+                src="https://www.tradingview.com/widgetembed/?frameElementId=tradingview_eth&symbol=ETHUSD&interval=D&hidesidetoolbar=1&hidetoptoolbar=1&symboledit=1&saveimage=1&toolbarbg=F1F3F6&studies=[]&hideideas=1&theme=Dark&style=1&timezone=Etc%2FUTC&studies_overrides={}&overrides={}&enabled_features=[]&disabled_features=[]&locale=en&utm_source=localhost&utm_medium=widget&utm_campaign=chart&utm_term=ETHUSD"
                 className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
-                title="Bitcoin Chart"
+                title="TradingView Ethereum Chart"
                 sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
               />
             </div>
           </GlassCard>
 
-          {/* BTC Dominance Chart */}
+          {/* Solana Chart */}
           <GlassCard className="p-3 sm:p-4 lg:p-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
               <div className="flex items-center gap-2">
-                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-yellow-500 rounded-full flex items-center justify-center">
-                  <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-purple-500 rounded-full flex items-center justify-center">
+                  <Activity className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
                 </div>
-                <h3 className="text-lg sm:text-xl font-semibold text-white">BTC Dominance Chart</h3>
-                <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-xs">
-                  BTC.D
+                <h3 className="text-lg sm:text-xl font-semibold text-white">TradingView Solana Chart</h3>
+                <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-xs">
+                  SOLANA
                 </Badge>
               </div>
               <button
-                onClick={() => openInNewTab('https://www.tradingview.com/chart/e5l95XgZ/?symbol=CRYPTOCAP%3ABTC.D')}
-                className="text-yellow-400 hover:text-yellow-300 text-xs sm:text-sm sm:ml-auto"
+                onClick={() => openInNewTab('https://www.tradingview.com/chart/?symbol=SOLUSD')}
+                className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm sm:ml-auto"
               >
                 Open in New Tab →
               </button>
             </div>
             <div className="w-full">
               <iframe
-                src="https://www.tradingview.com/widgetembed/?frameElementId=tradingview_btcd&symbol=CRYPTOCAP%3ABTC.D&interval=D&hidesidetoolbar=1&hidetoptoolbar=1&symboledit=1&saveimage=1&toolbarbg=F1F3F6&studies=[]&hideideas=1&theme=Dark&style=1&timezone=Etc%2FUTC&studies_overrides={}&overrides={}&enabled_features=[]&disabled_features=[]&locale=en&utm_source=localhost&utm_medium=widget&utm_campaign=chart&utm_term=CRYPTOCAP%3ABTC.D"
+                src="https://www.tradingview.com/widgetembed/?frameElementId=tradingview_sol&symbol=SOLUSD&interval=D&hidesidetoolbar=1&hidetoptoolbar=1&symboledit=1&saveimage=1&toolbarbg=F1F3F6&studies=[]&hideideas=1&theme=Dark&style=1&timezone=Etc%2FUTC&studies_overrides={}&overrides={}&enabled_features=[]&disabled_features=[]&locale=en&utm_source=localhost&utm_medium=widget&utm_campaign=chart&utm_term=SOLUSD"
                 className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
-                title="BTC Dominance Chart"
+                title="TradingView Solana Chart"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+              />
+            </div>
+          </GlassCard>
+
+          {/* XRP Chart */}
+          <GlassCard className="p-3 sm:p-4 lg:p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-green-500 rounded-full flex items-center justify-center">
+                  <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-semibold text-white">TradingView XRP Chart</h3>
+                <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
+                  XRP
+                </Badge>
+              </div>
+              <button
+                onClick={() => openInNewTab('https://www.tradingview.com/chart/e5l95XgZ/?symbol=BITSTAMP%3AXRPUSD')}
+                className="text-green-400 hover:text-green-300 text-xs sm:text-sm sm:ml-auto"
+              >
+                Open in New Tab →
+              </button>
+            </div>
+            <div className="w-full">
+              <iframe
+                src="https://www.tradingview.com/widgetembed/?frameElementId=tradingview_xrp&symbol=BITSTAMP%3AXRPUSD&interval=D&hidesidetoolbar=1&hidetoptoolbar=1&symboledit=1&saveimage=1&toolbarbg=F1F3F6&studies=[]&hideideas=1&theme=Dark&style=1&timezone=Etc%2FUTC&studies_overrides={}&overrides={}&enabled_features=[]&disabled_features=[]&locale=en&utm_source=localhost&utm_medium=widget&utm_campaign=chart&utm_term=BITSTAMP%3AXRPUSD"
+                className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
+                title="TradingView XRP Chart"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+              />
+            </div>
+          </GlassCard>
+
+          {/* PENGU Chart */}
+          <GlassCard className="p-3 sm:p-4 lg:p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                  <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-semibold text-white">PENGU Chart</h3>
+                <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
+                  PENGU
+                </Badge>
+              </div>
+              <button
+                onClick={() => openInNewTab('https://www.tradingview.com/chart/e5l95XgZ/?symbol=CRYPTO%3APENGUPUDUSD')}
+                className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm sm:ml-auto"
+              >
+                Open in New Tab →
+              </button>
+            </div>
+            <div className="w-full">
+              <iframe
+                src="https://www.tradingview.com/widgetembed/?frameElementId=tradingview_pengu&symbol=CRYPTO%3APENGUPUDUSD&interval=D&hidesidetoolbar=1&hidetoptoolbar=1&symboledit=1&saveimage=1&toolbarbg=F1F3F6&studies=[]&hideideas=1&theme=Dark&style=1&timezone=Etc%2FUTC&studies_overrides={}&overrides={}&enabled_features=[]&disabled_features=[]&locale=en&utm_source=localhost&utm_medium=widget&utm_campaign=chart&utm_term=CRYPTO%3APENGUPUDUSD"
+                className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
+                title="TradingView PENGU Chart"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+              />
+            </div>
+          </GlassCard>
+
+          {/* ETH Dominance Chart */}
+          <GlassCard className="p-3 sm:p-4 lg:p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                  <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-semibold text-white">ETH Dominance Chart</h3>
+                <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
+                  ETH.D
+                </Badge>
+              </div>
+              <button
+                onClick={() => openInNewTab('https://www.tradingview.com/symbols/ETH.D/?timeframe=ALL')}
+                className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm sm:ml-auto"
+              >
+                Open in New Tab →
+              </button>
+            </div>
+            <div className="w-full">
+              <iframe
+                src="https://www.tradingview.com/widgetembed/?frameElementId=tradingview_ethd&symbol=CRYPTOCAP%3AETH.D&interval=D&hidesidetoolbar=1&hidetoptoolbar=1&symboledit=1&saveimage=1&toolbarbg=F1F3F6&studies=[]&hideideas=1&theme=Dark&style=1&timezone=Etc%2FUTC&studies_overrides={}&overrides={}&enabled_features=[]&disabled_features=[]&locale=en&utm_source=localhost&utm_medium=widget&utm_campaign=chart&utm_term=CRYPTOCAP%3AETH.D"
+                className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
+                title="TradingView ETH Dominance Chart"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+              />
+            </div>
+          </GlassCard>
+
+          {/* OTHERS Dominance Chart */}
+          <GlassCard className="p-3 sm:p-4 lg:p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-purple-500 rounded-full flex items-center justify-center">
+                  <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-semibold text-white">OTHERS Dominance Chart</h3>
+                <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-xs">
+                  OTHERS.D
+                </Badge>
+              </div>
+              <button
+                onClick={() => openInNewTab('https://www.tradingview.com/chart/e5l95XgZ/?symbol=CRYPTOCAP%3AOTHERS.D')}
+                className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm sm:ml-auto"
+              >
+                Open in New Tab →
+              </button>
+            </div>
+            <div className="w-full">
+              <iframe
+                src="https://www.tradingview.com/widgetembed/?frameElementId=tradingview_others&symbol=CRYPTOCAP%3AOTHERS.D&interval=D&hidesidetoolbar=1&hidetoptoolbar=1&symboledit=1&saveimage=1&toolbarbg=F1F3F6&studies=[]&hideideas=1&theme=Dark&style=1&timezone=Etc%2FUTC&studies_overrides={}&overrides={}&enabled_features=[]&disabled_features=[]&locale=en&utm_source=localhost&utm_medium=widget&utm_campaign=chart&utm_term=CRYPTOCAP%3AOTHERS.D"
+                className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
+                title="TradingView OTHERS Dominance Chart"
                 sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
               />
             </div>
