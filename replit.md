@@ -713,6 +713,13 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Domain Issue Resolution**: Fixed Terminal.co, Checkr.social, BlockCreeper.com, and Virtuals.io iframe loading by adding proper subdomain variations
 - **Complete Protection**: Platform now blocks untrusted domains while maintaining full functionality for legitimate crypto platforms
 
+### July 22, 2025 - External Link Tab Opening Fix
+- **New Tab Opening**: Fixed external links to open in new browser tabs instead of popup windows
+- **Security Function Updates**: Updated openSecureLink() and all SafeLink components to remove window.open() popup parameters
+- **Enhanced Domain Trust**: Added missing trusted domains (app.elfa.ai, ayaoracle.xyz, indexy.xyz, debank.com) to security whitelist
+- **Improved User Experience**: All external platform links now open properly in new tabs for better navigation flow
+- **Base Section Runtime Fix**: Created safe Base section component to handle security function errors gracefully
+
 ### July 22, 2025 - Dynamic Social Pulse Implementation
 - **Backend Social Pulse Service**: Created comprehensive social pulse service with twice-daily X.com sentiment scanning
 - **Dynamic Ticker Rotation**: Implemented automatic ranking system based on 24hr sentiment increase with realistic variance

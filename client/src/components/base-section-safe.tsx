@@ -50,7 +50,7 @@ const GlassCard = ({ children, className = "" }: { children: React.ReactNode; cl
 const SafeIframe = ({ src, title, className = "" }: { src: string; title: string; className?: string }) => {
   const openInNewTab = (url: string) => {
     try {
-      window.open(url, '_blank', 'noopener,noreferrer');
+      window.open(url, '_blank');
     } catch (error) {
       console.warn('Failed to open URL:', url, error);
     }
@@ -80,7 +80,7 @@ const SafeLink = ({ href, children, className = "" }: { href: string; children: 
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
     try {
-      window.open(href, '_blank', 'noopener,noreferrer');
+      window.open(href, '_blank');
     } catch (error) {
       console.warn('Failed to open URL:', href, error);
     }

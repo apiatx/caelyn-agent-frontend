@@ -55,7 +55,12 @@ const TRUSTED_DOMAINS = [
   'app.relay.link',
   'aerodrome.finance',
   'app.uniswap.org',
-  'polymarket.com'
+  'polymarket.com',
+  'app.elfa.ai',
+  'elfa.ai',
+  'ayaoracle.xyz',
+  'indexy.xyz',
+  'debank.com'
 ];
 
 /**
@@ -112,11 +117,10 @@ export function openSecureLink(url: string): void {
     return;
   }
   
-  // Open with security attributes
+  // Open with security attributes in new tab (not window)
   const newWindow = window.open(
     sanitizedUrl,
-    '_blank',
-    'noopener,noreferrer,nofollow'
+    '_blank'
   );
   
   // Additional security: ensure the new window can't access opener
