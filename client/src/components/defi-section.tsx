@@ -48,7 +48,7 @@ export default function DeFiSection() {
             <ArrowLeftRight className="w-4 h-4 mr-2" />
             <div className="text-left">
               <div className="font-semibold">Aerodrome Finance</div>
-              <div className="text-sm text-crypto-silver">BASE network DEX trading</div>
+              <div className="text-sm text-crypto-silver">Base Network Liquidity Hub</div>
             </div>
           </Button>
           <Button
@@ -64,13 +64,13 @@ export default function DeFiSection() {
           </Button>
           <Button
             variant="outline"
-            onClick={() => openInNewTab('https://jup.ag/')}
+            onClick={() => openInNewTab('https://app.definitive.fi/0x9FDBdA0A5e284c32744D2f17Ee5c74B284993463/hyperevm')}
             className="bg-black/20 border-crypto-silver/20 hover:bg-blue-500/20 hover:border-blue-500/30 text-white justify-start p-4 h-auto"
           >
             <ArrowLeftRight className="w-4 h-4 mr-2" />
             <div className="text-left">
-              <div className="font-semibold">Jupiter</div>
-              <div className="text-sm text-crypto-silver">Solana DEX aggregator</div>
+              <div className="font-semibold">Definitive Edge</div>
+              <div className="text-sm text-crypto-silver">Trade any token, on any chain</div>
             </div>
           </Button>
         </div>

@@ -843,6 +843,7 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Alpha Resources Restructure**: Renamed "AI Insights" section to "Resources", removed X (Twitter) link, moved Bubblemaps from Tools section
 - **Alpha Tools Section Removal**: Removed separate Tools section after moving Bubblemaps to Resources section
 - **Bittensor X Signal Enhancement**: Added Shogun Base (@Shogun__base) and Victor Crypto (@Victor_crypto_2) to X Signal section
+- **DeFi Page Updates**: Definitive Edge replaces Jupiter with "Trade any token, on any chain" description, Aerodrome Finance updated to "Base Network Liquidity Hub"
 - **X Alpha Section Repositioned**: Moved X Alpha section above Bitcoin Treasuries for better content flow
 - **Portfolio Tab Added**: Added missing "Portfolio" tab to navigation menu with correct ordering
 - **Navigation Order Fixed**: Restored correct tab order: Market Overview | Top Charts | Alpha | Base | Bittensor | Hype | DeFi | Portfolio | Crypto Stocks
