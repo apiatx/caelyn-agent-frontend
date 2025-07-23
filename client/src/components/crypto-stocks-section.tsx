@@ -108,39 +108,100 @@ export default function CryptoStocksSection() {
         </div>
       </GlassCard>
 
-      {/* VanEck Digital Transformation ETF */}
+      {/* X Alpha */}
       <GlassCard className="p-3 sm:p-4 lg:p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-green-500 rounded-full flex items-center justify-center">
-              <Building2 className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-blue-500 rounded-full flex items-center justify-center">
+              <span className="text-white font-bold text-xs">𝕏</span>
             </div>
-            <h3 className="text-lg sm:text-xl font-semibold text-white">VanEck Digital Transformation ETF</h3>
-            <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
-              ETF
+            <h3 className="text-lg sm:text-xl font-semibold text-white">X Alpha</h3>
+            <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
+              TRADING
             </Badge>
           </div>
         </div>
 
-        <div className="w-full">
-          <div className="bg-gradient-to-br from-green-500/10 to-emerald-600/10 rounded-lg p-8 border border-green-500/20 text-center">
-            <div className="flex flex-col items-center gap-4">
-              <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center">
-                <Building2 className="w-8 h-8 text-white" />
-              </div>
-              <div>
-                <h4 className="text-xl font-semibold text-white mb-2">VanEck Digital Transformation ETF (DAPP)</h4>
-                <p className="text-crypto-silver text-sm mb-4">Access comprehensive digital transformation and blockchain investment analysis</p>
-              </div>
-              <Button
-                onClick={() => openInNewTab('https://www.vaneck.com/us/en/investments/digital-transformation-etf-dapp/overview/')}
-                className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium py-2 px-6 rounded-lg transition-all duration-300 flex items-center gap-2"
-              >
-                <ExternalLink className="w-4 h-4" />
-                Access VanEck DAPP ETF
-              </Button>
-            </div>
-          </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+          <button
+            onClick={() => openInNewTab('https://x.com/StocksToTrade')}
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-blue-300">StocksToTrade</div>
+            <div className="text-xs text-crypto-silver">@StocksToTrade</div>
+          </button>
+          
+          <button
+            onClick={() => openInNewTab('https://x.com/timothysykes')}
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-blue-300">Timothy Sykes</div>
+            <div className="text-xs text-crypto-silver">@timothysykes</div>
+          </button>
+          
+          <button
+            onClick={() => openInNewTab('https://x.com/Parangiras')}
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-blue-300">Parangiras</div>
+            <div className="text-xs text-crypto-silver">@Parangiras</div>
+          </button>
+          
+          <button
+            onClick={() => openInNewTab('https://x.com/realsheepwolf')}
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-blue-300">Real Sheep Wolf</div>
+            <div className="text-xs text-crypto-silver">@realsheepwolf</div>
+          </button>
+          
+          <button
+            onClick={() => openInNewTab('https://x.com/ericjackson')}
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-blue-300">Eric Jackson</div>
+            <div className="text-xs text-crypto-silver">@ericjackson</div>
+          </button>
+          
+          <button
+            onClick={() => openInNewTab('https://x.com/TheLongInvest')}
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-blue-300">The Long Invest</div>
+            <div className="text-xs text-crypto-silver">@TheLongInvest</div>
+          </button>
+          
+          <button
+            onClick={() => openInNewTab('https://x.com/davyy888')}
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-blue-300">Davy</div>
+            <div className="text-xs text-crypto-silver">@davyy888</div>
+          </button>
+          
+          <button
+            onClick={() => openInNewTab('https://x.com/JoelGoesDigital')}
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-blue-300">Joel Goes Digital</div>
+            <div className="text-xs text-crypto-silver">@JoelGoesDigital</div>
+          </button>
+          
+          <button
+            onClick={() => openInNewTab('https://x.com/MACDMaster328')}
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-blue-300">MACD Master</div>
+            <div className="text-xs text-crypto-silver">@MACDMaster328</div>
+          </button>
+          
+          <button
+            onClick={() => openInNewTab('https://x.com/Maximus_Holla')}
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-blue-300">Maximus Holla</div>
+            <div className="text-xs text-crypto-silver">@Maximus_Holla</div>
+          </button>
         </div>
       </GlassCard>
     </div>
