@@ -92,6 +92,7 @@ export const cspConfig = helmet.contentSecurityPolicy({
       "https://artemis.xyz",
       "https://*.artemis.xyz",
       "https://app.artemis.xyz",
+      "https://artemis.xyz/embed",
       "https://cointelegraph.com",
       "https://newhedge.io",
       "https://bitcointreasuries.net",
