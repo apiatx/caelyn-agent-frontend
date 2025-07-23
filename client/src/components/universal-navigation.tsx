@@ -85,6 +85,16 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
             <Zap className="w-4 h-4 mr-2 inline" />Solana
           </button>
           <button
+            onClick={() => navigateTo("/hype")}
+            className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
+              isActive("hype")
+                ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                : "hover:bg-white/5 text-crypto-silver"
+            }`}
+          >
+            <Brain className="w-4 h-4 mr-2 inline" />Hype
+          </button>
+          <button
             onClick={() => navigateTo("/defi")}
             className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
               isActive("defi")
@@ -95,14 +105,14 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
             <DollarSign className="w-4 h-4 mr-2 inline" />DeFi
           </button>
           <button
-            onClick={() => navigateTo("/hype")}
+            onClick={() => navigateTo("/#portfolio")}
             className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
-              isActive("hype")
+              isActive("portfolio")
                 ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
                 : "hover:bg-white/5 text-crypto-silver"
             }`}
           >
-            <Brain className="w-4 h-4 mr-2 inline" />Hype
+            <Activity className="w-4 h-4 mr-2 inline" />Portfolio
           </button>
           <button
             onClick={() => navigateTo("/crypto-stocks")}
@@ -180,6 +190,16 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
               <Zap className="w-4 h-4 mr-1 inline" />Solana
             </button>
             <button
+              onClick={() => navigateTo("/hype")}
+              className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+                isActive("hype")
+                  ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                  : "hover:bg-white/5 text-crypto-silver"
+              }`}
+            >
+              <Brain className="w-4 h-4 mr-1 inline" />Hype
+            </button>
+            <button
               onClick={() => navigateTo("/defi")}
               className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                 isActive("defi")
@@ -190,14 +210,14 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
               <DollarSign className="w-4 h-4 mr-1 inline" />DeFi
             </button>
             <button
-              onClick={() => navigateTo("/hype")}
+              onClick={() => navigateTo("/#portfolio")}
               className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
-                isActive("hype")
+                isActive("portfolio")
                   ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
                   : "hover:bg-white/5 text-crypto-silver"
               }`}
             >
-              <Brain className="w-4 h-4 mr-1 inline" />Hype
+              <Activity className="w-4 h-4 mr-1 inline" />Portfolio
             </button>
             <button
               onClick={() => navigateTo("/crypto-stocks")}
