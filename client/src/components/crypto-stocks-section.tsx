@@ -108,20 +108,20 @@ export default function CryptoStocksSection() {
         </div>
       </GlassCard>
 
-      {/* Online Notepad */}
+      {/* VanEck Digital Transformation ETF */}
       <GlassCard className="p-3 sm:p-4 lg:p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
           <div className="flex items-center gap-2">
             <div className="w-5 h-5 sm:w-6 sm:h-6 bg-green-500 rounded-full flex items-center justify-center">
-              <FileText className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+              <Building2 className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
             </div>
-            <h3 className="text-lg sm:text-xl font-semibold text-white">Online Notepad</h3>
+            <h3 className="text-lg sm:text-xl font-semibold text-white">VanEck Digital Transformation ETF</h3>
             <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
-              NOTES
+              ETF
             </Badge>
           </div>
           <button
-            onClick={() => openInNewTab('https://onlinenotepad.org/notepad')}
+            onClick={() => openInNewTab('https://www.vaneck.com/us/en/investments/digital-transformation-etf-dapp/overview/')}
             className="text-green-400 hover:text-green-300 text-xs sm:text-sm sm:ml-auto"
           >
             Open Full View →
@@ -130,9 +130,9 @@ export default function CryptoStocksSection() {
 
         <div className="w-full">
           <iframe
-            src="https://onlinenotepad.org/notepad"
+            src="https://www.vaneck.com/us/en/investments/digital-transformation-etf-dapp/overview/"
             className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
-            title="Online Notepad"
+            title="VanEck Digital Transformation ETF"
             sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
           />
         </div>
