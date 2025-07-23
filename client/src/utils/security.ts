@@ -74,7 +74,8 @@ const TRUSTED_DOMAINS = [
   'zyf.ai',
   'lido.fi',
   'app.coinmarketman.com',
-  'coinmarketman.com'
+  'coinmarketman.com',
+  'velo.xyz'
 ];
 
 /**

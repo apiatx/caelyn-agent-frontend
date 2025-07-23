@@ -831,6 +831,7 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **CoinMarketMan Section Enhancement**: Expanded to three buttons - "Perp Trader Sentiment", "Portfolio Analytics", and "PnL Chart" with specific CoinMarketMan URLs
 - **HyperTracker Section Rename**: Renamed "CoinMarketMan HyperTracker" section to "HyperTracker" on Hype page
 - **Portfolio Page HyperLiquid Integration**: Added new "HyperLiquid" section to Portfolio page with "HyperTracker" and "PnL Chart" buttons
+- **Velo Chart Integration**: Added Velo iframe (https://velo.xyz/chart) to Top Charts page bottom section titled "Other Altcoin Charts"
 - **X Alpha Section Repositioned**: Moved X Alpha section above Bitcoin Treasuries for better content flow
 - **Portfolio Tab Added**: Added missing "Portfolio" tab to navigation menu with correct ordering
 - **Navigation Order Fixed**: Restored correct tab order: Market Overview | Top Charts | Alpha | Base | Bittensor | Hype | DeFi | Portfolio | Crypto Stocks

@@ -248,6 +248,39 @@ export default function TopChartsPage() {
               </Suspense>
             </div>
           </div>
+
+          {/* Other Altcoin Charts Section */}
+          <div className="space-y-6">
+            <div className="flex items-center space-x-2">
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-green-400 via-blue-500 to-purple-600 bg-clip-text text-transparent">
+                Other Altcoin Charts
+              </h2>
+              <Badge variant="outline" className="bg-green-500/20 text-green-300 border-green-500/30">
+                ALTCOINS
+              </Badge>
+            </div>
+            
+            {/* Velo Chart */}
+            <Suspense fallback={<SectionLoadingState title="Velo Chart" />}>
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <h3 className="text-lg font-semibold text-green-400">Velo</h3>
+                  <Badge variant="outline" className="bg-green-500/20 text-green-300 border-green-500/30">
+                    VELO
+                  </Badge>
+                </div>
+                <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
+                  <iframe
+                    {...getSecureIframeProps("https://velo.xyz/chart")}
+                    width="100%"
+                    height="600"
+                    style={{ border: 'none' }}
+                    title="Velo Chart"
+                  />
+                </div>
+              </div>
+            </Suspense>
+          </div>
         </div>
       </main>
     </div>
