@@ -109,10 +109,10 @@ export class MarketOverviewService {
   // File-based persistent caching for aggressive rate limiting
   private readonly cacheFile = path.join(process.cwd(), 'market-overview-cache.json');
   
-  // Cache durations - AGGRESSIVE RATE LIMITING TO REDUCE FROM 478→<320 DAILY REQUESTS
+  // Cache durations - UPDATED FOR REAL-TIME DATA
   private readonly GLOBAL_METRICS_CACHE_DURATION = 4 * 60 * 60 * 1000; // 4 hours (max 6 API calls/day)
-  private readonly ALT_SEASON_CACHE_DURATION = 48 * 60 * 60 * 1000; // 48 hours (1 API call every 2 days)
-  private readonly FEAR_GREED_CACHE_DURATION = 48 * 60 * 60 * 1000; // 48 hours (1 API call every 2 days)
+  private readonly ALT_SEASON_CACHE_DURATION = 12 * 60 * 60 * 1000; // 12 hours (2 API calls per day)
+  private readonly FEAR_GREED_CACHE_DURATION = 12 * 60 * 60 * 1000; // 12 hours (2 API calls per day)
 
   constructor() {
     this.apiKey = process.env.COINMARKETCAP_API_KEY || '7d9a361e-596d-4914-87e2-f1124da24897';
@@ -318,7 +318,7 @@ export class MarketOverviewService {
       return this.altSeasonCache.data!;
     }
 
-    console.log('🔍 [Market Overview] Calculating REAL Alt Season Index using CoinMarketCap data (matching official formula)...');
+    console.log('🔍 [Market Overview] Fetching FRESH Alt Season Index from CoinMarketCap RIGHT NOW...');
     
     try {
       // Get top 50 cryptocurrencies with 90-day data to match official CoinMarketCap Alt Season calculation
@@ -551,7 +551,7 @@ export class MarketOverviewService {
       return this.fearGreedCache.data!;
     }
 
-    console.log('🔍 [Market Overview] Fetching live Fear & Greed Index from CoinMarketCap...');
+    console.log('🔍 [Market Overview] Fetching FRESH Fear & Greed Index from CoinMarketCap RIGHT NOW...');
     
     try {
       // Use the correct CoinMarketCap Fear & Greed Index API endpoint for historical data

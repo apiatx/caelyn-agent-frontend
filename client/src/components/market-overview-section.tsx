@@ -124,8 +124,8 @@ interface MarketOverview {
 export function MarketOverviewSection() {
   const { data: overview, isLoading, error } = useQuery<MarketOverview>({
     queryKey: ['/api/coinmarketcap/market-overview'],
-    refetchInterval: 300000, // Refresh every 5 minutes
-    staleTime: 240000 // 4 minutes
+    refetchInterval: 120000, // Refresh every 2 minutes for real-time data
+    staleTime: 60000 // 1 minute
   });
 
   // Real-time ETF flows data (cached twice daily to preserve API credits)
