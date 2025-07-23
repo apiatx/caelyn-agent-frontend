@@ -78,7 +78,8 @@ const TRUSTED_DOMAINS = [
   'velo.xyz',
   'simplywall.st',
   'client.schwab.com',
-  'unusualwhales.com'
+  'unusualwhales.com',
+  'newhedge.io'
 ];
 
 /**

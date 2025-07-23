@@ -837,6 +837,7 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Portfolio Section Addition**: Added new Portfolio section with Simply Wall St and Charles Schwab platform links
 - **Screening Section Enhancement**: Renamed "Trending" to "Screening" and added Unusual Whales stock screener
 - **Top Charts Velo Cleanup**: Removed individual "Velo" subtitle under "Other Altcoin Charts" section
+- **NewHedge Bitcoin Heatmap Integration**: Added NewHedge Bitcoin monthly returns heatmap iframe to Market Overview page between Onchain and News sections
 - **X Alpha Section Repositioned**: Moved X Alpha section above Bitcoin Treasuries for better content flow
 - **Portfolio Tab Added**: Added missing "Portfolio" tab to navigation menu with correct ordering
 - **Navigation Order Fixed**: Restored correct tab order: Market Overview | Top Charts | Alpha | Base | Bittensor | Hype | DeFi | Portfolio | Crypto Stocks
