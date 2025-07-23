@@ -14,49 +14,105 @@ import { ETFService } from './etf-service';
 import { z } from "zod";
 import { insertPremiumAccessSchema } from "@shared/schema";
 
+// Security imports
+import { 
+  validateWalletAddress, 
+  validateUserId, 
+  validatePortfolioId, 
+  handleValidationErrors,
+  strictRateLimit 
+} from './security/middleware';
+import { authenticateToken, optionalAuth } from './security/auth';
+
 const multiChainService = new MultiChainService();
 const marketOverviewService = new MarketOverviewService();
 const etfService = new ETFService();
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
-  // Portfolio endpoints
-  app.get("/api/portfolio/:userId", async (req, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      const portfolio = await storage.getPortfolioByUserId(userId);
-      
-      if (!portfolio) {
-        return res.status(404).json({ message: "Portfolio not found" });
+  // Portfolio endpoints with security validation
+  app.get("/api/portfolio/:userId", 
+    optionalAuth,
+    async (req, res) => {
+      try {
+        const userId = parseInt(req.params.userId);
+        
+        // Validate user ID
+        if (isNaN(userId) || userId < 1) {
+          return res.status(400).json({ 
+            error: "Invalid user ID",
+            message: "User ID must be a positive integer" 
+          });
+        }
+        
+        const portfolio = await storage.getPortfolioByUserId(userId);
+        
+        if (!portfolio) {
+          return res.status(404).json({ message: "Portfolio not found" });
+        }
+
+        const holdings = await storage.getHoldingsByPortfolioId(portfolio.id);
+        
+        res.json({
+          ...portfolio,
+          holdings
+        });
+      } catch (error) {
+        console.error('Portfolio fetch error:', error);
+        res.status(500).json({ message: "Failed to fetch portfolio" });
       }
-
-      const holdings = await storage.getHoldingsByPortfolioId(portfolio.id);
-      
-      res.json({
-        ...portfolio,
-        holdings
-      });
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch portfolio" });
     }
-  });
+  );
 
-  // Update portfolio wallet addresses and fetch real data from DeBank
-  app.put("/api/portfolio/:id/wallets", async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { baseWalletAddress, taoWalletAddress } = req.body;
-      
-      const portfolio = await storage.updatePortfolio(parseInt(id), {
-        baseWalletAddress,
-        taoWalletAddress
-      });
-      
-      res.json(portfolio);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to update portfolio wallets" });
+  // Update portfolio wallet addresses with validation
+  app.put("/api/portfolio/:id/wallets",
+    strictRateLimit,
+    [
+      validateWalletAddress.optional(),
+      handleValidationErrors
+    ],
+    async (req, res) => {
+      try {
+        const { id } = req.params;
+        const { baseWalletAddress, taoWalletAddress } = req.body;
+        
+        // Validate portfolio ID
+        const portfolioId = parseInt(id);
+        if (isNaN(portfolioId) || portfolioId < 1) {
+          return res.status(400).json({ 
+            error: "Invalid portfolio ID",
+            message: "Portfolio ID must be a positive integer" 
+          });
+        }
+        
+        // Validate wallet addresses format if provided
+        const walletRegex = /^0x[a-fA-F0-9]{40}$/;
+        if (baseWalletAddress && !walletRegex.test(baseWalletAddress)) {
+          return res.status(400).json({
+            error: "Invalid wallet address format",
+            message: "Base wallet address must be a valid Ethereum address"
+          });
+        }
+        
+        if (taoWalletAddress && !walletRegex.test(taoWalletAddress)) {
+          return res.status(400).json({
+            error: "Invalid wallet address format", 
+            message: "TAO wallet address must be a valid Ethereum address"
+          });
+        }
+        
+        const portfolio = await storage.updatePortfolio(portfolioId, {
+          baseWalletAddress,
+          taoWalletAddress
+        });
+        
+        res.json(portfolio);
+      } catch (error) {
+        console.error('Portfolio update error:', error);
+        res.status(500).json({ message: "Failed to update portfolio wallets" });
+      }
     }
-  });
+  );
 
   // Get DeBank portfolio data for a wallet address
   app.get("/api/debank/portfolio/:walletAddress", async (req, res) => {

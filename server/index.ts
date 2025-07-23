@@ -4,9 +4,49 @@ import { setupVite, serveStatic, log } from "./vite";
 import { startBackgroundServices, stopBackgroundServices } from "./background-services";
 import { realTimePriceService } from "./real-time-price-service";
 
+// Security imports
+import { 
+  helmetConfig, 
+  cspConfig, 
+  apiRateLimit, 
+  corsConfig, 
+  sanitizeInput, 
+  securityHeaders,
+  errorHandler 
+} from "./security/middleware";
+import { env, logSecurityConfig, isProduction } from "./security/environment";
+
 const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+
+// Log security configuration
+logSecurityConfig();
+
+// Apply security middleware FIRST
+app.use(securityHeaders);
+app.use(helmetConfig);
+app.use(cspConfig);
+app.use(corsConfig);
+
+// Force HTTPS in production
+if (isProduction && env.FORCE_HTTPS) {
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    if (req.header('x-forwarded-proto') !== 'https') {
+      res.redirect(301, `https://${req.header('host')}${req.url}`);
+    } else {
+      next();
+    }
+  });
+}
+
+// Rate limiting for API routes
+app.use('/api', apiRateLimit);
+
+// Body parsing with size limits
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: false, limit: '10mb' }));
+
+// Input sanitization
+app.use(sanitizeInput);
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -41,13 +81,8 @@ app.use((req, res, next) => {
 (async () => {
   const server = await registerRoutes(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-
-    res.status(status).json({ message });
-    throw err;
-  });
+  // Use security error handler
+  app.use(errorHandler);
 
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
