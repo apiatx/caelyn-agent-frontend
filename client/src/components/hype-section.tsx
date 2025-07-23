@@ -79,7 +79,7 @@ export function HypeSection() {
           <div className="w-6 h-6 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
             <span className="text-white font-bold text-xs">C</span>
           </div>
-          CoinMarketMan HyperTracker
+          HyperTracker
           <span className="text-xs bg-orange-500/20 text-orange-400 px-2 py-1 rounded-full border border-orange-500/30">
             TRACKER
           </span>

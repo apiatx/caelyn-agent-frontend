@@ -560,6 +560,53 @@ export default function PortfolioSection() {
         </div>
       </GlassCard>
 
+      {/* HyperLiquid Analytics */}
+      <GlassCard className="p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-semibold text-white flex items-center">
+            <div className="w-5 h-5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mr-2 flex items-center justify-center text-xs font-bold">
+              H
+            </div>
+            HyperLiquid
+          </h3>
+          <div className="flex items-center gap-2">
+            <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
+              Portfolio Analytics
+            </Badge>
+          </div>
+        </div>
+        
+        <div className="bg-black/20 border border-crypto-silver/20 rounded-lg p-6">
+          <div className="grid grid-cols-1 gap-3">
+            <button
+              onClick={() => window.open('https://app.coinmarketman.com/dashboard/accounts/hyperliquid/126558?tab=summary', '_blank', 'noopener,noreferrer')}
+              className="bg-gradient-to-br from-purple-500/10 to-pink-600/10 hover:from-purple-500/20 hover:to-pink-600/20 border border-purple-500/20 hover:border-purple-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-medium text-white group-hover:text-purple-300 mb-1">HyperTracker</div>
+                  <div className="text-xs text-crypto-silver">Comprehensive portfolio tracking and metrics</div>
+                </div>
+                <ExternalLink className="w-4 h-4 text-purple-400 group-hover:text-purple-300" />
+              </div>
+            </button>
+            
+            <button
+              onClick={() => window.open('https://app.coinmarketman.com/hypertracker/wallet/0xEE8d3996E60ff46466334e4844Dd94bafef5Eb5d', '_blank', 'noopener,noreferrer')}
+              className="bg-gradient-to-br from-purple-500/10 to-pink-600/10 hover:from-purple-500/20 hover:to-pink-600/20 border border-purple-500/20 hover:border-purple-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-medium text-white group-hover:text-purple-300 mb-1">PnL Chart</div>
+                  <div className="text-xs text-crypto-silver">Wallet performance and PnL visualization</div>
+                </div>
+                <ExternalLink className="w-4 h-4 text-purple-400 group-hover:text-purple-300" />
+              </div>
+            </button>
+          </div>
+        </div>
+      </GlassCard>
+
       {/* Holding Detail Modal */}
       <HoldingDetailModal 
         holding={selectedHolding}
