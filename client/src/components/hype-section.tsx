@@ -86,18 +86,46 @@ export function HypeSection() {
         </h3>
         
         <div className="bg-black/20 border border-crypto-silver/20 rounded-lg p-6">
-          <button
-            onClick={() => window.open('https://app.coinmarketman.com/hypertracker', '_blank', 'noopener,noreferrer')}
-            className="w-full bg-gradient-to-br from-orange-500/10 to-red-600/10 hover:from-orange-500/20 hover:to-red-600/20 border border-orange-500/20 hover:border-orange-400/40 rounded-lg p-6 transition-all duration-300 text-left group"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-lg font-medium text-white group-hover:text-orange-300 mb-2">CoinMarketMan HyperTracker</div>
-                <div className="text-sm text-crypto-silver">Advanced Hyperliquid tracking and analytics • Portfolio monitoring and insights</div>
+          <div className="grid grid-cols-1 gap-3">
+            <button
+              onClick={() => window.open('https://app.coinmarketman.com/hypertracker', '_blank', 'noopener,noreferrer')}
+              className="bg-gradient-to-br from-orange-500/10 to-red-600/10 hover:from-orange-500/20 hover:to-red-600/20 border border-orange-500/20 hover:border-orange-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-medium text-white group-hover:text-orange-300 mb-1">Perp Trader Sentiment</div>
+                  <div className="text-xs text-crypto-silver">Real-time trader sentiment analysis</div>
+                </div>
+                <ExternalLink className="w-4 h-4 text-orange-400 group-hover:text-orange-300" />
               </div>
-              <ExternalLink className="w-5 h-5 text-orange-400 group-hover:text-orange-300" />
-            </div>
-          </button>
+            </button>
+            
+            <button
+              onClick={() => window.open('https://app.coinmarketman.com/dashboard/accounts/hyperliquid/126558?tab=summary', '_blank', 'noopener,noreferrer')}
+              className="bg-gradient-to-br from-orange-500/10 to-red-600/10 hover:from-orange-500/20 hover:to-red-600/20 border border-orange-500/20 hover:border-orange-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-medium text-white group-hover:text-orange-300 mb-1">Portfolio Analytics</div>
+                  <div className="text-xs text-crypto-silver">Comprehensive portfolio tracking and metrics</div>
+                </div>
+                <ExternalLink className="w-4 h-4 text-orange-400 group-hover:text-orange-300" />
+              </div>
+            </button>
+            
+            <button
+              onClick={() => window.open('https://app.coinmarketman.com/hypertracker/wallet/0xEE8d3996E60ff46466334e4844Dd94bafef5Eb5d', '_blank', 'noopener,noreferrer')}
+              className="bg-gradient-to-br from-orange-500/10 to-red-600/10 hover:from-orange-500/20 hover:to-red-600/20 border border-orange-500/20 hover:border-orange-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-medium text-white group-hover:text-orange-300 mb-1">PnL Chart</div>
+                  <div className="text-xs text-crypto-silver">Wallet performance and PnL visualization</div>
+                </div>
+                <ExternalLink className="w-4 h-4 text-orange-400 group-hover:text-orange-300" />
+              </div>
+            </button>
+          </div>
         </div>
       </div>
 
