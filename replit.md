@@ -720,6 +720,13 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Improved User Experience**: All external platform links now open properly in new tabs for better navigation flow
 - **Base Section Runtime Fix**: Created safe Base section component to handle security function errors gracefully
 
+### July 22, 2025 - Alpha Page Cleanup & Base Page X Signal Update
+- **KOLs Section Removal**: Completely removed KOLs section from Alpha page per user request
+- **X Accounts Rename**: Changed "My Favorite X Accounts" to "X Accounts" on Alpha page
+- **Base Page X Signal Update**: Replaced all Base X accounts with single Jesse Pollak (@jessepollak) entry
+- **Enhanced Domain Trust**: Added additional trusted domains (relay.link, universalx.app, aave.com, senpi.ai, etc.) to security whitelist
+- **Streamlined Alpha Social**: Alpha page now features cleaner social section without KOL subsection
+
 ### July 22, 2025 - Dynamic Social Pulse Implementation
 - **Backend Social Pulse Service**: Created comprehensive social pulse service with twice-daily X.com sentiment scanning
 - **Dynamic Ticker Rotation**: Implemented automatic ranking system based on 24hr sentiment increase with realistic variance

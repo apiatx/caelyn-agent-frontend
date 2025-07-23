@@ -60,7 +60,19 @@ const TRUSTED_DOMAINS = [
   'elfa.ai',
   'ayaoracle.xyz',
   'indexy.xyz',
-  'debank.com'
+  'debank.com',
+  'www.relay.link',
+  'relay.link',
+  'universalx.app',
+  'defi.instadapp.io',
+  'app.aave.com',
+  'senpi.ai',
+  'www.aixvc.io',
+  'aixvc.io',
+  'app.arma.xyz',
+  'arma.xyz',
+  'zyf.ai',
+  'lido.fi'
 ];
 
 /**

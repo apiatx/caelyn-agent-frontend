@@ -300,9 +300,7 @@ export default function BaseSectionSafe() {
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {[
-              { handle: '@basedkarbon', name: 'BasedKarbon', url: 'https://x.com/basedkarbon' },
-              { handle: '@baseswagcity', name: 'BaseSwagCity', url: 'https://x.com/baseswagcity' },
-              { handle: '@basepaintwtf', name: 'BasePaint', url: 'https://x.com/basepaintwtf' }
+              { handle: '@jessepollak', name: 'Jesse Pollak', url: 'https://x.com/jessepollak' }
             ].map((account) => (
               <SafeLink
                 key={account.handle}
