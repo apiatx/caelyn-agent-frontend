@@ -72,7 +72,9 @@ const TRUSTED_DOMAINS = [
   'app.arma.xyz',
   'arma.xyz',
   'zyf.ai',
-  'lido.fi'
+  'lido.fi',
+  'app.coinmarketman.com',
+  'coinmarketman.com'
 ];
 
 /**
