@@ -520,46 +520,6 @@ export default function PortfolioSection() {
         </div>
       </GlassCard>
 
-      {/* Hyperfolio Integration */}
-      <GlassCard className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-white flex items-center">
-            <div className="w-5 h-5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mr-2 flex items-center justify-center text-xs font-bold">
-              H
-            </div>
-            Hyperfolio Portfolio
-          </h3>
-          <div className="flex items-center gap-2">
-            <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
-              Portfolio Analytics
-            </Badge>
-            <a 
-              href="https://www.hyperfolio.xyz/0xEE8d3996E60ff46466334e4844Dd94bafef5Eb5d"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-crypto-silver hover:text-white transition-colors group"
-            >
-              <ExternalLink className="h-4 w-4 group-hover:scale-110 transition-transform" />
-            </a>
-          </div>
-        </div>
-        
-        <div className="relative w-full">
-          <iframe
-            src="https://www.hyperfolio.xyz/0xEE8d3996E60ff46466334e4844Dd94bafef5Eb5d"
-            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            title="Hyperfolio Portfolio Analytics"
-            frameBorder="0"
-            loading="lazy"
-            allow="clipboard-read; clipboard-write"
-            sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation-by-user-activation"
-          />
-          <div className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
-            Hyperliquid Portfolio
-          </div>
-        </div>
-      </GlassCard>
-
       {/* HyperLiquid Analytics */}
       <GlassCard className="p-6">
         <div className="flex items-center justify-between mb-6">
@@ -603,6 +563,46 @@ export default function PortfolioSection() {
                 <ExternalLink className="w-4 h-4 text-purple-400 group-hover:text-purple-300" />
               </div>
             </button>
+          </div>
+        </div>
+      </GlassCard>
+
+      {/* Hyperfolio Integration */}
+      <GlassCard className="p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-semibold text-white flex items-center">
+            <div className="w-5 h-5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mr-2 flex items-center justify-center text-xs font-bold">
+              H
+            </div>
+            Hyperfolio Portfolio
+          </h3>
+          <div className="flex items-center gap-2">
+            <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
+              Portfolio Analytics
+            </Badge>
+            <a 
+              href="https://www.hyperfolio.xyz/0xEE8d3996E60ff46466334e4844Dd94bafef5Eb5d"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-crypto-silver hover:text-white transition-colors group"
+            >
+              <ExternalLink className="h-4 w-4 group-hover:scale-110 transition-transform" />
+            </a>
+          </div>
+        </div>
+        
+        <div className="relative w-full">
+          <iframe
+            src="https://www.hyperfolio.xyz/0xEE8d3996E60ff46466334e4844Dd94bafef5Eb5d"
+            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+            title="Hyperfolio Portfolio Analytics"
+            frameBorder="0"
+            loading="lazy"
+            allow="clipboard-read; clipboard-write"
+            sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation-by-user-activation"
+          />
+          <div className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+            Hyperliquid Portfolio
           </div>
         </div>
       </GlassCard>
