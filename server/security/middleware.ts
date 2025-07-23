@@ -31,7 +31,10 @@ export const cspConfig = helmet.contentSecurityPolicy({
       "https://unpkg.com",
       "https://mobyscreener.com",
       "https://*.mobyscreener.com",
-      "https://app.mobyscreener.com"
+      "https://app.mobyscreener.com",
+      "https://artemis.xyz",
+      "https://*.artemis.xyz",
+      "https://app.artemis.xyz"
     ],
     styleSrc: [
       "'self'",
@@ -39,7 +42,9 @@ export const cspConfig = helmet.contentSecurityPolicy({
       "https://fonts.googleapis.com",
       "https://cdn.jsdelivr.net",
       "https://mobyscreener.com",
-      "https://*.mobyscreener.com"
+      "https://*.mobyscreener.com",
+      "https://artemis.xyz",
+      "https://*.artemis.xyz"
     ],
     imgSrc: [
       "'self'",
@@ -63,7 +68,10 @@ export const cspConfig = helmet.contentSecurityPolicy({
       "https://api.mobyscreener.com",
       "https://fonts.googleapis.com",
       "https://api.coingecko.com",
-      "https://api.dexscreener.com"
+      "https://api.dexscreener.com",
+      "https://artemis.xyz",
+      "https://*.artemis.xyz",
+      "https://api.artemis.xyz"
     ],
     frameSrc: [
       "'self'",
@@ -128,13 +136,17 @@ export const cspConfig = helmet.contentSecurityPolicy({
       "'self'", 
       "blob:",
       "https://mobyscreener.com",
-      "https://*.mobyscreener.com"
+      "https://*.mobyscreener.com",
+      "https://artemis.xyz",
+      "https://*.artemis.xyz"
     ],
     childSrc: [
       "'self'", 
       "blob:",
       "https://mobyscreener.com",
-      "https://*.mobyscreener.com"
+      "https://*.mobyscreener.com",
+      "https://artemis.xyz",
+      "https://*.artemis.xyz"
     ],
     formAction: ["'self'"],
     upgradeInsecureRequests: []
