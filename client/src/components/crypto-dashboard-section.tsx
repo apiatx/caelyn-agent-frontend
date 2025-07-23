@@ -79,9 +79,13 @@ export default function CryptoDashboardSection() {
           </div>
         </div>
 
-        {/* Artemis Analytics Iframe - removed title */}
+        {/* Artemis Analytics Iframe */}
         <div className="mb-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
+            <h4 className="text-lg font-medium text-white">Artemis Analytics</h4>
+            <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 text-xs">
+              LIVE ONCHAIN DATA
+            </Badge>
             <button
               onClick={() => openInNewTab('https://app.artemis.xyz/')}
               className="text-cyan-400 hover:text-cyan-300 text-xs sm:text-sm ml-auto"
@@ -89,15 +93,16 @@ export default function CryptoDashboardSection() {
               Open Full View →
             </button>
           </div>
-          <div className="w-full">
+          <div className="w-full bg-gray-900/50 rounded-lg border border-crypto-silver/20 overflow-hidden">
             <iframe
               src="https://app.artemis.xyz/"
-              className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
-              title="Artemis Analytics"
+              className="w-full h-[400px] sm:h-[500px] lg:h-[600px]"
+              title="Artemis Analytics Dashboard"
               sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
               referrerPolicy="no-referrer-when-downgrade"
               loading="lazy"
-              allow="fullscreen; web-share; clipboard-read; clipboard-write"
+              allow="fullscreen; web-share; clipboard-read; clipboard-write; camera; microphone"
+              style={{ border: 'none' }}
             />
           </div>
         </div>

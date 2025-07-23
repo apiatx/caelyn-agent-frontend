@@ -1,60 +1,60 @@
 {
   "tickers": [
     {
-      "symbol": "TRUMP",
-      "sentiment": 53,
-      "mentions": 2475,
-      "lastUpdated": "2025-07-22T17:54:56.379Z"
+      "symbol": "GOAT",
+      "sentiment": 52,
+      "mentions": 3266,
+      "lastUpdated": "2025-07-23T13:53:15.653Z"
     },
     {
-      "symbol": "PENGU",
+      "symbol": "FARTCOIN",
+      "sentiment": 50,
+      "mentions": 1642,
+      "lastUpdated": "2025-07-23T13:53:15.653Z"
+    },
+    {
+      "symbol": "JESUS",
+      "sentiment": 48,
+      "mentions": 5851,
+      "lastUpdated": "2025-07-23T13:53:15.653Z"
+    },
+    {
+      "symbol": "MOODENG",
+      "sentiment": 47,
+      "mentions": 4950,
+      "lastUpdated": "2025-07-23T13:53:15.653Z"
+    },
+    {
+      "symbol": "MEME",
       "sentiment": 46,
-      "mentions": 2731,
-      "lastUpdated": "2025-07-22T17:54:56.379Z"
+      "mentions": 2116,
+      "lastUpdated": "2025-07-23T13:53:15.653Z"
     },
     {
-      "symbol": "HYPE",
-      "sentiment": 36,
-      "mentions": 3699,
-      "lastUpdated": "2025-07-22T17:54:56.379Z"
+      "symbol": "BRETT",
+      "sentiment": 45,
+      "mentions": 4677,
+      "lastUpdated": "2025-07-23T13:53:15.653Z"
     },
     {
-      "symbol": "AI16Z",
-      "sentiment": 35,
-      "mentions": 2468,
-      "lastUpdated": "2025-07-22T17:54:56.379Z"
+      "symbol": "WIF",
+      "sentiment": 42,
+      "mentions": 2540,
+      "lastUpdated": "2025-07-23T13:53:15.653Z"
     },
     {
-      "symbol": "XRP",
-      "sentiment": 31,
-      "mentions": 3988,
-      "lastUpdated": "2025-07-22T17:54:56.379Z"
+      "symbol": "PNUT",
+      "sentiment": 42,
+      "mentions": 5309,
+      "lastUpdated": "2025-07-23T13:53:15.653Z"
     },
     {
-      "symbol": "LINK",
-      "sentiment": 23,
-      "mentions": 5002,
-      "lastUpdated": "2025-07-22T17:54:56.379Z"
-    },
-    {
-      "symbol": "AVAX",
-      "sentiment": 22,
-      "mentions": 1998,
-      "lastUpdated": "2025-07-22T17:54:56.379Z"
-    },
-    {
-      "symbol": "VIRTUAL",
-      "sentiment": 22,
-      "mentions": 1727,
-      "lastUpdated": "2025-07-22T17:54:56.379Z"
-    },
-    {
-      "symbol": "SOL",
-      "sentiment": 21,
-      "mentions": 4060,
-      "lastUpdated": "2025-07-22T17:54:56.379Z"
+      "symbol": "BODEN",
+      "sentiment": 41,
+      "mentions": 5932,
+      "lastUpdated": "2025-07-23T13:53:15.653Z"
     }
   ],
-  "lastUpdated": "2025-07-22T17:54:56.378Z",
-  "nextUpdate": "2025-07-23T05:54:56.378Z"
+  "lastUpdated": "2025-07-23T13:53:15.652Z",
+  "nextUpdate": "2025-07-23T16:53:15.652Z"
 }
