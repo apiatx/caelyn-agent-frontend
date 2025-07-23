@@ -83,7 +83,7 @@ export default function CryptoDashboardSection() {
         <div className="mb-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
             <button
-              onClick={() => openInNewTab('https://app.artemisanalytics.com/home')}
+              onClick={() => openInNewTab('https://app.artemis.xyz/')}
               className="text-cyan-400 hover:text-cyan-300 text-xs sm:text-sm ml-auto"
             >
               Open Full View →
@@ -91,10 +91,13 @@ export default function CryptoDashboardSection() {
           </div>
           <div className="w-full">
             <iframe
-              src="https://app.artemisanalytics.com/home"
+              src="https://app.artemis.xyz/"
               className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
               title="Artemis Analytics"
-              sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+              referrerPolicy="no-referrer-when-downgrade"
+              loading="lazy"
+              allow="fullscreen; web-share; clipboard-read; clipboard-write"
             />
           </div>
         </div>
