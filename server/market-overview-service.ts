@@ -545,10 +545,13 @@ export class MarketOverviewService {
   }
 
   async getFearGreedIndex(): Promise<FearGreedData> {
-    // TEMPORARILY SKIP CACHE FOR TESTING - FORCE FRESH DATA
-    console.log('🔥 [Market Overview] FORCING FRESH Fear & Greed data from API - bypassing cache for testing');
+    // Use fallback system: check cache first, then fetch fresh data if needed
+    if (!this.shouldRefreshFearGreed() && this.fearGreedCache.data) {
+      console.log('📦 [Market Overview] Using cached Fear & Greed data (fallback system)');
+      return this.fearGreedCache.data!;
+    }
 
-    console.log('🔍 [Market Overview] Fetching FRESH Fear & Greed Index from CoinMarketCap RIGHT NOW...');
+    console.log('🔍 [Market Overview] Fetching most recent Fear & Greed Index from CoinMarketCap API...');
     
     try {
       // Use the correct CoinMarketCap Fear & Greed Index API endpoint for historical data
