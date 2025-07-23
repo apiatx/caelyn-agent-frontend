@@ -100,7 +100,7 @@ export default function CryptoDashboardSection() {
         </div>
       </GlassCard>
 
-      {/* NewHedge Bitcoin Returns Heatmap */}
+      {/* Bitcoin Monthly Returns */}
       <GlassCard className="p-3 sm:p-4 lg:p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
           <div className="flex items-center gap-2">
@@ -112,21 +112,21 @@ export default function CryptoDashboardSection() {
               HEATMAP
             </Badge>
           </div>
-          <button
-            onClick={() => openInNewTab('https://newhedge.io/bitcoin/monthly-returns-heatmap')}
-            className="text-orange-400 hover:text-orange-300 text-xs sm:text-sm sm:ml-auto"
-          >
-            Open Full View →
-          </button>
         </div>
 
-        <div className="w-full">
-          <iframe
-            src="https://newhedge.io/bitcoin/monthly-returns-heatmap"
-            className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
-            title="NewHedge Bitcoin Monthly Returns Heatmap"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-          />
+        <div className="grid grid-cols-1 gap-3">
+          <button
+            onClick={() => openInNewTab('https://newhedge.io/bitcoin/monthly-returns-heatmap')}
+            className="bg-gradient-to-br from-orange-500/10 to-orange-600/10 hover:from-orange-500/20 hover:to-orange-600/20 border border-orange-500/20 hover:border-orange-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm font-medium text-white group-hover:text-orange-300 mb-1">NewHedge Bitcoin Heatmap</div>
+                <div className="text-xs text-crypto-silver">Bitcoin monthly returns visualization and analysis</div>
+              </div>
+              <ExternalLink className="w-4 h-4 text-orange-400 group-hover:text-orange-300" />
+            </div>
+          </button>
         </div>
       </GlassCard>
 
