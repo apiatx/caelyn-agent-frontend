@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Building2, ExternalLink, Bitcoin } from "lucide-react";
+import { Building2, ExternalLink, Bitcoin, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 // Glass card component for crypto stocks
@@ -103,6 +103,36 @@ export default function CryptoStocksSection() {
             src="https://taotreasuries.app/"
             className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
             title="TAO Treasuries"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+          />
+        </div>
+      </GlassCard>
+
+      {/* Online Notepad */}
+      <GlassCard className="p-3 sm:p-4 lg:p-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-green-500 rounded-full flex items-center justify-center">
+              <FileText className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+            </div>
+            <h3 className="text-lg sm:text-xl font-semibold text-white">Online Notepad</h3>
+            <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
+              NOTES
+            </Badge>
+          </div>
+          <button
+            onClick={() => openInNewTab('https://onlinenotepad.org/notepad')}
+            className="text-green-400 hover:text-green-300 text-xs sm:text-sm sm:ml-auto"
+          >
+            Open Full View →
+          </button>
+        </div>
+
+        <div className="w-full">
+          <iframe
+            src="https://onlinenotepad.org/notepad"
+            className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
+            title="Online Notepad"
             sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
           />
         </div>
