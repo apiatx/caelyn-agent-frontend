@@ -740,6 +740,15 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Artemis Analytics Title Removed**: Removed "Artemis Analytics" text while keeping the iframe and external link functionality
 - **Streamlined Interface**: Cleaner Market Overview page with better content flow and reduced textual headers
 
+### July 22, 2025 - Crypto Stocks Page Creation & Alt Season Index Fix
+- **Duplicate Alt Season Text Removed**: Fixed duplicate "Alt Season Index" text by removing the redundant h4 title inside the card
+- **New Crypto Stocks Page**: Created dedicated "/crypto-stocks" page positioned last in navigation after Portfolio
+- **Bitcoin Treasuries Integration**: Added bitcointreasuries.net iframe with orange Bitcoin branding and corporate treasury focus
+- **TAO Treasuries Integration**: Added taotreasuries.app iframe with purple TAO branding for Bittensor ecosystem treasury tracking
+- **Navigation Enhancement**: Added "Crypto Stocks" button to both desktop and mobile navigation with Building2 icon
+- **Corporate Treasury Focus**: New page provides comprehensive view of institutional crypto adoption and corporate holdings
+- **App Routing Updated**: Added /crypto-stocks route to App.tsx with proper component import and routing structure
+
 ### July 22, 2025 - Dynamic Social Pulse Implementation
 - **Backend Social Pulse Service**: Created comprehensive social pulse service with twice-daily X.com sentiment scanning
 - **Dynamic Ticker Rotation**: Implemented automatic ranking system based on 24hr sentiment increase with realistic variance

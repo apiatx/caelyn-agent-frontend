@@ -8,6 +8,7 @@ import TopChartsPage from "@/pages/top-charts";
 import SolanaPage from "@/pages/solana";
 import DeFiPage from "@/pages/defi";
 import HypePage from "@/pages/hype";
+import CryptoStocks from "@/pages/crypto-stocks";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -18,6 +19,7 @@ function Router() {
       <Route path="/solana" component={SolanaPage} />
       <Route path="/defi" component={DeFiPage} />
       <Route path="/hype" component={HypePage} />
+      <Route path="/crypto-stocks" component={CryptoStocks} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -1,5 +1,5 @@
 import { useState, Suspense, useEffect } from "react";
-import { ChartLine, Settings, Activity, Eye, TrendingUp, BarChart3, Brain, Wallet, Zap, DollarSign, Layers } from "lucide-react";
+import { ChartLine, Settings, Activity, Eye, TrendingUp, BarChart3, Brain, Wallet, Zap, DollarSign, Layers, Building2 } from "lucide-react";
 import CryptoDashboardSection from "@/components/crypto-dashboard-section";
 import PortfolioSection from "@/components/portfolio-section";
 import AlphaSection from "@/components/alpha-section";
@@ -173,6 +173,12 @@ export default function Dashboard() {
             >
               <Wallet className="w-4 h-4 mr-2 inline" />Portfolio
             </button>
+            <button
+              onClick={() => window.location.href = "/crypto-stocks"}
+              className="flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver"
+            >
+              <Building2 className="w-4 h-4 mr-2 inline" />Crypto Stocks
+            </button>
 
           </div>
 
@@ -271,6 +277,18 @@ export default function Dashboard() {
                 }`}
               >
                 <Wallet className="w-4 h-4 mr-1 inline" />Portfolio
+              </button>
+              <button
+                onClick={() => window.location.href = "/crypto-stocks"}
+                className="whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver"
+              >
+                <Building2 className="w-4 h-4 mr-1 inline" />Crypto Stocks
+              </button>
+              <button
+                onClick={() => window.location.href = "/crypto-stocks"}
+                className="whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver"
+              >
+                <Building2 className="w-4 h-4 mr-1 inline" />Crypto Stocks
               </button>
 
             </div>
