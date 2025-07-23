@@ -68,8 +68,10 @@ export const cspConfig = helmet.contentSecurityPolicy({
       "https://taomarketcap.com",
       "https://swordscan.com",
       "https://taohub.info",
+      "https://*.taohub.info",
       "https://peapods.finance",
       "https://artemis.xyz",
+      "https://*.artemis.xyz",
       "https://cointelegraph.com",
       "https://newhedge.io",
       "https://bitcointreasuries.net",
@@ -81,7 +83,13 @@ export const cspConfig = helmet.contentSecurityPolicy({
       "https://velo.xyz",
       "https://stockanalysis.com",
       "https://screener.in",
-      "https://ainvest.com"
+      "https://ainvest.com",
+      "https://polymarket.com",
+      "https://*.polymarket.com",
+      "https://gamma.polymarket.com",
+      "https://hyperfolio.xyz",
+      "https://*.hyperfolio.xyz",
+      "https://www.hyperfolio.xyz"
     ],
     objectSrc: ["'none'"],
     mediaSrc: ["'self'", "https:", "data:"],
@@ -104,9 +112,7 @@ export const helmetConfig = helmet({
     preload: true
   },
   noSniff: true,
-  frameguard: {
-    action: 'deny'
-  },
+  frameguard: false, // Disable frameguard to allow legitimate iframes
   referrerPolicy: {
     policy: ['strict-origin-when-cross-origin']
   }
@@ -275,7 +281,7 @@ export const validatePortfolioId = body('portfolioId')
 export const securityHeaders = (req: Request, res: Response, next: NextFunction) => {
   // Additional security headers
   res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
+  // Remove X-Frame-Options to allow legitimate iframes
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
