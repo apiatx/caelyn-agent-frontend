@@ -73,6 +73,38 @@ export function HypeSection() {
         </div>
       </div>
 
+      {/* CoinMarketMan HyperTracker */}
+      <div className="mt-6">
+        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+          <div className="w-6 h-6 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
+            <span className="text-white font-bold text-xs">C</span>
+          </div>
+          CoinMarketMan HyperTracker
+          <span className="text-xs bg-orange-500/20 text-orange-400 px-2 py-1 rounded-full border border-orange-500/30">
+            TRACKER
+          </span>
+          <a
+            {...getSecureLinkProps('https://app.coinmarketman.com/hypertracker')}
+            className="ml-auto text-xs text-orange-400 hover:text-orange-300 transition-colors flex items-center gap-1"
+          >
+            Open Full View <ExternalLink className="w-3 h-3" />
+          </a>
+        </h3>
+        
+        <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+          <iframe
+            {...getSecureIframeProps('https://app.coinmarketman.com/hypertracker', 'CoinMarketMan HyperTracker')}
+            className="w-full h-[600px] border-0"
+          />
+        </div>
+        
+        <div className="mt-4 text-center">
+          <p className="text-xs text-gray-400">
+            Advanced Hyperliquid tracking and analytics • Portfolio monitoring and insights
+          </p>
+        </div>
+      </div>
+
       {/* HyperEVM DeFi Ecosystem */}
       <div className="mt-6">
         <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
