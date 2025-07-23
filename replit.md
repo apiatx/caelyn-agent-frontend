@@ -765,6 +765,15 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Enterprise Security Maintained**: All iframe fixes maintain enterprise-level CSP security while enabling legitimate platform access
 - **Production-Ready Platform**: CryptoHippo now features complete iframe functionality across all major analytics and trading sections
 
+### July 23, 2025 - Artemis Analytics Iframe Restoration & CEX Section Addition
+- **Artemis Analytics Iframe Fixed**: Restored iframe functionality using correct app.artemisanalytics.com domain instead of artemis.xyz
+- **CSP Configuration Updated**: Added artemisanalytics.com domains to all CSP sections (frameSrc, scriptSrc, styleSrc, connectSrc)
+- **Live Onchain Data Restored**: Artemis Analytics now displays properly in Market Overview "Onchain" section with full iframe functionality
+- **CEX Section Added**: Created new "CEX" section at bottom of DeFi page with Coinbase, Kraken, and MoonPay platform links
+- **Exchange Platform Integration**: Added professional trading platform access with color-coded branding (blue, purple, green)
+- **Centralized Exchange Access**: Users can now access leading CEX platforms directly from CryptoHippo DeFi page
+- **Security Compliance**: All new CEX links use secure openSecureLink function for safe external platform access
+
 ### July 22, 2025 - Dynamic Social Pulse Implementation
 - **Backend Social Pulse Service**: Created comprehensive social pulse service with twice-daily X.com sentiment scanning
 - **Dynamic Ticker Rotation**: Implemented automatic ranking system based on 24hr sentiment increase with realistic variance

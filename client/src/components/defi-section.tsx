@@ -289,6 +289,63 @@ export default function DeFiSection() {
         />
       </GlassCard>
 
+      {/* CEX Section */}
+      <div className="space-y-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
+            <Wallet className="text-white text-xl" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-white">CEX</h2>
+            <p className="text-crypto-silver">Centralized Exchange Platforms</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Button
+            variant="outline"
+            onClick={() => openInNewTab('https://www.coinbase.com/home')}
+            className="bg-black/20 border-crypto-silver/20 hover:bg-blue-500/20 hover:border-blue-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
+          >
+            <div className="p-3 rounded-lg bg-gradient-to-r from-blue-500/20 to-blue-600/20">
+              <Wallet className="h-6 w-6 text-blue-400" />
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-lg">Coinbase</div>
+              <div className="text-sm text-crypto-silver">Leading crypto exchange</div>
+            </div>
+          </Button>
+
+          <Button
+            variant="outline"
+            onClick={() => openInNewTab('https://www.kraken.com/')}
+            className="bg-black/20 border-crypto-silver/20 hover:bg-purple-500/20 hover:border-purple-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
+          >
+            <div className="p-3 rounded-lg bg-gradient-to-r from-purple-500/20 to-purple-600/20">
+              <Wallet className="h-6 w-6 text-purple-400" />
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-lg">Kraken</div>
+              <div className="text-sm text-crypto-silver">Professional trading platform</div>
+            </div>
+          </Button>
+
+          <Button
+            variant="outline"
+            onClick={() => openInNewTab('https://www.moonpay.com/buy?af_xp=qr&isMoonkit=true&source_caller=ui&pid=moonpay.com&af_js_web=true&shortlink=41j0y9vo&af_adset=moonpay.com&af_ad=moonpay.com&deep_link_value=buy&af_ss_ui=true&c=moonpay.com&af_ss_ver=2_7_3')}
+            className="bg-black/20 border-crypto-silver/20 hover:bg-green-500/20 hover:border-green-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
+          >
+            <div className="p-3 rounded-lg bg-gradient-to-r from-green-500/20 to-green-600/20">
+              <Wallet className="h-6 w-6 text-green-400" />
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-lg">MoonPay</div>
+              <div className="text-sm text-crypto-silver">Crypto payment gateway</div>
+            </div>
+          </Button>
+        </div>
+      </div>
+
     </div>
   );
 }
