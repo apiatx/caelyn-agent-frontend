@@ -750,6 +750,7 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **App Routing Updated**: Added /crypto-stocks route to App.tsx with proper component import and routing structure
 - **Navigation Fix**: Removed duplicate "Crypto Stocks" button from mobile navigation
 - **Crypto Stocks Navigation**: Added full navigation menu to crypto-stocks page for easy navigation between sections
+- **ETH Treasuries Integration**: Added strategicethreserve.xyz iframe between BTC and TAO treasuries with blue Ethereum branding
 
 ### July 22, 2025 - Dynamic Social Pulse Implementation
 - **Backend Social Pulse Service**: Created comprehensive social pulse service with twice-daily X.com sentiment scanning

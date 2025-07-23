@@ -48,6 +48,36 @@ export default function CryptoStocksSection() {
         </div>
       </GlassCard>
 
+      {/* ETH Treasuries */}
+      <GlassCard className="p-3 sm:p-4 lg:p-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-blue-500 rounded-full flex items-center justify-center">
+              <span className="text-white font-bold text-xs">Ξ</span>
+            </div>
+            <h3 className="text-lg sm:text-xl font-semibold text-white">ETH Treasuries</h3>
+            <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
+              ETHEREUM
+            </Badge>
+          </div>
+          <button
+            onClick={() => openInNewTab('https://www.strategicethreserve.xyz/')}
+            className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm sm:ml-auto"
+          >
+            Open Full View →
+          </button>
+        </div>
+
+        <div className="w-full">
+          <iframe
+            src="https://www.strategicethreserve.xyz/"
+            className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
+            title="ETH Treasuries"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+          />
+        </div>
+      </GlassCard>
+
       {/* TAO Treasuries */}
       <GlassCard className="p-3 sm:p-4 lg:p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
