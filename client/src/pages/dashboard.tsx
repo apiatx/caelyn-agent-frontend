@@ -284,12 +284,6 @@ export default function Dashboard() {
               >
                 <Building2 className="w-4 h-4 mr-1 inline" />Crypto Stocks
               </button>
-              <button
-                onClick={() => window.location.href = "/crypto-stocks"}
-                className="whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 hover:bg-white/5 text-crypto-silver"
-              >
-                <Building2 className="w-4 h-4 mr-1 inline" />Crypto Stocks
-              </button>
 
             </div>
           </div>
