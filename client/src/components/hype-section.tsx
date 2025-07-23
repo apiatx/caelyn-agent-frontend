@@ -83,25 +83,21 @@ export function HypeSection() {
           <span className="text-xs bg-orange-500/20 text-orange-400 px-2 py-1 rounded-full border border-orange-500/30">
             TRACKER
           </span>
-          <a
-            {...getSecureLinkProps('https://app.coinmarketman.com/hypertracker')}
-            className="ml-auto text-xs text-orange-400 hover:text-orange-300 transition-colors flex items-center gap-1"
-          >
-            Open Full View <ExternalLink className="w-3 h-3" />
-          </a>
         </h3>
         
-        <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-          <iframe
-            {...getSecureIframeProps('https://app.coinmarketman.com/hypertracker', 'CoinMarketMan HyperTracker')}
-            className="w-full h-[600px] border-0"
-          />
-        </div>
-        
-        <div className="mt-4 text-center">
-          <p className="text-xs text-gray-400">
-            Advanced Hyperliquid tracking and analytics • Portfolio monitoring and insights
-          </p>
+        <div className="bg-black/20 border border-crypto-silver/20 rounded-lg p-6">
+          <button
+            onClick={() => window.open('https://app.coinmarketman.com/hypertracker', '_blank', 'noopener,noreferrer')}
+            className="w-full bg-gradient-to-br from-orange-500/10 to-red-600/10 hover:from-orange-500/20 hover:to-red-600/20 border border-orange-500/20 hover:border-orange-400/40 rounded-lg p-6 transition-all duration-300 text-left group"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-lg font-medium text-white group-hover:text-orange-300 mb-2">CoinMarketMan HyperTracker</div>
+                <div className="text-sm text-crypto-silver">Advanced Hyperliquid tracking and analytics • Portfolio monitoring and insights</div>
+              </div>
+              <ExternalLink className="w-5 h-5 text-orange-400 group-hover:text-orange-300" />
+            </div>
+          </button>
         </div>
       </div>
 

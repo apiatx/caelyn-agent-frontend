@@ -827,6 +827,7 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **AInvest Iframe Conversion**: Converted AInvest.com from iframe to clickable link button due to connection refusal
 - **Trending Section Rename**: Renamed "Trending Stocks" to "Trending" and consolidated all three platforms into compact button layout
 - **CoinMarketMan HyperTracker Integration**: Added CoinMarketMan HyperTracker iframe to Hype page between Hyperdash Analytics and HyperEVM sections
+- **CoinMarketMan Iframe Conversion**: Converted CoinMarketMan HyperTracker from iframe to clickable link button due to connection refusal
 - **X Alpha Section Repositioned**: Moved X Alpha section above Bitcoin Treasuries for better content flow
 - **Portfolio Tab Added**: Added missing "Portfolio" tab to navigation menu with correct ordering
 - **Navigation Order Fixed**: Restored correct tab order: Market Overview | Top Charts | Alpha | Base | Bittensor | Hype | DeFi | Portfolio | Crypto Stocks
