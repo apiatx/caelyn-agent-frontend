@@ -833,6 +833,10 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Portfolio Page HyperLiquid Integration**: Added new "HyperLiquid" section to Portfolio page with "HyperTracker" and "PnL Chart" buttons
 - **Velo Chart Integration**: Added Velo iframe (https://velo.xyz/chart) to Top Charts page bottom section titled "Other Altcoin Charts"
 - **Velo Iframe Conversion**: Converted Velo iframe to clickable button due to iframe blocking, following established fallback pattern
+- **Stocks Page Reorganization**: Grouped Bitcoin, ETH, and TAO Treasuries under unified "Crypto Treasuries" section
+- **Portfolio Section Addition**: Added new Portfolio section with Simply Wall St and Charles Schwab platform links
+- **Screening Section Enhancement**: Renamed "Trending" to "Screening" and added Unusual Whales stock screener
+- **Top Charts Velo Cleanup**: Removed individual "Velo" subtitle under "Other Altcoin Charts" section
 - **X Alpha Section Repositioned**: Moved X Alpha section above Bitcoin Treasuries for better content flow
 - **Portfolio Tab Added**: Added missing "Portfolio" tab to navigation menu with correct ordering
 - **Navigation Order Fixed**: Restored correct tab order: Market Overview | Top Charts | Alpha | Base | Bittensor | Hype | DeFi | Portfolio | Crypto Stocks

@@ -75,7 +75,10 @@ const TRUSTED_DOMAINS = [
   'lido.fi',
   'app.coinmarketman.com',
   'coinmarketman.com',
-  'velo.xyz'
+  'velo.xyz',
+  'simplywall.st',
+  'client.schwab.com',
+  'unusualwhales.com'
 ];
 
 /**

@@ -263,12 +263,6 @@ export default function TopChartsPage() {
             {/* Velo Chart */}
             <Suspense fallback={<SectionLoadingState title="Velo Chart" />}>
               <div className="space-y-3">
-                <div className="flex items-center space-x-2">
-                  <h3 className="text-lg font-semibold text-green-400">Velo</h3>
-                  <Badge variant="outline" className="bg-green-500/20 text-green-300 border-green-500/30">
-                    VELO
-                  </Badge>
-                </div>
                 <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-8">
                   <div className="flex flex-col items-center justify-center text-center space-y-4">
                     <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center text-lg font-bold">

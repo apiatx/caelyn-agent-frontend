@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Building2, ExternalLink, Bitcoin, FileText } from "lucide-react";
+import { Building2, ExternalLink, Bitcoin, FileText, TrendingUp, Briefcase } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 // Glass card component for crypto stocks
@@ -18,21 +18,21 @@ export default function CryptoStocksSection() {
 
   return (
     <div className="space-y-4 lg:space-y-8">
-      {/* Trending */}
+      {/* Screening */}
       <GlassCard className="p-3 sm:p-4 lg:p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
           <div className="flex items-center gap-2">
             <div className="w-5 h-5 sm:w-6 sm:h-6 bg-blue-500 rounded-full flex items-center justify-center">
-              <Building2 className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
             </div>
-            <h3 className="text-lg sm:text-xl font-semibold text-white">Trending</h3>
+            <h3 className="text-lg sm:text-xl font-semibold text-white">Screening</h3>
             <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
-              TRENDING
+              SCREENING
             </Badge>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <button
             onClick={() => openInNewTab('https://www.ainvest.com/screener/')}
             className="bg-gradient-to-br from-green-500/10 to-green-600/10 hover:from-green-500/20 hover:to-green-600/20 border border-green-500/20 hover:border-green-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
@@ -55,6 +55,47 @@ export default function CryptoStocksSection() {
           >
             <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">Screener.in explore</div>
             <div className="text-xs text-crypto-silver">Indian stock screening and exploration</div>
+          </button>
+          
+          <button
+            onClick={() => openInNewTab('https://unusualwhales.com/stock-screener')}
+            className="bg-gradient-to-br from-purple-500/10 to-purple-600/10 hover:from-purple-500/20 hover:to-purple-600/20 border border-purple-500/20 hover:border-purple-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-purple-300 mb-1">Unusual Whales</div>
+            <div className="text-xs text-crypto-silver">Whale activity and stock screening</div>
+          </button>
+        </div>
+      </GlassCard>
+
+      {/* Portfolio */}
+      <GlassCard className="p-3 sm:p-4 lg:p-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-green-500 rounded-full flex items-center justify-center">
+              <Briefcase className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+            </div>
+            <h3 className="text-lg sm:text-xl font-semibold text-white">Portfolio</h3>
+            <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
+              PORTFOLIO
+            </Badge>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <button
+            onClick={() => openInNewTab('https://simplywall.st/portfolio/65b1f9ab-7fa4-4d25-95c6-b8fa93d94d77/holdings')}
+            className="bg-gradient-to-br from-green-500/10 to-green-600/10 hover:from-green-500/20 hover:to-green-600/20 border border-green-500/20 hover:border-green-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-green-300 mb-1">Simply Wall St - Portfolio Analytics</div>
+            <div className="text-xs text-crypto-silver">Portfolio analysis and stock insights</div>
+          </button>
+          
+          <button
+            onClick={() => openInNewTab('https://client.schwab.com/clientapps/accounts/summary/')}
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">Charles Schwab</div>
+            <div className="text-xs text-crypto-silver">Investment account dashboard</div>
           </button>
         </div>
       </GlassCard>
@@ -156,93 +197,107 @@ export default function CryptoStocksSection() {
         </div>
       </GlassCard>
 
-      {/* Bitcoin Treasuries */}
+      {/* Crypto Treasuries */}
       <GlassCard className="p-3 sm:p-4 lg:p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-orange-500 rounded-full flex items-center justify-center">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-orange-500 via-blue-500 to-purple-500 rounded-full flex items-center justify-center">
               <Bitcoin className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
             </div>
-            <h3 className="text-lg sm:text-xl font-semibold text-white">Bitcoin Treasuries</h3>
-            <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 text-xs">
+            <h3 className="text-lg sm:text-xl font-semibold text-white">Crypto Treasuries</h3>
+            <Badge className="bg-gradient-to-r from-orange-500/20 via-blue-500/20 to-purple-500/20 text-white border-crypto-silver/30 text-xs">
               CORPORATE
             </Badge>
           </div>
-          <button
-            onClick={() => openInNewTab('https://bitcointreasuries.net/')}
-            className="text-orange-400 hover:text-orange-300 text-xs sm:text-sm sm:ml-auto"
-          >
-            Open Full View →
-          </button>
         </div>
 
-        <div className="w-full">
-          <iframe
-            src="https://bitcointreasuries.net/"
-            className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
-            title="Bitcoin Treasuries"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-          />
-        </div>
-      </GlassCard>
-
-      {/* ETH Treasuries */}
-      <GlassCard className="p-3 sm:p-4 lg:p-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-blue-500 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold text-xs">Ξ</span>
+        <div className="space-y-6">
+          {/* Bitcoin Treasuries */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-orange-500 rounded-full flex items-center justify-center">
+                  <Bitcoin className="w-2.5 h-2.5 text-white" />
+                </div>
+                <h4 className="text-lg font-semibold text-orange-400">Bitcoin Treasuries</h4>
+                <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 text-xs">
+                  BTC
+                </Badge>
+              </div>
+              <button
+                onClick={() => openInNewTab('https://bitcointreasuries.net/')}
+                className="text-orange-400 hover:text-orange-300 text-xs sm:text-sm"
+              >
+                Open Full View →
+              </button>
             </div>
-            <h3 className="text-lg sm:text-xl font-semibold text-white">ETH Treasuries</h3>
-            <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
-              ETHEREUM
-            </Badge>
-          </div>
-          <button
-            onClick={() => openInNewTab('https://www.strategicethreserve.xyz/')}
-            className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm sm:ml-auto"
-          >
-            Open Full View →
-          </button>
-        </div>
-
-        <div className="w-full">
-          <iframe
-            src="https://www.strategicethreserve.xyz/"
-            className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
-            title="ETH Treasuries"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-          />
-        </div>
-      </GlassCard>
-
-      {/* TAO Treasuries */}
-      <GlassCard className="p-3 sm:p-4 lg:p-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-purple-500 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold text-xs">τ</span>
+            <div className="w-full">
+              <iframe
+                src="https://bitcointreasuries.net/"
+                className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
+                title="Bitcoin Treasuries"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+              />
             </div>
-            <h3 className="text-lg sm:text-xl font-semibold text-white">TAO Treasuries</h3>
-            <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-xs">
-              BITTENSOR
-            </Badge>
           </div>
-          <button
-            onClick={() => openInNewTab('https://taotreasuries.app/')}
-            className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm sm:ml-auto"
-          >
-            Open Full View →
-          </button>
-        </div>
 
-        <div className="w-full">
-          <iframe
-            src="https://taotreasuries.app/"
-            className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
-            title="TAO Treasuries"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-          />
+          {/* ETH Treasuries */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-xs">Ξ</span>
+                </div>
+                <h4 className="text-lg font-semibold text-blue-400">ETH Treasuries</h4>
+                <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
+                  ETH
+                </Badge>
+              </div>
+              <button
+                onClick={() => openInNewTab('https://www.strategicethreserve.xyz/')}
+                className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm"
+              >
+                Open Full View →
+              </button>
+            </div>
+            <div className="w-full">
+              <iframe
+                src="https://www.strategicethreserve.xyz/"
+                className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
+                title="ETH Treasuries"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+              />
+            </div>
+          </div>
+
+          {/* TAO Treasuries */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-purple-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-xs">τ</span>
+                </div>
+                <h4 className="text-lg font-semibold text-purple-400">TAO Treasuries</h4>
+                <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-xs">
+                  TAO
+                </Badge>
+              </div>
+              <button
+                onClick={() => openInNewTab('https://taotreasuries.app/')}
+                className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm"
+              >
+                Open Full View →
+              </button>
+            </div>
+            <div className="w-full">
+              <iframe
+                src="https://taotreasuries.app/"
+                className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
+                title="TAO Treasuries"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+              />
+            </div>
+          </div>
         </div>
       </GlassCard>
     </div>
