@@ -59,6 +59,11 @@ export default function SolanaSection() {
           <iframe
             {...getSecureIframeProps('https://www.mobyscreener.com/', 'Moby Screener Analytics')}
             className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+            style={{
+              background: '#1a1a1a',
+              colorScheme: 'dark'
+            }}
+            allow="fullscreen; web-share; clipboard-read; clipboard-write"
           />
         </div>
       </GlassCard>

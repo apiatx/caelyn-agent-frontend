@@ -28,13 +28,18 @@ export const cspConfig = helmet.contentSecurityPolicy({
       "https://taostats.io",
       "https://*.hyperliquid.xyz",
       "https://cdn.jsdelivr.net",
-      "https://unpkg.com"
+      "https://unpkg.com",
+      "https://mobyscreener.com",
+      "https://*.mobyscreener.com",
+      "https://app.mobyscreener.com"
     ],
     styleSrc: [
       "'self'",
       "'unsafe-inline'",
       "https://fonts.googleapis.com",
-      "https://cdn.jsdelivr.net"
+      "https://cdn.jsdelivr.net",
+      "https://mobyscreener.com",
+      "https://*.mobyscreener.com"
     ],
     imgSrc: [
       "'self'",
@@ -52,7 +57,13 @@ export const cspConfig = helmet.contentSecurityPolicy({
       "'self'",
       "https:",
       "wss:",
-      "ws:"
+      "ws:",
+      "https://mobyscreener.com",
+      "https://*.mobyscreener.com",
+      "https://api.mobyscreener.com",
+      "https://fonts.googleapis.com",
+      "https://api.coingecko.com",
+      "https://api.dexscreener.com"
     ],
     frameSrc: [
       "'self'",
@@ -105,6 +116,8 @@ export const cspConfig = helmet.contentSecurityPolicy({
       "https://mobyscreener.com",
       "https://*.mobyscreener.com",
       "https://www.mobyscreener.com",
+      "https://app.mobyscreener.com",
+      "https://api.mobyscreener.com",
       "https://jup.ag",
       "https://*.jup.ag",
       "https://app.jup.ag"
