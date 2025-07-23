@@ -34,7 +34,10 @@ export const cspConfig = helmet.contentSecurityPolicy({
       "https://app.mobyscreener.com",
       "https://artemis.xyz",
       "https://*.artemis.xyz",
-      "https://app.artemis.xyz"
+      "https://app.artemis.xyz",
+      "https://artemisanalytics.com",
+      "https://*.artemisanalytics.com",
+      "https://app.artemisanalytics.com"
     ],
     styleSrc: [
       "'self'",
@@ -44,7 +47,9 @@ export const cspConfig = helmet.contentSecurityPolicy({
       "https://mobyscreener.com",
       "https://*.mobyscreener.com",
       "https://artemis.xyz",
-      "https://*.artemis.xyz"
+      "https://*.artemis.xyz",
+      "https://artemisanalytics.com",
+      "https://*.artemisanalytics.com"
     ],
     imgSrc: [
       "'self'",
@@ -71,7 +76,10 @@ export const cspConfig = helmet.contentSecurityPolicy({
       "https://api.dexscreener.com",
       "https://artemis.xyz",
       "https://*.artemis.xyz",
-      "https://api.artemis.xyz"
+      "https://api.artemis.xyz",
+      "https://artemisanalytics.com",
+      "https://*.artemisanalytics.com",
+      "https://api.artemisanalytics.com"
     ],
     frameSrc: [
       "'self'",
@@ -93,6 +101,9 @@ export const cspConfig = helmet.contentSecurityPolicy({
       "https://*.artemis.xyz",
       "https://app.artemis.xyz",
       "https://artemis.xyz/embed",
+      "https://artemisanalytics.com",
+      "https://*.artemisanalytics.com",
+      "https://app.artemisanalytics.com",
       "https://cointelegraph.com",
       "https://newhedge.io",
       "https://bitcointreasuries.net",

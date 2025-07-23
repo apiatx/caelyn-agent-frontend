@@ -79,26 +79,31 @@ export default function CryptoDashboardSection() {
           </div>
         </div>
 
-        {/* Artemis Analytics - Clickable Button (Iframe Blocked) */}
+        {/* Artemis Analytics Iframe */}
         <div className="mb-6">
-          <div className="grid grid-cols-1 gap-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
+            <h4 className="text-lg font-medium text-white">Artemis Analytics</h4>
+            <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 text-xs">
+              LIVE ONCHAIN DATA
+            </Badge>
             <button
-              onClick={() => openInNewTab('https://app.artemis.xyz/')}
-              className="bg-gradient-to-br from-cyan-500/10 to-cyan-600/10 hover:from-cyan-500/20 hover:to-cyan-600/20 border border-cyan-500/20 hover:border-cyan-400/40 rounded-lg p-6 transition-all duration-300 text-left group"
+              onClick={() => openInNewTab('https://app.artemisanalytics.com/')}
+              className="text-cyan-400 hover:text-cyan-300 text-xs sm:text-sm ml-auto"
             >
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="text-lg font-medium text-white group-hover:text-cyan-300">Artemis Analytics</div>
-                    <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 text-xs">
-                      LIVE ONCHAIN DATA
-                    </Badge>
-                  </div>
-                  <div className="text-sm text-crypto-silver">Comprehensive blockchain analytics and onchain insights</div>
-                </div>
-                <div className="w-4 h-4 text-cyan-400 group-hover:text-cyan-300">→</div>
-              </div>
+              Open Full View →
             </button>
+          </div>
+          <div className="w-full bg-gray-900/50 rounded-lg border border-crypto-silver/20 overflow-hidden">
+            <iframe
+              src="https://app.artemisanalytics.com/"
+              className="w-full h-[400px] sm:h-[500px] lg:h-[600px]"
+              title="Artemis Analytics Dashboard"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+              referrerPolicy="no-referrer-when-downgrade"
+              loading="lazy"
+              allow="fullscreen; web-share; clipboard-read; clipboard-write; camera; microphone"
+              style={{ border: 'none' }}
+            />
           </div>
         </div>
       </GlassCard>
