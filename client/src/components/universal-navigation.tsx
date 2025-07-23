@@ -122,7 +122,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
                 : "hover:bg-white/5 text-crypto-silver"
             }`}
           >
-            <Building2 className="w-4 h-4 mr-2 inline" />Crypto Stocks
+            <Building2 className="w-4 h-4 mr-2 inline" />Stocks
           </button>
         </div>
 
@@ -227,7 +227,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
                   : "hover:bg-white/5 text-crypto-silver"
               }`}
             >
-              <Building2 className="w-4 h-4 mr-1 inline" />Crypto Stocks
+              <Building2 className="w-4 h-4 mr-1 inline" />Stocks
             </button>
           </div>
         </div>

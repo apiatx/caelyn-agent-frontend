@@ -819,6 +819,9 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **VanEck ETF Redirect Fix**: Converted VanEck ETF from iframe to clickable button due to "too many redirects" error
 - **VanEck ETF Removal**: Removed VanEck Digital Transformation ETF section from Crypto Stocks page per user request
 - **X Alpha Section**: Added new X Alpha section with 10 trading influencer X/Twitter links in responsive grid layout
+- **Stocks Page Rename**: Renamed "Crypto Stocks" page to "Stocks" in navigation and headers
+- **StockAnalysis.com Integration**: Added trending stocks iframe at top of Stocks page with blue branding
+- **X Alpha Section Repositioned**: Moved X Alpha section above Bitcoin Treasuries for better content flow
 - **Portfolio Tab Added**: Added missing "Portfolio" tab to navigation menu with correct ordering
 - **Navigation Order Fixed**: Restored correct tab order: Market Overview | Top Charts | Alpha | Base | Bittensor | Hype | DeFi | Portfolio | Crypto Stocks
 - **Online Notepad Integration**: Added online notepad iframe to bottom of Crypto Stocks page with green branding and "NOTES" badge
