@@ -183,13 +183,13 @@ export default function AlphaSection() {
         </div>
       </GlassCard>
 
-      {/* AI Insights */}
+      {/* Resources */}
       <GlassCard className="p-6">
         <div className="flex items-center gap-2 mb-6">
           <div className="w-6 h-6 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center">
             <Brain className="w-4 h-4 text-white" />
           </div>
-          <h3 className="text-xl font-semibold text-white">AI Insights</h3>
+          <h3 className="text-xl font-semibold text-white">Resources</h3>
           <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 text-xs">
             AI POWERED
           </Badge>
@@ -210,35 +210,7 @@ export default function AlphaSection() {
           </button>
 
           <button
-            onClick={() => openInNewTab('https://x.com/cryptohippo_ai')}
-            className="p-4 bg-black/20 border border-gray-500/20 rounded-lg hover:bg-gray-500/10 transition-colors"
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-bold">𝕏</span>
-              </div>
-              <h4 className="text-gray-300 font-semibold">X (Twitter)</h4>
-            </div>
-            <p className="text-gray-400 text-sm">Follow CryptoHippo Updates</p>
-          </button>
-        </div>
-      </GlassCard>
-
-      {/* Tools */}
-      <GlassCard className="p-6">
-        <div className="flex items-center gap-2 mb-6">
-          <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-            <TrendingUp className="w-4 h-4 text-white" />
-          </div>
-          <h3 className="text-xl font-semibold text-white">Tools</h3>
-          <Badge className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-400 border-blue-500/30 text-xs">
-            ANALYTICS TOOLS
-          </Badge>
-        </div>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <button
-            onClick={() => window.open('https://app.bubblemaps.io/', '_blank', 'noopener,noreferrer')}
+            onClick={() => openInNewTab('https://app.bubblemaps.io/')}
             className="p-4 bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg hover:from-blue-500/20 hover:to-purple-500/20 transition-colors"
           >
             <div className="flex items-center gap-2 mb-2">

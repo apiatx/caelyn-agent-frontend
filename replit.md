@@ -839,6 +839,9 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Top Charts Velo Cleanup**: Removed individual "Velo" subtitle under "Other Altcoin Charts" section
 - **NewHedge Bitcoin Heatmap Integration**: Added NewHedge Bitcoin monthly returns heatmap iframe to Market Overview page between Onchain and News sections
 - **NewHedge Iframe Conversion**: Converted NewHedge iframe to clickable button due to connection refusal, following established fallback pattern
+- **Historical Bitcoin Returns Rename**: Changed "Bitcoin Monthly Returns" to "Historical Bitcoin Monthly Returns" on Market Overview page
+- **Alpha Resources Restructure**: Renamed "AI Insights" section to "Resources", removed X (Twitter) link, moved Bubblemaps from Tools section
+- **Alpha Tools Section Removal**: Removed separate Tools section after moving Bubblemaps to Resources section
 - **X Alpha Section Repositioned**: Moved X Alpha section above Bitcoin Treasuries for better content flow
 - **Portfolio Tab Added**: Added missing "Portfolio" tab to navigation menu with correct ordering
 - **Navigation Order Fixed**: Restored correct tab order: Market Overview | Top Charts | Alpha | Base | Bittensor | Hype | DeFi | Portfolio | Crypto Stocks
