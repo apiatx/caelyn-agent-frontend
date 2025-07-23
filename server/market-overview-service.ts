@@ -109,10 +109,10 @@ export class MarketOverviewService {
   // File-based persistent caching for aggressive rate limiting
   private readonly cacheFile = path.join(process.cwd(), 'market-overview-cache.json');
   
-  // Cache durations - UPDATED FOR REAL-TIME DATA
+  // Cache durations - FORCE FRESH DATA TEMPORARILY FOR TESTING
   private readonly GLOBAL_METRICS_CACHE_DURATION = 4 * 60 * 60 * 1000; // 4 hours (max 6 API calls/day)
-  private readonly ALT_SEASON_CACHE_DURATION = 12 * 60 * 60 * 1000; // 12 hours (2 API calls per day)
-  private readonly FEAR_GREED_CACHE_DURATION = 12 * 60 * 60 * 1000; // 12 hours (2 API calls per day)
+  private readonly ALT_SEASON_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes for testing
+  private readonly FEAR_GREED_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes for testing
 
   constructor() {
     this.apiKey = process.env.COINMARKETCAP_API_KEY || '7d9a361e-596d-4914-87e2-f1124da24897';
@@ -545,11 +545,8 @@ export class MarketOverviewService {
   }
 
   async getFearGreedIndex(): Promise<FearGreedData> {
-    // Check if we should use cached data (max 2 API calls per day)
-    if (!this.shouldRefreshFearGreed()) {
-      console.log('📦 [Market Overview] Using cached Fear & Greed data (AGGRESSIVE rate limiting: 1 call/2 days)');
-      return this.fearGreedCache.data!;
-    }
+    // TEMPORARILY SKIP CACHE FOR TESTING - FORCE FRESH DATA
+    console.log('🔥 [Market Overview] FORCING FRESH Fear & Greed data from API - bypassing cache for testing');
 
     console.log('🔍 [Market Overview] Fetching FRESH Fear & Greed Index from CoinMarketCap RIGHT NOW...');
     
