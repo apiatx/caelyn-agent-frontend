@@ -18,56 +18,34 @@ export default function CryptoStocksSection() {
 
   return (
     <div className="space-y-4 lg:space-y-8">
-      {/* AInvest.com Screener */}
-      <GlassCard className="p-3 sm:p-4 lg:p-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-green-500 rounded-full flex items-center justify-center">
-              <Building2 className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-            </div>
-            <h3 className="text-lg sm:text-xl font-semibold text-white">AInvest Screener</h3>
-            <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
-              SCREENER
-            </Badge>
-          </div>
-          <button
-            onClick={() => openInNewTab('https://www.ainvest.com/screener/')}
-            className="text-green-400 hover:text-green-300 text-xs sm:text-sm sm:ml-auto"
-          >
-            Open Full View →
-          </button>
-        </div>
-
-        <div className="w-full">
-          <iframe
-            src="https://www.ainvest.com/screener/"
-            className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
-            title="AInvest Screener"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-          />
-        </div>
-      </GlassCard>
-
-      {/* Trending Stocks */}
+      {/* Trending */}
       <GlassCard className="p-3 sm:p-4 lg:p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
           <div className="flex items-center gap-2">
             <div className="w-5 h-5 sm:w-6 sm:h-6 bg-blue-500 rounded-full flex items-center justify-center">
               <Building2 className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
             </div>
-            <h3 className="text-lg sm:text-xl font-semibold text-white">Trending Stocks</h3>
+            <h3 className="text-lg sm:text-xl font-semibold text-white">Trending</h3>
             <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
               TRENDING
             </Badge>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <button
+            onClick={() => openInNewTab('https://www.ainvest.com/screener/')}
+            className="bg-gradient-to-br from-green-500/10 to-green-600/10 hover:from-green-500/20 hover:to-green-600/20 border border-green-500/20 hover:border-green-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-green-300 mb-1">AInvest.com screener</div>
+            <div className="text-xs text-crypto-silver">AI-powered stock screening and analysis</div>
+          </button>
+          
           <button
             onClick={() => openInNewTab('https://stockanalysis.com/trending/')}
             className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
           >
-            <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">StockAnalysis.com</div>
+            <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">StockAnalysis.com trending</div>
             <div className="text-xs text-crypto-silver">Trending stocks and market analysis</div>
           </button>
           
@@ -75,7 +53,7 @@ export default function CryptoStocksSection() {
             onClick={() => openInNewTab('https://www.screener.in/explore/')}
             className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
           >
-            <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">Screener.in</div>
+            <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">Screener.in explore</div>
             <div className="text-xs text-crypto-silver">Indian stock screening and exploration</div>
           </button>
         </div>

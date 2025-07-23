@@ -824,6 +824,8 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **StockAnalysis.com Iframe Conversion**: Converted StockAnalysis.com from iframe to clickable link due to connection refusal
 - **Screener.in Integration**: Added Screener.in explore link to Trending Stocks section for Indian stock analysis
 - **AInvest Screener Integration**: Added AInvest.com screener iframe at top of Trending section with green branding
+- **AInvest Iframe Conversion**: Converted AInvest.com from iframe to clickable link button due to connection refusal
+- **Trending Section Rename**: Renamed "Trending Stocks" to "Trending" and consolidated all three platforms into compact button layout
 - **X Alpha Section Repositioned**: Moved X Alpha section above Bitcoin Treasuries for better content flow
 - **Portfolio Tab Added**: Added missing "Portfolio" tab to navigation menu with correct ordering
 - **Navigation Order Fixed**: Restored correct tab order: Market Overview | Top Charts | Alpha | Base | Bittensor | Hype | DeFi | Portfolio | Crypto Stocks
