@@ -846,6 +846,8 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Fallback System Implementation**: Added intelligent fallback system that uses most recent API data when CoinMarketCap API has delays
 - **UI Reorganization**: Moved "Historical Bitcoin Monthly Returns" section above "Onchain" section on Market Overview page
 - **Text Cleanup**: Removed "LIVE ONCHAIN DATA" badge text from Artemis Analytics section for cleaner interface
+- **Duplicate Section Removal**: Removed duplicate "Historical Bitcoin Monthly Returns" section that appeared between Onchain and News
+- **Artemis Analytics Text Removal**: Removed "Artemis Analytics" heading text from Onchain section, keeping only the iframe and external link
 
 ### July 23, 2025 - Universal Navigation Implementation & Complete Navigation Consistency
 - **Universal Navigation Component**: Created comprehensive universal navigation component used across all pages
