@@ -848,6 +848,7 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Text Cleanup**: Removed "LIVE ONCHAIN DATA" badge text from Artemis Analytics section for cleaner interface
 - **Duplicate Section Removal**: Removed duplicate "Historical Bitcoin Monthly Returns" section that appeared between Onchain and News
 - **Artemis Analytics Text Removal**: Removed "Artemis Analytics" heading text from Onchain section, keeping only the iframe and external link
+- **Hyperfolio Portfolio Addition**: Added Hyperfolio Portfolio section to bottom of Hype page with purple branding and portfolio analytics integration
 
 ### July 23, 2025 - Universal Navigation Implementation & Complete Navigation Consistency
 - **Universal Navigation Component**: Created comprehensive universal navigation component used across all pages

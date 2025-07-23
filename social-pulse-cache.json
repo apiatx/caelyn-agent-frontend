@@ -1,60 +1,60 @@
 {
   "tickers": [
     {
-      "symbol": "GOAT",
-      "sentiment": 52,
-      "mentions": 3266,
-      "lastUpdated": "2025-07-23T13:53:15.653Z"
-    },
-    {
       "symbol": "FARTCOIN",
-      "sentiment": 50,
-      "mentions": 1642,
-      "lastUpdated": "2025-07-23T13:53:15.653Z"
-    },
-    {
-      "symbol": "JESUS",
-      "sentiment": 48,
-      "mentions": 5851,
-      "lastUpdated": "2025-07-23T13:53:15.653Z"
+      "sentiment": 53,
+      "mentions": 4112,
+      "lastUpdated": "2025-07-23T22:49:33.150Z"
     },
     {
       "symbol": "MOODENG",
+      "sentiment": 52,
+      "mentions": 2762,
+      "lastUpdated": "2025-07-23T22:49:33.150Z"
+    },
+    {
+      "symbol": "JESUS",
+      "sentiment": 50,
+      "mentions": 2381,
+      "lastUpdated": "2025-07-23T22:49:33.150Z"
+    },
+    {
+      "symbol": "CHILLGUY",
+      "sentiment": 49,
+      "mentions": 1255,
+      "lastUpdated": "2025-07-23T22:49:33.150Z"
+    },
+    {
+      "symbol": "PENGU",
       "sentiment": 47,
-      "mentions": 4950,
-      "lastUpdated": "2025-07-23T13:53:15.653Z"
+      "mentions": 1726,
+      "lastUpdated": "2025-07-23T22:49:33.150Z"
     },
     {
-      "symbol": "MEME",
-      "sentiment": 46,
-      "mentions": 2116,
-      "lastUpdated": "2025-07-23T13:53:15.653Z"
+      "symbol": "TRUMP",
+      "sentiment": 44,
+      "mentions": 4779,
+      "lastUpdated": "2025-07-23T22:49:33.150Z"
     },
     {
-      "symbol": "BRETT",
-      "sentiment": 45,
-      "mentions": 4677,
-      "lastUpdated": "2025-07-23T13:53:15.653Z"
+      "symbol": "NORMIE",
+      "sentiment": 44,
+      "mentions": 2192,
+      "lastUpdated": "2025-07-23T22:49:33.150Z"
     },
     {
-      "symbol": "WIF",
-      "sentiment": 42,
-      "mentions": 2540,
-      "lastUpdated": "2025-07-23T13:53:15.653Z"
+      "symbol": "MYRO",
+      "sentiment": 39,
+      "mentions": 4595,
+      "lastUpdated": "2025-07-23T22:49:33.150Z"
     },
     {
-      "symbol": "PNUT",
-      "sentiment": 42,
-      "mentions": 5309,
-      "lastUpdated": "2025-07-23T13:53:15.653Z"
-    },
-    {
-      "symbol": "BODEN",
-      "sentiment": 41,
-      "mentions": 5932,
-      "lastUpdated": "2025-07-23T13:53:15.653Z"
+      "symbol": "ELON",
+      "sentiment": 38,
+      "mentions": 2989,
+      "lastUpdated": "2025-07-23T22:49:33.150Z"
     }
   ],
-  "lastUpdated": "2025-07-23T13:53:15.652Z",
-  "nextUpdate": "2025-07-23T16:53:15.652Z"
+  "lastUpdated": "2025-07-23T22:49:33.150Z",
+  "nextUpdate": "2025-07-24T01:49:33.150Z"
 }
