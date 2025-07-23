@@ -46,7 +46,7 @@ export default function SolanaSection() {
 
       {/* Moby Screener */}
       <GlassCard className="p-6">
-        <div className="flex items-center gap-2 mb-6">
+        <div className="flex items-center gap-2 mb-4">
           <div className="w-6 h-6 bg-cyan-500 rounded-full flex items-center justify-center">
             <Activity className="w-4 h-4 text-white" />
           </div>
@@ -55,24 +55,19 @@ export default function SolanaSection() {
             ANALYTICS
           </Badge>
         </div>
-        
-        <div className="grid grid-cols-1 gap-4">
-          <a
-            href="https://www.mobyscreener.com/"
-            onClick={(e) => {e.preventDefault(); openSecureLink('https://www.mobyscreener.com/');}}
-            className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-cyan-500/30 transition-all duration-200 group cursor-pointer"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center">
-                <Activity className="w-4 h-4 text-white" />
-              </div>
-              <div>
-                <h3 className="text-white font-medium text-sm">Moby Screener</h3>
-                <p className="text-gray-400 text-xs">Advanced Solana analytics and screening tools</p>
-              </div>
-            </div>
-            <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-cyan-400 transition-colors" />
-          </a>
+        <div className="w-full">
+          <iframe
+            src="https://www.mobyscreener.com/"
+            title="Moby Screener Analytics"
+            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+            referrerPolicy="no-referrer-when-downgrade"
+            loading="lazy"
+            style={{
+              background: 'transparent',
+              colorScheme: 'dark'
+            }}
+          />
         </div>
       </GlassCard>
 

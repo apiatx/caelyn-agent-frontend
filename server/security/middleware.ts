@@ -124,8 +124,18 @@ export const cspConfig = helmet.contentSecurityPolicy({
     ],
     objectSrc: ["'none'"],
     mediaSrc: ["'self'", "https:", "data:"],
-    workerSrc: ["'self'", "blob:"],
-    childSrc: ["'self'", "blob:"],
+    workerSrc: [
+      "'self'", 
+      "blob:",
+      "https://mobyscreener.com",
+      "https://*.mobyscreener.com"
+    ],
+    childSrc: [
+      "'self'", 
+      "blob:",
+      "https://mobyscreener.com",
+      "https://*.mobyscreener.com"
+    ],
     formAction: ["'self'"],
     upgradeInsecureRequests: []
   }
