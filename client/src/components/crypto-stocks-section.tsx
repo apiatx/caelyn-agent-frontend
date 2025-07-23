@@ -120,21 +120,27 @@ export default function CryptoStocksSection() {
               ETF
             </Badge>
           </div>
-          <button
-            onClick={() => openInNewTab('https://www.vaneck.com/us/en/investments/digital-transformation-etf-dapp/overview/')}
-            className="text-green-400 hover:text-green-300 text-xs sm:text-sm sm:ml-auto"
-          >
-            Open Full View →
-          </button>
         </div>
 
         <div className="w-full">
-          <iframe
-            src="https://www.vaneck.com/us/en/investments/digital-transformation-etf-dapp/overview/"
-            className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
-            title="VanEck Digital Transformation ETF"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-          />
+          <div className="bg-gradient-to-br from-green-500/10 to-emerald-600/10 rounded-lg p-8 border border-green-500/20 text-center">
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center">
+                <Building2 className="w-8 h-8 text-white" />
+              </div>
+              <div>
+                <h4 className="text-xl font-semibold text-white mb-2">VanEck Digital Transformation ETF (DAPP)</h4>
+                <p className="text-crypto-silver text-sm mb-4">Access comprehensive digital transformation and blockchain investment analysis</p>
+              </div>
+              <Button
+                onClick={() => openInNewTab('https://www.vaneck.com/us/en/investments/digital-transformation-etf-dapp/overview/')}
+                className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium py-2 px-6 rounded-lg transition-all duration-300 flex items-center gap-2"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Access VanEck DAPP ETF
+              </Button>
+            </div>
+          </div>
         </div>
       </GlassCard>
     </div>
