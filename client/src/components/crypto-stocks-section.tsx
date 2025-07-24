@@ -32,7 +32,7 @@ export default function CryptoStocksSection() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
           <button
             onClick={() => openInNewTab('https://www.ainvest.com/screener/')}
             className="bg-gradient-to-br from-green-500/10 to-green-600/10 hover:from-green-500/20 hover:to-green-600/20 border border-green-500/20 hover:border-green-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
@@ -63,6 +63,14 @@ export default function CryptoStocksSection() {
           >
             <div className="text-sm font-medium text-white group-hover:text-purple-300 mb-1">Unusual Whales</div>
             <div className="text-xs text-crypto-silver">Whale activity and stock screening</div>
+          </button>
+          
+          <button
+            onClick={() => openInNewTab('https://www.cnn.com/markets/premarkets')}
+            className="bg-gradient-to-br from-red-500/10 to-red-600/10 hover:from-red-500/20 hover:to-red-600/20 border border-red-500/20 hover:border-red-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-red-300 mb-1">CNN Pre-Market</div>
+            <div className="text-xs text-crypto-silver">Live premarket trading data and futures</div>
           </button>
         </div>
       </GlassCard>
@@ -97,60 +105,6 @@ export default function CryptoStocksSection() {
             <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">Charles Schwab</div>
             <div className="text-xs text-crypto-silver">Investment account dashboard</div>
           </button>
-        </div>
-      </GlassCard>
-
-      {/* CNN PreMarket */}
-      <GlassCard className="p-3 sm:p-4 lg:p-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-red-500 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold text-xs">CNN</span>
-            </div>
-            <h3 className="text-lg sm:text-xl font-semibold text-white">CNN PreMarket</h3>
-            <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-xs">
-              LIVE MARKETS
-            </Badge>
-          </div>
-          <button
-            onClick={() => openInNewTab('https://www.cnn.com/markets/premarkets')}
-            className="ml-auto text-red-400 hover:text-red-300 text-xs sm:text-sm flex items-center gap-1"
-          >
-            Open Full View <ExternalLink className="w-3 h-3" />
-          </button>
-        </div>
-
-        <div className="w-full">
-          <div className="h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20 bg-gradient-to-br from-red-900/20 to-red-800/20 flex flex-col items-center justify-center p-8 text-center">
-            <div className="w-16 h-16 bg-gradient-to-r from-red-500 to-red-600 rounded-full flex items-center justify-center mb-6 text-xl font-bold">
-              CNN
-            </div>
-            <h4 className="text-xl font-semibold text-white mb-3">CNN Markets PreMarket</h4>
-            <p className="text-crypto-silver mb-6 max-w-md">
-              Access live premarket trading data, futures information, and early market indicators from CNN Business.
-            </p>
-            <div className="space-y-3 text-sm text-crypto-silver mb-6">
-              <div className="flex items-center justify-center gap-2">
-                <div className="w-2 h-2 bg-red-400 rounded-full"></div>
-                <span>Live premarket stock movements</span>
-              </div>
-              <div className="flex items-center justify-center gap-2">
-                <div className="w-2 h-2 bg-red-400 rounded-full"></div>
-                <span>Futures and market indicators</span>
-              </div>
-              <div className="flex items-center justify-center gap-2">
-                <div className="w-2 h-2 bg-red-400 rounded-full"></div>
-                <span>Early market sentiment analysis</span>
-              </div>
-            </div>
-            <button
-              onClick={() => openInNewTab('https://www.cnn.com/markets/premarkets')}
-              className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 hover:scale-105 flex items-center gap-2"
-            >
-              <ExternalLink className="w-4 h-4" />
-              View CNN PreMarket Data
-            </button>
-          </div>
         </div>
       </GlassCard>
 
