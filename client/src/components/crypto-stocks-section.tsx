@@ -324,6 +324,36 @@ export default function CryptoStocksSection() {
           </div>
         </div>
       </GlassCard>
+
+      {/* TradingView */}
+      <GlassCard className="p-3 sm:p-4 lg:p-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-blue-500 to-green-500 rounded-full flex items-center justify-center">
+              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+            </div>
+            <h3 className="text-lg sm:text-xl font-semibold text-white">TradingView</h3>
+            <Badge className="bg-gradient-to-r from-blue-500/20 to-green-500/20 text-white border-crypto-silver/30 text-xs">
+              TRADING PLATFORM
+            </Badge>
+          </div>
+          <button
+            onClick={() => openInNewTab('https://www.tradingview.com/')}
+            className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm"
+          >
+            Open Full View →
+          </button>
+        </div>
+
+        <div className="w-full">
+          <iframe
+            src="https://www.tradingview.com/"
+            className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+            title="TradingView"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+          />
+        </div>
+      </GlassCard>
     </div>
   );
 }
