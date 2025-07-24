@@ -347,9 +347,9 @@ export default function CryptoStocksSection() {
 
         <div className="w-full">
           <iframe
-            src="https://www.tradingview.com/"
+            src="https://www.tradingview.com/chart/?symbol=NASDAQ%3AAAPL&theme=dark"
             className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
-            title="TradingView"
+            title="TradingView Chart"
             sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
           />
         </div>
