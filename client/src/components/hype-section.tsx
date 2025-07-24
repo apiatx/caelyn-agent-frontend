@@ -1,5 +1,13 @@
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, TrendingUp } from "lucide-react";
 import { getSecureIframeProps, getSecureLinkProps } from "@/utils/security";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+
+const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+  <Card className={`backdrop-blur-sm bg-gradient-to-br from-white/10 to-white/5 border border-white/20 ${className}`}>
+    {children}
+  </Card>
+);
 
 export function HypeSection() {
   return (
@@ -220,6 +228,39 @@ export function HypeSection() {
             Complete HyperEVM DeFi ecosystem • Trading, swapping, and liquidity management
           </p>
         </div>
+      </div>
+
+      {/* Social Perps Signal Section */}
+      <div className="space-y-6">
+        <GlassCard className="p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <div className="w-6 h-6 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
+              <TrendingUp className="w-4 h-4 text-white" />
+            </div>
+            <h3 className="text-xl font-semibold text-white">Social Perps Signal</h3>
+            <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 text-xs">
+              TRADING SIGNALS
+            </Badge>
+          </div>
+          
+          <div className="grid grid-cols-1 gap-4">
+            <button
+              onClick={() => window.open('https://x.com/cnj_trading', '_blank')}
+              className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-orange-500/30 transition-all duration-200 group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
+                  <TrendingUp className="w-4 h-4 text-white" />
+                </div>
+                <div className="text-left">
+                  <h4 className="text-white font-medium text-sm">CNJ Trading</h4>
+                  <p className="text-gray-400 text-xs">@cnj_trading - Perpetuals trading signals and analysis</p>
+                </div>
+              </div>
+              <div className="w-4 h-4 text-gray-400 group-hover:text-orange-400 transition-colors">→</div>
+            </button>
+          </div>
+        </GlassCard>
       </div>
     </div>
   );
