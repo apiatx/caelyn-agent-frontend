@@ -32,7 +32,7 @@ export default function CryptoStocksSection() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
           <button
             onClick={() => openInNewTab('https://www.ainvest.com/screener/')}
             className="bg-gradient-to-br from-green-500/10 to-green-600/10 hover:from-green-500/20 hover:to-green-600/20 border border-green-500/20 hover:border-green-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
@@ -71,6 +71,14 @@ export default function CryptoStocksSection() {
           >
             <div className="text-sm font-medium text-white group-hover:text-red-300 mb-1">CNN Pre-Market</div>
             <div className="text-xs text-crypto-silver">Live premarket trading data and futures</div>
+          </button>
+          
+          <button
+            onClick={() => openInNewTab('https://www.cnn.com/markets/after-hours')}
+            className="bg-gradient-to-br from-red-500/10 to-red-600/10 hover:from-red-500/20 hover:to-red-600/20 border border-red-500/20 hover:border-red-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-red-300 mb-1">CNN After-Hours</div>
+            <div className="text-xs text-crypto-silver">After-hours trading data and analysis</div>
           </button>
         </div>
       </GlassCard>
