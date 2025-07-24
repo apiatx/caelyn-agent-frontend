@@ -849,6 +849,7 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Duplicate Section Removal**: Removed duplicate "Historical Bitcoin Monthly Returns" section that appeared between Onchain and News
 - **Artemis Analytics Text Removal**: Removed "Artemis Analytics" heading text from Onchain section, keeping only the iframe and external link
 - **Hyperfolio Portfolio Repositioning**: Removed Hyperfolio Portfolio section from Hype page and moved existing Portfolio page Hyperfolio section to bottom position
+- **CNN PreMarket Integration**: Added CNN Markets PreMarket iframe to Stocks page between Portfolio and X Alpha sections with red branding and live market data access
 
 ### July 23, 2025 - Universal Navigation Implementation & Complete Navigation Consistency
 - **Universal Navigation Component**: Created comprehensive universal navigation component used across all pages

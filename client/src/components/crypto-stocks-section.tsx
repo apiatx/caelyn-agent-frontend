@@ -100,6 +100,37 @@ export default function CryptoStocksSection() {
         </div>
       </GlassCard>
 
+      {/* CNN PreMarket */}
+      <GlassCard className="p-3 sm:p-4 lg:p-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-red-500 rounded-full flex items-center justify-center">
+              <span className="text-white font-bold text-xs">CNN</span>
+            </div>
+            <h3 className="text-lg sm:text-xl font-semibold text-white">CNN PreMarket</h3>
+            <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-xs">
+              LIVE MARKETS
+            </Badge>
+          </div>
+          <button
+            onClick={() => openInNewTab('https://www.cnn.com/markets/premarkets')}
+            className="ml-auto text-red-400 hover:text-red-300 text-xs sm:text-sm flex items-center gap-1"
+          >
+            Open Full View <ExternalLink className="w-3 h-3" />
+          </button>
+        </div>
+
+        <div className="w-full">
+          <iframe
+            src="https://www.cnn.com/markets/premarkets"
+            className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+            title="CNN PreMarket Data"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+            loading="lazy"
+          />
+        </div>
+      </GlassCard>
+
       {/* X Alpha */}
       <GlassCard className="p-3 sm:p-4 lg:p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
