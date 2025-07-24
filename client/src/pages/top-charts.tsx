@@ -66,11 +66,11 @@ export default function TopChartsPage() {
                   </div>
                   <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
                     <iframe
-                      src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=500&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=false&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&symbol=BINANCE%3ABTCUSDT"
+                      src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=500&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&symbol=BINANCE%3ABTCUSDT&hide_top_toolbar=false&disabled_features=[]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22]"
                       width="100%"
                       height="500"
                       frameBorder="0"
-                      allowtransparency="true"
+                      allowTransparency={true}
                       scrolling="no"
                       style={{ border: 'none' }}
                     />
@@ -97,11 +97,11 @@ export default function TopChartsPage() {
                   </div>
                   <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
                     <iframe
-                      src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=500&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=false&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&symbol=BINANCE%3AETHUSDT"
+                      src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=500&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&symbol=BINANCE%3AETHUSDT&hide_top_toolbar=false&disabled_features=[]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22]"
                       width="100%"
                       height="500"
                       frameBorder="0"
-                      allowtransparency="true"
+                      allowTransparency={true}
                       scrolling="no"
                       style={{ border: 'none' }}
                     />
@@ -128,11 +128,11 @@ export default function TopChartsPage() {
                   </div>
                   <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
                     <iframe
-                      src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=500&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=false&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&symbol=BINANCE%3AXRPUSDT"
+                      src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=500&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&symbol=BINANCE%3AXRPUSDT&hide_top_toolbar=false&disabled_features=[]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22]"
                       width="100%"
                       height="500"
                       frameBorder="0"
-                      allowtransparency="true"
+                      allowTransparency={true}
                       scrolling="no"
                       style={{ border: 'none' }}
                     />
@@ -159,11 +159,11 @@ export default function TopChartsPage() {
                   </div>
                   <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
                     <iframe
-                      src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=500&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=false&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&symbol=BINANCE%3ASOLUSDT"
+                      src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=500&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&symbol=BINANCE%3ASOLUSDT&hide_top_toolbar=false&disabled_features=[]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22]"
                       width="100%"
                       height="500"
                       frameBorder="0"
-                      allowtransparency="true"
+                      allowTransparency={true}
                       scrolling="no"
                       style={{ border: 'none' }}
                     />
@@ -190,11 +190,11 @@ export default function TopChartsPage() {
                   </div>
                   <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
                     <iframe
-                      src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=500&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=false&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&symbol=BINANCE%3ABNBUSDT"
+                      src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=500&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&symbol=BINANCE%3ABNBUSDT&hide_top_toolbar=false&disabled_features=[]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22]"
                       width="100%"
                       height="500"
                       frameBorder="0"
-                      allowtransparency="true"
+                      allowTransparency={true}
                       scrolling="no"
                       style={{ border: 'none' }}
                     />
@@ -221,11 +221,11 @@ export default function TopChartsPage() {
                   </div>
                   <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
                     <iframe
-                      src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=500&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=false&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&symbol=BINANCE%3ADOGEUSDT"
+                      src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=500&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&symbol=BINANCE%3ADOGEUSDT&hide_top_toolbar=false&disabled_features=[]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22]"
                       width="100%"
                       height="500"
                       frameBorder="0"
-                      allowtransparency="true"
+                      allowTransparency={true}
                       scrolling="no"
                       style={{ border: 'none' }}
                     />
@@ -252,11 +252,11 @@ export default function TopChartsPage() {
                   </div>
                   <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
                     <iframe
-                      src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=500&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=false&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&symbol=BINANCE%3APENGUUSDT"
+                      src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=500&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&symbol=BINANCE%3APENGUUSDT&hide_top_toolbar=false&disabled_features=[]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22]"
                       width="100%"
                       height="500"
                       frameBorder="0"
-                      allowtransparency="true"
+                      allowTransparency={true}
                       scrolling="no"
                       style={{ border: 'none' }}
                     />
@@ -283,11 +283,11 @@ export default function TopChartsPage() {
                   </div>
                   <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
                     <iframe
-                      src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=500&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=false&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&symbol=CRYPTOCAP%3ABTC.D"
+                      src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=500&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&symbol=CRYPTOCAP%3ABTC.D&hide_top_toolbar=false&disabled_features=[]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22]"
                       width="100%"
                       height="500"
                       frameBorder="0"
-                      allowtransparency="true"
+                      allowTransparency={true}
                       scrolling="no"
                       style={{ border: 'none' }}
                     />
@@ -314,11 +314,11 @@ export default function TopChartsPage() {
                   </div>
                   <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
                     <iframe
-                      src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=500&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=false&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&symbol=CRYPTOCAP%3AETH.D"
+                      src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=500&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&symbol=CRYPTOCAP%3AETH.D&hide_top_toolbar=false&disabled_features=[]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22]"
                       width="100%"
                       height="500"
                       frameBorder="0"
-                      allowtransparency="true"
+                      allowTransparency={true}
                       scrolling="no"
                       style={{ border: 'none' }}
                     />
@@ -345,11 +345,11 @@ export default function TopChartsPage() {
                   </div>
                   <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
                     <iframe
-                      src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=500&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=false&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&symbol=CRYPTOCAP%3AOTHERS.D"
+                      src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=500&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&symbol=CRYPTOCAP%3AOTHERS.D&hide_top_toolbar=false&disabled_features=[]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22]"
                       width="100%"
                       height="500"
                       frameBorder="0"
-                      allowtransparency="true"
+                      allowTransparency={true}
                       scrolling="no"
                       style={{ border: 'none' }}
                     />
