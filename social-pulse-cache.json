@@ -1,60 +1,60 @@
 {
   "tickers": [
     {
-      "symbol": "FARTCOIN",
-      "sentiment": 53,
-      "mentions": 4112,
-      "lastUpdated": "2025-07-23T22:49:33.150Z"
+      "symbol": "PENGU",
+      "sentiment": 50,
+      "mentions": 1198,
+      "lastUpdated": "2025-07-24T16:25:20.761Z"
     },
     {
       "symbol": "MOODENG",
-      "sentiment": 52,
-      "mentions": 2762,
-      "lastUpdated": "2025-07-23T22:49:33.150Z"
-    },
-    {
-      "symbol": "JESUS",
-      "sentiment": 50,
-      "mentions": 2381,
-      "lastUpdated": "2025-07-23T22:49:33.150Z"
-    },
-    {
-      "symbol": "CHILLGUY",
-      "sentiment": 49,
-      "mentions": 1255,
-      "lastUpdated": "2025-07-23T22:49:33.150Z"
-    },
-    {
-      "symbol": "PENGU",
-      "sentiment": 47,
-      "mentions": 1726,
-      "lastUpdated": "2025-07-23T22:49:33.150Z"
+      "sentiment": 45,
+      "mentions": 1052,
+      "lastUpdated": "2025-07-24T16:25:20.761Z"
     },
     {
       "symbol": "TRUMP",
       "sentiment": 44,
-      "mentions": 4779,
-      "lastUpdated": "2025-07-23T22:49:33.150Z"
+      "mentions": 1532,
+      "lastUpdated": "2025-07-24T16:25:20.761Z"
     },
     {
-      "symbol": "NORMIE",
-      "sentiment": 44,
-      "mentions": 2192,
-      "lastUpdated": "2025-07-23T22:49:33.150Z"
+      "symbol": "POPCAT",
+      "sentiment": 42,
+      "mentions": 3959,
+      "lastUpdated": "2025-07-24T16:25:20.761Z"
     },
     {
-      "symbol": "MYRO",
+      "symbol": "JESUS",
+      "sentiment": 42,
+      "mentions": 4932,
+      "lastUpdated": "2025-07-24T16:25:20.761Z"
+    },
+    {
+      "symbol": "GOAT",
+      "sentiment": 41,
+      "mentions": 5908,
+      "lastUpdated": "2025-07-24T16:25:20.761Z"
+    },
+    {
+      "symbol": "BONK",
       "sentiment": 39,
-      "mentions": 4595,
-      "lastUpdated": "2025-07-23T22:49:33.150Z"
+      "mentions": 4542,
+      "lastUpdated": "2025-07-24T16:25:20.761Z"
     },
     {
-      "symbol": "ELON",
-      "sentiment": 38,
-      "mentions": 2989,
-      "lastUpdated": "2025-07-23T22:49:33.150Z"
+      "symbol": "HYPE",
+      "sentiment": 39,
+      "mentions": 5255,
+      "lastUpdated": "2025-07-24T16:25:20.761Z"
+    },
+    {
+      "symbol": "BODEN",
+      "sentiment": 39,
+      "mentions": 4295,
+      "lastUpdated": "2025-07-24T16:25:20.761Z"
     }
   ],
-  "lastUpdated": "2025-07-23T22:49:33.150Z",
-  "nextUpdate": "2025-07-24T01:49:33.150Z"
+  "lastUpdated": "2025-07-24T16:25:20.760Z",
+  "nextUpdate": "2025-07-24T19:25:20.760Z"
 }

@@ -279,6 +279,22 @@ export default function BaseSection() {
           
           <div className="grid grid-cols-1 gap-3">
             <button
+              onClick={() => openSecureLink('https://x.com/BaseDailyTK')}
+              className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+            >
+              <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">Base Daily TK</div>
+              <div className="text-xs text-crypto-silver">@BaseDailyTK - Daily BASE network updates and insights</div>
+            </button>
+            
+            <button
+              onClick={() => openSecureLink('https://x.com/MemesOnBase')}
+              className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+            >
+              <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">Memes On Base</div>
+              <div className="text-xs text-crypto-silver">@MemesOnBase - BASE network meme culture and community</div>
+            </button>
+            
+            <button
               onClick={() => openSecureLink('https://x.com/MemesOnBase_')}
               className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
             >
