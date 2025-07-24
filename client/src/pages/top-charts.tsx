@@ -50,17 +50,28 @@ export default function TopChartsPage() {
               {/* Bitcoin Chart */}
               <Suspense fallback={<SectionLoadingState title="Bitcoin Chart" />}>
                 <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <h3 className="text-lg font-semibold text-orange-400">Bitcoin</h3>
-                    <Badge variant="outline" className="bg-orange-500/20 text-orange-300 border-orange-500/30">
-                      BTC
-                    </Badge>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <h3 className="text-lg font-semibold text-orange-400">Bitcoin</h3>
+                      <Badge variant="outline" className="bg-orange-500/20 text-orange-300 border-orange-500/30">
+                        BTC
+                      </Badge>
+                    </div>
+                    <button
+                      onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=BINANCE%3ABTCUSDT')}
+                      className="text-orange-400 hover:text-orange-300 text-xs sm:text-sm"
+                    >
+                      Open Full View →
+                    </button>
                   </div>
                   <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
                     <iframe
-                      {...getSecureIframeProps("https://s.tradingview.com/widgetembed/?frameElementId=tradingview_bitcoin&symbol=BINANCE%3ABTCUSDT&interval=1D&hidesidetoolbar=1&hidetoptoolbar=1&symboledit=0&saveimage=0&toolbarbg=0a0a0a&studies=%5B%5D&hideideas=1&theme=dark&style=1&timezone=Etc%2FUTC&studies_overrides=%7B%7D&overrides=%7B%7D&enabled_features=%5B%5D&disabled_features=%5B%5D&locale=en&utm_source=crypto-track-pro&utm_medium=widget_new&utm_campaign=chart&utm_term=BINANCE%3ABTCUSDT")}
+                      src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=500&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=false&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&symbol=BINANCE%3ABTCUSDT"
                       width="100%"
-                      height="400"
+                      height="500"
+                      frameBorder="0"
+                      allowtransparency="true"
+                      scrolling="no"
                       style={{ border: 'none' }}
                     />
                   </div>
@@ -70,17 +81,28 @@ export default function TopChartsPage() {
               {/* Ethereum Chart */}
               <Suspense fallback={<SectionLoadingState title="Ethereum Chart" />}>
                 <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <h3 className="text-lg font-semibold text-blue-400">Ethereum</h3>
-                    <Badge variant="outline" className="bg-blue-500/20 text-blue-300 border-blue-500/30">
-                      ETH
-                    </Badge>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <h3 className="text-lg font-semibold text-blue-400">Ethereum</h3>
+                      <Badge variant="outline" className="bg-blue-500/20 text-blue-300 border-blue-500/30">
+                        ETH
+                      </Badge>
+                    </div>
+                    <button
+                      onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=BINANCE%3AETHUSDT')}
+                      className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm"
+                    >
+                      Open Full View →
+                    </button>
                   </div>
                   <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
                     <iframe
-                      {...getSecureIframeProps("https://s.tradingview.com/widgetembed/?frameElementId=tradingview_ethereum&symbol=BINANCE%3AETHUSDT&interval=1D&hidesidetoolbar=1&hidetoptoolbar=1&symboledit=0&saveimage=0&toolbarbg=0a0a0a&studies=%5B%5D&hideideas=1&theme=dark&style=1&timezone=Etc%2FUTC&studies_overrides=%7B%7D&overrides=%7B%7D&enabled_features=%5B%5D&disabled_features=%5B%5D&locale=en&utm_source=crypto-track-pro&utm_medium=widget_new&utm_campaign=chart&utm_term=BINANCE%3AETHUSDT")}
+                      src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=500&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=false&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&symbol=BINANCE%3AETHUSDT"
                       width="100%"
-                      height="400"
+                      height="500"
+                      frameBorder="0"
+                      allowtransparency="true"
+                      scrolling="no"
                       style={{ border: 'none' }}
                     />
                   </div>
@@ -90,17 +112,28 @@ export default function TopChartsPage() {
               {/* XRP Chart */}
               <Suspense fallback={<SectionLoadingState title="XRP Chart" />}>
                 <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <h3 className="text-lg font-semibold text-gray-400">XRP</h3>
-                    <Badge variant="outline" className="bg-gray-500/20 text-gray-300 border-gray-500/30">
-                      XRP
-                    </Badge>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <h3 className="text-lg font-semibold text-gray-400">XRP</h3>
+                      <Badge variant="outline" className="bg-gray-500/20 text-gray-300 border-gray-500/30">
+                        XRP
+                      </Badge>
+                    </div>
+                    <button
+                      onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=BINANCE%3AXRPUSDT')}
+                      className="text-gray-400 hover:text-gray-300 text-xs sm:text-sm"
+                    >
+                      Open Full View →
+                    </button>
                   </div>
                   <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
                     <iframe
-                      {...getSecureIframeProps("https://s.tradingview.com/widgetembed/?frameElementId=tradingview_xrp&symbol=BINANCE%3AXRPUSDT&interval=1D&hidesidetoolbar=1&hidetoptoolbar=1&symboledit=0&saveimage=0&toolbarbg=0a0a0a&studies=%5B%5D&hideideas=1&theme=dark&style=1&timezone=Etc%2FUTC&studies_overrides=%7B%7D&overrides=%7B%7D&enabled_features=%5B%5D&disabled_features=%5B%5D&locale=en&utm_source=crypto-track-pro&utm_medium=widget_new&utm_campaign=chart&utm_term=BINANCE%3AXRPUSDT")}
+                      src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=500&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=false&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&symbol=BINANCE%3AXRPUSDT"
                       width="100%"
-                      height="400"
+                      height="500"
+                      frameBorder="0"
+                      allowtransparency="true"
+                      scrolling="no"
                       style={{ border: 'none' }}
                     />
                   </div>
@@ -110,17 +143,28 @@ export default function TopChartsPage() {
               {/* Solana Chart */}
               <Suspense fallback={<SectionLoadingState title="Solana Chart" />}>
                 <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <h3 className="text-lg font-semibold text-purple-400">Solana</h3>
-                    <Badge variant="outline" className="bg-purple-500/20 text-purple-300 border-purple-500/30">
-                      SOL
-                    </Badge>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <h3 className="text-lg font-semibold text-purple-400">Solana</h3>
+                      <Badge variant="outline" className="bg-purple-500/20 text-purple-300 border-purple-500/30">
+                        SOL
+                      </Badge>
+                    </div>
+                    <button
+                      onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=BINANCE%3ASOLUSDT')}
+                      className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm"
+                    >
+                      Open Full View →
+                    </button>
                   </div>
                   <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
                     <iframe
-                      {...getSecureIframeProps("https://s.tradingview.com/widgetembed/?frameElementId=tradingview_solana&symbol=BINANCE%3ASOLUSDT&interval=1D&hidesidetoolbar=1&hidetoptoolbar=1&symboledit=0&saveimage=0&toolbarbg=0a0a0a&studies=%5B%5D&hideideas=1&theme=dark&style=1&timezone=Etc%2FUTC&studies_overrides=%7B%7D&overrides=%7B%7D&enabled_features=%5B%5D&disabled_features=%5B%5D&locale=en&utm_source=crypto-track-pro&utm_medium=widget_new&utm_campaign=chart&utm_term=BINANCE%3ASOLUSDT")}
+                      src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=500&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=false&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&symbol=BINANCE%3ASOLUSDT"
                       width="100%"
-                      height="400"
+                      height="500"
+                      frameBorder="0"
+                      allowtransparency="true"
+                      scrolling="no"
                       style={{ border: 'none' }}
                     />
                   </div>
@@ -130,17 +174,28 @@ export default function TopChartsPage() {
               {/* BNB Chart */}
               <Suspense fallback={<SectionLoadingState title="BNB Chart" />}>
                 <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <h3 className="text-lg font-semibold text-yellow-400">BNB</h3>
-                    <Badge variant="outline" className="bg-yellow-500/20 text-yellow-300 border-yellow-500/30">
-                      BNB
-                    </Badge>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <h3 className="text-lg font-semibold text-yellow-400">BNB</h3>
+                      <Badge variant="outline" className="bg-yellow-500/20 text-yellow-300 border-yellow-500/30">
+                        BNB
+                      </Badge>
+                    </div>
+                    <button
+                      onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=BINANCE%3ABNBUSDT')}
+                      className="text-yellow-400 hover:text-yellow-300 text-xs sm:text-sm"
+                    >
+                      Open Full View →
+                    </button>
                   </div>
                   <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
                     <iframe
-                      {...getSecureIframeProps("https://s.tradingview.com/widgetembed/?frameElementId=tradingview_bnb&symbol=BINANCE%3ABNBUSDT&interval=1D&hidesidetoolbar=1&hidetoptoolbar=1&symboledit=0&saveimage=0&toolbarbg=0a0a0a&studies=%5B%5D&hideideas=1&theme=dark&style=1&timezone=Etc%2FUTC&studies_overrides=%7B%7D&overrides=%7B%7D&enabled_features=%5B%5D&disabled_features=%5B%5D&locale=en&utm_source=crypto-track-pro&utm_medium=widget_new&utm_campaign=chart&utm_term=BINANCE%3ABNBUSDT")}
+                      src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=500&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=false&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&symbol=BINANCE%3ABNBUSDT"
                       width="100%"
-                      height="400"
+                      height="500"
+                      frameBorder="0"
+                      allowtransparency="true"
+                      scrolling="no"
                       style={{ border: 'none' }}
                     />
                   </div>
@@ -150,17 +205,28 @@ export default function TopChartsPage() {
               {/* DOGE Chart */}
               <Suspense fallback={<SectionLoadingState title="DOGE Chart" />}>
                 <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <h3 className="text-lg font-semibold text-orange-400">DOGE</h3>
-                    <Badge variant="outline" className="bg-orange-500/20 text-orange-300 border-orange-500/30">
-                      DOGE
-                    </Badge>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <h3 className="text-lg font-semibold text-orange-400">DOGE</h3>
+                      <Badge variant="outline" className="bg-orange-500/20 text-orange-300 border-orange-500/30">
+                        DOGE
+                      </Badge>
+                    </div>
+                    <button
+                      onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=BINANCE%3ADOGEUSDT')}
+                      className="text-orange-400 hover:text-orange-300 text-xs sm:text-sm"
+                    >
+                      Open Full View →
+                    </button>
                   </div>
                   <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
                     <iframe
-                      {...getSecureIframeProps("https://s.tradingview.com/widgetembed/?frameElementId=tradingview_doge&symbol=BINANCE%3ADOGEUSDT&interval=1D&hidesidetoolbar=1&hidetoptoolbar=1&symboledit=0&saveimage=0&toolbarbg=0a0a0a&studies=%5B%5D&hideideas=1&theme=dark&style=1&timezone=Etc%2FUTC&studies_overrides=%7B%7D&overrides=%7B%7D&enabled_features=%5B%5D&disabled_features=%5B%5D&locale=en&utm_source=crypto-track-pro&utm_medium=widget_new&utm_campaign=chart&utm_term=BINANCE%3ADOGEUSDT")}
+                      src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=500&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=false&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&symbol=BINANCE%3ADOGEUSDT"
                       width="100%"
-                      height="400"
+                      height="500"
+                      frameBorder="0"
+                      allowtransparency="true"
+                      scrolling="no"
                       style={{ border: 'none' }}
                     />
                   </div>
@@ -170,17 +236,28 @@ export default function TopChartsPage() {
               {/* PENGU Chart */}
               <Suspense fallback={<SectionLoadingState title="PENGU Chart" />}>
                 <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <h3 className="text-lg font-semibold text-cyan-400">PENGU</h3>
-                    <Badge variant="outline" className="bg-cyan-500/20 text-cyan-300 border-cyan-500/30">
-                      PENGU
-                    </Badge>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <h3 className="text-lg font-semibold text-cyan-400">PENGU</h3>
+                      <Badge variant="outline" className="bg-cyan-500/20 text-cyan-300 border-cyan-500/30">
+                        PENGU
+                      </Badge>
+                    </div>
+                    <button
+                      onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=BINANCE%3APENGUUSDT')}
+                      className="text-cyan-400 hover:text-cyan-300 text-xs sm:text-sm"
+                    >
+                      Open Full View →
+                    </button>
                   </div>
                   <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
                     <iframe
-                      {...getSecureIframeProps("https://s.tradingview.com/widgetembed/?frameElementId=tradingview_pengu&symbol=BINANCE%3APENGUUSDT&interval=1D&hidesidetoolbar=1&hidetoptoolbar=1&symboledit=0&saveimage=0&toolbarbg=0a0a0a&studies=%5B%5D&hideideas=1&theme=dark&style=1&timezone=Etc%2FUTC&studies_overrides=%7B%7D&overrides=%7B%7D&enabled_features=%5B%5D&disabled_features=%5B%5D&locale=en&utm_source=crypto-track-pro&utm_medium=widget_new&utm_campaign=chart&utm_term=BINANCE%3APENGUUSDT")}
+                      src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=500&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=false&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&symbol=BINANCE%3APENGUUSDT"
                       width="100%"
-                      height="400"
+                      height="500"
+                      frameBorder="0"
+                      allowtransparency="true"
+                      scrolling="no"
                       style={{ border: 'none' }}
                     />
                   </div>
@@ -190,17 +267,28 @@ export default function TopChartsPage() {
               {/* BTC Dominance Chart */}
               <Suspense fallback={<SectionLoadingState title="BTC Dominance Chart" />}>
                 <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <h3 className="text-lg font-semibold text-orange-400">BTC Dominance</h3>
-                    <Badge variant="outline" className="bg-orange-500/20 text-orange-300 border-orange-500/30">
-                      BTC.D
-                    </Badge>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <h3 className="text-lg font-semibold text-orange-400">BTC Dominance</h3>
+                      <Badge variant="outline" className="bg-orange-500/20 text-orange-300 border-orange-500/30">
+                        BTC.D
+                      </Badge>
+                    </div>
+                    <button
+                      onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=CRYPTOCAP%3ABTC.D')}
+                      className="text-orange-400 hover:text-orange-300 text-xs sm:text-sm"
+                    >
+                      Open Full View →
+                    </button>
                   </div>
                   <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
                     <iframe
-                      {...getSecureIframeProps("https://s.tradingview.com/widgetembed/?frameElementId=tradingview_btc_dominance&symbol=CRYPTOCAP%3ABTC.D&interval=1D&hidesidetoolbar=1&hidetoptoolbar=1&symboledit=0&saveimage=0&toolbarbg=0a0a0a&studies=%5B%5D&hideideas=1&theme=dark&style=1&timezone=Etc%2FUTC&studies_overrides=%7B%7D&overrides=%7B%7D&enabled_features=%5B%5D&disabled_features=%5B%5D&locale=en&utm_source=crypto-track-pro&utm_medium=widget_new&utm_campaign=chart&utm_term=CRYPTOCAP%3ABTC.D")}
+                      src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=500&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=false&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&symbol=CRYPTOCAP%3ABTC.D"
                       width="100%"
-                      height="400"
+                      height="500"
+                      frameBorder="0"
+                      allowtransparency="true"
+                      scrolling="no"
                       style={{ border: 'none' }}
                     />
                   </div>
@@ -210,17 +298,28 @@ export default function TopChartsPage() {
               {/* ETH Dominance Chart */}
               <Suspense fallback={<SectionLoadingState title="ETH Dominance Chart" />}>
                 <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <h3 className="text-lg font-semibold text-blue-400">ETH Dominance</h3>
-                    <Badge variant="outline" className="bg-blue-500/20 text-blue-300 border-blue-500/30">
-                      ETH.D
-                    </Badge>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <h3 className="text-lg font-semibold text-blue-400">ETH Dominance</h3>
+                      <Badge variant="outline" className="bg-blue-500/20 text-blue-300 border-blue-500/30">
+                        ETH.D
+                      </Badge>
+                    </div>
+                    <button
+                      onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=CRYPTOCAP%3AETH.D')}
+                      className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm"
+                    >
+                      Open Full View →
+                    </button>
                   </div>
                   <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
                     <iframe
-                      {...getSecureIframeProps("https://s.tradingview.com/widgetembed/?frameElementId=tradingview_eth_dominance&symbol=CRYPTOCAP%3AETH.D&interval=1D&hidesidetoolbar=1&hidetoptoolbar=1&symboledit=0&saveimage=0&toolbarbg=0a0a0a&studies=%5B%5D&hideideas=1&theme=dark&style=1&timezone=Etc%2FUTC&studies_overrides=%7B%7D&overrides=%7B%7D&enabled_features=%5B%5D&disabled_features=%5B%5D&locale=en&utm_source=crypto-track-pro&utm_medium=widget_new&utm_campaign=chart&utm_term=CRYPTOCAP%3AETH.D")}
+                      src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=500&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=false&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&symbol=CRYPTOCAP%3AETH.D"
                       width="100%"
-                      height="400"
+                      height="500"
+                      frameBorder="0"
+                      allowtransparency="true"
+                      scrolling="no"
                       style={{ border: 'none' }}
                     />
                   </div>
@@ -230,17 +329,28 @@ export default function TopChartsPage() {
               {/* OTHERS Dominance Chart */}
               <Suspense fallback={<SectionLoadingState title="OTHERS Dominance Chart" />}>
                 <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <h3 className="text-lg font-semibold text-purple-400">OTHERS Dominance</h3>
-                    <Badge variant="outline" className="bg-purple-500/20 text-purple-300 border-purple-500/30">
-                      OTHERS.D
-                    </Badge>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <h3 className="text-lg font-semibold text-purple-400">OTHERS Dominance</h3>
+                      <Badge variant="outline" className="bg-purple-500/20 text-purple-300 border-purple-500/30">
+                        OTHERS.D
+                      </Badge>
+                    </div>
+                    <button
+                      onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=CRYPTOCAP%3AOTHERS.D')}
+                      className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm"
+                    >
+                      Open Full View →
+                    </button>
                   </div>
                   <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
                     <iframe
-                      {...getSecureIframeProps("https://s.tradingview.com/widgetembed/?frameElementId=tradingview_others_dominance&symbol=CRYPTOCAP%3AOTHERS.D&interval=1D&hidesidetoolbar=1&hidetoptoolbar=1&symboledit=0&saveimage=0&toolbarbg=0a0a0a&studies=%5B%5D&hideideas=1&theme=dark&style=1&timezone=Etc%2FUTC&studies_overrides=%7B%7D&overrides=%7B%7D&enabled_features=%5B%5D&disabled_features=%5B%5D&locale=en&utm_source=crypto-track-pro&utm_medium=widget_new&utm_campaign=chart&utm_term=CRYPTOCAP%3AOTHERS.D")}
+                      src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=500&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=false&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&symbol=CRYPTOCAP%3AOTHERS.D"
                       width="100%"
-                      height="400"
+                      height="500"
+                      frameBorder="0"
+                      allowtransparency="true"
+                      scrolling="no"
                       style={{ border: 'none' }}
                     />
                   </div>
