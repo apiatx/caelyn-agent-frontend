@@ -347,10 +347,12 @@ export default function CryptoStocksSection() {
 
         <div className="w-full">
           <iframe
-            src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_stocks&symbol=&interval=1D&hidesidetoolbar=0&hidetoptoolbar=0&symboledit=1&saveimage=1&toolbarbg=0a0a0a&studies=%5B%5D&hideideas=1&theme=dark&style=1&timezone=Etc%2FUTC&studies_overrides=%7B%7D&overrides=%7B%7D&enabled_features=%5B%5D&disabled_features=%5B%5D&locale=en&utm_source=crypto-track-pro&utm_medium=widget_new&utm_campaign=chart"
+            src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=false&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC"
             className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
-            title="TradingView Chart"
-            style={{ border: 'none' }}
+            title="TradingView Advanced Chart"
+            frameBorder="0"
+            allowTransparency={true}
+            scrolling="no"
           />
         </div>
       </GlassCard>
