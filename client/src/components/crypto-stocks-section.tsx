@@ -187,6 +187,30 @@ export default function CryptoStocksSection() {
             <div className="text-sm font-medium text-white group-hover:text-blue-300">Canton Meow</div>
             <div className="text-xs text-crypto-silver">@cantonmeow</div>
           </button>
+          
+          <button
+            onClick={() => openInNewTab('https://x.com/donaldjdean')}
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-blue-300">Donald J Dean</div>
+            <div className="text-xs text-crypto-silver">@donaldjdean</div>
+          </button>
+          
+          <button
+            onClick={() => openInNewTab('https://x.com/ACInvestorBlog')}
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-blue-300">AC Investor Blog</div>
+            <div className="text-xs text-crypto-silver">@ACInvestorBlog</div>
+          </button>
+          
+          <button
+            onClick={() => openInNewTab('https://x.com/CestrianInc')}
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-blue-300">Cestrian Inc</div>
+            <div className="text-xs text-crypto-silver">@CestrianInc</div>
+          </button>
         </div>
       </GlassCard>
 
