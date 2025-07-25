@@ -502,6 +502,18 @@ export default function AlphaSection() {
                 <h5 className="text-gray-400 font-semibold text-sm">stacy_muur</h5>
               </div>
             </button>
+
+            <button
+              onClick={() => openInNewTab('https://x.com/martypartymusic')}
+              className="p-3 bg-fuchsia-500/10 border border-fuchsia-500/20 rounded-lg hover:bg-fuchsia-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-6 h-6 bg-fuchsia-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">𝕏</span>
+                </div>
+                <h5 className="text-fuchsia-400 font-semibold text-sm">martypartymusic</h5>
+              </div>
+            </button>
           </div>
         </div>
 
