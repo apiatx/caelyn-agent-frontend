@@ -50,7 +50,11 @@ export default function AbstractSection() {
         <div className="w-full">
           <iframe
             {...getSecureIframeProps('https://dexscreener.com/abstract?theme=dark', 'DexScreener Abstract')}
-            className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
+            className="w-full h-[800px] rounded-lg border border-crypto-silver/20"
+            style={{
+              background: '#000000',
+              colorScheme: 'dark'
+            }}
           />
         </div>
       </GlassCard>
