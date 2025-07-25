@@ -218,7 +218,7 @@ export default function AltsPage() {
             </div>
             <div className="w-full">
               <iframe
-                src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&symbol=ETHUSD&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]"
+                src="https://www.tradingview.com/chart/?symbol=ETHUSD&utm_source=&utm_medium=widget_new&utm_campaign=chart&utm_term=ETHUSD"
                 className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
                 title="TradingView Ethereum Chart"
                 sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
@@ -247,7 +247,7 @@ export default function AltsPage() {
             </div>
             <div className="w-full">
               <iframe
-                src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&symbol=SOLUSD&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]"
+                src="https://www.tradingview.com/chart/?symbol=SOLUSD&utm_source=&utm_medium=widget_new&utm_campaign=chart&utm_term=SOLUSD"
                 className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
                 title="TradingView Solana Chart"
                 sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
@@ -276,7 +276,7 @@ export default function AltsPage() {
             </div>
             <div className="w-full">
               <iframe
-                src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&symbol=BITSTAMP%3AXRPUSD&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]"
+                src="https://www.tradingview.com/chart/?symbol=BITSTAMP%3AXRPUSD&utm_source=&utm_medium=widget_new&utm_campaign=chart&utm_term=XRPUSD"
                 className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
                 title="TradingView XRP Chart"
                 sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
@@ -305,7 +305,7 @@ export default function AltsPage() {
             </div>
             <div className="w-full">
               <iframe
-                src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&symbol=CRYPTO%3APENGUPUDUSD&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]"
+                src="https://www.tradingview.com/chart/?symbol=CRYPTO%3APENGUPUDUSD&utm_source=&utm_medium=widget_new&utm_campaign=chart&utm_term=PENGU"
                 className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
                 title="TradingView PENGU Chart"
                 sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
@@ -334,7 +334,7 @@ export default function AltsPage() {
             </div>
             <div className="w-full">
               <iframe
-                src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&symbol=CRYPTOCAP%3AETH.D&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]"
+                src="https://www.tradingview.com/chart/?symbol=CRYPTOCAP%3AETH.D&utm_source=&utm_medium=widget_new&utm_campaign=chart&utm_term=ETHD"
                 className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
                 title="TradingView ETH Dominance Chart"
                 sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
@@ -363,7 +363,7 @@ export default function AltsPage() {
             </div>
             <div className="w-full">
               <iframe
-                src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&symbol=CRYPTOCAP%3AOTHERS.D&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]"
+                src="https://www.tradingview.com/chart/?symbol=CRYPTOCAP%3AOTHERS.D&utm_source=&utm_medium=widget_new&utm_campaign=chart&utm_term=OTHERSD"
                 className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
                 title="TradingView OTHERS Dominance Chart"
                 sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
