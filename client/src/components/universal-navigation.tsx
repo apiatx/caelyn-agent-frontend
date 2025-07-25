@@ -1,4 +1,4 @@
-import { Activity, BarChart3, TrendingUp, ChartLine, Brain, Zap, DollarSign, Building2 } from "lucide-react";
+import { Activity, BarChart3, TrendingUp, ChartLine, Brain, Zap, DollarSign, Building2, Layers } from "lucide-react";
 import { Card } from "@/components/ui/card";
 
 // Glass card component
@@ -93,6 +93,16 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
             }`}
           >
             <Brain className="w-4 h-4 mr-2 inline" />Hype
+          </button>
+          <button
+            onClick={() => navigateTo("/abstract")}
+            className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
+              isActive("abstract")
+                ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                : "hover:bg-white/5 text-crypto-silver"
+            }`}
+          >
+            <Layers className="w-4 h-4 mr-2 inline" />Abstract
           </button>
           <button
             onClick={() => navigateTo("/defi")}
@@ -198,6 +208,16 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
               }`}
             >
               <Brain className="w-4 h-4 mr-1 inline" />Hype
+            </button>
+            <button
+              onClick={() => navigateTo("/abstract")}
+              className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+                isActive("abstract")
+                  ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                  : "hover:bg-white/5 text-crypto-silver"
+              }`}
+            >
+              <Layers className="w-4 h-4 mr-1 inline" />Abstract
             </button>
             <button
               onClick={() => navigateTo("/defi")}
