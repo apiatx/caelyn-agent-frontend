@@ -149,29 +149,7 @@ export default function BaseSectionSafe() {
         />
       </GlassCard>
 
-      {/* Terminal.co Integration */}
-      <GlassCard className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-6 h-6 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full flex items-center justify-center">
-            <span className="text-white text-xs font-bold">T</span>
-          </div>
-          <h3 className="text-xl font-semibold text-white">Terminal.co Base Analytics</h3>
-          <span className="px-2 py-1 bg-cyan-500/20 text-cyan-400 text-xs rounded-full font-medium">
-            ANALYTICS
-          </span>
-        </div>
-        <div className="bg-gradient-to-br from-cyan-500/10 to-blue-600/10 border border-cyan-500/20 rounded-lg p-6 text-center">
-          <p className="text-crypto-silver mb-4">
-            Professional BASE network analytics and trading data
-          </p>
-          <SafeLink 
-            href="https://www.terminal.co/?tab=base"
-            className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold rounded-lg transition-all duration-300 transform hover:scale-105"
-          >
-            Open Terminal.co BASE Analytics
-          </SafeLink>
-        </div>
-      </GlassCard>
+
 
       {/* Checkr.social */}
       <GlassCard className="p-6">
