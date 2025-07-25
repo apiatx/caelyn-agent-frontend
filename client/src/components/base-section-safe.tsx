@@ -159,17 +159,18 @@ export default function BaseSectionSafe() {
           <span className="px-2 py-1 bg-cyan-500/20 text-cyan-400 text-xs rounded-full font-medium">
             ANALYTICS
           </span>
+        </div>
+        <div className="bg-gradient-to-br from-cyan-500/10 to-blue-600/10 border border-cyan-500/20 rounded-lg p-6 text-center">
+          <p className="text-crypto-silver mb-4">
+            Professional BASE network analytics and trading data
+          </p>
           <SafeLink 
             href="https://www.terminal.co/?tab=base"
-            className="ml-auto text-cyan-400 hover:text-cyan-300 text-xs"
+            className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold rounded-lg transition-all duration-300 transform hover:scale-105"
           >
-            Open in New Tab →
+            Open Terminal.co BASE Analytics
           </SafeLink>
         </div>
-        <SafeIframe 
-          src="https://www.terminal.co/?tab=base"
-          title="Terminal.co Base Analytics"
-        />
       </GlassCard>
 
       {/* Checkr.social */}
