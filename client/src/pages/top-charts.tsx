@@ -4,45 +4,7 @@ import hippoImage from "@assets/image_1753204691716.png";
 import { SectionLoadingState } from "@/components/loading-screen";
 import { openSecureLink, getSecureIframeProps } from "@/utils/security";
 import { UniversalNavigation } from "@/components/universal-navigation";
-import { TrendingUp, Activity, BarChart3, Target, Zap, PieChart } from "lucide-react";
 
-// Chart Toolbar Component
-const ChartToolbar = ({ color = "orange" }: { color?: string }) => {
-  const colorClasses = {
-    orange: "from-orange-500/10 to-orange-600/10 border-orange-500/20 hover:border-orange-400/40 text-orange-300",
-    blue: "from-blue-500/10 to-blue-600/10 border-blue-500/20 hover:border-blue-400/40 text-blue-300",
-    purple: "from-purple-500/10 to-purple-600/10 border-purple-500/20 hover:border-purple-400/40 text-purple-300",
-    green: "from-green-500/10 to-green-600/10 border-green-500/20 hover:border-green-400/40 text-green-300",
-    yellow: "from-yellow-500/10 to-yellow-600/10 border-yellow-500/20 hover:border-yellow-400/40 text-yellow-300",
-    red: "from-red-500/10 to-red-600/10 border-red-500/20 hover:border-red-400/40 text-red-300",
-    cyan: "from-cyan-500/10 to-cyan-600/10 border-cyan-500/20 hover:border-cyan-400/40 text-cyan-300"
-  };
-
-  const indicators = [
-    { name: "MA", icon: TrendingUp, title: "Moving Average" },
-    { name: "RSI", icon: Activity, title: "Relative Strength Index" },
-    { name: "MACD", icon: BarChart3, title: "MACD Indicator" },
-    { name: "BB", icon: Target, title: "Bollinger Bands" },
-    { name: "Vol", icon: PieChart, title: "Volume" },
-    { name: "Fib", icon: Zap, title: "Fibonacci" }
-  ];
-
-  return (
-    <div className="flex flex-col space-y-2 w-16 lg:w-20">
-      <div className="text-xs font-semibold text-white/60 mb-2 text-center">Tools</div>
-      {indicators.map((indicator, index) => (
-        <button
-          key={index}
-          className={`bg-gradient-to-br ${colorClasses[color as keyof typeof colorClasses]} border rounded-lg p-2 lg:p-3 transition-all duration-300 hover:scale-105 group flex flex-col items-center justify-center space-y-1`}
-          title={indicator.title}
-        >
-          <indicator.icon className="w-3 h-3 lg:w-4 lg:h-4" />
-          <span className="text-xs font-medium">{indicator.name}</span>
-        </button>
-      ))}
-    </div>
-  );
-};
 
 export default function TopChartsPage() {
   return (
@@ -109,7 +71,7 @@ export default function TopChartsPage() {
                       className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
                       title="Bitcoin Advanced Chart"
                       frameBorder="0"
-                      allowTransparency={true}
+                      allowtransparency="true"
                       scrolling="no"
                     />
                   </div>
@@ -134,20 +96,14 @@ export default function TopChartsPage() {
                     </button>
                   </div>
                   <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
-                    <div className="flex gap-3 p-3">
-                      <ChartToolbar color="blue" />
-                      <div className="flex-1">
-                        <iframe
-                          src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_eth&symbol=BINANCE%3AETHUSDT&interval=1D&hidesidetoolbar=0&hidetoptoolbar=0&symboledit=1&saveimage=1&toolbarbg=0a0a0a&studies=[]&hideideas=1&theme=dark&style=1&timezone=Etc%2FUTC&studies_overrides={}&overrides={}&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22,%22timeframes_toolbar%22,%22show_interval_dialog_on_key_press%22]&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22,%22volume_panel%22]&locale=en&utm_source=cryptohippo.com&utm_medium=widget&utm_campaign=chart&utm_term=BINANCE%3AETHUSDT"
-                          width="100%"
-                          height="500"
-                          frameBorder="0"
-                          allowTransparency={true}
-                          scrolling="no"
-                          style={{ border: 'none' }}
-                        />
-                      </div>
-                    </div>
+                    <iframe
+                      src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]&symbol=BINANCE%3AETHUSDT"
+                      className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+                      title="Ethereum Advanced Chart"
+                      frameBorder="0"
+                      allowtransparency="true"
+                      scrolling="no"
+                    />
                   </div>
                 </div>
               </Suspense>
@@ -170,20 +126,14 @@ export default function TopChartsPage() {
                     </button>
                   </div>
                   <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
-                    <div className="flex gap-3 p-3">
-                      <ChartToolbar color="cyan" />
-                      <div className="flex-1">
-                        <iframe
-                          src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_xrp&symbol=BINANCE%3AXRPUSDT&interval=1D&hidesidetoolbar=0&hidetoptoolbar=0&symboledit=1&saveimage=1&toolbarbg=0a0a0a&studies=[]&hideideas=1&theme=dark&style=1&timezone=Etc%2FUTC&studies_overrides={}&overrides={}&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22,%22timeframes_toolbar%22,%22show_interval_dialog_on_key_press%22]&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22,%22volume_panel%22]&locale=en&utm_source=cryptohippo.com&utm_medium=widget&utm_campaign=chart&utm_term=BINANCE%3AXRPUSDT"
-                          width="100%"
-                          height="500"
-                          frameBorder="0"
-                          allowTransparency={true}
-                          scrolling="no"
-                          style={{ border: 'none' }}
-                        />
-                      </div>
-                    </div>
+                    <iframe
+                      src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]&symbol=BINANCE%3AXRPUSDT"
+                      className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+                      title="XRP Advanced Chart"
+                      frameBorder="0"
+                      allowtransparency="true"
+                      scrolling="no"
+                    />
                   </div>
                 </div>
               </Suspense>
@@ -206,20 +156,14 @@ export default function TopChartsPage() {
                     </button>
                   </div>
                   <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
-                    <div className="flex gap-3 p-3">
-                      <ChartToolbar color="purple" />
-                      <div className="flex-1">
-                        <iframe
-                          src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_sol&symbol=BINANCE%3ASOLUSDT&interval=1D&hidesidetoolbar=0&hidetoptoolbar=0&symboledit=1&saveimage=1&toolbarbg=0a0a0a&studies=[]&hideideas=1&theme=dark&style=1&timezone=Etc%2FUTC&studies_overrides={}&overrides={}&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22,%22timeframes_toolbar%22,%22show_interval_dialog_on_key_press%22]&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22,%22volume_panel%22]&locale=en&utm_source=cryptohippo.com&utm_medium=widget&utm_campaign=chart&utm_term=BINANCE%3ASOLUSDT"
-                          width="100%"
-                          height="500"
-                          frameBorder="0"
-                          allowTransparency={true}
-                          scrolling="no"
-                          style={{ border: 'none' }}
-                        />
-                      </div>
-                    </div>
+                    <iframe
+                      src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]&symbol=BINANCE%3ASOLUSDT"
+                      className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+                      title="Solana Advanced Chart"
+                      frameBorder="0"
+                      allowtransparency="true"
+                      scrolling="no"
+                    />
                   </div>
                 </div>
               </Suspense>
@@ -242,20 +186,14 @@ export default function TopChartsPage() {
                     </button>
                   </div>
                   <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
-                    <div className="flex gap-3 p-3">
-                      <ChartToolbar color="yellow" />
-                      <div className="flex-1">
-                        <iframe
-                          src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_bnb&symbol=BINANCE%3ABNBUSDT&interval=1D&hidesidetoolbar=0&hidetoptoolbar=0&symboledit=1&saveimage=1&toolbarbg=0a0a0a&studies=[]&hideideas=1&theme=dark&style=1&timezone=Etc%2FUTC&studies_overrides={}&overrides={}&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22,%22timeframes_toolbar%22,%22show_interval_dialog_on_key_press%22]&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22,%22volume_panel%22]&locale=en&utm_source=cryptohippo.com&utm_medium=widget&utm_campaign=chart&utm_term=BINANCE%3ABNBUSDT"
-                          width="100%"
-                          height="500"
-                          frameBorder="0"
-                          allowTransparency={true}
-                          scrolling="no"
-                          style={{ border: 'none' }}
-                        />
-                      </div>
-                    </div>
+                    <iframe
+                      src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]&symbol=BINANCE%3ABNBUSDT"
+                      className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+                      title="BNB Advanced Chart"
+                      frameBorder="0"
+                      allowtransparency="true"
+                      scrolling="no"
+                    />
                   </div>
                 </div>
               </Suspense>
@@ -278,20 +216,14 @@ export default function TopChartsPage() {
                     </button>
                   </div>
                   <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
-                    <div className="flex gap-3 p-3">
-                      <ChartToolbar color="orange" />
-                      <div className="flex-1">
-                        <iframe
-                          src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_doge&symbol=BINANCE%3ADOGEUSDT&interval=1D&hidesidetoolbar=0&hidetoptoolbar=0&symboledit=1&saveimage=1&toolbarbg=0a0a0a&studies=[]&hideideas=1&theme=dark&style=1&timezone=Etc%2FUTC&studies_overrides={}&overrides={}&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22,%22timeframes_toolbar%22,%22show_interval_dialog_on_key_press%22]&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22,%22volume_panel%22]&locale=en&utm_source=cryptohippo.com&utm_medium=widget&utm_campaign=chart&utm_term=BINANCE%3ADOGEUSDT"
-                          width="100%"
-                          height="500"
-                          frameBorder="0"
-                          allowTransparency={true}
-                          scrolling="no"
-                          style={{ border: 'none' }}
-                        />
-                      </div>
-                    </div>
+                    <iframe
+                      src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]&symbol=BINANCE%3ADOGEUSDT"
+                      className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+                      title="DOGE Advanced Chart"
+                      frameBorder="0"
+                      allowtransparency="true"
+                      scrolling="no"
+                    />
                   </div>
                 </div>
               </Suspense>
@@ -314,20 +246,14 @@ export default function TopChartsPage() {
                     </button>
                   </div>
                   <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
-                    <div className="flex gap-3 p-3">
-                      <ChartToolbar color="cyan" />
-                      <div className="flex-1">
-                        <iframe
-                          src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_pengu&symbol=BINANCE%3APENGUUSDT&interval=1D&hidesidetoolbar=0&hidetoptoolbar=0&symboledit=1&saveimage=1&toolbarbg=0a0a0a&studies=[]&hideideas=1&theme=dark&style=1&timezone=Etc%2FUTC&studies_overrides={}&overrides={}&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22,%22timeframes_toolbar%22,%22show_interval_dialog_on_key_press%22]&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22,%22volume_panel%22]&locale=en&utm_source=cryptohippo.com&utm_medium=widget&utm_campaign=chart&utm_term=BINANCE%3APENGUUSDT"
-                          width="100%"
-                          height="500"
-                          frameBorder="0"
-                          allowTransparency={true}
-                          scrolling="no"
-                          style={{ border: 'none' }}
-                        />
-                      </div>
-                    </div>
+                    <iframe
+                      src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]&symbol=BINANCE%3APENGUUSDT"
+                      className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+                      title="PENGU Advanced Chart"
+                      frameBorder="0"
+                      allowtransparency="true"
+                      scrolling="no"
+                    />
                   </div>
                 </div>
               </Suspense>
@@ -350,20 +276,14 @@ export default function TopChartsPage() {
                     </button>
                   </div>
                   <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
-                    <div className="flex gap-3 p-3">
-                      <ChartToolbar color="orange" />
-                      <div className="flex-1">
-                        <iframe
-                          src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_btcd&symbol=CRYPTOCAP%3ABTC.D&interval=1D&hidesidetoolbar=0&hidetoptoolbar=0&symboledit=1&saveimage=1&toolbarbg=0a0a0a&studies=[]&hideideas=1&theme=dark&style=1&timezone=Etc%2FUTC&studies_overrides={}&overrides={}&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22,%22timeframes_toolbar%22,%22show_interval_dialog_on_key_press%22]&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22,%22volume_panel%22]&locale=en&utm_source=cryptohippo.com&utm_medium=widget&utm_campaign=chart&utm_term=CRYPTOCAP%3ABTC.D"
-                          width="100%"
-                          height="500"
-                          frameBorder="0"
-                          allowTransparency={true}
-                          scrolling="no"
-                          style={{ border: 'none' }}
-                        />
-                      </div>
-                    </div>
+                    <iframe
+                      src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]&symbol=CRYPTOCAP%3ABTC.D"
+                      className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+                      title="BTC Dominance Advanced Chart"
+                      frameBorder="0"
+                      allowtransparency="true"
+                      scrolling="no"
+                    />
                   </div>
                 </div>
               </Suspense>
@@ -386,20 +306,14 @@ export default function TopChartsPage() {
                     </button>
                   </div>
                   <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
-                    <div className="flex gap-3 p-3">
-                      <ChartToolbar color="blue" />
-                      <div className="flex-1">
-                        <iframe
-                          src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_ethd&symbol=CRYPTOCAP%3AETH.D&interval=1D&hidesidetoolbar=0&hidetoptoolbar=0&symboledit=1&saveimage=1&toolbarbg=0a0a0a&studies=[]&hideideas=1&theme=dark&style=1&timezone=Etc%2FUTC&studies_overrides={}&overrides={}&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22,%22timeframes_toolbar%22,%22show_interval_dialog_on_key_press%22]&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22,%22volume_panel%22]&locale=en&utm_source=cryptohippo.com&utm_medium=widget&utm_campaign=chart&utm_term=CRYPTOCAP%3AETH.D"
-                          width="100%"
-                          height="500"
-                          frameBorder="0"
-                          allowTransparency={true}
-                          scrolling="no"
-                          style={{ border: 'none' }}
-                        />
-                      </div>
-                    </div>
+                    <iframe
+                      src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]&symbol=CRYPTOCAP%3AETH.D"
+                      className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+                      title="ETH Dominance Advanced Chart"
+                      frameBorder="0"
+                      allowtransparency="true"
+                      scrolling="no"
+                    />
                   </div>
                 </div>
               </Suspense>
@@ -422,20 +336,14 @@ export default function TopChartsPage() {
                     </button>
                   </div>
                   <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
-                    <div className="flex gap-3 p-3">
-                      <ChartToolbar color="purple" />
-                      <div className="flex-1">
-                        <iframe
-                          src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_othersd&symbol=CRYPTOCAP%3AOTHERS.D&interval=1D&hidesidetoolbar=0&hidetoptoolbar=0&symboledit=1&saveimage=1&toolbarbg=0a0a0a&studies=[]&hideideas=1&theme=dark&style=1&timezone=Etc%2FUTC&studies_overrides={}&overrides={}&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22,%22timeframes_toolbar%22,%22show_interval_dialog_on_key_press%22]&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22,%22volume_panel%22]&locale=en&utm_source=cryptohippo.com&utm_medium=widget&utm_campaign=chart&utm_term=CRYPTOCAP%3AOTHERS.D"
-                          width="100%"
-                          height="500"
-                          frameBorder="0"
-                          allowTransparency={true}
-                          scrolling="no"
-                          style={{ border: 'none' }}
-                        />
-                      </div>
-                    </div>
+                    <iframe
+                      src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]&symbol=CRYPTOCAP%3AOTHERS.D"
+                      className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+                      title="OTHERS Dominance Advanced Chart"
+                      frameBorder="0"
+                      allowtransparency="true"
+                      scrolling="no"
+                    />
                   </div>
                 </div>
               </Suspense>
