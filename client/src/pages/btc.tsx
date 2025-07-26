@@ -222,7 +222,7 @@ export default function BTCPage() {
             </div>
             <div className="w-full">
               <iframe
-                src="https://www.tradingview.com/chart/?symbol=BTCUSD&utm_source=&utm_medium=widget_new&utm_campaign=chart&utm_term=BTCUSD"
+                src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_btc&symbol=BINANCE%3ABTCUSDT&interval=1D&hidesidetoolbar=0&hidetoptoolbar=0&symboledit=1&saveimage=1&toolbarbg=0a0a0a&studies=[]&hideideas=1&theme=dark&style=1&timezone=Etc%2FUTC&studies_overrides={}&overrides={}&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22timeframes_toolbar%22,%22show_interval_dialog_on_key_press%22]&disabled_features=[%22volume_force_overlay%22]&locale=en&utm_source=cryptohippo.com&utm_medium=widget&utm_campaign=chart&utm_term=BINANCE%3ABTCUSDT"
                 className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
                 title="Bitcoin Chart"
                 sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
@@ -251,7 +251,7 @@ export default function BTCPage() {
             </div>
             <div className="w-full">
               <iframe
-                src="https://www.tradingview.com/chart/?symbol=CRYPTOCAP%3ABTC.D&utm_source=&utm_medium=widget_new&utm_campaign=chart&utm_term=BTCD"
+                src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_btcd&symbol=CRYPTOCAP%3ABTC.D&interval=1D&hidesidetoolbar=0&hidetoptoolbar=0&symboledit=1&saveimage=1&toolbarbg=0a0a0a&studies=[]&hideideas=1&theme=dark&style=1&timezone=Etc%2FUTC&studies_overrides={}&overrides={}&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22timeframes_toolbar%22,%22show_interval_dialog_on_key_press%22]&disabled_features=[%22volume_force_overlay%22]&locale=en&utm_source=cryptohippo.com&utm_medium=widget&utm_campaign=chart&utm_term=CRYPTOCAP%3ABTC.D"
                 className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
                 title="BTC Dominance Chart"
                 sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
