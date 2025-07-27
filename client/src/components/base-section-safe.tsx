@@ -149,7 +149,28 @@ export default function BaseSectionSafe() {
         />
       </GlassCard>
 
-
+      {/* Farterminal */}
+      <GlassCard className="p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-6 h-6 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center">
+            <span className="text-white text-xs font-bold">FT</span>
+          </div>
+          <h3 className="text-xl font-semibold text-white">Farterminal</h3>
+          <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-full font-medium">
+            TERMINAL
+          </span>
+          <SafeLink 
+            href="https://www.terminal.co/?tab=base"
+            className="ml-auto text-green-400 hover:text-green-300 text-xs"
+          >
+            Open in New Tab →
+          </SafeLink>
+        </div>
+        <SafeIframe 
+          src="https://www.terminal.co/?tab=base"
+          title="Farterminal"
+        />
+      </GlassCard>
 
       {/* Checkr.social */}
       <GlassCard className="p-6">
