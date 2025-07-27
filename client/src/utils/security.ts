@@ -42,6 +42,8 @@ const TRUSTED_DOMAINS = [
   'artemis.xyz',
   'x.com',
   'twitter.com',
+  't.me',
+  'telegram.me',
   'chatgpt.com',
   'bubblemaps.io',
   'kolytics.com',
