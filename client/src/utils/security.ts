@@ -55,6 +55,8 @@ const TRUSTED_DOMAINS = [
   'velvet.capital',
   'cointelegraph.com',
   'coinmarketcap.com',
+  'coingecko.com',
+  'www.coingecko.com',
   'jup.ag',
   'mobyscreener.com',
   'web3.okx.com',
