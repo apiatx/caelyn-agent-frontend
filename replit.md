@@ -851,6 +851,12 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Hyperfolio Portfolio Repositioning**: Removed Hyperfolio Portfolio section from Hype page and moved existing Portfolio page Hyperfolio section to bottom position
 - **CNN Trading Links Integration**: Added "CNN Pre-Market" and "CNN After-Hours" links to Screening section at top of Stocks page with red branding for comprehensive trading data access
 
+### July 26, 2025 - Farterminal Integration & TradingView Charts Enhancement
+- **Farterminal Integration**: Added Terminal.co iframe titled "Farterminal" to Base page between Trending and Checkr.social sections
+- **Terminal.co Base Tab**: Configured iframe to load Terminal.co with Base network tab parameter for focused BASE analytics
+- **Green Branding**: Implemented green gradient styling with "TERMINAL" badge to distinguish from other Base page sections
+- **Security Integration**: Applied proper security configurations and styling consistent with existing iframe implementations
+
 ### July 26, 2025 - Complete TradingView Charts Native Left Sidebar Implementation
 - **All Top Charts Updated**: Successfully updated ALL TradingView chart iframes across Top Charts page to use advanced widget with native left sidebar
 - **Native TradingView Interface**: All charts now display full left sidebar with drawing tools, indicators, and complete TradingView functionality
