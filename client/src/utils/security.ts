@@ -28,6 +28,8 @@ const TRUSTED_DOMAINS = [
   'www.terminal.co',
   'zoraterminal.fun',
   'www.zoraterminal.fun',
+  'zora.co',
+  'www.zora.co',
   'blockcreeper.com',
   'www.blockcreeper.com',
   'virtuals.io',

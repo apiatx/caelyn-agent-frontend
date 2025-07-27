@@ -72,18 +72,7 @@ export default function AbstractSection() {
             <p className="text-gray-400 text-sm">Discover the Abstract ecosystem</p>
           </button>
           
-          <button
-            onClick={() => openInNewTab('https://x.com/Abstract_Eco')}
-            className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-bold">𝕏</span>
-              </div>
-              <h4 className="text-blue-400 font-semibold">Abstract_Eco</h4>
-            </div>
-            <p className="text-gray-400 text-sm">Follow Abstract ecosystem updates</p>
-          </button>
+
           
           <button
             onClick={() => openInNewTab('https://pudgyinvest.com/')}
@@ -150,6 +139,32 @@ export default function AbstractSection() {
               <h4 className="text-green-400 font-semibold">@ProofOfEly</h4>
             </div>
             <p className="text-gray-400 text-sm">Abstract trading insights</p>
+          </button>
+          
+          <button
+            onClick={() => openInNewTab('https://x.com/AbstractHubHB')}
+            className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-sm font-bold">𝕏</span>
+              </div>
+              <h4 className="text-orange-400 font-semibold">@AbstractHubHB</h4>
+            </div>
+            <p className="text-gray-400 text-sm">Abstract Hub community</p>
+          </button>
+          
+          <button
+            onClick={() => openInNewTab('https://x.com/Abstract_Eco')}
+            className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-sm font-bold">𝕏</span>
+              </div>
+              <h4 className="text-blue-400 font-semibold">@Abstract_Eco</h4>
+            </div>
+            <p className="text-gray-400 text-sm">Follow Abstract ecosystem updates</p>
           </button>
         </div>
       </GlassCard>
