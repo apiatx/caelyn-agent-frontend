@@ -1,60 +1,60 @@
 {
   "tickers": [
     {
-      "symbol": "PENGU",
-      "sentiment": 50,
-      "mentions": 1198,
-      "lastUpdated": "2025-07-24T16:25:20.761Z"
+      "symbol": "TRUMP",
+      "sentiment": 53,
+      "mentions": 1970,
+      "lastUpdated": "2025-07-28T15:51:41.857Z"
     },
     {
       "symbol": "MOODENG",
-      "sentiment": 45,
-      "mentions": 1052,
-      "lastUpdated": "2025-07-24T16:25:20.761Z"
+      "sentiment": 52,
+      "mentions": 4164,
+      "lastUpdated": "2025-07-28T15:51:41.857Z"
     },
     {
-      "symbol": "TRUMP",
-      "sentiment": 44,
-      "mentions": 1532,
-      "lastUpdated": "2025-07-24T16:25:20.761Z"
-    },
-    {
-      "symbol": "POPCAT",
-      "sentiment": 42,
-      "mentions": 3959,
-      "lastUpdated": "2025-07-24T16:25:20.761Z"
-    },
-    {
-      "symbol": "JESUS",
-      "sentiment": 42,
-      "mentions": 4932,
-      "lastUpdated": "2025-07-24T16:25:20.761Z"
+      "symbol": "FARTCOIN",
+      "sentiment": 51,
+      "mentions": 2970,
+      "lastUpdated": "2025-07-28T15:51:41.857Z"
     },
     {
       "symbol": "GOAT",
-      "sentiment": 41,
-      "mentions": 5908,
-      "lastUpdated": "2025-07-24T16:25:20.761Z"
+      "sentiment": 49,
+      "mentions": 2834,
+      "lastUpdated": "2025-07-28T15:51:41.857Z"
     },
     {
       "symbol": "BONK",
-      "sentiment": 39,
-      "mentions": 4542,
-      "lastUpdated": "2025-07-24T16:25:20.761Z"
+      "sentiment": 44,
+      "mentions": 4667,
+      "lastUpdated": "2025-07-28T15:51:41.857Z"
+    },
+    {
+      "symbol": "PENGU",
+      "sentiment": 44,
+      "mentions": 1652,
+      "lastUpdated": "2025-07-28T15:51:41.857Z"
     },
     {
       "symbol": "HYPE",
-      "sentiment": 39,
-      "mentions": 5255,
-      "lastUpdated": "2025-07-24T16:25:20.761Z"
+      "sentiment": 42,
+      "mentions": 3382,
+      "lastUpdated": "2025-07-28T15:51:41.857Z"
     },
     {
-      "symbol": "BODEN",
-      "sentiment": 39,
-      "mentions": 4295,
-      "lastUpdated": "2025-07-24T16:25:20.761Z"
+      "symbol": "WIF",
+      "sentiment": 41,
+      "mentions": 3536,
+      "lastUpdated": "2025-07-28T15:51:41.857Z"
+    },
+    {
+      "symbol": "AI16Z",
+      "sentiment": 41,
+      "mentions": 4897,
+      "lastUpdated": "2025-07-28T15:51:41.857Z"
     }
   ],
-  "lastUpdated": "2025-07-24T16:25:20.760Z",
-  "nextUpdate": "2025-07-24T19:25:20.760Z"
+  "lastUpdated": "2025-07-28T15:51:41.856Z",
+  "nextUpdate": "2025-07-28T18:51:41.856Z"
 }
