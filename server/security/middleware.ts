@@ -37,7 +37,10 @@ export const cspConfig = helmet.contentSecurityPolicy({
       "https://app.artemis.xyz",
       "https://artemisanalytics.com",
       "https://*.artemisanalytics.com",
-      "https://app.artemisanalytics.com"
+      "https://app.artemisanalytics.com",
+      "https://zoracle.xyz",
+      "https://*.zoracle.xyz",
+      "https://www.zoracle.xyz"
     ],
     styleSrc: [
       "'self'",
@@ -49,7 +52,10 @@ export const cspConfig = helmet.contentSecurityPolicy({
       "https://artemis.xyz",
       "https://*.artemis.xyz",
       "https://artemisanalytics.com",
-      "https://*.artemisanalytics.com"
+      "https://*.artemisanalytics.com",
+      "https://zoracle.xyz",
+      "https://*.zoracle.xyz",
+      "https://www.zoracle.xyz"
     ],
     imgSrc: [
       "'self'",
@@ -79,7 +85,11 @@ export const cspConfig = helmet.contentSecurityPolicy({
       "https://api.artemis.xyz",
       "https://artemisanalytics.com",
       "https://*.artemisanalytics.com",
-      "https://api.artemisanalytics.com"
+      "https://api.artemisanalytics.com",
+      "https://zoracle.xyz",
+      "https://*.zoracle.xyz",
+      "https://www.zoracle.xyz",
+      "https://api.zoracle.xyz"
     ],
     frameSrc: [
       "'self'",
@@ -154,7 +164,10 @@ export const cspConfig = helmet.contentSecurityPolicy({
       "https://mobyscreener.com",
       "https://*.mobyscreener.com",
       "https://artemis.xyz",
-      "https://*.artemis.xyz"
+      "https://*.artemis.xyz",
+      "https://zoracle.xyz",
+      "https://*.zoracle.xyz",
+      "https://www.zoracle.xyz"
     ],
     childSrc: [
       "'self'", 
@@ -162,7 +175,10 @@ export const cspConfig = helmet.contentSecurityPolicy({
       "https://mobyscreener.com",
       "https://*.mobyscreener.com",
       "https://artemis.xyz",
-      "https://*.artemis.xyz"
+      "https://*.artemis.xyz",
+      "https://zoracle.xyz",
+      "https://*.zoracle.xyz",
+      "https://www.zoracle.xyz"
     ],
     formAction: ["'self'"],
     upgradeInsecureRequests: []
