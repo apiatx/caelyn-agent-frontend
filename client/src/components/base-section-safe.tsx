@@ -182,17 +182,25 @@ export default function BaseSectionSafe() {
           <span className="px-2 py-1 bg-purple-500/20 text-purple-400 text-xs rounded-full font-medium">
             ORACLE
           </span>
-          <SafeLink 
+        </div>
+        
+        {/* Zoracle access button */}
+        <div className="flex flex-col items-center justify-center py-16 bg-gradient-to-br from-purple-500/10 to-pink-600/10 rounded-lg border border-purple-500/20">
+          <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full flex items-center justify-center mb-4">
+            <span className="text-white text-2xl font-bold">Z</span>
+          </div>
+          <h4 className="text-xl font-semibold text-white mb-2">Zoracle Oracle Platform</h4>
+          <p className="text-gray-400 text-center mb-6 max-w-md">
+            Access Zoracle's oracle services and blockchain data feeds for decentralized applications
+          </p>
+          <SafeLink
             href="https://www.zoracle.xyz/"
-            className="ml-auto text-purple-400 hover:text-purple-300 text-xs"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-600 text-white font-medium rounded-lg hover:from-purple-600 hover:to-pink-700 transition-all duration-200"
           >
-            Open in New Tab →
+            <span>Open Zoracle Platform</span>
+            <span>→</span>
           </SafeLink>
         </div>
-        <SafeIframe 
-          src="https://www.zoracle.xyz/"
-          title="Zoracle"
-        />
       </GlassCard>
 
       {/* Checkr.social */}
