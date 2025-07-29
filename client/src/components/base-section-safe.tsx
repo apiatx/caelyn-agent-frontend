@@ -172,26 +172,26 @@ export default function BaseSectionSafe() {
         />
       </GlassCard>
 
-      {/* Zora Terminal */}
+      {/* Zoracle */}
       <GlassCard className="p-6">
         <div className="flex items-center gap-2 mb-4">
           <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full flex items-center justify-center">
-            <span className="text-white text-xs font-bold">ZT</span>
+            <span className="text-white text-xs font-bold">Z</span>
           </div>
-          <h3 className="text-xl font-semibold text-white">Zora Terminal</h3>
+          <h3 className="text-xl font-semibold text-white">Zoracle</h3>
           <span className="px-2 py-1 bg-purple-500/20 text-purple-400 text-xs rounded-full font-medium">
-            TERMINAL
+            ORACLE
           </span>
           <SafeLink 
-            href="https://www.zoraterminal.fun/"
+            href="https://www.zoracle.xyz/"
             className="ml-auto text-purple-400 hover:text-purple-300 text-xs"
           >
             Open in New Tab →
           </SafeLink>
         </div>
         <SafeIframe 
-          src="https://www.zoraterminal.fun/"
-          title="Zora Terminal"
+          src="https://www.zoracle.xyz/"
+          title="Zoracle"
         />
       </GlassCard>
 
