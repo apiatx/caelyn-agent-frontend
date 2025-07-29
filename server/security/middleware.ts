@@ -154,7 +154,12 @@ export const cspConfig = helmet.contentSecurityPolicy({
       "https://api.mobyscreener.com",
       "https://jup.ag",
       "https://*.jup.ag",
-      "https://app.jup.ag"
+      "https://app.jup.ag",
+      "https://portal.abs.xyz",
+      "https://*.abs.xyz",
+      "https://abs.xyz",
+      "https://pudgyinvest.com",
+      "https://*.pudgyinvest.com"
     ],
     objectSrc: ["'none'"],
     mediaSrc: ["'self'", "https:", "data:"],
