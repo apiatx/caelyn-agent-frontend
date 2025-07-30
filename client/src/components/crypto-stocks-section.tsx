@@ -82,6 +82,14 @@ export default function CryptoStocksSection() {
           </button>
           
           <button
+            onClick={() => openInNewTab('https://atypica.ai/study')}
+            className="bg-gradient-to-br from-indigo-500/10 to-indigo-600/10 hover:from-indigo-500/20 hover:to-indigo-600/20 border border-indigo-500/20 hover:border-indigo-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-indigo-300 mb-1">Atypica AI Study</div>
+            <div className="text-xs text-crypto-silver">AI-driven market research and analysis</div>
+          </button>
+          
+          <button
             onClick={() => openInNewTab('https://www.cnn.com/markets/premarkets')}
             className="bg-gradient-to-br from-red-500/10 to-red-600/10 hover:from-red-500/20 hover:to-red-600/20 border border-red-500/20 hover:border-red-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
           >
