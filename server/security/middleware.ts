@@ -186,7 +186,10 @@ export const cspConfig = helmet.contentSecurityPolicy({
       "https://www.stocktwits.com",
       "https://accounts.google.com",
       "https://*.googleapis.com",
-      "https://apis.google.com"
+      "https://apis.google.com",
+      "https://app.intellectia.ai",
+      "https://intellectia.ai",
+      "https://*.intellectia.ai"
     ],
     objectSrc: ["'none'"],
     mediaSrc: ["'self'", "https:", "data:"],

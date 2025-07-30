@@ -859,13 +859,16 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Purple-Pink Branding**: Implemented purple-to-pink gradient styling with "TERMINAL" badge for Zora Terminal section
 - **Security Integration**: Applied proper security configurations and styling consistent with existing iframe implementations
 
-### July 30, 2025 - StockTwits Integration as Simple Screening Link
+### July 30, 2025 - Intellectia AI Stock Market Integration & StockTwits Simplification
+- **Intellectia AI Stock Market Iframe**: Added full iframe integration at top of Stocks page with purple AI analytics branding
+- **Purple Theme Implementation**: Professional purple gradient styling with "AI ANALYTICS" badge and responsive 400-600px height
+- **Security Configuration**: Added intellectia.ai domains to both client-side and server-side CSP configurations for iframe support
+- **External Access**: "Open Full View" button provides direct access to complete Intellectia AI platform
 - **StockTwits Simple Integration**: Added StockTwits as first link in Screening section per user preference
 - **Removed Complex Interface**: Eliminated button grid and iframe approaches for clean, functional link
 - **Blue Gradient Styling**: Consistent with other screening tools using blue-themed gradient design  
 - **Minimal Space Usage**: Simple link button format matches user preference for streamlined interfaces
 - **Authentication Solution**: Opens in new tab where full StockTwits functionality and login work normally
-- **CSP Security Configuration**: Maintained comprehensive StockTwits and Google OAuth domains in security middleware
 
 ### July 30, 2025 - SOL Treasuries Integration & Iframe Security Resolution
 - **SOL Treasuries Section Added**: Successfully integrated SOL Treasuries section to Stocks page positioned between ETH and TAO treasuries

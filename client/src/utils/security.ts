@@ -93,7 +93,9 @@ const TRUSTED_DOMAINS = [
   'pudgyinvest.com',
   'thenew.money',
   'stocktwits.com',
-  'www.stocktwits.com'
+  'www.stocktwits.com',
+  'app.intellectia.ai',
+  'intellectia.ai'
 ];
 
 /**
