@@ -159,7 +159,9 @@ export const cspConfig = helmet.contentSecurityPolicy({
       "https://*.abs.xyz",
       "https://abs.xyz",
       "https://pudgyinvest.com",
-      "https://*.pudgyinvest.com"
+      "https://*.pudgyinvest.com",
+      "https://thenew.money",
+      "https://*.thenew.money"
     ],
     objectSrc: ["'none'"],
     mediaSrc: ["'self'", "https:", "data:"],

@@ -287,6 +287,35 @@ export default function CryptoStocksSection() {
             </div>
           </div>
 
+          {/* SOL Treasuries */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-xs">◎</span>
+                </div>
+                <h4 className="text-lg font-semibold text-green-400">SOL Treasuries</h4>
+                <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
+                  SOL
+                </Badge>
+              </div>
+              <button
+                onClick={() => openInNewTab('https://www.thenew.money/trend/solana-holders')}
+                className="text-green-400 hover:text-green-300 text-xs sm:text-sm"
+              >
+                Open Full View →
+              </button>
+            </div>
+            <div className="w-full">
+              <iframe
+                src="https://www.thenew.money/trend/solana-holders"
+                className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
+                title="SOL Treasuries"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+              />
+            </div>
+          </div>
+
           {/* TAO Treasuries */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">

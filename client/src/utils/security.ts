@@ -90,7 +90,8 @@ const TRUSTED_DOMAINS = [
   'newhedge.io',
   'portal.abs.xyz',
   'abs.xyz',
-  'pudgyinvest.com'
+  'pudgyinvest.com',
+  'thenew.money'
 ];
 
 /**
