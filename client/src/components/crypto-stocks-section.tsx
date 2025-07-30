@@ -43,9 +43,10 @@ export default function CryptoStocksSection() {
             src="https://stocktwits.com/"
             className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
             title="StockTwits Social Trading Platform"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-top-navigation"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-top-navigation allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
             referrerPolicy="no-referrer-when-downgrade"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; storage-access"
+            allowTransparency={true}
           />
         </div>
       </GlassCard>

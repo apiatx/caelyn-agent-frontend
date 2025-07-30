@@ -859,6 +859,13 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Purple-Pink Branding**: Implemented purple-to-pink gradient styling with "TERMINAL" badge for Zora Terminal section
 - **Security Integration**: Applied proper security configurations and styling consistent with existing iframe implementations
 
+### July 30, 2025 - StockTwits Social Trading Integration & Enhanced Authentication
+- **StockTwits Iframe Integration**: Successfully added StockTwits social trading platform at top of Stocks page with blue gradient branding
+- **Enhanced Authentication Support**: Configured iframe with advanced sandbox permissions for OAuth login flows including Google Sign-In
+- **CSP Security Configuration**: Added comprehensive StockTwits domains to both client-side and server-side Content Security Policy configurations
+- **Professional Interface Design**: Blue "SOCIAL TRADING" badge with responsive layout and external link access
+- **OAuth Flow Optimization**: Added allow-popups-to-escape-sandbox and storage-access permissions for persistent login sessions
+
 ### July 30, 2025 - SOL Treasuries Integration & Iframe Security Resolution
 - **SOL Treasuries Section Added**: Successfully integrated SOL Treasuries section to Stocks page positioned between ETH and TAO treasuries
 - **Green Solana Branding**: Implemented consistent design with green color scheme and Solana's ◎ symbol matching other treasury sections
