@@ -43,7 +43,10 @@ export const cspConfig = helmet.contentSecurityPolicy({
       "https://app.artemisanalytics.com",
       "https://zoracle.xyz",
       "https://*.zoracle.xyz",
-      "https://www.zoracle.xyz"
+      "https://www.zoracle.xyz",
+      "https://stocktwits.com",
+      "https://*.stocktwits.com",
+      "https://www.stocktwits.com"
     ],
     styleSrc: [
       "'self'",
@@ -61,7 +64,10 @@ export const cspConfig = helmet.contentSecurityPolicy({
       "https://*.artemisanalytics.com",
       "https://zoracle.xyz",
       "https://*.zoracle.xyz",
-      "https://www.zoracle.xyz"
+      "https://www.zoracle.xyz",
+      "https://stocktwits.com",
+      "https://*.stocktwits.com",
+      "https://www.stocktwits.com"
     ],
     imgSrc: [
       "'self'",
@@ -98,7 +104,10 @@ export const cspConfig = helmet.contentSecurityPolicy({
       "https://zoracle.xyz",
       "https://*.zoracle.xyz",
       "https://www.zoracle.xyz",
-      "https://api.zoracle.xyz"
+      "https://api.zoracle.xyz",
+      "https://stocktwits.com",
+      "https://*.stocktwits.com",
+      "https://www.stocktwits.com"
     ],
     frameSrc: [
       "'self'",
@@ -171,7 +180,10 @@ export const cspConfig = helmet.contentSecurityPolicy({
       "https://*.pudgyinvest.com",
       "https://thenew.money",
       "https://*.thenew.money",
-      "https://www.thenew.money"
+      "https://www.thenew.money",
+      "https://stocktwits.com",
+      "https://*.stocktwits.com",
+      "https://www.stocktwits.com"
     ],
     objectSrc: ["'none'"],
     mediaSrc: ["'self'", "https:", "data:"],

@@ -91,7 +91,9 @@ const TRUSTED_DOMAINS = [
   'portal.abs.xyz',
   'abs.xyz',
   'pudgyinvest.com',
-  'thenew.money'
+  'thenew.money',
+  'stocktwits.com',
+  'www.stocktwits.com'
 ];
 
 /**
