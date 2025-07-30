@@ -307,14 +307,94 @@ export default function CryptoStocksSection() {
               </button>
             </div>
             <div className="w-full">
-              <iframe
-                src="https://www.thenew.money/trend/solana-holders"
-                className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
-                title="SOL Treasuries"
-                sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-top-navigation"
-                referrerPolicy="no-referrer-when-downgrade"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              />
+              <div className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20 bg-black/20 backdrop-blur-sm overflow-hidden">
+                <div className="p-6 h-full flex flex-col">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                        <span className="text-white font-bold text-lg">◎</span>
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold text-green-400">Solana Corporate Treasuries</h3>
+                        <p className="text-crypto-silver text-sm">Public companies investing in SOL</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => openInNewTab('https://www.thenew.money/trend/solana-holders')}
+                      className="text-green-400 hover:text-green-300 text-sm flex items-center gap-1"
+                    >
+                      View Live Data <ExternalLink className="w-4 h-4" />
+                    </button>
+                  </div>
+                  
+                  <div className="flex-1 space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="bg-gradient-to-r from-green-500/10 to-green-600/10 rounded-lg p-4 border border-green-500/20">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="font-semibold text-white">DeFi Development Corp</h4>
+                            <p className="text-sm text-crypto-silver">NASDAQ: DFDV</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-green-400 font-bold">999,999 SOL</p>
+                            <p className="text-xs text-crypto-silver">Holdings</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-gradient-to-r from-green-500/10 to-green-600/10 rounded-lg p-4 border border-green-500/20">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="font-semibold text-white">Upexi Inc</h4>
+                            <p className="text-sm text-crypto-silver">NASDAQ: UPXI</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-green-400 font-bold">$500M</p>
+                            <p className="text-xs text-crypto-silver">Credit Line for SOL</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-gradient-to-r from-green-500/10 to-green-600/10 rounded-lg p-4 border border-green-500/20">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="font-semibold text-white">Sol Strategies</h4>
+                            <p className="text-sm text-crypto-silver">CSE: HODL</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-green-400 font-bold">Staking</p>
+                            <p className="text-xs text-crypto-silver">Validator Operations</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-gradient-to-r from-green-500/10 to-green-600/10 rounded-lg p-4 border border-green-500/20">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="font-semibold text-white">Galaxy Digital</h4>
+                            <p className="text-sm text-crypto-silver">TSX: GLXY</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-green-400 font-bold">Institutional</p>
+                            <p className="text-xs text-crypto-silver">SOL Solutions</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-6 p-4 bg-green-500/5 rounded-lg border border-green-500/10">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                        <span className="text-green-400 text-sm font-medium">Live Treasury Tracking</span>
+                      </div>
+                      <p className="text-crypto-silver text-sm">
+                        Companies are adding Solana to treasuries for staking rewards and strategic blockchain exposure. 
+                        Click "View Live Data" above for real-time updates and complete institutional holdings data.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
