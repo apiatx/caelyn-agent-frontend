@@ -67,7 +67,10 @@ export const cspConfig = helmet.contentSecurityPolicy({
       "https://www.zoracle.xyz",
       "https://stocktwits.com",
       "https://*.stocktwits.com",
-      "https://www.stocktwits.com"
+      "https://www.stocktwits.com",
+      "https://app.intellectia.ai",
+      "https://intellectia.ai",
+      "https://*.intellectia.ai"
     ],
     imgSrc: [
       "'self'",
@@ -107,7 +110,10 @@ export const cspConfig = helmet.contentSecurityPolicy({
       "https://api.zoracle.xyz",
       "https://stocktwits.com",
       "https://*.stocktwits.com",
-      "https://www.stocktwits.com"
+      "https://www.stocktwits.com",
+      "https://app.intellectia.ai",
+      "https://intellectia.ai",
+      "https://*.intellectia.ai"
     ],
     frameSrc: [
       "'self'",
@@ -181,6 +187,9 @@ export const cspConfig = helmet.contentSecurityPolicy({
       "https://thenew.money",
       "https://*.thenew.money",
       "https://www.thenew.money",
+      "https://app.intellectia.ai",
+      "https://intellectia.ai",
+      "https://*.intellectia.ai",
       "https://stocktwits.com",
       "https://*.stocktwits.com",
       "https://www.stocktwits.com",
