@@ -875,6 +875,7 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **PMDiChristina X Account**: Added @PMDiChristina link to X Alpha section on Stocks page with consistent blue gradient styling
 - **Invest Insights X Account**: Added @investinsights4 link to X Alpha section on Stocks page with consistent blue gradient styling
 - **Bits and Bips X Account**: Added @bitsandbips link to X Alpha section on Stocks page with consistent blue gradient styling
+- **BKnight221 X Account**: Added @BKnight221 link to X Alpha section on Stocks page with consistent blue gradient styling
 - **X Alpha Expansion**: Enhanced X Alpha section with additional investment-focused X accounts for comprehensive trading intelligence
 - **Streamlined Integration**: Eliminated complex iframe approach in favor of clean, functional link format
 - **Security Configuration**: Added intellectia.ai domains to both client-side and server-side CSP configurations (retained for future use)

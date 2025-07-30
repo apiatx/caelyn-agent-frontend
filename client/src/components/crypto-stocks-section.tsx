@@ -318,6 +318,14 @@ export default function CryptoStocksSection() {
             <div className="text-sm font-medium text-white group-hover:text-blue-300">Bits and Bips</div>
             <div className="text-xs text-crypto-silver">@bitsandbips</div>
           </button>
+          
+          <button
+            onClick={() => openInNewTab('https://x.com/BKnight221')}
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-blue-300">BKnight221</div>
+            <div className="text-xs text-crypto-silver">@BKnight221</div>
+          </button>
         </div>
       </GlassCard>
 
