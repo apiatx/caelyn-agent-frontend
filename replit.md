@@ -860,6 +860,8 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Security Integration**: Applied proper security configurations and styling consistent with existing iframe implementations
 
 ### July 30, 2025 - AI Analytics Links Integration & X Alpha Expansion
+- **MarketWatch Integration**: Added MarketWatch link (https://www.marketwatch.com/) as first link in Screening section with green gradient styling
+- **Financial News Access**: MarketWatch positioned as "Financial news and market data" platform for comprehensive market information
 - **Intellectia AI Simple Link**: Added Intellectia AI as simple link in Screening section between Unusual Whales and CNN Pre-Market per user preference
 - **Purple Gradient Styling**: Consistent purple-themed button styling with "AI-powered stock market analytics" description
 - **Atypica AI Study Integration**: Added Atypica AI Study link (https://atypica.ai/study) in Screening section with indigo gradient styling
@@ -870,7 +872,7 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **X Alpha Expansion**: Enhanced X Alpha section with additional investment-focused X account for comprehensive trading intelligence
 - **Streamlined Integration**: Eliminated complex iframe approach in favor of clean, functional link format
 - **Security Configuration**: Added intellectia.ai domains to both client-side and server-side CSP configurations (retained for future use)
-- **StockTwits Simple Integration**: Added StockTwits as first link in Screening section per user preference
+- **StockTwits Simple Integration**: Added StockTwits as second link in Screening section per user preference
 - **Removed Complex Interface**: Eliminated button grid and iframe approaches for clean, functional link
 - **Blue Gradient Styling**: Consistent with other screening tools using blue-themed gradient design  
 - **Minimal Space Usage**: Simple link button format matches user preference for streamlined interfaces
