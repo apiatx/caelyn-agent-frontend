@@ -21,6 +21,9 @@ export const cspConfig = helmet.contentSecurityPolicy({
       "'self'",
       "'unsafe-inline'",
       "'unsafe-eval'",
+      "https://thenew.money",
+      "https://*.thenew.money",
+      "https://www.thenew.money",
       "https://tradingview.com",
       "https://*.tradingview.com",
       "https://dexscreener.com",
@@ -45,6 +48,9 @@ export const cspConfig = helmet.contentSecurityPolicy({
     styleSrc: [
       "'self'",
       "'unsafe-inline'",
+      "https://thenew.money",
+      "https://*.thenew.money",
+      "https://www.thenew.money",
       "https://fonts.googleapis.com",
       "https://cdn.jsdelivr.net",
       "https://mobyscreener.com",
@@ -71,6 +77,9 @@ export const cspConfig = helmet.contentSecurityPolicy({
     ],
     connectSrc: [
       "'self'",
+      "https://thenew.money",
+      "https://*.thenew.money",
+      "https://www.thenew.money",
       "https:",
       "wss:",
       "ws:",
@@ -161,7 +170,8 @@ export const cspConfig = helmet.contentSecurityPolicy({
       "https://pudgyinvest.com",
       "https://*.pudgyinvest.com",
       "https://thenew.money",
-      "https://*.thenew.money"
+      "https://*.thenew.money",
+      "https://www.thenew.money"
     ],
     objectSrc: ["'none'"],
     mediaSrc: ["'self'", "https:", "data:"],
