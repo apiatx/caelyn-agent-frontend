@@ -859,7 +859,10 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Purple-Pink Branding**: Implemented purple-to-pink gradient styling with "TERMINAL" badge for Zora Terminal section
 - **Security Integration**: Applied proper security configurations and styling consistent with existing iframe implementations
 
-### July 30, 2025 - AI Analytics Links Integration & X Alpha Expansion
+### July 30, 2025 - AI Analytics Links Integration & Investing.com Stock Screener Integration
+- **Investing.com Stock Screener Iframe**: Added comprehensive stock screener iframe (https://www.investing.com/stock-screener) at top of Stocks page with blue-purple gradient branding
+- **Professional Stock Screening**: Full-featured Investing.com stock screener with 600px height iframe for comprehensive stock analysis
+- **Security Configuration**: Added investing.com domains to both client-side and server-side CSP configurations for proper iframe functionality
 - **MarketWatch Integration**: Added MarketWatch link (https://www.marketwatch.com/) as first link in Screening section with green gradient styling
 - **Financial News Access**: MarketWatch positioned as "Financial news and market data" platform for comprehensive market information
 - **Intellectia AI Simple Link**: Added Intellectia AI as simple link in Screening section between Unusual Whales and CNN Pre-Market per user preference

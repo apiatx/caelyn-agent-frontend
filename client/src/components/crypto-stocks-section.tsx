@@ -18,6 +18,38 @@ export default function CryptoStocksSection() {
 
   return (
     <div className="space-y-4 lg:space-y-8">
+      {/* Investing.com Stock Screener */}
+      <GlassCard className="p-3 sm:p-4 lg:p-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+            </div>
+            <h3 className="text-lg sm:text-xl font-semibold text-white">Stock Screener</h3>
+            <Badge className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white border-crypto-silver/30 text-xs">
+              INVESTING.COM
+            </Badge>
+          </div>
+          <button
+            onClick={() => openInNewTab('https://www.investing.com/stock-screener')}
+            className="text-crypto-silver hover:text-white text-xs sm:text-sm flex items-center gap-1"
+          >
+            <ExternalLink className="w-3 h-3" />
+            Open Full View
+          </button>
+        </div>
+
+        <div className="w-full">
+          <iframe
+            src="https://www.investing.com/stock-screener"
+            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+            title="Investing.com Stock Screener"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+            allowTransparency={true}
+          />
+        </div>
+      </GlassCard>
+
       {/* Screening */}
       <GlassCard className="p-3 sm:p-4 lg:p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">

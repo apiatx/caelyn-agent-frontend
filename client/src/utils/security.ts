@@ -95,7 +95,9 @@ const TRUSTED_DOMAINS = [
   'stocktwits.com',
   'www.stocktwits.com',
   'app.intellectia.ai',
-  'intellectia.ai'
+  'intellectia.ai',
+  'investing.com',
+  'www.investing.com'
 ];
 
 /**
