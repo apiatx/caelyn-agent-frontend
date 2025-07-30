@@ -183,7 +183,10 @@ export const cspConfig = helmet.contentSecurityPolicy({
       "https://www.thenew.money",
       "https://stocktwits.com",
       "https://*.stocktwits.com",
-      "https://www.stocktwits.com"
+      "https://www.stocktwits.com",
+      "https://accounts.google.com",
+      "https://*.googleapis.com",
+      "https://apis.google.com"
     ],
     objectSrc: ["'none'"],
     mediaSrc: ["'self'", "https:", "data:"],
