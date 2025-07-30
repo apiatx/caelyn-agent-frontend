@@ -859,6 +859,15 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Purple-Pink Branding**: Implemented purple-to-pink gradient styling with "TERMINAL" badge for Zora Terminal section
 - **Security Integration**: Applied proper security configurations and styling consistent with existing iframe implementations
 
+### July 30, 2025 - SOL Treasuries Integration & Iframe Security Resolution
+- **SOL Treasuries Section Added**: Successfully integrated SOL Treasuries section to Stocks page positioned between ETH and TAO treasuries
+- **Green Solana Branding**: Implemented consistent design with green color scheme and Solana's ◎ symbol matching other treasury sections
+- **Security Configuration**: Added thenew.money domain to both client-side (security.ts) and server-side (middleware.ts) CSP configurations
+- **Iframe Fallback Solution**: Converted blocked iframe to professional clickable button interface due to "refused to connect" error
+- **Professional Button Design**: Created attractive fallback with green gradient background, Solana branding, and external link access
+- **Consistent User Experience**: Maintained same visual hierarchy and responsive design as BTC, ETH, and TAO treasury sections
+- **Enhanced Treasury Coverage**: Stocks page now provides comprehensive corporate treasury tracking across Bitcoin, Ethereum, Solana, and Bittensor ecosystems
+
 ### July 26, 2025 - Complete TradingView Charts Native Left Sidebar Implementation
 - **All Top Charts Updated**: Successfully updated ALL TradingView chart iframes across Top Charts page to use advanced widget with native left sidebar
 - **Native TradingView Interface**: All charts now display full left sidebar with drawing tools, indicators, and complete TradingView functionality

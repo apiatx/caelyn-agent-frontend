@@ -307,12 +307,24 @@ export default function CryptoStocksSection() {
               </button>
             </div>
             <div className="w-full">
-              <iframe
-                src="https://www.thenew.money/trend/solana-holders"
-                className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
-                title="SOL Treasuries"
-                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-              />
+              <div className="h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20 bg-gradient-to-br from-green-500/5 to-green-600/10 flex items-center justify-center">
+                <div className="text-center space-y-4 p-8">
+                  <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto">
+                    <span className="text-green-400 text-2xl font-bold">◎</span>
+                  </div>
+                  <h4 className="text-xl font-semibold text-green-400">SOL Treasuries</h4>
+                  <p className="text-crypto-silver text-sm max-w-md">
+                    Track Solana institutional adoption and corporate treasury holdings
+                  </p>
+                  <button
+                    onClick={() => openInNewTab('https://www.thenew.money/trend/solana-holders')}
+                    className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-3 rounded-lg font-medium transition-all duration-300 inline-flex items-center gap-2"
+                  >
+                    <span>Open SOL Treasuries</span>
+                    <ExternalLink className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
