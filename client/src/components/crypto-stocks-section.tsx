@@ -18,76 +18,6 @@ export default function CryptoStocksSection() {
 
   return (
     <div className="space-y-4 lg:space-y-8">
-      {/* StockTwits */}
-      <GlassCard className="p-3 sm:p-4 lg:p-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-blue-500 rounded-full flex items-center justify-center">
-              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-            </div>
-            <h3 className="text-lg sm:text-xl font-semibold text-white">StockTwits Social Trading</h3>
-            <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
-              SOCIAL TRADING
-            </Badge>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-          <button
-            onClick={() => openInNewTab('https://stocktwits.com/')}
-            className="flex flex-col items-center justify-center p-4 sm:p-6 bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 rounded-lg transition-all duration-300 group"
-          >
-            <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8 text-blue-400 mb-2 group-hover:scale-110 transition-transform" />
-            <span className="text-white font-medium text-sm sm:text-base">StockTwits Home</span>
-            <span className="text-blue-400 text-xs mt-1">Social trading platform</span>
-          </button>
-
-          <button
-            onClick={() => openInNewTab('https://stocktwits.com/trending')}
-            className="flex flex-col items-center justify-center p-4 sm:p-6 bg-gradient-to-br from-green-500/10 to-green-600/10 hover:from-green-500/20 hover:to-green-600/20 border border-green-500/20 rounded-lg transition-all duration-300 group"
-          >
-            <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8 text-green-400 mb-2 group-hover:scale-110 transition-transform" />
-            <span className="text-white font-medium text-sm sm:text-base">Trending Stocks</span>
-            <span className="text-green-400 text-xs mt-1">Hot discussions</span>
-          </button>
-
-          <button
-            onClick={() => openInNewTab('https://stocktwits.com/streams/crypto')}
-            className="flex flex-col items-center justify-center p-4 sm:p-6 bg-gradient-to-br from-orange-500/10 to-orange-600/10 hover:from-orange-500/20 hover:to-orange-600/20 border border-orange-500/20 rounded-lg transition-all duration-300 group"
-          >
-            <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8 text-orange-400 mb-2 group-hover:scale-110 transition-transform" />
-            <span className="text-white font-medium text-sm sm:text-base">Crypto Stream</span>
-            <span className="text-orange-400 text-xs mt-1">Cryptocurrency discussions</span>
-          </button>
-
-          <button
-            onClick={() => openInNewTab('https://stocktwits.com/leaderboard')}
-            className="flex flex-col items-center justify-center p-4 sm:p-6 bg-gradient-to-br from-purple-500/10 to-purple-600/10 hover:from-purple-500/20 hover:to-purple-600/20 border border-purple-500/20 rounded-lg transition-all duration-300 group"
-          >
-            <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8 text-purple-400 mb-2 group-hover:scale-110 transition-transform" />
-            <span className="text-white font-medium text-sm sm:text-base">Leaderboard</span>
-            <span className="text-purple-400 text-xs mt-1">Top traders</span>
-          </button>
-
-          <button
-            onClick={() => openInNewTab('https://stocktwits.com/streams/suggested')}
-            className="flex flex-col items-center justify-center p-4 sm:p-6 bg-gradient-to-br from-teal-500/10 to-teal-600/10 hover:from-teal-500/20 hover:to-teal-600/20 border border-teal-500/20 rounded-lg transition-all duration-300 group"
-          >
-            <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8 text-teal-400 mb-2 group-hover:scale-110 transition-transform" />
-            <span className="text-white font-medium text-sm sm:text-base">Suggested</span>
-            <span className="text-teal-400 text-xs mt-1">Recommended streams</span>
-          </button>
-
-          <button
-            onClick={() => openInNewTab('https://stocktwits.com/ideas')}
-            className="flex flex-col items-center justify-center p-4 sm:p-6 bg-gradient-to-br from-pink-500/10 to-pink-600/10 hover:from-pink-500/20 hover:to-pink-600/20 border border-pink-500/20 rounded-lg transition-all duration-300 group"
-          >
-            <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8 text-pink-400 mb-2 group-hover:scale-110 transition-transform" />
-            <span className="text-white font-medium text-sm sm:text-base">Ideas</span>
-            <span className="text-pink-400 text-xs mt-1">Trading ideas & analysis</span>
-          </button>
-        </div>
-      </GlassCard>
 
       {/* Screening */}
       <GlassCard className="p-3 sm:p-4 lg:p-6">
@@ -104,6 +34,14 @@ export default function CryptoStocksSection() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+          <button
+            onClick={() => openInNewTab('https://stocktwits.com/')}
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">StockTwits</div>
+            <div className="text-xs text-crypto-silver">Social trading platform</div>
+          </button>
+
           <button
             onClick={() => openInNewTab('https://www.ainvest.com/screener/')}
             className="bg-gradient-to-br from-green-500/10 to-green-600/10 hover:from-green-500/20 hover:to-green-600/20 border border-green-500/20 hover:border-green-400/40 rounded-lg p-4 transition-all duration-300 text-left group"

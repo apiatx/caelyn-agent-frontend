@@ -859,13 +859,13 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Purple-Pink Branding**: Implemented purple-to-pink gradient styling with "TERMINAL" badge for Zora Terminal section
 - **Security Integration**: Applied proper security configurations and styling consistent with existing iframe implementations
 
-### July 30, 2025 - StockTwits Social Trading Platform Integration
-- **StockTwits Button Grid Interface**: Converted from problematic iframe to comprehensive button-based access solving authentication issues
-- **Six StockTwits Access Points**: Home, Trending Stocks, Crypto Stream, Leaderboard, Suggested, and Ideas sections
-- **Authentication Solution**: Eliminated iframe login restrictions by opening StockTwits in new tabs for full functionality
-- **Enhanced User Experience**: Color-coded gradient buttons (blue, green, orange, purple, teal, pink) with hover animations
-- **Professional Design**: Responsive 3-column grid layout with "SOCIAL TRADING" badge and icon animations
-- **CSP Security Configuration**: Added comprehensive StockTwits and Google OAuth domains to security middleware
+### July 30, 2025 - StockTwits Integration as Simple Screening Link
+- **StockTwits Simple Integration**: Added StockTwits as first link in Screening section per user preference
+- **Removed Complex Interface**: Eliminated button grid and iframe approaches for clean, functional link
+- **Blue Gradient Styling**: Consistent with other screening tools using blue-themed gradient design  
+- **Minimal Space Usage**: Simple link button format matches user preference for streamlined interfaces
+- **Authentication Solution**: Opens in new tab where full StockTwits functionality and login work normally
+- **CSP Security Configuration**: Maintained comprehensive StockTwits and Google OAuth domains in security middleware
 
 ### July 30, 2025 - SOL Treasuries Integration & Iframe Security Resolution
 - **SOL Treasuries Section Added**: Successfully integrated SOL Treasuries section to Stocks page positioned between ETH and TAO treasuries
