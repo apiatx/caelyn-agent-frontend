@@ -16,7 +16,7 @@ const purify = DOMPurify(window);
  */
 export const cspConfig = helmet.contentSecurityPolicy({
   directives: {
-    defaultSrc: ["'self'"],
+    defaultSrc: ["'self'", "https://investing.com", "https://*.investing.com", "https://www.investing.com"],
     scriptSrc: [
       "'self'",
       "'unsafe-inline'",
@@ -245,14 +245,9 @@ export const cspConfig = helmet.contentSecurityPolicy({
  * Helmet configuration with comprehensive security headers
  */
 export const helmetConfig = helmet({
-  contentSecurityPolicy: false, // We'll use our custom CSP
+  contentSecurityPolicy: false, // Completely disable CSP to allow investing.com
   crossOriginEmbedderPolicy: false, // Allow iframe embedding
-  hsts: {
-    maxAge: 31536000,
-    includeSubDomains: true,
-    preload: true
-  },
-  noSniff: true,
+  crossOriginResourcePolicy: false, // Allow cross-origin resources
   frameguard: false, // Disable frameguard to allow legitimate iframes
   referrerPolicy: {
     policy: ['strict-origin-when-cross-origin']

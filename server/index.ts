@@ -21,10 +21,10 @@ const app = express();
 // Log security configuration
 logSecurityConfig();
 
-// Apply security middleware FIRST
+// Apply security middleware FIRST (CSP disabled for investing.com)
 app.use(securityHeaders);
 app.use(helmetConfig);
-app.use(cspConfig);
+// app.use(cspConfig); // Disabled to allow investing.com iframe
 app.use(corsConfig);
 
 // Force HTTPS in production

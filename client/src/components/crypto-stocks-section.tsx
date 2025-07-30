@@ -44,8 +44,11 @@ export default function CryptoStocksSection() {
             src="https://www.investing.com/stock-screener"
             className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
             title="Investing.com Stock Screener"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
             allowTransparency={true}
+            loading="eager"
+            referrerPolicy="unsafe-url"
+            allow="fullscreen; clipboard-write; autoplay; camera; microphone; geolocation"
+            frameBorder="0"
           />
         </div>
       </GlassCard>
