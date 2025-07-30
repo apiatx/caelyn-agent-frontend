@@ -859,13 +859,15 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Purple-Pink Branding**: Implemented purple-to-pink gradient styling with "TERMINAL" badge for Zora Terminal section
 - **Security Integration**: Applied proper security configurations and styling consistent with existing iframe implementations
 
-### July 30, 2025 - AI Analytics Links Integration & StockTwits Simplification
+### July 30, 2025 - AI Analytics Links Integration & X Alpha Expansion
 - **Intellectia AI Simple Link**: Added Intellectia AI as simple link in Screening section between Unusual Whales and CNN Pre-Market per user preference
 - **Purple Gradient Styling**: Consistent purple-themed button styling with "AI-powered stock market analytics" description
 - **Atypica AI Study Integration**: Added Atypica AI Study link (https://atypica.ai/study) in Screening section with indigo gradient styling
 - **AI Research Focus**: Atypica AI positioned as "AI-driven market research and analysis" tool for comprehensive market studies
 - **Kavout Integration**: Added Kavout link (https://www.kavout.com/) in Screening section with teal gradient styling positioned after Atypica AI Study
 - **Investment Research Platform**: Kavout positioned as "AI-powered investment research platform" for comprehensive market intelligence
+- **InvestInAssets X Account**: Added @InvestInAssets link to X Alpha section on Stocks page with consistent blue gradient styling
+- **X Alpha Expansion**: Enhanced X Alpha section with additional investment-focused X account for comprehensive trading intelligence
 - **Streamlined Integration**: Eliminated complex iframe approach in favor of clean, functional link format
 - **Security Configuration**: Added intellectia.ai domains to both client-side and server-side CSP configurations (retained for future use)
 - **StockTwits Simple Integration**: Added StockTwits as first link in Screening section per user preference
