@@ -1,60 +1,60 @@
 {
   "tickers": [
     {
-      "symbol": "TRUMP",
-      "sentiment": 53,
-      "mentions": 1970,
-      "lastUpdated": "2025-07-28T15:51:41.857Z"
+      "symbol": "GOAT",
+      "sentiment": 52,
+      "mentions": 5087,
+      "lastUpdated": "2025-07-31T21:14:21.757Z"
     },
     {
       "symbol": "MOODENG",
-      "sentiment": 52,
-      "mentions": 4164,
-      "lastUpdated": "2025-07-28T15:51:41.857Z"
+      "sentiment": 50,
+      "mentions": 3852,
+      "lastUpdated": "2025-07-31T21:14:21.757Z"
     },
     {
-      "symbol": "FARTCOIN",
-      "sentiment": 51,
-      "mentions": 2970,
-      "lastUpdated": "2025-07-28T15:51:41.857Z"
-    },
-    {
-      "symbol": "GOAT",
+      "symbol": "JESUS",
       "sentiment": 49,
-      "mentions": 2834,
-      "lastUpdated": "2025-07-28T15:51:41.857Z"
+      "mentions": 1009,
+      "lastUpdated": "2025-07-31T21:14:21.757Z"
     },
     {
-      "symbol": "BONK",
-      "sentiment": 44,
-      "mentions": 4667,
-      "lastUpdated": "2025-07-28T15:51:41.857Z"
+      "symbol": "TRUMP",
+      "sentiment": 48,
+      "mentions": 5188,
+      "lastUpdated": "2025-07-31T21:14:21.757Z"
     },
     {
       "symbol": "PENGU",
+      "sentiment": 46,
+      "mentions": 4129,
+      "lastUpdated": "2025-07-31T21:14:21.757Z"
+    },
+    {
+      "symbol": "FARTCOIN",
+      "sentiment": 46,
+      "mentions": 4482,
+      "lastUpdated": "2025-07-31T21:14:21.757Z"
+    },
+    {
+      "symbol": "CHILLGUY",
       "sentiment": 44,
-      "mentions": 1652,
-      "lastUpdated": "2025-07-28T15:51:41.857Z"
+      "mentions": 5534,
+      "lastUpdated": "2025-07-31T21:14:21.757Z"
     },
     {
-      "symbol": "HYPE",
+      "symbol": "BASEDOG",
+      "sentiment": 43,
+      "mentions": 3018,
+      "lastUpdated": "2025-07-31T21:14:21.757Z"
+    },
+    {
+      "symbol": "POPCAT",
       "sentiment": 42,
-      "mentions": 3382,
-      "lastUpdated": "2025-07-28T15:51:41.857Z"
-    },
-    {
-      "symbol": "WIF",
-      "sentiment": 41,
-      "mentions": 3536,
-      "lastUpdated": "2025-07-28T15:51:41.857Z"
-    },
-    {
-      "symbol": "AI16Z",
-      "sentiment": 41,
-      "mentions": 4897,
-      "lastUpdated": "2025-07-28T15:51:41.857Z"
+      "mentions": 5674,
+      "lastUpdated": "2025-07-31T21:14:21.757Z"
     }
   ],
-  "lastUpdated": "2025-07-28T15:51:41.856Z",
-  "nextUpdate": "2025-07-28T18:51:41.856Z"
+  "lastUpdated": "2025-07-31T21:14:21.757Z",
+  "nextUpdate": "2025-08-01T00:14:21.757Z"
 }
