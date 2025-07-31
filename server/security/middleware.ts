@@ -49,7 +49,9 @@ export const cspConfig = helmet.contentSecurityPolicy({
       "https://www.stocktwits.com",
       "https://investing.com",
       "https://*.investing.com",
-      "https://www.investing.com"
+      "https://www.investing.com",
+      "https://macroedge.ai",
+      "https://*.macroedge.ai"
     ],
     styleSrc: [
       "'self'",
@@ -210,7 +212,9 @@ export const cspConfig = helmet.contentSecurityPolicy({
       "https://*.intellectia.ai",
       "https://investing.com",
       "https://*.investing.com",
-      "https://www.investing.com"
+      "https://www.investing.com",
+      "https://macroedge.ai",
+      "https://*.macroedge.ai"
     ],
     objectSrc: ["'none'"],
     mediaSrc: ["'self'", "https:", "data:"],

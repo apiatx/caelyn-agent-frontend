@@ -877,6 +877,8 @@ The application uses a comprehensive schema for cryptocurrency portfolio managem
 - **Bits and Bips X Account**: Added @bitsandbips link to X Alpha section on Stocks page with consistent blue gradient styling
 - **BKnight221 X Account**: Added @BKnight221 link to X Alpha section on Stocks page with consistent blue gradient styling
 - **X Alpha Expansion**: Enhanced X Alpha section with additional investment-focused X accounts for comprehensive trading intelligence
+- **MacroEdge Integration**: Added MacroEdge iframe (https://macroedge.ai/app) to Market Overview page above Onchain section with purple branding
+- **MacroEdge Security**: Added macroedge.ai domains to both client-side and server-side CSP configurations for proper iframe functionality
 - **Streamlined Integration**: Eliminated complex iframe approach in favor of clean, functional link format
 - **Security Configuration**: Added intellectia.ai domains to both client-side and server-side CSP configurations (retained for future use)
 - **StockTwits Simple Integration**: Added StockTwits as second link in Screening section per user preference

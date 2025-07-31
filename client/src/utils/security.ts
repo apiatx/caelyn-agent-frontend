@@ -73,6 +73,7 @@ const TRUSTED_DOMAINS = [
   'relay.link',
   'universalx.app',
   'defi.instadapp.io',
+  'macroedge.ai',
   'app.aave.com',
   'senpi.ai',
   'www.aixvc.io',
