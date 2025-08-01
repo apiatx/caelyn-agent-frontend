@@ -60,3 +60,9 @@ The application employs a full-stack monorepo architecture, ensuring clear separ
     - **Miscellaneous**: Terminal.co, Checkr.social, Virtuals.io, Creator.bid, Bankr.bot, Velvet Capital, Indexy.xyz, OKX Leaderboard, NewHedge.
 - **Build Tools**: Vite, esbuild, tsx.
 - **Development Tools**: Replit Integration plugins, Hot Reload (Vite HMR), TypeScript.
+
+## Recent Changes (August 2025)
+- **MacroEdge Integration**: Added MacroEdge iframe (https://macroedge.ai/app) to Market Overview page above Onchain section with purple branding
+- **MacroEdge Security**: Added macroedge.ai domains to both client-side and server-side CSP configurations for proper iframe functionality
+- **Custom TradingView Charts**: Added three custom TradingView chart iframes to Top Charts page between BNB and DOGE sections using the specified chart URL (e5l95XgZ)
+- **Chart Color Schemes**: Implemented green, purple, and pink color themes for the three custom charts with consistent glassmorphism styling

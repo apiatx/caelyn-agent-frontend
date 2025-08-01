@@ -198,6 +198,105 @@ export default function TopChartsPage() {
                 </div>
               </Suspense>
 
+              {/* Custom Chart 1 */}
+              <Suspense fallback={<SectionLoadingState title="Custom Chart 1" />}>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <h3 className="text-lg font-semibold text-green-400">Custom Chart 1</h3>
+                      <Badge variant="outline" className="bg-green-500/20 text-green-300 border-green-500/30">
+                        CHART
+                      </Badge>
+                    </div>
+                    <button
+                      onClick={() => openSecureLink('https://www.tradingview.com/chart/e5l95XgZ/?source=promo_go_pro_button')}
+                      className="text-green-400 hover:text-green-300 text-xs sm:text-sm"
+                    >
+                      Open Full View →
+                    </button>
+                  </div>
+                  <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
+                    <iframe
+                      src="https://www.tradingview.com/chart/e5l95XgZ/?source=promo_go_pro_button"
+                      className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+                      title="Custom TradingView Chart 1"
+                      frameBorder="0"
+                      scrolling="no"
+                      sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+                      referrerPolicy="no-referrer-when-downgrade"
+                      loading="lazy"
+                      allow="fullscreen; web-share; clipboard-read; clipboard-write"
+                    />
+                  </div>
+                </div>
+              </Suspense>
+
+              {/* Custom Chart 2 */}
+              <Suspense fallback={<SectionLoadingState title="Custom Chart 2" />}>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <h3 className="text-lg font-semibold text-purple-400">Custom Chart 2</h3>
+                      <Badge variant="outline" className="bg-purple-500/20 text-purple-300 border-purple-500/30">
+                        CHART
+                      </Badge>
+                    </div>
+                    <button
+                      onClick={() => openSecureLink('https://www.tradingview.com/chart/e5l95XgZ/?source=promo_go_pro_button')}
+                      className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm"
+                    >
+                      Open Full View →
+                    </button>
+                  </div>
+                  <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
+                    <iframe
+                      src="https://www.tradingview.com/chart/e5l95XgZ/?source=promo_go_pro_button"
+                      className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+                      title="Custom TradingView Chart 2"
+                      frameBorder="0"
+                      scrolling="no"
+                      sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+                      referrerPolicy="no-referrer-when-downgrade"
+                      loading="lazy"
+                      allow="fullscreen; web-share; clipboard-read; clipboard-write"
+                    />
+                  </div>
+                </div>
+              </Suspense>
+
+              {/* Custom Chart 3 */}
+              <Suspense fallback={<SectionLoadingState title="Custom Chart 3" />}>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <h3 className="text-lg font-semibold text-pink-400">Custom Chart 3</h3>
+                      <Badge variant="outline" className="bg-pink-500/20 text-pink-300 border-pink-500/30">
+                        CHART
+                      </Badge>
+                    </div>
+                    <button
+                      onClick={() => openSecureLink('https://www.tradingview.com/chart/e5l95XgZ/?source=promo_go_pro_button')}
+                      className="text-pink-400 hover:text-pink-300 text-xs sm:text-sm"
+                    >
+                      Open Full View →
+                    </button>
+                  </div>
+                  <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
+                    <iframe
+                      src="https://www.tradingview.com/chart/e5l95XgZ/?source=promo_go_pro_button"
+                      className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+                      title="Custom TradingView Chart 3"
+                      frameBorder="0"
+                      scrolling="no"
+                      sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+                      referrerPolicy="no-referrer-when-downgrade"
+                      loading="lazy"
+                      allow="fullscreen; web-share; clipboard-read; clipboard-write"
+                    />
+                  </div>
+                </div>
+              </Suspense>
+
               {/* DOGE Chart */}
               <Suspense fallback={<SectionLoadingState title="DOGE Chart" />}>
                 <div className="space-y-3">
