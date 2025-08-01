@@ -51,7 +51,10 @@ export const cspConfig = helmet.contentSecurityPolicy({
       "https://*.investing.com",
       "https://www.investing.com",
       "https://macroedge.ai",
-      "https://*.macroedge.ai"
+      "https://*.macroedge.ai",
+      "https://blockcreeper.com",
+      "https://*.blockcreeper.com",
+      "https://www.blockcreeper.com"
     ],
     styleSrc: [
       "'self'",
@@ -78,7 +81,10 @@ export const cspConfig = helmet.contentSecurityPolicy({
       "https://*.intellectia.ai",
       "https://investing.com",
       "https://*.investing.com",
-      "https://www.investing.com"
+      "https://www.investing.com",
+      "https://blockcreeper.com",
+      "https://*.blockcreeper.com",
+      "https://www.blockcreeper.com"
     ],
     imgSrc: [
       "'self'",
@@ -174,8 +180,9 @@ export const cspConfig = helmet.contentSecurityPolicy({
       "https://www.zoracle.xyz",
       "https://checkr.social",
       "https://*.checkr.social",
-      "https://basescan.org",
-      "https://*.basescan.org",
+      "https://blockcreeper.com",
+      "https://*.blockcreeper.com",
+      "https://www.blockcreeper.com",
       "https://virtuals.io",
       "https://*.virtuals.io",
       "https://app.virtuals.io",

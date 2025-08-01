@@ -197,31 +197,34 @@ export default function BaseSection() {
         </div>
       </GlassCard>
 
-      {/* Base Network Explorer */}
+      {/* BlockCreeper Explorer */}
       <GlassCard className="p-6">
         <div className="flex items-center gap-2 mb-4">
-          <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center">
-            <span className="text-white text-xs font-bold">BS</span>
+          <div className="w-6 h-6 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
+            <span className="text-white text-xs font-bold">BC</span>
           </div>
-          <h3 className="text-xl font-semibold text-white">BaseScan Explorer</h3>
-          <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs rounded-full font-medium">
+          <h3 className="text-xl font-semibold text-white">BlockCreeper Explorer</h3>
+          <span className="px-2 py-1 bg-orange-500/20 text-orange-400 text-xs rounded-full font-medium">
             BLOCKCHAIN EXPLORER
           </span>
           <button
-            onClick={() => openSecureLink('https://basescan.org/')}
-            className="ml-auto text-blue-400 hover:text-blue-300 text-xs"
+            onClick={() => openSecureLink('https://www.blockcreeper.com/')}
+            className="ml-auto text-orange-400 hover:text-orange-300 text-xs"
           >
             Open in New Tab →
           </button>
         </div>
         <div className="w-full">
           <iframe
-            {...getSecureIframeProps('https://basescan.org/', 'BaseScan Explorer')}
+            src="https://www.blockcreeper.com/"
+            title="BlockCreeper Explorer"
             className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
             style={{
               background: '#000000',
               colorScheme: 'dark'
             }}
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+            loading="lazy"
           />
         </div>
       </GlassCard>
