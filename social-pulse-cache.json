@@ -1,60 +1,60 @@
 {
   "tickers": [
     {
-      "symbol": "GOAT",
-      "sentiment": 52,
-      "mentions": 5087,
-      "lastUpdated": "2025-07-31T21:14:21.757Z"
-    },
-    {
-      "symbol": "MOODENG",
-      "sentiment": 50,
-      "mentions": 3852,
-      "lastUpdated": "2025-07-31T21:14:21.757Z"
-    },
-    {
-      "symbol": "JESUS",
-      "sentiment": 49,
-      "mentions": 1009,
-      "lastUpdated": "2025-07-31T21:14:21.757Z"
-    },
-    {
       "symbol": "TRUMP",
-      "sentiment": 48,
-      "mentions": 5188,
-      "lastUpdated": "2025-07-31T21:14:21.757Z"
-    },
-    {
-      "symbol": "PENGU",
-      "sentiment": 46,
-      "mentions": 4129,
-      "lastUpdated": "2025-07-31T21:14:21.757Z"
+      "sentiment": 53,
+      "mentions": 4679,
+      "lastUpdated": "2025-08-01T18:13:28.627Z"
     },
     {
       "symbol": "FARTCOIN",
-      "sentiment": 46,
-      "mentions": 4482,
-      "lastUpdated": "2025-07-31T21:14:21.757Z"
+      "sentiment": 52,
+      "mentions": 2449,
+      "lastUpdated": "2025-08-01T18:13:28.627Z"
     },
     {
-      "symbol": "CHILLGUY",
-      "sentiment": 44,
-      "mentions": 5534,
-      "lastUpdated": "2025-07-31T21:14:21.757Z"
-    },
-    {
-      "symbol": "BASEDOG",
-      "sentiment": 43,
-      "mentions": 3018,
-      "lastUpdated": "2025-07-31T21:14:21.757Z"
+      "symbol": "HYPE",
+      "sentiment": 47,
+      "mentions": 4527,
+      "lastUpdated": "2025-08-01T18:13:28.627Z"
     },
     {
       "symbol": "POPCAT",
-      "sentiment": 42,
-      "mentions": 5674,
-      "lastUpdated": "2025-07-31T21:14:21.757Z"
+      "sentiment": 46,
+      "mentions": 3977,
+      "lastUpdated": "2025-08-01T18:13:28.627Z"
+    },
+    {
+      "symbol": "MEME",
+      "sentiment": 45,
+      "mentions": 5358,
+      "lastUpdated": "2025-08-01T18:13:28.627Z"
+    },
+    {
+      "symbol": "JESUS",
+      "sentiment": 44,
+      "mentions": 1961,
+      "lastUpdated": "2025-08-01T18:13:28.627Z"
+    },
+    {
+      "symbol": "PENGU",
+      "sentiment": 40,
+      "mentions": 1799,
+      "lastUpdated": "2025-08-01T18:13:28.627Z"
+    },
+    {
+      "symbol": "NORMIE",
+      "sentiment": 40,
+      "mentions": 1253,
+      "lastUpdated": "2025-08-01T18:13:28.627Z"
+    },
+    {
+      "symbol": "BASEDOG",
+      "sentiment": 40,
+      "mentions": 4015,
+      "lastUpdated": "2025-08-01T18:13:28.627Z"
     }
   ],
-  "lastUpdated": "2025-07-31T21:14:21.757Z",
-  "nextUpdate": "2025-08-01T00:14:21.757Z"
+  "lastUpdated": "2025-08-01T18:13:28.626Z",
+  "nextUpdate": "2025-08-01T21:13:28.626Z"
 }
