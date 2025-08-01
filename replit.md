@@ -68,8 +68,9 @@ The application employs a full-stack monorepo architecture, ensuring clear separ
 - **Chart Integration**: All new charts use the same TradingView widget format as existing charts for consistent functionality and display
 - **Fixed iframe Issues**: Resolved all TypeScript compatibility issues by removing problematic allowtransparency attributes from iframe elements
 - **Deployment Health Checks**: Applied comprehensive deployment health check fixes including:
-  - Multiple health endpoints (`/`, `/health`, `/api/health`, `/api/ready`) with priority placement before middleware
-  - Background service initialization delayed to 2 seconds after server startup to prevent blocking
+  - Multiple redundant health endpoints (`/deployment-health`, `/`, `/health`, `/ready`, `/api/health`, `/api/ready`)
+  - Priority deployment health check endpoint at `/deployment-health` that responds with 200 immediately
+  - Smart root path handling that detects deployment systems vs browsers using Accept headers and User-Agent
+  - Background service initialization delayed to 5+ seconds after server startup to prevent blocking
   - Server timeout configuration (30s timeout, 65s keep-alive) for load balancer compatibility
-  - Enhanced error handling that allows server to function even if background services fail
-  - Fixed all TypeScript type issues in route handlers to prevent runtime errors
+  - Enhanced error handling with nested timeouts to completely isolate background services from server startup

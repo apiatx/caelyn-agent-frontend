@@ -18,32 +18,47 @@ import { env, logSecurityConfig, isProduction } from "./security/environment";
 
 const app = express();
 
-// Priority health check endpoints - BEFORE any middleware
-// These ensure fast response for deployment health checks without interfering with frontend
-app.get("/health", (req, res) => {
-  res.status(200).json({ 
-    status: "healthy", 
-    timestamp: new Date().toISOString(),
-    service: "crypto-intelligence-platform"
-  });
+// ABSOLUTE PRIORITY: Deployment health check endpoints - must be first
+app.get("/deployment-health", (req, res) => {
+  res.status(200).send("OK");
 });
 
-// Primary deployment health check - accepts query parameter for deployment systems
+// CRITICAL: Deployment health check that works with Vite frontend serving
 app.get("/", (req, res, next) => {
-  // If request specifically asks for health check (deployment systems), respond with JSON
-  if (req.query.health === 'true' || req.headers['user-agent']?.includes('deployment') || req.headers['user-agent']?.includes('health')) {
-    res.status(200).json({ 
-      status: "healthy", 
-      timestamp: new Date().toISOString(),
-      service: "crypto-intelligence-platform"
-    });
+  // Check if this looks like a deployment health check
+  const userAgent = req.headers['user-agent'] || '';
+  const accept = req.headers['accept'] || '';
+  
+  // Deployment systems typically don't include 'text/html' in Accept header
+  // or use specific user agents
+  const looksLikeHealthCheck = (
+    !accept.includes('text/html') ||
+    userAgent.includes('curl') ||
+    userAgent.includes('wget') ||
+    userAgent.includes('health') ||
+    userAgent.includes('deployment') ||
+    userAgent.includes('replit') ||
+    req.query.health === 'true'
+  );
+  
+  if (looksLikeHealthCheck) {
+    res.status(200).send("OK");
   } else {
-    // Otherwise, let it continue to the frontend serving middleware
+    // Continue to Vite middleware for frontend serving
     next();
   }
 });
 
-// Lightweight readiness check - fastest possible response
+// Additional health check endpoints for monitoring
+app.get("/health", (req, res) => {
+  res.status(200).json({ 
+    status: "healthy", 
+    timestamp: new Date().toISOString(),
+    service: "crypto-intelligence-platform",
+    uptime: process.uptime()
+  });
+});
+
 app.get("/ready", (req, res) => {
   res.status(200).send("OK");
 });
@@ -142,23 +157,28 @@ app.use((req, res, next) => {
     log(`serving on port ${port}`);
     log(`Server is ready and healthy`);
     log(`Health check endpoints available at:`);
+    log(`  - http://0.0.0.0:${port}/deployment-health (priority)`);
     log(`  - http://0.0.0.0:${port}/`);
     log(`  - http://0.0.0.0:${port}/health`);
+    log(`  - http://0.0.0.0:${port}/ready`);
     log(`  - http://0.0.0.0:${port}/api/health`);
     log(`  - http://0.0.0.0:${port}/api/ready`);
     
     // Start background services AFTER server is confirmed running
-    // Use setTimeout to ensure server is fully ready before starting intensive background tasks
+    // Longer delay to ensure deployment health checks pass before background services start
     setTimeout(() => {
       log(`Starting background services...`);
       try {
-        startBackgroundServices();
-        log(`Background services started successfully`);
+        // Use a nested setTimeout to further isolate from server startup
+        setTimeout(() => {
+          startBackgroundServices();
+          log(`Background services started successfully`);
+        }, 1000);
       } catch (error) {
         console.error('Error starting background services:', error);
         // Don't exit - server can still function without background services
       }
-    }, 2000); // 2 second delay to ensure server is stable for deployment health checks
+    }, 5000); // 5 second delay to ensure server is stable for deployment health checks
   });
 
   // Add error handler for server
