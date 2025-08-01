@@ -71,7 +71,6 @@ export default function TopChartsPage() {
                       className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
                       title="Bitcoin Advanced Chart"
                       frameBorder="0"
-                      allowtransparency="true"
                       scrolling="no"
                     />
                   </div>
@@ -101,7 +100,6 @@ export default function TopChartsPage() {
                       className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
                       title="Ethereum Advanced Chart"
                       frameBorder="0"
-                      allowtransparency="true"
                       scrolling="no"
                     />
                   </div>
@@ -131,7 +129,6 @@ export default function TopChartsPage() {
                       className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
                       title="XRP Advanced Chart"
                       frameBorder="0"
-                      allowtransparency="true"
                       scrolling="no"
                     />
                   </div>
@@ -161,7 +158,6 @@ export default function TopChartsPage() {
                       className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
                       title="Solana Advanced Chart"
                       frameBorder="0"
-                      allowtransparency="true"
                       scrolling="no"
                     />
                   </div>
@@ -191,7 +187,6 @@ export default function TopChartsPage() {
                       className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
                       title="BNB Advanced Chart"
                       frameBorder="0"
-                      allowtransparency="true"
                       scrolling="no"
                     />
                   </div>
@@ -320,7 +315,6 @@ export default function TopChartsPage() {
                       className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
                       title="DOGE Advanced Chart"
                       frameBorder="0"
-                      allowtransparency="true"
                       scrolling="no"
                     />
                   </div>
@@ -350,7 +344,6 @@ export default function TopChartsPage() {
                       className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
                       title="PENGU Advanced Chart"
                       frameBorder="0"
-                      allowtransparency="true"
                       scrolling="no"
                     />
                   </div>
