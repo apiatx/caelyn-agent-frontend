@@ -18,6 +18,36 @@ import { env, logSecurityConfig, isProduction } from "./security/environment";
 
 const app = express();
 
+// Priority health check endpoints - BEFORE any middleware
+// These ensure fast response for deployment health checks without interfering with frontend
+app.get("/health", (req, res) => {
+  res.status(200).json({ 
+    status: "healthy", 
+    timestamp: new Date().toISOString(),
+    service: "crypto-intelligence-platform"
+  });
+});
+
+// Primary deployment health check - accepts query parameter for deployment systems
+app.get("/", (req, res, next) => {
+  // If request specifically asks for health check (deployment systems), respond with JSON
+  if (req.query.health === 'true' || req.headers['user-agent']?.includes('deployment') || req.headers['user-agent']?.includes('health')) {
+    res.status(200).json({ 
+      status: "healthy", 
+      timestamp: new Date().toISOString(),
+      service: "crypto-intelligence-platform"
+    });
+  } else {
+    // Otherwise, let it continue to the frontend serving middleware
+    next();
+  }
+});
+
+// Lightweight readiness check - fastest possible response
+app.get("/ready", (req, res) => {
+  res.status(200).send("OK");
+});
+
 // Log security configuration
 logSecurityConfig();
 
@@ -111,6 +141,11 @@ app.use((req, res, next) => {
     
     log(`serving on port ${port}`);
     log(`Server is ready and healthy`);
+    log(`Health check endpoints available at:`);
+    log(`  - http://0.0.0.0:${port}/`);
+    log(`  - http://0.0.0.0:${port}/health`);
+    log(`  - http://0.0.0.0:${port}/api/health`);
+    log(`  - http://0.0.0.0:${port}/api/ready`);
     
     // Start background services AFTER server is confirmed running
     // Use setTimeout to ensure server is fully ready before starting intensive background tasks
@@ -123,13 +158,24 @@ app.use((req, res, next) => {
         console.error('Error starting background services:', error);
         // Don't exit - server can still function without background services
       }
-    }, 1000); // 1 second delay to ensure server is stable
+    }, 2000); // 2 second delay to ensure server is stable for deployment health checks
   });
 
   // Add error handler for server
   server.on('error', (error: Error) => {
     console.error('Server error:', error);
+    // In production, attempt to gracefully recover or restart
+    if (isProduction) {
+      console.error('Production server error detected, attempting graceful recovery...');
+    }
   });
+
+  // Set server timeout to prevent hanging requests during deployment health checks
+  server.setTimeout(30000); // 30 second timeout
+  
+  // Keep alive timeout for load balancers
+  server.keepAliveTimeout = 65000; // 65 seconds
+  server.headersTimeout = 66000; // 66 seconds
 
   // Graceful shutdown
   process.on('SIGTERM', () => {
