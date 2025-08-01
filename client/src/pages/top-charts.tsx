@@ -193,18 +193,18 @@ export default function TopChartsPage() {
                 </div>
               </Suspense>
 
-              {/* Custom Chart 1 */}
-              <Suspense fallback={<SectionLoadingState title="Custom Chart 1" />}>
+              {/* SUI Chart */}
+              <Suspense fallback={<SectionLoadingState title="SUI Chart" />}>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
-                      <h3 className="text-lg font-semibold text-green-400">Custom Chart 1</h3>
+                      <h3 className="text-lg font-semibold text-green-400">SUI</h3>
                       <Badge variant="outline" className="bg-green-500/20 text-green-300 border-green-500/30">
-                        CHART
+                        SUI
                       </Badge>
                     </div>
                     <button
-                      onClick={() => openSecureLink('https://www.tradingview.com/chart/e5l95XgZ/?source=promo_go_pro_button')}
+                      onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=BINANCE%3ASUIUSDT')}
                       className="text-green-400 hover:text-green-300 text-xs sm:text-sm"
                     >
                       Open Full View →
@@ -212,32 +212,28 @@ export default function TopChartsPage() {
                   </div>
                   <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
                     <iframe
-                      src="https://www.tradingview.com/chart/e5l95XgZ/?source=promo_go_pro_button"
+                      src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]&symbol=BINANCE%3ASUIUSDT"
                       className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
-                      title="Custom TradingView Chart 1"
+                      title="SUI Advanced Chart"
                       frameBorder="0"
                       scrolling="no"
-                      sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
-                      referrerPolicy="no-referrer-when-downgrade"
-                      loading="lazy"
-                      allow="fullscreen; web-share; clipboard-read; clipboard-write"
                     />
                   </div>
                 </div>
               </Suspense>
 
-              {/* Custom Chart 2 */}
-              <Suspense fallback={<SectionLoadingState title="Custom Chart 2" />}>
+              {/* AVAX Chart */}
+              <Suspense fallback={<SectionLoadingState title="AVAX Chart" />}>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
-                      <h3 className="text-lg font-semibold text-purple-400">Custom Chart 2</h3>
+                      <h3 className="text-lg font-semibold text-purple-400">AVAX</h3>
                       <Badge variant="outline" className="bg-purple-500/20 text-purple-300 border-purple-500/30">
-                        CHART
+                        AVAX
                       </Badge>
                     </div>
                     <button
-                      onClick={() => openSecureLink('https://www.tradingview.com/chart/e5l95XgZ/?source=promo_go_pro_button')}
+                      onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=BINANCE%3AAVAXUSDT')}
                       className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm"
                     >
                       Open Full View →
@@ -245,32 +241,28 @@ export default function TopChartsPage() {
                   </div>
                   <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
                     <iframe
-                      src="https://www.tradingview.com/chart/e5l95XgZ/?source=promo_go_pro_button"
+                      src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]&symbol=BINANCE%3AAVAXUSDT"
                       className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
-                      title="Custom TradingView Chart 2"
+                      title="AVAX Advanced Chart"
                       frameBorder="0"
                       scrolling="no"
-                      sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
-                      referrerPolicy="no-referrer-when-downgrade"
-                      loading="lazy"
-                      allow="fullscreen; web-share; clipboard-read; clipboard-write"
                     />
                   </div>
                 </div>
               </Suspense>
 
-              {/* Custom Chart 3 */}
-              <Suspense fallback={<SectionLoadingState title="Custom Chart 3" />}>
+              {/* CHAINLINK Chart */}
+              <Suspense fallback={<SectionLoadingState title="CHAINLINK Chart" />}>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
-                      <h3 className="text-lg font-semibold text-pink-400">Custom Chart 3</h3>
+                      <h3 className="text-lg font-semibold text-pink-400">CHAINLINK</h3>
                       <Badge variant="outline" className="bg-pink-500/20 text-pink-300 border-pink-500/30">
-                        CHART
+                        LINK
                       </Badge>
                     </div>
                     <button
-                      onClick={() => openSecureLink('https://www.tradingview.com/chart/e5l95XgZ/?source=promo_go_pro_button')}
+                      onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=BINANCE%3ALINKUSDT')}
                       className="text-pink-400 hover:text-pink-300 text-xs sm:text-sm"
                     >
                       Open Full View →
@@ -278,15 +270,11 @@ export default function TopChartsPage() {
                   </div>
                   <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
                     <iframe
-                      src="https://www.tradingview.com/chart/e5l95XgZ/?source=promo_go_pro_button"
+                      src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]&symbol=BINANCE%3ALINKUSDT"
                       className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
-                      title="Custom TradingView Chart 3"
+                      title="CHAINLINK Advanced Chart"
                       frameBorder="0"
                       scrolling="no"
-                      sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
-                      referrerPolicy="no-referrer-when-downgrade"
-                      loading="lazy"
-                      allow="fullscreen; web-share; clipboard-read; clipboard-write"
                     />
                   </div>
                 </div>
@@ -373,7 +361,6 @@ export default function TopChartsPage() {
                       className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
                       title="BTC Dominance Advanced Chart"
                       frameBorder="0"
-                      allowtransparency="true"
                       scrolling="no"
                     />
                   </div>
@@ -403,7 +390,6 @@ export default function TopChartsPage() {
                       className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
                       title="ETH Dominance Advanced Chart"
                       frameBorder="0"
-                      allowtransparency="true"
                       scrolling="no"
                     />
                   </div>
@@ -433,7 +419,6 @@ export default function TopChartsPage() {
                       className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
                       title="OTHERS Dominance Advanced Chart"
                       frameBorder="0"
-                      allowtransparency="true"
                       scrolling="no"
                     />
                   </div>

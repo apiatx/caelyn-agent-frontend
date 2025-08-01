@@ -64,5 +64,6 @@ The application employs a full-stack monorepo architecture, ensuring clear separ
 ## Recent Changes (August 2025)
 - **MacroEdge Integration**: Added MacroEdge iframe (https://macroedge.ai/app) to Market Overview page above Onchain section with purple branding
 - **MacroEdge Security**: Added macroedge.ai domains to both client-side and server-side CSP configurations for proper iframe functionality
-- **Custom TradingView Charts**: Added three custom TradingView chart iframes to Top Charts page between BNB and DOGE sections using the specified chart URL (e5l95XgZ)
-- **Chart Color Schemes**: Implemented green, purple, and pink color themes for the three custom charts with consistent glassmorphism styling
+- **Additional TradingView Charts**: Added three new cryptocurrency chart iframes to Top Charts page between BNB and DOGE sections: SUI (green theme), AVAX (purple theme), and CHAINLINK (pink theme)
+- **Chart Integration**: All new charts use the same TradingView widget format as existing charts for consistent functionality and display
+- **Fixed iframe Issues**: Resolved all TypeScript compatibility issues by removing problematic allowtransparency attributes from iframe elements
