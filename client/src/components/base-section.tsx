@@ -49,14 +49,38 @@ const GlassCard = ({ children, className = "" }: { children: React.ReactNode; cl
 );
 
 export default function BaseSection() {
-  const { data: dashboardData, isLoading: loadingDashboard } = useQuery<DashboardData>({
+  const { data: dashboardData, isLoading: loadingDashboard, error } = useQuery<DashboardData>({
     queryKey: ['/api/dashboard'],
-    refetchInterval: 300000 // Refresh every 5 minutes
+    refetchInterval: 300000, // Refresh every 5 minutes
+    retry: 3, // Retry failed requests
+    staleTime: 60000 // Consider data stale after 1 minute
   });
 
   const isLoading = loadingDashboard;
 
-  if (isLoading || !dashboardData) {
+  // Enhanced error handling and data validation
+  if (error) {
+    console.error('Dashboard data error:', error);
+  }
+
+  // Ensure we have valid data structure with fallbacks
+  const safeData = dashboardData || {
+    portfolioValue: 0,
+    portfolioPnL: 0,
+    portfolioPnLPercent: 0,
+    baseTopMovers: [],
+    taoSubnetMovers: [],
+    largeWalletActivity: [],
+    socialPulse: []
+  };
+
+  // Ensure arrays are properly initialized
+  const baseTopMovers = Array.isArray(safeData.baseTopMovers) ? safeData.baseTopMovers : [];
+  const taoSubnetMovers = Array.isArray(safeData.taoSubnetMovers) ? safeData.taoSubnetMovers : [];
+  const largeWalletActivity = Array.isArray(safeData.largeWalletActivity) ? safeData.largeWalletActivity : [];
+  const socialPulse = Array.isArray(safeData.socialPulse) ? safeData.socialPulse : [];
+
+  if (isLoading && !dashboardData) {
     return (
       <div className="space-y-6">
         <div className="text-center">
@@ -69,6 +93,17 @@ export default function BaseSection() {
               <div className="h-24 bg-white/10 rounded"></div>
             </GlassCard>
           ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-white mb-2">Base Network</h2>
+          <p className="text-red-400">Error loading dashboard data. Showing platform integrations below.</p>
         </div>
       </div>
     );
