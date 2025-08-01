@@ -98,14 +98,37 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || '5000', 10);
+  
   server.listen({
     port,
     host: "0.0.0.0",
     reusePort: true,
-  }, () => {
+  }, (error?: Error) => {
+    if (error) {
+      console.error('Failed to start server:', error);
+      process.exit(1);
+    }
+    
     log(`serving on port ${port}`);
-    // Start background services for real-time monitoring
-    startBackgroundServices();
+    log(`Server is ready and healthy`);
+    
+    // Start background services AFTER server is confirmed running
+    // Use setTimeout to ensure server is fully ready before starting intensive background tasks
+    setTimeout(() => {
+      log(`Starting background services...`);
+      try {
+        startBackgroundServices();
+        log(`Background services started successfully`);
+      } catch (error) {
+        console.error('Error starting background services:', error);
+        // Don't exit - server can still function without background services
+      }
+    }, 1000); // 1 second delay to ensure server is stable
+  });
+
+  // Add error handler for server
+  server.on('error', (error: Error) => {
+    console.error('Server error:', error);
   });
 
   // Graceful shutdown

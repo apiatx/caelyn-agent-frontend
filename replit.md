@@ -67,3 +67,5 @@ The application employs a full-stack monorepo architecture, ensuring clear separ
 - **Additional TradingView Charts**: Added three new cryptocurrency chart iframes to Top Charts page between BNB and DOGE sections: SUI (green theme), AVAX (purple theme), and CHAINLINK (pink theme)
 - **Chart Integration**: All new charts use the same TradingView widget format as existing charts for consistent functionality and display
 - **Fixed iframe Issues**: Resolved all TypeScript compatibility issues by removing problematic allowtransparency attributes from iframe elements
+- **Deployment Health Checks**: Applied deployment health check fixes with multiple health endpoints (`/`, `/health`, `/api/health`, `/api/ready`), delayed background service initialization to prevent blocking server startup, and improved error handling during server startup process
+- **Server Startup Optimization**: Background services now start 1 second after server confirmation to ensure fast deployment health checks, with proper error handling that doesn't crash the main server if background services fail
