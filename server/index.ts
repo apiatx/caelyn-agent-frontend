@@ -18,38 +18,11 @@ import { env, logSecurityConfig, isProduction } from "./security/environment";
 
 const app = express();
 
-// ABSOLUTE PRIORITY: Deployment health check endpoints - must be first
+// PRIORITY: Deployment health check endpoints - must be first
 app.get("/deployment-health", (req, res) => {
   res.status(200).send("OK");
 });
 
-// CRITICAL: Deployment health check that works with Vite frontend serving
-app.get("/", (req, res, next) => {
-  // Check if this looks like a deployment health check
-  const userAgent = req.headers['user-agent'] || '';
-  const accept = req.headers['accept'] || '';
-  
-  // Deployment systems typically don't include 'text/html' in Accept header
-  // or use specific user agents
-  const looksLikeHealthCheck = (
-    !accept.includes('text/html') ||
-    userAgent.includes('curl') ||
-    userAgent.includes('wget') ||
-    userAgent.includes('health') ||
-    userAgent.includes('deployment') ||
-    userAgent.includes('replit') ||
-    req.query.health === 'true'
-  );
-  
-  if (looksLikeHealthCheck) {
-    res.status(200).send("OK");
-  } else {
-    // Continue to Vite middleware for frontend serving
-    next();
-  }
-});
-
-// Additional health check endpoints for monitoring
 app.get("/health", (req, res) => {
   res.status(200).json({ 
     status: "healthy", 
@@ -164,21 +137,20 @@ app.use((req, res, next) => {
     log(`  - http://0.0.0.0:${port}/api/health`);
     log(`  - http://0.0.0.0:${port}/api/ready`);
     
-    // Start background services AFTER server is confirmed running
-    // Longer delay to ensure deployment health checks pass before background services start
+    // Start background services after a delay to ensure server is ready
     setTimeout(() => {
       log(`Starting background services...`);
       try {
-        // Use a nested setTimeout to further isolate from server startup
-        setTimeout(() => {
-          startBackgroundServices();
-          log(`Background services started successfully`);
-        }, 1000);
+        startBackgroundServices();
+        log(`Background services started successfully`);
       } catch (error) {
         console.error('Error starting background services:', error);
         // Don't exit - server can still function without background services
       }
-    }, 5000); // 5 second delay to ensure server is stable for deployment health checks
+    }, 1000);
+  }).on('error', (err) => {
+    console.error('Server failed to start:', err);
+    process.exit(1);
   });
 
   // Add error handler for server

@@ -69,8 +69,9 @@ The application employs a full-stack monorepo architecture, ensuring clear separ
 - **Fixed iframe Issues**: Resolved all TypeScript compatibility issues by removing problematic allowtransparency attributes from iframe elements
 - **Deployment Health Checks**: Applied comprehensive deployment health check fixes including:
   - Multiple redundant health endpoints (`/deployment-health`, `/`, `/health`, `/ready`, `/api/health`, `/api/ready`)
-  - Priority deployment health check endpoint at `/deployment-health` that responds with 200 immediately
-  - Smart root path handling that detects deployment systems vs browsers using Accept headers and User-Agent
-  - Background service initialization delayed to 5+ seconds after server startup to prevent blocking
+  - Root route handler in routes.ts that responds with 200 status and JSON message for deployment systems
+  - Priority deployment health check endpoint at `/deployment-health` that responds with "OK" immediately
+  - Background service initialization delayed to 1 second after server startup to prevent blocking
   - Server timeout configuration (30s timeout, 65s keep-alive) for load balancer compatibility
-  - Enhanced error handling with nested timeouts to completely isolate background services from server startup
+  - Enhanced error handling with server.on('error') event listener for robust startup
+  - All health endpoints tested and confirmed working with curl commands

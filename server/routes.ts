@@ -30,6 +30,11 @@ const etfService = new ETFService();
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
+  // Root route handler for deployment health checks
+  app.get('/', (req, res) => {
+    res.status(200).json({ status: 'ok', message: 'Server is running' });
+  });
+
   // API health check endpoint (detailed info for monitoring)
   app.get("/api/health", (req, res) => {
     res.status(200).json({ 
