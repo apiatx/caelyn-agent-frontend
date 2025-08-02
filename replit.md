@@ -68,9 +68,10 @@ The application employs a full-stack monorepo architecture, ensuring clear separ
 - **Chart Integration**: All new charts use the same TradingView widget format as existing charts for consistent functionality and display
 - **Fixed iframe Issues**: Resolved all TypeScript compatibility issues by removing problematic allowtransparency attributes from iframe elements
 - **Deployment Health Checks**: Applied comprehensive deployment health check fixes including:
-  - Multiple redundant health endpoints (`/deployment-health`, `/`, `/health`, `/ready`, `/api/health`, `/api/ready`)
-  - Root route handler in routes.ts that responds with 200 status and JSON message for deployment systems
+  - Multiple redundant health endpoints (`/deployment-health`, `/health`, `/ready`, `/api/health`, `/api/ready`)
   - Priority deployment health check endpoint at `/deployment-health` that responds with "OK" immediately
+  - No root route handler to allow Vite middleware to serve React frontend properly
+  - Trust proxy configuration enabled for accurate rate limiting in deployment environments
   - Background service initialization delayed to 1 second after server startup to prevent blocking
   - Server timeout configuration (30s timeout, 65s keep-alive) for load balancer compatibility
   - Enhanced error handling with server.on('error') event listener for robust startup

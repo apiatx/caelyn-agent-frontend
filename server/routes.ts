@@ -30,7 +30,8 @@ const etfService = new ETFService();
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
-  // Root route removed - let Vite middleware handle frontend serving
+  // No root route handler - let Vite middleware handle all requests to /
+  // Deployment systems should use dedicated health endpoints
 
   // API health check endpoint (detailed info for monitoring)
   app.get("/api/health", (req, res) => {

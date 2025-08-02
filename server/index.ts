@@ -18,6 +18,9 @@ import { env, logSecurityConfig, isProduction } from "./security/environment";
 
 const app = express();
 
+// Configure trust proxy for rate limiting accuracy
+app.set('trust proxy', true);
+
 // PRIORITY: Deployment health check endpoints - must be first
 app.get("/deployment-health", (req, res) => {
   res.status(200).send("OK");
