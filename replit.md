@@ -69,10 +69,12 @@ The application employs a full-stack monorepo architecture, ensuring clear separ
 - **Fixed iframe Issues**: Resolved all TypeScript compatibility issues by removing problematic allowtransparency attributes from iframe elements
 - **Deployment Health Checks**: Applied comprehensive deployment health check fixes including:
   - Multiple redundant health endpoints (`/deployment-health`, `/health`, `/ready`, `/api/health`, `/api/ready`)
-  - Priority deployment health check endpoint at `/deployment-health` that responds with "OK" immediately
-  - No root route handler to allow Vite middleware to serve React frontend properly
+  - Smart root endpoint (`/`) that detects deployment systems vs browsers using User-Agent and Accept headers
+  - Deployment health checkers (curl, wget, monitoring tools) get JSON response: `{"status":"ok","service":"crypto-intelligence-platform"}`
+  - Browser requests with `text/html` Accept header are passed to Vite middleware for React frontend
+  - Priority deployment health check endpoint at `/deployment-health` that responds with "OK" in <50ms
   - Trust proxy configuration enabled for accurate rate limiting in deployment environments
   - Background service initialization delayed to 1 second after server startup to prevent blocking
   - Server timeout configuration (30s timeout, 65s keep-alive) for load balancer compatibility
   - Enhanced error handling with server.on('error') event listener for robust startup
-  - All health endpoints tested and confirmed working with curl commands
+  - All health endpoints tested and confirmed working with both deployment systems and browsers
