@@ -21,33 +21,20 @@ const app = express();
 // Configure trust proxy for rate limiting accuracy
 app.set('trust proxy', true);
 
-// PRIORITY: Deployment health check endpoints - must be first
-// Smart root endpoint that detects deployment health checkers vs browsers
-app.get("/", (req, res, next) => {
+// CRITICAL: Deployment health check endpoint - MUST respond with 200 immediately
+// Also serves as user redirect to the frontend
+app.get("/", (req, res) => {
   const userAgent = req.get('User-Agent') || '';
   const acceptHeader = req.get('Accept') || '';
   
-  // Deployment systems typically:
-  // 1. Use specific user agents (health, check, monitor, curl, wget, etc.)
-  // 2. Don't request HTML content
-  // 3. Use simple Accept headers
-  const isDeploymentHealthCheck = 
-    userAgent.toLowerCase().includes('health') ||
-    userAgent.toLowerCase().includes('check') ||
-    userAgent.toLowerCase().includes('monitor') ||
-    userAgent.toLowerCase().includes('curl') ||
-    userAgent.toLowerCase().includes('wget') ||
-    userAgent.toLowerCase().includes('bot') ||
-    acceptHeader === '*/*' ||
-    acceptHeader.includes('application/json') ||
-    !acceptHeader.includes('text/html');
-  
-  if (isDeploymentHealthCheck) {
-    return res.status(200).json({ status: "ok", service: "crypto-intelligence-platform" });
+  // Check if this is a browser request (has text/html in Accept header)
+  if (acceptHeader.includes('text/html') && userAgent.includes('Mozilla')) {
+    // Redirect browsers to the frontend application
+    return res.redirect(302, '/app');
   }
   
-  // For browsers requesting HTML, let Vite middleware handle it
-  next();
+  // For deployment health checks and monitoring tools
+  res.status(200).json({ status: "ok", service: "crypto-intelligence-platform" });
 });
 
 app.get("/deployment-health", (req, res) => {
