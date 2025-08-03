@@ -25,7 +25,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
         {/* Desktop Navigation */}
         <div className="hidden lg:flex space-x-2">
           <button
-            onClick={() => navigateTo("/")}
+            onClick={() => navigateTo("/app")}
             className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
               isActive("dashboard")
                 ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
@@ -35,7 +35,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
             <Activity className="w-4 h-4 mr-2 inline" />Market Overview
           </button>
           <button
-            onClick={() => navigateTo("/top-charts")}
+            onClick={() => navigateTo("/app/top-charts")}
             className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
               isActive("top-charts")
                 ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
@@ -45,7 +45,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
             <BarChart3 className="w-4 h-4 mr-2 inline" />Top Charts
           </button>
           <button
-            onClick={() => navigateTo("/#alpha")}
+            onClick={() => navigateTo("/app#alpha")}
             className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
               isActive("alpha")
                 ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
@@ -55,7 +55,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
             <TrendingUp className="w-4 h-4 mr-2 inline" />Alpha
           </button>
           <button
-            onClick={() => navigateTo("/#base")}
+            onClick={() => navigateTo("/app#base")}
             className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
               isActive("base")
                 ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
@@ -65,7 +65,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
             <ChartLine className="w-4 h-4 mr-2 inline" />Base
           </button>
           <button
-            onClick={() => navigateTo("/#bittensor")}
+            onClick={() => navigateTo("/app#bittensor")}
             className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
               isActive("bittensor")
                 ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
@@ -75,7 +75,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
             <Brain className="w-4 h-4 mr-2 inline" />Bittensor
           </button>
           <button
-            onClick={() => navigateTo("/solana")}
+            onClick={() => navigateTo("/app/solana")}
             className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
               isActive("solana")
                 ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
@@ -85,7 +85,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
             <Zap className="w-4 h-4 mr-2 inline" />Solana
           </button>
           <button
-            onClick={() => navigateTo("/hype")}
+            onClick={() => navigateTo("/app/hype")}
             className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
               isActive("hype")
                 ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
@@ -95,7 +95,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
             <Brain className="w-4 h-4 mr-2 inline" />Hype
           </button>
           <button
-            onClick={() => navigateTo("/abstract")}
+            onClick={() => navigateTo("/app/abstract")}
             className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
               isActive("abstract")
                 ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
@@ -105,7 +105,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
             <Layers className="w-4 h-4 mr-2 inline" />Abstract
           </button>
           <button
-            onClick={() => navigateTo("/defi")}
+            onClick={() => navigateTo("/app/defi")}
             className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
               isActive("defi")
                 ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
@@ -115,7 +115,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
             <DollarSign className="w-4 h-4 mr-2 inline" />DeFi
           </button>
           <button
-            onClick={() => navigateTo("/#portfolio")}
+            onClick={() => navigateTo("/app#portfolio")}
             className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
               isActive("portfolio")
                 ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
@@ -125,7 +125,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
             <Activity className="w-4 h-4 mr-2 inline" />Portfolio
           </button>
           <button
-            onClick={() => navigateTo("/crypto-stocks")}
+            onClick={() => navigateTo("/app/crypto-stocks")}
             className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
               isActive("crypto-stocks")
                 ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
@@ -140,7 +140,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
         <div className="lg:hidden overflow-x-auto">
           <div className="flex space-x-1 min-w-max pb-2">
             <button
-              onClick={() => navigateTo("/")}
+              onClick={() => navigateTo("/app")}
               className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                 isActive("dashboard")
                   ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
@@ -150,7 +150,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
               <Activity className="w-4 h-4 mr-1 inline" />Market Overview
             </button>
             <button
-              onClick={() => navigateTo("/top-charts")}
+              onClick={() => navigateTo("/app/top-charts")}
               className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                 isActive("top-charts")
                   ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
@@ -160,7 +160,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
               <BarChart3 className="w-4 h-4 mr-1 inline" />Top Charts
             </button>
             <button
-              onClick={() => navigateTo("/#alpha")}
+              onClick={() => navigateTo("/app#alpha")}
               className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                 isActive("alpha")
                   ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
@@ -170,7 +170,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
               <TrendingUp className="w-4 h-4 mr-1 inline" />Alpha
             </button>
             <button
-              onClick={() => navigateTo("/#base")}
+              onClick={() => navigateTo("/app#base")}
               className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                 isActive("base")
                   ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
@@ -180,7 +180,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
               <ChartLine className="w-4 h-4 mr-1 inline" />Base
             </button>
             <button
-              onClick={() => navigateTo("/#bittensor")}
+              onClick={() => navigateTo("/app#bittensor")}
               className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                 isActive("bittensor")
                   ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
@@ -190,7 +190,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
               <Brain className="w-4 h-4 mr-1 inline" />Bittensor
             </button>
             <button
-              onClick={() => navigateTo("/solana")}
+              onClick={() => navigateTo("/app/solana")}
               className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                 isActive("solana")
                   ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
@@ -200,7 +200,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
               <Zap className="w-4 h-4 mr-1 inline" />Solana
             </button>
             <button
-              onClick={() => navigateTo("/hype")}
+              onClick={() => navigateTo("/app/hype")}
               className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                 isActive("hype")
                   ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
@@ -210,7 +210,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
               <Brain className="w-4 h-4 mr-1 inline" />Hype
             </button>
             <button
-              onClick={() => navigateTo("/abstract")}
+              onClick={() => navigateTo("/app/abstract")}
               className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                 isActive("abstract")
                   ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
@@ -220,7 +220,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
               <Layers className="w-4 h-4 mr-1 inline" />Abstract
             </button>
             <button
-              onClick={() => navigateTo("/defi")}
+              onClick={() => navigateTo("/app/defi")}
               className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                 isActive("defi")
                   ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
@@ -230,7 +230,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
               <DollarSign className="w-4 h-4 mr-1 inline" />DeFi
             </button>
             <button
-              onClick={() => navigateTo("/#portfolio")}
+              onClick={() => navigateTo("/app#portfolio")}
               className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                 isActive("portfolio")
                   ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
@@ -240,7 +240,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
               <Activity className="w-4 h-4 mr-1 inline" />Portfolio
             </button>
             <button
-              onClick={() => navigateTo("/crypto-stocks")}
+              onClick={() => navigateTo("/app/crypto-stocks")}
               className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                 isActive("crypto-stocks")
                   ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"

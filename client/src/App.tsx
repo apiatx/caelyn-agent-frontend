@@ -15,13 +15,14 @@ import NotFound from "@/pages/not-found";
 function Router() {
   return (
     <Switch>
+      <Route path="/app" component={Dashboard} />
+      <Route path="/app/top-charts" component={TopChartsPage} />
+      <Route path="/app/solana" component={SolanaPage} />
+      <Route path="/app/defi" component={DeFiPage} />
+      <Route path="/app/hype" component={HypePage} />
+      <Route path="/app/abstract" component={AbstractPage} />
+      <Route path="/app/crypto-stocks" component={CryptoStocks} />
       <Route path="/" component={Dashboard} />
-      <Route path="/top-charts" component={TopChartsPage} />
-      <Route path="/solana" component={SolanaPage} />
-      <Route path="/defi" component={DeFiPage} />
-      <Route path="/hype" component={HypePage} />
-      <Route path="/abstract" component={AbstractPage} />
-      <Route path="/crypto-stocks" component={CryptoStocks} />
       <Route component={NotFound} />
     </Switch>
   );
