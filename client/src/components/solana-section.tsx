@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BarChart3, Activity, Zap, TrendingDown, ExternalLink } from "lucide-react";
+import { BarChart3, Activity, Zap, TrendingDown, ExternalLink, Star } from "lucide-react";
 import { openSecureLink, getSecureIframeProps } from "@/utils/security";
 
 // Glass card component for Solana section
@@ -169,6 +169,69 @@ export default function SolanaSection() {
           </div>
         </GlassCard>
       </div>
+
+      {/* X Alpha */}
+      <GlassCard className="p-6">
+        <div className="flex items-center gap-2 mb-6">
+          <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+            <Star className="w-4 h-4 text-white" />
+          </div>
+          <h3 className="text-xl font-semibold text-white">X Alpha</h3>
+          <Badge className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white border-crypto-silver/30">
+            SOLANA ALPHA
+          </Badge>
+        </div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <button
+            onClick={() => openSecureLink('https://x.com/Dior100x')}
+            className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
+          >
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-xs font-bold">𝕏</span>
+              </div>
+              <h5 className="text-purple-400 font-semibold text-sm">Dior100x</h5>
+            </div>
+          </button>
+
+          <button
+            onClick={() => openSecureLink('https://x.com/_Shadow36')}
+            className="p-3 bg-gray-500/10 border border-gray-500/20 rounded-lg hover:bg-gray-500/20 transition-colors"
+          >
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-6 h-6 bg-gray-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-xs font-bold">𝕏</span>
+              </div>
+              <h5 className="text-gray-400 font-semibold text-sm">_Shadow36</h5>
+            </div>
+          </button>
+
+          <button
+            onClick={() => openSecureLink('https://x.com/WolverCrypto')}
+            className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg hover:bg-yellow-500/20 transition-colors"
+          >
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-xs font-bold">𝕏</span>
+              </div>
+              <h5 className="text-yellow-400 font-semibold text-sm">WolverCrypto</h5>
+            </div>
+          </button>
+
+          <button
+            onClick={() => openSecureLink('https://x.com/watchingmarkets')}
+            className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+          >
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-xs font-bold">𝕏</span>
+              </div>
+              <h5 className="text-blue-400 font-semibold text-sm">watchingmarkets</h5>
+            </div>
+          </button>
+        </div>
+      </GlassCard>
 
       {/* Jupiter */}
       <GlassCard className="p-6">
