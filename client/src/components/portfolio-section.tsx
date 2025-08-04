@@ -441,6 +441,47 @@ export default function PortfolioSection() {
           </GlassCard>
         )}
 
+      {/* Jupiter Portfolio */}
+      <GlassCard className="p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-sm font-bold">
+              J
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-white">Jupiter Portfolio</h3>
+              <p className="text-crypto-silver text-sm">Solana DeFi portfolio tracking</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
+              SOLANA DEX
+            </Badge>
+            <button
+              onClick={() => window.open('https://jup.ag/portfolio/FjT8MxAYv8gUvQ8TQME6zvceE3n4KncrgX55VitJiT4B', '_blank', 'noopener,noreferrer')}
+              className="text-crypto-silver hover:text-white transition-colors group"
+            >
+              <ExternalLink className="h-4 w-4 group-hover:scale-110 transition-transform" />
+            </button>
+          </div>
+        </div>
+        
+        <div className="w-full">
+          <iframe
+            src="https://jup.ag/portfolio/FjT8MxAYv8gUvQ8TQME6zvceE3n4KncrgX55VitJiT4B"
+            className="w-full h-[600px] sm:h-[700px] lg:h-[800px] rounded-lg border border-crypto-silver/20"
+            title="Jupiter Portfolio"
+            frameBorder="0"
+            loading="lazy"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+            style={{
+              background: 'transparent',
+              colorScheme: 'dark'
+            }}
+          />
+        </div>
+      </GlassCard>
+
       {/* TaoHub Portfolio Integration */}
       <GlassCard className="p-6">
         <div className="flex items-center justify-between mb-6">
