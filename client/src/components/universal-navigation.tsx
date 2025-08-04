@@ -35,14 +35,14 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
             <Activity className="w-4 h-4 mr-2 inline" />Market Overview
           </button>
           <button
-            onClick={() => navigateTo("/app/top-charts")}
+            onClick={() => navigateTo("/app/majors")}
             className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
-              isActive("top-charts")
+              isActive("majors")
                 ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
                 : "hover:bg-white/5 text-crypto-silver"
             }`}
           >
-            <BarChart3 className="w-4 h-4 mr-2 inline" />Top Charts
+            <BarChart3 className="w-4 h-4 mr-2 inline" />Majors
           </button>
           <button
             onClick={() => navigateTo("/app#alpha")}
@@ -150,14 +150,14 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
               <Activity className="w-4 h-4 mr-1 inline" />Market Overview
             </button>
             <button
-              onClick={() => navigateTo("/app/top-charts")}
+              onClick={() => navigateTo("/app/majors")}
               className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
-                isActive("top-charts")
+                isActive("majors")
                   ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
                   : "hover:bg-white/5 text-crypto-silver"
               }`}
             >
-              <BarChart3 className="w-4 h-4 mr-1 inline" />Top Charts
+              <BarChart3 className="w-4 h-4 mr-1 inline" />Majors
             </button>
             <button
               onClick={() => navigateTo("/app#alpha")}

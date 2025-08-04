@@ -30,19 +30,19 @@ export default function TopChartsPage() {
       </header>
 
       {/* Navigation */}
-      <UniversalNavigation activePage="top-charts" />
+      <UniversalNavigation activePage="majors" />
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 lg:py-8">
         <div className="space-y-8">
-          {/* Top Charts Section */}
+          {/* Majors Section */}
           <div className="space-y-6">
             <div className="flex items-center space-x-2">
               <h2 className="text-2xl font-bold bg-gradient-to-r from-orange-400 via-yellow-500 to-orange-600 bg-clip-text text-transparent">
-                Top Charts
+                Majors
               </h2>
               <Badge variant="outline" className="bg-orange-500/20 text-orange-300 border-orange-500/30">
-                LIVE CHARTS
+                MAJOR PAIRS
               </Badge>
             </div>
             
@@ -67,7 +67,7 @@ export default function TopChartsPage() {
                   </div>
                   <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
                     <iframe
-                      src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]&symbol=BINANCE%3ABTCUSDT"
+                      src="https://www.tradingview.com/chart/e5l95XgZ/?symbol=BITSTAMP%3ABTCUSD"
                       className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
                       title="Bitcoin Advanced Chart"
                       frameBorder="0"

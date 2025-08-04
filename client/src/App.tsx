@@ -16,7 +16,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/app" component={Dashboard} />
-      <Route path="/app/top-charts" component={TopChartsPage} />
+      <Route path="/app/majors" component={TopChartsPage} />
       <Route path="/app/solana" component={SolanaPage} />
       <Route path="/app/defi" component={DeFiPage} />
       <Route path="/app/hype" component={HypePage} />
