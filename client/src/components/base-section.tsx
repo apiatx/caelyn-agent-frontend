@@ -2,7 +2,6 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { Globe, ArrowLeftRight, TrendingUp } from "lucide-react";
-import { openSecureLink, getSecureIframeProps, getSecureLinkProps } from "@/utils/security";
 
 
 interface DashboardData {
@@ -47,6 +46,51 @@ const GlassCard = ({ children, className = "" }: { children: React.ReactNode; cl
     {children}
   </Card>
 );
+
+// Safe iframe component that doesn't throw errors
+const SafeIframe = ({ src, title, className = "" }: { src: string; title: string; className?: string }) => {
+  return (
+    <div className="w-full">
+      <iframe
+        src={src}
+        title={title}
+        className={`w-full h-[600px] rounded-lg border border-crypto-silver/20 ${className}`}
+        frameBorder="0"
+        loading="lazy"
+        sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation-by-user-activation"
+        referrerPolicy="strict-origin-when-cross-origin"
+        style={{
+          background: '#000000',
+          colorScheme: 'dark'
+        }}
+      />
+    </div>
+  );
+};
+
+// Safe link component
+const SafeLink = ({ href, children, className = "" }: { href: string; children: React.ReactNode; className?: string }) => {
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    try {
+      window.open(href, '_blank');
+    } catch (error) {
+      console.warn('Failed to open URL:', href, error);
+    }
+  };
+
+  return (
+    <a
+      href={href}
+      onClick={handleClick}
+      className={className}
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      {children}
+    </a>
+  );
+};
 
 export default function BaseSection() {
   const { data: dashboardData, isLoading: loadingDashboard, error } = useQuery<DashboardData>({
@@ -127,16 +171,10 @@ export default function BaseSection() {
             Live Data
           </span>
         </div>
-        <div className="w-full">
-          <iframe
-            {...getSecureIframeProps('https://dexscreener.com/base?theme=dark', 'DexScreener Base Network')}
-            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            style={{
-              background: '#000000',
-              colorScheme: 'dark'
-            }}
-          />
-        </div>
+        <SafeIframe 
+          src="https://dexscreener.com/base?theme=dark"
+          title="DexScreener Base Network"
+        />
       </GlassCard>
 
       {/* Farterminal */}
@@ -149,23 +187,17 @@ export default function BaseSection() {
           <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-full font-medium">
             TERMINAL
           </span>
-          <button
-            onClick={() => openSecureLink('https://www.terminal.co/?tab=base')}
+          <SafeLink 
+            href="https://www.terminal.co/?tab=base"
             className="ml-auto text-green-400 hover:text-green-300 text-xs"
           >
             Open in New Tab →
-          </button>
+          </SafeLink>
         </div>
-        <div className="w-full">
-          <iframe
-            {...getSecureIframeProps('https://www.terminal.co/?tab=base', 'Farterminal')}
-            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            style={{
-              background: '#000000',
-              colorScheme: 'dark'
-            }}
-          />
-        </div>
+        <SafeIframe 
+          src="https://www.terminal.co/?tab=base"
+          title="Farterminal"
+        />
       </GlassCard>
 
       {/* Checkr.social */}
@@ -178,23 +210,17 @@ export default function BaseSection() {
           <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs rounded-full font-medium">
             SOCIAL ANALYTICS
           </span>
-          <button
-            onClick={() => openSecureLink('https://checkr.social/')}
+          <SafeLink 
+            href="https://checkr.social/"
             className="ml-auto text-blue-400 hover:text-blue-300 text-xs"
           >
             Open in New Tab →
-          </button>
+          </SafeLink>
         </div>
-        <div className="w-full">
-          <iframe
-            {...getSecureIframeProps('https://checkr.social/', 'Checkr.social')}
-            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            style={{
-              background: '#000000',
-              colorScheme: 'dark'
-            }}
-          />
-        </div>
+        <SafeIframe 
+          src="https://checkr.social/"
+          title="Checkr.social"
+        />
       </GlassCard>
 
       {/* BlockCreeper Explorer */}
@@ -207,12 +233,12 @@ export default function BaseSection() {
           <span className="px-2 py-1 bg-orange-500/20 text-orange-400 text-xs rounded-full font-medium">
             BLOCKCHAIN EXPLORER
           </span>
-          <button
-            onClick={() => openSecureLink('https://www.blockcreeper.com/')}
+          <SafeLink 
+            href="https://www.blockcreeper.com/"
             className="ml-auto text-orange-400 hover:text-orange-300 text-xs"
           >
             Open in New Tab →
-          </button>
+          </SafeLink>
         </div>
         <div className="w-full">
           <iframe
@@ -239,23 +265,17 @@ export default function BaseSection() {
           <span className="px-2 py-1 bg-purple-500/20 text-purple-400 text-xs rounded-full font-medium">
             ORACLE
           </span>
-          <button
-            onClick={() => openSecureLink('https://www.zoracle.xyz/')}
+          <SafeLink 
+            href="https://www.zoracle.xyz/"
             className="ml-auto text-purple-400 hover:text-purple-300 text-xs"
           >
             Open in New Tab →
-          </button>
+          </SafeLink>
         </div>
-        <div className="w-full">
-          <iframe
-            {...getSecureIframeProps('https://www.zoracle.xyz/', 'Zoracle')}
-            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            style={{
-              background: '#000000',
-              colorScheme: 'dark'
-            }}
-          />
-        </div>
+        <SafeIframe 
+          src="https://www.zoracle.xyz/"
+          title="Zoracle"
+        />
       </GlassCard>
 
       {/* Ecosystems Section */}
@@ -282,21 +302,15 @@ export default function BaseSection() {
             </span>
           </div>
           <div className="space-y-4">
-            <div className="w-full">
-              <iframe
-                {...getSecureIframeProps('https://app.virtuals.io/', 'Virtuals.io Platform')}
-                className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-                style={{
-                  background: '#000000',
-                  colorScheme: 'dark'
-                }}
-              />
-            </div>
+            <SafeIframe 
+              src="https://app.virtuals.io/"
+              title="Virtuals.io Platform"
+            />
             
             {/* Related Platforms */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-crypto-silver/10">
-              <a
-                {...getSecureLinkProps('https://bankr.bot/terminal')}
+              <SafeLink
+                href="https://bankr.bot/terminal"
                 className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-purple-500/30 transition-all duration-200 group"
               >
                 <div className="flex items-center gap-3">
@@ -309,10 +323,10 @@ export default function BaseSection() {
                   </div>
                 </div>
                 <div className="w-4 h-4 text-gray-400 group-hover:text-purple-400 transition-colors">→</div>
-              </a>
+              </SafeLink>
 
-              <a
-                {...getSecureLinkProps('https://creator.bid/agents')}
+              <SafeLink
+                href="https://creator.bid/agents"
                 className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-emerald-500/30 transition-all duration-200 group"
               >
                 <div className="flex items-center gap-3">
@@ -325,7 +339,7 @@ export default function BaseSection() {
                   </div>
                 </div>
                 <div className="w-4 h-4 text-gray-400 group-hover:text-emerald-400 transition-colors">→</div>
-              </a>
+              </SafeLink>
             </div>
           </div>
         </GlassCard>
