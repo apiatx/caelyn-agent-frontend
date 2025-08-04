@@ -229,6 +229,35 @@ export default function BaseSection() {
         </div>
       </GlassCard>
 
+      {/* Zoracle */}
+      <GlassCard className="p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full flex items-center justify-center">
+            <span className="text-white text-xs font-bold">Z</span>
+          </div>
+          <h3 className="text-xl font-semibold text-white">Zoracle</h3>
+          <span className="px-2 py-1 bg-purple-500/20 text-purple-400 text-xs rounded-full font-medium">
+            ORACLE
+          </span>
+          <button
+            onClick={() => openSecureLink('https://www.zoracle.xyz/')}
+            className="ml-auto text-purple-400 hover:text-purple-300 text-xs"
+          >
+            Open in New Tab →
+          </button>
+        </div>
+        <div className="w-full">
+          <iframe
+            {...getSecureIframeProps('https://www.zoracle.xyz/', 'Zoracle')}
+            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+            style={{
+              background: '#000000',
+              colorScheme: 'dark'
+            }}
+          />
+        </div>
+      </GlassCard>
+
       {/* Ecosystems Section */}
       <div className="space-y-6">
         <div className="flex items-center gap-3 mb-6">
