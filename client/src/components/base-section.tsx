@@ -240,19 +240,10 @@ export default function BaseSection() {
             Open in New Tab →
           </SafeLink>
         </div>
-        <div className="w-full">
-          <iframe
-            src="https://www.blockcreeper.com/"
-            title="BlockCreeper Explorer"
-            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            style={{
-              background: '#000000',
-              colorScheme: 'dark'
-            }}
-            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
-            loading="lazy"
-          />
-        </div>
+        <SafeIframe 
+          src="https://www.blockcreeper.com/"
+          title="BlockCreeper Explorer"
+        />
       </GlassCard>
 
       {/* Zoracle */}
@@ -359,29 +350,29 @@ export default function BaseSection() {
           </div>
           
           <div className="grid grid-cols-1 gap-3">
-            <button
-              onClick={() => openSecureLink('https://x.com/BaseDailyTK')}
-              className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+            <SafeLink
+              href="https://x.com/BaseDailyTK"
+              className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group block"
             >
               <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">Base Daily TK</div>
               <div className="text-xs text-crypto-silver">@BaseDailyTK - Daily BASE network updates and insights</div>
-            </button>
+            </SafeLink>
             
-            <button
-              onClick={() => openSecureLink('https://x.com/MemesOnBase')}
-              className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+            <SafeLink
+              href="https://x.com/MemesOnBase"
+              className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group block"
             >
               <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">Memes On Base</div>
               <div className="text-xs text-crypto-silver">@MemesOnBase - BASE network meme culture and community</div>
-            </button>
+            </SafeLink>
             
-            <button
-              onClick={() => openSecureLink('https://x.com/MemesOnBase_')}
-              className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+            <SafeLink
+              href="https://x.com/MemesOnBase_"
+              className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group block"
             >
               <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">Memes On Base</div>
               <div className="text-xs text-crypto-silver">@MemesOnBase_ - BASE network meme culture and trends</div>
-            </button>
+            </SafeLink>
           </div>
         </GlassCard>
       </div>
