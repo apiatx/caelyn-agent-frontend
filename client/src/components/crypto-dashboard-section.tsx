@@ -86,23 +86,29 @@ export default function CryptoDashboardSection() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-3">
-          <button
-            onClick={() => openInNewTab('https://app.newhedge.io/research/bitcoin-monthly-returns')}
-            className="p-4 bg-gradient-to-r from-orange-500/20 to-red-500/20 border border-orange-500/30 rounded-lg hover:border-orange-400/50 transition-all duration-200 text-left"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="font-medium text-orange-200 group-hover:text-orange-100 transition-colors">
-                  Bitcoin Monthly Returns Heatmap
-                </div>
-                <div className="text-xs text-gray-400 mt-1">
-                  Historical monthly performance analysis
-                </div>
-              </div>
-              <ExternalLink className="w-4 h-4 text-orange-400 opacity-60 group-hover:opacity-100 transition-opacity" />
-            </div>
-          </button>
+        <div className="mb-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
+            <button
+              onClick={() => openInNewTab('https://newhedge.io/bitcoin/monthly-returns-heatmap')}
+              className="text-orange-400 hover:text-orange-300 text-xs sm:text-sm ml-auto"
+            >
+              Open Full View →
+            </button>
+          </div>
+          <div className="w-full bg-gray-900/50 rounded-lg border border-crypto-silver/20 overflow-hidden">
+            <iframe
+              src="https://newhedge.io/bitcoin/monthly-returns-heatmap"
+              className="w-full h-[400px] sm:h-[500px] lg:h-[600px]"
+              title="Bitcoin Monthly Returns Heatmap"
+              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              style={{
+                background: '#000000',
+                colorScheme: 'dark'
+              }}
+            />
+          </div>
         </div>
       </GlassCard>
 
