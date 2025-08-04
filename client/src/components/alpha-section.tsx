@@ -140,91 +140,7 @@ export default function AlphaSection() {
         </div>
       </GlassCard>
 
-
-
-      {/* Smart Wallets */}
-      <GlassCard className="p-6">
-        <div className="flex items-center gap-2 mb-6">
-          <div className="w-6 h-6 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center">
-            <Wallet className="w-4 h-4 text-white" />
-          </div>
-          <h3 className="text-xl font-semibold text-white">Smart Wallets</h3>
-          <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
-            COMING SOON
-          </Badge>
-        </div>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-          <button
-            onClick={() => openInNewTab('https://hyperdash.info/trader/0x15b325660a1c4a9582a7d834c31119c0cb9e3a42')}
-            className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
-                <Wallet className="w-4 h-4 text-white" />
-              </div>
-              <h4 className="text-purple-400 font-semibold">HyperLiquid Whale</h4>
-            </div>
-            <p className="text-gray-400 text-sm">Hyperdash Trader Analytics</p>
-          </button>
-
-          <button
-            onClick={() => openInNewTab('https://debank.com/profile/0x3f135ba020d0ed288d8dd85cd3d600451b121013')}
-            className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                <Wallet className="w-4 h-4 text-white" />
-              </div>
-              <h4 className="text-green-400 font-semibold">WhaleAI - ETH/BASE</h4>
-            </div>
-            <p className="text-gray-400 text-sm">DeBank Portfolio Analysis</p>
-          </button>
-        </div>
-      </GlassCard>
-
-      {/* Resources */}
-      <GlassCard className="p-6">
-        <div className="flex items-center gap-2 mb-6">
-          <div className="w-6 h-6 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center">
-            <Brain className="w-4 h-4 text-white" />
-          </div>
-          <h3 className="text-xl font-semibold text-white">Resources</h3>
-          <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 text-xs">
-            AI POWERED
-          </Badge>
-        </div>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <button
-            onClick={() => openInNewTab('https://chatgpt.com/g/g-ma6mK7m5t-crypto-trading-investing')}
-            className="p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-lg hover:bg-cyan-500/20 transition-colors"
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center">
-                <Brain className="w-4 h-4 text-white" />
-              </div>
-              <h4 className="text-cyan-400 font-semibold">ChatGPT Crypto AI</h4>
-            </div>
-            <p className="text-gray-400 text-sm">Crypto Trading & Investing GPT</p>
-          </button>
-
-          <button
-            onClick={() => openInNewTab('https://app.bubblemaps.io/')}
-            className="p-4 bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg hover:from-blue-500/20 hover:to-purple-500/20 transition-colors"
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                <TrendingUp className="w-4 h-4 text-white" />
-              </div>
-              <h4 className="text-blue-400 font-semibold">Bubblemaps</h4>
-            </div>
-            <p className="text-gray-400 text-sm">Token Analytics & Visualization</p>
-          </button>
-        </div>
-      </GlassCard>
-
-      {/* Social - Moved to bottom with KOLs and Social Pulse subsections */}
+      {/* Social - Moved underneath Signal section */}
       <GlassCard className="p-6">
         <div className="flex items-center gap-2 mb-6">
           <div className="w-6 h-6 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
@@ -659,6 +575,88 @@ export default function AlphaSection() {
               <p className="text-gray-400 text-sm">Social Signal Analytics</p>
             </button>
           </div>
+        </div>
+      </GlassCard>
+
+      {/* Smart Wallets */}
+      <GlassCard className="p-6">
+        <div className="flex items-center gap-2 mb-6">
+          <div className="w-6 h-6 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center">
+            <Wallet className="w-4 h-4 text-white" />
+          </div>
+          <h3 className="text-xl font-semibold text-white">Smart Wallets</h3>
+          <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
+            COMING SOON
+          </Badge>
+        </div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+          <button
+            onClick={() => openInNewTab('https://hyperdash.info/trader/0x15b325660a1c4a9582a7d834c31119c0cb9e3a42')}
+            className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                <Wallet className="w-4 h-4 text-white" />
+              </div>
+              <h4 className="text-purple-400 font-semibold">HyperLiquid Whale</h4>
+            </div>
+            <p className="text-gray-400 text-sm">Hyperdash Trader Analytics</p>
+          </button>
+
+          <button
+            onClick={() => openInNewTab('https://debank.com/profile/0x3f135ba020d0ed288d8dd85cd3d600451b121013')}
+            className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                <Wallet className="w-4 h-4 text-white" />
+              </div>
+              <h4 className="text-green-400 font-semibold">WhaleAI - ETH/BASE</h4>
+            </div>
+            <p className="text-gray-400 text-sm">DeBank Portfolio Analysis</p>
+          </button>
+        </div>
+      </GlassCard>
+
+      {/* Resources - Moved to bottom */}
+      <GlassCard className="p-6">
+        <div className="flex items-center gap-2 mb-6">
+          <div className="w-6 h-6 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center">
+            <Brain className="w-4 h-4 text-white" />
+          </div>
+          <h3 className="text-xl font-semibold text-white">Resources</h3>
+          <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 text-xs">
+            AI POWERED
+          </Badge>
+        </div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <button
+            onClick={() => openInNewTab('https://chatgpt.com/g/g-ma6mK7m5t-crypto-trading-investing')}
+            className="p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-lg hover:bg-cyan-500/20 transition-colors"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center">
+                <Brain className="w-4 h-4 text-white" />
+              </div>
+              <h4 className="text-cyan-400 font-semibold">ChatGPT Crypto AI</h4>
+            </div>
+            <p className="text-gray-400 text-sm">Crypto Trading & Investing GPT</p>
+          </button>
+
+          <button
+            onClick={() => openInNewTab('https://app.bubblemaps.io/')}
+            className="p-4 bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg hover:from-blue-500/20 hover:to-purple-500/20 transition-colors"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                <TrendingUp className="w-4 h-4 text-white" />
+              </div>
+              <h4 className="text-blue-400 font-semibold">Bubblemaps</h4>
+            </div>
+            <p className="text-gray-400 text-sm">Token Analytics & Visualization</p>
+          </button>
         </div>
       </GlassCard>
     </div>
