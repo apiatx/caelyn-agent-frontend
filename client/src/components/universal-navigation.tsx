@@ -28,7 +28,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
             onClick={() => navigateTo("/app")}
             className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
               isActive("dashboard")
-                ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                 : "hover:bg-white/5 text-crypto-silver"
             }`}
           >
@@ -38,7 +38,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
             onClick={() => navigateTo("/app/majors")}
             className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
               isActive("majors")
-                ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                 : "hover:bg-white/5 text-crypto-silver"
             }`}
           >
@@ -48,7 +48,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
             onClick={() => navigateTo("/app#alpha")}
             className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
               isActive("alpha")
-                ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                 : "hover:bg-white/5 text-crypto-silver"
             }`}
           >
@@ -58,7 +58,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
             onClick={() => navigateTo("/app/ethereum")}
             className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
               isActive("ethereum")
-                ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                 : "hover:bg-white/5 text-crypto-silver"
             }`}
           >
@@ -68,7 +68,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
             onClick={() => navigateTo("/app#base")}
             className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
               isActive("base")
-                ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                 : "hover:bg-white/5 text-crypto-silver"
             }`}
           >
@@ -78,7 +78,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
             onClick={() => navigateTo("/app/solana")}
             className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
               isActive("solana")
-                ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                 : "hover:bg-white/5 text-crypto-silver"
             }`}
           >
@@ -88,7 +88,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
             onClick={() => navigateTo("/app/hype")}
             className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
               isActive("hype")
-                ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                 : "hover:bg-white/5 text-crypto-silver"
             }`}
           >
@@ -98,7 +98,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
             onClick={() => navigateTo("/app#bittensor")}
             className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
               isActive("bittensor")
-                ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                 : "hover:bg-white/5 text-crypto-silver"
             }`}
           >
@@ -108,7 +108,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
             onClick={() => navigateTo("/app/abstract")}
             className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
               isActive("abstract")
-                ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                 : "hover:bg-white/5 text-crypto-silver"
             }`}
           >
@@ -118,7 +118,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
             onClick={() => navigateTo("/app/defi")}
             className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
               isActive("defi")
-                ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                 : "hover:bg-white/5 text-crypto-silver"
             }`}
           >
@@ -128,7 +128,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
             onClick={() => navigateTo("/app#portfolio")}
             className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
               isActive("portfolio")
-                ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                 : "hover:bg-white/5 text-crypto-silver"
             }`}
           >
@@ -138,7 +138,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
             onClick={() => navigateTo("/app/crypto-stocks")}
             className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
               isActive("crypto-stocks")
-                ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                 : "hover:bg-white/5 text-crypto-silver"
             }`}
           >
@@ -147,13 +147,13 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
         </div>
 
         {/* Mobile Navigation - Horizontal Scroll */}
-        <div className="lg:hidden overflow-x-auto">
-          <div className="flex space-x-1 min-w-max pb-2">
+        <div className="lg:hidden overflow-x-auto scrollbar-hide">
+          <div className="flex space-x-1 min-w-max pb-2 px-1">
             <button
               onClick={() => navigateTo("/app")}
               className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                 isActive("dashboard")
-                  ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                  ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                   : "hover:bg-white/5 text-crypto-silver"
               }`}
             >
@@ -163,7 +163,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
               onClick={() => navigateTo("/app/majors")}
               className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                 isActive("majors")
-                  ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                  ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                   : "hover:bg-white/5 text-crypto-silver"
               }`}
             >
@@ -173,7 +173,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
               onClick={() => navigateTo("/app#alpha")}
               className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                 isActive("alpha")
-                  ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                  ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                   : "hover:bg-white/5 text-crypto-silver"
               }`}
             >
@@ -183,7 +183,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
               onClick={() => navigateTo("/app/ethereum")}
               className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                 isActive("ethereum")
-                  ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                  ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                   : "hover:bg-white/5 text-crypto-silver"
               }`}
             >
@@ -193,7 +193,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
               onClick={() => navigateTo("/app#base")}
               className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                 isActive("base")
-                  ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                  ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                   : "hover:bg-white/5 text-crypto-silver"
               }`}
             >
@@ -203,7 +203,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
               onClick={() => navigateTo("/app/solana")}
               className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                 isActive("solana")
-                  ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                  ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                   : "hover:bg-white/5 text-crypto-silver"
               }`}
             >
@@ -213,7 +213,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
               onClick={() => navigateTo("/app/hype")}
               className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                 isActive("hype")
-                  ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                  ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                   : "hover:bg-white/5 text-crypto-silver"
               }`}
             >
@@ -223,7 +223,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
               onClick={() => navigateTo("/app#bittensor")}
               className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                 isActive("bittensor")
-                  ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                  ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                   : "hover:bg-white/5 text-crypto-silver"
               }`}
             >
@@ -233,7 +233,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
               onClick={() => navigateTo("/app/abstract")}
               className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                 isActive("abstract")
-                  ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                  ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                   : "hover:bg-white/5 text-crypto-silver"
               }`}
             >
@@ -243,7 +243,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
               onClick={() => navigateTo("/app/defi")}
               className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                 isActive("defi")
-                  ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                  ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                   : "hover:bg-white/5 text-crypto-silver"
               }`}
             >
@@ -253,7 +253,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
               onClick={() => navigateTo("/app#portfolio")}
               className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                 isActive("portfolio")
-                  ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                  ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                   : "hover:bg-white/5 text-crypto-silver"
               }`}
             >
@@ -263,7 +263,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
               onClick={() => navigateTo("/app/crypto-stocks")}
               className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                 isActive("crypto-stocks")
-                  ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                  ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                   : "hover:bg-white/5 text-crypto-silver"
               }`}
             >

@@ -62,7 +62,7 @@ export default function Dashboard() {
       </header>
 
       {/* Navigation */}
-      <UniversalNavigation activePage="dashboard" />
+      <UniversalNavigation activePage={activeTab} />
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 mt-4 lg:mt-8 pb-8">
