@@ -65,16 +65,6 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
             <ChartLine className="w-4 h-4 mr-2 inline" />Base
           </button>
           <button
-            onClick={() => navigateTo("/app#bittensor")}
-            className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
-              isActive("bittensor")
-                ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
-                : "hover:bg-white/5 text-crypto-silver"
-            }`}
-          >
-            <Brain className="w-4 h-4 mr-2 inline" />Bittensor
-          </button>
-          <button
             onClick={() => navigateTo("/app/solana")}
             className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
               isActive("solana")
@@ -93,6 +83,16 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
             }`}
           >
             <Brain className="w-4 h-4 mr-2 inline" />Hype
+          </button>
+          <button
+            onClick={() => navigateTo("/app#bittensor")}
+            className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
+              isActive("bittensor")
+                ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                : "hover:bg-white/5 text-crypto-silver"
+            }`}
+          >
+            <Brain className="w-4 h-4 mr-2 inline" />Bittensor
           </button>
           <button
             onClick={() => navigateTo("/app/abstract")}
@@ -180,16 +180,6 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
               <ChartLine className="w-4 h-4 mr-1 inline" />Base
             </button>
             <button
-              onClick={() => navigateTo("/app#bittensor")}
-              className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
-                isActive("bittensor")
-                  ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
-                  : "hover:bg-white/5 text-crypto-silver"
-              }`}
-            >
-              <Brain className="w-4 h-4 mr-1 inline" />Bittensor
-            </button>
-            <button
               onClick={() => navigateTo("/app/solana")}
               className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                 isActive("solana")
@@ -208,6 +198,16 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
               }`}
             >
               <Brain className="w-4 h-4 mr-1 inline" />Hype
+            </button>
+            <button
+              onClick={() => navigateTo("/app#bittensor")}
+              className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+                isActive("bittensor")
+                  ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                  : "hover:bg-white/5 text-crypto-silver"
+              }`}
+            >
+              <Brain className="w-4 h-4 mr-1 inline" />Bittensor
             </button>
             <button
               onClick={() => navigateTo("/app/abstract")}

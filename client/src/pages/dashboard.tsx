@@ -78,14 +78,14 @@ export default function Dashboard() {
         <Suspense fallback={<SectionLoadingState title="Base Network" />}>
           {activeTab === "base" && <BaseSection />}
         </Suspense>
+        <Suspense fallback={<SectionLoadingState title="Solana Network" />}>
+          {activeTab === "solana" && <SolanaSection />}
+        </Suspense>
         <Suspense fallback={<SectionLoadingState title="Bittensor" />}>
           {activeTab === "bittensor" && <BittensorDashboardSection />}
         </Suspense>
         <Suspense fallback={<SectionLoadingState title="Abstract Network" />}>
           {activeTab === "abstract" && <AbstractSection />}
-        </Suspense>
-        <Suspense fallback={<SectionLoadingState title="Solana Network" />}>
-          {activeTab === "solana" && <SolanaSection />}
         </Suspense>
         <Suspense fallback={<SectionLoadingState title="DeFi Platforms" />}>
           {activeTab === "defi" && <DeFiSection />}
