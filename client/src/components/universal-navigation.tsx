@@ -23,126 +23,126 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
     <nav className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4">
       <GlassCard className="p-4 overflow-hidden">
         {/* Desktop Navigation */}
-        <div className="hidden lg:flex space-x-2">
+        <div className="hidden lg:grid lg:grid-cols-6 xl:grid-cols-12 gap-1 xl:gap-2">
           <button
             onClick={() => navigateTo("/app")}
-            className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
+            className={`w-full py-3 px-2 xl:px-4 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
               isActive("dashboard")
                 ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                 : "hover:bg-white/5 text-crypto-silver"
             }`}
           >
-            <Activity className="w-4 h-4 mr-2 inline" />Market Overview
+            <Activity className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />Market Overview
           </button>
           <button
             onClick={() => navigateTo("/app/majors")}
-            className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
+            className={`w-full py-3 px-2 xl:px-4 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
               isActive("majors")
                 ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                 : "hover:bg-white/5 text-crypto-silver"
             }`}
           >
-            <BarChart3 className="w-4 h-4 mr-2 inline" />Majors
+            <BarChart3 className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />Majors
           </button>
           <button
             onClick={() => navigateTo("/app#alpha")}
-            className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
+            className={`w-full py-3 px-2 xl:px-4 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
               isActive("alpha")
                 ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                 : "hover:bg-white/5 text-crypto-silver"
             }`}
           >
-            <TrendingUp className="w-4 h-4 mr-2 inline" />Alpha
+            <TrendingUp className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />Alpha
           </button>
           <button
             onClick={() => navigateTo("/app/ethereum")}
-            className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
+            className={`w-full py-3 px-2 xl:px-4 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
               isActive("ethereum")
                 ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                 : "hover:bg-white/5 text-crypto-silver"
             }`}
           >
-            <Coins className="w-4 h-4 mr-2 inline" />Ethereum
+            <Coins className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />Ethereum
           </button>
           <button
             onClick={() => navigateTo("/app#base")}
-            className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
+            className={`w-full py-3 px-2 xl:px-4 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
               isActive("base")
                 ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                 : "hover:bg-white/5 text-crypto-silver"
             }`}
           >
-            <ChartLine className="w-4 h-4 mr-2 inline" />Base
+            <ChartLine className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />Base
           </button>
           <button
             onClick={() => navigateTo("/app/solana")}
-            className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
+            className={`w-full py-3 px-2 xl:px-4 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
               isActive("solana")
                 ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                 : "hover:bg-white/5 text-crypto-silver"
             }`}
           >
-            <Zap className="w-4 h-4 mr-2 inline" />Solana
+            <Zap className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />Solana
           </button>
           <button
             onClick={() => navigateTo("/app/hype")}
-            className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
+            className={`w-full py-3 px-2 xl:px-4 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
               isActive("hype")
                 ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                 : "hover:bg-white/5 text-crypto-silver"
             }`}
           >
-            <Brain className="w-4 h-4 mr-2 inline" />Hype
+            <Brain className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />Hype
           </button>
           <button
             onClick={() => navigateTo("/app#bittensor")}
-            className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
+            className={`w-full py-3 px-2 xl:px-4 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
               isActive("bittensor")
                 ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                 : "hover:bg-white/5 text-crypto-silver"
             }`}
           >
-            <Brain className="w-4 h-4 mr-2 inline" />Bittensor
+            <Brain className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />Bittensor
           </button>
           <button
             onClick={() => navigateTo("/app/abstract")}
-            className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
+            className={`w-full py-3 px-2 xl:px-4 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
               isActive("abstract")
                 ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                 : "hover:bg-white/5 text-crypto-silver"
             }`}
           >
-            <Layers className="w-4 h-4 mr-2 inline" />Abstract
+            <Layers className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />Abstract
           </button>
           <button
             onClick={() => navigateTo("/app/defi")}
-            className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
+            className={`w-full py-3 px-2 xl:px-4 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
               isActive("defi")
                 ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                 : "hover:bg-white/5 text-crypto-silver"
             }`}
           >
-            <DollarSign className="w-4 h-4 mr-2 inline" />DeFi
+            <DollarSign className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />DeFi
           </button>
           <button
             onClick={() => navigateTo("/app#portfolio")}
-            className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
+            className={`w-full py-3 px-2 xl:px-4 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
               isActive("portfolio")
                 ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                 : "hover:bg-white/5 text-crypto-silver"
             }`}
           >
-            <Activity className="w-4 h-4 mr-2 inline" />Portfolio
+            <Activity className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />Portfolio
           </button>
           <button
             onClick={() => navigateTo("/app/crypto-stocks")}
-            className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
+            className={`w-full py-3 px-2 xl:px-4 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
               isActive("crypto-stocks")
                 ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                 : "hover:bg-white/5 text-crypto-silver"
             }`}
           >
-            <Building2 className="w-4 h-4 mr-2 inline" />Stocks
+            <Building2 className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />Stocks
           </button>
         </div>
 
