@@ -23,7 +23,7 @@ export default function SolanaSection() {
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <h3 className="text-lg font-semibold text-purple-400">Solana</h3>
+            <h3 className="text-lg font-semibold text-purple-400">Solana Price Chart</h3>
             <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/30">
               SOL
             </Badge>
