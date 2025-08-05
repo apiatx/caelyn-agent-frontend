@@ -57,10 +57,7 @@ export const cspConfig = helmet.contentSecurityPolicy({
       "https://www.blockcreeper.com",
       "https://taofi.com",
       "https://*.taofi.com",
-      "https://www.taofi.com",
-      "https://pump.fun",
-      "https://*.pump.fun",
-      "https://www.pump.fun"
+      "https://www.taofi.com"
     ],
     styleSrc: [
       "'self'",
@@ -93,10 +90,7 @@ export const cspConfig = helmet.contentSecurityPolicy({
       "https://www.blockcreeper.com",
       "https://taofi.com",
       "https://*.taofi.com",
-      "https://www.taofi.com",
-      "https://pump.fun",
-      "https://*.pump.fun",
-      "https://www.pump.fun"
+      "https://www.taofi.com"
     ],
     imgSrc: [
       "'self'",
@@ -145,10 +139,7 @@ export const cspConfig = helmet.contentSecurityPolicy({
       "https://www.investing.com",
       "https://taofi.com",
       "https://*.taofi.com",
-      "https://www.taofi.com",
-      "https://pump.fun",
-      "https://*.pump.fun",
-      "https://www.pump.fun"
+      "https://www.taofi.com"
     ],
     frameSrc: [
       "'self'",
@@ -242,10 +233,7 @@ export const cspConfig = helmet.contentSecurityPolicy({
       "https://*.macroedge.ai",
       "https://taofi.com",
       "https://*.taofi.com",
-      "https://www.taofi.com",
-      "https://pump.fun",
-      "https://*.pump.fun",
-      "https://www.pump.fun"
+      "https://www.taofi.com"
     ],
     objectSrc: ["'none'"],
     mediaSrc: ["'self'", "https:", "data:"],
