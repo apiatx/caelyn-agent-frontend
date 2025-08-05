@@ -206,24 +206,6 @@ export default function SolanaSection() {
           </a>
 
           <a
-            href="https://pump.fun"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-green-500/30 transition-all duration-200 group"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
-                <span className="text-white font-bold text-sm">P</span>
-              </div>
-              <div>
-                <h3 className="text-white font-medium text-sm">Pump.fun</h3>
-                <p className="text-gray-400 text-xs">Launch platform</p>
-              </div>
-            </div>
-            <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-green-400 transition-colors" />
-          </a>
-
-          <a
             href="https://believe.app"
             target="_blank"
             rel="noopener noreferrer"
@@ -240,6 +222,38 @@ export default function SolanaSection() {
             </div>
             <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-blue-400 transition-colors" />
           </a>
+        </div>
+
+        {/* Pump.fun Board Iframe */}
+        <div className="mt-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-sm">P</span>
+              </div>
+              <h4 className="text-lg font-semibold text-green-400">Pump.fun Board</h4>
+              <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
+                LIVE
+              </Badge>
+            </div>
+            <a
+              href="https://pump.fun/board?meta=gta&coins_sort=market_cap"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-green-400 hover:text-green-300 text-xs sm:text-sm flex items-center gap-1"
+            >
+              <ExternalLink className="w-3 h-3" />
+              Open Full View
+            </a>
+          </div>
+          <div className="w-full">
+            <iframe
+              src="https://pump.fun/board?meta=gta&coins_sort=market_cap"
+              className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+              title="Pump.fun Board"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+            />
+          </div>
         </div>
       </GlassCard>
     </div>
