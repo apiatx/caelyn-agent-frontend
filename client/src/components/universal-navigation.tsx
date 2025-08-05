@@ -21,7 +21,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
 
   return (
     <nav className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4">
-      <GlassCard className="p-4">
+      <GlassCard className="p-4 overflow-hidden">
         {/* Desktop Navigation */}
         <div className="hidden lg:flex space-x-2">
           <button
@@ -147,9 +147,10 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
         </div>
 
         {/* Mobile Navigation - Horizontal Scroll */}
-        <div className="lg:hidden overflow-x-auto scrollbar-hide">
-          <div className="flex space-x-1 min-w-max pb-2 px-1">
-            <button
+        <div className="lg:hidden">
+          <div className="overflow-x-auto scrollbar-hide">
+            <div className="flex space-x-1 min-w-max pb-2 px-1">
+              <button
               onClick={() => navigateTo("/app")}
               className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                 isActive("dashboard")
@@ -259,16 +260,17 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
             >
               <Activity className="w-4 h-4 mr-1 inline" />Portfolio
             </button>
-            <button
-              onClick={() => navigateTo("/app/crypto-stocks")}
-              className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
-                isActive("crypto-stocks")
-                  ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
-                  : "hover:bg-white/5 text-crypto-silver"
-              }`}
-            >
-              <Building2 className="w-4 h-4 mr-1 inline" />Stocks
-            </button>
+              <button
+                onClick={() => navigateTo("/app/crypto-stocks")}
+                className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+                  isActive("crypto-stocks")
+                    ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
+                    : "hover:bg-white/5 text-crypto-silver"
+                }`}
+              >
+                <Building2 className="w-4 h-4 mr-1 inline" />Stocks
+              </button>
+            </div>
           </div>
         </div>
       </GlassCard>
