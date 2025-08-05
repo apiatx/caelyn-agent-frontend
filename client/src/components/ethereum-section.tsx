@@ -55,7 +55,7 @@ export function EthereumSection() {
         
         <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
           <SafeIframe
-            src="https://dexscreener.com/ethereum"
+            src="https://dexscreener.com/ethereum?theme=dark"
             title="Trending Ethereum Tokens"
             className="w-full h-[600px] border-0"
           />
