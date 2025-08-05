@@ -35,6 +35,33 @@ const SafeIframe = ({ src, title, className = "", ...props }: { src: string; tit
 export function EthereumSection() {
   return (
     <div className="space-y-6">
+      {/* Trending Ethereum Tokens */}
+      <div>
+        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+          <div className="w-6 h-6 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
+            <span className="text-white font-bold text-xs">🔥</span>
+          </div>
+          Trending Ethereum Tokens
+          <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded-full border border-green-500/30">
+            LIVE TRENDING
+          </span>
+          <SafeLink
+            href="https://dexscreener.com/ethereum"
+            className="ml-auto text-xs text-green-400 hover:text-green-300 transition-colors flex items-center gap-1"
+          >
+            Open Full View <ExternalLink className="w-3 h-3" />
+          </SafeLink>
+        </h3>
+        
+        <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+          <SafeIframe
+            src="https://dexscreener.com/ethereum"
+            title="Trending Ethereum Tokens"
+            className="w-full h-[600px] border-0"
+          />
+        </div>
+      </div>
+
       {/* Ethereum Price Chart */}
       <div>
         <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
