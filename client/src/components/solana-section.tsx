@@ -247,12 +247,24 @@ export default function SolanaSection() {
             </a>
           </div>
           <div className="w-full">
-            <iframe
-              src="https://pump.fun/board?meta=gta&coins_sort=market_cap"
-              className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-              title="Pump.fun Board"
-              sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-            />
+            <div className="bg-black/20 border border-crypto-silver/20 rounded-lg p-6 text-center">
+              <div className="mb-4">
+                <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-white font-bold text-2xl">P</span>
+                </div>
+                <h3 className="text-white text-xl font-semibold mb-2">Pump.fun Board</h3>
+                <p className="text-gray-400 mb-6">Pump.fun doesn't allow iframe embedding. Click below to access the live board.</p>
+              </div>
+              <a
+                href="https://pump.fun/board?meta=gta&coins_sort=market_cap"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-semibold rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all duration-200"
+              >
+                <span className="text-white font-bold">Launch Pump.fun Board</span>
+                <ExternalLink className="w-4 h-4" />
+              </a>
+            </div>
           </div>
         </div>
       </GlassCard>
