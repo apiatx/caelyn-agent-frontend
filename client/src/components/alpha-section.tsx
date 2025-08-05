@@ -3,8 +3,6 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, Star, Zap, DollarSign, Wallet, TrendingDown, Brain, Loader2 } from "lucide-react";
 import { useSocialPulse } from "@/hooks/useSocialPulse";
-import { openSecureLink, getSecureLinkProps } from "@/utils/security";
-
 // Glass card component for alpha section
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
   <Card className={`bg-black/40 backdrop-blur-lg border-crypto-silver/20 ${className}`}>
@@ -12,13 +10,25 @@ const GlassCard = ({ children, className = "" }: { children: React.ReactNode; cl
   </Card>
 );
 
+// Safe link component that doesn't throw unhandled rejections
+const SafeLink = ({ href, children, className = "" }: { href: string; children: React.ReactNode; className?: string }) => {
+  const openInNewTab = (url: string) => {
+    try {
+      window.open(url, '_blank');
+    } catch (error) {
+      console.warn('Failed to open URL:', url, error);
+    }
+  };
+
+  return (
+    <button onClick={() => openInNewTab(href)} className={className}>
+      {children}
+    </button>
+  );
+};
+
 export default function AlphaSection() {
   const { data: socialPulseData, isLoading } = useSocialPulse();
-  
-  // Use secure link opening
-  const openInNewTab = (url: string) => {
-    openSecureLink(url);
-  };
 
   const getTickerColor = (index: number) => {
     const colors = [
@@ -60,8 +70,8 @@ export default function AlphaSection() {
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <button
-            onClick={() => openInNewTab('https://app.elfa.ai/leaderboard/token?sortBy=mindshare:change')}
+          <SafeLink
+            href='https://app.elfa.ai/leaderboard/token?sortBy=mindshare:change'
             className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
           >
             <div className="flex items-center gap-2 mb-2">
@@ -71,10 +81,10 @@ export default function AlphaSection() {
               <h4 className="text-purple-400 font-semibold">Mindshare by Elfi</h4>
             </div>
             <p className="text-gray-400 text-sm">AI Token Analytics & Social Intelligence</p>
-          </button>
+          </SafeLink>
 
-          <button
-            onClick={() => openInNewTab('https://www.cookie.fun/')}
+          <SafeLink
+            href='https://www.cookie.fun/'
             className="p-4 bg-pink-500/10 border border-pink-500/20 rounded-lg hover:bg-pink-500/20 transition-colors"
           >
             <div className="flex items-center gap-2 mb-2">
@@ -84,10 +94,10 @@ export default function AlphaSection() {
               <h4 className="text-pink-400 font-semibold">Cookie.fun</h4>
             </div>
             <p className="text-gray-400 text-sm">Interactive Trading Platform</p>
-          </button>
+          </SafeLink>
 
-          <button
-            onClick={() => openInNewTab('https://dapp.velvet.capital/')}
+          <SafeLink
+            href='https://dapp.velvet.capital/'
             className="p-4 bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-lg hover:from-purple-500/20 hover:to-pink-500/20 transition-colors"
           >
             <div className="flex items-center gap-2 mb-2">
@@ -97,10 +107,10 @@ export default function AlphaSection() {
               <h4 className="text-purple-400 font-semibold">Velvet Capital</h4>
             </div>
             <p className="text-gray-400 text-sm">DeFi Portfolio Management</p>
-          </button>
+          </SafeLink>
 
-          <button
-            onClick={() => openInNewTab('https://ayaoracle.xyz/#agents_data')}
+          <SafeLink
+            href='https://ayaoracle.xyz/#agents_data'
             className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-lg hover:bg-indigo-500/20 transition-colors"
           >
             <div className="flex items-center gap-2 mb-2">
@@ -110,10 +120,10 @@ export default function AlphaSection() {
               <h4 className="text-indigo-400 font-semibold">Aya AI</h4>
             </div>
             <p className="text-gray-400 text-sm">Crypto AI Agent Analytics</p>
-          </button>
+          </SafeLink>
 
-          <button
-            onClick={() => openInNewTab('https://opensea.io/stats/tokens')}
+          <SafeLink
+            href='https://opensea.io/stats/tokens'
             className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
           >
             <div className="flex items-center gap-2 mb-2">
@@ -123,10 +133,10 @@ export default function AlphaSection() {
               <h4 className="text-blue-400 font-semibold">OpenSea</h4>
             </div>
             <p className="text-gray-400 text-sm">Trending Altcoin Timeframes</p>
-          </button>
+          </SafeLink>
 
-          <button
-            onClick={() => openInNewTab('https://indexy.xyz/home')}
+          <SafeLink
+            href='https://indexy.xyz/home'
             className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
           >
             <div className="flex items-center gap-2 mb-2">
@@ -136,7 +146,7 @@ export default function AlphaSection() {
               <h4 className="text-green-400 font-semibold">Indexy</h4>
             </div>
             <p className="text-gray-400 text-sm">Crypto market indexing platform</p>
-          </button>
+          </SafeLink>
         </div>
       </GlassCard>
 
@@ -167,8 +177,8 @@ export default function AlphaSection() {
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <button
-              onClick={() => openInNewTab('https://x.com/altcoinvector')}
+            <SafeLink
+              href='https://x.com/altcoinvector'
               className="p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-lg hover:bg-indigo-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-1">
@@ -177,10 +187,10 @@ export default function AlphaSection() {
                 </div>
                 <h5 className="text-indigo-400 font-semibold text-sm">altcoinvector</h5>
               </div>
-            </button>
+            </SafeLink>
 
-            <button
-              onClick={() => openInNewTab('https://x.com/WolverCrypto')}
+            <SafeLink
+              href='https://x.com/WolverCrypto'
               className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg hover:bg-yellow-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-1">
@@ -189,10 +199,10 @@ export default function AlphaSection() {
                 </div>
                 <h5 className="text-yellow-400 font-semibold text-sm">WolverCrypto</h5>
               </div>
-            </button>
+            </SafeLink>
 
-            <button
-              onClick={() => openInNewTab('https://x.com/AltcoinMarksman')}
+            <SafeLink
+              href='https://x.com/AltcoinMarksman'
               className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-1">
@@ -201,10 +211,10 @@ export default function AlphaSection() {
                 </div>
                 <h5 className="text-green-400 font-semibold text-sm">AltcoinMarksman</h5>
               </div>
-            </button>
+            </SafeLink>
 
-            <button
-              onClick={() => openInNewTab('https://x.com/ofvoice25355')}
+            <SafeLink
+              href='https://x.com/ofvoice25355'
               className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-1">
@@ -213,10 +223,10 @@ export default function AlphaSection() {
                 </div>
                 <h5 className="text-blue-400 font-semibold text-sm">Voice of the Gods</h5>
               </div>
-            </button>
+            </SafeLink>
 
-            <button
-              onClick={() => openInNewTab('https://x.com/CoinGurruu')}
+            <SafeLink
+              href='https://x.com/CoinGurruu'
               className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-1">
@@ -225,10 +235,10 @@ export default function AlphaSection() {
                 </div>
                 <h5 className="text-purple-400 font-semibold text-sm">CoinGurruu</h5>
               </div>
-            </button>
+            </SafeLink>
 
-            <button
-              onClick={() => openInNewTab('https://x.com/CryptoZer0_')}
+            <SafeLink
+              href='https://x.com/CryptoZer0_'
               className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-1">
@@ -237,10 +247,10 @@ export default function AlphaSection() {
                 </div>
                 <h5 className="text-green-400 font-semibold text-sm">CryptoZer0_</h5>
               </div>
-            </button>
+            </SafeLink>
 
-            <button
-              onClick={() => openInNewTab('https://x.com/DeFi_Paanda')}
+            <SafeLink
+              href='https://x.com/DeFi_Paanda'
               className="p-3 bg-pink-500/10 border border-pink-500/20 rounded-lg hover:bg-pink-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-1">
@@ -249,10 +259,10 @@ export default function AlphaSection() {
                 </div>
                 <h5 className="text-pink-400 font-semibold text-sm">DeFi_Paanda</h5>
               </div>
-            </button>
+            </SafeLink>
 
-            <button
-              onClick={() => openInNewTab('https://x.com/aicryptopattern')}
+            <SafeLink
+              href='https://x.com/aicryptopattern'
               className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-1">
@@ -261,10 +271,10 @@ export default function AlphaSection() {
                 </div>
                 <h5 className="text-orange-400 font-semibold text-sm">aicryptopattern</h5>
               </div>
-            </button>
+            </SafeLink>
 
-            <button
-              onClick={() => openInNewTab('https://x.com/bittybitbit86')}
+            <SafeLink
+              href='https://x.com/bittybitbit86'
               className="p-3 bg-cyan-500/10 border border-cyan-500/20 rounded-lg hover:bg-cyan-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-1">
@@ -273,10 +283,10 @@ export default function AlphaSection() {
                 </div>
                 <h5 className="text-cyan-400 font-semibold text-sm">bittybitbit86</h5>
               </div>
-            </button>
+            </SafeLink>
 
-            <button
-              onClick={() => openInNewTab('https://x.com/Whale_AI_net')}
+            <SafeLink
+              href='https://x.com/Whale_AI_net'
               className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-1">
@@ -285,10 +295,10 @@ export default function AlphaSection() {
                 </div>
                 <h5 className="text-orange-400 font-semibold text-sm">Whale_AI_net</h5>
               </div>
-            </button>
+            </SafeLink>
 
-            <button
-              onClick={() => openInNewTab('https://x.com/Defi0xJeff')}
+            <SafeLink
+              href='https://x.com/Defi0xJeff'
               className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg hover:bg-red-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-1">
@@ -297,10 +307,10 @@ export default function AlphaSection() {
                 </div>
                 <h5 className="text-red-400 font-semibold text-sm">Defi0xJeff</h5>
               </div>
-            </button>
+            </SafeLink>
 
-            <button
-              onClick={() => openInNewTab('https://x.com/EricCryptoman')}
+            <SafeLink
+              href='https://x.com/EricCryptoman'
               className="p-3 bg-pink-500/10 border border-pink-500/20 rounded-lg hover:bg-pink-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-1">
@@ -309,10 +319,10 @@ export default function AlphaSection() {
                 </div>
                 <h5 className="text-pink-400 font-semibold text-sm">EricCryptoman</h5>
               </div>
-            </button>
+            </SafeLink>
 
-            <button
-              onClick={() => openInNewTab('https://x.com/cryptorinweb3')}
+            <SafeLink
+              href='https://x.com/cryptorinweb3'
               className="p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-lg hover:bg-indigo-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-1">
@@ -321,10 +331,10 @@ export default function AlphaSection() {
                 </div>
                 <h5 className="text-indigo-400 font-semibold text-sm">cryptorinweb3</h5>
               </div>
-            </button>
+            </SafeLink>
 
-            <button
-              onClick={() => openInNewTab('https://x.com/OverkillTrading')}
+            <SafeLink
+              href='https://x.com/OverkillTrading'
               className="p-3 bg-teal-500/10 border border-teal-500/20 rounded-lg hover:bg-teal-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-1">
@@ -333,10 +343,10 @@ export default function AlphaSection() {
                 </div>
                 <h5 className="text-teal-400 font-semibold text-sm">OverkillTrading</h5>
               </div>
-            </button>
+            </SafeLink>
 
-            <button
-              onClick={() => openInNewTab('https://x.com/jkrdoc')}
+            <SafeLink
+              href='https://x.com/jkrdoc'
               className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg hover:bg-yellow-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-1">
@@ -345,10 +355,10 @@ export default function AlphaSection() {
                 </div>
                 <h5 className="text-yellow-400 font-semibold text-sm">jkrdoc</h5>
               </div>
-            </button>
+            </SafeLink>
 
-            <button
-              onClick={() => openInNewTab('https://x.com/chironchain')}
+            <SafeLink
+              href='https://x.com/chironchain'
               className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg hover:bg-emerald-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-1">
@@ -357,10 +367,10 @@ export default function AlphaSection() {
                 </div>
                 <h5 className="text-emerald-400 font-semibold text-sm">chironchain</h5>
               </div>
-            </button>
+            </SafeLink>
 
-            <button
-              onClick={() => openInNewTab('https://x.com/goodvimonly')}
+            <SafeLink
+              href='https://x.com/goodvimonly'
               className="p-3 bg-violet-500/10 border border-violet-500/20 rounded-lg hover:bg-violet-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-1">
@@ -369,10 +379,10 @@ export default function AlphaSection() {
                 </div>
                 <h5 className="text-violet-400 font-semibold text-sm">goodvimonly</h5>
               </div>
-            </button>
+            </SafeLink>
 
-            <button
-              onClick={() => openInNewTab('https://x.com/Agent_rsch')}
+            <SafeLink
+              href='https://x.com/Agent_rsch'
               className="p-3 bg-lime-500/10 border border-lime-500/20 rounded-lg hover:bg-lime-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-1">
@@ -381,10 +391,10 @@ export default function AlphaSection() {
                 </div>
                 <h5 className="text-lime-400 font-semibold text-sm">Agent_rsch</h5>
               </div>
-            </button>
+            </SafeLink>
 
-            <button
-              onClick={() => openInNewTab('https://x.com/dontbuytops')}
+            <SafeLink
+              href='https://x.com/dontbuytops'
               className="p-3 bg-sky-500/10 border border-sky-500/20 rounded-lg hover:bg-sky-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-1">
@@ -393,10 +403,10 @@ export default function AlphaSection() {
                 </div>
                 <h5 className="text-sky-400 font-semibold text-sm">dontbuytops</h5>
               </div>
-            </button>
+            </SafeLink>
 
-            <button
-              onClick={() => openInNewTab('https://x.com/bruhbearr')}
+            <SafeLink
+              href='https://x.com/bruhbearr'
               className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg hover:bg-rose-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-1">
@@ -405,10 +415,10 @@ export default function AlphaSection() {
                 </div>
                 <h5 className="text-rose-400 font-semibold text-sm">bruhbearr</h5>
               </div>
-            </button>
+            </SafeLink>
 
-            <button
-              onClick={() => openInNewTab('https://x.com/MetaverseRanger')}
+            <SafeLink
+              href='https://x.com/MetaverseRanger'
               className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg hover:bg-amber-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-1">
@@ -417,10 +427,10 @@ export default function AlphaSection() {
                 </div>
                 <h5 className="text-amber-400 font-semibold text-sm">MetaverseRanger</h5>
               </div>
-            </button>
+            </SafeLink>
 
-            <button
-              onClick={() => openInNewTab('https://x.com/Shake51_')}
+            <SafeLink
+              href='https://x.com/Shake51_'
               className="p-3 bg-slate-500/10 border border-slate-500/20 rounded-lg hover:bg-slate-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-1">
@@ -429,10 +439,10 @@ export default function AlphaSection() {
                 </div>
                 <h5 className="text-slate-400 font-semibold text-sm">Shake51_</h5>
               </div>
-            </button>
+            </SafeLink>
 
-            <button
-              onClick={() => openInNewTab('https://x.com/0x_tesseract')}
+            <SafeLink
+              href='https://x.com/0x_tesseract'
               className="p-3 bg-stone-500/10 border border-stone-500/20 rounded-lg hover:bg-stone-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-1">
@@ -441,10 +451,10 @@ export default function AlphaSection() {
                 </div>
                 <h5 className="text-stone-400 font-semibold text-sm">0x_tesseract</h5>
               </div>
-            </button>
+            </SafeLink>
 
-            <button
-              onClick={() => openInNewTab('https://x.com/TheEuroSniper')}
+            <SafeLink
+              href='https://x.com/TheEuroSniper'
               className="p-3 bg-neutral-500/10 border border-neutral-500/20 rounded-lg hover:bg-neutral-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-1">
@@ -453,10 +463,10 @@ export default function AlphaSection() {
                 </div>
                 <h5 className="text-neutral-400 font-semibold text-sm">TheEuroSniper</h5>
               </div>
-            </button>
+            </SafeLink>
 
-            <button
-              onClick={() => openInNewTab('https://x.com/CryptoThannos')}
+            <SafeLink
+              href='https://x.com/CryptoThannos'
               className="p-3 bg-zinc-500/10 border border-zinc-500/20 rounded-lg hover:bg-zinc-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-1">
@@ -465,10 +475,10 @@ export default function AlphaSection() {
                 </div>
                 <h5 className="text-zinc-400 font-semibold text-sm">CryptoThannos</h5>
               </div>
-            </button>
+            </SafeLink>
 
-            <button
-              onClick={() => openInNewTab('https://x.com/stacy_muur')}
+            <SafeLink
+              href='https://x.com/stacy_muur'
               className="p-3 bg-gray-500/10 border border-gray-500/20 rounded-lg hover:bg-gray-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-1">
@@ -477,10 +487,10 @@ export default function AlphaSection() {
                 </div>
                 <h5 className="text-gray-400 font-semibold text-sm">stacy_muur</h5>
               </div>
-            </button>
+            </SafeLink>
 
-            <button
-              onClick={() => openInNewTab('https://x.com/martypartymusic')}
+            <SafeLink
+              href='https://x.com/martypartymusic'
               className="p-3 bg-fuchsia-500/10 border border-fuchsia-500/20 rounded-lg hover:bg-fuchsia-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-1">
@@ -489,10 +499,10 @@ export default function AlphaSection() {
                 </div>
                 <h5 className="text-fuchsia-400 font-semibold text-sm">martypartymusic</h5>
               </div>
-            </button>
+            </SafeLink>
 
-            <button
-              onClick={() => openInNewTab('https://x.com/watchingmarkets')}
+            <SafeLink
+              href='https://x.com/watchingmarkets'
               className="p-3 bg-blue-600/10 border border-blue-600/20 rounded-lg hover:bg-blue-600/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-1">
@@ -501,7 +511,7 @@ export default function AlphaSection() {
                 </div>
                 <h5 className="text-blue-600 font-semibold text-sm">watchingmarkets</h5>
               </div>
-            </button>
+            </SafeLink>
           </div>
         </div>
 
@@ -527,9 +537,9 @@ export default function AlphaSection() {
               {socialPulseData?.map((ticker, index) => {
                 const colors = getTickerColor(index);
                 return (
-                  <button
+                  <SafeLink
                     key={ticker.symbol}
-                    onClick={() => openInNewTab(`https://x.com/search?q=%24${ticker.symbol}&src=typed_query&f=live`)}
+                    href={`https://x.com/search?q=%24${ticker.symbol}&src=typed_query&f=live`}
                     className={`p-4 ${colors.bg} border ${colors.border} rounded-lg ${colors.hover} transition-colors`}
                   >
                     <div className="flex items-center gap-2 mb-2">
@@ -541,7 +551,7 @@ export default function AlphaSection() {
                     <p className="text-gray-400 text-sm">
                       24hr Sentiment {ticker.sentiment > 0 ? '+' : ''}{ticker.sentiment}%
                     </p>
-                  </button>
+                  </SafeLink>
                 );
               })}
             </div>
@@ -561,8 +571,8 @@ export default function AlphaSection() {
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <button
-              onClick={() => openInNewTab('https://yaps.kaito.ai/')}
+            <SafeLink
+              href='https://yaps.kaito.ai/'
               className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-2">
@@ -572,10 +582,10 @@ export default function AlphaSection() {
                 <h4 className="text-orange-400 font-semibold">Kaito</h4>
               </div>
               <p className="text-gray-400 text-sm">AI-Powered Social Intelligence</p>
-            </button>
+            </SafeLink>
 
-            <button
-              onClick={() => openInNewTab('https://app.kolytics.pro/leaderboard')}
+            <SafeLink
+              href='https://app.kolytics.pro/leaderboard'
               className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg hover:bg-red-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-2">
@@ -585,7 +595,7 @@ export default function AlphaSection() {
                 <h4 className="text-red-400 font-semibold">Kolytics</h4>
               </div>
               <p className="text-gray-400 text-sm">Social Signal Analytics</p>
-            </button>
+            </SafeLink>
           </div>
         </div>
       </GlassCard>
@@ -603,8 +613,8 @@ export default function AlphaSection() {
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-          <button
-            onClick={() => openInNewTab('https://hyperdash.info/trader/0x15b325660a1c4a9582a7d834c31119c0cb9e3a42')}
+          <SafeLink
+            href='https://hyperdash.info/trader/0x15b325660a1c4a9582a7d834c31119c0cb9e3a42'
             className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
           >
             <div className="flex items-center gap-2 mb-2">
@@ -614,10 +624,10 @@ export default function AlphaSection() {
               <h4 className="text-purple-400 font-semibold">HyperLiquid Whale</h4>
             </div>
             <p className="text-gray-400 text-sm">Hyperdash Trader Analytics</p>
-          </button>
+          </SafeLink>
 
-          <button
-            onClick={() => openInNewTab('https://debank.com/profile/0x3f135ba020d0ed288d8dd85cd3d600451b121013')}
+          <SafeLink
+            href='https://debank.com/profile/0x3f135ba020d0ed288d8dd85cd3d600451b121013'
             className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
           >
             <div className="flex items-center gap-2 mb-2">
@@ -627,7 +637,7 @@ export default function AlphaSection() {
               <h4 className="text-green-400 font-semibold">WhaleAI - ETH/BASE</h4>
             </div>
             <p className="text-gray-400 text-sm">DeBank Portfolio Analysis</p>
-          </button>
+          </SafeLink>
         </div>
       </GlassCard>
 
@@ -644,8 +654,8 @@ export default function AlphaSection() {
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <button
-            onClick={() => openInNewTab('https://chatgpt.com/g/g-ma6mK7m5t-crypto-trading-investing')}
+          <SafeLink
+            href='https://chatgpt.com/g/g-ma6mK7m5t-crypto-trading-investing'
             className="p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-lg hover:bg-cyan-500/20 transition-colors"
           >
             <div className="flex items-center gap-2 mb-2">
@@ -655,10 +665,10 @@ export default function AlphaSection() {
               <h4 className="text-cyan-400 font-semibold">ChatGPT Crypto AI</h4>
             </div>
             <p className="text-gray-400 text-sm">Crypto Trading & Investing GPT</p>
-          </button>
+          </SafeLink>
 
-          <button
-            onClick={() => openInNewTab('https://app.bubblemaps.io/')}
+          <SafeLink
+            href='https://app.bubblemaps.io/'
             className="p-4 bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg hover:from-blue-500/20 hover:to-purple-500/20 transition-colors"
           >
             <div className="flex items-center gap-2 mb-2">
@@ -668,7 +678,7 @@ export default function AlphaSection() {
               <h4 className="text-blue-400 font-semibold">Bubblemaps</h4>
             </div>
             <p className="text-gray-400 text-sm">Token Analytics & Visualization</p>
-          </button>
+          </SafeLink>
         </div>
       </GlassCard>
     </div>
