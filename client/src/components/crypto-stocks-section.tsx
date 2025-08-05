@@ -4,6 +4,18 @@ import { Badge } from "@/components/ui/badge";
 import { Building2, ExternalLink, Bitcoin, FileText, TrendingUp, Briefcase } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+// SafeLink component for secure external links
+const SafeLink = ({ href, children, className }: { href: string; children: React.ReactNode; className?: string }) => (
+  <a
+    href={href}
+    target="_blank"
+    rel="noopener noreferrer"
+    className={className}
+  >
+    {children}
+  </a>
+);
+
 // Glass card component for crypto stocks
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
   <Card className={`bg-black/40 backdrop-blur-lg border-crypto-silver/20 ${className}`}>
@@ -175,157 +187,165 @@ export default function CryptoStocksSection() {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-          <button
-            onClick={() => openInNewTab('https://x.com/StocksToTrade')}
-            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group"
+          <SafeLink
+            href='https://x.com/StocksToTrade'
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group block"
           >
             <div className="text-sm font-medium text-white group-hover:text-blue-300">StocksToTrade</div>
             <div className="text-xs text-crypto-silver">@StocksToTrade</div>
-          </button>
+          </SafeLink>
           
-          <button
-            onClick={() => openInNewTab('https://x.com/timothysykes')}
-            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group"
+          <SafeLink
+            href='https://x.com/timothysykes'
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group block"
           >
             <div className="text-sm font-medium text-white group-hover:text-blue-300">Timothy Sykes</div>
             <div className="text-xs text-crypto-silver">@timothysykes</div>
-          </button>
+          </SafeLink>
           
-          <button
-            onClick={() => openInNewTab('https://x.com/Parangiras')}
-            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group"
+          <SafeLink
+            href='https://x.com/Parangiras'
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group block"
           >
             <div className="text-sm font-medium text-white group-hover:text-blue-300">Parangiras</div>
             <div className="text-xs text-crypto-silver">@Parangiras</div>
-          </button>
+          </SafeLink>
           
-          <button
-            onClick={() => openInNewTab('https://x.com/realsheepwolf')}
-            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group"
+          <SafeLink
+            href='https://x.com/realsheepwolf'
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group block"
           >
             <div className="text-sm font-medium text-white group-hover:text-blue-300">Real Sheep Wolf</div>
             <div className="text-xs text-crypto-silver">@realsheepwolf</div>
-          </button>
+          </SafeLink>
           
-          <button
-            onClick={() => openInNewTab('https://x.com/ericjackson')}
-            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group"
+          <SafeLink
+            href='https://x.com/ericjackson'
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group block"
           >
             <div className="text-sm font-medium text-white group-hover:text-blue-300">Eric Jackson</div>
             <div className="text-xs text-crypto-silver">@ericjackson</div>
-          </button>
+          </SafeLink>
           
-          <button
-            onClick={() => openInNewTab('https://x.com/TheLongInvest')}
-            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group"
+          <SafeLink
+            href='https://x.com/TheLongInvest'
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group block"
           >
             <div className="text-sm font-medium text-white group-hover:text-blue-300">The Long Invest</div>
             <div className="text-xs text-crypto-silver">@TheLongInvest</div>
-          </button>
+          </SafeLink>
           
-          <button
-            onClick={() => openInNewTab('https://x.com/davyy888')}
-            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group"
+          <SafeLink
+            href='https://x.com/davyy888'
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group block"
           >
             <div className="text-sm font-medium text-white group-hover:text-blue-300">Davy</div>
             <div className="text-xs text-crypto-silver">@davyy888</div>
-          </button>
+          </SafeLink>
           
-          <button
-            onClick={() => openInNewTab('https://x.com/JoelGoesDigital')}
-            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group"
+          <SafeLink
+            href='https://x.com/JoelGoesDigital'
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group block"
           >
             <div className="text-sm font-medium text-white group-hover:text-blue-300">Joel Goes Digital</div>
             <div className="text-xs text-crypto-silver">@JoelGoesDigital</div>
-          </button>
+          </SafeLink>
           
-          <button
-            onClick={() => openInNewTab('https://x.com/MACDMaster328')}
-            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group"
+          <SafeLink
+            href='https://x.com/MACDMaster328'
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group block"
           >
             <div className="text-sm font-medium text-white group-hover:text-blue-300">MACD Master</div>
             <div className="text-xs text-crypto-silver">@MACDMaster328</div>
-          </button>
+          </SafeLink>
           
-          <button
-            onClick={() => openInNewTab('https://x.com/Maximus_Holla')}
-            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group"
+          <SafeLink
+            href='https://x.com/Maximus_Holla'
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group block"
           >
             <div className="text-sm font-medium text-white group-hover:text-blue-300">Maximus Holla</div>
             <div className="text-xs text-crypto-silver">@Maximus_Holla</div>
-          </button>
+          </SafeLink>
           
-          <button
-            onClick={() => openInNewTab('https://x.com/cantonmeow')}
-            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group"
+          <SafeLink
+            href='https://x.com/cantonmeow'
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group block"
           >
             <div className="text-sm font-medium text-white group-hover:text-blue-300">Canton Meow</div>
             <div className="text-xs text-crypto-silver">@cantonmeow</div>
-          </button>
+          </SafeLink>
           
-          <button
-            onClick={() => openInNewTab('https://x.com/donaldjdean')}
-            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group"
+          <SafeLink
+            href='https://x.com/donaldjdean'
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group block"
           >
             <div className="text-sm font-medium text-white group-hover:text-blue-300">Donald J Dean</div>
             <div className="text-xs text-crypto-silver">@donaldjdean</div>
-          </button>
+          </SafeLink>
           
-          <button
-            onClick={() => openInNewTab('https://x.com/ACInvestorBlog')}
-            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group"
+          <SafeLink
+            href='https://x.com/ACInvestorBlog'
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group block"
           >
             <div className="text-sm font-medium text-white group-hover:text-blue-300">AC Investor Blog</div>
             <div className="text-xs text-crypto-silver">@ACInvestorBlog</div>
-          </button>
+          </SafeLink>
           
-          <button
-            onClick={() => openInNewTab('https://x.com/CestrianInc')}
-            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group"
+          <SafeLink
+            href='https://x.com/CestrianInc'
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group block"
           >
             <div className="text-sm font-medium text-white group-hover:text-blue-300">Cestrian Inc</div>
             <div className="text-xs text-crypto-silver">@CestrianInc</div>
-          </button>
+          </SafeLink>
           
-          <button
-            onClick={() => openInNewTab('https://x.com/InvestInAssets')}
-            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group"
+          <SafeLink
+            href='https://x.com/InvestInAssets'
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group block"
           >
             <div className="text-sm font-medium text-white group-hover:text-blue-300">Invest In Assets</div>
             <div className="text-xs text-crypto-silver">@InvestInAssets</div>
-          </button>
+          </SafeLink>
           
-          <button
-            onClick={() => openInNewTab('https://x.com/PMDiChristina')}
-            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group"
+          <SafeLink
+            href='https://x.com/PMDiChristina'
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group block"
           >
             <div className="text-sm font-medium text-white group-hover:text-blue-300">PM Di Christina</div>
             <div className="text-xs text-crypto-silver">@PMDiChristina</div>
-          </button>
+          </SafeLink>
           
-          <button
-            onClick={() => openInNewTab('https://x.com/investinsights4')}
-            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group"
+          <SafeLink
+            href='https://x.com/investinsights4'
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group block"
           >
             <div className="text-sm font-medium text-white group-hover:text-blue-300">Invest Insights</div>
             <div className="text-xs text-crypto-silver">@investinsights4</div>
-          </button>
+          </SafeLink>
           
-          <button
-            onClick={() => openInNewTab('https://x.com/bitsandbips')}
-            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group"
+          <SafeLink
+            href='https://x.com/bitsandbips'
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group block"
           >
             <div className="text-sm font-medium text-white group-hover:text-blue-300">Bits and Bips</div>
             <div className="text-xs text-crypto-silver">@bitsandbips</div>
-          </button>
+          </SafeLink>
           
-          <button
-            onClick={() => openInNewTab('https://x.com/BKnight221')}
-            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group"
+          <SafeLink
+            href='https://x.com/BKnight221'
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group block"
           >
             <div className="text-sm font-medium text-white group-hover:text-blue-300">BKnight221</div>
             <div className="text-xs text-crypto-silver">@BKnight221</div>
-          </button>
+          </SafeLink>
+
+          <SafeLink
+            href='https://x.com/NFTLunatic'
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group block"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-blue-300">NFT Lunatic</div>
+            <div className="text-xs text-crypto-silver">@NFTLunatic</div>
+          </SafeLink>
         </div>
       </GlassCard>
 
