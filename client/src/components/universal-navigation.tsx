@@ -1,4 +1,4 @@
-import { Activity, BarChart3, TrendingUp, ChartLine, Brain, Zap, DollarSign, Building2, Layers } from "lucide-react";
+import { Activity, BarChart3, TrendingUp, ChartLine, Brain, Zap, DollarSign, Building2, Layers, Coins } from "lucide-react";
 import { Card } from "@/components/ui/card";
 
 // Glass card component
@@ -53,6 +53,16 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
             }`}
           >
             <TrendingUp className="w-4 h-4 mr-2 inline" />Alpha
+          </button>
+          <button
+            onClick={() => navigateTo("/app/ethereum")}
+            className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
+              isActive("ethereum")
+                ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                : "hover:bg-white/5 text-crypto-silver"
+            }`}
+          >
+            <Coins className="w-4 h-4 mr-2 inline" />Ethereum
           </button>
           <button
             onClick={() => navigateTo("/app#base")}
@@ -168,6 +178,16 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
               }`}
             >
               <TrendingUp className="w-4 h-4 mr-1 inline" />Alpha
+            </button>
+            <button
+              onClick={() => navigateTo("/app/ethereum")}
+              className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+                isActive("ethereum")
+                  ? "bg-gradient-to-r from-crypto-silver/20 to-white/10 border border-crypto-silver/30 text-white"
+                  : "hover:bg-white/5 text-crypto-silver"
+              }`}
+            >
+              <Coins className="w-4 h-4 mr-1 inline" />Ethereum
             </button>
             <button
               onClick={() => navigateTo("/app#base")}

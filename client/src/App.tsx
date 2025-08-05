@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Dashboard from "@/pages/dashboard";
 import TopChartsPage from "@/pages/top-charts";
+import EthereumPage from "@/pages/ethereum";
 import SolanaPage from "@/pages/solana";
 import DeFiPage from "@/pages/defi";
 import HypePage from "@/pages/hype";
@@ -17,6 +18,7 @@ function Router() {
     <Switch>
       <Route path="/app" component={Dashboard} />
       <Route path="/app/majors" component={TopChartsPage} />
+      <Route path="/app/ethereum" component={EthereumPage} />
       <Route path="/app/solana" component={SolanaPage} />
       <Route path="/app/defi" component={DeFiPage} />
       <Route path="/app/hype" component={HypePage} />
