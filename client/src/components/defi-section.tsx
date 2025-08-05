@@ -5,6 +5,43 @@ import { Button } from "@/components/ui/button";
 import { DollarSign, TrendingUp, BarChart3, Brain, ArrowLeftRight, Wallet, ExternalLink, Layers, Shield } from "lucide-react";
 import { openSecureLink, getSecureIframeProps } from "@/utils/security";
 
+// Safe components for external links and iframes
+const SafeLink = ({ href, children, className = "", ...props }: { 
+  href: string; 
+  children: React.ReactNode; 
+  className?: string; 
+  [key: string]: any; 
+}) => (
+  <a
+    href={href}
+    target="_blank"
+    rel="noopener noreferrer"
+    className={className}
+    onClick={(e) => {
+      e.preventDefault();
+      openSecureLink(href);
+    }}
+    {...props}
+  >
+    {children}
+  </a>
+);
+
+const SafeIframe = ({ src, title, className = "", ...props }: { 
+  src: string; 
+  title: string; 
+  className?: string; 
+  [key: string]: any; 
+}) => (
+  <iframe
+    src={src}
+    title={title}
+    className={className}
+    sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+    {...props}
+  />
+);
+
 // Glass card component for DeFi section
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
   <Card className={`bg-black/40 backdrop-blur-lg border-crypto-silver/20 ${className}`}>
@@ -77,9 +114,32 @@ export default function DeFiSection() {
       </div>
 
 
-
-
-
+      {/* DeFi TVL Rankings */}
+      <div className="mt-6">
+        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+          <div className="w-6 h-6 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full flex items-center justify-center">
+            <span className="text-white font-bold text-xs">🔥</span>
+          </div>
+          DeFi TVL Rankings
+          <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded-full border border-yellow-500/30">
+            DEFILLAMA
+          </span>
+          <SafeLink
+            href="https://defillama.com/"
+            className="ml-auto text-xs text-yellow-400 hover:text-yellow-300 transition-colors flex items-center gap-1"
+          >
+            Open Full View <ExternalLink className="w-3 h-3" />
+          </SafeLink>
+        </h3>
+        
+        <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+          <SafeIframe
+            src="https://defillama.com/"
+            title="DeFi TVL Rankings by DefiLlama"
+            className="w-full h-[600px] border-0"
+          />
+        </div>
+      </div>
 
       {/* DeFi Section */}
       <div className="space-y-6">
