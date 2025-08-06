@@ -281,57 +281,82 @@ export default function BaseSection() {
           </div>
         </div>
 
-        {/* Virtuals.io Platform */}
+        {/* AI Agent Platforms */}
         <GlassCard className="p-6">
           <div className="flex items-center gap-2 mb-6">
             <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-full flex items-center justify-center">
-              <span className="text-white text-xs font-bold">V</span>
+              <span className="text-white text-xs font-bold">AI</span>
             </div>
-            <h3 className="text-xl font-semibold text-white">Virtuals.io Platform</h3>
+            <h3 className="text-xl font-semibold text-white">AI Agent Platforms</h3>
             <span className="px-2 py-1 bg-purple-500/20 text-purple-400 text-xs rounded-full font-medium">
-              AI AGENTS
+              TRADING TOOLS
             </span>
           </div>
-          <div className="space-y-4">
-            <SafeIframe 
-              src="https://app.virtuals.io/"
-              title="Virtuals.io Platform"
-            />
-            
-            {/* Related Platforms */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-crypto-silver/10">
-              <SafeLink
-                href="https://bankr.bot/terminal"
-                className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-purple-500/30 transition-all duration-200 group"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                    <span className="text-white font-bold text-sm">B</span>
-                  </div>
-                  <div>
-                    <h4 className="text-white font-medium text-sm">Bankr.bot</h4>
-                    <p className="text-gray-400 text-xs">Trading terminal</p>
-                  </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <SafeLink
+              href="https://app.virtuals.io/"
+              className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-purple-500/30 transition-all duration-200 group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">V</span>
                 </div>
-                <div className="w-4 h-4 text-gray-400 group-hover:text-purple-400 transition-colors">→</div>
-              </SafeLink>
+                <div>
+                  <h4 className="text-white font-medium text-sm">Virtuals.io</h4>
+                  <p className="text-gray-400 text-xs">AI agent platform</p>
+                </div>
+              </div>
+              <div className="w-4 h-4 text-gray-400 group-hover:text-purple-400 transition-colors">→</div>
+            </SafeLink>
 
-              <SafeLink
-                href="https://creator.bid/agents"
-                className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-emerald-500/30 transition-all duration-200 group"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full flex items-center justify-center">
-                    <span className="text-white font-bold text-sm">C</span>
-                  </div>
-                  <div>
-                    <h4 className="text-white font-medium text-sm">Creator.bid</h4>
-                    <p className="text-gray-400 text-xs">Agent marketplace</p>
-                  </div>
+            <SafeLink
+              href="https://bankr.bot/terminal"
+              className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-purple-500/30 transition-all duration-200 group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">B</span>
                 </div>
-                <div className="w-4 h-4 text-gray-400 group-hover:text-emerald-400 transition-colors">→</div>
-              </SafeLink>
-            </div>
+                <div>
+                  <h4 className="text-white font-medium text-sm">Bankr.bot</h4>
+                  <p className="text-gray-400 text-xs">Trading terminal</p>
+                </div>
+              </div>
+              <div className="w-4 h-4 text-gray-400 group-hover:text-purple-400 transition-colors">→</div>
+            </SafeLink>
+
+            <SafeLink
+              href="https://creator.bid/agents"
+              className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-emerald-500/30 transition-all duration-200 group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">C</span>
+                </div>
+                <div>
+                  <h4 className="text-white font-medium text-sm">Creator.bid</h4>
+                  <p className="text-gray-400 text-xs">Agent marketplace</p>
+                </div>
+              </div>
+              <div className="w-4 h-4 text-gray-400 group-hover:text-emerald-400 transition-colors">→</div>
+            </SafeLink>
+
+            <SafeLink
+              href="https://www.clanker.world/"
+              className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-blue-500/30 transition-all duration-200 group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">CL</span>
+                </div>
+                <div>
+                  <h4 className="text-white font-medium text-sm">Clanker</h4>
+                  <p className="text-gray-400 text-xs">Token creation platform</p>
+                </div>
+              </div>
+              <div className="w-4 h-4 text-gray-400 group-hover:text-blue-400 transition-colors">→</div>
+            </SafeLink>
           </div>
         </GlassCard>
       </div>
