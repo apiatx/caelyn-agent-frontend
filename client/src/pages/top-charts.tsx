@@ -291,7 +291,7 @@ export default function TopChartsPage() {
                       </Badge>
                     </div>
                     <button
-                      onClick={() => openSecureLink('https://www.tradingview.com/chart/e5l95XgZ/?symbol=MEXC%3ATAOUSDT')}
+                      onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=BITGET%3ATAOUSDT')}
                       className="text-orange-400 hover:text-orange-300 text-xs sm:text-sm"
                     >
                       Open Full View →
@@ -300,7 +300,7 @@ export default function TopChartsPage() {
                   <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
                     <div className="relative w-full h-[500px] sm:h-[600px] lg:h-[700px]">
                       <iframe
-                        src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=100%25&interval=1D&range=ALL&style=1&toolbar_bg=0a0a0a&enable_publishing=false&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=false&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&symbol=BINANCE%3ATAOUSDT"
+                        src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=100%25&interval=1D&range=ALL&style=1&toolbar_bg=0a0a0a&enable_publishing=false&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=false&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&symbol=BITGET%3ATAOUSDT"
                         className="w-full h-full rounded-lg border border-crypto-silver/20"
                         title="Bittensor Chart - Full History"
                         frameBorder="0"
