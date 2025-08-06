@@ -163,26 +163,60 @@ export default function SolanaSection() {
         </div>
       </GlassCard>
 
-      {/* Jupiter */}
-      <GlassCard className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-            <Zap className="w-4 h-4 text-white" />
+      {/* Trade Section */}
+      <div className="space-y-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
+            <Zap className="text-white text-xl" />
           </div>
-          <h3 className="text-xl font-semibold text-white">Jupiter</h3>
-          <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-            DEX TRADING
-          </Badge>
+          <div>
+            <h2 className="text-2xl font-bold text-white">Trade</h2>
+            <p className="text-crypto-silver">DEX Aggregators & Trading Platforms</p>
+          </div>
         </div>
-        <div className="w-full">
-          <iframe
-            src="https://jup.ag/?utm_source=phantom&utm_medium=list"
-            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            title="Jupiter DEX Aggregator"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-          />
-        </div>
-      </GlassCard>
+
+        {/* Jupiter */}
+        <GlassCard className="p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+              <Zap className="w-4 h-4 text-white" />
+            </div>
+            <h3 className="text-xl font-semibold text-white">Jupiter</h3>
+            <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+              DEX TRADING
+            </Badge>
+          </div>
+          <div className="w-full">
+            <iframe
+              src="https://jup.ag/?utm_source=phantom&utm_medium=list"
+              className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+              title="Jupiter DEX Aggregator"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+            />
+          </div>
+        </GlassCard>
+
+        {/* Raydium */}
+        <GlassCard className="p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+              <Activity className="w-4 h-4 text-white" />
+            </div>
+            <h3 className="text-xl font-semibold text-white">Raydium</h3>
+            <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+              AMM & DEX
+            </Badge>
+          </div>
+          <div className="w-full">
+            <iframe
+              src="https://raydium.io/swap/?inputMint=sol&outputMint=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+              className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+              title="Raydium"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+            />
+          </div>
+        </GlassCard>
+      </div>
 
       {/* Trenches - Moved from Trench section and renamed */}
       <GlassCard className="p-6">
