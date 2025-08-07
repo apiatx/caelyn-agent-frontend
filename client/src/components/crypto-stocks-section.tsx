@@ -102,6 +102,14 @@ export default function CryptoStocksSection() {
           </button>
           
           <button
+            onClick={() => openInNewTab('https://finance.yahoo.com/markets/stocks/most-active/')}
+            className="bg-gradient-to-br from-yellow-500/10 to-yellow-600/10 hover:from-yellow-500/20 hover:to-yellow-600/20 border border-yellow-500/20 hover:border-yellow-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-yellow-300 mb-1">Yahoo Finance Most Active</div>
+            <div className="text-xs text-crypto-silver">Most actively traded stocks</div>
+          </button>
+          
+          <button
             onClick={() => openInNewTab('https://app.koyfin.com/home')}
             className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
           >
