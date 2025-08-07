@@ -24,6 +24,7 @@ function Router() {
       <Route path="/app/hype" component={HypePage} />
       <Route path="/app/abstract" component={AbstractPage} />
       <Route path="/app/crypto-stocks" component={CryptoStocks} />
+      <Route path="/app/stocks" component={CryptoStocks} />
       <Route path="/" component={Dashboard} />
       <Route component={NotFound} />
     </Switch>
