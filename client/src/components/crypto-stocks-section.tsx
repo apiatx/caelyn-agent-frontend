@@ -30,20 +30,20 @@ export default function CryptoStocksSection() {
 
   return (
     <div className="space-y-4 lg:space-y-8">
-      {/* Investing.com Stock Screener */}
+      {/* Slickcharts Stock Data */}
       <GlassCard className="p-3 sm:p-4 lg:p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center">
               <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
             </div>
-            <h3 className="text-lg sm:text-xl font-semibold text-white">Stock Screener</h3>
-            <Badge className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white border-crypto-silver/30 text-xs">
-              INVESTING.COM
+            <h3 className="text-lg sm:text-xl font-semibold text-white">Stock Market Data</h3>
+            <Badge className="bg-gradient-to-r from-green-500/20 to-blue-500/20 text-white border-crypto-silver/30 text-xs">
+              SLICKCHARTS
             </Badge>
           </div>
           <button
-            onClick={() => openInNewTab('https://www.investing.com/stock-screener')}
+            onClick={() => openInNewTab('https://www.slickcharts.com/')}
             className="text-crypto-silver hover:text-white text-xs sm:text-sm flex items-center gap-1"
           >
             <ExternalLink className="w-3 h-3" />
@@ -53,10 +53,9 @@ export default function CryptoStocksSection() {
 
         <div className="w-full">
           <iframe
-            src="https://www.investing.com/stock-screener"
+            src="https://www.slickcharts.com/"
             className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            title="Investing.com Stock Screener"
-            allowTransparency={true}
+            title="Slickcharts Stock Market Data"
             loading="eager"
             referrerPolicy="unsafe-url"
             allow="fullscreen; clipboard-write; autoplay; camera; microphone; geolocation"
