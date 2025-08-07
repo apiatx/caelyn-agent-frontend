@@ -398,6 +398,14 @@ export default function BaseSection() {
               <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">Memes On Base</div>
               <div className="text-xs text-crypto-silver">@MemesOnBase_ - BASE network meme culture and trends</div>
             </SafeLink>
+            
+            <SafeLink
+              href="https://x.com/Shake51_"
+              className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group block"
+            >
+              <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">Shake51</div>
+              <div className="text-xs text-crypto-silver">@Shake51_ - BASE network trading insights</div>
+            </SafeLink>
           </div>
         </GlassCard>
       </div>

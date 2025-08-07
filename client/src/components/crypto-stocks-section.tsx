@@ -249,6 +249,14 @@ export default function CryptoStocksSection() {
           </SafeLink>
           
           <SafeLink
+            href='https://x.com/Scot1andT'
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group block"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-blue-300">Scot1andT</div>
+            <div className="text-xs text-crypto-silver">@Scot1andT</div>
+          </SafeLink>
+          
+          <SafeLink
             href='https://x.com/MACDMaster328'
             className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group block"
           >
@@ -434,6 +442,14 @@ export default function CryptoStocksSection() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <button
+            onClick={() => openInNewTab('https://finance.yahoo.com/portfolios')}
+            className="bg-gradient-to-br from-yellow-500/10 to-yellow-600/10 hover:from-yellow-500/20 hover:to-yellow-600/20 border border-yellow-500/20 hover:border-yellow-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-yellow-300 mb-1">Yahoo Finance Portfolios</div>
+            <div className="text-xs text-crypto-silver">Portfolio tracking and analysis</div>
+          </button>
+          
+          <button
             onClick={() => openInNewTab('https://simplywall.st/portfolio/65b1f9ab-7fa4-4d25-95c6-b8fa93d94d77/holdings')}
             className="bg-gradient-to-br from-green-500/10 to-green-600/10 hover:from-green-500/20 hover:to-green-600/20 border border-green-500/20 hover:border-green-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
           >
@@ -455,14 +471,6 @@ export default function CryptoStocksSection() {
           >
             <div className="text-sm font-medium text-white group-hover:text-purple-300 mb-1">Empower Net Worth</div>
             <div className="text-xs text-crypto-silver">Net worth tracking and financial planning</div>
-          </button>
-          
-          <button
-            onClick={() => openInNewTab('https://finance.yahoo.com/portfolios')}
-            className="bg-gradient-to-br from-yellow-500/10 to-yellow-600/10 hover:from-yellow-500/20 hover:to-yellow-600/20 border border-yellow-500/20 hover:border-yellow-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
-          >
-            <div className="text-sm font-medium text-white group-hover:text-yellow-300 mb-1">Yahoo Finance Portfolios</div>
-            <div className="text-xs text-crypto-silver">Portfolio tracking and analysis</div>
           </button>
         </div>
       </GlassCard>
