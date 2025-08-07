@@ -118,6 +118,14 @@ export default function CryptoStocksSection() {
           </button>
           
           <button
+            onClick={() => openInNewTab('https://www.barchart.com/news/chart-of-the-day')}
+            className="bg-gradient-to-br from-orange-500/10 to-orange-600/10 hover:from-orange-500/20 hover:to-orange-600/20 border border-orange-500/20 hover:border-orange-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-orange-300 mb-1">Chart of the day</div>
+            <div className="text-xs text-crypto-silver">Daily featured charts and market insights</div>
+          </button>
+          
+          <button
             onClick={() => openInNewTab('https://atypica.ai/study')}
             className="bg-gradient-to-br from-indigo-500/10 to-indigo-600/10 hover:from-indigo-500/20 hover:to-indigo-600/20 border border-indigo-500/20 hover:border-indigo-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
           >
