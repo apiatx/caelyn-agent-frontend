@@ -86,6 +86,14 @@ export default function CryptoStocksSection() {
           </button>
           
           <button
+            onClick={() => openInNewTab('https://app.koyfin.com/home')}
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">Koyfin</div>
+            <div className="text-xs text-crypto-silver">Professional market data and analytics</div>
+          </button>
+          
+          <button
             onClick={() => openInNewTab('https://unusualwhales.com/stock-screener')}
             className="bg-gradient-to-br from-purple-500/10 to-purple-600/10 hover:from-purple-500/20 hover:to-purple-600/20 border border-purple-500/20 hover:border-purple-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
           >
@@ -513,12 +521,23 @@ export default function CryptoStocksSection() {
               </button>
             </div>
             <div className="w-full">
-              <iframe
-                src="https://thenew.money/sol"
-                className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
-                title="SOL Treasuries"
-                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-              />
+              <button
+                onClick={() => openInNewTab('https://thenew.money/sol')}
+                className="w-full bg-gradient-to-r from-purple-500/10 to-purple-600/10 hover:from-purple-500/20 hover:to-purple-600/20 border border-purple-500/20 hover:border-purple-400/30 rounded-lg p-4 transition-all duration-300 group"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                      <span className="text-white font-bold text-lg">SOL</span>
+                    </div>
+                    <div className="text-left">
+                      <h4 className="font-semibold text-purple-400 group-hover:text-purple-300">SOL Treasuries</h4>
+                      <p className="text-crypto-silver text-sm">Track Solana institutional adoption</p>
+                    </div>
+                  </div>
+                  <ExternalLink className="w-5 h-5 text-purple-400 group-hover:text-purple-300 transition-colors" />
+                </div>
+              </button>
             </div>
           </div>
 

@@ -71,6 +71,9 @@ The application employs a full-stack monorepo architecture, ensuring clear separ
 - **Navigation Mobile Improvements**: Enhanced mobile navigation with scrollbar-hide CSS utility, improved container layout, and proper button containment within the glass navigation bar
 - **Navigation Visual Updates**: Updated all navigation buttons with improved golden/yellow active state styling (crypto-warning gradient) for better visual feedback
 - **Stocks Page Integration**: Ensured Stocks page button is properly included in both desktop and mobile navigation within the main navigation bar alongside other pages
+- **Stocks Page Reorganization**: Completed comprehensive reorganization including duplicate section removal, proper TradingView and Portfolio section positioning above Crypto Stocks section
+- **SOL Treasuries Fix**: Converted non-working SOL treasuries iframe (thenew.money/sol) to a simple clickable link button for better user experience
+- **Koyfin Integration**: Added Koyfin (https://app.koyfin.com/home) link button to Screening section between Screener.in explore and Unusual Whales
 - **Deployment Health Checks**: Applied comprehensive deployment health check fixes including:
   - CRITICAL FIX: Root endpoint (`/`) now returns immediate 200 JSON response for deployment health checks
   - Browser requests get redirected to `/app` frontend route while maintaining health check functionality  
