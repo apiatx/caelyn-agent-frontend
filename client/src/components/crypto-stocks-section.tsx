@@ -423,6 +423,25 @@ export default function CryptoStocksSection() {
               PORTFOLIO
             </Badge>
           </div>
+          <button
+            onClick={() => openInNewTab('https://finance.yahoo.com/portfolios')}
+            className="text-green-400 hover:text-green-300 text-xs sm:text-sm flex items-center gap-1"
+          >
+            <ExternalLink className="w-3 h-3" />
+            Open Full View
+          </button>
+        </div>
+
+        <div className="w-full mb-6">
+          <iframe
+            src="https://finance.yahoo.com/portfolios"
+            className="w-full h-[500px] rounded-lg border border-crypto-silver/20"
+            title="Yahoo Finance Portfolios"
+            loading="eager"
+            referrerPolicy="unsafe-url"
+            allow="fullscreen; clipboard-write; autoplay; camera; microphone; geolocation"
+            frameBorder="0"
+          />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
