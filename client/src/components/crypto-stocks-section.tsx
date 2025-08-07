@@ -52,15 +52,38 @@ export default function CryptoStocksSection() {
         </div>
 
         <div className="w-full">
-          <iframe
-            src="https://stockanalysis.com/"
-            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            title="StockAnalysis.com"
-            loading="eager"
-            referrerPolicy="unsafe-url"
-            allow="fullscreen; clipboard-write; autoplay; camera; microphone; geolocation"
-            frameBorder="0"
-          />
+          <div className="bg-gradient-to-br from-purple-500/5 to-pink-500/5 border border-purple-500/20 rounded-lg p-6 text-center">
+            <div className="mb-4">
+              <TrendingUp className="w-12 h-12 text-purple-400 mx-auto mb-3" />
+              <h4 className="text-lg font-semibold text-white mb-2">StockAnalysis.com</h4>
+              <p className="text-crypto-silver text-sm mb-4">
+                Professional stock analysis and financial data platform
+              </p>
+            </div>
+            <div className="space-y-3">
+              <button
+                onClick={() => openInNewTab('https://stockanalysis.com/')}
+                className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white py-3 px-6 rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-2"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Open StockAnalysis.com
+              </button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <button
+                  onClick={() => openInNewTab('https://stockanalysis.com/stocks/')}
+                  className="bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-purple-300 py-2 px-4 rounded-lg text-sm transition-all duration-300"
+                >
+                  Stock Screener
+                </button>
+                <button
+                  onClick={() => openInNewTab('https://stockanalysis.com/trending/')}
+                  className="bg-pink-500/10 hover:bg-pink-500/20 border border-pink-500/30 text-pink-300 py-2 px-4 rounded-lg text-sm transition-all duration-300"
+                >
+                  Trending Stocks
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </GlassCard>
 
