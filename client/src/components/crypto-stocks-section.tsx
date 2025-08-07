@@ -30,97 +30,6 @@ export default function CryptoStocksSection() {
 
   return (
     <div className="space-y-4 lg:space-y-8">
-      {/* StockAnalysis.com */}
-      <GlassCard className="p-3 sm:p-4 lg:p-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-            </div>
-            <h3 className="text-lg sm:text-xl font-semibold text-white">Stock Analysis</h3>
-            <Badge className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-white border-crypto-silver/30 text-xs">
-              STOCKANALYSIS.COM
-            </Badge>
-          </div>
-          <button
-            onClick={() => openInNewTab('https://stockanalysis.com/')}
-            className="text-crypto-silver hover:text-white text-xs sm:text-sm flex items-center gap-1"
-          >
-            <ExternalLink className="w-3 h-3" />
-            Open Full View
-          </button>
-        </div>
-
-        <div className="w-full">
-          <div className="bg-gradient-to-br from-purple-500/5 to-pink-500/5 border border-purple-500/20 rounded-lg p-6 text-center">
-            <div className="mb-4">
-              <TrendingUp className="w-12 h-12 text-purple-400 mx-auto mb-3" />
-              <h4 className="text-lg font-semibold text-white mb-2">StockAnalysis.com</h4>
-              <p className="text-crypto-silver text-sm mb-4">
-                Professional stock analysis and financial data platform
-              </p>
-            </div>
-            <div className="space-y-3">
-              <button
-                onClick={() => openInNewTab('https://stockanalysis.com/')}
-                className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white py-3 px-6 rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-2"
-              >
-                <ExternalLink className="w-4 h-4" />
-                Open StockAnalysis.com
-              </button>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <button
-                  onClick={() => openInNewTab('https://stockanalysis.com/stocks/')}
-                  className="bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-purple-300 py-2 px-4 rounded-lg text-sm transition-all duration-300"
-                >
-                  Stock Screener
-                </button>
-                <button
-                  onClick={() => openInNewTab('https://stockanalysis.com/trending/')}
-                  className="bg-pink-500/10 hover:bg-pink-500/20 border border-pink-500/30 text-pink-300 py-2 px-4 rounded-lg text-sm transition-all duration-300"
-                >
-                  Trending Stocks
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </GlassCard>
-
-      {/* Slickcharts Stock Data */}
-      <GlassCard className="p-3 sm:p-4 lg:p-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center">
-              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-            </div>
-            <h3 className="text-lg sm:text-xl font-semibold text-white">Stock Market Data</h3>
-            <Badge className="bg-gradient-to-r from-green-500/20 to-blue-500/20 text-white border-crypto-silver/30 text-xs">
-              SLICKCHARTS
-            </Badge>
-          </div>
-          <button
-            onClick={() => openInNewTab('https://www.slickcharts.com/')}
-            className="text-crypto-silver hover:text-white text-xs sm:text-sm flex items-center gap-1"
-          >
-            <ExternalLink className="w-3 h-3" />
-            Open Full View
-          </button>
-        </div>
-
-        <div className="w-full">
-          <iframe
-            src="https://www.slickcharts.com/"
-            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            title="Slickcharts Stock Market Data"
-            loading="eager"
-            referrerPolicy="unsafe-url"
-            allow="fullscreen; clipboard-write; autoplay; camera; microphone; geolocation"
-            frameBorder="0"
-          />
-        </div>
-      </GlassCard>
-
       {/* Screening */}
       <GlassCard className="p-3 sm:p-4 lg:p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
@@ -137,19 +46,19 @@ export default function CryptoStocksSection() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
           <button
-            onClick={() => openInNewTab('https://www.marketwatch.com/')}
-            className="bg-gradient-to-br from-green-500/10 to-green-600/10 hover:from-green-500/20 hover:to-green-600/20 border border-green-500/20 hover:border-green-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
-          >
-            <div className="text-sm font-medium text-white group-hover:text-green-300 mb-1">MarketWatch</div>
-            <div className="text-xs text-crypto-silver">Financial news and market data</div>
-          </button>
-          
-          <button
             onClick={() => openInNewTab('https://stocktwits.com/')}
             className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
           >
             <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">StockTwits</div>
             <div className="text-xs text-crypto-silver">Social trading platform</div>
+          </button>
+
+          <button
+            onClick={() => openInNewTab('https://www.kavout.com/')}
+            className="bg-gradient-to-br from-teal-500/10 to-teal-600/10 hover:from-teal-500/20 hover:to-teal-600/20 border border-teal-500/20 hover:border-teal-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-teal-300 mb-1">Kavout</div>
+            <div className="text-xs text-crypto-silver">AI-powered investment research platform</div>
           </button>
 
           <button
@@ -201,11 +110,11 @@ export default function CryptoStocksSection() {
           </button>
           
           <button
-            onClick={() => openInNewTab('https://www.kavout.com/')}
-            className="bg-gradient-to-br from-teal-500/10 to-teal-600/10 hover:from-teal-500/20 hover:to-teal-600/20 border border-teal-500/20 hover:border-teal-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+            onClick={() => openInNewTab('https://www.marketwatch.com/')}
+            className="bg-gradient-to-br from-green-500/10 to-green-600/10 hover:from-green-500/20 hover:to-green-600/20 border border-green-500/20 hover:border-green-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
           >
-            <div className="text-sm font-medium text-white group-hover:text-teal-300 mb-1">Kavout</div>
-            <div className="text-xs text-crypto-silver">AI-powered investment research platform</div>
+            <div className="text-sm font-medium text-white group-hover:text-green-300 mb-1">MarketWatch</div>
+            <div className="text-xs text-crypto-silver">Financial news and market data</div>
           </button>
           
           <button
@@ -413,14 +322,48 @@ export default function CryptoStocksSection() {
         </div>
       </GlassCard>
 
-      {/* Crypto Treasuries */}
+      {/* Stock Market Data */}
+      <GlassCard className="p-3 sm:p-4 lg:p-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center">
+              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+            </div>
+            <h3 className="text-lg sm:text-xl font-semibold text-white">Stock Market Data</h3>
+            <Badge className="bg-gradient-to-r from-green-500/20 to-blue-500/20 text-white border-crypto-silver/30 text-xs">
+              SLICKCHARTS
+            </Badge>
+          </div>
+          <button
+            onClick={() => openInNewTab('https://www.slickcharts.com/')}
+            className="text-crypto-silver hover:text-white text-xs sm:text-sm flex items-center gap-1"
+          >
+            <ExternalLink className="w-3 h-3" />
+            Open Full View
+          </button>
+        </div>
+
+        <div className="w-full">
+          <iframe
+            src="https://www.slickcharts.com/"
+            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+            title="Slickcharts Stock Market Data"
+            loading="eager"
+            referrerPolicy="unsafe-url"
+            allow="fullscreen; clipboard-write; autoplay; camera; microphone; geolocation"
+            frameBorder="0"
+          />
+        </div>
+      </GlassCard>
+
+      {/* Crypto Stocks */}
       <GlassCard className="p-3 sm:p-4 lg:p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
           <div className="flex items-center gap-2">
             <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-orange-500 via-blue-500 to-purple-500 rounded-full flex items-center justify-center">
               <Bitcoin className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
             </div>
-            <h3 className="text-lg sm:text-xl font-semibold text-white">Crypto Treasuries</h3>
+            <h3 className="text-lg sm:text-xl font-semibold text-white">Crypto Stocks</h3>
             <Badge className="bg-gradient-to-r from-orange-500/20 via-blue-500/20 to-purple-500/20 text-white border-crypto-silver/30 text-xs">
               CORPORATE
             </Badge>
