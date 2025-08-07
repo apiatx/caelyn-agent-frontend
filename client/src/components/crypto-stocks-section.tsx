@@ -34,112 +34,291 @@ export default function CryptoStocksSection() {
       <GlassCard className="p-3 sm:p-4 lg:p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full flex items-center justify-center">
-              <Building2 className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-blue-500 rounded-full flex items-center justify-center">
+              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
             </div>
             <h3 className="text-lg sm:text-xl font-semibold text-white">Screening</h3>
-            <Badge className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 text-white border-crypto-silver/30 text-xs">
-              STOCK SCREENERS
+            <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
+              SCREENING
             </Badge>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
           <button
-            onClick={() => openInNewTab('https://stocktwits.com/rankings/most-active')}
+            onClick={() => openInNewTab('https://stocktwits.com/')}
             className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
           >
             <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">StockTwits</div>
-            <div className="text-xs text-crypto-silver">Most active stocks</div>
+            <div className="text-xs text-crypto-silver">Social trading platform</div>
+          </button>
+
+          <button
+            onClick={() => openInNewTab('https://www.kavout.com/')}
+            className="bg-gradient-to-br from-teal-500/10 to-teal-600/10 hover:from-teal-500/20 hover:to-teal-600/20 border border-teal-500/20 hover:border-teal-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-teal-300 mb-1">Kavout</div>
+            <div className="text-xs text-crypto-silver">AI-powered investment research platform</div>
+          </button>
+
+          <button
+            onClick={() => openInNewTab('https://www.ainvest.com/screener/')}
+            className="bg-gradient-to-br from-green-500/10 to-green-600/10 hover:from-green-500/20 hover:to-green-600/20 border border-green-500/20 hover:border-green-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-green-300 mb-1">AInvest.com screener</div>
+            <div className="text-xs text-crypto-silver">AI-powered stock screening and analysis</div>
           </button>
           
           <button
-            onClick={() => openInNewTab('https://kavout.com/stock-screener')}
-            className="bg-gradient-to-br from-green-500/10 to-green-600/10 hover:from-green-500/20 hover:to-green-600/20 border border-green-500/20 hover:border-green-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+            onClick={() => openInNewTab('https://stockanalysis.com/trending/')}
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
           >
-            <div className="text-sm font-medium text-white group-hover:text-green-300 mb-1">Kavout</div>
-            <div className="text-xs text-crypto-silver">AI-powered stock screening</div>
+            <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">StockAnalysis.com trending</div>
+            <div className="text-xs text-crypto-silver">Trending stocks and market analysis</div>
           </button>
-
+          
           <button
-            onClick={() => openInNewTab('https://www.ainvest.com/stock-screener/')}
+            onClick={() => openInNewTab('https://www.screener.in/explore/')}
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">Screener.in explore</div>
+            <div className="text-xs text-crypto-silver">Indian stock screening and exploration</div>
+          </button>
+          
+          <button
+            onClick={() => openInNewTab('https://unusualwhales.com/stock-screener')}
             className="bg-gradient-to-br from-purple-500/10 to-purple-600/10 hover:from-purple-500/20 hover:to-purple-600/20 border border-purple-500/20 hover:border-purple-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
           >
-            <div className="text-sm font-medium text-white group-hover:text-purple-300 mb-1">AInvest.com</div>
-            <div className="text-xs text-crypto-silver">AI investment screening</div>
+            <div className="text-sm font-medium text-white group-hover:text-purple-300 mb-1">Unusual Whales</div>
+            <div className="text-xs text-crypto-silver">Whale activity and stock screening</div>
           </button>
-
+          
           <button
-            onClick={() => openInNewTab('https://www.marketwatch.com/tools/screener')}
-            className="bg-gradient-to-br from-orange-500/10 to-red-500/10 hover:from-orange-500/20 hover:to-red-500/20 border border-orange-500/20 hover:border-red-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+            onClick={() => openInNewTab('https://app.intellectia.ai/stock-market')}
+            className="bg-gradient-to-br from-purple-500/10 to-purple-600/10 hover:from-purple-500/20 hover:to-purple-600/20 border border-purple-500/20 hover:border-purple-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
           >
-            <div className="text-sm font-medium text-white group-hover:text-orange-300 mb-1">MarketWatch</div>
-            <div className="text-xs text-crypto-silver">Market screening tools</div>
+            <div className="text-sm font-medium text-white group-hover:text-purple-300 mb-1">Intellectia AI</div>
+            <div className="text-xs text-crypto-silver">AI-powered stock market analytics</div>
           </button>
-
+          
+          <button
+            onClick={() => openInNewTab('https://atypica.ai/study')}
+            className="bg-gradient-to-br from-indigo-500/10 to-indigo-600/10 hover:from-indigo-500/20 hover:to-indigo-600/20 border border-indigo-500/20 hover:border-indigo-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-indigo-300 mb-1">Atypica AI Study</div>
+            <div className="text-xs text-crypto-silver">AI-driven market research and analysis</div>
+          </button>
+          
+          <button
+            onClick={() => openInNewTab('https://www.marketwatch.com/')}
+            className="bg-gradient-to-br from-green-500/10 to-green-600/10 hover:from-green-500/20 hover:to-green-600/20 border border-green-500/20 hover:border-green-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-green-300 mb-1">MarketWatch</div>
+            <div className="text-xs text-crypto-silver">Financial news and market data</div>
+          </button>
+          
           <button
             onClick={() => openInNewTab('https://www.cnn.com/markets/premarkets')}
-            className="bg-gradient-to-br from-red-500/10 to-pink-500/10 hover:from-red-500/20 hover:to-pink-500/20 border border-red-500/20 hover:border-pink-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+            className="bg-gradient-to-br from-red-500/10 to-red-600/10 hover:from-red-500/20 hover:to-red-600/20 border border-red-500/20 hover:border-red-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
           >
             <div className="text-sm font-medium text-white group-hover:text-red-300 mb-1">CNN Pre-Market</div>
-            <div className="text-xs text-crypto-silver">Pre-market movers</div>
+            <div className="text-xs text-crypto-silver">Live premarket trading data and futures</div>
+          </button>
+          
+          <button
+            onClick={() => openInNewTab('https://www.cnn.com/markets/after-hours')}
+            className="bg-gradient-to-br from-red-500/10 to-red-600/10 hover:from-red-500/20 hover:to-red-600/20 border border-red-500/20 hover:border-red-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-red-300 mb-1">CNN After-Hours</div>
+            <div className="text-xs text-crypto-silver">After-hours trading data and analysis</div>
           </button>
         </div>
       </GlassCard>
+
+
 
       {/* X Alpha */}
       <GlassCard className="p-3 sm:p-4 lg:p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-black rounded-full flex items-center justify-center">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-blue-500 rounded-full flex items-center justify-center">
               <span className="text-white font-bold text-xs">𝕏</span>
             </div>
             <h3 className="text-lg sm:text-xl font-semibold text-white">X Alpha</h3>
-            <Badge className="bg-black/20 text-white border-gray-500/30 text-xs">
-              SOCIAL INTELLIGENCE
+            <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
+              TRADING
             </Badge>
           </div>
-          <button
-            onClick={() => openInNewTab('https://x.com/unusual_whales')}
-            className="text-crypto-silver hover:text-white text-xs sm:text-sm flex items-center gap-1"
-          >
-            <ExternalLink className="w-3 h-3" />
-            Open Full View
-          </button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <button
-            onClick={() => openInNewTab('https://x.com/unusual_whales')}
-            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+          <SafeLink
+            href='https://x.com/StocksToTrade'
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group block"
           >
-            <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">@unusual_whales</div>
-            <div className="text-xs text-crypto-silver">Options flow and unusual activity</div>
-          </button>
+            <div className="text-sm font-medium text-white group-hover:text-blue-300">StocksToTrade</div>
+            <div className="text-xs text-crypto-silver">@StocksToTrade</div>
+          </SafeLink>
           
-          <button
-            onClick={() => openInNewTab('https://x.com/DeItaone')}
-            className="bg-gradient-to-br from-green-500/10 to-green-600/10 hover:from-green-500/20 hover:to-green-600/20 border border-green-500/20 hover:border-green-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+          <SafeLink
+            href='https://x.com/timothysykes'
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group block"
           >
-            <div className="text-sm font-medium text-white group-hover:text-green-300 mb-1">@DeItaone</div>
-            <div className="text-xs text-crypto-silver">Breaking financial news</div>
-          </button>
+            <div className="text-sm font-medium text-white group-hover:text-blue-300">Timothy Sykes</div>
+            <div className="text-xs text-crypto-silver">@timothysykes</div>
+          </SafeLink>
+          
+          <SafeLink
+            href='https://x.com/Parangiras'
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group block"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-blue-300">Parangiras</div>
+            <div className="text-xs text-crypto-silver">@Parangiras</div>
+          </SafeLink>
+          
+          <SafeLink
+            href='https://x.com/realsheepwolf'
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group block"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-blue-300">Real Sheep Wolf</div>
+            <div className="text-xs text-crypto-silver">@realsheepwolf</div>
+          </SafeLink>
+          
+          <SafeLink
+            href='https://x.com/ericjackson'
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group block"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-blue-300">Eric Jackson</div>
+            <div className="text-xs text-crypto-silver">@ericjackson</div>
+          </SafeLink>
+          
+          <SafeLink
+            href='https://x.com/TheLongInvest'
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group block"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-blue-300">The Long Invest</div>
+            <div className="text-xs text-crypto-silver">@TheLongInvest</div>
+          </SafeLink>
+          
+          <SafeLink
+            href='https://x.com/davyy888'
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group block"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-blue-300">Davy</div>
+            <div className="text-xs text-crypto-silver">@davyy888</div>
+          </SafeLink>
+          
+          <SafeLink
+            href='https://x.com/PMDiChristina'
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group block"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-blue-300">PMDiChristina</div>
+            <div className="text-xs text-crypto-silver">@PMDiChristina</div>
+          </SafeLink>
+          
+          <SafeLink
+            href='https://x.com/JoelGoesDigital'
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group block"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-blue-300">Joel Goes Digital</div>
+            <div className="text-xs text-crypto-silver">@JoelGoesDigital</div>
+          </SafeLink>
+          
+          <SafeLink
+            href='https://x.com/MACDMaster328'
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group block"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-blue-300">MACD Master</div>
+            <div className="text-xs text-crypto-silver">@MACDMaster328</div>
+          </SafeLink>
+          
+          <SafeLink
+            href='https://x.com/Maximus_Holla'
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group block"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-blue-300">Maximus Holla</div>
+            <div className="text-xs text-crypto-silver">@Maximus_Holla</div>
+          </SafeLink>
+          
+          <SafeLink
+            href='https://x.com/cantonmeow'
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group block"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-blue-300">Canton Meow</div>
+            <div className="text-xs text-crypto-silver">@cantonmeow</div>
+          </SafeLink>
+          
+          <SafeLink
+            href='https://x.com/donaldjdean'
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group block"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-blue-300">Donald J Dean</div>
+            <div className="text-xs text-crypto-silver">@donaldjdean</div>
+          </SafeLink>
+          
+          <SafeLink
+            href='https://x.com/ACInvestorBlog'
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group block"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-blue-300">AC Investor Blog</div>
+            <div className="text-xs text-crypto-silver">@ACInvestorBlog</div>
+          </SafeLink>
+          
+          <SafeLink
+            href='https://x.com/CestrianInc'
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group block"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-blue-300">Cestrian Inc</div>
+            <div className="text-xs text-crypto-silver">@CestrianInc</div>
+          </SafeLink>
+          
+          <SafeLink
+            href='https://x.com/InvestInAssets'
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group block"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-blue-300">Invest In Assets</div>
+            <div className="text-xs text-crypto-silver">@InvestInAssets</div>
+          </SafeLink>
+          
+          <SafeLink
+            href='https://x.com/PMDiChristina'
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group block"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-blue-300">PM Di Christina</div>
+            <div className="text-xs text-crypto-silver">@PMDiChristina</div>
+          </SafeLink>
+          
+          <SafeLink
+            href='https://x.com/investinsights4'
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group block"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-blue-300">Invest Insights</div>
+            <div className="text-xs text-crypto-silver">@investinsights4</div>
+          </SafeLink>
+          
+          <SafeLink
+            href='https://x.com/bitsandbips'
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group block"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-blue-300">Bits and Bips</div>
+            <div className="text-xs text-crypto-silver">@bitsandbips</div>
+          </SafeLink>
+          
+          <SafeLink
+            href='https://x.com/BKnight221'
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group block"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-blue-300">BKnight221</div>
+            <div className="text-xs text-crypto-silver">@BKnight221</div>
+          </SafeLink>
 
-          <button
-            onClick={() => openInNewTab('https://x.com/FirstSquawk')}
-            className="bg-gradient-to-br from-purple-500/10 to-purple-600/10 hover:from-purple-500/20 hover:to-purple-600/20 border border-purple-500/20 hover:border-purple-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+          <SafeLink
+            href='https://x.com/NFTLunatic'
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group block"
           >
-            <div className="text-sm font-medium text-white group-hover:text-purple-300 mb-1">@FirstSquawk</div>
-            <div className="text-xs text-crypto-silver">Real-time market alerts</div>
-          </button>
-
-          <button
-            onClick={() => openInNewTab('https://x.com/zerohedge')}
-            className="bg-gradient-to-br from-red-500/10 to-red-600/10 hover:from-red-500/20 hover:to-red-600/20 border border-red-500/20 hover:border-red-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
-          >
-            <div className="text-sm font-medium text-white group-hover:text-red-300 mb-1">@zerohedge</div>
-            <div className="text-xs text-crypto-silver">Financial and political news</div>
-          </button>
+            <div className="text-sm font-medium text-white group-hover:text-blue-300">NFT Lunatic</div>
+            <div className="text-xs text-crypto-silver">@NFTLunatic</div>
+          </SafeLink>
         </div>
       </GlassCard>
 
@@ -174,6 +353,150 @@ export default function CryptoStocksSection() {
             allow="fullscreen; clipboard-write; autoplay; camera; microphone; geolocation"
             frameBorder="0"
           />
+        </div>
+      </GlassCard>
+
+      {/* Crypto Stocks */}
+      <GlassCard className="p-3 sm:p-4 lg:p-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-orange-500 via-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+              <Bitcoin className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+            </div>
+            <h3 className="text-lg sm:text-xl font-semibold text-white">Crypto Stocks</h3>
+            <Badge className="bg-gradient-to-r from-orange-500/20 via-blue-500/20 to-purple-500/20 text-white border-crypto-silver/30 text-xs">
+              CORPORATE
+            </Badge>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          {/* Bitcoin Treasuries */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-orange-500 rounded-full flex items-center justify-center">
+                  <Bitcoin className="w-2.5 h-2.5 text-white" />
+                </div>
+                <h4 className="text-lg font-semibold text-orange-400">Bitcoin Treasuries</h4>
+                <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 text-xs">
+                  BTC
+                </Badge>
+              </div>
+              <button
+                onClick={() => openInNewTab('https://bitcointreasuries.net/')}
+                className="text-orange-400 hover:text-orange-300 text-xs sm:text-sm"
+              >
+                Open Full View →
+              </button>
+            </div>
+            <div className="w-full">
+              <iframe
+                src="https://bitcointreasuries.net/"
+                className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
+                title="Bitcoin Treasuries"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+              />
+            </div>
+          </div>
+
+          {/* ETH Treasuries */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-xs">Ξ</span>
+                </div>
+                <h4 className="text-lg font-semibold text-blue-400">ETH Treasuries</h4>
+                <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
+                  ETH
+                </Badge>
+              </div>
+              <button
+                onClick={() => openInNewTab('https://www.strategicethreserve.xyz/')}
+                className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm"
+              >
+                Open Full View →
+              </button>
+            </div>
+            <div className="w-full">
+              <iframe
+                src="https://www.strategicethreserve.xyz/"
+                className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
+                title="ETH Treasuries"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+              />
+            </div>
+          </div>
+
+          {/* SOL Treasuries */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-xs">◎</span>
+                </div>
+                <h4 className="text-lg font-semibold text-green-400">SOL Treasuries</h4>
+                <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
+                  SOL
+                </Badge>
+              </div>
+              <button
+                onClick={() => openInNewTab('https://www.thenew.money/trend/solana-holders')}
+                className="text-green-400 hover:text-green-300 text-xs sm:text-sm"
+              >
+                Open Full View →
+              </button>
+            </div>
+            <div className="w-full">
+              <button
+                onClick={() => openInNewTab('https://www.thenew.money/trend/solana-holders')}
+                className="w-full bg-gradient-to-r from-green-500/10 to-green-600/10 hover:from-green-500/20 hover:to-green-600/20 border border-green-500/20 hover:border-green-400/30 rounded-lg p-4 transition-all duration-300 group"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                      <span className="text-white font-bold text-lg">◎</span>
+                    </div>
+                    <div className="text-left">
+                      <h4 className="font-semibold text-green-400 group-hover:text-green-300">SOL Treasuries</h4>
+                      <p className="text-crypto-silver text-sm">Track Solana institutional adoption</p>
+                    </div>
+                  </div>
+                  <ExternalLink className="w-5 h-5 text-green-400 group-hover:text-green-300 transition-colors" />
+                </div>
+              </button>
+            </div>
+          </div>
+
+          {/* TAO Treasuries */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-purple-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-xs">τ</span>
+                </div>
+                <h4 className="text-lg font-semibold text-purple-400">TAO Treasuries</h4>
+                <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-xs">
+                  TAO
+                </Badge>
+              </div>
+              <button
+                onClick={() => openInNewTab('https://taotreasuries.app/')}
+                className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm"
+              >
+                Open Full View →
+              </button>
+            </div>
+            <div className="w-full">
+              <iframe
+                src="https://taotreasuries.app/"
+                className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
+                title="TAO Treasuries"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+              />
+            </div>
+          </div>
         </div>
       </GlassCard>
 
@@ -321,13 +644,13 @@ export default function CryptoStocksSection() {
                 <div className="w-4 h-4 bg-purple-500 rounded-full flex items-center justify-center">
                   <span className="text-white font-bold text-xs">SOL</span>
                 </div>
-                <h4 className="text-lg font-semibold text-purple-400">Solana Reserve</h4>
+                <h4 className="text-lg font-semibold text-purple-400">SOL Treasuries</h4>
                 <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-xs">
                   SOL
                 </Badge>
               </div>
               <button
-                onClick={() => openInNewTab('https://thenew.money/')}
+                onClick={() => openInNewTab('https://thenew.money/sol')}
                 className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm"
               >
                 Open Full View →
@@ -335,9 +658,9 @@ export default function CryptoStocksSection() {
             </div>
             <div className="w-full">
               <iframe
-                src="https://thenew.money/"
+                src="https://thenew.money/sol"
                 className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
-                title="Solana Reserve"
+                title="SOL Treasuries"
                 sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
               />
             </div>
@@ -379,7 +702,7 @@ export default function CryptoStocksSection() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
           <div className="flex items-center gap-2">
             <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
-              <FileText className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
             </div>
             <h3 className="text-lg sm:text-xl font-semibold text-white">Tokenized Stocks</h3>
             <Badge className="bg-gradient-to-r from-purple-500/20 to-blue-500/20 text-white border-crypto-silver/30 text-xs">
