@@ -30,6 +30,40 @@ export default function CryptoStocksSection() {
 
   return (
     <div className="space-y-4 lg:space-y-8">
+      {/* StockAnalysis.com */}
+      <GlassCard className="p-3 sm:p-4 lg:p-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+            </div>
+            <h3 className="text-lg sm:text-xl font-semibold text-white">Stock Analysis</h3>
+            <Badge className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-white border-crypto-silver/30 text-xs">
+              STOCKANALYSIS.COM
+            </Badge>
+          </div>
+          <button
+            onClick={() => openInNewTab('https://stockanalysis.com/')}
+            className="text-crypto-silver hover:text-white text-xs sm:text-sm flex items-center gap-1"
+          >
+            <ExternalLink className="w-3 h-3" />
+            Open Full View
+          </button>
+        </div>
+
+        <div className="w-full">
+          <iframe
+            src="https://stockanalysis.com/"
+            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+            title="StockAnalysis.com"
+            loading="eager"
+            referrerPolicy="unsafe-url"
+            allow="fullscreen; clipboard-write; autoplay; camera; microphone; geolocation"
+            frameBorder="0"
+          />
+        </div>
+      </GlassCard>
+
       {/* Slickcharts Stock Data */}
       <GlassCard className="p-3 sm:p-4 lg:p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
