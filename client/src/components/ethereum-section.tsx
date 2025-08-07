@@ -46,7 +46,7 @@ export function EthereumSection() {
             LIVE CHART
           </span>
           <SafeLink
-            href="https://www.tradingview.com/chart/?symbol=BINANCE%3AETHUSDT"
+            href="https://www.tradingview.com/chart/e5l95XgZ/?symbol=BITSTAMP%3AETHUSD"
             className="ml-auto text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
           >
             Open Full Chart <ExternalLink className="w-3 h-3" />
@@ -55,7 +55,7 @@ export function EthereumSection() {
         
         <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
           <SafeIframe
-            src="https://www.tradingview.com/widgetembed/?frameElementId=tradingview_76d87&symbol=BINANCE%3AETHUSDT&interval=D&hidesidetoolbar=1&hidetoptoolbar=1&symboledit=1&saveimage=1&toolbarbg=f1f3f6&studies=[]&hideideas=1&theme=dark&style=1&timezone=Etc%2FUTC&studies_overrides={}&overrides={}&enabled_features=[]&disabled_features=[]&locale=en&utm_source=coinmarketcap.com&utm_medium=widget&utm_campaign=chart&utm_term=BINANCE%3AETHUSDT"
+            src="https://www.tradingview.com/chart/e5l95XgZ/?symbol=BITSTAMP%3AETHUSD"
             title="Ethereum ETH Price Chart"
             className="w-full h-[500px] border-0"
           />
