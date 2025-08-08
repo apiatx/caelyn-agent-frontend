@@ -1,5 +1,6 @@
 import React, { Suspense } from 'react';
 import { Badge } from "@/components/ui/badge";
+import { ExternalLink } from "lucide-react";
 import hippoImage from "@assets/image_1753204691716.png";
 import { SectionLoadingState } from "@/components/loading-screen";
 import { openSecureLink, getSecureIframeProps } from "@/utils/security";
@@ -58,12 +59,21 @@ export default function TopChartsPage() {
                         BTC
                       </Badge>
                     </div>
-                    <button
-                      onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=BINANCE%3ABTCUSDT')}
-                      className="text-orange-400 hover:text-orange-300 text-xs sm:text-sm"
-                    >
-                      Open Full View →
-                    </button>
+                    <div className="flex items-center space-x-3">
+                      <button
+                        onClick={() => openSecureLink('https://coinmarketcap.com/currencies/bitcoin/')}
+                        className="text-orange-400 hover:text-orange-300 text-xs sm:text-sm flex items-center gap-1"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        CoinMarketCap
+                      </button>
+                      <button
+                        onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=BINANCE%3ABTCUSDT')}
+                        className="text-orange-400 hover:text-orange-300 text-xs sm:text-sm"
+                      >
+                        Open Full View →
+                      </button>
+                    </div>
                   </div>
                   <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
                     <iframe
@@ -87,12 +97,21 @@ export default function TopChartsPage() {
                         ETH
                       </Badge>
                     </div>
-                    <button
-                      onClick={() => openSecureLink('https://www.tradingview.com/chart/e5l95XgZ/?symbol=BITSTAMP%3AETHUSD')}
-                      className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm"
-                    >
-                      Open Full View →
-                    </button>
+                    <div className="flex items-center space-x-3">
+                      <button
+                        onClick={() => openSecureLink('https://coinmarketcap.com/currencies/ethereum/')}
+                        className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm flex items-center gap-1"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        CoinMarketCap
+                      </button>
+                      <button
+                        onClick={() => openSecureLink('https://www.tradingview.com/chart/e5l95XgZ/?symbol=BITSTAMP%3AETHUSD')}
+                        className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm"
+                      >
+                        Open Full View →
+                      </button>
+                    </div>
                   </div>
                   <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
                     <iframe
@@ -116,12 +135,21 @@ export default function TopChartsPage() {
                         XRP
                       </Badge>
                     </div>
-                    <button
-                      onClick={() => openSecureLink('https://www.tradingview.com/chart/e5l95XgZ/?symbol=BITSTAMP%3AXRPUSD')}
-                      className="text-gray-400 hover:text-gray-300 text-xs sm:text-sm"
-                    >
-                      Open Full View →
-                    </button>
+                    <div className="flex items-center space-x-3">
+                      <button
+                        onClick={() => openSecureLink('https://coinmarketcap.com/currencies/xrp/')}
+                        className="text-gray-400 hover:text-gray-300 text-xs sm:text-sm flex items-center gap-1"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        CoinMarketCap
+                      </button>
+                      <button
+                        onClick={() => openSecureLink('https://www.tradingview.com/chart/e5l95XgZ/?symbol=BITSTAMP%3AXRPUSD')}
+                        className="text-gray-400 hover:text-gray-300 text-xs sm:text-sm"
+                      >
+                        Open Full View →
+                      </button>
+                    </div>
                   </div>
                   <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
                     <iframe
@@ -145,12 +173,21 @@ export default function TopChartsPage() {
                         SOL
                       </Badge>
                     </div>
-                    <button
-                      onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=BINANCE%3ASOLUSDT')}
-                      className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm"
-                    >
-                      Open Full View →
-                    </button>
+                    <div className="flex items-center space-x-3">
+                      <button
+                        onClick={() => openSecureLink('https://coinmarketcap.com/currencies/solana/')}
+                        className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm flex items-center gap-1"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        CoinMarketCap
+                      </button>
+                      <button
+                        onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=BINANCE%3ASOLUSDT')}
+                        className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm"
+                      >
+                        Open Full View →
+                      </button>
+                    </div>
                   </div>
                   <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
                     <iframe
@@ -174,12 +211,21 @@ export default function TopChartsPage() {
                         BNB
                       </Badge>
                     </div>
-                    <button
-                      onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=BINANCE%3ABNBUSDT')}
-                      className="text-yellow-400 hover:text-yellow-300 text-xs sm:text-sm"
-                    >
-                      Open Full View →
-                    </button>
+                    <div className="flex items-center space-x-3">
+                      <button
+                        onClick={() => openSecureLink('https://coinmarketcap.com/currencies/bnb/')}
+                        className="text-yellow-400 hover:text-yellow-300 text-xs sm:text-sm flex items-center gap-1"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        CoinMarketCap
+                      </button>
+                      <button
+                        onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=BINANCE%3ABNBUSDT')}
+                        className="text-yellow-400 hover:text-yellow-300 text-xs sm:text-sm"
+                      >
+                        Open Full View →
+                      </button>
+                    </div>
                   </div>
                   <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
                     <iframe
@@ -203,12 +249,21 @@ export default function TopChartsPage() {
                         SUI
                       </Badge>
                     </div>
-                    <button
-                      onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=BINANCE%3ASUIUSDT')}
-                      className="text-green-400 hover:text-green-300 text-xs sm:text-sm"
-                    >
-                      Open Full View →
-                    </button>
+                    <div className="flex items-center space-x-3">
+                      <button
+                        onClick={() => openSecureLink('https://coinmarketcap.com/currencies/sui/')}
+                        className="text-green-400 hover:text-green-300 text-xs sm:text-sm flex items-center gap-1"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        CoinMarketCap
+                      </button>
+                      <button
+                        onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=BINANCE%3ASUIUSDT')}
+                        className="text-green-400 hover:text-green-300 text-xs sm:text-sm"
+                      >
+                        Open Full View →
+                      </button>
+                    </div>
                   </div>
                   <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
                     <iframe
@@ -232,12 +287,21 @@ export default function TopChartsPage() {
                         LINK
                       </Badge>
                     </div>
-                    <button
-                      onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=BINANCE%3ALINKUSDT')}
-                      className="text-pink-400 hover:text-pink-300 text-xs sm:text-sm"
-                    >
-                      Open Full View →
-                    </button>
+                    <div className="flex items-center space-x-3">
+                      <button
+                        onClick={() => openSecureLink('https://coinmarketcap.com/currencies/chainlink/')}
+                        className="text-pink-400 hover:text-pink-300 text-xs sm:text-sm flex items-center gap-1"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        CoinMarketCap
+                      </button>
+                      <button
+                        onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=BINANCE%3ALINKUSDT')}
+                        className="text-pink-400 hover:text-pink-300 text-xs sm:text-sm"
+                      >
+                        Open Full View →
+                      </button>
+                    </div>
                   </div>
                   <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
                     <iframe
@@ -261,12 +325,21 @@ export default function TopChartsPage() {
                         HYPE
                       </Badge>
                     </div>
-                    <button
-                      onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=PYTH%3AHYPEUSD')}
-                      className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm"
-                    >
-                      Open Full View →
-                    </button>
+                    <div className="flex items-center space-x-3">
+                      <button
+                        onClick={() => openSecureLink('https://coinmarketcap.com/currencies/hyperliquid/')}
+                        className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm flex items-center gap-1"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        CoinMarketCap
+                      </button>
+                      <button
+                        onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=PYTH%3AHYPEUSD')}
+                        className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm"
+                      >
+                        Open Full View →
+                      </button>
+                    </div>
                   </div>
                   <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
                     <iframe
@@ -290,12 +363,21 @@ export default function TopChartsPage() {
                         TAO
                       </Badge>
                     </div>
-                    <button
-                      onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=BITGET%3ATAOUSDT')}
-                      className="text-orange-400 hover:text-orange-300 text-xs sm:text-sm"
-                    >
-                      Open Full View →
-                    </button>
+                    <div className="flex items-center space-x-3">
+                      <button
+                        onClick={() => openSecureLink('https://coinmarketcap.com/currencies/bittensor/')}
+                        className="text-orange-400 hover:text-orange-300 text-xs sm:text-sm flex items-center gap-1"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        CoinMarketCap
+                      </button>
+                      <button
+                        onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=BITGET%3ATAOUSDT')}
+                        className="text-orange-400 hover:text-orange-300 text-xs sm:text-sm"
+                      >
+                        Open Full View →
+                      </button>
+                    </div>
                   </div>
                   <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
                     <div className="relative w-full h-[500px] sm:h-[600px] lg:h-[700px]">
@@ -321,12 +403,21 @@ export default function TopChartsPage() {
                         AVAX
                       </Badge>
                     </div>
-                    <button
-                      onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=BINANCE%3AAVAXUSDT')}
-                      className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm"
-                    >
-                      Open Full View →
-                    </button>
+                    <div className="flex items-center space-x-3">
+                      <button
+                        onClick={() => openSecureLink('https://coinmarketcap.com/currencies/avalanche/')}
+                        className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm flex items-center gap-1"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        CoinMarketCap
+                      </button>
+                      <button
+                        onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=BINANCE%3AAVAXUSDT')}
+                        className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm"
+                      >
+                        Open Full View →
+                      </button>
+                    </div>
                   </div>
                   <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
                     <iframe
@@ -350,12 +441,21 @@ export default function TopChartsPage() {
                         DOGE
                       </Badge>
                     </div>
-                    <button
-                      onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=BINANCE%3ADOGEUSDT')}
-                      className="text-orange-400 hover:text-orange-300 text-xs sm:text-sm"
-                    >
-                      Open Full View →
-                    </button>
+                    <div className="flex items-center space-x-3">
+                      <button
+                        onClick={() => openSecureLink('https://coinmarketcap.com/currencies/dogecoin/')}
+                        className="text-orange-400 hover:text-orange-300 text-xs sm:text-sm flex items-center gap-1"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        CoinMarketCap
+                      </button>
+                      <button
+                        onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=BINANCE%3ADOGEUSDT')}
+                        className="text-orange-400 hover:text-orange-300 text-xs sm:text-sm"
+                      >
+                        Open Full View →
+                      </button>
+                    </div>
                   </div>
                   <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
                     <iframe
@@ -379,12 +479,21 @@ export default function TopChartsPage() {
                         BONK
                       </Badge>
                     </div>
-                    <button
-                      onClick={() => openSecureLink('https://www.tradingview.com/chart/e5l95XgZ/?symbol=MEXC%3ABONKUSDT')}
-                      className="text-yellow-400 hover:text-yellow-300 text-xs sm:text-sm"
-                    >
-                      Open Full View →
-                    </button>
+                    <div className="flex items-center space-x-3">
+                      <button
+                        onClick={() => openSecureLink('https://coinmarketcap.com/currencies/bonk/')}
+                        className="text-yellow-400 hover:text-yellow-300 text-xs sm:text-sm flex items-center gap-1"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        CoinMarketCap
+                      </button>
+                      <button
+                        onClick={() => openSecureLink('https://www.tradingview.com/chart/e5l95XgZ/?symbol=MEXC%3ABONKUSDT')}
+                        className="text-yellow-400 hover:text-yellow-300 text-xs sm:text-sm"
+                      >
+                        Open Full View →
+                      </button>
+                    </div>
                   </div>
                   <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
                     <iframe
@@ -408,12 +517,21 @@ export default function TopChartsPage() {
                         PENGU
                       </Badge>
                     </div>
-                    <button
-                      onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=BINANCE%3APENGUUSDT')}
-                      className="text-cyan-400 hover:text-cyan-300 text-xs sm:text-sm"
-                    >
-                      Open Full View →
-                    </button>
+                    <div className="flex items-center space-x-3">
+                      <button
+                        onClick={() => openSecureLink('https://coinmarketcap.com/currencies/pudgy-penguins/')}
+                        className="text-cyan-400 hover:text-cyan-300 text-xs sm:text-sm flex items-center gap-1"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        CoinMarketCap
+                      </button>
+                      <button
+                        onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=BINANCE%3APENGUUSDT')}
+                        className="text-cyan-400 hover:text-cyan-300 text-xs sm:text-sm"
+                      >
+                        Open Full View →
+                      </button>
+                    </div>
                   </div>
                   <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
                     <iframe
