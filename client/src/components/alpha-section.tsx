@@ -192,27 +192,7 @@ export default function AlphaSection() {
           </SafeLink>
         </div>
 
-        {/* Memecoins Section */}
-        <div className="mt-6">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-5 h-5 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full flex items-center justify-center">
-              <span className="text-white text-xs">🚀</span>
-            </div>
-            <h4 className="text-lg font-semibold text-white">Memecoins</h4>
-            <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-xs">
-              CAPITODAY
-            </Badge>
-          </div>
-          
-          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-            <iframe
-              src="https://capitoday.com/"
-              title="Capitoday Memecoin Analytics"
-              className="w-full h-[600px] border-0"
-              sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-            />
-          </div>
-        </div>
+
       </GlassCard>
 
       {/* Social - Moved underneath Signal section */}
@@ -662,6 +642,28 @@ export default function AlphaSection() {
             </div>
             <p className="text-gray-400 text-sm">DeBank Portfolio Analysis</p>
           </SafeLink>
+        </div>
+      </GlassCard>
+
+      {/* Memecoins */}
+      <GlassCard className="p-6">
+        <div className="flex items-center gap-2 mb-6">
+          <div className="w-6 h-6 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full flex items-center justify-center">
+            <span className="text-white text-sm">🚀</span>
+          </div>
+          <h3 className="text-xl font-semibold text-white">Memecoins</h3>
+          <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-xs">
+            CAPITODAY
+          </Badge>
+        </div>
+        
+        <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+          <iframe
+            src="https://capitoday.com/"
+            title="Capitoday Memecoin Analytics"
+            className="w-full h-[600px] border-0"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+          />
         </div>
       </GlassCard>
 
