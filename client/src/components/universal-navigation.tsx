@@ -52,7 +52,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
                 : "hover:bg-white/5 text-crypto-silver"
             }`}
           >
-            <TrendingUp className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />Alpha
+            <BarChart3 className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />Onchain
           </button>
           <button
             onClick={() => navigateTo("/app/ethereum")}
@@ -178,7 +178,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
                     : "hover:bg-white/5 text-crypto-silver"
                 }`}
               >
-                <TrendingUp className="w-4 h-4 mr-1 inline" />Alpha
+                <BarChart3 className="w-4 h-4 mr-1 inline" />Onchain
               </button>
               <button
                 onClick={() => navigateTo("/app/ethereum")}

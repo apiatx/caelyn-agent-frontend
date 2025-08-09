@@ -85,3 +85,10 @@ The application employs a full-stack monorepo architecture, ensuring clear separ
   - Enhanced error handling with server.on('error') event listener for robust startup
   - Deployment health checkers get immediate JSON: `{"status":"ok","service":"crypto-intelligence-platform"}`
   - Frontend accessible at `/app` route serving full React application via Vite middleware
+- **Alpha to Onchain Page Restructuring**: Completed comprehensive page reorganization including:
+  - Moved "Onchain" section with Artemis iframe from Market Overview page to top of Alpha page
+  - Renamed "Alpha" page to "Onchain" in both desktop and mobile navigation with updated BarChart3 icon
+  - Removed "X Sentiment - Top Coins" section from the new Onchain page as requested
+  - Updated page header to "Onchain Analytics" with cyan branding and "Comprehensive blockchain data and intelligence" description
+  - Maintained all other Alpha functionality including Signal section, X Accounts, and Social Analytics
+  - Preserved navigation order: Market Overview → Majors → Onchain → Ethereum → Base → Solana → Hype → Bittensor → Abstract → DeFi → Portfolio → Stocks

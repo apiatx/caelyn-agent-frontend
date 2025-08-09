@@ -1,7 +1,7 @@
 import React, { Suspense } from 'react';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, Star, Zap, DollarSign, Wallet, TrendingDown, Brain, Loader2 } from "lucide-react";
+import { TrendingUp, Star, Zap, DollarSign, Wallet, TrendingDown, Brain, Loader2, BarChart3 } from "lucide-react";
 import { useSocialPulse } from "@/hooks/useSocialPulse";
 // Glass card component for alpha section
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
@@ -30,6 +30,10 @@ const SafeLink = ({ href, children, className = "" }: { href: string; children: 
 export default function AlphaSection() {
   const { data: socialPulseData, isLoading } = useSocialPulse();
 
+  const openInNewTab = (url: string) => {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
   const getTickerColor = (index: number) => {
     const colors = [
       { bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', hover: 'hover:bg-yellow-500/20', icon: 'bg-yellow-500', text: 'text-yellow-400' },
@@ -48,14 +52,53 @@ export default function AlphaSection() {
   return (
     <div className="space-y-8">
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 bg-gradient-to-r from-crypto-warning to-yellow-400 rounded-xl flex items-center justify-center">
-          <TrendingUp className="text-crypto-black text-xl" />
+        <div className="w-10 h-10 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-xl flex items-center justify-center">
+          <BarChart3 className="text-white text-xl" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-white">Alpha Intelligence</h1>
-          <p className="text-crypto-silver">Advanced market intelligence and analytics</p>
+          <h1 className="text-2xl font-bold text-white">Onchain Analytics</h1>
+          <p className="text-crypto-silver">Comprehensive blockchain data and intelligence</p>
         </div>
       </div>
+
+      {/* Onchain - Artemis Analytics */}
+      <GlassCard className="p-3 sm:p-4 lg:p-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-cyan-500 rounded-full flex items-center justify-center">
+              <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+            </div>
+            <h3 className="text-lg sm:text-xl font-semibold text-white">Onchain</h3>
+            <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 text-xs">
+              COMPREHENSIVE
+            </Badge>
+          </div>
+        </div>
+
+        {/* Artemis Analytics Iframe */}
+        <div className="mb-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
+            <button
+              onClick={() => openInNewTab('https://app.artemisanalytics.com/')}
+              className="text-cyan-400 hover:text-cyan-300 text-xs sm:text-sm ml-auto"
+            >
+              Open Full View →
+            </button>
+          </div>
+          <div className="w-full bg-gray-900/50 rounded-lg border border-crypto-silver/20 overflow-hidden">
+            <iframe
+              src="https://app.artemisanalytics.com/"
+              className="w-full h-[400px] sm:h-[500px] lg:h-[600px]"
+              title="Artemis Analytics Dashboard"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+              referrerPolicy="no-referrer-when-downgrade"
+              loading="lazy"
+              allow="fullscreen; web-share; clipboard-read; clipboard-write; camera; microphone"
+              style={{ border: 'none' }}
+            />
+          </div>
+        </div>
+      </GlassCard>
 
       {/* Alpha Analytics Platforms */}
       <GlassCard className="p-6">
@@ -537,48 +580,7 @@ export default function AlphaSection() {
           </div>
         </div>
 
-        {/* X Sentiment - Top Coins Subsection */}
-        <div className="mt-8">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-5 h-5 bg-gradient-to-r from-red-500 to-pink-500 rounded-full flex items-center justify-center">
-              <TrendingUp className="w-3 h-3 text-white" />
-            </div>
-            <h4 className="text-lg font-semibold text-white">X Sentiment - Top Coins</h4>
-            <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-xs">
-              24H TRENDING
-            </Badge>
-          </div>
-          
-          {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
-              <span className="ml-2 text-gray-400">Loading trending tickers...</span>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {socialPulseData?.map((ticker, index) => {
-                const colors = getTickerColor(index);
-                return (
-                  <SafeLink
-                    key={ticker.symbol}
-                    href={`https://x.com/search?q=%24${ticker.symbol}&src=typed_query&f=live`}
-                    className={`p-4 ${colors.bg} border ${colors.border} rounded-lg ${colors.hover} transition-colors`}
-                  >
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className={`w-8 h-8 ${colors.icon} rounded-full flex items-center justify-center`}>
-                        <span className="text-white text-sm font-bold">$</span>
-                      </div>
-                      <h5 className={`${colors.text} font-semibold`}>${ticker.symbol}</h5>
-                    </div>
-                    <p className="text-gray-400 text-sm">
-                      24hr Sentiment {ticker.sentiment > 0 ? '+' : ''}{ticker.sentiment}%
-                    </p>
-                  </SafeLink>
-                );
-              })}
-            </div>
-          )}
-        </div>
+
 
         {/* Social Analytics - Moved to bottom */}
         <div className="mt-8">
