@@ -32,7 +32,7 @@ export default function CryptoDashboardSection() {
 
       {/* Quick Analytics Links - moved between Alt Season and Onchain */}
       <GlassCard className="p-3 sm:p-4 lg:p-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
           <button
             onClick={() => openInNewTab('https://coinmarketcap.com/')}
             className="p-3 sm:p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
@@ -68,6 +68,13 @@ export default function CryptoDashboardSection() {
           >
             <h5 className="text-green-400 font-semibold mb-1">CoinGecko Chains</h5>
             <p className="text-gray-400 text-sm">Blockchain Analytics</p>
+          </button>
+          <button
+            onClick={() => openInNewTab('https://messari.io/')}
+            className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-lg hover:bg-indigo-500/20 transition-colors"
+          >
+            <h5 className="text-indigo-400 font-semibold mb-1">Messari</h5>
+            <p className="text-gray-400 text-sm">Crypto Research</p>
           </button>
         </div>
       </GlassCard>
