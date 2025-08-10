@@ -109,30 +109,55 @@ export function HypeSection() {
             </button>
             
             <button
-              onClick={() => window.open('https://app.coinmarketman.com/dashboard/accounts/hyperliquid/126558?tab=summary', '_blank', 'noopener,noreferrer')}
+              onClick={() => window.open('https://app.coinmarketman.com/dashboard/intelligence?tab=open_positions', '_blank', 'noopener,noreferrer')}
               className="bg-gradient-to-br from-orange-500/10 to-red-600/10 hover:from-orange-500/20 hover:to-red-600/20 border border-orange-500/20 hover:border-orange-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-sm font-medium text-white group-hover:text-orange-300 mb-1">Portfolio Analytics</div>
-                  <div className="text-xs text-crypto-silver">Comprehensive portfolio tracking and metrics</div>
+                  <div className="text-sm font-medium text-white group-hover:text-orange-300 mb-1">Perps Intelligence</div>
+                  <div className="text-xs text-crypto-silver">Open positions and perpetual futures intelligence</div>
                 </div>
                 <ExternalLink className="w-4 h-4 text-orange-400 group-hover:text-orange-300" />
               </div>
             </button>
+          </div>
+          
+          {/* Portfolio Subsection */}
+          <div className="mt-6">
+            <h4 className="text-md font-semibold text-orange-400 mb-3 flex items-center gap-2">
+              <div className="w-4 h-4 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-xs">P</span>
+              </div>
+              Portfolio
+            </h4>
             
-            <button
-              onClick={() => window.open('https://app.coinmarketman.com/hypertracker/wallet/0xEE8d3996E60ff46466334e4844Dd94bafef5Eb5d', '_blank', 'noopener,noreferrer')}
-              className="bg-gradient-to-br from-orange-500/10 to-red-600/10 hover:from-orange-500/20 hover:to-red-600/20 border border-orange-500/20 hover:border-orange-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-medium text-white group-hover:text-orange-300 mb-1">PnL Chart</div>
-                  <div className="text-xs text-crypto-silver">Wallet performance and PnL visualization</div>
+            <div className="grid grid-cols-1 gap-3">
+              <button
+                onClick={() => window.open('https://app.coinmarketman.com/dashboard/accounts/hyperliquid/126558?tab=summary', '_blank', 'noopener,noreferrer')}
+                className="bg-gradient-to-br from-orange-500/10 to-red-600/10 hover:from-orange-500/20 hover:to-red-600/20 border border-orange-500/20 hover:border-orange-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm font-medium text-white group-hover:text-orange-300 mb-1">Portfolio Analytics</div>
+                    <div className="text-xs text-crypto-silver">Comprehensive portfolio tracking and metrics</div>
+                  </div>
+                  <ExternalLink className="w-4 h-4 text-orange-400 group-hover:text-orange-300" />
                 </div>
-                <ExternalLink className="w-4 h-4 text-orange-400 group-hover:text-orange-300" />
-              </div>
-            </button>
+              </button>
+              
+              <button
+                onClick={() => window.open('https://app.coinmarketman.com/hypertracker/wallet/0xEE8d3996E60ff46466334e4844Dd94bafef5Eb5d', '_blank', 'noopener,noreferrer')}
+                className="bg-gradient-to-br from-orange-500/10 to-red-600/10 hover:from-orange-500/20 hover:to-red-600/20 border border-orange-500/20 hover:border-orange-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm font-medium text-white group-hover:text-orange-300 mb-1">PnL Chart</div>
+                    <div className="text-xs text-crypto-silver">Wallet performance and PnL visualization</div>
+                  </div>
+                  <ExternalLink className="w-4 h-4 text-orange-400 group-hover:text-orange-300" />
+                </div>
+              </button>
+            </div>
           </div>
         </div>
       </div>
