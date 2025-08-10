@@ -208,29 +208,6 @@ export default function BaseSection() {
         />
       </GlassCard>
 
-      {/* Checkr.social */}
-      <GlassCard className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-cyan-600 rounded-full flex items-center justify-center">
-            <span className="text-white text-xs font-bold">CS</span>
-          </div>
-          <h3 className="text-xl font-semibold text-white">Checkr.social</h3>
-          <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs rounded-full font-medium">
-            SOCIAL ANALYTICS
-          </span>
-          <SafeLink 
-            href="https://checkr.social/"
-            className="ml-auto text-blue-400 hover:text-blue-300 text-xs"
-          >
-            Open in New Tab →
-          </SafeLink>
-        </div>
-        <SafeIframe 
-          src="https://checkr.social/"
-          title="Checkr.social"
-        />
-      </GlassCard>
-
       {/* BlockCreeper Explorer */}
       <GlassCard className="p-6">
         <div className="flex items-center gap-2 mb-4">
@@ -254,28 +231,77 @@ export default function BaseSection() {
         />
       </GlassCard>
 
-      {/* Zoracle */}
+      {/* Checkr.social */}
       <GlassCard className="p-6">
         <div className="flex items-center gap-2 mb-4">
-          <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full flex items-center justify-center">
-            <span className="text-white text-xs font-bold">Z</span>
+          <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-cyan-600 rounded-full flex items-center justify-center">
+            <span className="text-white text-xs font-bold">CS</span>
           </div>
-          <h3 className="text-xl font-semibold text-white">Zoracle</h3>
-          <span className="px-2 py-1 bg-purple-500/20 text-purple-400 text-xs rounded-full font-medium">
-            ORACLE
+          <h3 className="text-xl font-semibold text-white">Checkr.social</h3>
+          <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs rounded-full font-medium">
+            SOCIAL ANALYTICS
           </span>
           <SafeLink 
-            href="https://www.zoracle.xyz/"
-            className="ml-auto text-purple-400 hover:text-purple-300 text-xs"
+            href="https://checkr.social/"
+            className="ml-auto text-blue-400 hover:text-blue-300 text-xs"
           >
             Open in New Tab →
           </SafeLink>
         </div>
         <SafeIframe 
-          src="https://www.zoracle.xyz/"
-          title="Zoracle"
+          src="https://checkr.social/"
+          title="Checkr.social"
         />
       </GlassCard>
+
+      {/* X Signal Section */}
+      <div className="space-y-6">
+        <GlassCard className="p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+              <TrendingUp className="w-4 h-4 text-white" />
+            </div>
+            <h3 className="text-xl font-semibold text-white">X Signal</h3>
+            <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
+              BASE SIGNAL
+            </Badge>
+          </div>
+          
+          <div className="grid grid-cols-1 gap-3">
+            <SafeLink
+              href="https://x.com/BaseDailyTK"
+              className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group block"
+            >
+              <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">Base Daily TK</div>
+              <div className="text-xs text-crypto-silver">@BaseDailyTK - Daily BASE network updates and insights</div>
+            </SafeLink>
+            
+            <SafeLink
+              href="https://x.com/MemesOnBase"
+              className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group block"
+            >
+              <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">Memes On Base</div>
+              <div className="text-xs text-crypto-silver">@MemesOnBase - BASE network meme culture and community</div>
+            </SafeLink>
+            
+            <SafeLink
+              href="https://x.com/MemesOnBase_"
+              className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group block"
+            >
+              <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">Memes On Base</div>
+              <div className="text-xs text-crypto-silver">@MemesOnBase_ - BASE network meme culture and trends</div>
+            </SafeLink>
+            
+            <SafeLink
+              href="https://x.com/Shake51_"
+              className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group block"
+            >
+              <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">Shake51</div>
+              <div className="text-xs text-crypto-silver">@Shake51_ - BASE network trading insights</div>
+            </SafeLink>
+          </div>
+        </GlassCard>
+      </div>
 
       {/* Ecosystems Section */}
       <div className="space-y-6">
@@ -365,54 +391,21 @@ export default function BaseSection() {
               </div>
               <div className="w-4 h-4 text-gray-400 group-hover:text-blue-400 transition-colors">→</div>
             </SafeLink>
-          </div>
-        </GlassCard>
-      </div>
 
-      {/* X Signal Section */}
-      <div className="space-y-6">
-        <GlassCard className="p-6">
-          <div className="flex items-center gap-2 mb-6">
-            <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-              <TrendingUp className="w-4 h-4 text-white" />
-            </div>
-            <h3 className="text-xl font-semibold text-white">X Signal</h3>
-            <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
-              BASE SIGNAL
-            </Badge>
-          </div>
-          
-          <div className="grid grid-cols-1 gap-3">
             <SafeLink
-              href="https://x.com/BaseDailyTK"
-              className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group block"
+              href="https://www.zoracle.xyz/"
+              className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-purple-500/30 transition-all duration-200 group"
             >
-              <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">Base Daily TK</div>
-              <div className="text-xs text-crypto-silver">@BaseDailyTK - Daily BASE network updates and insights</div>
-            </SafeLink>
-            
-            <SafeLink
-              href="https://x.com/MemesOnBase"
-              className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group block"
-            >
-              <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">Memes On Base</div>
-              <div className="text-xs text-crypto-silver">@MemesOnBase - BASE network meme culture and community</div>
-            </SafeLink>
-            
-            <SafeLink
-              href="https://x.com/MemesOnBase_"
-              className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group block"
-            >
-              <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">Memes On Base</div>
-              <div className="text-xs text-crypto-silver">@MemesOnBase_ - BASE network meme culture and trends</div>
-            </SafeLink>
-            
-            <SafeLink
-              href="https://x.com/Shake51_"
-              className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group block"
-            >
-              <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">Shake51</div>
-              <div className="text-xs text-crypto-silver">@Shake51_ - BASE network trading insights</div>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">Z</span>
+                </div>
+                <div>
+                  <h4 className="text-white font-medium text-sm">Zoracle</h4>
+                  <p className="text-gray-400 text-xs">Oracle platform</p>
+                </div>
+              </div>
+              <div className="w-4 h-4 text-gray-400 group-hover:text-purple-400 transition-colors">→</div>
             </SafeLink>
           </div>
         </GlassCard>
