@@ -333,7 +333,7 @@ export default function SolanaSection() {
           <div className="w-6 h-6 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full flex items-center justify-center">
             <TrendingUp className="w-4 h-4 text-white" />
           </div>
-          <h3 className="text-xl font-semibold text-white">Trading Platforms</h3>
+          <h3 className="text-xl font-semibold text-white">The World Onchain</h3>
           <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-xs">
             ASSETS
           </Badge>

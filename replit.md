@@ -107,7 +107,7 @@ The application employs a full-stack monorepo architecture, ensuring clear separ
 - **Majors Page Chart Additions**: Added TradingView iframes for XLM (Stellar - COINBASE:XLMUSD) with blue theme and HBAR (Hedera - BINANCE:HBARUSDT) with green theme between Bittensor and AVAX sections, including CoinMarketCap links and full view options
 - **Market Overview Coinglass Integration**: Added Coinglass Bull Market Peak Signals iframe (https://www.coinglass.com/bull-market-peak-signals) above Historical Bitcoin Monthly Returns section with green theme and Analytics badge, including CSP security configuration for coinglass.com domains
 - **Onchain Page X Account Addition**: Added TechDev_52 (https://x.com/TechDev_52) as the first X Account in the Social section with cyan branding for personal picks
-- **Solana Page Trading Platforms**: Added comprehensive Trading Platforms section featuring 10 specialized trading platforms with dual access (X account + website) for various assets:
+- **Solana Page The World Onchain**: Added comprehensive "The World Onchain" section featuring 10 specialized trading platforms with dual access (X account + website) for various assets:
   - Oro Gold (@orogoldapp + orogold.app) - trade gold
   - xStocks (@xStocksFi + xstocks.com/us) - trade stocks  
   - PreStocks (@PreStocksFi + prestocks.com) - trade pre-IPO stocks
