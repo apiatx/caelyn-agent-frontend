@@ -1,154 +1,48 @@
 #!/usr/bin/env node
 
-// CryptoHippo Production Server with Fixed SPA Routing
-// This server builds and serves the CryptoHippo React app correctly
-// Handles all /app/* routes properly for single-page application
+// CryptoHippo Production Server with FULL API Support
+// This server runs the complete Express application with API routes
+// Ensures proper deployment functionality for cryptohippo.locker
 
-import express from 'express';
+import { spawn } from 'child_process';
 import path from 'path';
-import fs from 'fs';
 import { fileURLToPath } from 'url';
-import { exec } from 'child_process';
-import { promisify } from 'util';
 
-const execAsync = promisify(exec);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const app = express();
-const PORT = process.env.PORT || 8080;
+console.log('🚀 CryptoHippo Production Deployment');
+console.log('📡 Starting full Express server with API routes...');
 
-console.log('🚀 CryptoHippo production server starting...');
-console.log(`📍 Port: ${PORT}`);
+// Set production environment
+process.env.NODE_ENV = 'production';
+process.env.PORT = process.env.PORT || '8080';
 
-let buildReady = false;
-let buildError = null;
+// Start the actual Express server from dist/index.js
+const serverProcess = spawn('node', ['dist/index.js'], {
+  cwd: __dirname,
+  env: process.env,
+  stdio: 'inherit'
+});
+
+serverProcess.on('error', (error) => {
+  console.error('❌ Failed to start server:', error);
+  process.exit(1);
+});
+
+serverProcess.on('exit', (code) => {
+  console.log(`🛑 Server exited with code ${code}`);
+  process.exit(code);
+});
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
-  console.log('🛑 Received SIGTERM, shutting down gracefully...');
-  process.exit(0);
+  console.log('🛑 Received SIGTERM, shutting down...');
+  serverProcess.kill('SIGTERM');
 });
 
 process.on('SIGINT', () => {
-  console.log('🛑 Received SIGINT, shutting down gracefully...');
-  process.exit(0);
+  console.log('🛑 Received SIGINT, shutting down...');
+  serverProcess.kill('SIGINT');
 });
 
-// Build the application
-async function buildApp() {
-  try {
-    console.log('🔧 Building CryptoHippo...');
-    await execAsync('npm run build', { 
-      cwd: __dirname,
-      timeout: 300000 
-    });
-    console.log('✅ Build completed successfully');
-    buildReady = true;
-  } catch (error) {
-    console.error('❌ Build failed:', error.message);
-    buildError = error;
-    buildReady = false;
-  }
-}
-
-// Health check endpoints
-app.get('/health', (req, res) => {
-  res.json({
-    status: buildReady ? 'ready' : 'building',
-    ready: buildReady,
-    error: buildError ? buildError.message : null,
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime()
-  });
-});
-
-app.get('/readiness', (req, res) => {
-  if (buildReady) {
-    res.status(200).send('Ready');
-  } else {
-    res.status(503).send('Not Ready');
-  }
-});
-
-// Wait for build before serving
-app.use((req, res, next) => {
-  if (!buildReady && !req.path.startsWith('/health') && !req.path.startsWith('/readiness')) {
-    return res.status(503).json({
-      error: 'Service building',
-      message: 'CryptoHippo is building, please wait...',
-      buildError: buildError ? buildError.message : null
-    });
-  }
-  next();
-});
-
-// Security headers
-app.use((req, res, next) => {
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
-  res.setHeader('X-XSS-Protection', '1; mode=block');
-  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  
-  // Cache static assets
-  if (req.path.includes('/assets/')) {
-    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-  } else if (req.path.endsWith('.html')) {
-    res.setHeader('Cache-Control', 'no-cache');
-  } else {
-    res.setHeader('Cache-Control', 'public, max-age=3600');
-  }
-  
-  next();
-});
-
-// Serve static files from dist/public
-const staticPath = path.join(__dirname, 'dist', 'public');
-app.use(express.static(staticPath, {
-  index: false, // Don't auto-serve index.html
-  maxAge: '1d'
-}));
-
-// SPA routing - serve index.html for all non-static routes
-app.get('*', (req, res) => {
-  const indexPath = path.join(staticPath, 'index.html');
-  
-  if (fs.existsSync(indexPath)) {
-    console.log(`📄 SPA route: ${req.path} -> index.html`);
-    res.sendFile(indexPath);
-  } else {
-    console.error(`❌ Missing index.html at: ${indexPath}`);
-    res.status(404).json({
-      error: 'CryptoHippo not found',
-      message: 'Application build files missing'
-    });
-  }
-});
-
-// Error handling
-app.use((error, req, res, next) => {
-  console.error('Server error:', error);
-  res.status(500).json({
-    error: 'Internal server error',
-    message: 'Something went wrong with CryptoHippo'
-  });
-});
-
-// Start server
-app.listen(PORT, '0.0.0.0', async () => {
-  console.log(`✅ CryptoHippo server running on port ${PORT}`);
-  console.log(`🌐 Health check: http://0.0.0.0:${PORT}/health`);
-  console.log(`🔍 Readiness check: http://0.0.0.0:${PORT}/readiness`);
-  
-  // Build after server starts
-  await buildApp();
-  
-  if (buildReady) {
-    const files = fs.existsSync(staticPath) ? fs.readdirSync(staticPath) : [];
-    console.log(`📂 Serving ${files.length} files from: ${path.relative(__dirname, staticPath)}`);
-    console.log('🎉 CryptoHippo ready for production traffic!');
-    console.log(`🌐 Access at: http://0.0.0.0:${PORT}`);
-  } else {
-    console.log('❌ CryptoHippo build failed - check logs above');
-  }
-});
