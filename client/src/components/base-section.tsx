@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
-import { Globe, ArrowLeftRight, TrendingUp } from "lucide-react";
+import { Globe, ArrowLeftRight, TrendingUp, ExternalLink } from "lucide-react";
 
 
 interface DashboardData {

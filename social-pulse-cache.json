@@ -2,59 +2,59 @@
   "tickers": [
     {
       "symbol": "FARTCOIN",
-      "sentiment": 53,
-      "mentions": 5123,
-      "lastUpdated": "2025-08-09T17:52:05.753Z"
-    },
-    {
-      "symbol": "MOODENG",
-      "sentiment": 52,
-      "mentions": 2392,
-      "lastUpdated": "2025-08-09T17:52:05.753Z"
-    },
-    {
-      "symbol": "TRUMP",
-      "sentiment": 49,
-      "mentions": 3285,
-      "lastUpdated": "2025-08-09T17:52:05.753Z"
+      "sentiment": 48,
+      "mentions": 2450,
+      "lastUpdated": "2025-08-10T16:12:51.962Z"
     },
     {
       "symbol": "WIF",
-      "sentiment": 47,
-      "mentions": 3297,
-      "lastUpdated": "2025-08-09T17:52:05.753Z"
+      "sentiment": 43,
+      "mentions": 2140,
+      "lastUpdated": "2025-08-10T16:12:51.962Z"
+    },
+    {
+      "symbol": "TRUMP",
+      "sentiment": 42,
+      "mentions": 3245,
+      "lastUpdated": "2025-08-10T16:12:51.962Z"
+    },
+    {
+      "symbol": "GOAT",
+      "sentiment": 42,
+      "mentions": 4232,
+      "lastUpdated": "2025-08-10T16:12:51.962Z"
+    },
+    {
+      "symbol": "NORMIE",
+      "sentiment": 42,
+      "mentions": 2875,
+      "lastUpdated": "2025-08-10T16:12:51.962Z"
+    },
+    {
+      "symbol": "BASEDOG",
+      "sentiment": 41,
+      "mentions": 5996,
+      "lastUpdated": "2025-08-10T16:12:51.962Z"
+    },
+    {
+      "symbol": "MOODENG",
+      "sentiment": 39,
+      "mentions": 4517,
+      "lastUpdated": "2025-08-10T16:12:51.962Z"
     },
     {
       "symbol": "PENGU",
-      "sentiment": 46,
-      "mentions": 2619,
-      "lastUpdated": "2025-08-09T17:52:05.753Z"
+      "sentiment": 38,
+      "mentions": 4812,
+      "lastUpdated": "2025-08-10T16:12:51.962Z"
     },
     {
-      "symbol": "HYPE",
-      "sentiment": 46,
-      "mentions": 3780,
-      "lastUpdated": "2025-08-09T17:52:05.753Z"
-    },
-    {
-      "symbol": "BRETT",
-      "sentiment": 45,
-      "mentions": 4795,
-      "lastUpdated": "2025-08-09T17:52:05.753Z"
-    },
-    {
-      "symbol": "POPCAT",
-      "sentiment": 44,
-      "mentions": 2680,
-      "lastUpdated": "2025-08-09T17:52:05.753Z"
-    },
-    {
-      "symbol": "CHILLGUY",
-      "sentiment": 43,
-      "mentions": 1243,
-      "lastUpdated": "2025-08-09T17:52:05.753Z"
+      "symbol": "ACT",
+      "sentiment": 37,
+      "mentions": 5103,
+      "lastUpdated": "2025-08-10T16:12:51.962Z"
     }
   ],
-  "lastUpdated": "2025-08-09T17:52:05.753Z",
-  "nextUpdate": "2025-08-09T20:52:05.753Z"
+  "lastUpdated": "2025-08-10T16:12:51.961Z",
+  "nextUpdate": "2025-08-10T19:12:51.961Z"
 }
