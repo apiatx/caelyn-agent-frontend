@@ -101,3 +101,4 @@ The application employs a full-stack monorepo architecture, ensuring clear separ
   - Consistent purple/cyan branding and hover effects matching page theme
 - **Onchain Page Alphanomics Integration**: Added Alphanomics Platform iframe (https://platform.alphanomics.io/) under the Signal links in the Onchain page Signal section with purple/pink gradient branding, Analytics badge, and secure iframe implementation
 - **Base and Abstract Page DexScreener Links**: Added "Open Full View" external links with ExternalLink icons in the top right of DexScreener iframe sections on both Base and Abstract pages for easy access to full DexScreener interfaces
+- **Ethereum Page CoinMarketCap Link**: Added CoinMarketCap Ethereum link next to "Open Full Chart" in the Ethereum Price Chart section header with purple branding and ExternalLink icon

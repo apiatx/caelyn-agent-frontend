@@ -46,8 +46,14 @@ export function EthereumSection() {
             LIVE CHART
           </span>
           <SafeLink
+            href="https://coinmarketcap.com/currencies/ethereum/"
+            className="ml-auto text-xs text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-1"
+          >
+            CoinMarketCap <ExternalLink className="w-3 h-3" />
+          </SafeLink>
+          <SafeLink
             href="https://www.tradingview.com/chart/e5l95XgZ/?symbol=BITSTAMP%3AETHUSD"
-            className="ml-auto text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
+            className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
           >
             Open Full Chart <ExternalLink className="w-3 h-3" />
           </SafeLink>
