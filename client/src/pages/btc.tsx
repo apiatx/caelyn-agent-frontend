@@ -17,7 +17,7 @@ export default function BTCPage() {
     <div className="min-h-screen text-white" style={{background: 'linear-gradient(135deg, hsl(0, 0%, 0%) 0%, hsl(0, 0%, 10%) 50%, hsl(0, 0%, 0%) 100%)'}}>
       {/* Header */}
       <header className="glass-card-dark border-b border-crypto-silver/20 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
+        <div className="max-w-[95vw] mx-auto px-2 sm:px-3">
           <div className="flex justify-between items-center py-3 lg:py-4">
             <div className="flex items-center space-x-2 sm:space-x-3">
               <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg overflow-hidden">
@@ -48,7 +48,7 @@ export default function BTCPage() {
       </header>
 
       {/* Navigation */}
-      <nav className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 mt-4 lg:mt-6">
+      <nav className="max-w-[95vw] mx-auto px-2 sm:px-3 mt-4">
         <GlassCard className="p-1 sm:p-2">
           {/* Desktop Navigation */}
           <div className="hidden lg:flex space-x-2">
@@ -193,7 +193,7 @@ export default function BTCPage() {
       </nav>
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 mt-4 lg:mt-8 pb-8">
+      <div className="max-w-[95vw] mx-auto px-2 sm:px-3 mt-4 pb-8">
 
         <div className="space-y-4 lg:space-y-8">
           <div className="text-center px-3 sm:px-0">

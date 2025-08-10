@@ -9,7 +9,7 @@ export default function EthereumPage() {
     <div className="min-h-screen text-white" style={{background: 'linear-gradient(135deg, hsl(0, 0%, 0%) 0%, hsl(0, 0%, 10%) 50%, hsl(0, 0%, 0%) 100%)'}}>
       {/* Header */}
       <header className="glass-card-dark border-b border-crypto-silver/20 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
+        <div className="max-w-[95vw] mx-auto px-2 sm:px-3">
           <div className="flex justify-between items-center py-3 lg:py-4">
             <div className="flex items-center space-x-2 sm:space-x-3">
               <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg overflow-hidden">
@@ -31,7 +31,7 @@ export default function EthereumPage() {
       <UniversalNavigation activePage="ethereum" />
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 lg:py-8">
+      <main className="max-w-[95vw] mx-auto px-2 sm:px-3 py-4">
         <div className="space-y-8">
           {/* Ethereum Section */}
           <Suspense fallback={<SectionLoadingState title="Ethereum Network" />}>
