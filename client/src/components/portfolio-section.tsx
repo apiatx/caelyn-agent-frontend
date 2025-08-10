@@ -420,12 +420,12 @@ export default function PortfolioSection() {
                 <div className="text-sm text-crypto-silver">
                   If data doesn't load, visit{' '}
                   <a 
-                    href={`https://debank.com/profile/${portfolio?.baseWalletAddress || baseWalletAddress}`}
+                    href="https://debank.com/"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-400 hover:text-blue-300 underline"
                   >
-                    your DeBank profile
+                    DeBank
                   </a>
                 </div>
               </div>
@@ -450,7 +450,7 @@ export default function PortfolioSection() {
               SOLANA DEX
             </Badge>
             <button
-              onClick={() => window.open('https://jup.ag/portfolio/FjT8MxAYv8gUvQ8TQME6zvceE3n4KncrgX55VitJiT4B', '_blank', 'noopener,noreferrer')}
+              onClick={() => window.open('https://jup.ag/portfolio', '_blank', 'noopener,noreferrer')}
               className="text-crypto-silver hover:text-white transition-colors group"
             >
               <ExternalLink className="h-4 w-4 group-hover:scale-110 transition-transform" />
@@ -460,7 +460,7 @@ export default function PortfolioSection() {
         
         <div className="w-full">
           <iframe
-            src="https://jup.ag/portfolio/FjT8MxAYv8gUvQ8TQME6zvceE3n4KncrgX55VitJiT4B"
+            src="https://jup.ag/portfolio"
             className="w-full h-[600px] sm:h-[700px] lg:h-[800px] rounded-lg border border-crypto-silver/20"
             title="Jupiter Portfolio"
             frameBorder="0"
@@ -570,14 +570,14 @@ export default function PortfolioSection() {
             <div className="w-5 h-5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mr-2 flex items-center justify-center text-xs font-bold">
               H
             </div>
-            Hyperfolio Portfolio
+            Hyperfolio
           </h3>
           <div className="flex items-center gap-2">
             <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
               Portfolio Analytics
             </Badge>
             <a 
-              href="https://www.hyperfolio.xyz/0xEE8d3996E60ff46466334e4844Dd94bafef5Eb5d"
+              href="https://www.hyperfolio.xyz/"
               target="_blank"
               rel="noopener noreferrer"
               className="text-crypto-silver hover:text-white transition-colors group"
@@ -589,7 +589,7 @@ export default function PortfolioSection() {
         
         <div className="relative w-full">
           <iframe
-            src="https://www.hyperfolio.xyz/0xEE8d3996E60ff46466334e4844Dd94bafef5Eb5d"
+            src="https://www.hyperfolio.xyz/"
             className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
             title="Hyperfolio Portfolio Analytics"
             frameBorder="0"
