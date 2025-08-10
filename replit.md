@@ -119,3 +119,5 @@ The application employs a full-stack monorepo architecture, ensuring clear separ
   - Circle (@circle + circle.com) - trade forex
   - AgriDex (@AgriDexPlatform + agridex.com) - trade agriculture
   Each platform card includes Twitter and Website buttons with color-coded themes and consistent ExternalLink icons
+- **Onchain Page Resources Enhancement**: Added Substack (https://substack.com/home) and X Home (https://x.com/home) links to the Resources section with appropriate icons and styling for newsletter platform and social media access
+- **Market Overview Spacing Improvements**: Enhanced spacing of market metrics (Total Market Cap, 24hr Volume, BTC Dominance, ETH Dominance) in Crypto Market Overview section by adjusting grid layout from `grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4` to `grid-cols-2 md:grid-cols-4 gap-4 md:gap-6` for better deployment view compatibility

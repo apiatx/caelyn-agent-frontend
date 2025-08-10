@@ -737,6 +737,32 @@ export default function AlphaSection() {
             </div>
             <p className="text-gray-400 text-sm">Token Analytics & Visualization</p>
           </SafeLink>
+
+          <SafeLink
+            href='https://substack.com/home'
+            className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-sm font-bold">📰</span>
+              </div>
+              <h4 className="text-orange-400 font-semibold">Substack</h4>
+            </div>
+            <p className="text-gray-400 text-sm">Newsletter Publishing Platform</p>
+          </SafeLink>
+
+          <SafeLink
+            href='https://x.com/home'
+            className="p-4 bg-gray-800/10 border border-gray-600/20 rounded-lg hover:bg-gray-800/20 transition-colors"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center">
+                <span className="text-white text-sm font-bold">𝕏</span>
+              </div>
+              <h4 className="text-gray-300 font-semibold">X Home</h4>
+            </div>
+            <p className="text-gray-400 text-sm">Social Media & News Feed</p>
+          </SafeLink>
         </div>
       </GlassCard>
     </div>
