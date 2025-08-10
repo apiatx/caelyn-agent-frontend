@@ -27,6 +27,13 @@ export default function SolanaSection() {
             <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/30">
               SOL
             </Badge>
+            <button
+              onClick={() => openSecureLink('https://coinmarketcap.com/currencies/solana/')}
+              className="flex items-center gap-1 text-purple-400 hover:text-purple-300 text-xs transition-colors"
+            >
+              <span>CoinMarketCap</span>
+              <ExternalLink className="w-3 h-3" />
+            </button>
           </div>
           <button
             onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=BINANCE%3ASOLUSDT')}
@@ -48,14 +55,22 @@ export default function SolanaSection() {
 
       {/* DexScreener Solana */}
       <GlassCard className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
-            <BarChart3 className="w-4 h-4 text-white" />
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
+              <BarChart3 className="w-4 h-4 text-white" />
+            </div>
+            <h3 className="text-xl font-semibold text-white">Trending</h3>
+            <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
+              LIVE CHARTS
+            </Badge>
           </div>
-          <h3 className="text-xl font-semibold text-white">Trending</h3>
-          <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
-            LIVE CHARTS
-          </Badge>
+          <button
+            onClick={() => openSecureLink('https://dexscreener.com/solana')}
+            className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm"
+          >
+            Open Full View →
+          </button>
         </div>
         <div className="w-full">
           <iframe
@@ -73,14 +88,22 @@ export default function SolanaSection() {
 
       {/* Moby Screener */}
       <GlassCard className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-6 h-6 bg-cyan-500 rounded-full flex items-center justify-center">
-            <Activity className="w-4 h-4 text-white" />
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 bg-cyan-500 rounded-full flex items-center justify-center">
+              <Activity className="w-4 h-4 text-white" />
+            </div>
+            <h3 className="text-xl font-semibold text-white">Moby Screener</h3>
+            <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30">
+              ANALYTICS
+            </Badge>
           </div>
-          <h3 className="text-xl font-semibold text-white">Moby Screener</h3>
-          <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30">
-            ANALYTICS
-          </Badge>
+          <button
+            onClick={() => openSecureLink('https://www.mobyscreener.com/')}
+            className="text-cyan-400 hover:text-cyan-300 text-xs sm:text-sm"
+          >
+            Open Full View →
+          </button>
         </div>
         <div className="w-full">
           <iframe

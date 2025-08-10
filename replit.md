@@ -94,3 +94,8 @@ The application employs a full-stack monorepo architecture, ensuring clear separ
   - Preserved navigation order: Market Overview → Majors → Onchain → Ethereum → Base → Solana → Hype → Bittensor → Abstract → DeFi → Portfolio → Stocks
 - **Onchain Page Content Reorganization**: Moved Memecoins section from within Signal section to standalone GlassCard positioned between Smart Wallets and Resources sections for better page structure and content organization
 - **Messari.io Integration**: Added Messari.io link (https://messari.io/) next to CoinGecko Chains link in Market Overview page Quick Analytics section with indigo branding and "Crypto Research" description
+- **Solana Page Link Enhancements**: Added comprehensive external link integration including:
+  - CoinMarketCap Solana link next to "Solana Price Chart" title with ExternalLink icon
+  - DexScreener full view link ("Open Full View →") in top right of DexScreener iframe section
+  - Moby Screener full view link ("Open Full View →") in top right of Moby Screener section
+  - Consistent purple/cyan branding and hover effects matching page theme
