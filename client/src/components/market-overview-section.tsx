@@ -125,8 +125,17 @@ export function MarketOverviewSection() {
   const { data: overview, isLoading, error } = useQuery<MarketOverview>({
     queryKey: ['/api/coinmarketcap/market-overview'],
     refetchInterval: 120000, // Refresh every 2 minutes for real-time data
-    staleTime: 60000 // 1 minute
+    staleTime: 60000, // 1 minute
+    retry: 3
   });
+
+  // Debug logging
+  if (error) {
+    console.error('Market Overview Query Error:', error);
+  }
+  if (overview) {
+    console.log('Market Overview Data:', overview);
+  }
 
   // Real-time ETF flows data (cached twice daily to preserve API credits)
   const { data: etfData, isLoading: etfLoading } = useQuery<ETFData>({
