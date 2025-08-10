@@ -17,17 +17,15 @@ export default function SolanaPage() {
                   className="w-full h-full object-cover"
                 />
               </div>
-              <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-white">
+              <h1 className="sm:text-xl lg:text-2xl text-white text-[32px] font-bold">
                 CryptoHippo
               </h1>
             </div>
           </div>
         </div>
       </header>
-
       {/* Navigation */}
       <UniversalNavigation activePage="solana" />
-
       {/* Content */}
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 mt-4 lg:mt-8 pb-8">
         <SolanaSection />
