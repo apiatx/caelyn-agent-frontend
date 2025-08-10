@@ -129,12 +129,9 @@ export function MarketOverviewSection() {
     retry: 3
   });
 
-  // Debug logging
+  // Debug logging (production ready)
   if (error) {
     console.error('Market Overview Query Error:', error);
-  }
-  if (overview) {
-    console.log('Market Overview Data:', overview);
   }
 
   // Real-time ETF flows data (cached twice daily to preserve API credits)
@@ -249,7 +246,7 @@ export function MarketOverviewSection() {
     );
   }
 
-  if (error || !overview) {
+  if (error || (!overview && !isLoading)) {
     return (
       <div className="bg-black/20 border border-crypto-silver/20 rounded-lg p-6">
         <div className="flex items-center gap-2 mb-4">
@@ -260,9 +257,38 @@ export function MarketOverviewSection() {
           <Activity className="w-12 h-12 mx-auto mb-2 opacity-50" />
           <p>Unable to load market data</p>
           <p className="text-sm">Please check your connection and try again</p>
+          {error && <p className="text-xs text-red-400 mt-2">Error: {error.message}</p>}
         </div>
       </div>
     );
+  }
+
+  // Show loading if still loading and no data
+  if (isLoading && !overview) {
+    return (
+      <div className="bg-black/20 border border-crypto-silver/20 rounded-lg p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Globe className="w-5 h-5 text-blue-400" />
+          <h2 className="text-xl font-bold text-white">Market Overview</h2>
+          <div className="ml-auto">
+            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-400"></div>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="bg-black/30 border border-crypto-silver/20 rounded-lg p-4 animate-pulse">
+              <div className="h-4 bg-gray-600 rounded mb-2"></div>
+              <div className="h-6 bg-gray-600 rounded"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Ensure we have data before rendering
+  if (!overview) {
+    return null;
   }
 
   const { globalMetrics, altSeasonIndex, etfNetflows, fearGreedIndex } = overview;
