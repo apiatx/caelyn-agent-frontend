@@ -224,7 +224,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
                 <Brain className="w-4 h-4 mr-1 inline" />Hype
               </button>
               <button
-                onClick={() => navigateTo("/app/hype")}
+                onClick={() => navigateTo("/app#bittensor")}
                 className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                   isActive("bittensor")
                     ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
