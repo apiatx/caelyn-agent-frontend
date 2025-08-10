@@ -340,13 +340,8 @@ export default function SolanaSection() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <a
-            href="https://x.com/orogoldapp"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-yellow-500/30 transition-all duration-200 group"
-          >
-            <div className="flex items-center gap-3">
+          <div className="p-4 bg-black/20 border border-crypto-silver/20 rounded-lg">
+            <div className="flex items-center gap-3 mb-3">
               <div className="w-8 h-8 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full flex items-center justify-center">
                 <span className="text-white font-bold text-sm">AU</span>
               </div>
@@ -355,16 +350,30 @@ export default function SolanaSection() {
                 <p className="text-gray-400 text-xs">Trade gold</p>
               </div>
             </div>
-            <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-yellow-400 transition-colors" />
-          </a>
+            <div className="flex gap-2">
+              <a
+                href="https://x.com/orogoldapp"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-500/20 border border-blue-500/30 rounded text-blue-400 hover:bg-blue-500/30 text-xs transition-colors"
+              >
+                <span className="font-bold">𝕏</span>
+                <span>Twitter</span>
+              </a>
+              <a
+                href="https://orogold.app/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-yellow-500/20 border border-yellow-500/30 rounded text-yellow-400 hover:bg-yellow-500/30 text-xs transition-colors"
+              >
+                <ExternalLink className="w-3 h-3" />
+                <span>Website</span>
+              </a>
+            </div>
+          </div>
 
-          <a
-            href="https://x.com/xStocksFi"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-blue-500/30 transition-all duration-200 group"
-          >
-            <div className="flex items-center gap-3">
+          <div className="p-4 bg-black/20 border border-crypto-silver/20 rounded-lg">
+            <div className="flex items-center gap-3 mb-3">
               <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center">
                 <span className="text-white font-bold text-sm">📈</span>
               </div>
@@ -373,16 +382,30 @@ export default function SolanaSection() {
                 <p className="text-gray-400 text-xs">Trade stocks</p>
               </div>
             </div>
-            <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-blue-400 transition-colors" />
-          </a>
+            <div className="flex gap-2">
+              <a
+                href="https://x.com/xStocksFi"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-500/20 border border-blue-500/30 rounded text-blue-400 hover:bg-blue-500/30 text-xs transition-colors"
+              >
+                <span className="font-bold">𝕏</span>
+                <span>Twitter</span>
+              </a>
+              <a
+                href="https://xstocks.com/us"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-500/20 border border-blue-500/30 rounded text-blue-400 hover:bg-blue-500/30 text-xs transition-colors"
+              >
+                <ExternalLink className="w-3 h-3" />
+                <span>Website</span>
+              </a>
+            </div>
+          </div>
 
-          <a
-            href="https://x.com/PreStocksFi"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-purple-500/30 transition-all duration-200 group"
-          >
-            <div className="flex items-center gap-3">
+          <div className="p-4 bg-black/20 border border-crypto-silver/20 rounded-lg">
+            <div className="flex items-center gap-3 mb-3">
               <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
                 <span className="text-white font-bold text-sm">🏢</span>
               </div>
@@ -391,16 +414,30 @@ export default function SolanaSection() {
                 <p className="text-gray-400 text-xs">Trade pre-IPO stocks</p>
               </div>
             </div>
-            <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-purple-400 transition-colors" />
-          </a>
+            <div className="flex gap-2">
+              <a
+                href="https://x.com/PreStocksFi"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-500/20 border border-blue-500/30 rounded text-blue-400 hover:bg-blue-500/30 text-xs transition-colors"
+              >
+                <span className="font-bold">𝕏</span>
+                <span>Twitter</span>
+              </a>
+              <a
+                href="https://prestocks.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-purple-500/20 border border-purple-500/30 rounded text-purple-400 hover:bg-purple-500/30 text-xs transition-colors"
+              >
+                <ExternalLink className="w-3 h-3" />
+                <span>Website</span>
+              </a>
+            </div>
+          </div>
 
-          <a
-            href="https://x.com/ApolloBTCportal"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-orange-500/30 transition-all duration-200 group"
-          >
-            <div className="flex items-center gap-3">
+          <div className="p-4 bg-black/20 border border-crypto-silver/20 rounded-lg">
+            <div className="flex items-center gap-3 mb-3">
               <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-yellow-500 rounded-full flex items-center justify-center">
                 <span className="text-white font-bold text-sm">₿</span>
               </div>
@@ -409,16 +446,30 @@ export default function SolanaSection() {
                 <p className="text-gray-400 text-xs">Trade native Bitcoin</p>
               </div>
             </div>
-            <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-orange-400 transition-colors" />
-          </a>
+            <div className="flex gap-2">
+              <a
+                href="https://x.com/ApolloBTCportal"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-500/20 border border-blue-500/30 rounded text-blue-400 hover:bg-blue-500/30 text-xs transition-colors"
+              >
+                <span className="font-bold">𝕏</span>
+                <span>Twitter</span>
+              </a>
+              <a
+                href="https://apolloportal.io/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-orange-500/20 border border-orange-500/30 rounded text-orange-400 hover:bg-orange-500/30 text-xs transition-colors"
+              >
+                <ExternalLink className="w-3 h-3" />
+                <span>Website</span>
+              </a>
+            </div>
+          </div>
 
-          <a
-            href="https://x.com/Parcl"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-green-500/30 transition-all duration-200 group"
-          >
-            <div className="flex items-center gap-3">
+          <div className="p-4 bg-black/20 border border-crypto-silver/20 rounded-lg">
+            <div className="flex items-center gap-3 mb-3">
               <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
                 <span className="text-white font-bold text-sm">🏠</span>
               </div>
@@ -427,16 +478,30 @@ export default function SolanaSection() {
                 <p className="text-gray-400 text-xs">Trade real estate</p>
               </div>
             </div>
-            <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-green-400 transition-colors" />
-          </a>
+            <div className="flex gap-2">
+              <a
+                href="https://x.com/Parcl"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-500/20 border border-blue-500/30 rounded text-blue-400 hover:bg-blue-500/30 text-xs transition-colors"
+              >
+                <span className="font-bold">𝕏</span>
+                <span>Twitter</span>
+              </a>
+              <a
+                href="https://www.parcl.co/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-green-500/20 border border-green-500/30 rounded text-green-400 hover:bg-green-500/30 text-xs transition-colors"
+              >
+                <ExternalLink className="w-3 h-3" />
+                <span>Website</span>
+              </a>
+            </div>
+          </div>
 
-          <a
-            href="https://x.com/MagicEden"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-pink-500/30 transition-all duration-200 group"
-          >
-            <div className="flex items-center gap-3">
+          <div className="p-4 bg-black/20 border border-crypto-silver/20 rounded-lg">
+            <div className="flex items-center gap-3 mb-3">
               <div className="w-8 h-8 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full flex items-center justify-center">
                 <span className="text-white font-bold text-sm">✨</span>
               </div>
@@ -445,16 +510,30 @@ export default function SolanaSection() {
                 <p className="text-gray-400 text-xs">Trade digital slop</p>
               </div>
             </div>
-            <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-pink-400 transition-colors" />
-          </a>
+            <div className="flex gap-2">
+              <a
+                href="https://x.com/MagicEden"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-500/20 border border-blue-500/30 rounded text-blue-400 hover:bg-blue-500/30 text-xs transition-colors"
+              >
+                <span className="font-bold">𝕏</span>
+                <span>Twitter</span>
+              </a>
+              <a
+                href="https://magiceden.io/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-pink-500/20 border border-pink-500/30 rounded text-pink-400 hover:bg-pink-500/30 text-xs transition-colors"
+              >
+                <ExternalLink className="w-3 h-3" />
+                <span>Website</span>
+              </a>
+            </div>
+          </div>
 
-          <a
-            href="https://x.com/RECCFinance"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-cyan-500/30 transition-all duration-200 group"
-          >
-            <div className="flex items-center gap-3">
+          <div className="p-4 bg-black/20 border border-crypto-silver/20 rounded-lg">
+            <div className="flex items-center gap-3 mb-3">
               <div className="w-8 h-8 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center">
                 <span className="text-white font-bold text-sm">🏦</span>
               </div>
@@ -463,16 +542,30 @@ export default function SolanaSection() {
                 <p className="text-gray-400 text-xs">Trade RWA</p>
               </div>
             </div>
-            <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-cyan-400 transition-colors" />
-          </a>
+            <div className="flex gap-2">
+              <a
+                href="https://x.com/RECCFinance"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-500/20 border border-blue-500/30 rounded text-blue-400 hover:bg-blue-500/30 text-xs transition-colors"
+              >
+                <span className="font-bold">𝕏</span>
+                <span>Twitter</span>
+              </a>
+              <a
+                href="https://recc.finance/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-cyan-500/20 border border-cyan-500/30 rounded text-cyan-400 hover:bg-cyan-500/30 text-xs transition-colors"
+              >
+                <ExternalLink className="w-3 h-3" />
+                <span>Website</span>
+              </a>
+            </div>
+          </div>
 
-          <a
-            href="https://x.com/etherfuse"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-indigo-500/30 transition-all duration-200 group"
-          >
-            <div className="flex items-center gap-3">
+          <div className="p-4 bg-black/20 border border-crypto-silver/20 rounded-lg">
+            <div className="flex items-center gap-3 mb-3">
               <div className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full flex items-center justify-center">
                 <span className="text-white font-bold text-sm">📊</span>
               </div>
@@ -481,16 +574,30 @@ export default function SolanaSection() {
                 <p className="text-gray-400 text-xs">Trade bonds</p>
               </div>
             </div>
-            <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-indigo-400 transition-colors" />
-          </a>
+            <div className="flex gap-2">
+              <a
+                href="https://x.com/etherfuse"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-500/20 border border-blue-500/30 rounded text-blue-400 hover:bg-blue-500/30 text-xs transition-colors"
+              >
+                <span className="font-bold">𝕏</span>
+                <span>Twitter</span>
+              </a>
+              <a
+                href="https://www.etherfuse.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-indigo-500/20 border border-indigo-500/30 rounded text-indigo-400 hover:bg-indigo-500/30 text-xs transition-colors"
+              >
+                <ExternalLink className="w-3 h-3" />
+                <span>Website</span>
+              </a>
+            </div>
+          </div>
 
-          <a
-            href="https://x.com/circle"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-emerald-500/30 transition-all duration-200 group"
-          >
-            <div className="flex items-center gap-3">
+          <div className="p-4 bg-black/20 border border-crypto-silver/20 rounded-lg">
+            <div className="flex items-center gap-3 mb-3">
               <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full flex items-center justify-center">
                 <span className="text-white font-bold text-sm">💱</span>
               </div>
@@ -499,16 +606,30 @@ export default function SolanaSection() {
                 <p className="text-gray-400 text-xs">Trade forex</p>
               </div>
             </div>
-            <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-emerald-400 transition-colors" />
-          </a>
+            <div className="flex gap-2">
+              <a
+                href="https://x.com/circle"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-500/20 border border-blue-500/30 rounded text-blue-400 hover:bg-blue-500/30 text-xs transition-colors"
+              >
+                <span className="font-bold">𝕏</span>
+                <span>Twitter</span>
+              </a>
+              <a
+                href="https://www.circle.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-emerald-500/20 border border-emerald-500/30 rounded text-emerald-400 hover:bg-emerald-500/30 text-xs transition-colors"
+              >
+                <ExternalLink className="w-3 h-3" />
+                <span>Website</span>
+              </a>
+            </div>
+          </div>
 
-          <a
-            href="https://x.com/AgriDexPlatform"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-green-600/30 transition-all duration-200 group"
-          >
-            <div className="flex items-center gap-3">
+          <div className="p-4 bg-black/20 border border-crypto-silver/20 rounded-lg">
+            <div className="flex items-center gap-3 mb-3">
               <div className="w-8 h-8 bg-gradient-to-r from-green-600 to-lime-500 rounded-full flex items-center justify-center">
                 <span className="text-white font-bold text-sm">🌾</span>
               </div>
@@ -517,8 +638,27 @@ export default function SolanaSection() {
                 <p className="text-gray-400 text-xs">Trade agriculture</p>
               </div>
             </div>
-            <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-green-400 transition-colors" />
-          </a>
+            <div className="flex gap-2">
+              <a
+                href="https://x.com/AgriDexPlatform"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-500/20 border border-blue-500/30 rounded text-blue-400 hover:bg-blue-500/30 text-xs transition-colors"
+              >
+                <span className="font-bold">𝕏</span>
+                <span>Twitter</span>
+              </a>
+              <a
+                href="https://agridex.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-green-600/20 border border-green-600/30 rounded text-green-400 hover:bg-green-600/30 text-xs transition-colors"
+              >
+                <ExternalLink className="w-3 h-3" />
+                <span>Website</span>
+              </a>
+            </div>
+          </div>
         </div>
       </GlassCard>
     </div>
