@@ -144,11 +144,102 @@ export default function BaseSection() {
 
   if (error) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-8">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-white mb-2">Base Network</h2>
-          <p className="text-red-400">Error loading dashboard data. Showing platform integrations below.</p>
+          <h2 className="text-3xl font-bold text-white mb-2">Base Network Dashboard</h2>
+          <p className="text-crypto-silver">Live BASE network analytics and DexScreener integration</p>
         </div>
+
+        {/* Show full Base content even when API fails */}
+        <GlassCard className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-xs font-bold">D</span>
+              </div>
+              <h3 className="text-xl font-semibold text-white">Trending</h3>
+              <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs rounded-full font-medium">
+                Live Data
+              </span>
+            </div>
+            <SafeLink 
+              href="https://dexscreener.com/base?theme=dark"
+              className="flex items-center gap-1 text-blue-400 hover:text-blue-300 text-sm transition-colors"
+            >
+              Open Full View <ExternalLink className="w-3 h-3" />
+            </SafeLink>
+          </div>
+          <SafeIframe 
+            src="https://dexscreener.com/base?theme=dark"
+            title="DexScreener Base Network"
+          />
+        </GlassCard>
+
+        <GlassCard className="p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-6 h-6 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center">
+              <span className="text-white text-xs font-bold">FT</span>
+            </div>
+            <h3 className="text-xl font-semibold text-white">Farterminal</h3>
+            <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-full font-medium">
+              TERMINAL
+            </span>
+            <SafeLink 
+              href="https://www.terminal.co/?tab=base"
+              className="ml-auto text-green-400 hover:text-green-300 text-xs"
+            >
+              Open in New Tab →
+            </SafeLink>
+          </div>
+          <SafeIframe 
+            src="https://www.terminal.co/?tab=base"
+            title="Farterminal"
+          />
+        </GlassCard>
+
+        <GlassCard className="p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-6 h-6 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
+              <span className="text-white text-xs font-bold">BC</span>
+            </div>
+            <h3 className="text-xl font-semibold text-white">BlockCreeper Explorer</h3>
+            <span className="px-2 py-1 bg-orange-500/20 text-orange-400 text-xs rounded-full font-medium">
+              BLOCKCHAIN EXPLORER
+            </span>
+            <SafeLink 
+              href="https://www.blockcreeper.com/"
+              className="ml-auto text-orange-400 hover:text-orange-300 text-xs"
+            >
+              Open in New Tab →
+            </SafeLink>
+          </div>
+          <SafeIframe 
+            src="https://www.blockcreeper.com/"
+            title="BlockCreeper Explorer"
+          />
+        </GlassCard>
+
+        <GlassCard className="p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-cyan-600 rounded-full flex items-center justify-center">
+              <span className="text-white text-xs font-bold">CS</span>
+            </div>
+            <h3 className="text-xl font-semibold text-white">Checkr.social</h3>
+            <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs rounded-full font-medium">
+              SOCIAL ANALYTICS
+            </span>
+            <SafeLink 
+              href="https://checkr.social/"
+              className="ml-auto text-blue-400 hover:text-blue-300 text-xs"
+            >
+              Open in New Tab →
+            </SafeLink>
+          </div>
+          <SafeIframe 
+            src="https://checkr.social/"
+            title="Checkr.social"
+          />
+        </GlassCard>
       </div>
     );
   }
