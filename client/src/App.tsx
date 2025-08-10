@@ -11,6 +11,8 @@ import DeFiPage from "@/pages/defi";
 import HypePage from "@/pages/hype";
 import AbstractPage from "@/pages/abstract";
 import CryptoStocks from "@/pages/crypto-stocks";
+import OnchainPage from "@/pages/onchain";
+import BasePage from "@/pages/base";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -25,8 +27,8 @@ function Router() {
       <Route path="/app/abstract" component={AbstractPage} />
       <Route path="/app/crypto-stocks" component={CryptoStocks} />
       <Route path="/app/stocks" component={CryptoStocks} />
-      <Route path="/app/onchain" component={TopChartsPage} />
-      <Route path="/app/base" component={SolanaPage} />
+      <Route path="/app/onchain" component={OnchainPage} />
+      <Route path="/app/base" component={BasePage} />
       <Route path="/app/portfolio" component={Dashboard} />
       <Route path="/" component={Dashboard} />
       <Route component={NotFound} />
