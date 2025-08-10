@@ -253,19 +253,14 @@ export default function PortfolioSection() {
     );
   }
 
-  if (!portfolio) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-crypto-silver">No portfolio data available</p>
-      </div>
-    );
-  }
+  // Even without portfolio data, show external integrations
+  const showExternalIntegrations = true;
 
-  const baseHoldings = portfolio.holdings?.filter(h => h.network === "BASE") || [];
-  const taoHoldings = portfolio.holdings?.filter(h => h.network === "TAO") || [];
+  const baseHoldings = portfolio?.holdings?.filter(h => h.network === "BASE") || [];
+  const taoHoldings = portfolio?.holdings?.filter(h => h.network === "TAO") || [];
 
   // Check if portfolio has no real data
-  const hasNoData = !portfolio.holdings?.length && parseFloat(portfolio.totalBalance) === 0;
+  const hasNoData = !portfolio?.holdings?.length && parseFloat(portfolio?.totalBalance || '0') === 0;
 
   return (
     <div className="space-y-8">
