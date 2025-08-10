@@ -1,9 +1,6 @@
 #!/usr/bin/env node
 
-// CryptoHippo Production Server with Fixed SPA Routing
-// This server builds and serves the CryptoHippo React app correctly
-// Handles all /app/* routes properly for single-page application
-
+// Production server for CryptoHippo with proper SPA routing
 import express from 'express';
 import path from 'path';
 import fs from 'fs';
@@ -24,17 +21,6 @@ console.log(`📍 Port: ${PORT}`);
 let buildReady = false;
 let buildError = null;
 
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('🛑 Received SIGTERM, shutting down gracefully...');
-  process.exit(0);
-});
-
-process.on('SIGINT', () => {
-  console.log('🛑 Received SIGINT, shutting down gracefully...');
-  process.exit(0);
-});
-
 // Build the application
 async function buildApp() {
   try {
@@ -52,32 +38,22 @@ async function buildApp() {
   }
 }
 
-// Health check endpoints
+// Health check
 app.get('/health', (req, res) => {
   res.json({
     status: buildReady ? 'ready' : 'building',
     ready: buildReady,
     error: buildError ? buildError.message : null,
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime()
+    timestamp: new Date().toISOString()
   });
-});
-
-app.get('/readiness', (req, res) => {
-  if (buildReady) {
-    res.status(200).send('Ready');
-  } else {
-    res.status(503).send('Not Ready');
-  }
 });
 
 // Wait for build before serving
 app.use((req, res, next) => {
-  if (!buildReady && !req.path.startsWith('/health') && !req.path.startsWith('/readiness')) {
+  if (!buildReady && !req.path.startsWith('/health')) {
     return res.status(503).json({
       error: 'Service building',
-      message: 'CryptoHippo is building, please wait...',
-      buildError: buildError ? buildError.message : null
+      message: 'CryptoHippo is building, please wait...'
     });
   }
   next();
@@ -137,14 +113,12 @@ app.use((error, req, res, next) => {
 // Start server
 app.listen(PORT, '0.0.0.0', async () => {
   console.log(`✅ CryptoHippo server running on port ${PORT}`);
-  console.log(`🌐 Health check: http://0.0.0.0:${PORT}/health`);
-  console.log(`🔍 Readiness check: http://0.0.0.0:${PORT}/readiness`);
   
   // Build after server starts
   await buildApp();
   
   if (buildReady) {
-    const files = fs.existsSync(staticPath) ? fs.readdirSync(staticPath) : [];
+    const files = fs.readdirSync(staticPath);
     console.log(`📂 Serving ${files.length} files from: ${path.relative(__dirname, staticPath)}`);
     console.log('🎉 CryptoHippo ready for production traffic!');
     console.log(`🌐 Access at: http://0.0.0.0:${PORT}`);
