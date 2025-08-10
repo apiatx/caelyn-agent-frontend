@@ -1,7 +1,7 @@
 import React, { Suspense } from 'react';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, Star, Zap, DollarSign, Wallet, TrendingDown, Brain, Loader2, BarChart3 } from "lucide-react";
+import { TrendingUp, Star, Zap, DollarSign, Wallet, TrendingDown, Brain, Loader2, BarChart3, ExternalLink } from "lucide-react";
 import { useSocialPulse } from "@/hooks/useSocialPulse";
 // Glass card component for alpha section
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (

@@ -1,0 +1,15 @@
+#!/bin/bash
+# Deployment script that starts the production server
+# This script is executed by Replit's autoscale deployment
+
+echo "🚀 Starting production server for autoscale deployment..."
+
+# Check if build artifacts exist
+if [ ! -f "dist/index.js" ]; then
+    echo "❌ Build artifacts not found. Deployment build process incomplete."
+    exit 1
+fi
+
+# Start the production server
+echo "🌐 Starting Express server on PORT=${PORT:-5000}..."
+exec node dist/index.js
