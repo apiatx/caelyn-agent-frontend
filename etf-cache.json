@@ -8,22 +8,22 @@
         "daily_flows": 0,
         "ytd_flows": 0,
         "market_cap": 0,
-        "price": 0.005743471821863936,
-        "price_change_24h": -93.0334635,
-        "volume_24h": 5336341.64170624,
-        "last_updated": "2025-08-09T17:46:00.000Z"
+        "price": 0.007341431651442242,
+        "price_change_24h": 181.20579075,
+        "volume_24h": 7333884.53810283,
+        "last_updated": "2025-08-10T16:09:00.000Z"
       },
       {
         "symbol": "FBTC",
         "name": "Function",
-        "net_assets": 95.32335312840625,
-        "daily_flows": 0,
-        "ytd_flows": 0,
-        "market_cap": 95323353.12840626,
-        "price": 116611.3415205045,
-        "price_change_24h": 0.04672542,
-        "volume_24h": 874834.73487277,
-        "last_updated": "2025-08-09T17:45:00.000Z"
+        "net_assets": 97.52235176438403,
+        "daily_flows": 20,
+        "ytd_flows": 1800,
+        "market_cap": 97522351.76438403,
+        "price": 119301.4292327748,
+        "price_change_24h": 2.02540533,
+        "volume_24h": 752290.33764767,
+        "last_updated": "2025-08-10T16:09:00.000Z"
       },
       {
         "symbol": "GBTC",
@@ -32,22 +32,22 @@
         "daily_flows": 0,
         "ytd_flows": 0,
         "market_cap": 0,
-        "price": 0.03667433171384937,
-        "price_change_24h": 11.99187455,
-        "volume_24h": 3088.1468099,
-        "last_updated": "2025-08-09T17:46:00.000Z"
+        "price": 0.035483363414622875,
+        "price_change_24h": 4.22637066,
+        "volume_24h": 0,
+        "last_updated": "2025-08-10T16:09:00.000Z"
       },
       {
         "symbol": "HODL",
         "name": "HODL",
-        "net_assets": 4.000641815593966,
-        "daily_flows": 0,
-        "ytd_flows": 0,
-        "market_cap": 4000641.8155939654,
-        "price": 0.00044677910189841973,
-        "price_change_24h": -1.07784951,
-        "volume_24h": 158548.60717477,
-        "last_updated": "2025-08-09T17:46:00.000Z"
+        "net_assets": 4.00295640857312,
+        "daily_flows": -1,
+        "ytd_flows": -90,
+        "market_cap": 4002956.4085731204,
+        "price": 0.00044703758836638004,
+        "price_change_24h": -1.79049102,
+        "volume_24h": 153761.35587425,
+        "last_updated": "2025-08-10T16:09:00.000Z"
       },
       {
         "symbol": "BRRR",
@@ -56,22 +56,22 @@
         "daily_flows": 0,
         "ytd_flows": 0,
         "market_cap": 0,
-        "price": 0.0028378130987295257,
-        "price_change_24h": -9.35731088,
-        "volume_24h": 321.38534988,
-        "last_updated": "2025-08-09T17:45:00.000Z"
+        "price": 0.0030003577031312368,
+        "price_change_24h": 0.42411373,
+        "volume_24h": 0,
+        "last_updated": "2025-08-10T16:08:00.000Z"
       },
       {
         "symbol": "BTC",
         "name": "Bitcoin",
-        "net_assets": 2323349.43904198,
-        "daily_flows": 28482,
-        "ytd_flows": 2563380,
-        "market_cap": 2323349439041.98,
-        "price": 116727.53064412954,
-        "price_change_24h": 0.11795947,
-        "volume_24h": 53814907722.1392,
-        "last_updated": "2025-08-09T17:46:00.000Z"
+        "net_assets": 2366230.4928666237,
+        "daily_flows": 400513,
+        "ytd_flows": 36046170,
+        "market_cap": 2366230492866.6235,
+        "price": 118879.45340003181,
+        "price_change_24h": 1.68740554,
+        "volume_24h": 61692808256.83783,
+        "last_updated": "2025-08-10T16:08:00.000Z"
       }
     ],
     "eth_etfs": [
@@ -83,9 +83,9 @@
         "ytd_flows": 0,
         "market_cap": 6973.705296244712,
         "price": 0.0007450997449538778,
-        "price_change_24h": 0.16127059,
+        "price_change_24h": 0,
         "volume_24h": 0,
-        "last_updated": "2025-08-09T17:46:00.000Z"
+        "last_updated": "2025-08-10T16:09:00.000Z"
       },
       {
         "symbol": "ETHE",
@@ -102,45 +102,45 @@
       {
         "symbol": "ETHW",
         "name": "EthereumPoW",
-        "net_assets": 190.2271571409027,
-        "daily_flows": 88,
-        "ytd_flows": 7920,
-        "market_cap": 190227157.1409027,
-        "price": 1.764319450348544,
-        "price_change_24h": 4.62243614,
-        "volume_24h": 11340856.83952584,
-        "last_updated": "2025-08-09T17:45:00.000Z"
+        "net_assets": 187.68669610053357,
+        "daily_flows": -36,
+        "ytd_flows": -3240,
+        "market_cap": 187686696.10053357,
+        "price": 1.7407571741008052,
+        "price_change_24h": -1.94007667,
+        "volume_24h": 10936349.23855356,
+        "last_updated": "2025-08-10T16:09:00.000Z"
       },
       {
         "symbol": "PYTH",
         "name": "Pyth Network",
-        "net_assets": 744.4223401247027,
-        "daily_flows": 288,
-        "ytd_flows": 25920,
-        "market_cap": 744422340.1247027,
-        "price": 0.12946509082419455,
-        "price_change_24h": 3.85899723,
-        "volume_24h": 25863266.34270395,
-        "last_updated": "2025-08-09T17:46:00.000Z"
+        "net_assets": 731.9635469647397,
+        "daily_flows": -97,
+        "ytd_flows": -8730,
+        "market_cap": 731963546.9647398,
+        "price": 0.12729833861534276,
+        "price_change_24h": -1.34017798,
+        "volume_24h": 30901079.6789336,
+        "last_updated": "2025-08-10T16:08:00.000Z"
       },
       {
         "symbol": "ETH",
         "name": "Ethereum",
-        "net_assets": 510487.1755740251,
-        "daily_flows": 268955,
-        "ytd_flows": 24205950,
-        "market_cap": 510487175574.0251,
-        "price": 4229.0694336216575,
-        "price_change_24h": 5.25172438,
-        "volume_24h": 43065181067.07437,
-        "last_updated": "2025-08-09T17:46:00.000Z"
+        "net_assets": 510356.2717873992,
+        "daily_flows": 21058,
+        "ytd_flows": 1895220,
+        "market_cap": 510356271787.3992,
+        "price": 4227.988490672343,
+        "price_change_24h": 0.39684127,
+        "volume_24h": 40271639164.62279,
+        "last_updated": "2025-08-10T16:09:00.000Z"
       }
     ],
-    "total_btc_flows": 28482,
-    "total_eth_flows": 269331,
-    "last_updated": "2025-08-09T17:46:58.514Z",
-    "cache_expires": "2025-08-10T05:46:58.514Z"
+    "total_btc_flows": 400532,
+    "total_eth_flows": 20925,
+    "last_updated": "2025-08-10T16:09:50.999Z",
+    "cache_expires": "2025-08-11T04:09:50.999Z"
   },
-  "cached_at": "2025-08-09T17:46:58.514Z",
-  "expires_at": "2025-08-10T08:00:00.000Z"
+  "cached_at": "2025-08-10T16:09:50.999Z",
+  "expires_at": "2025-08-11T08:00:00.000Z"
 }
