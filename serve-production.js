@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
-// Simple production server for deployment
+// Production server for Cloud Run deployment
+// This is a long-running server process suitable for Cloud Run
 // Can be used as run command: node serve-production.js
 
 import express from 'express';
