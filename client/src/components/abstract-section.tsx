@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Layers } from "lucide-react";
+import { Layers, ExternalLink } from "lucide-react";
 import { openSecureLink, getSecureIframeProps } from "@/utils/security";
 
 // Glass card component for abstract section
@@ -25,14 +25,22 @@ export default function AbstractSection() {
 
       {/* DexScreener Abstract */}
       <GlassCard className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
-            <Layers className="w-4 h-4 text-white" />
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
+              <Layers className="w-4 h-4 text-white" />
+            </div>
+            <h3 className="text-xl font-semibold text-white">Trending</h3>
+            <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
+              LIVE CHARTS
+            </Badge>
           </div>
-          <h3 className="text-xl font-semibold text-white">Trending</h3>
-          <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
-            LIVE CHARTS
-          </Badge>
+          <button
+            onClick={() => openInNewTab('https://dexscreener.com/abstract?theme=dark')}
+            className="flex items-center gap-1 text-purple-400 hover:text-purple-300 text-sm transition-colors"
+          >
+            Open Full View <ExternalLink className="w-3 h-3" />
+          </button>
         </div>
         <div className="w-full">
           <iframe

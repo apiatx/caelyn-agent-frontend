@@ -162,14 +162,22 @@ export default function BaseSection() {
 
       {/* DexScreener Base Network iframe */}
       <GlassCard className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-            <span className="text-white text-xs font-bold">D</span>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+              <span className="text-white text-xs font-bold">D</span>
+            </div>
+            <h3 className="text-xl font-semibold text-white">Trending</h3>
+            <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs rounded-full font-medium">
+              Live Data
+            </span>
           </div>
-          <h3 className="text-xl font-semibold text-white">Trending</h3>
-          <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs rounded-full font-medium">
-            Live Data
-          </span>
+          <SafeLink 
+            href="https://dexscreener.com/base?theme=dark"
+            className="flex items-center gap-1 text-blue-400 hover:text-blue-300 text-sm transition-colors"
+          >
+            Open Full View <ExternalLink className="w-3 h-3" />
+          </SafeLink>
         </div>
         <SafeIframe 
           src="https://dexscreener.com/base?theme=dark"
