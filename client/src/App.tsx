@@ -34,6 +34,7 @@ function Router() {
       <Route path="/app/crypto-stocks" component={CryptoStocks} />
       <Route path="/app/stocks" component={CryptoStocks} />
       <Route path="/app/portfolio" component={PortfolioPage} />
+      <Route path="/portfolio" component={PortfolioPage} />
       <Route component={NotFound} />
     </Switch>
   );
