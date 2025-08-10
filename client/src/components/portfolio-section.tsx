@@ -284,33 +284,33 @@ export default function PortfolioSection() {
           </div>
         </div>
         <div className="w-full">
-          <div className="h-[200px] sm:h-[220px] lg:h-[240px] rounded-lg border border-crypto-silver/20 bg-gradient-to-br from-green-900/20 to-blue-900/20 flex flex-col items-center justify-center p-4 text-center">
-            <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center mb-4 text-sm font-bold">
+          <div className="h-[250px] sm:h-[280px] lg:h-[300px] rounded-lg border border-crypto-silver/20 bg-gradient-to-br from-green-900/20 to-blue-900/20 flex flex-col items-center justify-center p-6 text-center">
+            <div className="w-14 h-14 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center mb-5 text-base font-bold">
               DB
             </div>
-            <h4 className="text-lg font-semibold text-white mb-2">Multi-Chain Portfolio Intelligence</h4>
-            <p className="text-crypto-silver mb-4 max-w-md text-sm">
+            <h4 className="text-xl font-semibold text-white mb-3">Multi-Chain Portfolio Intelligence</h4>
+            <p className="text-crypto-silver mb-5 max-w-md">
               DeBank provides comprehensive portfolio tracking across 30+ blockchains with real-time asset monitoring and DeFi analytics.
             </p>
-            <div className="space-y-2 text-xs text-crypto-silver mb-4">
+            <div className="space-y-2 text-sm text-crypto-silver mb-5">
               <div className="flex items-center justify-center gap-2">
-                <div className="w-1.5 h-1.5 bg-green-400 rounded-full"></div>
+                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
                 <span>Real-time portfolio tracking across all major chains</span>
               </div>
               <div className="flex items-center justify-center gap-2">
-                <div className="w-1.5 h-1.5 bg-blue-400 rounded-full"></div>
+                <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
                 <span>DeFi protocol position monitoring</span>
               </div>
               <div className="flex items-center justify-center gap-2">
-                <div className="w-1.5 h-1.5 bg-green-400 rounded-full"></div>
+                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
                 <span>NFT collection and transaction history</span>
               </div>
             </div>
             <button
               onClick={() => window.open('https://debank.com/profile/0x1677b97859620ccbf4eecf33f6feb1b7bea8d97e', '_blank', 'noopener,noreferrer')}
-              className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 hover:scale-105 flex items-center gap-2 text-sm"
+              className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white px-5 py-2.5 rounded-lg font-medium transition-all duration-200 hover:scale-105 flex items-center gap-2"
             >
-              <ExternalLink className="w-3 h-3" />
+              <ExternalLink className="w-4 h-4" />
               View DeBank Portfolio
             </button>
           </div>
