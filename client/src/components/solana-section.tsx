@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BarChart3, Activity, Zap, TrendingDown, ExternalLink, Star } from "lucide-react";
+import { BarChart3, Activity, Zap, TrendingDown, TrendingUp, ExternalLink, Star } from "lucide-react";
 import { openSecureLink, getSecureIframeProps } from "@/utils/security";
 
 // Glass card component for Solana section
@@ -323,6 +323,201 @@ export default function SolanaSection() {
               </div>
             </div>
             <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-blue-400 transition-colors" />
+          </a>
+        </div>
+      </GlassCard>
+
+      {/* Trading Platforms */}
+      <GlassCard className="p-6">
+        <div className="flex items-center gap-2 mb-6">
+          <div className="w-6 h-6 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full flex items-center justify-center">
+            <TrendingUp className="w-4 h-4 text-white" />
+          </div>
+          <h3 className="text-xl font-semibold text-white">Trading Platforms</h3>
+          <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-xs">
+            ASSETS
+          </Badge>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <a
+            href="https://x.com/orogoldapp"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-yellow-500/30 transition-all duration-200 group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-sm">AU</span>
+              </div>
+              <div>
+                <h3 className="text-white font-medium text-sm">Oro Gold</h3>
+                <p className="text-gray-400 text-xs">Trade gold</p>
+              </div>
+            </div>
+            <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-yellow-400 transition-colors" />
+          </a>
+
+          <a
+            href="https://x.com/xStocksFi"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-blue-500/30 transition-all duration-200 group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-sm">📈</span>
+              </div>
+              <div>
+                <h3 className="text-white font-medium text-sm">xStocks</h3>
+                <p className="text-gray-400 text-xs">Trade stocks</p>
+              </div>
+            </div>
+            <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-blue-400 transition-colors" />
+          </a>
+
+          <a
+            href="https://x.com/PreStocksFi"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-purple-500/30 transition-all duration-200 group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-sm">🏢</span>
+              </div>
+              <div>
+                <h3 className="text-white font-medium text-sm">PreStocks</h3>
+                <p className="text-gray-400 text-xs">Trade pre-IPO stocks</p>
+              </div>
+            </div>
+            <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-purple-400 transition-colors" />
+          </a>
+
+          <a
+            href="https://x.com/ApolloBTCportal"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-orange-500/30 transition-all duration-200 group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-yellow-500 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-sm">₿</span>
+              </div>
+              <div>
+                <h3 className="text-white font-medium text-sm">Apollo BTC</h3>
+                <p className="text-gray-400 text-xs">Trade native Bitcoin</p>
+              </div>
+            </div>
+            <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-orange-400 transition-colors" />
+          </a>
+
+          <a
+            href="https://x.com/Parcl"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-green-500/30 transition-all duration-200 group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-sm">🏠</span>
+              </div>
+              <div>
+                <h3 className="text-white font-medium text-sm">Parcl</h3>
+                <p className="text-gray-400 text-xs">Trade real estate</p>
+              </div>
+            </div>
+            <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-green-400 transition-colors" />
+          </a>
+
+          <a
+            href="https://x.com/MagicEden"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-pink-500/30 transition-all duration-200 group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-sm">✨</span>
+              </div>
+              <div>
+                <h3 className="text-white font-medium text-sm">Magic Eden</h3>
+                <p className="text-gray-400 text-xs">Trade digital slop</p>
+              </div>
+            </div>
+            <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-pink-400 transition-colors" />
+          </a>
+
+          <a
+            href="https://x.com/RECCFinance"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-cyan-500/30 transition-all duration-200 group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-sm">🏦</span>
+              </div>
+              <div>
+                <h3 className="text-white font-medium text-sm">RECC Finance</h3>
+                <p className="text-gray-400 text-xs">Trade RWA</p>
+              </div>
+            </div>
+            <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-cyan-400 transition-colors" />
+          </a>
+
+          <a
+            href="https://x.com/etherfuse"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-indigo-500/30 transition-all duration-200 group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-sm">📊</span>
+              </div>
+              <div>
+                <h3 className="text-white font-medium text-sm">Etherfuse</h3>
+                <p className="text-gray-400 text-xs">Trade bonds</p>
+              </div>
+            </div>
+            <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-indigo-400 transition-colors" />
+          </a>
+
+          <a
+            href="https://x.com/circle"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-emerald-500/30 transition-all duration-200 group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-sm">💱</span>
+              </div>
+              <div>
+                <h3 className="text-white font-medium text-sm">Circle</h3>
+                <p className="text-gray-400 text-xs">Trade forex</p>
+              </div>
+            </div>
+            <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-emerald-400 transition-colors" />
+          </a>
+
+          <a
+            href="https://x.com/AgriDexPlatform"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-green-600/30 transition-all duration-200 group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-green-600 to-lime-500 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-sm">🌾</span>
+              </div>
+              <div>
+                <h3 className="text-white font-medium text-sm">AgriDex</h3>
+                <p className="text-gray-400 text-xs">Trade agriculture</p>
+              </div>
+            </div>
+            <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-green-400 transition-colors" />
           </a>
         </div>
       </GlassCard>

@@ -243,6 +243,18 @@ export default function AlphaSection() {
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <SafeLink
+              href='https://x.com/TechDev_52'
+              className="p-3 bg-cyan-500/10 border border-cyan-500/20 rounded-lg hover:bg-cyan-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-6 h-6 bg-cyan-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">𝕏</span>
+                </div>
+                <h5 className="text-cyan-400 font-semibold text-sm">TechDev_52</h5>
+              </div>
+            </SafeLink>
+
+            <SafeLink
               href='https://x.com/altcoinvector'
               className="p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-lg hover:bg-indigo-500/20 transition-colors"
             >
