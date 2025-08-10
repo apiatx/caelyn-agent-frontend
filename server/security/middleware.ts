@@ -254,7 +254,10 @@ export const cspConfig = helmet.contentSecurityPolicy({
       "https://www.opensea.io",
       "https://compound.finance",
       "https://*.compound.finance",
-      "https://app.compound.finance"
+      "https://app.compound.finance",
+      "https://coinglass.com",
+      "https://*.coinglass.com",
+      "https://www.coinglass.com"
     ],
     objectSrc: ["'none'"],
     mediaSrc: ["'self'", "https:", "data:"],
