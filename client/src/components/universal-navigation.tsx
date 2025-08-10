@@ -14,13 +14,19 @@ interface UniversalNavigationProps {
 }
 
 export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   
   const navigateTo = (url: string) => {
+    console.log(`Navigating to: ${url}`);
     setLocation(url);
   };
 
-  const isActive = (page: string) => activePage === page;
+  const isActive = (page: string) => {
+    // Use both props and current location for active state
+    const currentPath = location.replace(/^\/+/, '').replace(/\/+$/, '');
+    const isActiveByPath = currentPath === `app/${page}` || (page === 'dashboard' && (currentPath === '' || currentPath === 'app'));
+    return activePage === page || isActiveByPath;
+  };
 
   return (
     <nav className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4">

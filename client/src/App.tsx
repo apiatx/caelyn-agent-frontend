@@ -14,24 +14,26 @@ import CryptoStocks from "@/pages/crypto-stocks";
 
 import OnchainPage from "@/pages/onchain";
 import BasePage from "@/pages/base";
+import TestOnchainPage from "@/pages/test-onchain";
+import TestBasePage from "@/pages/test-base";
 import NotFound from "@/pages/not-found";
 
 function Router() {
   return (
     <Switch>
+      <Route path="/" component={Dashboard} />
       <Route path="/app" component={Dashboard} />
       <Route path="/app/majors" component={TopChartsPage} />
+      <Route path="/app/onchain" component={TestOnchainPage} />
+      <Route path="/app/base" component={TestBasePage} />
       <Route path="/app/ethereum" component={EthereumPage} />
       <Route path="/app/solana" component={SolanaPage} />
-      <Route path="/app/defi" component={DeFiPage} />
       <Route path="/app/hype" component={HypePage} />
       <Route path="/app/abstract" component={AbstractPage} />
+      <Route path="/app/defi" component={DeFiPage} />
       <Route path="/app/crypto-stocks" component={CryptoStocks} />
       <Route path="/app/stocks" component={CryptoStocks} />
-      <Route path="/app/onchain" component={OnchainPage} />
-      <Route path="/app/base" component={BasePage} />
       <Route path="/app/portfolio" component={Dashboard} />
-      <Route path="/" component={Dashboard} />
       <Route component={NotFound} />
     </Switch>
   );
