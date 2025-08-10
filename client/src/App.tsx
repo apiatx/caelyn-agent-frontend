@@ -25,6 +25,9 @@ function Router() {
       <Route path="/app/abstract" component={AbstractPage} />
       <Route path="/app/crypto-stocks" component={CryptoStocks} />
       <Route path="/app/stocks" component={CryptoStocks} />
+      <Route path="/app/onchain" component={TopChartsPage} />
+      <Route path="/app/base" component={SolanaPage} />
+      <Route path="/app/portfolio" component={Dashboard} />
       <Route path="/" component={Dashboard} />
       <Route component={NotFound} />
     </Switch>

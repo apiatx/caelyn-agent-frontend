@@ -1,5 +1,6 @@
 import { Activity, BarChart3, TrendingUp, ChartLine, Brain, Zap, DollarSign, Building2, Layers, Coins } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { useLocation } from "wouter";
 
 // Glass card component
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
@@ -13,8 +14,10 @@ interface UniversalNavigationProps {
 }
 
 export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
+  const [, setLocation] = useLocation();
+  
   const navigateTo = (url: string) => {
-    window.location.href = url;
+    setLocation(url);
   };
 
   const isActive = (page: string) => activePage === page;
@@ -45,9 +48,9 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
             <BarChart3 className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />Majors
           </button>
           <button
-            onClick={() => navigateTo("/app#alpha")}
+            onClick={() => navigateTo("/app/onchain")}
             className={`w-full py-3 px-2 xl:px-4 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
-              isActive("alpha")
+              isActive("onchain")
                 ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                 : "hover:bg-white/5 text-crypto-silver"
             }`}
@@ -65,7 +68,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
             <Coins className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />Ethereum
           </button>
           <button
-            onClick={() => navigateTo("/app#base")}
+            onClick={() => navigateTo("/app/base")}
             className={`w-full py-3 px-2 xl:px-4 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
               isActive("base")
                 ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
@@ -125,7 +128,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
             <DollarSign className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />DeFi
           </button>
           <button
-            onClick={() => navigateTo("/app#portfolio")}
+            onClick={() => navigateTo("/app/portfolio")}
             className={`w-full py-3 px-2 xl:px-4 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
               isActive("portfolio")
                 ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
@@ -171,9 +174,9 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
                 <BarChart3 className="w-4 h-4 mr-1 inline" />Majors
               </button>
               <button
-                onClick={() => navigateTo("/app#alpha")}
+                onClick={() => navigateTo("/app/onchain")}
                 className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
-                  isActive("alpha")
+                  isActive("onchain")
                     ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                     : "hover:bg-white/5 text-crypto-silver"
                 }`}
@@ -191,7 +194,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
                 <Coins className="w-4 h-4 mr-1 inline" />Ethereum
               </button>
               <button
-                onClick={() => navigateTo("/app#base")}
+                onClick={() => navigateTo("/app/base")}
                 className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                   isActive("base")
                     ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
@@ -221,7 +224,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
                 <Brain className="w-4 h-4 mr-1 inline" />Hype
               </button>
               <button
-                onClick={() => navigateTo("/app#bittensor")}
+                onClick={() => navigateTo("/app/hype")}
                 className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                   isActive("bittensor")
                     ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
@@ -251,7 +254,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
                 <DollarSign className="w-4 h-4 mr-1 inline" />DeFi
               </button>
               <button
-                onClick={() => navigateTo("/app#portfolio")}
+                onClick={() => navigateTo("/app/portfolio")}
                 className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                   isActive("portfolio")
                     ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
