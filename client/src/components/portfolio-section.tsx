@@ -299,7 +299,7 @@ export default function PortfolioSection() {
               </div>
             </div>
             <button
-              onClick={() => window.open('https://debank.com/profile/0x1677b97859620ccbf4eecf33f6feb1b7bea8d97e', '_blank', 'noopener,noreferrer')}
+              onClick={() => window.open('https://debank.com/profile', '_blank', 'noopener,noreferrer')}
               className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white px-5 py-2.5 rounded-lg font-medium transition-all duration-200 hover:scale-105 flex items-center gap-2"
             >
               <ExternalLink className="w-4 h-4" />
