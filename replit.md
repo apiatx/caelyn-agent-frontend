@@ -99,4 +99,4 @@ The application employs a full-stack monorepo architecture, ensuring clear separ
   - DexScreener full view link ("Open Full View →") in top right of DexScreener iframe section
   - Moby Screener full view link ("Open Full View →") in top right of Moby Screener section
   - Consistent purple/cyan branding and hover effects matching page theme
-- **Base Page Alphanomics Integration**: Added Alphanomics Platform iframe (https://platform.alphanomics.io/) under the X Signal links in the Signal section with blue/purple branding, Analytics badge, and proper SafeIframe implementation for secure loading
+- **Onchain Page Alphanomics Integration**: Added Alphanomics Platform iframe (https://platform.alphanomics.io/) under the Signal links in the Onchain page Signal section with purple/pink gradient branding, Analytics badge, and secure iframe implementation
