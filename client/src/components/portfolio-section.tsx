@@ -285,14 +285,11 @@ export default function PortfolioSection() {
         </div>
         <div className="w-full">
           <div className="h-[250px] sm:h-[280px] lg:h-[300px] rounded-lg border border-crypto-silver/20 bg-gradient-to-br from-green-900/20 to-blue-900/20 flex flex-col items-center justify-center p-6 text-center">
-            <div className="w-14 h-14 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center mb-5 text-base font-bold">
-              DB
-            </div>
-            <h4 className="text-xl font-semibold text-white mb-3">Multi-Chain Portfolio Intelligence</h4>
+            <h4 className="text-xl font-semibold text-white mb-4">Multi-Chain Portfolio Intelligence</h4>
             <p className="text-crypto-silver mb-5 max-w-md">
               DeBank provides comprehensive portfolio tracking across 30+ blockchains with real-time asset monitoring and DeFi analytics.
             </p>
-            <div className="space-y-2 text-sm text-crypto-silver mb-5">
+            <div className="space-y-2 text-sm text-crypto-silver mb-6">
               <div className="flex items-center justify-center gap-2">
                 <div className="w-2 h-2 bg-green-400 rounded-full"></div>
                 <span>Real-time portfolio tracking across all major chains</span>
