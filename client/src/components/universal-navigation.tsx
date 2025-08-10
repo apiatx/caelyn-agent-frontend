@@ -17,7 +17,6 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
   const [location, setLocation] = useLocation();
   
   const navigateTo = (url: string) => {
-    console.log(`Navigating to: ${url}`);
     setLocation(url);
   };
 
