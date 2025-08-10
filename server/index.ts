@@ -23,14 +23,22 @@ app.set('trust proxy', true);
 
 // CRITICAL: Deployment health check endpoint - MUST respond with 200 immediately
 // Also serves as user redirect to the frontend
-app.get("/", (req, res) => {
+app.get("/", (req, res, next) => {
   const userAgent = req.get('User-Agent') || '';
   const acceptHeader = req.get('Accept') || '';
+  const host = req.get('Host') || '';
   
   // Check if this is a browser request (has text/html in Accept header)
   if (acceptHeader.includes('text/html') && userAgent.includes('Mozilla')) {
-    // Redirect browsers to the frontend application
-    return res.redirect(302, '/app');
+    // For custom domains like cryptohippo.locker, serve the frontend directly
+    // For replit domains, redirect to /app for consistency
+    if (host.includes('cryptohippo.locker') || host.includes('.replit.app')) {
+      // Let this fall through to the catch-all route that serves the frontend
+      return next();
+    } else {
+      // Redirect browsers to the frontend application for other domains
+      return res.redirect(302, '/app');
+    }
   }
   
   // For deployment health checks and monitoring tools
