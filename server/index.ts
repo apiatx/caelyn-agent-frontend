@@ -30,9 +30,9 @@ app.get("/", (req, res, next) => {
   
   // Check if this is a browser request (has text/html in Accept header)
   if (acceptHeader.includes('text/html') && userAgent.includes('Mozilla')) {
-    // For custom domains like cryptohippo.locker, serve the frontend directly
-    // For replit domains, redirect to /app for consistency
-    if (host.includes('cryptohippo.locker') || host.includes('.replit.app')) {
+    // For custom domains like cryptohippo.locker, always serve the frontend directly
+    // This ensures domain functionality works correctly
+    if (host.includes('cryptohippo.locker') || host.includes('.replit.app') || host.includes('.replit.dev')) {
       // Let this fall through to the catch-all route that serves the frontend
       return next();
     } else {
