@@ -393,6 +393,82 @@ export default function TopChartsPage() {
                 </div>
               </Suspense>
 
+              {/* XLM Chart */}
+              <Suspense fallback={<SectionLoadingState title="XLM Chart" />}>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <h3 className="text-lg font-semibold text-blue-400">Stellar</h3>
+                      <Badge variant="outline" className="bg-blue-500/20 text-blue-300 border-blue-500/30">
+                        XLM
+                      </Badge>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <button
+                        onClick={() => openSecureLink('https://coinmarketcap.com/currencies/stellar/')}
+                        className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm flex items-center gap-1"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        CoinMarketCap
+                      </button>
+                      <button
+                        onClick={() => openSecureLink('https://www.tradingview.com/chart/e5l95XgZ/?symbol=COINBASE%3AXLMUSD')}
+                        className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm"
+                      >
+                        Open Full View →
+                      </button>
+                    </div>
+                  </div>
+                  <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
+                    <iframe
+                      src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]&symbol=COINBASE%3AXLMUSD"
+                      className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+                      title="Stellar XLM Advanced Chart"
+                      frameBorder="0"
+                      scrolling="no"
+                    />
+                  </div>
+                </div>
+              </Suspense>
+
+              {/* HBAR Chart */}
+              <Suspense fallback={<SectionLoadingState title="HBAR Chart" />}>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <h3 className="text-lg font-semibold text-green-400">Hedera</h3>
+                      <Badge variant="outline" className="bg-green-500/20 text-green-300 border-green-500/30">
+                        HBAR
+                      </Badge>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <button
+                        onClick={() => openSecureLink('https://coinmarketcap.com/currencies/hedera-hashgraph/')}
+                        className="text-green-400 hover:text-green-300 text-xs sm:text-sm flex items-center gap-1"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        CoinMarketCap
+                      </button>
+                      <button
+                        onClick={() => openSecureLink('https://www.tradingview.com/chart/e5l95XgZ/?symbol=BINANCE%3AHBARUSDT')}
+                        className="text-green-400 hover:text-green-300 text-xs sm:text-sm"
+                      >
+                        Open Full View →
+                      </button>
+                    </div>
+                  </div>
+                  <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
+                    <iframe
+                      src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]&symbol=BINANCE%3AHBARUSDT"
+                      className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+                      title="Hedera HBAR Advanced Chart"
+                      frameBorder="0"
+                      scrolling="no"
+                    />
+                  </div>
+                </div>
+              </Suspense>
+
               {/* AVAX Chart */}
               <Suspense fallback={<SectionLoadingState title="AVAX Chart" />}>
                 <div className="space-y-3">
