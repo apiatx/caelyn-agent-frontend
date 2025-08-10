@@ -67,14 +67,14 @@
   },
   "altSeasonCache": {
     "data": {
-      "index_value": 41,
-      "timestamp": "2025-08-10T01:14:44.907Z",
+      "index_value": 39,
+      "timestamp": "2025-08-10T02:39:28.931Z",
       "is_alt_season": false,
       "description": "Alt Season approaching",
       "historical": {
-        "yesterday": 41,
-        "last_week": 39,
-        "last_month": 35,
+        "yesterday": 37,
+        "last_week": 41,
+        "last_month": 32,
         "last_month_description": "Mixed Season"
       },
       "yearly": {
@@ -86,7 +86,7 @@
         "low_description": "Bitcoin Season"
       }
     },
-    "lastFetch": 1754788484907
+    "lastFetch": 1754793568931
   },
   "fearGreedCache": {
     "data": {
@@ -110,7 +110,7 @@
         "low_classification": "Neutral"
       }
     },
-    "lastFetch": 1754788485063
+    "lastFetch": 1754793568805
   },
-  "lastSaved": "2025-08-10T01:14:45.063Z"
+  "lastSaved": "2025-08-10T02:39:28.931Z"
 }
