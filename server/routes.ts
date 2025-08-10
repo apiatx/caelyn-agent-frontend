@@ -94,7 +94,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       validateWalletAddress.optional(),
       handleValidationErrors
     ],
-    async (req, res) => {
+    async (req: any, res: any) => {
       try {
         const { id } = req.params;
         const { baseWalletAddress, taoWalletAddress } = req.body;
@@ -510,7 +510,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalMarketCap: overview.globalMetrics?.quote?.USD?.total_market_cap,
         btcDominance: overview.globalMetrics?.btc_dominance,
         altSeasonIndex: overview.altSeasonIndex?.index_value,
-        etfCount: overview.etfNetflows?.length
+        etfCount: Array.isArray(overview.etfNetflows) ? overview.etfNetflows.length : undefined
       });
       
       res.json(overview);
@@ -707,8 +707,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const portfolio = await storage.getPortfolioByUserId(1);
       if (portfolio) {
         dashboardData.portfolioValue = parseFloat(portfolio.totalBalance || '0');
-        dashboardData.portfolioPnL = parseFloat(portfolio.totalPnL24h || '0');
-        dashboardData.portfolioPnLPercent = parseFloat(portfolio.totalPnL24h || '0') / Math.max(parseFloat(portfolio.totalBalance || '1'), 1) * 100;
+        dashboardData.portfolioPnL = parseFloat(portfolio.pnl24h || '0');
+        dashboardData.portfolioPnLPercent = parseFloat(portfolio.pnl24h || '0') / Math.max(parseFloat(portfolio.totalBalance || '1'), 1) * 100;
       }
       
       res.json(dashboardData);

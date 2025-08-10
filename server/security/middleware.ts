@@ -352,6 +352,11 @@ export const corsConfig = cors({
       return callback(null, true);
     }
     
+    // Allow custom domain for CryptoHippo
+    if (origin.includes('cryptohippo.locker')) {
+      return callback(null, true);
+    }
+    
     // Block all other origins in production
     callback(new Error('Not allowed by CORS'));
   },

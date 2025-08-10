@@ -39,6 +39,7 @@ The application employs a full-stack monorepo architecture, ensuring clear separ
 - **Data Flow**: RESTful API communication with JSON. Type-safe database operations via Drizzle ORM. Polling-based real-time updates and client-side caching with React Query. Centralized error handling.
 - **Security**: Enterprise-level security including HTTPS enforcement, XSS/SQL injection prevention, comprehensive CSP headers, JWT authentication readiness, input sanitization, rate limiting, CORS protection, and Helmet security headers. Secure iframe sandboxing and external link handling.
 - **Performance**: Optimized frontend builds with code splitting, efficient Express.js backend, and optimized Drizzle ORM queries with caching.
+- **Deployment**: Custom domain support with CORS configuration for cryptohippo.locker domain. Production-ready API endpoints with comprehensive error handling and TypeScript type safety.
 
 ## External Dependencies
 
