@@ -1,13 +1,36 @@
 import { UniversalNavigation } from "@/components/universal-navigation";
 import { GlassCard } from "@/components/ui/glass-card";
 import { ExternalLink } from "lucide-react";
+import cryptoHippoImage from "@assets/image_1753204691716.png";
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-800">
+    <div className="min-h-screen text-white" style={{background: 'linear-gradient(135deg, hsl(0, 0%, 0%) 0%, hsl(0, 0%, 10%) 50%, hsl(0, 0%, 0%) 100%)'}}>
+      {/* Header */}
+      <header className="glass-card-dark border-b border-crypto-silver/20 sticky top-0 z-50">
+        <div className="max-w-[95vw] mx-auto px-2 sm:px-3">
+          <div className="flex justify-between items-center py-3 lg:py-4">
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg overflow-hidden">
+                <img 
+                  src={cryptoHippoImage}
+                  alt="CryptoHippo"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-white">
+                CryptoHippo
+              </h1>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Navigation */}
       <UniversalNavigation activePage="about" />
       
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Main Content */}
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <GlassCard className="p-8">
           <div className="text-center space-y-8">
             <div className="space-y-6">
@@ -161,7 +184,7 @@ export default function AboutPage() {
             </div>
           </div>
         </GlassCard>
-      </div>
+      </main>
     </div>
   );
 }
