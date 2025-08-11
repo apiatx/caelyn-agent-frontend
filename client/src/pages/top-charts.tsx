@@ -779,7 +779,7 @@ export default function TopChartsPage() {
                     </div>
                     <h4 className="text-xl font-semibold text-white">Velo Charts</h4>
                     <p className="text-crypto-silver max-w-md">
-                      Access comprehensive Velo trading charts and analytics on the official Velo platform.
+                      Access comprehensive altcoin trading charts and analytics.
                     </p>
                     <button
                       onClick={() => window.open('https://velo.xyz/chart', '_blank', 'noopener,noreferrer')}
