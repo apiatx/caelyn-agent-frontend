@@ -62,9 +62,9 @@ export default function DeFiSection() {
         <p className="text-crypto-silver">Comprehensive DeFi protocol access and portfolio management tools</p>
       </div>
 
-      {/* Swap Section */}
+      {/* Cross-Chain Section */}
       <div className="space-y-4">
-        <h3 className="text-xl font-semibold text-white mb-4">Swap</h3>
+        <h3 className="text-xl font-semibold text-white mb-4">Cross-Chain</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <Button
             variant="outline"
@@ -361,8 +361,8 @@ export default function DeFiSection() {
             <Wallet className="text-white text-xl" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-white">CEX</h2>
-            <p className="text-crypto-silver">Centralized Exchange Platforms</p>
+            <h2 className="text-2xl font-bold text-white">On Ramp</h2>
+            <p className="text-crypto-silver">Fiat to crypto onboarding platforms</p>
           </div>
         </div>
 
