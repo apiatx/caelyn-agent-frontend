@@ -58,8 +58,8 @@ export default function DeFiSection() {
   return (
     <div className="space-y-8">
       <div className="text-center">
-        <h2 className="text-3xl font-bold text-white mb-2">DeFi Platforms</h2>
-        <p className="text-crypto-silver">Comprehensive DeFi protocol access and portfolio management tools</p>
+        <h2 className="text-3xl font-bold text-white mb-2">DeFi Hub</h2>
+        <p className="text-crypto-silver">Comprehensive Decentralized Finance access and analytics</p>
       </div>
 
       {/* DeFiLlama */}
