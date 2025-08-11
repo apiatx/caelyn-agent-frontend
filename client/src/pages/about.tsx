@@ -140,6 +140,7 @@ export default function AboutPage() {
                   <p>The future belongs to those who think in satoshis, not cents.</p>
                   <p>It belongs to people who understand that real financial freedom comes from owning assets that no government can print, freeze, or seize.</p>
                   <p>Going on-chain isn't just about making trades — it's about reclaiming sovereignty over your wealth and stepping outside the rigged casino of the traditional financial system.</p>
+                  <p>Every position you take, every move you make is a vote for decentralization, transparency, and wealth that can't be inflated away.</p>
                   <p>CryptoHippo exists to help you take that step with clarity, speed, and confidence.</p>
                 </div>
               </div>
