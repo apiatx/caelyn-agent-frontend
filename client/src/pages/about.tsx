@@ -39,73 +39,66 @@ export default function AboutPage() {
               </div>
 
               <div>
-                <h2 className="text-2xl font-semibold text-white mb-4">What You Get</h2>
-                <div className="space-y-4 text-crypto-silver">
-                  <div className="space-y-3">
-                    <div>
-                      <h3 className="text-lg font-medium text-white mb-2">Market Overview</h3>
-                      <div className="space-y-1">
-                        <p>• Fear & Greed Index</p>
-                        <p>• BTC/ETH dominance</p>
-                        <p>• Curated news feed</p>
-                      </div>
-                    </div>
+                <h2 className="text-2xl font-semibold text-white mb-4">Market Overview</h2>
+                <div className="space-y-1 text-crypto-silver ml-4">
+                  <p>• Fear & Greed Index</p>
+                  <p>• BTC/ETH dominance</p>
+                  <p>• Curated news feed</p>
+                </div>
+              </div>
 
-                    <div>
-                      <h3 className="text-lg font-medium text-white mb-2">Top Majors Analysis</h3>
-                      <div className="space-y-1">
-                        <p>• TradingView charts for instant TA</p>
-                        <p>• CoinMarketCap data without leaving the page</p>
-                      </div>
-                    </div>
+              <div>
+                <h2 className="text-2xl font-semibold text-white mb-4">Top Majors Analysis</h2>
+                <div className="space-y-1 text-crypto-silver ml-4">
+                  <p>• TradingView charts for instant TA</p>
+                  <p>• CoinMarketCap data without leaving the page</p>
+                </div>
+              </div>
 
-                    <div>
-                      <h3 className="text-lg font-medium text-white mb-2">On-Chain Intelligence</h3>
-                      <div className="space-y-1">
-                        <p>• Live net flows</p>
-                        <p>• Trending tokens</p>
-                        <p>• AI-powered sentiment feeds</p>
-                      </div>
-                    </div>
+              <div>
+                <h2 className="text-2xl font-semibold text-white mb-4">On-Chain Intelligence</h2>
+                <div className="space-y-1 text-crypto-silver ml-4">
+                  <p>• Live net flows</p>
+                  <p>• Trending tokens</p>
+                  <p>• AI-powered sentiment feeds</p>
+                </div>
+              </div>
 
-                    <div>
-                      <h3 className="text-lg font-medium text-white mb-2">Chain-Specific Hubs</h3>
-                      <div className="space-y-1">
-                        <p>• ETH, SOL, BASE, Bittensor, Abstract, HyperLiquid</p>
-                        <p>• Chain-specific DeFi tools, trending tokens, and social analytics</p>
-                      </div>
-                    </div>
+              <div>
+                <h2 className="text-2xl font-semibold text-white mb-4">Chain-Specific Hubs</h2>
+                <div className="space-y-1 text-crypto-silver ml-4">
+                  <p>• ETH, SOL, BASE, Bittensor, Abstract, HyperLiquid</p>
+                  <p>• Chain-specific DeFi tools, trending tokens, and social analytics</p>
+                </div>
+              </div>
 
-                    <div>
-                      <h3 className="text-lg font-medium text-white mb-2">DeFi Central</h3>
-                      <div className="space-y-1">
-                        <p>• Farming, liquidity pools, perpetuals — all in one spot</p>
-                      </div>
-                    </div>
+              <div>
+                <h2 className="text-2xl font-semibold text-white mb-4">DeFi Central</h2>
+                <div className="space-y-1 text-crypto-silver ml-4">
+                  <p>• Farming, liquidity pools, perpetuals — all in one spot</p>
+                </div>
+              </div>
 
-                    <div>
-                      <h3 className="text-lg font-medium text-white mb-2">Stocks & Macro</h3>
-                      <div className="space-y-1">
-                        <p>• Favorite equity watchlists</p>
-                        <p>• Crypto treasury holdings</p>
-                        <p>• Market context for macro trends</p>
-                      </div>
-                    </div>
+              <div>
+                <h2 className="text-2xl font-semibold text-white mb-4">Stocks & Macro</h2>
+                <div className="space-y-1 text-crypto-silver ml-4">
+                  <p>• Favorite equity watchlists</p>
+                  <p>• Crypto treasury holdings</p>
+                  <p>• Market context for macro trends</p>
+                </div>
+              </div>
 
-                    <div>
-                      <h3 className="text-lg font-medium text-white mb-2">Portfolio Tracking</h3>
-                      <div className="space-y-1">
-                        <p>• Multi-chain wallet integration</p>
-                        <p>• Real-time performance updates</p>
-                      </div>
-                    </div>
-                  </div>
+              <div>
+                <h2 className="text-2xl font-semibold text-white mb-4">Portfolio Tracking</h2>
+                <div className="space-y-1 text-crypto-silver ml-4">
+                  <p>• Multi-chain wallet integration</p>
+                  <p>• Real-time performance updates</p>
                 </div>
               </div>
 
               <div>
                 <h2 className="text-2xl font-semibold text-white mb-4">Who It's For</h2>
-                <div className="space-y-1 text-crypto-silver">
+                <div className="space-y-1 text-crypto-silver ml-4">
                   <p>• Day traders who need speed and clarity</p>
                   <p>• DeFi farmers and liquidity providers</p>
                   <p>• On-chain analysts chasing alpha</p>
@@ -115,11 +108,40 @@ export default function AboutPage() {
 
               <div>
                 <h2 className="text-2xl font-semibold text-white mb-4">Why Traders Use It</h2>
-                <div className="space-y-1 text-crypto-silver">
+                <div className="space-y-1 text-crypto-silver ml-4">
                   <p>• <span className="text-white font-medium">Save Time:</span> Skip the endless tab-switching.</p>
                   <p>• <span className="text-white font-medium">Trade Smarter:</span> Market, on-chain, and sentiment data together.</p>
                   <p>• <span className="text-white font-medium">React Faster:</span> Spot setups before the crowd moves.</p>
                   <p>• <span className="text-white font-medium">Stay Organized:</span> One hub for your entire workflow.</p>
+                </div>
+              </div>
+
+              <div>
+                <h2 className="text-2xl font-semibold text-white mb-4">Why This Matters</h2>
+                <div className="text-crypto-silver space-y-4">
+                  <p>Cycles end quickly. By the book, spot and opportunities are out there — but for newcomers, the learning curve can be steep. Finding the right charts, understanding on-chain activity, navigating DeFi markets — it can take months just to piece it together.</p>
+                  <p>CryptoHippo is built to shorten that curve.</p>
+                  <p>To flatten barriers — whether speed bumps, DeFi tools, and portfolio tracking into one clear, accessible hub, we make it easier for anyone to see the bigger picture and start making informed moves.</p>
+                  <p>This isn't just about efficiency — it's about leveling the playing field.</p>
+                </div>
+              </div>
+
+              <div>
+                <h2 className="text-2xl font-semibold text-white mb-4">In Markets, Speed</h2>
+                <div className="text-crypto-silver space-y-4">
+                  <p>When everything you need is in front of you, you can focus on learning, experimenting, and growing — instead of wasting time searching for the right tool or source.</p>
+                  <p>Whether you're here to trade, farm, analyze, or just understand the market, CryptoHippo gives you the clarity and speed you need to step up and play the long game.</p>
+                </div>
+              </div>
+
+              <div>
+                <h2 className="text-2xl font-semibold text-white mb-4">The Bigger Picture</h2>
+                <div className="text-crypto-silver space-y-4">
+                  <p>Bitcoin isn't just code — it's a declaration of independence from a system designed to keep you poor.</p>
+                  <p>The future belongs to people who are not content.</p>
+                  <p>True financial freedom comes from owning assets that no government can print, freeze, or seize.</p>
+                  <p>Going on-chain isn't just about making trades — it's about reclaiming control over your wealth and stepping outside the rigged casino of the traditional financial system.</p>
+                  <p>Every position you take, every move you make is a vote for decentralization, transparency, and wealth that can't be inflated away.</p>
                 </div>
               </div>
             </div>
