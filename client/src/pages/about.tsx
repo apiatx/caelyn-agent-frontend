@@ -124,29 +124,23 @@ export default function AboutPage() {
               <div>
                 <h2 className="text-2xl font-semibold text-white mb-4">Why This Matters</h2>
                 <div className="text-crypto-silver space-y-4">
-                  <p>Cycles end quickly. By the book, spot and opportunities are out there — but for newcomers, the learning curve can be steep. Finding the right charts, understanding on-chain activity, navigating DeFi markets — it can take months just to piece it together.</p>
+                  <p>Crypto is still early. The tools, data, and opportunities are out there — but for newcomers, the learning curve can be steep. Finding the right charts, understanding on-chain activity, navigating DeFi platforms... it can take months (or years) to piece it all together.</p>
                   <p>CryptoHippo is built to shorten that curve.</p>
-                  <p>To flatten barriers — whether speed bumps, DeFi tools, and portfolio tracking into one clear, accessible hub, we make it easier for anyone to see the bigger picture and start making informed moves.</p>
-                  <p>This isn't just about efficiency — it's about leveling the playing field.</p>
-                </div>
-              </div>
-
-              <div>
-                <h2 className="text-2xl font-semibold text-white mb-4">In Markets, Speed</h2>
-                <div className="text-crypto-silver space-y-4">
+                  <p>By putting market data, on-chain analytics, sentiment, DeFi tools, and portfolio tracking into one clear, accessible hub, we make it easier for anyone to see the bigger picture and start making informed moves.</p>
+                  <p>Our mission is simple: <span className="text-white font-medium">help more people go on-chain, faster.</span></p>
                   <p>When everything you need is in front of you, you can focus on learning, experimenting, and growing — instead of wasting time searching for the right tool or source.</p>
-                  <p>Whether you're here to trade, farm, analyze, or just understand the market, CryptoHippo gives you the clarity and speed you need to step up and play the long game.</p>
+                  <p>Whether you're here to trade, farm, analyze, or just understand the market, CryptoHippo gives you the same clarity and speed the pros have — without the complexity.</p>
                 </div>
               </div>
 
               <div>
                 <h2 className="text-2xl font-semibold text-white mb-4">The Bigger Picture</h2>
                 <div className="text-crypto-silver space-y-4">
-                  <p>Bitcoin isn't just code — it's a declaration of independence from a system designed to keep you poor.</p>
-                  <p>The future belongs to people who are not content.</p>
-                  <p>True financial freedom comes from owning assets that no government can print, freeze, or seize.</p>
-                  <p>Going on-chain isn't just about making trades — it's about reclaiming control over your wealth and stepping outside the rigged casino of the traditional financial system.</p>
-                  <p>Every position you take, every move you make is a vote for decentralization, transparency, and wealth that can't be inflated away.</p>
+                  <p>Bitcoin isn't just code — it's a declaration of independence from a system designed to keep you playing a game you can never win. Fiat is debt. Inflation is theft. And the central banking model ensures you're always running just to stay in place.</p>
+                  <p>The future belongs to those who think in satoshis, not cents.</p>
+                  <p>It belongs to people who understand that real financial freedom comes from owning assets that no government can print, freeze, or seize.</p>
+                  <p>Going on-chain isn't just about making trades — it's about reclaiming sovereignty over your wealth and stepping outside the rigged casino of the traditional financial system.</p>
+                  <p>CryptoHippo exists to help you take that step with clarity, speed, and confidence.</p>
                 </div>
               </div>
             </div>
