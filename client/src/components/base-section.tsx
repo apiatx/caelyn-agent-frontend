@@ -486,6 +486,29 @@ export default function BaseSection() {
         </GlassCard>
       </div>
 
+      {/* Debt Relief Bot Wallet */}
+      <GlassCard className="p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-6 h-6 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full flex items-center justify-center">
+            <span className="text-white text-xs font-bold">DB</span>
+          </div>
+          <h3 className="text-xl font-semibold text-white">Debt Relief Bot Wallet</h3>
+          <span className="px-2 py-1 bg-emerald-500/20 text-emerald-400 text-xs rounded-full font-medium">
+            WALLET TRACKER
+          </span>
+          <SafeLink 
+            href="https://debank.com/profile/0xb1058c959987e3513600eb5b4fd82aeee2a0e4f9"
+            className="ml-auto text-emerald-400 hover:text-emerald-300 text-xs"
+          >
+            Open in New Tab →
+          </SafeLink>
+        </div>
+        <SafeIframe 
+          src="https://debank.com/profile/0xb1058c959987e3513600eb5b4fd82aeee2a0e4f9"
+          title="Debt Relief Bot Wallet"
+        />
+      </GlassCard>
+
       {/* Zoracle */}
       <GlassCard className="p-6">
         <div className="flex items-center gap-2 mb-4">
