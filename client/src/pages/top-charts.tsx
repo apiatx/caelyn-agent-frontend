@@ -57,12 +57,21 @@ export default function TopChartsPage() {
                     BITCOIN
                   </Badge>
                 </div>
-                <button
-                  onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=BTCUSD')}
-                  className="text-orange-400 hover:text-orange-300 text-xs sm:text-sm sm:ml-auto"
-                >
-                  Open in New Tab →
-                </button>
+                <div className="flex items-center gap-2 sm:ml-auto">
+                  <button
+                    onClick={() => openSecureLink('https://coinmarketcap.com/currencies/bitcoin/')}
+                    className="text-orange-400 hover:text-orange-300 text-xs sm:text-sm flex items-center gap-1"
+                  >
+                    CMC <ExternalLink className="w-3 h-3" />
+                  </button>
+                  <span className="text-crypto-silver text-xs">|</span>
+                  <button
+                    onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=BTCUSD')}
+                    className="text-orange-400 hover:text-orange-300 text-xs sm:text-sm"
+                  >
+                    Open in New Tab →
+                  </button>
+                </div>
               </div>
               <div className="w-full">
                 <iframe
@@ -120,12 +129,21 @@ export default function TopChartsPage() {
                     ETHEREUM
                   </Badge>
                 </div>
-                <button
-                  onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=ETHUSD')}
-                  className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm sm:ml-auto"
-                >
-                  Open in New Tab →
-                </button>
+                <div className="flex items-center gap-2 sm:ml-auto">
+                  <button
+                    onClick={() => openSecureLink('https://coinmarketcap.com/currencies/ethereum/')}
+                    className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm flex items-center gap-1"
+                  >
+                    CMC <ExternalLink className="w-3 h-3" />
+                  </button>
+                  <span className="text-crypto-silver text-xs">|</span>
+                  <button
+                    onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=ETHUSD')}
+                    className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm"
+                  >
+                    Open in New Tab →
+                  </button>
+                </div>
               </div>
               <div className="w-full">
                 <iframe
