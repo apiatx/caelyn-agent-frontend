@@ -77,17 +77,7 @@ export default function DeFiSection() {
               <div className="text-sm text-crypto-silver">Cross-chain asset bridging</div>
             </div>
           </Button>
-          <Button
-            variant="outline"
-            onClick={() => openInNewTab('https://aerodrome.finance/swap?from=eth&to=0x940181a94a35a4569e4529a3cdfb74e38fd98631&chain0=8453&chain1=8453')}
-            className="bg-black/20 border-crypto-silver/20 hover:bg-green-500/20 hover:border-green-500/30 text-white justify-start p-4 h-auto"
-          >
-            <ArrowLeftRight className="w-4 h-4 mr-2" />
-            <div className="text-left">
-              <div className="font-semibold">Aerodrome Finance</div>
-              <div className="text-sm text-crypto-silver">Base Network Liquidity Hub</div>
-            </div>
-          </Button>
+
           <Button
             variant="outline"
             onClick={() => openInNewTab('https://universalx.app/home')}
@@ -99,6 +89,7 @@ export default function DeFiSection() {
               <div className="text-sm text-crypto-silver">Trade any token, on any chain</div>
             </div>
           </Button>
+          
           <Button
             variant="outline"
             onClick={() => openInNewTab('https://app.definitive.fi/0x9FDBdA0A5e284c32744D2f17Ee5c74B284993463/hyperevm')}
@@ -179,7 +170,7 @@ export default function DeFiSection() {
         </GlassCard>
 
         {/* DeFi Platform Links */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
           <Button
             variant="outline"
             onClick={() => openInNewTab('https://defi.instadapp.io/')}
@@ -233,6 +224,20 @@ export default function DeFiSection() {
             <div className="text-center">
               <div className="font-semibold text-lg">Eigenlayer</div>
               <div className="text-sm text-crypto-silver">Restaking protocol</div>
+            </div>
+          </Button>
+
+          <Button
+            variant="outline"
+            onClick={() => openInNewTab('https://aerodrome.finance/liquidity')}
+            className="bg-black/20 border-crypto-silver/20 hover:bg-green-500/20 hover:border-green-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
+          >
+            <div className="p-3 rounded-lg bg-gradient-to-r from-green-500/20 to-emerald-500/20">
+              <ArrowLeftRight className="h-6 w-6 text-green-400" />
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-lg">Aerodrome</div>
+              <div className="text-sm text-crypto-silver">Base Network Liquidity Hub</div>
             </div>
           </Button>
         </div>
