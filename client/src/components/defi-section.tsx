@@ -366,7 +366,7 @@ export default function DeFiSection() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Button
             variant="outline"
             onClick={() => openInNewTab('https://www.coinbase.com/home')}
@@ -406,6 +406,20 @@ export default function DeFiSection() {
             <div className="text-center">
               <div className="font-semibold text-lg">MoonPay</div>
               <div className="text-sm text-crypto-silver">Crypto payment gateway</div>
+            </div>
+          </Button>
+
+          <Button
+            variant="outline"
+            onClick={() => openInNewTab('https://strike.me/en/')}
+            className="bg-black/20 border-crypto-silver/20 hover:bg-orange-500/20 hover:border-orange-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
+          >
+            <div className="p-3 rounded-lg bg-gradient-to-r from-orange-500/20 to-yellow-500/20">
+              <Wallet className="h-6 w-6 text-orange-400" />
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-lg">Strike</div>
+              <div className="text-sm text-crypto-silver">Bitcoin payment app</div>
             </div>
           </Button>
         </div>
