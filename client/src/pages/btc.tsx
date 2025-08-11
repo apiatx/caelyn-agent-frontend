@@ -322,6 +322,35 @@ export default function BTCPage() {
               </div>
             </GlassCard>
           </div>
+
+          {/* OTHERS Dominance Chart */}
+          <GlassCard className="p-3 sm:p-4 lg:p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-green-500 rounded-full flex items-center justify-center">
+                  <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-semibold text-white">OTHERS Dominance</h3>
+                <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
+                  OTHERS.D
+                </Badge>
+              </div>
+              <button
+                onClick={() => openInNewTab('https://www.tradingview.com/chart/?symbol=CRYPTOCAP%3AOTHERS.D')}
+                className="text-green-400 hover:text-green-300 text-xs sm:text-sm sm:ml-auto"
+              >
+                Open in New Tab →
+              </button>
+            </div>
+            <div className="w-full">
+              <iframe
+                src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_othersd&symbol=CRYPTOCAP%3AOTHERS.D&interval=1D&hidesidetoolbar=0&hidetoptoolbar=0&symboledit=1&saveimage=1&toolbarbg=0a0a0a&studies=[]&hideideas=1&theme=dark&style=1&timezone=Etc%2FUTC&studies_overrides={}&overrides={}&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22,%22timeframes_toolbar%22,%22show_interval_dialog_on_key_press%22]&disabled_features=[]&locale=en&utm_source=cryptohippo.com&utm_medium=widget&utm_campaign=chart&utm_term=CRYPTOCAP%3AOTHERS.D"
+                className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
+                title="OTHERS Dominance Chart"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+              />
+            </div>
+          </GlassCard>
         </div>
       </div>
     </div>
