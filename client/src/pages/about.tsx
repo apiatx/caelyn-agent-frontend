@@ -169,6 +169,20 @@ export default function AboutPage() {
               </div>
             </div>
 
+            {/* About .locker Section */}
+            <div className="space-y-6 text-left">
+              <div>
+                <h2 className="text-2xl font-semibold text-white mb-4">About .locker</h2>
+                <div className="text-crypto-silver space-y-4">
+                  <p>CryptoHippo uses a .locker domain — a new kind of web address that's both a traditional domain and a blockchain-secured identity. When you register a .locker, it's linked to the Bitcoin Naming System (BNS), meaning your Web3 identity is anchored to the most secure and decentralized blockchain in existence.</p>
+                  
+                  <p>This isn't just about a cooler domain name — it's about preparing for a future where online identity, ownership, and interaction all live on-chain. As crypto adoption grows, .locker domains bridge the gap between the familiar Web2 internet and the trustless, decentralized Web3 ecosystem.</p>
+                  
+                  <p>By using .locker, CryptoHippo signals its commitment to that future — one where traders, investors, and everyday users can control their own identity, data, and assets without relying on centralized gatekeepers.</p>
+                </div>
+              </div>
+            </div>
+
             {/* Support Section */}
             <div className="mt-12 pt-8 border-t border-crypto-silver/20">
               <h2 className="text-2xl font-semibold text-white mb-6">Support CryptoHippo</h2>
