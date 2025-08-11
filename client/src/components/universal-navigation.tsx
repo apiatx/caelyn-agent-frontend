@@ -1,4 +1,4 @@
-import { Activity, BarChart3, TrendingUp, ChartLine, Brain, Zap, DollarSign, Building2, Layers, Coins } from "lucide-react";
+import { Activity, BarChart3, TrendingUp, ChartLine, Brain, Zap, DollarSign, Building2, Layers, Coins, Network } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { useLocation } from "wouter";
 
@@ -121,6 +121,16 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
             }`}
           >
             <Layers className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />Abstract
+          </button>
+          <button
+            onClick={() => navigateTo("/app/other-ecosystems")}
+            className={`flex-1 min-w-0 py-3 px-1 xl:px-3 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
+              isActive("other-ecosystems")
+                ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
+                : "hover:bg-white/5 text-crypto-silver"
+            }`}
+          >
+            <Network className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />Other Ecosystems
           </button>
           <button
             onClick={() => navigateTo("/app/defi")}
@@ -257,6 +267,16 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
                 }`}
               >
                 <Layers className="w-4 h-4 mr-1 inline" />Abstract
+              </button>
+              <button
+                onClick={() => navigateTo("/app/other-ecosystems")}
+                className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+                  isActive("other-ecosystems")
+                    ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
+                    : "hover:bg-white/5 text-crypto-silver"
+                }`}
+              >
+                <Network className="w-4 h-4 mr-1 inline" />Other Ecosystems
               </button>
               <button
                 onClick={() => navigateTo("/app/defi")}

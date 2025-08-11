@@ -10,6 +10,7 @@ import SolanaPage from "@/pages/solana";
 import DeFiPage from "@/pages/defi";
 import HypePage from "@/pages/hype";
 import AbstractPage from "@/pages/abstract";
+import OtherEcosystemsPage from "@/pages/other-ecosystems";
 import CryptoStocks from "@/pages/crypto-stocks";
 
 import OnchainPage from "@/pages/onchain";
@@ -31,6 +32,7 @@ function Router() {
       <Route path="/app/solana" component={SolanaPage} />
       <Route path="/app/hype" component={HypePage} />
       <Route path="/app/abstract" component={AbstractPage} />
+      <Route path="/app/other-ecosystems" component={OtherEcosystemsPage} />
       <Route path="/app/defi" component={DeFiPage} />
       <Route path="/app/crypto-stocks" component={CryptoStocks} />
       <Route path="/app/stocks" component={CryptoStocks} />
