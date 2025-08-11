@@ -195,11 +195,8 @@ export default function TopChartsPage() {
           <div className="space-y-6">
             <div className="flex items-center space-x-2">
               <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-400 via-blue-500 to-green-600 bg-clip-text text-transparent">
-                Additional Markets
+                Altcoins
               </h2>
-              <Badge variant="outline" className="bg-purple-500/20 text-purple-300 border-purple-500/30">
-                ALTCOINS
-              </Badge>
             </div>
             
             {/* XRP Chart */}
