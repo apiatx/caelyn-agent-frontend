@@ -139,7 +139,7 @@ export default function AboutPage() {
                   <p>Bitcoin isn't just code — it's a declaration of independence from a system designed to keep you playing a game you can never win. Fiat is debt. Inflation is theft. And the central banking model ensures you're always running just to stay in place.</p>
                   <p>The future belongs to those who think in satoshis, not cents.</p>
                   <p>It belongs to people who understand that real financial freedom comes from owning assets that no government can print, freeze, or seize.</p>
-                  <p>Going on-chain isn't just about making trades — it's about reclaiming sovereignty over your wealth and stepping outside the rigged casino of the traditional financial system.</p>
+                  <p>Going on-chain isn't just about making trades — it's about taking ownership of your wealth and moving beyond a centralized system that's stacked against you.</p>
                   <p>Every position you take, every move you make is a vote for decentralization, transparency, and wealth that can't be inflated away.</p>
                   <p>CryptoHippo exists to help you take that step with clarity, speed, and confidence.</p>
                 </div>
