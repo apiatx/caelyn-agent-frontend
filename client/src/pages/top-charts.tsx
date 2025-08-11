@@ -449,7 +449,7 @@ export default function TopChartsPage() {
                       CoinMarketCap
                     </button>
                     <button
-                      onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=TAOSTATS%3ATAO')}
+                      onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=BITGET%3ATAOUSDT')}
                       className="text-orange-400 hover:text-orange-300 text-xs sm:text-sm"
                     >
                       Open Full View →
@@ -458,9 +458,199 @@ export default function TopChartsPage() {
                 </div>
                 <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
                   <iframe
-                    src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]&symbol=BINANCE%3ATAO1USDT"
+                    src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]&symbol=BITGET%3ATAOUSDT"
                     className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
                     title="Bittensor Advanced Chart"
+                    frameBorder="0"
+                    scrolling="no"
+                  />
+                </div>
+              </div>
+            </Suspense>
+
+            {/* XLM Chart */}
+            <Suspense fallback={<SectionLoadingState title="XLM Chart" />}>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <h3 className="text-lg font-semibold text-blue-400">Stellar</h3>
+                    <Badge variant="outline" className="bg-blue-500/20 text-blue-300 border-blue-500/30">
+                      XLM
+                    </Badge>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <button
+                      onClick={() => openSecureLink('https://coinmarketcap.com/currencies/stellar/')}
+                      className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm flex items-center gap-1"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                      CoinMarketCap
+                    </button>
+                    <button
+                      onClick={() => openSecureLink('https://www.tradingview.com/chart/e5l95XgZ/?symbol=COINBASE%3AXLMUSD')}
+                      className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm"
+                    >
+                      Open Full View →
+                    </button>
+                  </div>
+                </div>
+                <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
+                  <iframe
+                    src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]&symbol=COINBASE%3AXLMUSD"
+                    className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+                    title="XLM Advanced Chart"
+                    frameBorder="0"
+                    scrolling="no"
+                  />
+                </div>
+              </div>
+            </Suspense>
+
+            {/* HBAR Chart */}
+            <Suspense fallback={<SectionLoadingState title="HBAR Chart" />}>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <h3 className="text-lg font-semibold text-green-400">Hedera</h3>
+                    <Badge variant="outline" className="bg-green-500/20 text-green-300 border-green-500/30">
+                      HBAR
+                    </Badge>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <button
+                      onClick={() => openSecureLink('https://coinmarketcap.com/currencies/hedera-hashgraph/')}
+                      className="text-green-400 hover:text-green-300 text-xs sm:text-sm flex items-center gap-1"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                      CoinMarketCap
+                    </button>
+                    <button
+                      onClick={() => openSecureLink('https://www.tradingview.com/chart/e5l95XgZ/?symbol=BINANCE%3AHBARUSDT')}
+                      className="text-green-400 hover:text-green-300 text-xs sm:text-sm"
+                    >
+                      Open Full View →
+                    </button>
+                  </div>
+                </div>
+                <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
+                  <iframe
+                    src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]&symbol=BINANCE%3AHBARUSDT"
+                    className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+                    title="Hedera HBAR Advanced Chart"
+                    frameBorder="0"
+                    scrolling="no"
+                  />
+                </div>
+              </div>
+            </Suspense>
+
+            {/* DOGE Chart */}
+            <Suspense fallback={<SectionLoadingState title="DOGE Chart" />}>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <h3 className="text-lg font-semibold text-orange-400">DOGE</h3>
+                    <Badge variant="outline" className="bg-orange-500/20 text-orange-300 border-orange-500/30">
+                      DOGE
+                    </Badge>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <button
+                      onClick={() => openSecureLink('https://coinmarketcap.com/currencies/dogecoin/')}
+                      className="text-orange-400 hover:text-orange-300 text-xs sm:text-sm flex items-center gap-1"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                      CoinMarketCap
+                    </button>
+                    <button
+                      onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=BINANCE%3ADOGEUSDT')}
+                      className="text-orange-400 hover:text-orange-300 text-xs sm:text-sm"
+                    >
+                      Open Full View →
+                    </button>
+                  </div>
+                </div>
+                <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
+                  <iframe
+                    src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]&symbol=BINANCE%3ADOGEUSDT"
+                    className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+                    title="DOGE Advanced Chart"
+                    frameBorder="0"
+                    scrolling="no"
+                  />
+                </div>
+              </div>
+            </Suspense>
+
+            {/* BONK Chart */}
+            <Suspense fallback={<SectionLoadingState title="BONK Chart" />}>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <h3 className="text-lg font-semibold text-yellow-400">BONK</h3>
+                    <Badge variant="outline" className="bg-yellow-500/20 text-yellow-300 border-yellow-500/30">
+                      BONK
+                    </Badge>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <button
+                      onClick={() => openSecureLink('https://coinmarketcap.com/currencies/bonk/')}
+                      className="text-yellow-400 hover:text-yellow-300 text-xs sm:text-sm flex items-center gap-1"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                      CoinMarketCap
+                    </button>
+                    <button
+                      onClick={() => openSecureLink('https://www.tradingview.com/chart/e5l95XgZ/?symbol=MEXC%3ABONKUSDT')}
+                      className="text-yellow-400 hover:text-yellow-300 text-xs sm:text-sm"
+                    >
+                      Open Full View →
+                    </button>
+                  </div>
+                </div>
+                <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
+                  <iframe
+                    src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]&symbol=MEXC%3ABONKUSDT"
+                    className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+                    title="BONK Advanced Chart"
+                    frameBorder="0"
+                    scrolling="no"
+                  />
+                </div>
+              </div>
+            </Suspense>
+
+            {/* PENGU Chart */}
+            <Suspense fallback={<SectionLoadingState title="PENGU Chart" />}>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <h3 className="text-lg font-semibold text-cyan-400">PENGU</h3>
+                    <Badge variant="outline" className="bg-cyan-500/20 text-cyan-300 border-cyan-500/30">
+                      PENGU
+                    </Badge>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <button
+                      onClick={() => openSecureLink('https://coinmarketcap.com/currencies/pudgy-penguins/')}
+                      className="text-cyan-400 hover:text-cyan-300 text-xs sm:text-sm flex items-center gap-1"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                      CoinMarketCap
+                    </button>
+                    <button
+                      onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=BINANCE%3APENGUUSDT')}
+                      className="text-cyan-400 hover:text-cyan-300 text-xs sm:text-sm"
+                    >
+                      Open Full View →
+                    </button>
+                  </div>
+                </div>
+                <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
+                  <iframe
+                    src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]&symbol=BINANCE%3APENGUUSDT"
+                    className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+                    title="PENGU Advanced Chart"
                     frameBorder="0"
                     scrolling="no"
                   />
