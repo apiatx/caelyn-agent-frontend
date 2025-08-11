@@ -39,60 +39,65 @@ export default function AboutPage() {
               </div>
 
               <div>
-                <h2 className="text-2xl font-semibold text-white mb-4">Market Overview</h2>
-                <div className="space-y-1 text-crypto-silver ml-4">
-                  <p>• Fear & Greed Index</p>
-                  <p>• BTC/ETH dominance</p>
-                  <p>• Curated news feed</p>
-                </div>
-              </div>
+                <h2 className="text-2xl font-semibold text-white mb-4">What You Get</h2>
+                <div className="space-y-4 text-crypto-silver">
+                  <div>
+                    <h3 className="text-lg font-medium text-white mb-2">Market Overview</h3>
+                    <div className="space-y-1 ml-4">
+                      <p>• Fear & Greed Index</p>
+                      <p>• BTC/ETH dominance</p>
+                      <p>• Curated news feed</p>
+                    </div>
+                  </div>
 
-              <div>
-                <h2 className="text-2xl font-semibold text-white mb-4">Top Majors Analysis</h2>
-                <div className="space-y-1 text-crypto-silver ml-4">
-                  <p>• TradingView charts for instant TA</p>
-                  <p>• CoinMarketCap data without leaving the page</p>
-                </div>
-              </div>
+                  <div>
+                    <h3 className="text-lg font-medium text-white mb-2">Top Majors Analysis</h3>
+                    <div className="space-y-1 ml-4">
+                      <p>• TradingView charts for instant TA</p>
+                      <p>• CoinMarketCap data without leaving the page</p>
+                    </div>
+                  </div>
 
-              <div>
-                <h2 className="text-2xl font-semibold text-white mb-4">On-Chain Intelligence</h2>
-                <div className="space-y-1 text-crypto-silver ml-4">
-                  <p>• Live net flows</p>
-                  <p>• Trending tokens</p>
-                  <p>• AI-powered sentiment feeds</p>
-                </div>
-              </div>
+                  <div>
+                    <h3 className="text-lg font-medium text-white mb-2">On-Chain Intelligence</h3>
+                    <div className="space-y-1 ml-4">
+                      <p>• Live net flows</p>
+                      <p>• Trending tokens</p>
+                      <p>• AI-powered sentiment feeds</p>
+                    </div>
+                  </div>
 
-              <div>
-                <h2 className="text-2xl font-semibold text-white mb-4">Chain-Specific Hubs</h2>
-                <div className="space-y-1 text-crypto-silver ml-4">
-                  <p>• ETH, SOL, BASE, Bittensor, Abstract, HyperLiquid</p>
-                  <p>• Chain-specific DeFi tools, trending tokens, and social analytics</p>
-                </div>
-              </div>
+                  <div>
+                    <h3 className="text-lg font-medium text-white mb-2">Chain-Specific Hubs</h3>
+                    <div className="space-y-1 ml-4">
+                      <p>• ETH, SOL, BASE, Bittensor, Abstract, HyperLiquid</p>
+                      <p>• Chain-specific DeFi tools, trending tokens, and social analytics</p>
+                    </div>
+                  </div>
 
-              <div>
-                <h2 className="text-2xl font-semibold text-white mb-4">DeFi Central</h2>
-                <div className="space-y-1 text-crypto-silver ml-4">
-                  <p>• Farming, liquidity pools, perpetuals — all in one spot</p>
-                </div>
-              </div>
+                  <div>
+                    <h3 className="text-lg font-medium text-white mb-2">DeFi Central</h3>
+                    <div className="space-y-1 ml-4">
+                      <p>• Farming, liquidity pools, perpetuals — all in one spot</p>
+                    </div>
+                  </div>
 
-              <div>
-                <h2 className="text-2xl font-semibold text-white mb-4">Stocks & Macro</h2>
-                <div className="space-y-1 text-crypto-silver ml-4">
-                  <p>• Favorite equity watchlists</p>
-                  <p>• Crypto treasury holdings</p>
-                  <p>• Market context for macro trends</p>
-                </div>
-              </div>
+                  <div>
+                    <h3 className="text-lg font-medium text-white mb-2">Stocks & Macro</h3>
+                    <div className="space-y-1 ml-4">
+                      <p>• Favorite equity watchlists</p>
+                      <p>• Crypto treasury holdings</p>
+                      <p>• Market context for macro trends</p>
+                    </div>
+                  </div>
 
-              <div>
-                <h2 className="text-2xl font-semibold text-white mb-4">Portfolio Tracking</h2>
-                <div className="space-y-1 text-crypto-silver ml-4">
-                  <p>• Multi-chain wallet integration</p>
-                  <p>• Real-time performance updates</p>
+                  <div>
+                    <h3 className="text-lg font-medium text-white mb-2">Portfolio Tracking</h3>
+                    <div className="space-y-1 ml-4">
+                      <p>• Multi-chain wallet integration</p>
+                      <p>• Real-time performance updates</p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
