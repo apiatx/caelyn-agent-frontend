@@ -10,11 +10,13 @@ import DeFiSection from "@/components/defi-section";
 import cryptoHippoImage from "@assets/image_1753204691716.png";
 import { UniversalNavigation } from "@/components/universal-navigation";
 import { SectionLoadingState } from "@/components/loading-screen";
+import { useScrollFade } from "@/hooks/useScrollFade";
 
 type TabType = "dashboard" | "alpha" | "base" | "bittensor" | "abstract" | "solana" | "defi" | "portfolio";
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<TabType>("dashboard");
+  const headerOpacity = useScrollFade(30, 120);
 
   // Handle URL fragments on page load and hash changes
   useEffect(() => {
@@ -42,7 +44,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen text-white" style={{background: 'linear-gradient(135deg, hsl(0, 0%, 0%) 0%, hsl(0, 0%, 10%) 50%, hsl(0, 0%, 0%) 100%)'}}>
       {/* Header */}
-      <header className="glass-card-dark border-b border-crypto-silver/20 sticky top-0 z-50">
+      <header className="glass-card-dark border-b border-crypto-silver/20 sticky top-0 z-50 transition-opacity duration-300" style={{ opacity: headerOpacity }}>
         <div className="max-w-[95vw] mx-auto px-2 sm:px-3">
           <div className="flex justify-between items-center py-3 lg:py-4">
             <div className="flex items-center space-x-2 sm:space-x-3">
