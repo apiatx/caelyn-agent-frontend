@@ -62,9 +62,33 @@ export default function DeFiSection() {
         <p className="text-crypto-silver">Comprehensive DeFi protocol access and portfolio management tools</p>
       </div>
 
+      {/* DeFiLlama */}
+      <div className="mt-6">
+        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+          <div className="w-6 h-6 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full flex items-center justify-center">
+            <span className="text-white font-bold text-xs">🔥</span>
+          </div>
+          DeFiLlama
+          <SafeLink
+            href="https://defillama.com/"
+            className="ml-auto text-xs text-yellow-400 hover:text-yellow-300 transition-colors flex items-center gap-1"
+          >
+            Open Full View <ExternalLink className="w-3 h-3" />
+          </SafeLink>
+        </h3>
+        
+        <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+          <SafeIframe
+            src="https://defillama.com/"
+            title="DeFi TVL Rankings by DefiLlama"
+            className="w-full h-[600px] border-0"
+          />
+        </div>
+      </div>
+
       {/* Cross-Chain Section */}
       <div className="space-y-4">
-        <h3 className="text-xl font-semibold text-white mb-4">Cross-Chain</h3>
+        <h3 className="text-xl font-semibold text-white mb-4">Cross-Chain Swap</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <Button
             variant="outline"
@@ -101,34 +125,6 @@ export default function DeFiSection() {
               <div className="text-sm text-crypto-silver">Trade any token, on any chain</div>
             </div>
           </Button>
-        </div>
-      </div>
-
-
-      {/* DeFi TVL Rankings */}
-      <div className="mt-6">
-        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-          <div className="w-6 h-6 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full flex items-center justify-center">
-            <span className="text-white font-bold text-xs">🔥</span>
-          </div>
-          DeFi TVL Rankings
-          <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded-full border border-yellow-500/30">
-            DEFILLAMA
-          </span>
-          <SafeLink
-            href="https://defillama.com/"
-            className="ml-auto text-xs text-yellow-400 hover:text-yellow-300 transition-colors flex items-center gap-1"
-          >
-            Open Full View <ExternalLink className="w-3 h-3" />
-          </SafeLink>
-        </h3>
-        
-        <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-          <SafeIframe
-            src="https://defillama.com/"
-            title="DeFi TVL Rankings by DefiLlama"
-            className="w-full h-[600px] border-0"
-          />
         </div>
       </div>
 
