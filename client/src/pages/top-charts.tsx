@@ -221,7 +221,7 @@ export default function TopChartsPage() {
           <div className="space-y-6">
             <div className="flex items-center space-x-2">
               <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-400 via-blue-500 to-green-600 bg-clip-text text-transparent">
-                Altcoins
+                Altcoin Price Charts
               </h2>
             </div>
             
