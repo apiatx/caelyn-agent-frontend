@@ -12,11 +12,11 @@ export default function AboutPage() {
           <div className="text-center space-y-8">
             <div className="space-y-6">
               <h1 className="text-3xl sm:text-4xl font-bold text-white mb-4">
-                What is CryptoTrack Pro?
+                What is CryptoHippo?
               </h1>
               
               <p className="text-lg text-crypto-silver leading-relaxed">
-                CryptoTrack Pro is an all-in-one trading dashboard designed to put everything you need in one place — market data, technical analysis, on-chain flows, sentiment, DeFi tools, and portfolio tracking. No more juggling tabs, apps, and bookmarks.
+                CryptoHippo is an all-in-one trading dashboard designed to put everything you need in one place — market data, technical analysis, on-chain flows, sentiment, DeFi tools, and portfolio tracking. No more juggling tabs, apps, and bookmarks.
               </p>
             </div>
 
@@ -26,99 +26,101 @@ export default function AboutPage() {
                 <div className="text-crypto-silver space-y-4">
                   <p>Crypto trading moves fast. Every second you spend switching between different sites is a second you might miss an opportunity. Traders often have:</p>
                   
-                  <ul className="space-y-2 ml-4">
-                    <li>• CMC open for token stats.</li>
-                    <li>• TradingView for charting.</li>
-                    <li>• Separate dashboards for DeFi positions.</li>
-                    <li>• Multiple tabs for on-chain analytics.</li>
-                    <li>• Twitter or news feeds for sentiment.</li>
-                  </ul>
+                  <div className="space-y-1 ml-4">
+                    <p>• CMC open for token stats.</p>
+                    <p>• TradingView for charting.</p>
+                    <p>• Separate dashboards for DeFi positions.</p>
+                    <p>• Multiple tabs for on-chain analytics.</p>
+                    <p>• Twitter or news feeds for sentiment.</p>
+                  </div>
                   
-                  <p>This scattered workflow slows you down. CryptoTrack Pro solves that.</p>
+                  <p>This scattered workflow slows you down. CryptoHippo solves that.</p>
                 </div>
               </div>
 
               <div>
                 <h2 className="text-2xl font-semibold text-white mb-4">What You Get</h2>
                 <div className="space-y-4 text-crypto-silver">
-                  <div>
-                    <h3 className="text-lg font-medium text-white mb-2">Market Overview</h3>
-                    <ul className="ml-4 space-y-1">
-                      <li>• Fear & Greed Index</li>
-                      <li>• BTC/ETH dominance</li>
-                      <li>• Curated news feed</li>
-                    </ul>
-                  </div>
+                  <div className="space-y-3">
+                    <div>
+                      <h3 className="text-lg font-medium text-white mb-2">Market Overview</h3>
+                      <div className="space-y-1">
+                        <p>• Fear & Greed Index</p>
+                        <p>• BTC/ETH dominance</p>
+                        <p>• Curated news feed</p>
+                      </div>
+                    </div>
 
-                  <div>
-                    <h3 className="text-lg font-medium text-white mb-2">Top Majors Analysis</h3>
-                    <ul className="ml-4 space-y-1">
-                      <li>• TradingView charts for instant TA</li>
-                      <li>• CoinMarketCap data without leaving the page</li>
-                    </ul>
-                  </div>
+                    <div>
+                      <h3 className="text-lg font-medium text-white mb-2">Top Majors Analysis</h3>
+                      <div className="space-y-1">
+                        <p>• TradingView charts for instant TA</p>
+                        <p>• CoinMarketCap data without leaving the page</p>
+                      </div>
+                    </div>
 
-                  <div>
-                    <h3 className="text-lg font-medium text-white mb-2">On-Chain Intelligence</h3>
-                    <ul className="ml-4 space-y-1">
-                      <li>• Live net flows</li>
-                      <li>• Trending tokens</li>
-                      <li>• AI-powered sentiment feeds</li>
-                    </ul>
-                  </div>
+                    <div>
+                      <h3 className="text-lg font-medium text-white mb-2">On-Chain Intelligence</h3>
+                      <div className="space-y-1">
+                        <p>• Live net flows</p>
+                        <p>• Trending tokens</p>
+                        <p>• AI-powered sentiment feeds</p>
+                      </div>
+                    </div>
 
-                  <div>
-                    <h3 className="text-lg font-medium text-white mb-2">Chain-Specific Hubs</h3>
-                    <ul className="ml-4 space-y-1">
-                      <li>• ETH, SOL, BASE, Bittensor, Abstract, HyperLiquid</li>
-                      <li>• Chain-specific DeFi tools, trending tokens, and social analytics</li>
-                    </ul>
-                  </div>
+                    <div>
+                      <h3 className="text-lg font-medium text-white mb-2">Chain-Specific Hubs</h3>
+                      <div className="space-y-1">
+                        <p>• ETH, SOL, BASE, Bittensor, Abstract, HyperLiquid</p>
+                        <p>• Chain-specific DeFi tools, trending tokens, and social analytics</p>
+                      </div>
+                    </div>
 
-                  <div>
-                    <h3 className="text-lg font-medium text-white mb-2">DeFi Central</h3>
-                    <ul className="ml-4 space-y-1">
-                      <li>• Farming, liquidity pools, perpetuals — all in one spot</li>
-                    </ul>
-                  </div>
+                    <div>
+                      <h3 className="text-lg font-medium text-white mb-2">DeFi Central</h3>
+                      <div className="space-y-1">
+                        <p>• Farming, liquidity pools, perpetuals — all in one spot</p>
+                      </div>
+                    </div>
 
-                  <div>
-                    <h3 className="text-lg font-medium text-white mb-2">Stocks & Macro</h3>
-                    <ul className="ml-4 space-y-1">
-                      <li>• Favorite equity watchlists</li>
-                      <li>• Crypto treasury holdings</li>
-                      <li>• Market context for macro trends</li>
-                    </ul>
-                  </div>
+                    <div>
+                      <h3 className="text-lg font-medium text-white mb-2">Stocks & Macro</h3>
+                      <div className="space-y-1">
+                        <p>• Favorite equity watchlists</p>
+                        <p>• Crypto treasury holdings</p>
+                        <p>• Market context for macro trends</p>
+                      </div>
+                    </div>
 
-                  <div>
-                    <h3 className="text-lg font-medium text-white mb-2">Portfolio Tracking</h3>
-                    <ul className="ml-4 space-y-1">
-                      <li>• Multi-chain wallet integration</li>
-                      <li>• Real-time performance updates</li>
-                    </ul>
+                    <div>
+                      <h3 className="text-lg font-medium text-white mb-2">Portfolio Tracking</h3>
+                      <div className="space-y-1">
+                        <p>• Multi-chain wallet integration</p>
+                        <p>• Real-time performance updates</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
 
               <div>
                 <h2 className="text-2xl font-semibold text-white mb-4">Who It's For</h2>
-                <ul className="space-y-2 ml-4 text-crypto-silver">
-                  <li>• Day traders who need speed and clarity</li>
-                  <li>• DeFi farmers and liquidity providers</li>
-                  <li>• On-chain analysts chasing alpha</li>
-                  <li>• Swing traders who mix crypto and equities</li>
-                </ul>
+                <div className="space-y-1 text-crypto-silver">
+                  <p>• Day traders who need speed and clarity</p>
+                  <p>• DeFi farmers and liquidity providers</p>
+                  <p>• On-chain analysts chasing alpha</p>
+                  <p>• Swing traders who mix crypto and equities</p>
+                </div>
               </div>
 
               <div>
                 <h2 className="text-2xl font-semibold text-white mb-4">Why Traders Use It</h2>
-                <ul className="space-y-2 ml-4 text-crypto-silver">
-                  <li>• <span className="text-white font-medium">Save Time:</span> Skip the endless tab-switching.</li>
-                  <li>• <span className="text-white font-medium">Trade Smarter:</span> Market, on-chain, and sentiment data together.</li>
-                  <li>• <span className="text-white font-medium">React Faster:</span> Spot setups before the crowd moves.</li>
-                  <li>• <span className="text-white font-medium">Stay Organized:</span> One hub for your entire workflow.</li>
-                </ul>
+                <div className="space-y-1 text-crypto-silver">
+                  <p>• <span className="text-white font-medium">Save Time:</span> Skip the endless tab-switching.</p>
+                  <p>• <span className="text-white font-medium">Trade Smarter:</span> Market, on-chain, and sentiment data together.</p>
+                  <p>• <span className="text-white font-medium">React Faster:</span> Spot setups before the crowd moves.</p>
+                  <p>• <span className="text-white font-medium">Stay Organized:</span> One hub for your entire workflow.</p>
+                </div>
               </div>
             </div>
 
