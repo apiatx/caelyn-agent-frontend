@@ -152,6 +152,16 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
           >
             <Building2 className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />Stocks
           </button>
+          <button
+            onClick={() => navigateTo("/app/about")}
+            className={`w-full py-3 px-2 xl:px-4 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
+              isActive("about")
+                ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
+                : "hover:bg-white/5 text-crypto-silver"
+            }`}
+          >
+            <Activity className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />About
+          </button>
         </div>
 
         {/* Mobile Navigation - Horizontal Scroll */}
@@ -277,6 +287,16 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
                 }`}
               >
                 <Building2 className="w-4 h-4 mr-1 inline" />Stocks
+              </button>
+              <button
+                onClick={() => navigateTo("/app/about")}
+                className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+                  isActive("about")
+                    ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
+                    : "hover:bg-white/5 text-crypto-silver"
+                }`}
+              >
+                <Activity className="w-4 h-4 mr-1 inline" />About
               </button>
             </div>
           </div>

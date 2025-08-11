@@ -15,6 +15,7 @@ import CryptoStocks from "@/pages/crypto-stocks";
 import OnchainPage from "@/pages/onchain";
 import BasePage from "@/pages/base";
 import PortfolioPage from "@/pages/portfolio";
+import AboutPage from "@/pages/about";
 
 import NotFound from "@/pages/not-found";
 
@@ -35,6 +36,7 @@ function Router() {
       <Route path="/app/stocks" component={CryptoStocks} />
       <Route path="/app/portfolio" component={PortfolioPage} />
       <Route path="/portfolio" component={PortfolioPage} />
+      <Route path="/app/about" component={AboutPage} />
       <Route component={NotFound} />
     </Switch>
   );
