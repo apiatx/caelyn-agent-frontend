@@ -600,17 +600,17 @@ export default function CryptoStocksSection() {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-orange-500 rounded-full flex items-center justify-center">
+                <div className="w-4 h-4 bg-gradient-to-r from-gray-400 to-gray-500 rounded-full flex items-center justify-center">
                   <Brain className="w-2.5 h-2.5 text-white" />
                 </div>
-                <h4 className="text-lg font-semibold text-orange-400">TAO Treasuries</h4>
-                <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 text-xs">
+                <h4 className="text-lg font-semibold text-gray-300 bg-gradient-to-r from-gray-200 to-gray-400 bg-clip-text text-transparent">TAO Treasuries</h4>
+                <Badge className="bg-gray-500/20 text-gray-300 border-gray-500/30 text-xs">
                   TAO
                 </Badge>
               </div>
               <button
                 onClick={() => openInNewTab('https://taotreasuries.app/')}
-                className="text-orange-400 hover:text-orange-300 text-xs sm:text-sm"
+                className="text-gray-300 hover:text-gray-200 text-xs sm:text-sm"
               >
                 Open Full View →
               </button>
