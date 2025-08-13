@@ -183,6 +183,18 @@ export default function SolanaSection() {
               <h5 className="text-blue-400 font-semibold text-sm">watchingmarkets</h5>
             </div>
           </button>
+
+          <button
+            onClick={() => openSecureLink('https://x.com/Crypto_Alch')}
+            className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
+          >
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-xs font-bold">𝕏</span>
+              </div>
+              <h5 className="text-green-400 font-semibold text-sm">Crypto_Alch</h5>
+            </div>
+          </button>
         </div>
       </GlassCard>
 
