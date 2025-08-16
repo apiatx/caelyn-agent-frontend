@@ -31,8 +31,34 @@ export default function CryptoStocksPage() {
       {/* Navigation */}
       <UniversalNavigation activePage="crypto-stocks" />
 
+      {/* Perplexity Finance */}
+      <div className="max-w-[95vw] mx-auto px-2 sm:px-3 mt-4">
+        <div className="glass-card p-4 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-white">Perplexity Finance</h2>
+            <a
+              href="https://www.perplexity.ai/finance"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-400 hover:text-blue-300 text-sm transition-colors"
+            >
+              Open in New Tab ↗
+            </a>
+          </div>
+          <div className="relative w-full" style={{ height: '600px' }}>
+            <iframe
+              src="https://www.perplexity.ai/finance"
+              className="w-full h-full border-0 rounded-lg"
+              title="Perplexity Finance"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+              loading="lazy"
+            />
+          </div>
+        </div>
+      </div>
+
       {/* Content */}
-      <div className="max-w-[95vw] mx-auto px-2 sm:px-3 mt-4 pb-8">
+      <div className="max-w-[95vw] mx-auto px-2 sm:px-3 pb-8">
         <CryptoStocksSection />
       </div>
     </div>
