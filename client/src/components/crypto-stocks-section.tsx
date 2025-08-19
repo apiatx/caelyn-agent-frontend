@@ -84,6 +84,14 @@ export default function CryptoStocksSection() {
             <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">TipRanks</div>
             <div className="text-xs text-crypto-silver">Analyst ratings and stock insights</div>
           </button>
+
+          <button
+            onClick={() => openInNewTab('https://tradytics.com/charts')}
+            className="bg-gradient-to-br from-green-500/10 to-green-600/10 hover:from-green-500/20 hover:to-green-600/20 border border-green-500/20 hover:border-green-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-green-300 mb-1">Tradytics</div>
+            <div className="text-xs text-crypto-silver">Advanced options flow and analytics</div>
+          </button>
           
           <button
             onClick={() => openInNewTab('https://app.intellectia.ai/stock-market')}

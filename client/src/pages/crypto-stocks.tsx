@@ -31,39 +31,6 @@ export default function CryptoStocksPage() {
       {/* Navigation */}
       <UniversalNavigation activePage="crypto-stocks" />
 
-      {/* Tradytics Charts */}
-      <div className="max-w-[95vw] mx-auto px-2 sm:px-3 mt-4">
-        <div className="glass-card p-4 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-blue-500 rounded-lg flex items-center justify-center">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              </div>
-              <h2 className="text-xl font-semibold text-white">Tradytics Charts</h2>
-            </div>
-            <a
-              href="https://tradytics.com/charts"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-400 hover:text-blue-300 text-sm transition-colors"
-            >
-              Open in New Tab ↗
-            </a>
-          </div>
-          <div className="relative w-full" style={{ height: '600px' }}>
-            <iframe
-              src="https://tradytics.com/charts"
-              className="w-full h-full border-0 rounded-lg"
-              title="Tradytics Charts"
-              sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-              loading="lazy"
-            />
-          </div>
-        </div>
-      </div>
-
       {/* Perplexity Finance Access */}
       <div className="max-w-[95vw] mx-auto px-2 sm:px-3 mt-4">
         <div className="glass-card p-6 mb-6">
