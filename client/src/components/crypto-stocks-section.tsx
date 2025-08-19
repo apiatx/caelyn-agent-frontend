@@ -193,6 +193,14 @@ export default function CryptoStocksSection() {
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
           <SafeLink
+            href='https://x.com/RebellioMarket'
+            className="bg-gradient-to-br from-purple-500/10 to-purple-600/10 hover:from-purple-500/20 hover:to-purple-600/20 border border-purple-500/20 hover:border-purple-400/40 rounded-lg p-3 transition-all duration-300 text-left group block"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-purple-300">RebellioMarket</div>
+            <div className="text-xs text-crypto-silver">@RebellioMarket</div>
+          </SafeLink>
+
+          <SafeLink
             href='https://x.com/StocksToTrade'
             className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group block"
           >
