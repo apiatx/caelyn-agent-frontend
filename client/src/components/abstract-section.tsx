@@ -71,14 +71,33 @@ export default function AbstractSection() {
                 Open Full View <ExternalLink className="w-3 h-3" />
               </button>
             </div>
-            <iframe
-              {...getSecureIframeProps('https://opensea.io/stats/tokens?sortBy=thirtyDayPriceChange&chains=abstract', 'OpenSea Abstract Stats')}
-              className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-              style={{
-                background: '#000000',
-                colorScheme: 'dark'
-              }}
-            />
+            <div className="bg-gradient-to-br from-cyan-500/10 to-blue-600/10 border border-cyan-500/20 rounded-lg p-8 text-center">
+              <div className="flex flex-col items-center space-y-4">
+                <div className="w-16 h-16 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-2xl font-bold">OS</span>
+                </div>
+                <h4 className="text-xl font-semibold text-white">OpenSea Abstract NFT Stats</h4>
+                <p className="text-crypto-silver max-w-md">
+                  View Abstract chain NFT collection stats, trending tokens, and 30-day price changes on OpenSea.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <button
+                    onClick={() => openInNewTab('https://opensea.io/stats/tokens?sortBy=thirtyDayPriceChange&chains=abstract')}
+                    className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-medium py-3 px-6 rounded-lg transition-all duration-300 flex items-center justify-center gap-2"
+                  >
+                    <ExternalLink className="w-5 h-5" />
+                    View Abstract NFT Stats
+                  </button>
+                  <button
+                    onClick={() => openInNewTab('https://opensea.io/stats/tokens?chains=abstract')}
+                    className="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-medium py-3 px-6 rounded-lg transition-all duration-300 flex items-center justify-center gap-2"
+                  >
+                    <ExternalLink className="w-5 h-5" />
+                    All Abstract Collections
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </GlassCard>
