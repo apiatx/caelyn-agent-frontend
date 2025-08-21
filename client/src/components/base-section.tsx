@@ -282,7 +282,7 @@ export default function BaseSection() {
           />
           
           {/* 30 Day Trending on OpenSea */}
-          <div className="border-t border-crypto-silver/20 pt-4">
+          <div className="border-t border-crypto-silver/20 pt-4 space-y-3">
             <button
               onClick={() => openInNewTab('https://opensea.io/stats/tokens?sortBy=thirtyDayPriceChange&chains=base')}
               className="w-full p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-lg hover:bg-cyan-500/20 transition-colors text-left"
@@ -294,6 +294,20 @@ export default function BaseSection() {
                 <h4 className="text-cyan-400 font-semibold">30 Day Trending on OpenSea</h4>
               </div>
               <p className="text-gray-400 text-sm">View trending Base tokens by 30-day price changes</p>
+            </button>
+            
+            {/* Trending AI Agents */}
+            <button
+              onClick={() => openInNewTab('https://www.geckoterminal.com/category/ai-agents/base')}
+              className="w-full p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors text-left"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                  <ExternalLink className="w-4 h-4 text-white" />
+                </div>
+                <h4 className="text-purple-400 font-semibold">Trending AI Agents</h4>
+              </div>
+              <p className="text-gray-400 text-sm">View trending AI agent tokens on Base network</p>
             </button>
           </div>
         </div>
