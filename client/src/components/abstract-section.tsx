@@ -56,10 +56,15 @@ export default function AbstractSection() {
           <div className="border-t border-crypto-silver/20 pt-4">
             <button
               onClick={() => openInNewTab('https://opensea.io/stats/tokens?sortBy=thirtyDayPriceChange&chains=abstract')}
-              className="flex items-center gap-2 text-cyan-400 hover:text-cyan-300 text-sm transition-colors"
+              className="w-full p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-lg hover:bg-cyan-500/20 transition-colors text-left"
             >
-              <ExternalLink className="w-4 h-4" />
-              30 Day Trending on OpenSea
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center">
+                  <ExternalLink className="w-4 h-4 text-white" />
+                </div>
+                <h4 className="text-cyan-400 font-semibold">30 Day Trending on OpenSea</h4>
+              </div>
+              <p className="text-gray-400 text-sm">View trending Abstract tokens by 30-day price changes</p>
             </button>
           </div>
         </div>
