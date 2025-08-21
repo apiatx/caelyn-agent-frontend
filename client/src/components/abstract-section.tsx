@@ -42,7 +42,7 @@ export default function AbstractSection() {
             Open Full View <ExternalLink className="w-3 h-3" />
           </button>
         </div>
-        <div className="w-full">
+        <div className="w-full space-y-6">
           <iframe
             {...getSecureIframeProps('https://dexscreener.com/abstract?theme=dark', 'DexScreener Abstract')}
             className="w-full h-[800px] rounded-lg border border-crypto-silver/20"
@@ -51,6 +51,35 @@ export default function AbstractSection() {
               colorScheme: 'dark'
             }}
           />
+          
+          {/* OpenSea Abstract Stats */}
+          <div className="border-t border-crypto-silver/20 pt-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 bg-cyan-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">OS</span>
+                </div>
+                <h4 className="text-lg font-semibold text-white">OpenSea Abstract Stats</h4>
+                <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 text-xs">
+                  NFT STATS
+                </Badge>
+              </div>
+              <button
+                onClick={() => openInNewTab('https://opensea.io/stats/tokens?sortBy=thirtyDayPriceChange&chains=abstract')}
+                className="flex items-center gap-1 text-cyan-400 hover:text-cyan-300 text-sm transition-colors"
+              >
+                Open Full View <ExternalLink className="w-3 h-3" />
+              </button>
+            </div>
+            <iframe
+              {...getSecureIframeProps('https://opensea.io/stats/tokens?sortBy=thirtyDayPriceChange&chains=abstract', 'OpenSea Abstract Stats')}
+              className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+              style={{
+                background: '#000000',
+                colorScheme: 'dark'
+              }}
+            />
+          </div>
         </div>
       </GlassCard>
 
