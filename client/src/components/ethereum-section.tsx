@@ -103,7 +103,7 @@ export function EthereumSection() {
           {/* 30 Day Trending on OpenSea */}
           <div className="border-t border-crypto-silver/20 pt-4 px-4 pb-4">
             <button
-              onClick={() => openInNewTab('https://opensea.io/stats/tokens?sortBy=thirtyDayPriceChange&chains=base,ethereum')}
+              onClick={() => openInNewTab('https://opensea.io/stats/tokens?sortBy=thirtyDayPriceChange&chains=ethereum')}
               className="w-full p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-lg hover:bg-cyan-500/20 transition-colors text-left"
             >
               <div className="flex items-center gap-2 mb-2">
@@ -112,7 +112,7 @@ export function EthereumSection() {
                 </div>
                 <h4 className="text-cyan-400 font-semibold">30 Day Trending on OpenSea</h4>
               </div>
-              <p className="text-gray-400 text-sm">View trending Base & Ethereum tokens by 30-day price changes</p>
+              <p className="text-gray-400 text-sm">View trending Ethereum tokens by 30-day price changes</p>
             </button>
           </div>
         </div>
