@@ -1,6 +1,7 @@
 import { ExternalLink, TrendingUp } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { openSecureLink } from "@/utils/security";
 
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
   <Card className={`backdrop-blur-sm bg-gradient-to-br from-white/10 to-white/5 border border-white/20 ${className}`}>
@@ -33,6 +34,10 @@ const SafeIframe = ({ src, title, className = "", ...props }: { src: string; tit
 );
 
 export function EthereumSection() {
+  const openInNewTab = (url: string) => {
+    openSecureLink(url);
+  };
+
   return (
     <div className="space-y-6">
       {/* Ethereum Price Chart */}
@@ -88,12 +93,28 @@ export function EthereumSection() {
           </SafeLink>
         </h3>
         
-        <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+        <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden space-y-4">
           <SafeIframe
             src="https://dexscreener.com/ethereum?theme=dark"
             title="Trending Ethereum Tokens"
             className="w-full h-[600px] border-0"
           />
+          
+          {/* 30 Day Trending on OpenSea */}
+          <div className="border-t border-crypto-silver/20 pt-4 px-4 pb-4">
+            <button
+              onClick={() => openInNewTab('https://opensea.io/stats/tokens?sortBy=thirtyDayPriceChange&chains=base,ethereum')}
+              className="w-full p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-lg hover:bg-cyan-500/20 transition-colors text-left"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center">
+                  <ExternalLink className="w-4 h-4 text-white" />
+                </div>
+                <h4 className="text-cyan-400 font-semibold">30 Day Trending on OpenSea</h4>
+              </div>
+              <p className="text-gray-400 text-sm">View trending Base & Ethereum tokens by 30-day price changes</p>
+            </button>
+          </div>
         </div>
       </div>
 
