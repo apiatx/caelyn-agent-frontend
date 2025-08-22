@@ -291,10 +291,11 @@ export default function DeFiSection() {
             </div>
           </Button>
 
-          <Button
-            variant="outline"
-            onClick={() => openInNewTab('https://app.eigenlayer.xyz/')}
-            className="bg-black/20 border-crypto-silver/20 hover:bg-orange-500/20 hover:border-orange-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
+          <a
+            href="https://app.eigenlayer.xyz/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-black/20 border border-crypto-silver/20 hover:bg-orange-500/20 hover:border-orange-500/30 text-white justify-start p-6 h-auto flex-col space-y-2 rounded-md transition-colors flex items-center"
           >
             <div className="p-3 rounded-lg bg-gradient-to-r from-orange-500/20 to-red-500/20">
               <Shield className="h-6 w-6 text-orange-400" />
@@ -303,7 +304,7 @@ export default function DeFiSection() {
               <div className="font-semibold text-lg">Eigenlayer</div>
               <div className="text-sm text-crypto-silver">Restaking protocol</div>
             </div>
-          </Button>
+          </a>
 
           <Button
             variant="outline"
