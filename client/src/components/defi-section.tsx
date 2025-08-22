@@ -62,58 +62,81 @@ export default function DeFiSection() {
         <p className="text-crypto-silver">Comprehensive Decentralized Finance access and analytics</p>
       </div>
 
-      {/* Swidge Section */}
-      <div className="space-y-4">
-        <h3 className="text-xl font-semibold text-white mb-4">Swidge</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Button
-            variant="outline"
-            onClick={() => openInNewTab('https://www.relay.link/bridge')}
-            className="bg-black/20 border-crypto-silver/20 hover:bg-blue-500/20 hover:border-blue-500/30 text-white justify-start p-4 h-auto"
-          >
-            <ArrowLeftRight className="w-4 h-4 mr-2" />
-            <div className="text-left">
-              <div className="font-semibold">Relay Bridge</div>
-              <div className="text-sm text-crypto-silver">Cross-chain asset bridging</div>
-            </div>
-          </Button>
+      {/* Cross-Chain Section */}
+      <div className="space-y-6">
+        <h3 className="text-xl font-semibold text-white mb-4">Cross-Chain</h3>
+        
+        {/* Swidge Subsection */}
+        <div className="space-y-4">
+          <h4 className="text-lg font-medium text-blue-400 mb-3">Swidge</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://www.relay.link/bridge')}
+              className="bg-black/20 border-crypto-silver/20 hover:bg-blue-500/20 hover:border-blue-500/30 text-white justify-start p-4 h-auto"
+            >
+              <ArrowLeftRight className="w-4 h-4 mr-2" />
+              <div className="text-left">
+                <div className="font-semibold">Relay Bridge</div>
+                <div className="text-sm text-crypto-silver">Cross-chain asset bridging</div>
+              </div>
+            </Button>
 
-          <Button
-            variant="outline"
-            onClick={() => openInNewTab('https://app.debridge.finance/?inputChain=1&outputChain=8453&inputCurrency=&outputCurrency=&dlnMode=simple')}
-            className="bg-black/20 border-crypto-silver/20 hover:bg-green-500/20 hover:border-green-500/30 text-white justify-start p-4 h-auto"
-          >
-            <ArrowLeftRight className="w-4 h-4 mr-2" />
-            <div className="text-left">
-              <div className="font-semibold">deBridge</div>
-              <div className="text-sm text-crypto-silver">Cross-chain liquidity and infrastructure</div>
-            </div>
-          </Button>
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://app.debridge.finance/?inputChain=1&outputChain=8453&inputCurrency=&outputCurrency=&dlnMode=simple')}
+              className="bg-black/20 border-crypto-silver/20 hover:bg-green-500/20 hover:border-green-500/30 text-white justify-start p-4 h-auto"
+            >
+              <ArrowLeftRight className="w-4 h-4 mr-2" />
+              <div className="text-left">
+                <div className="font-semibold">deBridge</div>
+                <div className="text-sm text-crypto-silver">Cross-chain liquidity and infrastructure</div>
+              </div>
+            </Button>
+          </div>
+        </div>
 
-          <Button
-            variant="outline"
-            onClick={() => openInNewTab('https://universalx.app/home')}
-            className="bg-black/20 border-crypto-silver/20 hover:bg-purple-500/20 hover:border-purple-500/30 text-white justify-start p-4 h-auto"
-          >
-            <TrendingUp className="w-4 h-4 mr-2" />
-            <div className="text-left">
-              <div className="font-semibold">UniversalX</div>
-              <div className="text-sm text-crypto-silver">Trade any token, on any chain</div>
-            </div>
-          </Button>
-          
-          <a
-            href="https://app.definitive.fi/0x9FDBdA0A5e284c32744D2f17Ee5c74B284993463/hyperevm"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="bg-black/20 border border-crypto-silver/20 hover:bg-blue-500/20 hover:border-blue-500/30 text-white justify-start p-4 h-auto rounded-md transition-colors flex items-center"
-          >
-            <ArrowLeftRight className="w-4 h-4 mr-2" />
-            <div className="text-left">
-              <div className="font-semibold">Definitive Edge</div>
-              <div className="text-sm text-crypto-silver">Trade any token, on any chain</div>
-            </div>
-          </a>
+        {/* Trading Subsection */}
+        <div className="space-y-4">
+          <h4 className="text-lg font-medium text-purple-400 mb-3">Trading</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://universalx.app/home')}
+              className="bg-black/20 border-crypto-silver/20 hover:bg-purple-500/20 hover:border-purple-500/30 text-white justify-start p-4 h-auto"
+            >
+              <TrendingUp className="w-4 h-4 mr-2" />
+              <div className="text-left">
+                <div className="font-semibold">UniversalX</div>
+                <div className="text-sm text-crypto-silver">Trade any token, on any chain</div>
+              </div>
+            </Button>
+            
+            <a
+              href="https://app.definitive.fi/0x9FDBdA0A5e284c32744D2f17Ee5c74B284993463/hyperevm"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-black/20 border border-crypto-silver/20 hover:bg-blue-500/20 hover:border-blue-500/30 text-white justify-start p-4 h-auto rounded-md transition-colors flex items-center"
+            >
+              <ArrowLeftRight className="w-4 h-4 mr-2" />
+              <div className="text-left">
+                <div className="font-semibold">Definitive Edge</div>
+                <div className="text-sm text-crypto-silver">Trade any token, on any chain</div>
+              </div>
+            </a>
+
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://quanto.trade/en/markets/BTC-USD-SWAP-LIN')}
+              className="bg-black/20 border-crypto-silver/20 hover:bg-orange-500/20 hover:border-orange-500/30 text-white justify-start p-4 h-auto"
+            >
+              <TrendingUp className="w-4 h-4 mr-2" />
+              <div className="text-left">
+                <div className="font-semibold">Quanto</div>
+                <div className="text-sm text-crypto-silver">Perpetual futures trading</div>
+              </div>
+            </Button>
+          </div>
         </div>
       </div>
 
