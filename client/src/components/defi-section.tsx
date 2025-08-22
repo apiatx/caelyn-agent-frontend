@@ -103,14 +103,25 @@ export default function DeFiSection() {
             <div>
               <h4 className="text-xl font-semibold text-white mb-2">DeFi Everything App</h4>
               <p className="text-gray-400 mb-4">Complete DeFi platform with portfolio tracking, crypto onramp, trending token discovery, and perpetual trading</p>
-              <SafeLink
-                href="https://app.defi.app/portfolio"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg text-white font-semibold hover:from-blue-600 hover:to-purple-600 transition-colors"
-              >
-                <Wallet className="w-5 h-5" />
-                Open DeFi.app
-                <ExternalLink className="w-4 h-4" />
-              </SafeLink>
+              <div className="space-y-3">
+                <SafeLink
+                  href="https://app.defi.app/portfolio"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg text-white font-semibold hover:from-blue-600 hover:to-purple-600 transition-colors"
+                >
+                  <Wallet className="w-5 h-5" />
+                  Open DeFi.app
+                  <ExternalLink className="w-4 h-4" />
+                </SafeLink>
+                
+                <SafeLink
+                  href="https://de.fi/@apilon32/dashboard/portfolio-overview"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-gray-600/20 border border-gray-500/30 rounded-lg text-gray-300 font-medium hover:bg-gray-500/30 hover:text-white transition-colors text-sm"
+                >
+                  <BarChart3 className="w-4 h-4" />
+                  De.Fi Portfolio Dashboard
+                  <ExternalLink className="w-3 h-3" />
+                </SafeLink>
+              </div>
             </div>
           </div>
         </div>
