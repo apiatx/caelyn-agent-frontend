@@ -570,7 +570,7 @@ export default function BaseSection() {
         </GlassCard>
 
         {/* Zoracle */}
-        <GlassCard className="p-6">
+        <GlassCard className="p-6 mt-2">
           <div className="flex items-center gap-2 mb-4">
             <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full flex items-center justify-center">
               <span className="text-white text-xs font-bold">Z</span>
