@@ -265,14 +265,56 @@ export default function PortfolioSection() {
   return (
     <div className="space-y-8">
 
-      {/* DeBank Portfolio */}
+      {/* Cerebro Multi-Chain Portfolio Tracker */}
+      <GlassCard className="p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-sm font-bold">
+              C
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-white">Cerebro Multi-Chain Portfolio Tracker</h3>
+              <p className="text-crypto-silver text-sm">Advanced multi-chain portfolio analytics</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30">
+              MULTI-CHAIN
+            </Badge>
+            <button
+              onClick={() => window.open('https://cerebro.xyz/dashboard', '_blank', 'noopener,noreferrer')}
+              className="text-crypto-silver hover:text-white transition-colors group"
+            >
+              <ExternalLink className="h-4 w-4 group-hover:scale-110 transition-transform" />
+            </button>
+          </div>
+        </div>
+        
+        <div className="w-full">
+          <iframe
+            src="https://cerebro.xyz/dashboard"
+            className="w-full h-[600px] sm:h-[700px] lg:h-[800px] rounded-lg border border-crypto-silver/20"
+            title="Cerebro Multi-Chain Portfolio Tracker"
+            frameBorder="0"
+            loading="lazy"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+            referrerPolicy="no-referrer-when-downgrade"
+            style={{
+              background: 'transparent',
+              colorScheme: 'dark'
+            }}
+          />
+        </div>
+      </GlassCard>
+
+      {/* DeBank EVM Portfolio */}
       <GlassCard className="p-3 sm:p-4 lg:p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
           <div className="flex items-center gap-2">
             <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center text-xs font-bold">
               DB
             </div>
-            <h3 className="text-lg sm:text-xl font-semibold text-white">DeBank Portfolio</h3>
+            <h3 className="text-lg sm:text-xl font-semibold text-white">DeBank EVM Portfolio</h3>
             <Badge className="bg-gradient-to-r from-green-500/20 to-blue-500/20 text-green-300 border-green-500/30 text-xs">
               MULTI-CHAIN
             </Badge>
