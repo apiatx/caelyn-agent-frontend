@@ -86,43 +86,44 @@ export default function DeFiSection() {
         </div>
       </div>
 
-      {/* DeFi.app */}
+      {/* DeFi Everything Apps */}
       <div className="mt-6">
         <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
           <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
             <Wallet className="w-4 h-4 text-white" />
           </div>
-          DeFi.app
+          DeFi Everything Apps
         </h3>
         
         <div className="bg-black/20 border border-crypto-silver/20 rounded-lg p-6">
-          <div className="text-center space-y-4">
-            <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full mx-auto flex items-center justify-center">
-              <Wallet className="w-8 h-8 text-white" />
-            </div>
-            <div>
-              <h4 className="text-xl font-semibold text-white mb-2">DeFi Everything App</h4>
-              <p className="text-gray-400 mb-4">Complete DeFi platform with portfolio tracking, crypto onramp, trending token discovery, and perpetual trading</p>
-              <div className="space-y-3">
-                <SafeLink
-                  href="https://app.defi.app/portfolio"
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg text-white font-semibold hover:from-blue-600 hover:to-purple-600 transition-colors"
-                >
-                  <Wallet className="w-5 h-5" />
-                  Open DeFi.app
-                  <ExternalLink className="w-4 h-4" />
-                </SafeLink>
-                
-                <SafeLink
-                  href="https://de.fi/@apilon32/dashboard/portfolio-overview"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-gray-600/20 border border-gray-500/30 rounded-lg text-gray-300 font-medium hover:bg-gray-500/30 hover:text-white transition-colors text-sm"
-                >
-                  <BarChart3 className="w-4 h-4" />
-                  De.Fi Portfolio Dashboard
-                  <ExternalLink className="w-3 h-3" />
-                </SafeLink>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <SafeLink
+              href="https://app.defi.app/portfolio"
+              className="flex flex-col items-center gap-3 p-4 bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg hover:border-blue-400/40 transition-colors group"
+            >
+              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                <Wallet className="w-6 h-6 text-white" />
               </div>
-            </div>
+              <div className="text-center">
+                <h4 className="text-white font-semibold group-hover:text-blue-300 transition-colors">DeFi.app</h4>
+                <p className="text-gray-400 text-sm mt-1">Complete DeFi platform with portfolio tracking, crypto onramp, trending token discovery, and perpetual trading</p>
+              </div>
+              <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-blue-300 transition-colors" />
+            </SafeLink>
+            
+            <SafeLink
+              href="https://de.fi/@apilon32/dashboard/portfolio-overview"
+              className="flex flex-col items-center gap-3 p-4 bg-gray-600/10 border border-gray-500/30 rounded-lg hover:border-gray-400/40 transition-colors group"
+            >
+              <div className="w-12 h-12 bg-gradient-to-r from-gray-600 to-gray-500 rounded-full flex items-center justify-center">
+                <BarChart3 className="w-6 h-6 text-white" />
+              </div>
+              <div className="text-center">
+                <h4 className="text-white font-semibold group-hover:text-gray-300 transition-colors">De.Fi</h4>
+                <p className="text-gray-400 text-sm mt-1">Portfolio overview and analytics</p>
+              </div>
+              <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-gray-300 transition-colors" />
+            </SafeLink>
           </div>
         </div>
       </div>
