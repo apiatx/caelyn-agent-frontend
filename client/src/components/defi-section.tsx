@@ -483,30 +483,7 @@ export default function DeFiSection() {
 
 
 
-      {/* Betting Markets */}
-      <GlassCard className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-6 h-6 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
-            <TrendingUp className="w-4 h-4 text-white" />
-          </div>
-          <h3 className="text-xl font-semibold text-white">Betting Markets</h3>
-          <Badge className="bg-gradient-to-r from-orange-500/20 to-red-500/20 text-orange-400 border-orange-500/30">
-            PREDICTION MARKETS
-          </Badge>
-          <button
-            onClick={() => openInNewTab('https://polymarket.com/crypto')}
-            className="text-orange-400 hover:text-orange-300 text-sm ml-auto"
-          >
-            Open Full View →
-          </button>
-        </div>
-        <iframe
-          src="https://polymarket.com/crypto"
-          className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-          title="Polymarket Crypto"
-          sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-        />
-      </GlassCard>
+
 
       {/* CEX Section */}
       <div className="space-y-6">
@@ -578,6 +555,31 @@ export default function DeFiSection() {
           </Button>
         </div>
       </div>
+
+      {/* Betting Markets */}
+      <GlassCard className="p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-6 h-6 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
+            <TrendingUp className="w-4 h-4 text-white" />
+          </div>
+          <h3 className="text-xl font-semibold text-white">Betting Markets</h3>
+          <Badge className="bg-gradient-to-r from-orange-500/20 to-red-500/20 text-orange-400 border-orange-500/30">
+            PREDICTION MARKETS
+          </Badge>
+          <button
+            onClick={() => openInNewTab('https://polymarket.com/crypto')}
+            className="text-orange-400 hover:text-orange-300 text-sm ml-auto"
+          >
+            Open Full View →
+          </button>
+        </div>
+        <iframe
+          src="https://polymarket.com/crypto"
+          className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+          title="Polymarket Crypto"
+          sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+        />
+      </GlassCard>
 
     </div>
   );
