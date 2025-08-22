@@ -743,27 +743,7 @@ export default function AlphaSection() {
 
       </GlassCard>
 
-      {/* Memecoins */}
-      <GlassCard className="p-6">
-        <div className="flex items-center gap-2 mb-6">
-          <div className="w-6 h-6 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full flex items-center justify-center">
-            <span className="text-white text-sm">🚀</span>
-          </div>
-          <h3 className="text-xl font-semibold text-white">Memecoins</h3>
-          <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-xs">
-            CAPITODAY
-          </Badge>
-        </div>
-        
-        <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-          <iframe
-            src="https://capitoday.com/"
-            title="Capitoday Memecoin Analytics"
-            className="w-full h-[600px] border-0"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-          />
-        </div>
-      </GlassCard>
+
 
       {/* Resources - Moved to bottom */}
       <GlassCard className="p-6">
@@ -935,24 +915,38 @@ export default function AlphaSection() {
             </div>
           </div>
 
-          {/* Chainlyze Smart Wallet Tracker */}
-          <div className="bg-gray-900/50 rounded-lg border border-crypto-silver/20 p-4 text-center">
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-10 h-10 bg-cyan-500 rounded-full flex items-center justify-center">
-                <Wallet className="w-5 h-5 text-white" />
+        {/* Chainlyze Smart Wallet Iframe */}
+        <div className="mt-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 sm:w-6 sm:h-6 bg-cyan-500 rounded-full flex items-center justify-center">
+                <Wallet className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
               </div>
-              <div>
-                <h5 className="text-white font-semibold">Chainlyze</h5>
-                <p className="text-gray-400 text-xs mb-3">Smart wallet analytics</p>
-                <button
-                  onClick={() => openInNewTab('https://app.chainlyze.ai/smart-wallet')}
-                  className="bg-cyan-500 hover:bg-cyan-600 text-white px-4 py-2 rounded-lg transition-colors text-xs font-medium"
-                >
-                  Open Tracker
-                </button>
-              </div>
+              <h4 className="text-lg font-semibold text-white">Chainlyze Smart Wallet Tracker</h4>
+              <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 text-xs">
+                ANALYTICS
+              </Badge>
             </div>
+            <button
+              onClick={() => openInNewTab('https://app.chainlyze.ai/smart-wallet')}
+              className="text-cyan-400 hover:text-cyan-300 text-xs sm:text-sm ml-auto"
+            >
+              Open Full View →
+            </button>
           </div>
+          <div className="w-full bg-gray-900/50 rounded-lg border border-crypto-silver/20 overflow-hidden">
+            <iframe
+              src="https://app.chainlyze.ai/smart-wallet"
+              className="w-full h-[400px] sm:h-[500px] lg:h-[600px]"
+              title="Chainlyze Smart Wallet"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+              referrerPolicy="no-referrer-when-downgrade"
+              loading="lazy"
+              allow="fullscreen; web-share; clipboard-read; clipboard-write; camera; microphone"
+              style={{ border: 'none' }}
+            />
+          </div>
+        </div>
         </div>
       </GlassCard>
 
@@ -1025,6 +1019,28 @@ export default function AlphaSection() {
               </div>
             </div>
           </div>
+        </div>
+      </GlassCard>
+
+      {/* Memecoins */}
+      <GlassCard className="p-6">
+        <div className="flex items-center gap-2 mb-6">
+          <div className="w-6 h-6 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full flex items-center justify-center">
+            <span className="text-white text-sm">🚀</span>
+          </div>
+          <h3 className="text-xl font-semibold text-white">Memecoins</h3>
+          <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-xs">
+            CAPITODAY
+          </Badge>
+        </div>
+        
+        <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+          <iframe
+            src="https://capitoday.com/"
+            title="Capitoday Memecoin Analytics"
+            className="w-full h-[600px] border-0"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+          />
         </div>
       </GlassCard>
     </div>
