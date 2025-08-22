@@ -86,7 +86,7 @@ export default function DeFiSection() {
         </div>
       </div>
 
-      {/* DeFi Everything Apps - Links Currently Blocked */}
+      {/* DeFi Everything Apps */}
       <div className="mt-6">
         <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
           <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
@@ -96,18 +96,38 @@ export default function DeFiSection() {
         </h3>
         
         <div className="bg-black/20 border border-crypto-silver/20 rounded-lg p-6">
-          <div className="text-center space-y-4">
-            <div className="w-16 h-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-full mx-auto flex items-center justify-center">
-              <Shield className="w-8 h-8 text-white" />
-            </div>
-            <div>
-              <h4 className="text-xl font-semibold text-white mb-2">External DeFi Links Restricted</h4>
-              <p className="text-gray-400 mb-4">DeFi.app and De.Fi links are currently blocked by security policies. Please access these platforms directly through your browser.</p>
-              <div className="text-sm text-gray-500 bg-gray-800/50 rounded-lg p-3">
-                <p><strong>DeFi.app:</strong> Complete DeFi platform with portfolio tracking, crypto onramp, trending token discovery, and perpetual trading</p>
-                <p className="mt-2"><strong>De.Fi:</strong> Portfolio overview and analytics, address book, wallet watcher, scanner, shield, yield explorer, rekt database</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <a
+              href="https://app.defi.app/portfolio"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex flex-col items-center gap-3 p-4 bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg hover:border-blue-400/40 transition-colors group"
+            >
+              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                <Wallet className="w-6 h-6 text-white" />
               </div>
-            </div>
+              <div className="text-center">
+                <h4 className="text-white font-semibold group-hover:text-blue-300 transition-colors">DeFi.app</h4>
+                <p className="text-gray-400 text-sm mt-1">Complete DeFi platform with portfolio tracking, crypto onramp, trending token discovery, and perpetual trading</p>
+              </div>
+              <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-blue-300 transition-colors" />
+            </a>
+            
+            <a
+              href="https://de.fi/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex flex-col items-center gap-3 p-4 bg-gray-600/10 border border-gray-500/30 rounded-lg hover:border-gray-400/40 transition-colors group"
+            >
+              <div className="w-12 h-12 bg-gradient-to-r from-gray-600 to-gray-500 rounded-full flex items-center justify-center">
+                <BarChart3 className="w-6 h-6 text-white" />
+              </div>
+              <div className="text-center">
+                <h4 className="text-white font-semibold group-hover:text-gray-300 transition-colors">De.Fi</h4>
+                <p className="text-gray-400 text-sm mt-1">Portfolio overview and analytics, address book, wallet watcher, scanner, shield, yield explorer, rekt database</p>
+              </div>
+              <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-gray-300 transition-colors" />
+            </a>
           </div>
         </div>
       </div>
