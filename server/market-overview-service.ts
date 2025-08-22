@@ -109,10 +109,10 @@ export class MarketOverviewService {
   // File-based persistent caching for aggressive rate limiting
   private readonly cacheFile = path.join(process.cwd(), 'market-overview-cache.json');
   
-  // Cache durations for real-time data (10+ times per day minimum)
-  private readonly GLOBAL_METRICS_CACHE_DURATION = 2 * 60 * 60 * 1000; // 2 hours (12 times per day)
-  private readonly ALT_SEASON_CACHE_DURATION = 2 * 60 * 60 * 1000; // 2 hours (12 times per day) 
-  private readonly FEAR_GREED_CACHE_DURATION = 2 * 60 * 60 * 1000; // 2 hours (12 times per day)
+  // Cache durations for REAL-TIME data (aggressive fresh data fetching)
+  private readonly GLOBAL_METRICS_CACHE_DURATION = 1 * 60 * 60 * 1000; // 1 hour (24 times per day)
+  private readonly ALT_SEASON_CACHE_DURATION = 1 * 60 * 60 * 1000; // 1 hour (24 times per day) 
+  private readonly FEAR_GREED_CACHE_DURATION = 1 * 60 * 60 * 1000; // 1 hour (24 times per day)
 
   constructor() {
     this.apiKey = process.env.COINMARKETCAP_API_KEY || '7d9a361e-596d-4914-87e2-f1124da24897';
@@ -184,7 +184,7 @@ export class MarketOverviewService {
     const now = Date.now();
     const timeSinceLastFetch = now - this.globalMetricsCache.lastFetch;
     
-    // Allow refresh 24/7 for real-time data, every 2 hours (12 times daily minimum)
+    // Allow refresh 24/7 for real-time data, every 1 hour (24+ times daily)
     return timeSinceLastFetch >= this.GLOBAL_METRICS_CACHE_DURATION;
   }
 
@@ -196,7 +196,7 @@ export class MarketOverviewService {
     const now = Date.now();
     const timeSinceLastFetch = now - this.altSeasonCache.lastFetch;
     
-    // Allow API calls every 2 hours for real-time data (12 times daily)
+    // Allow API calls every 1 hour for real-time data (24+ times daily)
     return timeSinceLastFetch >= this.ALT_SEASON_CACHE_DURATION;
   }
 
@@ -208,14 +208,14 @@ export class MarketOverviewService {
     const now = Date.now();
     const timeSinceLastFetch = now - this.fearGreedCache.lastFetch;
     
-    // Allow API calls every 2 hours for real-time data (12 times daily)
+    // Allow API calls every 1 hour for real-time data (24+ times daily)
     return timeSinceLastFetch >= this.FEAR_GREED_CACHE_DURATION;
   }
 
   async getGlobalMetrics(): Promise<GlobalMetrics> {
     // Check if we should use cached data
     if (!this.shouldRefreshGlobalMetrics()) {
-      console.log('📦 [Market Overview] Using cached global metrics data (2 hour cache, 12+ daily updates)');
+      console.log('📦 [Market Overview] Using cached global metrics data (1 hour cache, 24+ daily updates)');
       return this.globalMetricsCache.data!;
     }
 
@@ -329,7 +329,7 @@ export class MarketOverviewService {
   async getAltSeasonIndex(): Promise<AltSeasonData> {
     // Check if we should use cached data (max 2 API calls per day)
     if (!this.shouldRefreshAltSeason()) {
-      console.log('📦 [Market Overview] Using cached Alt Season data (2 hour cache, 12+ daily updates)');
+      console.log('📦 [Market Overview] Using cached Alt Season data (1 hour cache, 24+ daily updates)');
       return this.altSeasonCache.data!;
     }
 
@@ -562,15 +562,18 @@ export class MarketOverviewService {
   async getFearGreedIndex(): Promise<FearGreedData> {
     // Use fallback system: check cache first, then fetch fresh data if needed
     if (!this.shouldRefreshFearGreed() && this.fearGreedCache.data) {
-      console.log('📦 [Market Overview] Using cached Fear & Greed data (2 hour cache, 12+ daily updates)');
+      console.log('📦 [Market Overview] Using cached Fear & Greed data (1 hour cache, 24+ daily updates)');
       return this.fearGreedCache.data!;
     }
 
-    console.log('🔍 [Market Overview] Fetching most recent Fear & Greed Index from CoinMarketCap API...');
+    console.log('🔍 [Market Overview] Fetching REAL Fear & Greed Index from CoinMarketCap API using exact endpoint...');
     
     try {
-      // Use the correct CoinMarketCap Fear & Greed Index API endpoint for historical data
-      const fearGreedUrl = `https://pro-api.coinmarketcap.com/v3/fear-and-greed/historical?start=1&limit=30`;
+      // Use the EXACT CoinMarketCap Fear & Greed Index API endpoint as specified by user
+      const fearGreedUrl = `https://pro-api.coinmarketcap.com/v3/fear-and-greed/historical?start=1&limit=50`;
+      
+      console.log('🔍 [Fear & Greed] API URL:', fearGreedUrl);
+      console.log('🔍 [Fear & Greed] API Key:', this.apiKey ? '***KEY_SET***' : '***NOT_SET***');
       
       const response = await fetch(fearGreedUrl, {
         headers: {
@@ -579,8 +582,12 @@ export class MarketOverviewService {
         }
       });
 
+      console.log('🔍 [Fear & Greed] Response status:', response.status, response.statusText);
+
       if (!response.ok) {
-        console.log(`⚠️ [Market Overview] Direct Fear & Greed API error: ${response.status} ${response.statusText}, using live market indicators...`);
+        const errorText = await response.text();
+        console.error(`❌ [Fear & Greed] API error: ${response.status} ${response.statusText} - ${errorText}`);
+        throw new Error(`CMC Fear & Greed API error: ${response.status} ${response.statusText}`);
         
         // Calculate using comprehensive live market data
         const [globalMetrics, btcData] = await Promise.all([

@@ -124,9 +124,11 @@ interface MarketOverview {
 export function MarketOverviewSection() {
   const { data: overview, isLoading, error } = useQuery<MarketOverview>({
     queryKey: ['/api/coinmarketcap/market-overview'],
-    refetchInterval: 300000, // Refresh every 5 minutes for real-time data (aggressive)
-    staleTime: 240000, // 4 minutes
-    retry: 3
+    refetchInterval: 180000, // Refresh every 3 minutes for REAL-TIME data (ultra aggressive)
+    staleTime: 120000, // 2 minutes
+    retry: 3,
+    refetchOnWindowFocus: true, // Force refresh when user returns to tab
+    refetchOnReconnect: true // Force refresh on reconnection
   });
 
   // Debug logging (production ready)
