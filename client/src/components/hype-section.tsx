@@ -227,7 +227,7 @@ export function HypeSection() {
                 </div>
                 <div>
                   <h3 className="text-white font-medium text-sm">LiquidLaunch Trenches</h3>
-                  <p className="text-gray-400 text-xs">HyperEVM Launch Platform</p>
+                  <p className="text-gray-400 text-xs">HyperEVM Launchpad</p>
                 </div>
               </div>
               <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-green-400 transition-colors" />
@@ -245,7 +245,7 @@ export function HypeSection() {
                 </div>
                 <div>
                   <h3 className="text-white font-medium text-sm">Hyperpie</h3>
-                  <p className="text-gray-400 text-xs">HL Core Trenches</p>
+                  <p className="text-gray-400 text-xs">HyperLiquid Core Launchpad</p>
                 </div>
               </div>
               <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-green-400 transition-colors" />
