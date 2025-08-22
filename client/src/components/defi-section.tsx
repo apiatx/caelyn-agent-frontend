@@ -80,6 +80,18 @@ export default function DeFiSection() {
 
           <Button
             variant="outline"
+            onClick={() => openInNewTab('https://app.debridge.finance/?inputChain=1&outputChain=8453&inputCurrency=&outputCurrency=&dlnMode=simple')}
+            className="bg-black/20 border-crypto-silver/20 hover:bg-green-500/20 hover:border-green-500/30 text-white justify-start p-4 h-auto"
+          >
+            <ArrowLeftRight className="w-4 h-4 mr-2" />
+            <div className="text-left">
+              <div className="font-semibold">deBridge</div>
+              <div className="text-sm text-crypto-silver">Cross-chain liquidity and infrastructure</div>
+            </div>
+          </Button>
+
+          <Button
+            variant="outline"
             onClick={() => openInNewTab('https://universalx.app/home')}
             className="bg-black/20 border-crypto-silver/20 hover:bg-purple-500/20 hover:border-purple-500/30 text-white justify-start p-4 h-auto"
           >
@@ -102,18 +114,6 @@ export default function DeFiSection() {
               <div className="text-sm text-crypto-silver">Trade any token, on any chain</div>
             </div>
           </a>
-
-          <Button
-            variant="outline"
-            onClick={() => openInNewTab('https://app.debridge.finance/?inputChain=1&outputChain=8453&inputCurrency=&outputCurrency=&dlnMode=simple')}
-            className="bg-black/20 border-crypto-silver/20 hover:bg-green-500/20 hover:border-green-500/30 text-white justify-start p-4 h-auto"
-          >
-            <ArrowLeftRight className="w-4 h-4 mr-2" />
-            <div className="text-left">
-              <div className="font-semibold">deBridge</div>
-              <div className="text-sm text-crypto-silver">Cross-chain liquidity and infrastructure</div>
-            </div>
-          </Button>
         </div>
       </div>
 
