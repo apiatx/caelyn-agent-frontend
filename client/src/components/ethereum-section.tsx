@@ -137,12 +137,40 @@ export function EthereumSection() {
           </SafeLink>
         </h3>
         
-        <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+        <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden space-y-4">
           <SafeIframe
             src="https://l2beat.com/"
             title="Layer 2 Analytics by L2Beat"
             className="w-full h-[600px] border-0"
           />
+          
+          {/* GrowThePie Analytics */}
+          <div className="border-t border-crypto-silver/20 pt-4 px-4 pb-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-orange-500 rounded-full flex items-center justify-center">
+                  <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                </div>
+                <h4 className="text-lg font-semibold text-white">GrowThePie</h4>
+                <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 text-xs">
+                  L2 ANALYTICS
+                </Badge>
+              </div>
+              <button
+                onClick={() => openInNewTab('https://www.growthepie.com/')}
+                className="text-orange-400 hover:text-orange-300 text-xs sm:text-sm ml-auto"
+              >
+                Open Full View →
+              </button>
+            </div>
+            <div className="w-full bg-gray-900/50 rounded-lg border border-crypto-silver/20 overflow-hidden">
+              <SafeIframe
+                src="https://www.growthepie.com/"
+                title="GrowThePie Layer 2 Analytics"
+                className="w-full h-[400px] sm:h-[500px] lg:h-[600px] border-0"
+              />
+            </div>
+          </div>
         </div>
       </div>
 
