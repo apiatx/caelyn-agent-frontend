@@ -148,6 +148,18 @@ export default function DeFiSection() {
                 <div className="text-sm text-crypto-silver">Trade any token, on any chain</div>
               </div>
             </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://o1.exchange/')}
+              className="bg-black/20 border-crypto-silver/20 hover:bg-cyan-500/20 hover:border-cyan-500/30 text-white justify-start p-4 h-auto"
+            >
+              <TrendingUp className="w-4 h-4 mr-2" />
+              <div className="text-left">
+                <div className="font-semibold">O1 Exchange</div>
+                <div className="text-sm text-crypto-silver">Advanced trading platform</div>
+              </div>
+            </Button>
           </div>
         </div>
       </div>
