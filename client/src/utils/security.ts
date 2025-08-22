@@ -75,6 +75,7 @@ const TRUSTED_DOMAINS = [
   'defi.instadapp.io',
   'ave.ai',
   'o1.exchange',
+  'app.swing.xyz',
   'macroedge.ai',
   'app.aave.com',
   'senpi.ai',
