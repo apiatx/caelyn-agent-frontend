@@ -101,7 +101,7 @@ export default function DeFiSection() {
               <Wallet className="w-8 h-8 text-white" />
             </div>
             <div>
-              <h4 className="text-xl font-semibold text-white mb-2">Portfolio Tracking, Onramp, Explore Trending, and Perps</h4>
+              <h4 className="text-xl font-semibold text-white mb-2">DeFi Everything App</h4>
               <p className="text-gray-400 mb-4">Complete DeFi platform with portfolio tracking, crypto onramp, trending token discovery, and perpetual trading</p>
               <SafeLink
                 href="https://app.defi.app/portfolio"
