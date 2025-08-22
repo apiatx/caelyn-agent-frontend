@@ -112,7 +112,7 @@ export default function DeFiSection() {
             </SafeLink>
             
             <SafeLink
-              href="https://de.fi/@apilon32/dashboard/portfolio-overview"
+              href="https://de.fi/"
               className="flex flex-col items-center gap-3 p-4 bg-gray-600/10 border border-gray-500/30 rounded-lg hover:border-gray-400/40 transition-colors group"
             >
               <div className="w-12 h-12 bg-gradient-to-r from-gray-600 to-gray-500 rounded-full flex items-center justify-center">
