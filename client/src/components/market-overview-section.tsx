@@ -124,8 +124,8 @@ interface MarketOverview {
 export function MarketOverviewSection() {
   const { data: overview, isLoading, error } = useQuery<MarketOverview>({
     queryKey: ['/api/coinmarketcap/market-overview'],
-    refetchInterval: 120000, // Refresh every 2 minutes for real-time data
-    staleTime: 60000, // 1 minute
+    refetchInterval: 300000, // Refresh every 5 minutes for real-time data (aggressive)
+    staleTime: 240000, // 4 minutes
     retry: 3
   });
 
@@ -137,8 +137,8 @@ export function MarketOverviewSection() {
   // Real-time ETF flows data (cached twice daily to preserve API credits)
   const { data: etfData, isLoading: etfLoading } = useQuery<ETFData>({
     queryKey: ['/api/etf/flows'],
-    refetchInterval: 43200000, // 12 hours (twice daily)
-    staleTime: 43200000, // 12 hours
+    refetchInterval: 7200000, // 2 hours (12 times daily)
+    staleTime: 3600000, // 1 hour
     retry: 2
   });
 

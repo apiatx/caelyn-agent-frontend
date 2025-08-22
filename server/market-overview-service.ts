@@ -109,14 +109,33 @@ export class MarketOverviewService {
   // File-based persistent caching for aggressive rate limiting
   private readonly cacheFile = path.join(process.cwd(), 'market-overview-cache.json');
   
-  // Cache durations - Real-time data with increased API usage allowance
-  private readonly GLOBAL_METRICS_CACHE_DURATION = 15 * 60 * 1000; // 15 minutes (96 API calls/day)
-  private readonly ALT_SEASON_CACHE_DURATION = 30 * 60 * 1000; // 30 minutes (48 API calls/day) 
-  private readonly FEAR_GREED_CACHE_DURATION = 15 * 60 * 1000; // 15 minutes (96 API calls/day)
+  // Cache durations for real-time data (10+ times per day minimum)
+  private readonly GLOBAL_METRICS_CACHE_DURATION = 2 * 60 * 60 * 1000; // 2 hours (12 times per day)
+  private readonly ALT_SEASON_CACHE_DURATION = 2 * 60 * 60 * 1000; // 2 hours (12 times per day) 
+  private readonly FEAR_GREED_CACHE_DURATION = 2 * 60 * 60 * 1000; // 2 hours (12 times per day)
 
   constructor() {
     this.apiKey = process.env.COINMARKETCAP_API_KEY || '7d9a361e-596d-4914-87e2-f1124da24897';
     this.loadPersistentCache();
+    
+    // Force initial fresh data fetch on server startup for real-time accuracy
+    console.log('🚀 [Market Overview] Server started - will fetch fresh CMC data on first request');
+  }
+
+  // Method to clear all caches and force fresh data fetches
+  async clearCache(): Promise<void> {
+    console.log('🗑️ [Market Overview] Clearing all caches to force fresh data');
+    this.globalMetricsCache = { data: null, lastFetch: null };
+    this.altSeasonCache = { data: null, lastFetch: null };
+    this.fearGreedCache = { data: null, lastFetch: null };
+    
+    // Also clear persistent cache file
+    try {
+      await fs.unlink(this.cacheFile);
+      console.log('🗑️ [Market Overview] Cleared persistent cache file');
+    } catch {
+      console.log('⚠️ [Market Overview] No persistent cache file to clear');
+    }
   }
   
   private async loadPersistentCache(): Promise<void> {
@@ -165,11 +184,7 @@ export class MarketOverviewService {
     const now = Date.now();
     const timeSinceLastFetch = now - this.globalMetricsCache.lastFetch;
     
-    // Only allow refresh during business hours (9am-6pm UTC) and max every 4 hours
-    if (!this.isBusinessHours()) {
-      return false;
-    }
-    
+    // Allow refresh 24/7 for real-time data, every 2 hours (12 times daily minimum)
     return timeSinceLastFetch >= this.GLOBAL_METRICS_CACHE_DURATION;
   }
 
@@ -181,7 +196,7 @@ export class MarketOverviewService {
     const now = Date.now();
     const timeSinceLastFetch = now - this.altSeasonCache.lastFetch;
     
-    // Allow API calls every 30 minutes for real-time data
+    // Allow API calls every 2 hours for real-time data (12 times daily)
     return timeSinceLastFetch >= this.ALT_SEASON_CACHE_DURATION;
   }
 
@@ -193,14 +208,14 @@ export class MarketOverviewService {
     const now = Date.now();
     const timeSinceLastFetch = now - this.fearGreedCache.lastFetch;
     
-    // Allow API calls every 15 minutes for real-time data
+    // Allow API calls every 2 hours for real-time data (12 times daily)
     return timeSinceLastFetch >= this.FEAR_GREED_CACHE_DURATION;
   }
 
   async getGlobalMetrics(): Promise<GlobalMetrics> {
     // Check if we should use cached data
     if (!this.shouldRefreshGlobalMetrics()) {
-      console.log('📦 [Market Overview] Using cached global metrics data (15 min cache for real-time updates)');
+      console.log('📦 [Market Overview] Using cached global metrics data (2 hour cache, 12+ daily updates)');
       return this.globalMetricsCache.data!;
     }
 
@@ -314,7 +329,7 @@ export class MarketOverviewService {
   async getAltSeasonIndex(): Promise<AltSeasonData> {
     // Check if we should use cached data (max 2 API calls per day)
     if (!this.shouldRefreshAltSeason()) {
-      console.log('📦 [Market Overview] Using cached Alt Season data (30 min cache for real-time updates)');
+      console.log('📦 [Market Overview] Using cached Alt Season data (2 hour cache, 12+ daily updates)');
       return this.altSeasonCache.data!;
     }
 
@@ -547,7 +562,7 @@ export class MarketOverviewService {
   async getFearGreedIndex(): Promise<FearGreedData> {
     // Use fallback system: check cache first, then fetch fresh data if needed
     if (!this.shouldRefreshFearGreed() && this.fearGreedCache.data) {
-      console.log('📦 [Market Overview] Using cached Fear & Greed data (15 min cache for real-time updates)');
+      console.log('📦 [Market Overview] Using cached Fear & Greed data (2 hour cache, 12+ daily updates)');
       return this.fearGreedCache.data!;
     }
 

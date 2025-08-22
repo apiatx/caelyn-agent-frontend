@@ -503,13 +503,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/coinmarketcap/market-overview', async (req, res) => {
     try {
       console.log('🔍 [API] Fetching market overview from CoinMarketCap...');
+      const startTime = Date.now();
       const overview = await marketOverviewService.getMarketOverview();
+      const duration = Date.now() - startTime;
       
       console.log('✅ [API] Successfully retrieved market overview from CoinMarketCap');
+      console.log(`⏱️ [API] Request completed in ${duration}ms`);
       console.log('📊 [API] Market overview sample:', {
         totalMarketCap: overview.globalMetrics?.quote?.USD?.total_market_cap,
         btcDominance: overview.globalMetrics?.btc_dominance,
         altSeasonIndex: overview.altSeasonIndex?.index_value,
+        fearGreedIndex: overview.fearGreedIndex?.index_value,
         etfCount: Array.isArray(overview.etfNetflows) ? overview.etfNetflows.length : undefined
       });
       
@@ -517,6 +521,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('❌ [API] Failed to fetch market overview from CoinMarketCap:', error);
       res.status(500).json({ message: 'Failed to fetch market overview' });
+    }
+  });
+
+  // Add endpoint to force fresh data refresh
+  app.post('/api/coinmarketcap/refresh', async (req, res) => {
+    try {
+      console.log('🔄 [API] Force refreshing all CMC data...');
+      // Clear cache to force fresh fetches
+      await marketOverviewService.clearCache();
+      const overview = await marketOverviewService.getMarketOverview();
+      
+      console.log('✅ [API] Successfully refreshed all CMC data');
+      res.json({ 
+        message: 'Market data refreshed successfully',
+        timestamp: new Date().toISOString(),
+        data: overview 
+      });
+    } catch (error) {
+      console.error('❌ [API] Failed to refresh market data:', error);
+      res.status(500).json({ message: 'Failed to refresh market data' });
     }
   });
 
