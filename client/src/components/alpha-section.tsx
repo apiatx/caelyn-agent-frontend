@@ -948,7 +948,7 @@ export default function AlphaSection() {
           </Badge>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Gravity Ecosystem */}
           <div className="bg-gray-900/50 rounded-lg border border-crypto-silver/20 p-4 text-center">
             <div className="flex flex-col items-center gap-3">
@@ -982,6 +982,25 @@ export default function AlphaSection() {
                   className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white px-4 py-2 rounded-lg transition-colors text-xs font-medium"
                 >
                   Open DappRadar
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          {/* Zapper */}
+          <div className="bg-gray-900/50 rounded-lg border border-crypto-silver/20 p-4 text-center">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-sm font-bold">Z</span>
+              </div>
+              <div>
+                <h5 className="text-white font-semibold">Zapper</h5>
+                <p className="text-gray-400 text-xs mb-3">DeFi portfolio management</p>
+                <button
+                  onClick={() => openInNewTab('https://zapper.xyz/')}
+                  className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white px-4 py-2 rounded-lg transition-colors text-xs font-medium"
+                >
+                  Open Zapper
                 </button>
               </div>
             </div>
