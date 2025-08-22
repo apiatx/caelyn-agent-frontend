@@ -852,34 +852,41 @@ export default function AlphaSection() {
 
       {/* Chainspect */}
       <GlassCard className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-6 h-6 bg-gradient-to-r from-green-500 to-teal-500 rounded-full flex items-center justify-center">
-            <span className="text-white text-xs font-bold">C</span>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-green-500 rounded-full flex items-center justify-center">
+              <span className="w-3 h-3 sm:w-4 sm:h-4 text-white text-xs font-bold">C</span>
+            </div>
+            <h4 className="text-lg font-semibold text-white">Chainspect</h4>
+            <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
+              ANALYTICS
+            </Badge>
           </div>
-          <h3 className="text-xl font-semibold text-white">Chainspect</h3>
-          <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
-            BLOCKCHAIN ANALYTICS
-          </Badge>
-          <SafeLink
-            href="https://chainspect.app/"
-            className="ml-auto text-green-400 hover:text-green-300 text-xs"
+          <button
+            onClick={() => openInNewTab('https://chainspect.app/')}
+            className="text-green-400 hover:text-green-300 text-xs sm:text-sm ml-auto"
           >
-            Open in New Tab →
-          </SafeLink>
+            Open Full View →
+          </button>
         </div>
-        <div className="w-full">
-          <iframe
-            src="https://chainspect.app/"
-            title="Chainspect"
-            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
-            referrerPolicy="no-referrer-when-downgrade"
-            loading="lazy"
-            style={{
-              background: 'transparent',
-              colorScheme: 'dark'
-            }}
-          />
+        <div className="w-full bg-gray-900/50 rounded-lg border border-crypto-silver/20 p-8 text-center">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center">
+              <span className="w-8 h-8 text-white text-xl font-bold">C</span>
+            </div>
+            <div>
+              <h5 className="text-xl font-semibold text-white mb-2">Chainspect Analytics</h5>
+              <p className="text-gray-400 text-sm mb-4">
+                Explore Chain Scalability and Decentralization
+              </p>
+              <button
+                onClick={() => openInNewTab('https://chainspect.app/')}
+                className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg transition-colors text-sm font-medium"
+              >
+                Open Chainspect Dashboard
+              </button>
+            </div>
+          </div>
         </div>
       </GlassCard>
     </div>
