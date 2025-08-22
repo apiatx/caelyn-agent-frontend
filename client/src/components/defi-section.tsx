@@ -120,7 +120,7 @@ export default function DeFiSection() {
               </div>
               <div className="text-center">
                 <h4 className="text-white font-semibold group-hover:text-gray-300 transition-colors">De.Fi</h4>
-                <p className="text-gray-400 text-sm mt-1">Portfolio overview and analytics</p>
+                <p className="text-gray-400 text-sm mt-1">Portfolio overview and analytics, address book, wallet watcher, scanner, shield, yield explorer, rekt database</p>
               </div>
               <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-gray-300 transition-colors" />
             </SafeLink>
