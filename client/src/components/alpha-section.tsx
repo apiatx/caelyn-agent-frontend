@@ -68,7 +68,7 @@ export default function AlphaSection() {
             <div className="w-5 h-5 sm:w-6 sm:h-6 bg-cyan-500 rounded-full flex items-center justify-center">
               <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
             </div>
-            <h3 className="text-lg sm:text-xl font-semibold text-white">Onchain</h3>
+            <h3 className="text-lg sm:text-xl font-semibold text-white">Artemis</h3>
             <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 text-xs">
               COMPREHENSIVE
             </Badge>
@@ -90,6 +90,39 @@ export default function AlphaSection() {
               src="https://app.artemisanalytics.com/"
               className="w-full h-[400px] sm:h-[500px] lg:h-[600px]"
               title="Artemis Analytics Dashboard"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+              referrerPolicy="no-referrer-when-downgrade"
+              loading="lazy"
+              allow="fullscreen; web-share; clipboard-read; clipboard-write; camera; microphone"
+              style={{ border: 'none' }}
+            />
+          </div>
+        </div>
+
+        {/* Nansen.ai Iframe */}
+        <div className="mt-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 sm:w-6 sm:h-6 bg-purple-500 rounded-full flex items-center justify-center">
+                <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+              </div>
+              <h4 className="text-lg font-semibold text-white">Nansen.ai</h4>
+              <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-xs">
+                ANALYTICS
+              </Badge>
+            </div>
+            <button
+              onClick={() => openInNewTab('https://app.nansen.ai/')}
+              className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm ml-auto"
+            >
+              Open Full View →
+            </button>
+          </div>
+          <div className="w-full bg-gray-900/50 rounded-lg border border-crypto-silver/20 overflow-hidden">
+            <iframe
+              src="https://app.nansen.ai/"
+              className="w-full h-[400px] sm:h-[500px] lg:h-[600px]"
+              title="Nansen.ai Dashboard"
               sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
               referrerPolicy="no-referrer-when-downgrade"
               loading="lazy"
@@ -777,13 +810,13 @@ export default function AlphaSection() {
         </div>
       </GlassCard>
 
-      {/* WachXBT */}
+      {/* WachXBT Token Sniffer */}
       <GlassCard className="p-6">
         <div className="flex items-center gap-2 mb-4">
           <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
             <span className="text-white text-xs font-bold">W</span>
           </div>
-          <h3 className="text-xl font-semibold text-white">WachXBT</h3>
+          <h3 className="text-xl font-semibold text-white">WachXBT Token Sniffer</h3>
           <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
             AI CHAT
           </Badge>
@@ -797,7 +830,7 @@ export default function AlphaSection() {
         <div className="w-full">
           <iframe
             src="https://wach.ai/chat"
-            title="WachXBT"
+            title="WachXBT Token Sniffer"
             className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
             sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
             referrerPolicy="no-referrer-when-downgrade"
