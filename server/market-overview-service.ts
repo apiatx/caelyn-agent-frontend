@@ -725,15 +725,21 @@ export class MarketOverviewService {
         const highEntry = fearGreedResponse.data.find((d: any) => d.value === yearlyHigh);
         const lowEntry = fearGreedResponse.data.find((d: any) => d.value === yearlyLow);
         
-        // Convert Unix timestamps to readable dates
-        const formatDate = (timestamp: string) => {
-          const date = new Date(parseInt(timestamp) * 1000);
+        // Convert Unix timestamps to readable dates (CMC uses Unix seconds)
+        const formatDate = (timestamp: string | number) => {
+          // CMC API returns timestamps as Unix seconds, convert to milliseconds
+          const timestampMs = typeof timestamp === 'string' ? parseInt(timestamp) * 1000 : timestamp * 1000;
+          const date = new Date(timestampMs);
           return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
         };
         
+        // Convert CMC Unix timestamp to ISO string for consistency
+        const timestampMs = parseInt(updateTime) * 1000;
+        const isoTimestamp = new Date(timestampMs).toISOString();
+        
         const fearGreedData = {
           index_value: indexValue,
-          timestamp: updateTime,
+          timestamp: isoTimestamp,
           classification: classification,
           historical: {
             yesterday: yesterday,
