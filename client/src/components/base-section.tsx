@@ -503,21 +503,7 @@ export default function BaseSection() {
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <SafeLink
-              href="https://app.virtuals.io/"
-              className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-purple-500/30 transition-all duration-200 group"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">V</span>
-                </div>
-                <div>
-                  <h4 className="text-white font-medium text-sm">Virtuals.io</h4>
-                  <p className="text-gray-400 text-xs">AI agent platform</p>
-                </div>
-              </div>
-              <div className="w-4 h-4 text-gray-400 group-hover:text-purple-400 transition-colors">→</div>
-            </SafeLink>
+            {/* Virtuals.io iframe placeholder - will be added as full iframe below */}
 
             <SafeLink
               href="https://bankr.bot/terminal"
@@ -570,23 +556,27 @@ export default function BaseSection() {
         </GlassCard>
       </div>
 
-      {/* Debt Relief Bot Wallet */}
+      {/* Virtuals.io AI Agent Platform */}
       <GlassCard className="p-6">
-        <SafeLink
-          href="https://debank.com/profile/0xb1058c959987e3513600eb5b4fd82aeee2a0e4f9"
-          className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-emerald-500/30 transition-all duration-200 group"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold text-sm">DB</span>
-            </div>
-            <div>
-              <h4 className="text-white font-medium text-sm">Debt Relief Bot Wallet</h4>
-              <p className="text-gray-400 text-xs">DeBank wallet tracker</p>
-            </div>
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-full flex items-center justify-center">
+            <span className="text-white text-xs font-bold">V</span>
           </div>
-          <div className="w-4 h-4 text-gray-400 group-hover:text-emerald-400 transition-colors">→</div>
-        </SafeLink>
+          <h3 className="text-xl font-semibold text-white">Virtuals.io</h3>
+          <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-xs">
+            AI AGENTS
+          </Badge>
+          <SafeLink 
+            href="https://app.virtuals.io/"
+            className="ml-auto text-purple-400 hover:text-purple-300 text-xs"
+          >
+            Open in New Tab →
+          </SafeLink>
+        </div>
+        <SafeIframe 
+          src="https://app.virtuals.io/"
+          title="Virtuals.io AI Agent Platform"
+        />
       </GlassCard>
 
       {/* Zoracle */}

@@ -725,6 +725,19 @@ export default function AlphaSection() {
             </div>
             <p className="text-gray-400 text-sm">DeBank Portfolio Analysis</p>
           </SafeLink>
+
+          <SafeLink
+            href='https://debank.com/profile/0xb1058c959987e3513600eb5b4fd82aeee2a0e4f9'
+            className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg hover:bg-emerald-500/20 transition-colors"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center">
+                <Wallet className="w-4 h-4 text-white" />
+              </div>
+              <h4 className="text-emerald-400 font-semibold">Debt Relief Bot</h4>
+            </div>
+            <p className="text-gray-400 text-sm">DeBank wallet tracker</p>
+          </SafeLink>
         </div>
 
         {/* Chainlyze Smart Wallet Iframe */}
