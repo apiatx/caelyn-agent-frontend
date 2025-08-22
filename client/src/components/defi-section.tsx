@@ -96,9 +96,9 @@ export default function DeFiSection() {
           </div>
         </div>
 
-        {/* Trading Subsection */}
+        {/* Trading Terminals Subsection */}
         <div className="space-y-4">
-          <h4 className="text-lg font-medium text-purple-400 mb-3">Trading</h4>
+          <h4 className="text-lg font-medium text-purple-400 mb-3">Trading Terminals</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <a
               href="https://app.definitive.fi/0x9FDBdA0A5e284c32744D2f17Ee5c74B284993463/hyperevm"
@@ -122,6 +122,18 @@ export default function DeFiSection() {
               <div className="text-left">
                 <div className="font-semibold">Quanto</div>
                 <div className="text-sm text-crypto-silver">Perpetual futures trading</div>
+              </div>
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://ave.ai/')}
+              className="bg-black/20 border-crypto-silver/20 hover:bg-green-500/20 hover:border-green-500/30 text-white justify-start p-4 h-auto"
+            >
+              <TrendingUp className="w-4 h-4 mr-2" />
+              <div className="text-left">
+                <div className="font-semibold">Ave.ai</div>
+                <div className="text-sm text-crypto-silver">AI-powered trading terminal</div>
               </div>
             </Button>
 
