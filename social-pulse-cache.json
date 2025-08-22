@@ -1,60 +1,60 @@
 {
   "tickers": [
     {
-      "symbol": "FARTCOIN",
-      "sentiment": 52,
-      "mentions": 5067,
-      "lastUpdated": "2025-08-11T19:19:02.993Z"
-    },
-    {
-      "symbol": "PENGU",
-      "sentiment": 49,
-      "mentions": 5902,
-      "lastUpdated": "2025-08-11T19:19:02.993Z"
-    },
-    {
       "symbol": "TRUMP",
-      "sentiment": 48,
-      "mentions": 5558,
-      "lastUpdated": "2025-08-11T19:19:02.993Z"
+      "sentiment": 54,
+      "mentions": 2244,
+      "lastUpdated": "2025-08-22T15:10:51.238Z"
     },
     {
-      "symbol": "HYPE",
-      "sentiment": 47,
-      "mentions": 5837,
-      "lastUpdated": "2025-08-11T19:19:02.993Z"
-    },
-    {
-      "symbol": "MEME",
-      "sentiment": 44,
-      "mentions": 3203,
-      "lastUpdated": "2025-08-11T19:19:02.993Z"
-    },
-    {
-      "symbol": "GOAT",
-      "sentiment": 44,
-      "mentions": 4940,
-      "lastUpdated": "2025-08-11T19:19:02.993Z"
-    },
-    {
-      "symbol": "BASE",
-      "sentiment": 42,
-      "mentions": 2726,
-      "lastUpdated": "2025-08-11T19:19:02.993Z"
-    },
-    {
-      "symbol": "POPCAT",
-      "sentiment": 41,
-      "mentions": 1629,
-      "lastUpdated": "2025-08-11T19:19:02.993Z"
+      "symbol": "FARTCOIN",
+      "sentiment": 53,
+      "mentions": 1064,
+      "lastUpdated": "2025-08-22T15:10:51.238Z"
     },
     {
       "symbol": "MOODENG",
-      "sentiment": 40,
-      "mentions": 3391,
-      "lastUpdated": "2025-08-11T19:19:02.993Z"
+      "sentiment": 51,
+      "mentions": 1751,
+      "lastUpdated": "2025-08-22T15:10:51.238Z"
+    },
+    {
+      "symbol": "GOAT",
+      "sentiment": 47,
+      "mentions": 1474,
+      "lastUpdated": "2025-08-22T15:10:51.238Z"
+    },
+    {
+      "symbol": "HYPE",
+      "sentiment": 46,
+      "mentions": 3737,
+      "lastUpdated": "2025-08-22T15:10:51.238Z"
+    },
+    {
+      "symbol": "BASEDOG",
+      "sentiment": 43,
+      "mentions": 4238,
+      "lastUpdated": "2025-08-22T15:10:51.238Z"
+    },
+    {
+      "symbol": "MEME",
+      "sentiment": 41,
+      "mentions": 1775,
+      "lastUpdated": "2025-08-22T15:10:51.238Z"
+    },
+    {
+      "symbol": "JESUS",
+      "sentiment": 37,
+      "mentions": 5610,
+      "lastUpdated": "2025-08-22T15:10:51.238Z"
+    },
+    {
+      "symbol": "BLAST",
+      "sentiment": 36,
+      "mentions": 5832,
+      "lastUpdated": "2025-08-22T15:10:51.238Z"
     }
   ],
-  "lastUpdated": "2025-08-11T19:19:02.992Z",
-  "nextUpdate": "2025-08-11T22:19:02.992Z"
+  "lastUpdated": "2025-08-22T15:10:51.237Z",
+  "nextUpdate": "2025-08-22T18:10:51.237Z"
 }
