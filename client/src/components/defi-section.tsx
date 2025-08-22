@@ -160,17 +160,18 @@ export default function DeFiSection() {
             </div>
           </Button>
           
-          <Button
-            variant="outline"
-            onClick={() => openInNewTab('https://app.definitive.fi/0x9FDBdA0A5e284c32744D2f17Ee5c74B284993463/hyperevm')}
-            className="bg-black/20 border-crypto-silver/20 hover:bg-blue-500/20 hover:border-blue-500/30 text-white justify-start p-4 h-auto"
+          <a
+            href="https://app.definitive.fi/0x9FDBdA0A5e284c32744D2f17Ee5c74B284993463/hyperevm"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-black/20 border border-crypto-silver/20 hover:bg-blue-500/20 hover:border-blue-500/30 text-white justify-start p-4 h-auto rounded-md transition-colors flex items-center"
           >
             <ArrowLeftRight className="w-4 h-4 mr-2" />
             <div className="text-left">
               <div className="font-semibold">Definitive Edge</div>
               <div className="text-sm text-crypto-silver">Trade any token, on any chain</div>
             </div>
-          </Button>
+          </a>
         </div>
       </div>
 
