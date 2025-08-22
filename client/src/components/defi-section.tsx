@@ -341,6 +341,20 @@ export default function DeFiSection() {
               </div>
             </Button>
             
+            {/* Ethy.ai */}
+            <a
+              href="https://chat.ethyai.app/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-black/20 border border-crypto-silver/20 hover:bg-purple-500/20 hover:border-purple-500/30 text-white justify-start p-4 h-auto rounded-md transition-colors flex items-center"
+            >
+              <Brain className="w-4 h-4 mr-2" />
+              <div className="text-left">
+                <div className="font-semibold">Ethy.ai</div>
+                <div className="text-sm text-crypto-silver">AI-powered crypto chat assistant</div>
+              </div>
+            </a>
+            
             {/* ZyFAI */}
             <Button
               variant="outline"
