@@ -428,6 +428,19 @@ export default function DeFiSection() {
                 <div className="text-sm text-crypto-silver">Personal finance companion</div>
               </div>
             </Button>
+
+            {/* Quant.fun */}
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://quant.fun/vaults')}
+              className="bg-black/20 border-crypto-silver/20 hover:bg-green-500/20 hover:border-green-500/30 text-white justify-start p-4 h-auto"
+            >
+              <BarChart3 className="w-4 h-4 mr-2" />
+              <div className="text-left">
+                <div className="font-semibold">Quant.fun</div>
+                <div className="text-sm text-crypto-silver">AI-powered quantitative trading vaults</div>
+              </div>
+            </Button>
           </div>
         </GlassCard>
       </div>
