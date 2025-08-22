@@ -86,13 +86,13 @@ export default function DeFiSection() {
         </div>
       </div>
 
-      {/* DeFi.app Portfolio */}
+      {/* DeFi.app */}
       <div className="mt-6">
         <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
           <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
             <Wallet className="w-4 h-4 text-white" />
           </div>
-          DeFi.app Portfolio Tracker
+          DeFi.app
         </h3>
         
         <div className="bg-black/20 border border-crypto-silver/20 rounded-lg p-6">
@@ -101,14 +101,14 @@ export default function DeFiSection() {
               <Wallet className="w-8 h-8 text-white" />
             </div>
             <div>
-              <h4 className="text-xl font-semibold text-white mb-2">Portfolio Tracking</h4>
-              <p className="text-gray-400 mb-4">Track your DeFi positions across all protocols and chains</p>
+              <h4 className="text-xl font-semibold text-white mb-2">Portfolio Tracking, Onramp, Explore Trending, and Perps</h4>
+              <p className="text-gray-400 mb-4">Complete DeFi platform with portfolio tracking, crypto onramp, trending token discovery, and perpetual trading</p>
               <SafeLink
                 href="https://app.defi.app/portfolio"
                 className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg text-white font-semibold hover:from-blue-600 hover:to-purple-600 transition-colors"
               >
                 <Wallet className="w-5 h-5" />
-                Open DeFi.app Portfolio
+                Open DeFi.app
                 <ExternalLink className="w-4 h-4" />
               </SafeLink>
             </div>
