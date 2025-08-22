@@ -247,47 +247,6 @@ export function EthereumSection() {
           />
         </div>
       </div>
-
-
-
-      {/* Ethereum Network Stats */}
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-        <GlassCard className="p-4">
-          <h4 className="text-sm font-medium text-white mb-2 flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-blue-400" />
-            Network Activity
-          </h4>
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-xs text-gray-400">Active Addresses</span>
-              <Badge variant="secondary" className="text-xs">Live Data</Badge>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-xs text-gray-400">Daily Transactions</span>
-              <Badge variant="secondary" className="text-xs">Live Data</Badge>
-            </div>
-          </div>
-        </GlassCard>
-
-        <GlassCard className="p-4">
-          <h4 className="text-sm font-medium text-white mb-2 flex items-center gap-2">
-            <div className="w-4 h-4 bg-purple-500 rounded-full"></div>
-            DeFi Metrics
-          </h4>
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-xs text-gray-400">Total Value Locked</span>
-              <Badge variant="secondary" className="text-xs">$50B+</Badge>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-xs text-gray-400">Top Protocol</span>
-              <Badge variant="secondary" className="text-xs">Uniswap</Badge>
-            </div>
-          </div>
-        </GlassCard>
-      </div>
-
-
     </div>
   );
 }
