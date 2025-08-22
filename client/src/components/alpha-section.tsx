@@ -776,6 +776,39 @@ export default function AlphaSection() {
           </SafeLink>
         </div>
       </GlassCard>
+
+      {/* WachXBT */}
+      <GlassCard className="p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+            <span className="text-white text-xs font-bold">W</span>
+          </div>
+          <h3 className="text-xl font-semibold text-white">WachXBT</h3>
+          <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
+            AI CHAT
+          </Badge>
+          <SafeLink
+            href="https://wach.ai/chat"
+            className="ml-auto text-blue-400 hover:text-blue-300 text-xs"
+          >
+            Open in New Tab →
+          </SafeLink>
+        </div>
+        <div className="w-full">
+          <iframe
+            src="https://wach.ai/chat"
+            title="WachXBT"
+            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+            referrerPolicy="no-referrer-when-downgrade"
+            loading="lazy"
+            style={{
+              background: 'transparent',
+              colorScheme: 'dark'
+            }}
+          />
+        </div>
+      </GlassCard>
     </div>
   );
 }
