@@ -895,38 +895,24 @@ export default function AlphaSection() {
               </div>
             </div>
           </div>
-        </div>
 
-        {/* OKLink Iframe */}
-        <div className="mt-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
-            <div className="flex items-center gap-2">
-              <div className="w-5 h-5 sm:w-6 sm:h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                <span className="text-white text-xs font-bold">OK</span>
+          {/* OKLink */}
+          <div className="bg-gray-900/50 rounded-lg border border-crypto-silver/20 p-4 text-center">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-sm font-bold">OK</span>
               </div>
-              <h4 className="text-lg font-semibold text-white">OKLink</h4>
-              <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
-                EXPLORER
-              </Badge>
+              <div>
+                <h5 className="text-white font-semibold">OKLink</h5>
+                <p className="text-gray-400 text-xs mb-3">Blockchain explorer and analytics</p>
+                <button
+                  onClick={() => openInNewTab('https://www.oklink.com/')}
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors text-xs font-medium"
+                >
+                  Open OKLink
+                </button>
+              </div>
             </div>
-            <button
-              onClick={() => openInNewTab('https://www.oklink.com/')}
-              className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm ml-auto"
-            >
-              Open Full View →
-            </button>
-          </div>
-          <div className="w-full bg-gray-900/50 rounded-lg border border-crypto-silver/20 overflow-hidden">
-            <iframe
-              src="https://www.oklink.com/"
-              className="w-full h-[400px] sm:h-[500px] lg:h-[600px]"
-              title="OKLink Explorer"
-              sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
-              referrerPolicy="no-referrer-when-downgrade"
-              loading="lazy"
-              allow="fullscreen; web-share; clipboard-read; clipboard-write; camera; microphone"
-              style={{ border: 'none' }}
-            />
           </div>
         </div>
 
