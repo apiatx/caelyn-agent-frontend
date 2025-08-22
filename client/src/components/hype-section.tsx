@@ -209,12 +209,12 @@ export function HypeSection() {
           </div>
         </div>
 
-        {/* Resources */}
+        {/* Trenches */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-3">
-            <h4 className="text-md font-medium text-green-400">Resources</h4>
+            <h4 className="text-md font-medium text-green-400">Trenches</h4>
           </div>
-          <div className="grid grid-cols-1">
+          <div className="grid grid-cols-1 gap-3">
             <a
               href="https://liquidlaunch.app/"
               target="_blank"
@@ -227,7 +227,25 @@ export function HypeSection() {
                 </div>
                 <div>
                   <h3 className="text-white font-medium text-sm">LiquidLaunch Trenches</h3>
-                  <p className="text-gray-400 text-xs">Token launch platform</p>
+                  <p className="text-gray-400 text-xs">HyperEVM Launch Platform</p>
+                </div>
+              </div>
+              <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-green-400 transition-colors" />
+            </a>
+            
+            <a
+              href="https://www.hyperliquid.magpiexyz.io/meme"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-green-500/30 transition-all duration-200 group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">H</span>
+                </div>
+                <div>
+                  <h3 className="text-white font-medium text-sm">Hyperpie</h3>
+                  <p className="text-gray-400 text-xs">HL Core Trenches</p>
                 </div>
               </div>
               <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-green-400 transition-colors" />
