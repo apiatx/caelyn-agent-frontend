@@ -62,10 +62,10 @@ export default function DeFiSection() {
         <p className="text-crypto-silver">Comprehensive Decentralized Finance access and analytics</p>
       </div>
 
-      {/* Cross-Chain Section */}
+      {/* Swidge Section */}
       <div className="space-y-4">
-        <h3 className="text-xl font-semibold text-white mb-4">Cross-Chain Swap</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <h3 className="text-xl font-semibold text-white mb-4">Swidge</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Button
             variant="outline"
             onClick={() => openInNewTab('https://www.relay.link/bridge')}
@@ -102,6 +102,18 @@ export default function DeFiSection() {
               <div className="text-sm text-crypto-silver">Trade any token, on any chain</div>
             </div>
           </a>
+
+          <Button
+            variant="outline"
+            onClick={() => openInNewTab('https://app.debridge.finance/?inputChain=1&outputChain=8453&inputCurrency=&outputCurrency=&dlnMode=simple')}
+            className="bg-black/20 border-crypto-silver/20 hover:bg-green-500/20 hover:border-green-500/30 text-white justify-start p-4 h-auto"
+          >
+            <ArrowLeftRight className="w-4 h-4 mr-2" />
+            <div className="text-left">
+              <div className="font-semibold">deBridge</div>
+              <div className="text-sm text-crypto-silver">Cross-chain liquidity and infrastructure</div>
+            </div>
+          </Button>
         </div>
       </div>
 
