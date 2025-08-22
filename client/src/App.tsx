@@ -32,6 +32,7 @@ function Router() {
       <Route path="/app/hype" component={HypePage} />
       <Route path="/app/abstract" component={AbstractPage} />
       <Route path="/app/defi" component={DeFiPage} />
+      <Route path="/defi" component={DeFiPage} />
       <Route path="/app/crypto-stocks" component={CryptoStocks} />
       <Route path="/app/stocks" component={CryptoStocks} />
       <Route path="/app/portfolio" component={PortfolioPage} />
