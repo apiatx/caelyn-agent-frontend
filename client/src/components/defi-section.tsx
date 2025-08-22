@@ -62,27 +62,46 @@ export default function DeFiSection() {
         <p className="text-crypto-silver">Comprehensive Decentralized Finance access and analytics</p>
       </div>
 
-      {/* DeFiLlama */}
-      <div className="mt-6">
-        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-          <div className="w-6 h-6 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full flex items-center justify-center">
-            <span className="text-white font-bold text-xs">🔥</span>
-          </div>
-          DeFiLlama
-          <SafeLink
-            href="https://defillama.com/"
-            className="ml-auto text-xs text-yellow-400 hover:text-yellow-300 transition-colors flex items-center gap-1"
+      {/* Cross-Chain Section */}
+      <div className="space-y-4">
+        <h3 className="text-xl font-semibold text-white mb-4">Cross-Chain Swap</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <Button
+            variant="outline"
+            onClick={() => openInNewTab('https://www.relay.link/bridge')}
+            className="bg-black/20 border-crypto-silver/20 hover:bg-blue-500/20 hover:border-blue-500/30 text-white justify-start p-4 h-auto"
           >
-            Open Full View <ExternalLink className="w-3 h-3" />
-          </SafeLink>
-        </h3>
-        
-        <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-          <SafeIframe
-            src="https://defillama.com/"
-            title="DeFi TVL Rankings by DefiLlama"
-            className="w-full h-[600px] border-0"
-          />
+            <ArrowLeftRight className="w-4 h-4 mr-2" />
+            <div className="text-left">
+              <div className="font-semibold">Relay Bridge</div>
+              <div className="text-sm text-crypto-silver">Cross-chain asset bridging</div>
+            </div>
+          </Button>
+
+          <Button
+            variant="outline"
+            onClick={() => openInNewTab('https://universalx.app/home')}
+            className="bg-black/20 border-crypto-silver/20 hover:bg-purple-500/20 hover:border-purple-500/30 text-white justify-start p-4 h-auto"
+          >
+            <TrendingUp className="w-4 h-4 mr-2" />
+            <div className="text-left">
+              <div className="font-semibold">UniversalX</div>
+              <div className="text-sm text-crypto-silver">Trade any token, on any chain</div>
+            </div>
+          </Button>
+          
+          <a
+            href="https://app.definitive.fi/0x9FDBdA0A5e284c32744D2f17Ee5c74B284993463/hyperevm"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-black/20 border border-crypto-silver/20 hover:bg-blue-500/20 hover:border-blue-500/30 text-white justify-start p-4 h-auto rounded-md transition-colors flex items-center"
+          >
+            <ArrowLeftRight className="w-4 h-4 mr-2" />
+            <div className="text-left">
+              <div className="font-semibold">Definitive Edge</div>
+              <div className="text-sm text-crypto-silver">Trade any token, on any chain</div>
+            </div>
+          </a>
         </div>
       </div>
 
@@ -132,46 +151,27 @@ export default function DeFiSection() {
         </div>
       </div>
 
-      {/* Cross-Chain Section */}
-      <div className="space-y-4">
-        <h3 className="text-xl font-semibold text-white mb-4">Cross-Chain Swap</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <Button
-            variant="outline"
-            onClick={() => openInNewTab('https://www.relay.link/bridge')}
-            className="bg-black/20 border-crypto-silver/20 hover:bg-blue-500/20 hover:border-blue-500/30 text-white justify-start p-4 h-auto"
+      {/* DeFiLlama */}
+      <div className="mt-6">
+        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+          <div className="w-6 h-6 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full flex items-center justify-center">
+            <span className="text-white font-bold text-xs">🔥</span>
+          </div>
+          DeFiLlama
+          <SafeLink
+            href="https://defillama.com/"
+            className="ml-auto text-xs text-yellow-400 hover:text-yellow-300 transition-colors flex items-center gap-1"
           >
-            <ArrowLeftRight className="w-4 h-4 mr-2" />
-            <div className="text-left">
-              <div className="font-semibold">Relay Bridge</div>
-              <div className="text-sm text-crypto-silver">Cross-chain asset bridging</div>
-            </div>
-          </Button>
-
-          <Button
-            variant="outline"
-            onClick={() => openInNewTab('https://universalx.app/home')}
-            className="bg-black/20 border-crypto-silver/20 hover:bg-purple-500/20 hover:border-purple-500/30 text-white justify-start p-4 h-auto"
-          >
-            <TrendingUp className="w-4 h-4 mr-2" />
-            <div className="text-left">
-              <div className="font-semibold">UniversalX</div>
-              <div className="text-sm text-crypto-silver">Trade any token, on any chain</div>
-            </div>
-          </Button>
-          
-          <a
-            href="https://app.definitive.fi/0x9FDBdA0A5e284c32744D2f17Ee5c74B284993463/hyperevm"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="bg-black/20 border border-crypto-silver/20 hover:bg-blue-500/20 hover:border-blue-500/30 text-white justify-start p-4 h-auto rounded-md transition-colors flex items-center"
-          >
-            <ArrowLeftRight className="w-4 h-4 mr-2" />
-            <div className="text-left">
-              <div className="font-semibold">Definitive Edge</div>
-              <div className="text-sm text-crypto-silver">Trade any token, on any chain</div>
-            </div>
-          </a>
+            Open Full View <ExternalLink className="w-3 h-3" />
+          </SafeLink>
+        </h3>
+        
+        <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+          <SafeIframe
+            src="https://defillama.com/"
+            title="DeFi TVL Rankings by DefiLlama"
+            className="w-full h-[600px] border-0"
+          />
         </div>
       </div>
 
