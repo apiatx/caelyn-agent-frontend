@@ -92,21 +92,27 @@ export default function DeFiSection() {
           <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
             <Wallet className="w-4 h-4 text-white" />
           </div>
-          DeFi.app Portfolio
-          <SafeLink
-            href="https://app.defi.app/portfolio"
-            className="ml-auto text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
-          >
-            Open Full View <ExternalLink className="w-3 h-3" />
-          </SafeLink>
+          DeFi.app Portfolio Tracker
         </h3>
         
-        <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-          <SafeIframe
-            src="https://app.defi.app/portfolio"
-            title="DeFi.app Portfolio Tracker"
-            className="w-full h-[600px] border-0"
-          />
+        <div className="bg-black/20 border border-crypto-silver/20 rounded-lg p-6">
+          <div className="text-center space-y-4">
+            <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full mx-auto flex items-center justify-center">
+              <Wallet className="w-8 h-8 text-white" />
+            </div>
+            <div>
+              <h4 className="text-xl font-semibold text-white mb-2">Portfolio Tracking</h4>
+              <p className="text-gray-400 mb-4">Track your DeFi positions across all protocols and chains</p>
+              <SafeLink
+                href="https://app.defi.app/portfolio"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg text-white font-semibold hover:from-blue-600 hover:to-purple-600 transition-colors"
+              >
+                <Wallet className="w-5 h-5" />
+                Open DeFi.app Portfolio
+                <ExternalLink className="w-4 h-4" />
+              </SafeLink>
+            </div>
+          </div>
         </div>
       </div>
 
