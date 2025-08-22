@@ -287,59 +287,7 @@ export function EthereumSection() {
         </GlassCard>
       </div>
 
-      {/* Quick Links */}
-      <div className="mt-6">
-        <h4 className="text-md font-semibold text-white mb-3">Quick Access</h4>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <SafeLink
-            href="https://uniswap.org/"
-            className="block p-3 rounded-lg bg-pink-500/10 border border-pink-500/20 hover:bg-pink-500/20 transition-colors"
-          >
-            <div className="text-center">
-              <div className="w-8 h-8 bg-pink-500 rounded-full mx-auto mb-2 flex items-center justify-center">
-                <span className="text-white font-bold text-xs">🦄</span>
-              </div>
-              <span className="text-xs text-pink-400 font-medium">Uniswap</span>
-            </div>
-          </SafeLink>
 
-          <SafeLink
-            href="https://aave.com/"
-            className="block p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 transition-colors"
-          >
-            <div className="text-center">
-              <div className="w-8 h-8 bg-blue-500 rounded-full mx-auto mb-2 flex items-center justify-center">
-                <span className="text-white font-bold text-xs">A</span>
-              </div>
-              <span className="text-xs text-blue-400 font-medium">Aave</span>
-            </div>
-          </SafeLink>
-
-          <SafeLink
-            href="https://opensea.io/"
-            className="block p-3 rounded-lg bg-blue-600/10 border border-blue-600/20 hover:bg-blue-600/20 transition-colors"
-          >
-            <div className="text-center">
-              <div className="w-8 h-8 bg-blue-600 rounded-full mx-auto mb-2 flex items-center justify-center">
-                <span className="text-white font-bold text-xs">🌊</span>
-              </div>
-              <span className="text-xs text-blue-400 font-medium">OpenSea</span>
-            </div>
-          </SafeLink>
-
-          <SafeLink
-            href="https://compound.finance/"
-            className="block p-3 rounded-lg bg-green-500/10 border border-green-500/20 hover:bg-green-500/20 transition-colors"
-          >
-            <div className="text-center">
-              <div className="w-8 h-8 bg-green-500 rounded-full mx-auto mb-2 flex items-center justify-center">
-                <span className="text-white font-bold text-xs">C</span>
-              </div>
-              <span className="text-xs text-green-400 font-medium">Compound</span>
-            </div>
-          </SafeLink>
-        </div>
-      </div>
     </div>
   );
 }
