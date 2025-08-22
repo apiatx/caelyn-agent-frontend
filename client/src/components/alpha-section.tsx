@@ -99,7 +99,7 @@ export default function AlphaSection() {
           </div>
         </div>
 
-        {/* Nansen.ai Iframe */}
+        {/* Nansen.ai */}
         <div className="mt-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
             <div className="flex items-center gap-2">
@@ -118,17 +118,24 @@ export default function AlphaSection() {
               Open Full View →
             </button>
           </div>
-          <div className="w-full bg-gray-900/50 rounded-lg border border-crypto-silver/20 overflow-hidden">
-            <iframe
-              src="https://app.nansen.ai/"
-              className="w-full h-[400px] sm:h-[500px] lg:h-[600px]"
-              title="Nansen.ai Dashboard"
-              sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
-              referrerPolicy="no-referrer-when-downgrade"
-              loading="lazy"
-              allow="fullscreen; web-share; clipboard-read; clipboard-write; camera; microphone"
-              style={{ border: 'none' }}
-            />
+          <div className="w-full bg-gray-900/50 rounded-lg border border-crypto-silver/20 p-8 text-center">
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-16 h-16 bg-purple-500 rounded-full flex items-center justify-center">
+                <BarChart3 className="w-8 h-8 text-white" />
+              </div>
+              <div>
+                <h5 className="text-xl font-semibold text-white mb-2">Nansen.ai Analytics</h5>
+                <p className="text-gray-400 text-sm mb-4">
+                  Blockchain analytics platform with on-chain insights and wallet tracking
+                </p>
+                <button
+                  onClick={() => openInNewTab('https://app.nansen.ai/')}
+                  className="bg-purple-500 hover:bg-purple-600 text-white px-6 py-2 rounded-lg transition-colors text-sm font-medium"
+                >
+                  Open Nansen.ai Dashboard
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </GlassCard>
