@@ -273,8 +273,8 @@ export default function PortfolioSection() {
               C
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-white">Cerebro Multi-Chain Portfolio Tracker</h3>
-              <p className="text-crypto-silver text-sm">Advanced multi-chain portfolio analytics</p>
+              <h3 className="text-lg font-semibold text-white">Cerebro</h3>
+              <p className="text-crypto-silver text-sm">Multi-Chain Portfolio Tracker</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -291,28 +291,10 @@ export default function PortfolioSection() {
         </div>
         
         <div className="w-full">
-          <div className="h-[250px] sm:h-[280px] lg:h-[300px] rounded-lg border border-crypto-silver/20 bg-gradient-to-br from-cyan-900/20 to-blue-900/20 flex flex-col items-center justify-center p-6 text-center">
-            <h4 className="text-xl font-semibold text-white mb-4">Advanced Multi-Chain Portfolio Analytics</h4>
-            <p className="text-crypto-silver mb-5 max-w-md">
-              Cerebro provides comprehensive portfolio tracking across multiple blockchains with advanced analytics and real-time monitoring.
-            </p>
-            <div className="space-y-2 text-sm text-crypto-silver mb-6">
-              <div className="flex items-center justify-center gap-2">
-                <div className="w-2 h-2 bg-cyan-400 rounded-full"></div>
-                <span>Cross-chain portfolio aggregation</span>
-              </div>
-              <div className="flex items-center justify-center gap-2">
-                <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-                <span>Advanced DeFi position tracking</span>
-              </div>
-              <div className="flex items-center justify-center gap-2">
-                <div className="w-2 h-2 bg-cyan-400 rounded-full"></div>
-                <span>Real-time performance analytics</span>
-              </div>
-            </div>
+          <div className="h-[120px] rounded-lg border border-crypto-silver/20 bg-gradient-to-br from-cyan-900/20 to-blue-900/20 flex items-center justify-center p-6">
             <button
               onClick={() => window.open('https://cerebro.xyz/dashboard', '_blank', 'noopener,noreferrer')}
-              className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white px-5 py-2.5 rounded-lg font-medium transition-all duration-200 hover:scale-105 flex items-center gap-2"
+              className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 hover:scale-105 flex items-center gap-2"
             >
               <ExternalLink className="w-4 h-4" />
               Open Cerebro Dashboard
@@ -328,38 +310,21 @@ export default function PortfolioSection() {
             <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center text-xs font-bold">
               DB
             </div>
-            <h3 className="text-lg sm:text-xl font-semibold text-white">DeBank EVM Portfolio</h3>
+            <h3 className="text-lg sm:text-xl font-semibold text-white">DeBank</h3>
+            <p className="text-crypto-silver text-sm">EVM Portfolio Tracker</p>
             <Badge className="bg-gradient-to-r from-green-500/20 to-blue-500/20 text-green-300 border-green-500/30 text-xs">
-              MULTI-CHAIN
+              EVM CHAINS
             </Badge>
           </div>
         </div>
         <div className="w-full">
-          <div className="h-[250px] sm:h-[280px] lg:h-[300px] rounded-lg border border-crypto-silver/20 bg-gradient-to-br from-green-900/20 to-blue-900/20 flex flex-col items-center justify-center p-6 text-center">
-            <h4 className="text-xl font-semibold text-white mb-4">Multi-Chain Portfolio Intelligence</h4>
-            <p className="text-crypto-silver mb-5 max-w-md">
-              DeBank provides comprehensive portfolio tracking across 30+ blockchains with real-time asset monitoring and DeFi analytics.
-            </p>
-            <div className="space-y-2 text-sm text-crypto-silver mb-6">
-              <div className="flex items-center justify-center gap-2">
-                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                <span>Real-time portfolio tracking across all major chains</span>
-              </div>
-              <div className="flex items-center justify-center gap-2">
-                <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-                <span>DeFi protocol position monitoring</span>
-              </div>
-              <div className="flex items-center justify-center gap-2">
-                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                <span>NFT collection and transaction history</span>
-              </div>
-            </div>
+          <div className="h-[120px] rounded-lg border border-crypto-silver/20 bg-gradient-to-br from-green-900/20 to-blue-900/20 flex items-center justify-center p-6">
             <button
               onClick={() => window.open('https://debank.com/profile', '_blank', 'noopener,noreferrer')}
-              className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white px-5 py-2.5 rounded-lg font-medium transition-all duration-200 hover:scale-105 flex items-center gap-2"
+              className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 hover:scale-105 flex items-center gap-2"
             >
               <ExternalLink className="w-4 h-4" />
-              View DeBank Portfolio
+              Open DeBank Portfolio
             </button>
           </div>
         </div>
