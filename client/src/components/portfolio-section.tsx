@@ -291,19 +291,33 @@ export default function PortfolioSection() {
         </div>
         
         <div className="w-full">
-          <iframe
-            src="https://cerebro.xyz/dashboard"
-            className="w-full h-[600px] sm:h-[700px] lg:h-[800px] rounded-lg border border-crypto-silver/20"
-            title="Cerebro Multi-Chain Portfolio Tracker"
-            frameBorder="0"
-            loading="lazy"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
-            referrerPolicy="no-referrer-when-downgrade"
-            style={{
-              background: 'transparent',
-              colorScheme: 'dark'
-            }}
-          />
+          <div className="h-[250px] sm:h-[280px] lg:h-[300px] rounded-lg border border-crypto-silver/20 bg-gradient-to-br from-cyan-900/20 to-blue-900/20 flex flex-col items-center justify-center p-6 text-center">
+            <h4 className="text-xl font-semibold text-white mb-4">Advanced Multi-Chain Portfolio Analytics</h4>
+            <p className="text-crypto-silver mb-5 max-w-md">
+              Cerebro provides comprehensive portfolio tracking across multiple blockchains with advanced analytics and real-time monitoring.
+            </p>
+            <div className="space-y-2 text-sm text-crypto-silver mb-6">
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-2 h-2 bg-cyan-400 rounded-full"></div>
+                <span>Cross-chain portfolio aggregation</span>
+              </div>
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                <span>Advanced DeFi position tracking</span>
+              </div>
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-2 h-2 bg-cyan-400 rounded-full"></div>
+                <span>Real-time performance analytics</span>
+              </div>
+            </div>
+            <button
+              onClick={() => window.open('https://cerebro.xyz/dashboard', '_blank', 'noopener,noreferrer')}
+              className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white px-5 py-2.5 rounded-lg font-medium transition-all duration-200 hover:scale-105 flex items-center gap-2"
+            >
+              <ExternalLink className="w-4 h-4" />
+              Open Cerebro Dashboard
+            </button>
+          </div>
         </div>
       </GlassCard>
 
