@@ -143,17 +143,7 @@ export default function AboutPage() {
                 </div>
               </div>
 
-              <div>
-                <h2 className="text-2xl font-semibold text-white mb-4">Who It's For</h2>
-                <div className="space-y-1 text-crypto-silver ml-4">
-                  <p>• Day traders who need speed and clarity</p>
-                  <p>• DeFi farmers and liquidity providers</p>
-                  <p>• On-chain analysts chasing alpha</p>
-                  <p>• Swing traders who mix crypto and equities</p>
-                </div>
-              </div>
-
-              {/* Second Hippo Image - Laser Eyes - Moved down and left */}
+              {/* Second Hippo Image - Laser Eyes - Above "Who It's For" */}
               <div className="flex justify-start my-10">
                 <div className="w-40 h-40 rounded-xl overflow-hidden shadow-xl border-2 border-green-500/30">
                   <img 
@@ -161,6 +151,16 @@ export default function AboutPage() {
                     alt="Hippo with Laser Eyes" 
                     className="w-full h-full object-cover"
                   />
+                </div>
+              </div>
+
+              <div>
+                <h2 className="text-2xl font-semibold text-white mb-4">Who It's For</h2>
+                <div className="space-y-1 text-crypto-silver ml-4">
+                  <p>• Day traders who need speed and clarity</p>
+                  <p>• DeFi farmers and liquidity providers</p>
+                  <p>• On-chain analysts chasing alpha</p>
+                  <p>• Swing traders who mix crypto and equities</p>
                 </div>
               </div>
 
@@ -235,8 +235,8 @@ export default function AboutPage() {
               </div>
             </div>
 
-            {/* Fifth Hippo Image - Moved down and left */}
-            <div className="flex justify-start my-12">
+            {/* Fifth Hippo Image - Centered in middle of page */}
+            <div className="flex justify-center my-12">
               <div className="w-40 h-40 rounded-2xl overflow-hidden shadow-xl border-3 border-blue-500/40">
                 <img 
                   src={hippoImages1} 
