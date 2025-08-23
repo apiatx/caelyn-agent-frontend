@@ -15,7 +15,7 @@ export default function BittensorDashboardSection() {
       <div className="text-center">
         <div className="flex items-center justify-center gap-3 mb-3">
           <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center">
-            <img src="https://assets.coingecko.com/coins/images/28452/standard/ARUsPeNQ_400x400.jpg" alt="Bittensor" className="w-8 h-8 rounded-lg" />
+            <img src="@assets/bittensor_1755977414942.png" alt="Bittensor" className="w-8 h-8 rounded-lg" />
           </div>
           <h1 className="text-3xl font-bold text-white">Bittensor</h1>
         </div>

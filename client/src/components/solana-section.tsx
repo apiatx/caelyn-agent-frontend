@@ -17,7 +17,7 @@ export default function SolanaSection() {
       <div className="text-center">
         <div className="flex items-center justify-center gap-3 mb-3">
           <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-xl flex items-center justify-center">
-            <img src="https://cryptologos.cc/logos/solana-sol-logo.png" alt="Solana" className="w-8 h-8 rounded-lg" />
+            <img src="@assets/solana_1755977414939.png" alt="Solana" className="w-8 h-8 rounded-lg" />
           </div>
           <h1 className="text-3xl font-bold text-white">Solana Network</h1>
         </div>
