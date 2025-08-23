@@ -556,21 +556,39 @@ export default function BaseSection() {
             </span>
           </div>
           
-          <SafeLink
-            href="https://www.clanker.world/"
-            className="w-full flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-blue-500/30 transition-all duration-200 group"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
-                <span className="text-white font-bold text-sm">CL</span>
+          <div className="space-y-4">
+            <SafeLink
+              href="https://www.clanker.world/"
+              className="w-full flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-blue-500/30 transition-all duration-200 group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">CL</span>
+                </div>
+                <div>
+                  <h4 className="text-white font-medium text-sm">Clanker</h4>
+                  <p className="text-gray-400 text-xs">Token creation platform</p>
+                </div>
               </div>
-              <div>
-                <h4 className="text-white font-medium text-sm">Clanker</h4>
-                <p className="text-gray-400 text-xs">Token creation platform</p>
+              <div className="w-4 h-4 text-gray-400 group-hover:text-blue-400 transition-colors">→</div>
+            </SafeLink>
+
+            <SafeLink
+              href="https://bankr.bot/terminal"
+              className="w-full flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-purple-500/30 transition-all duration-200 group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">B</span>
+                </div>
+                <div>
+                  <h4 className="text-white font-medium text-sm">Bankr.bot</h4>
+                  <p className="text-gray-400 text-xs">Trading terminal</p>
+                </div>
               </div>
-            </div>
-            <div className="w-4 h-4 text-gray-400 group-hover:text-blue-400 transition-colors">→</div>
-          </SafeLink>
+              <div className="w-4 h-4 text-gray-400 group-hover:text-purple-400 transition-colors">→</div>
+            </SafeLink>
+          </div>
         </GlassCard>
 
         {/* Zora Ecosystem */}
