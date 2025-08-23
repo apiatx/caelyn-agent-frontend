@@ -738,6 +738,19 @@ export default function AlphaSection() {
             </div>
             <p className="text-gray-400 text-sm">DeBank wallet tracker</p>
           </SafeLink>
+
+          <SafeLink
+            href='https://app.hyperliquid.xyz/vaults/0xe11b12a81ad743ae805078b0da61e9166475a829'
+            className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-lg hover:bg-indigo-500/20 transition-colors"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-indigo-500 rounded-full flex items-center justify-center">
+                <Wallet className="w-4 h-4 text-white" />
+              </div>
+              <h4 className="text-indigo-400 font-semibold">HyperLiquid Vault</h4>
+            </div>
+            <p className="text-gray-400 text-sm">Copy trading vault strategy</p>
+          </SafeLink>
         </div>
 
 

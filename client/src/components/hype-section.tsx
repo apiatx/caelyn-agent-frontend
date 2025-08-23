@@ -44,13 +44,13 @@ export function HypeSection() {
         </div>
       </div>
 
-      {/* Hyperdash Analytics */}
+      {/* HyperDash */}
       <div className="mt-6">
         <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
           <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
             <span className="text-white font-bold text-xs">H</span>
           </div>
-          Hyperdash Analytics
+          HyperDash
           <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full border border-blue-500/30">
             ANALYTICS
           </span>
@@ -108,18 +108,7 @@ export function HypeSection() {
               </div>
             </button>
             
-            <button
-              onClick={() => window.open('https://app.coinmarketman.com/dashboard/intelligence?tab=open_positions', '_blank', 'noopener,noreferrer')}
-              className="bg-gradient-to-br from-orange-500/10 to-red-600/10 hover:from-orange-500/20 hover:to-red-600/20 border border-orange-500/20 hover:border-orange-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-medium text-white group-hover:text-orange-300 mb-1">Perps Intelligence</div>
-                  <div className="text-xs text-crypto-silver">Open positions and perpetual futures intelligence</div>
-                </div>
-                <ExternalLink className="w-4 h-4 text-orange-400 group-hover:text-orange-300" />
-              </div>
-            </button>
+
           </div>
           
           {/* Portfolio Subsection */}
@@ -140,6 +129,19 @@ export function HypeSection() {
                   <div>
                     <div className="text-sm font-medium text-white group-hover:text-orange-300 mb-1">Portfolio Analytics</div>
                     <div className="text-xs text-crypto-silver">Comprehensive portfolio tracking and metrics</div>
+                  </div>
+                  <ExternalLink className="w-4 h-4 text-orange-400 group-hover:text-orange-300" />
+                </div>
+              </button>
+              
+              <button
+                onClick={() => window.open('https://app.coinmarketman.com/dashboard/intelligence?tab=open_positions', '_blank', 'noopener,noreferrer')}
+                className="bg-gradient-to-br from-orange-500/10 to-red-600/10 hover:from-orange-500/20 hover:to-red-600/20 border border-orange-500/20 hover:border-orange-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm font-medium text-white group-hover:text-orange-300 mb-1">Wallet Intelligence</div>
+                    <div className="text-xs text-crypto-silver">Open positions and perpetual futures intelligence</div>
                   </div>
                   <ExternalLink className="w-4 h-4 text-orange-400 group-hover:text-orange-300" />
                 </div>
@@ -191,7 +193,7 @@ export function HypeSection() {
             <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full flex items-center justify-center">
               <span className="text-white text-xs font-bold">CT</span>
             </div>
-            <h3 className="text-xl font-semibold text-white">Copy Trading</h3>
+            <h3 className="text-xl font-semibold text-white">Top Perps Wallets</h3>
             <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-xs">
               VAULT STRATEGY
             </Badge>
@@ -219,15 +221,17 @@ export function HypeSection() {
 
       {/* HyperEVM DeFi Ecosystem */}
       <div className="mt-6">
-        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-          <div className="w-6 h-6 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
-            <span className="text-white font-bold text-xs">H</span>
-          </div>
-          HyperEVM
-          <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded-full border border-green-500/30">
-            DEFI
-          </span>
-        </h3>
+        <div className="text-center mb-6">
+          <h3 className="text-lg font-semibold text-white mb-4 flex items-center justify-center gap-2">
+            <div className="w-6 h-6 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
+              <span className="text-white font-bold text-xs">H</span>
+            </div>
+            HyperEVM
+            <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded-full border border-green-500/30">
+              DEFI
+            </span>
+          </h3>
+        </div>
         
         {/* DexScreener HyperEVM */}
         <div className="mb-6">
