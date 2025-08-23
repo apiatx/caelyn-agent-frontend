@@ -198,6 +198,10 @@ export function MarketOverviewSection() {
     window.open('https://coinmarketcap.com/charts/fear-and-greed-index/', '_blank');
   };
 
+  const openMarketCharts = () => {
+    window.open('https://coinmarketcap.com/charts/', '_blank');
+  };
+
   const getFearGreedColor = (value: number) => {
     if (value >= 75) return 'text-green-400';
     if (value >= 55) return 'text-green-300';
@@ -304,8 +308,12 @@ export function MarketOverviewSection() {
         <div className="ml-auto text-xs text-gray-400">Live Data</div>
       </div>
 
-      {/* Global Market Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-6">
+      {/* Global Market Stats - Clickable Link */}
+      <div 
+        onClick={openMarketCharts}
+        className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-6 cursor-pointer group hover:opacity-80 transition-opacity duration-200"
+        title="Click to view detailed charts on CoinMarketCap"
+      >
         <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg p-3 sm:p-4">
           <div className="flex items-center gap-2 mb-2">
             <DollarSign className="w-4 h-4 text-blue-400" />
