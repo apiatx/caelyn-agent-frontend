@@ -361,28 +361,7 @@ export default function BaseSection() {
 
 
 
-      {/* Whale Intel */}
-      <GlassCard className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center">
-            <span className="text-white text-xs font-bold">WI</span>
-          </div>
-          <h3 className="text-xl font-semibold text-white">Whale Intel</h3>
-          <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
-            VIRTUALS TRACKING
-          </Badge>
-          <SafeLink 
-            href="https://whaleintel.ai/virtuals"
-            className="ml-auto text-blue-400 hover:text-blue-300 text-xs"
-          >
-            Open in New Tab →
-          </SafeLink>
-        </div>
-        <SafeIframe 
-          src="https://whaleintel.ai/virtuals"
-          title="Whale Intel Virtuals"
-        />
-      </GlassCard>
+
 
       {/* Social Section */}
       <div className="space-y-6">
@@ -503,22 +482,22 @@ export default function BaseSection() {
           </div>
         </div>
 
-        {/* AI Agent Platforms */}
+        {/* Virtuals Ecosystem */}
         <GlassCard className="p-6">
           <div className="flex items-center gap-2 mb-6">
             <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-full flex items-center justify-center">
-              <span className="text-white text-xs font-bold">AI</span>
+              <span className="text-white text-xs font-bold">V</span>
             </div>
-            <h3 className="text-xl font-semibold text-white">AI Agent Platforms</h3>
+            <h3 className="text-xl font-semibold text-white">Virtuals</h3>
             <span className="px-2 py-1 bg-purple-500/20 text-purple-400 text-xs rounded-full font-medium">
-              TRADING TOOLS
+              AI AGENTS
             </span>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-4">
             <SafeLink
               href="https://app.virtuals.io/"
-              className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-purple-500/30 transition-all duration-200 group"
+              className="w-full flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-purple-500/30 transition-all duration-200 group"
             >
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full flex items-center justify-center">
@@ -532,77 +511,141 @@ export default function BaseSection() {
               <div className="w-4 h-4 text-gray-400 group-hover:text-purple-400 transition-colors">→</div>
             </SafeLink>
 
+            {/* Whale Intel iframe for Virtuals */}
+            <div className="border-t border-crypto-silver/20 pt-4">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">WI</span>
+                </div>
+                <h4 className="text-lg font-semibold text-white">Whale Intel</h4>
+                <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
+                  VIRTUALS TRACKING
+                </Badge>
+                <SafeLink 
+                  href="https://whaleintel.ai/virtuals"
+                  className="ml-auto text-blue-400 hover:text-blue-300 text-xs"
+                >
+                  Open in New Tab →
+                </SafeLink>
+              </div>
+              <SafeIframe 
+                src="https://whaleintel.ai/virtuals"
+                title="Whale Intel Virtuals"
+              />
+            </div>
+          </div>
+        </GlassCard>
+
+        {/* Creator.bid Ecosystem */}
+        <GlassCard className="p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <div className="w-6 h-6 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full flex items-center justify-center">
+              <span className="text-white text-xs font-bold">C</span>
+            </div>
+            <h3 className="text-xl font-semibold text-white">Creator.bid</h3>
+            <span className="px-2 py-1 bg-emerald-500/20 text-emerald-400 text-xs rounded-full font-medium">
+              AGENT MARKETPLACE
+            </span>
+          </div>
+          
+          <SafeLink
+            href="https://creator.bid/agents"
+            className="w-full flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-emerald-500/30 transition-all duration-200 group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-sm">C</span>
+              </div>
+              <div>
+                <h4 className="text-white font-medium text-sm">Creator.bid</h4>
+                <p className="text-gray-400 text-xs">Agent marketplace</p>
+              </div>
+            </div>
+            <div className="w-4 h-4 text-gray-400 group-hover:text-emerald-400 transition-colors">→</div>
+          </SafeLink>
+        </GlassCard>
+
+        {/* Clanker Ecosystem */}
+        <GlassCard className="p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-cyan-600 rounded-full flex items-center justify-center">
+              <span className="text-white text-xs font-bold">CL</span>
+            </div>
+            <h3 className="text-xl font-semibold text-white">Clanker</h3>
+            <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs rounded-full font-medium">
+              TOKEN CREATION
+            </span>
+          </div>
+          
+          <SafeLink
+            href="https://www.clanker.world/"
+            className="w-full flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-blue-500/30 transition-all duration-200 group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-sm">CL</span>
+              </div>
+              <div>
+                <h4 className="text-white font-medium text-sm">Clanker</h4>
+                <p className="text-gray-400 text-xs">Token creation platform</p>
+              </div>
+            </div>
+            <div className="w-4 h-4 text-gray-400 group-hover:text-blue-400 transition-colors">→</div>
+          </SafeLink>
+        </GlassCard>
+
+        {/* Zora Ecosystem */}
+        <GlassCard className="p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full flex items-center justify-center">
+              <span className="text-white text-xs font-bold">Z</span>
+            </div>
+            <h3 className="text-xl font-semibold text-white">Zora</h3>
+            <span className="px-2 py-1 bg-purple-500/20 text-purple-400 text-xs rounded-full font-medium">
+              NFT PLATFORM
+            </span>
+          </div>
+          
+          <div className="space-y-4">
             <SafeLink
-              href="https://bankr.bot/terminal"
-              className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-purple-500/30 transition-all duration-200 group"
+              href="https://zora.co/explore/top-today"
+              className="w-full flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-purple-500/30 transition-all duration-200 group"
             >
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">B</span>
+                  <span className="text-white font-bold text-sm">Z</span>
                 </div>
                 <div>
-                  <h4 className="text-white font-medium text-sm">Bankr.bot</h4>
-                  <p className="text-gray-400 text-xs">Trading terminal</p>
+                  <h4 className="text-white font-medium text-sm">Zora</h4>
+                  <p className="text-gray-400 text-xs">Explore top trending NFTs today</p>
                 </div>
               </div>
               <div className="w-4 h-4 text-gray-400 group-hover:text-purple-400 transition-colors">→</div>
             </SafeLink>
 
-            <SafeLink
-              href="https://creator.bid/agents"
-              className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-emerald-500/30 transition-all duration-200 group"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">C</span>
+            {/* Zoracle iframe for Zora */}
+            <div className="border-t border-crypto-silver/20 pt-4">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">ZO</span>
                 </div>
-                <div>
-                  <h4 className="text-white font-medium text-sm">Creator.bid</h4>
-                  <p className="text-gray-400 text-xs">Agent marketplace</p>
-                </div>
+                <h4 className="text-lg font-semibold text-white">Zoracle</h4>
+                <span className="px-2 py-1 bg-purple-500/20 text-purple-400 text-xs rounded-full font-medium">
+                  ORACLE
+                </span>
+                <SafeLink 
+                  href="https://www.zoracle.xyz/"
+                  className="ml-auto text-purple-400 hover:text-purple-300 text-xs"
+                >
+                  Open in New Tab →
+                </SafeLink>
               </div>
-              <div className="w-4 h-4 text-gray-400 group-hover:text-emerald-400 transition-colors">→</div>
-            </SafeLink>
-
-            <SafeLink
-              href="https://www.clanker.world/"
-              className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-blue-500/30 transition-all duration-200 group"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">CL</span>
-                </div>
-                <div>
-                  <h4 className="text-white font-medium text-sm">Clanker</h4>
-                  <p className="text-gray-400 text-xs">Token creation platform</p>
-                </div>
-              </div>
-              <div className="w-4 h-4 text-gray-400 group-hover:text-blue-400 transition-colors">→</div>
-            </SafeLink>
-          </div>
-        </GlassCard>
-
-        {/* Zoracle */}
-        <GlassCard className="p-6 mt-2">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full flex items-center justify-center">
-              <span className="text-white text-xs font-bold">Z</span>
+              <SafeIframe 
+                src="https://www.zoracle.xyz/"
+                title="Zoracle"
+              />
             </div>
-            <h3 className="text-xl font-semibold text-white">Zoracle</h3>
-            <span className="px-2 py-1 bg-purple-500/20 text-purple-400 text-xs rounded-full font-medium">
-              ORACLE
-            </span>
-            <SafeLink 
-              href="https://www.zoracle.xyz/"
-              className="ml-auto text-purple-400 hover:text-purple-300 text-xs"
-            >
-              Open in New Tab →
-            </SafeLink>
           </div>
-          <SafeIframe 
-            src="https://www.zoracle.xyz/"
-            title="Zoracle"
-          />
         </GlassCard>
       </div>
     </div>
