@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { Globe, ArrowLeftRight, TrendingUp, ExternalLink } from "lucide-react";
 import { openSecureLink } from "@/utils/security";
+import baseLogo from "@assets/base logo_1755977414942.webp";
 
 
 interface DashboardData {
@@ -135,7 +136,7 @@ export default function BaseSection() {
         <div className="text-center">
           <div className="flex items-center justify-center gap-3 mb-3">
             <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
-              <img src="@assets/base logo_1755977414942.webp" alt="Base" className="w-8 h-8 rounded-lg" />
+              <img src={baseLogo} alt="Base" className="w-8 h-8 rounded-lg" />
             </div>
             <h1 className="text-3xl font-bold text-white">Base Network</h1>
           </div>
@@ -158,7 +159,7 @@ export default function BaseSection() {
         <div className="text-center">
           <div className="flex items-center justify-center gap-3 mb-3">
             <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
-              <img src="@assets/base logo_1755977414942.webp" alt="Base" className="w-8 h-8 rounded-lg" />
+              <img src={baseLogo} alt="Base" className="w-8 h-8 rounded-lg" />
             </div>
             <h1 className="text-3xl font-bold text-white">Base Network</h1>
           </div>
@@ -264,7 +265,7 @@ export default function BaseSection() {
       <div className="text-center">
         <div className="flex items-center justify-center gap-3 mb-3">
           <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
-            <img src="@assets/base logo_1755977414942.webp" alt="Base" className="w-8 h-8 rounded-lg" />
+            <img src={baseLogo} alt="Base" className="w-8 h-8 rounded-lg" />
           </div>
           <h1 className="text-3xl font-bold text-white">Base Network</h1>
         </div>

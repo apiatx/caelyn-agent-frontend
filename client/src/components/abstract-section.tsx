@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Layers, ExternalLink } from "lucide-react";
 import { openSecureLink, getSecureIframeProps } from "@/utils/security";
+import abstractLogo from "@assets/abstract chain_1755977414942.jpg";
 
 // Glass card component for abstract section
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
@@ -21,7 +22,7 @@ export default function AbstractSection() {
       <div className="text-center mb-6">
         <div className="flex items-center justify-center gap-3 mb-3">
           <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
-            <img src="@assets/abstract chain_1755977414942.jpg" alt="Abstract" className="w-8 h-8 rounded-lg" />
+            <img src={abstractLogo} alt="Abstract" className="w-8 h-8 rounded-lg" />
           </div>
           <h1 className="text-3xl font-bold text-white">Abstract Chain</h1>
         </div>

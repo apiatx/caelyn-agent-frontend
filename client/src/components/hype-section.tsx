@@ -1,5 +1,6 @@
 import { ExternalLink, TrendingUp } from "lucide-react";
 import { getSecureIframeProps, getSecureLinkProps } from "@/utils/security";
+import hyperliquidLogo from "@assets/hyperliquid-logo_1755977414943.png";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -16,7 +17,7 @@ export function HypeSection() {
       <div className="text-center mb-6">
         <div className="flex items-center justify-center gap-3 mb-3">
           <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
-            <img src="@assets/hyperliquid-logo_1755977414943.png" alt="HyperLiquid" className="w-8 h-8 rounded-lg" />
+            <img src={hyperliquidLogo} alt="HyperLiquid" className="w-8 h-8 rounded-lg" />
           </div>
           <h1 className="text-3xl font-bold text-white">HyperLiquid Trading</h1>
         </div>

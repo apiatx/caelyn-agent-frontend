@@ -2,6 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Brain, ExternalLink } from "lucide-react";
 import { getSecureIframeProps, getSecureLinkProps } from "@/utils/security";
+import bittensorLogo from "@assets/bittensor_1755977414942.png";
 
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
   <Card className={`backdrop-blur-sm bg-gradient-to-br from-white/10 to-white/5 border border-white/20 ${className}`}>
@@ -15,7 +16,7 @@ export default function BittensorDashboardSection() {
       <div className="text-center">
         <div className="flex items-center justify-center gap-3 mb-3">
           <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center">
-            <img src="@assets/bittensor_1755977414942.png" alt="Bittensor" className="w-8 h-8 rounded-lg" />
+            <img src={bittensorLogo} alt="Bittensor" className="w-8 h-8 rounded-lg" />
           </div>
           <h1 className="text-3xl font-bold text-white">Bittensor</h1>
         </div>

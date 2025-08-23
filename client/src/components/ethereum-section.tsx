@@ -2,6 +2,7 @@ import { ExternalLink, TrendingUp } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { openSecureLink } from "@/utils/security";
+import ethereumLogo from "@assets/Ethereum_logo_2014.svg_1755977414942.png";
 
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
   <Card className={`backdrop-blur-sm bg-gradient-to-br from-white/10 to-white/5 border border-white/20 ${className}`}>
@@ -44,7 +45,7 @@ export function EthereumSection() {
       <div className="text-center mb-6">
         <div className="flex items-center justify-center gap-3 mb-3">
           <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
-            <img src="@assets/Ethereum_logo_2014.svg_1755977414942.png" alt="Ethereum" className="w-8 h-8 rounded-lg" />
+            <img src={ethereumLogo} alt="Ethereum" className="w-8 h-8 rounded-lg" />
           </div>
           <h1 className="text-3xl font-bold text-white">Ethereum Network</h1>
         </div>
