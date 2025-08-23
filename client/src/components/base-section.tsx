@@ -336,28 +336,7 @@ export default function BaseSection() {
         />
       </GlassCard>
 
-      {/* BlockCreeper Explorer */}
-      <GlassCard className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-6 h-6 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
-            <span className="text-white text-xs font-bold">BC</span>
-          </div>
-          <h3 className="text-xl font-semibold text-white">BlockCreeper Explorer</h3>
-          <span className="px-2 py-1 bg-orange-500/20 text-orange-400 text-xs rounded-full font-medium">
-            BLOCKCHAIN EXPLORER
-          </span>
-          <SafeLink 
-            href="https://www.blockcreeper.com/"
-            className="ml-auto text-orange-400 hover:text-orange-300 text-xs"
-          >
-            Open in New Tab →
-          </SafeLink>
-        </div>
-        <SafeIframe 
-          src="https://www.blockcreeper.com/"
-          title="BlockCreeper Explorer"
-        />
-      </GlassCard>
+
 
 
 
@@ -481,6 +460,45 @@ export default function BaseSection() {
             <p className="text-crypto-silver">AI Agent Platforms & Trading Tools</p>
           </div>
         </div>
+
+        {/* BlockCreeper Ecosystem */}
+        <GlassCard className="p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <div className="w-6 h-6 bg-gradient-to-r from-orange-500 to-red-600 rounded-full flex items-center justify-center">
+              <span className="text-white text-xs font-bold">BC</span>
+            </div>
+            <h3 className="text-xl font-semibold text-white">BlockCreeper</h3>
+            <span className="px-2 py-1 bg-orange-500/20 text-orange-400 text-xs rounded-full font-medium">
+              BLOCKCHAIN EXPLORER
+            </span>
+          </div>
+          
+          <div className="space-y-4">
+            <SafeLink
+              href="https://www.blockcreeper.com/"
+              className="w-full flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-orange-500/30 transition-all duration-200 group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">BC</span>
+                </div>
+                <div>
+                  <h4 className="text-white font-medium text-sm">BlockCreeper Explorer</h4>
+                  <p className="text-gray-400 text-xs">Blockchain explorer and analytics</p>
+                </div>
+              </div>
+              <div className="w-4 h-4 text-gray-400 group-hover:text-orange-400 transition-colors">→</div>
+            </SafeLink>
+
+            {/* BlockCreeper iframe */}
+            <div className="border-t border-crypto-silver/20 pt-4">
+              <SafeIframe 
+                src="https://www.blockcreeper.com/"
+                title="BlockCreeper Explorer"
+              />
+            </div>
+          </div>
+        </GlassCard>
 
         {/* Virtuals Ecosystem */}
         <GlassCard className="p-6">
