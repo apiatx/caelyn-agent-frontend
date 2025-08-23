@@ -452,7 +452,7 @@ export default function CryptoStocksSection() {
             </Badge>
           </div>
           <button
-            onClick={() => openInNewTab('https://finance.yahoo.com/chart/%5EGSPC')}
+            onClick={() => openInNewTab('https://www.investing.com/indices/us-spx-500-chart')}
             className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm"
           >
             Open Full View →
@@ -461,7 +461,7 @@ export default function CryptoStocksSection() {
 
         <div className="w-full">
           <iframe
-            src="https://finance.yahoo.com/chart/%5EGSPC"
+            src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_76d87&symbol=SPX&interval=D&hidesidetoolbar=1&hidetoptoolbar=1&symboledit=1&saveimage=1&toolbarbg=F1F3F6&studies=[]&hideideas=1&theme=dark&style=1&timezone=Etc%2FUTC&studies_overrides={}&overrides={}&enabled_features=[]&disabled_features=[]&locale=en&utm_source=www.investing.com&utm_medium=widget&utm_campaign=market&utm_term=SPX"
             className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
             title="S&P 500 (SPX) Chart"
             frameBorder="0"
