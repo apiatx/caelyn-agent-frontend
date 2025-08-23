@@ -20,7 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import type { Holding, Subnet } from "@shared/schema";
 import { getSecureIframeProps, getSecureLinkProps } from "@/utils/security";
-import chainIcon from "@assets/golden-chain-icon-cartoon-style-vector_1755978148795.jpg";
+import chainIcon from "@assets/golden-chain-icon-cartoon-style-vector_1755978359958.jpg";
 
 export default function PortfolioSection() {
   const { data: portfolio, isLoading } = usePortfolio(1);
