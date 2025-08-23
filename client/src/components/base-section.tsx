@@ -133,7 +133,12 @@ export default function BaseSection() {
     return (
       <div className="space-y-6">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-white mb-2">Base Network</h2>
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
+              <img src="https://avatars.githubusercontent.com/u/108554348?s=280&v=4" alt="Base" className="w-8 h-8 rounded-lg" />
+            </div>
+            <h1 className="text-3xl font-bold text-white">Base Network</h1>
+          </div>
           <p className="text-crypto-silver">Loading BASE network overview...</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -151,7 +156,12 @@ export default function BaseSection() {
     return (
       <div className="space-y-8">
         <div className="text-center">
-          <h2 className="text-3xl font-bold text-white mb-2">Base Network Dashboard</h2>
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
+              <img src="https://avatars.githubusercontent.com/u/108554348?s=280&v=4" alt="Base" className="w-8 h-8 rounded-lg" />
+            </div>
+            <h1 className="text-3xl font-bold text-white">Base Network</h1>
+          </div>
           <p className="text-crypto-silver">Live BASE network analytics and DexScreener integration</p>
         </div>
 
@@ -252,7 +262,12 @@ export default function BaseSection() {
   return (
     <div className="space-y-8">
       <div className="text-center">
-        <h2 className="text-3xl font-bold text-white mb-2">Base Network Dashboard</h2>
+        <div className="flex items-center justify-center gap-3 mb-3">
+          <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
+            <img src="https://avatars.githubusercontent.com/u/108554348?s=280&v=4" alt="Base" className="w-8 h-8 rounded-lg" />
+          </div>
+          <h1 className="text-3xl font-bold text-white">Base Network</h1>
+        </div>
         <p className="text-crypto-silver">Live BASE network analytics and DexScreener integration</p>
       </div>
 

@@ -15,7 +15,12 @@ export default function SolanaSection() {
   return (
     <div className="space-y-8">
       <div className="text-center">
-        <h2 className="text-3xl font-bold text-white mb-2">Solana Network Dashboard</h2>
+        <div className="flex items-center justify-center gap-3 mb-3">
+          <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-xl flex items-center justify-center">
+            <img src="https://cryptologos.cc/logos/solana-sol-logo.png" alt="Solana" className="w-8 h-8 rounded-lg" />
+          </div>
+          <h1 className="text-3xl font-bold text-white">Solana Network</h1>
+        </div>
         <p className="text-crypto-silver">Live Solana network analytics with DexScreener, Jupiter, and Moby Screener</p>
       </div>
 
