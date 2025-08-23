@@ -55,7 +55,7 @@ export default function AlphaSection() {
       <div className="text-center mb-6">
         <div className="flex items-center justify-center gap-3 mb-3">
           <div className="w-12 h-12 bg-black rounded-xl flex items-center justify-center">
-            <img src={chainIcon} alt="Onchain" className="w-8 h-8 rounded-lg" />
+            <img src={chainIcon} alt="Onchain" className="w-8 h-8 object-contain" style={{filter: 'drop-shadow(0 0 4px rgba(255, 215, 0, 0.3))'}} />
           </div>
           <h1 className="text-3xl font-bold text-white">Onchain Analytics</h1>
         </div>
