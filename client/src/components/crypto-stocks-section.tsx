@@ -452,7 +452,7 @@ export default function CryptoStocksSection() {
             </Badge>
           </div>
           <button
-            onClick={() => openInNewTab('https://www.investing.com/indices/us-spx-500-chart')}
+            onClick={() => openInNewTab('https://www.tradingview.com/chart/?symbol=SPX')}
             className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm"
           >
             Open Full View →
@@ -461,12 +461,11 @@ export default function CryptoStocksSection() {
 
         <div className="w-full">
           <iframe
-            src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_76d87&symbol=SPX&interval=D&hidesidetoolbar=1&hidetoptoolbar=1&symboledit=1&saveimage=1&toolbarbg=F1F3F6&studies=[]&hideideas=1&theme=dark&style=1&timezone=Etc%2FUTC&studies_overrides={}&overrides={}&enabled_features=[]&disabled_features=[]&locale=en&utm_source=www.investing.com&utm_medium=widget&utm_campaign=market&utm_term=SPX"
+            src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]&symbol=SPX"
             className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
             title="S&P 500 (SPX) Chart"
             frameBorder="0"
             scrolling="no"
-            allow="fullscreen"
           />
         </div>
       </GlassCard>
