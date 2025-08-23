@@ -1,60 +1,60 @@
 {
   "tickers": [
     {
-      "symbol": "CHILLGUY",
-      "sentiment": 49,
-      "mentions": 3892,
-      "lastUpdated": "2025-08-23T15:15:20.231Z"
-    },
-    {
-      "symbol": "POPCAT",
-      "sentiment": 48,
-      "mentions": 1092,
-      "lastUpdated": "2025-08-23T15:15:20.231Z"
-    },
-    {
-      "symbol": "WIF",
-      "sentiment": 47,
-      "mentions": 2563,
-      "lastUpdated": "2025-08-23T15:15:20.231Z"
+      "symbol": "GOAT",
+      "sentiment": 52,
+      "mentions": 5302,
+      "lastUpdated": "2025-08-23T18:40:20.262Z"
     },
     {
       "symbol": "JESUS",
-      "sentiment": 45,
-      "mentions": 4670,
-      "lastUpdated": "2025-08-23T15:15:20.231Z"
+      "sentiment": 50,
+      "mentions": 3844,
+      "lastUpdated": "2025-08-23T18:40:20.262Z"
     },
     {
-      "symbol": "DEGEN",
+      "symbol": "CHILLGUY",
+      "sentiment": 49,
+      "mentions": 2752,
+      "lastUpdated": "2025-08-23T18:40:20.262Z"
+    },
+    {
+      "symbol": "TRUMP",
+      "sentiment": 45,
+      "mentions": 1567,
+      "lastUpdated": "2025-08-23T18:40:20.262Z"
+    },
+    {
+      "symbol": "FARTCOIN",
       "sentiment": 44,
-      "mentions": 2040,
-      "lastUpdated": "2025-08-23T15:15:20.231Z"
+      "mentions": 3468,
+      "lastUpdated": "2025-08-23T18:40:20.262Z"
     },
     {
       "symbol": "HYPE",
       "sentiment": 43,
-      "mentions": 5279,
-      "lastUpdated": "2025-08-23T15:15:20.231Z"
+      "mentions": 2691,
+      "lastUpdated": "2025-08-23T18:40:20.262Z"
     },
     {
-      "symbol": "GOAT",
+      "symbol": "POPCAT",
+      "sentiment": 43,
+      "mentions": 4257,
+      "lastUpdated": "2025-08-23T18:40:20.262Z"
+    },
+    {
+      "symbol": "PNUT",
       "sentiment": 42,
-      "mentions": 4487,
-      "lastUpdated": "2025-08-23T15:15:20.231Z"
+      "mentions": 4768,
+      "lastUpdated": "2025-08-23T18:40:20.262Z"
     },
     {
-      "symbol": "NORMIE",
-      "sentiment": 42,
-      "mentions": 3016,
-      "lastUpdated": "2025-08-23T15:15:20.231Z"
-    },
-    {
-      "symbol": "FARTCOIN",
+      "symbol": "MEME",
       "sentiment": 41,
-      "mentions": 4211,
-      "lastUpdated": "2025-08-23T15:15:20.231Z"
+      "mentions": 4548,
+      "lastUpdated": "2025-08-23T18:40:20.262Z"
     }
   ],
-  "lastUpdated": "2025-08-23T15:15:20.231Z",
-  "nextUpdate": "2025-08-23T18:15:20.231Z"
+  "lastUpdated": "2025-08-23T18:40:20.261Z",
+  "nextUpdate": "2025-08-23T21:40:20.261Z"
 }
