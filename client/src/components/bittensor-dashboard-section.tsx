@@ -18,7 +18,7 @@ export default function BittensorDashboardSection() {
           <div className="w-12 h-12 bg-black rounded-xl flex items-center justify-center">
             <img src={bittensorLogo} alt="Bittensor" className="w-8 h-8 rounded-lg" />
           </div>
-          <h1 className="text-3xl font-bold text-white">Bittensor</h1>
+          <h1 className="text-3xl font-bold text-white">Bittensor Network</h1>
         </div>
         <p className="text-crypto-silver">Comprehensive Bittensor subnet analytics and live data</p>
       </div>

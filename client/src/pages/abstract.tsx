@@ -5,6 +5,7 @@ import { Loader2, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { openSecureLink } from "@/utils/security";
 import cryptoHippoImage from "@assets/image_1753204691716.png";
+import abstractLogo from "@assets/abstract chain_1755977414942.jpg";
 import { useScrollFade } from "@/hooks/useScrollFade";
 
 export default function AbstractPage() {
@@ -37,6 +38,17 @@ export default function AbstractPage() {
 
       {/* Content */}
       <div className="max-w-[95vw] mx-auto px-2 sm:px-3 mt-4 pb-8">
+        {/* Abstract Header */}
+        <div className="text-center mb-6">
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <div className="w-12 h-12 bg-black rounded-xl flex items-center justify-center">
+              <img src={abstractLogo} alt="Abstract" className="w-8 h-8 rounded-lg" />
+            </div>
+            <h1 className="text-3xl font-bold text-white">Abstract Chain</h1>
+          </div>
+          <p className="text-crypto-silver">Live Abstract network analytics with DexScreener and ecosystem discovery</p>
+        </div>
+
         {/* PENGU Chart */}
         <div className="mb-6">
           <Suspense fallback={<div className="flex items-center justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-cyan-500" /><span className="ml-2 text-white">Loading PENGU Chart...</span></div>}>

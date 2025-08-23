@@ -19,15 +19,6 @@ export default function AbstractSection() {
 
   return (
     <div className="space-y-8">
-      <div className="text-center mb-6">
-        <div className="flex items-center justify-center gap-3 mb-3">
-          <div className="w-12 h-12 bg-black rounded-xl flex items-center justify-center">
-            <img src={abstractLogo} alt="Abstract" className="w-8 h-8 rounded-lg" />
-          </div>
-          <h1 className="text-3xl font-bold text-white">Abstract Chain</h1>
-        </div>
-        <p className="text-crypto-silver">Live Abstract network analytics with DexScreener and ecosystem discovery</p>
-      </div>
 
       {/* DexScreener Abstract */}
       <GlassCard className="p-6">
