@@ -2,6 +2,11 @@ import { UniversalNavigation } from "@/components/universal-navigation";
 import { GlassCard } from "@/components/ui/glass-card";
 import { ExternalLink } from "lucide-react";
 import cryptoHippoImage from "@assets/image_1753204691716.png";
+import hippoMouthOpen from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
+import hippoLaserEyes from "@assets/image_1755979639049.png";
+import hippoDownload1 from "@assets/download (1)_1755979612947.jpeg";
+import hippoDownload2 from "@assets/download_1755979612950.jpeg";
+import hippoImages1 from "@assets/images (1)_1755979629737.jpeg";
 import { useScrollFade } from "@/hooks/useScrollFade";
 
 export default function AboutPage() {
@@ -44,6 +49,17 @@ export default function AboutPage() {
               <p className="text-lg text-crypto-silver leading-relaxed">
                 CryptoHippo is an all-in-one trading dashboard designed to put everything you need in one place — market data, technical analysis, on-chain flows, sentiment, DeFi tools, and portfolio tracking. No more juggling tabs, apps, and bookmarks.
               </p>
+              
+              {/* First Hippo Image - Mouth Open */}
+              <div className="flex justify-center my-8">
+                <div className="w-32 h-32 rounded-full overflow-hidden shadow-lg border-2 border-crypto-silver/20">
+                  <img 
+                    src={hippoMouthOpen} 
+                    alt="Hippo" 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="space-y-6 text-left">
@@ -127,6 +143,17 @@ export default function AboutPage() {
                 </div>
               </div>
 
+              {/* Second Hippo Image - Laser Eyes */}
+              <div className="flex justify-end my-12">
+                <div className="w-40 h-40 rounded-xl overflow-hidden shadow-xl border-2 border-green-500/30">
+                  <img 
+                    src={hippoLaserEyes} 
+                    alt="Hippo with Laser Eyes" 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              </div>
+
               <div>
                 <h2 className="text-2xl font-semibold text-white mb-4">Who It's For</h2>
                 <div className="space-y-1 text-crypto-silver ml-4">
@@ -147,6 +174,17 @@ export default function AboutPage() {
                 </div>
               </div>
 
+              {/* Third Hippo Image - Left aligned */}
+              <div className="flex justify-start my-10">
+                <div className="w-36 h-36 rounded-lg overflow-hidden shadow-lg border-2 border-purple-500/30">
+                  <img 
+                    src={hippoDownload1} 
+                    alt="Hippo" 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              </div>
+
               <div>
                 <h2 className="text-2xl font-semibold text-white mb-4">Why This Matters</h2>
                 <div className="text-crypto-silver space-y-4">
@@ -156,6 +194,17 @@ export default function AboutPage() {
                   <p>Our mission is simple: <span className="text-white font-medium">help more people go on-chain, faster.</span></p>
                   <p>When everything you need is in front of you, you can focus on learning, experimenting, and growing — instead of wasting time searching for the right tool or source.</p>
                   <p>Whether you're here to trade, farm, analyze, or just understand the market, CryptoHippo gives you the same clarity and speed the pros have — without the complexity.</p>
+                </div>
+              </div>
+
+              {/* Fourth Hippo Image - Center aligned */}
+              <div className="flex justify-center my-12">
+                <div className="w-44 h-44 rounded-full overflow-hidden shadow-2xl border-4 border-orange-500/40">
+                  <img 
+                    src={hippoDownload2} 
+                    alt="Hippo" 
+                    className="w-full h-full object-cover"
+                  />
                 </div>
               </div>
 
@@ -169,6 +218,17 @@ export default function AboutPage() {
                   <p>Every position you take, every move you make is a vote for decentralization, transparency, and wealth that can't be inflated away.</p>
                   <p>CryptoHippo exists to help you take that step with clarity, speed, and confidence.</p>
                 </div>
+              </div>
+            </div>
+
+            {/* Fifth Hippo Image - Right aligned */}
+            <div className="flex justify-end my-10">
+              <div className="w-38 h-38 rounded-2xl overflow-hidden shadow-xl border-3 border-blue-500/40">
+                <img 
+                  src={hippoImages1} 
+                  alt="Hippo" 
+                  className="w-full h-full object-cover"
+                />
               </div>
             </div>
 
