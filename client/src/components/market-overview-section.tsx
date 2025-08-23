@@ -356,17 +356,18 @@ export function MarketOverviewSection() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Fear & Greed Index */}
-        <div>
+        {/* Fear & Greed Index - Clickable Link */}
+        <div 
+          onClick={openFearGreedChart}
+          className="cursor-pointer group hover:opacity-80 transition-opacity duration-200"
+          title="Click to view Fear & Greed Chart on CoinMarketCap"
+        >
           <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
             <Activity className="w-5 h-5 text-purple-400" />
             Fear and Greed Index
-            <button
-              onClick={openFearGreedChart}
-              className="ml-auto text-xs text-purple-400 hover:text-purple-300 transition-colors"
-            >
+            <span className="ml-auto text-xs text-purple-400 group-hover:text-purple-300 transition-colors">
               View Chart →
-            </button>
+            </span>
           </h3>
           
           <div className="space-y-3">
@@ -478,20 +479,21 @@ export function MarketOverviewSection() {
           </div>
         </div>
 
-        {/* Real ETF Net Flows from CoinMarketCap */}
-        <div>
+        {/* Real ETF Net Flows from CoinMarketCap - Clickable Link */}
+        <div 
+          onClick={openETFPage}
+          className="cursor-pointer group hover:opacity-80 transition-opacity duration-200"
+          title="Click to view ETF page on CoinMarketCap"
+        >
           <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-green-400" />
             ETF Net Flows
             <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded-full border border-green-500/30">
               CMC REAL-TIME
             </span>
-            <button
-              onClick={openETFPage}
-              className="ml-auto text-xs text-green-400 hover:text-green-300 transition-colors"
-            >
+            <span className="ml-auto text-xs text-green-400 group-hover:text-green-300 transition-colors">
               View All ETFs →
-            </button>
+            </span>
           </h3>
           
           <div className="bg-black/20 border border-crypto-silver/20 rounded-lg p-6">
@@ -562,18 +564,19 @@ export function MarketOverviewSection() {
         </div>
       </div>
 
-      {/* Alt Season Index */}
+      {/* Alt Season Index - Clickable Link */}
       <div className="grid grid-cols-1 lg:grid-cols-1 gap-6 mt-6">
-        <div>
+        <div 
+          onClick={openAltSeasonChart}
+          className="cursor-pointer group hover:opacity-80 transition-opacity duration-200"
+          title="Click to view Alt Season Index on CoinMarketCap"
+        >
           <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-blue-400" />
             Alt Season Index
-            <button
-              onClick={openAltSeasonChart}
-              className="ml-auto text-xs text-blue-400 hover:text-blue-300 transition-colors"
-            >
+            <span className="ml-auto text-xs text-blue-400 group-hover:text-blue-300 transition-colors">
               View Chart →
-            </button>
+            </span>
           </h3>
           
           <div className="space-y-3">
