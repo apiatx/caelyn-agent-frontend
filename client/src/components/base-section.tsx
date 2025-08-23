@@ -359,28 +359,7 @@ export default function BaseSection() {
         />
       </GlassCard>
 
-      {/* Checkr.social */}
-      <GlassCard className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-cyan-600 rounded-full flex items-center justify-center">
-            <span className="text-white text-xs font-bold">CS</span>
-          </div>
-          <h3 className="text-xl font-semibold text-white">Checkr.social</h3>
-          <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs rounded-full font-medium">
-            SOCIAL ANALYTICS
-          </span>
-          <SafeLink 
-            href="https://checkr.social/"
-            className="ml-auto text-blue-400 hover:text-blue-300 text-xs"
-          >
-            Open in New Tab →
-          </SafeLink>
-        </div>
-        <SafeIframe 
-          src="https://checkr.social/"
-          title="Checkr.social"
-        />
-      </GlassCard>
+
 
       {/* Whale Intel */}
       <GlassCard className="p-6">
@@ -405,14 +384,43 @@ export default function BaseSection() {
         />
       </GlassCard>
 
-      {/* X Signal Section */}
+      {/* Social Section */}
       <div className="space-y-6">
+        <div className="text-center px-3 sm:px-0">
+          <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-2">Social</h2>
+          <p className="text-sm sm:text-base text-crypto-silver">Social intelligence and community insights</p>
+        </div>
+
+        {/* Checkr.social */}
+        <GlassCard className="p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-cyan-600 rounded-full flex items-center justify-center">
+              <span className="text-white text-xs font-bold">CS</span>
+            </div>
+            <h3 className="text-xl font-semibold text-white">Checkr.social</h3>
+            <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs rounded-full font-medium">
+              SOCIAL ANALYTICS
+            </span>
+            <SafeLink 
+              href="https://checkr.social/"
+              className="ml-auto text-blue-400 hover:text-blue-300 text-xs"
+            >
+              Open in New Tab →
+            </SafeLink>
+          </div>
+          <SafeIframe 
+            src="https://checkr.social/"
+            title="Checkr.social"
+          />
+        </GlassCard>
+
+        {/* X Alpha Subsection */}
         <GlassCard className="p-6">
           <div className="flex items-center gap-2 mb-6">
             <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
               <TrendingUp className="w-4 h-4 text-white" />
             </div>
-            <h3 className="text-xl font-semibold text-white">X Signal</h3>
+            <h3 className="text-xl font-semibold text-white">X Alpha</h3>
             <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
               BASE SIGNAL
             </Badge>
