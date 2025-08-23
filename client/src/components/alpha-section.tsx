@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, Star, Zap, DollarSign, Wallet, TrendingDown, Brain, Loader2, BarChart3, ExternalLink } from "lucide-react";
 import { useSocialPulse } from "@/hooks/useSocialPulse";
+import chainIcon from "@assets/golden-chain-icon-cartoon-style-vector_1755978359958.jpg";
 // Glass card component for alpha section
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
   <Card className={`bg-black/40 backdrop-blur-lg border-crypto-silver/20 ${className}`}>
@@ -53,8 +54,8 @@ export default function AlphaSection() {
     <div className="space-y-8">
       <div className="text-center mb-6">
         <div className="flex items-center justify-center gap-3 mb-3">
-          <div className="w-12 h-12 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-xl flex items-center justify-center">
-            <span className="text-white font-bold text-2xl">⛓️</span>
+          <div className="w-12 h-12 bg-black rounded-xl flex items-center justify-center">
+            <img src={chainIcon} alt="Onchain" className="w-8 h-8 rounded-lg" />
           </div>
           <h1 className="text-3xl font-bold text-white">Onchain Analytics</h1>
         </div>
