@@ -512,6 +512,29 @@ export default function BaseSection() {
                 title="Whale Intel Virtuals"
               />
             </div>
+
+            {/* Loky AI Terminal iframe */}
+            <div className="border-t border-crypto-silver/20 pt-4">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-6 h-6 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">LA</span>
+                </div>
+                <h4 className="text-lg font-semibold text-white">Loky AI Terminal</h4>
+                <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
+                  GENESIS TERMINAL
+                </Badge>
+                <SafeLink 
+                  href="https://lokyai.com/terminal/genesis"
+                  className="ml-auto text-green-400 hover:text-green-300 text-xs"
+                >
+                  Open in New Tab →
+                </SafeLink>
+              </div>
+              <SafeIframe 
+                src="https://lokyai.com/terminal/genesis"
+                title="Loky AI Terminal Genesis"
+              />
+            </div>
           </div>
         </GlassCard>
 
