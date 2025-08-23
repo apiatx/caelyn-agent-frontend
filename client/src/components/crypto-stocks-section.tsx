@@ -446,13 +446,13 @@ export default function CryptoStocksSection() {
             <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-blue-500 to-green-500 rounded-full flex items-center justify-center">
               <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
             </div>
-            <h3 className="text-lg sm:text-xl font-semibold text-white">TradingView</h3>
+            <h3 className="text-lg sm:text-xl font-semibold text-white">S&P 500 (SPX)</h3>
             <Badge className="bg-gradient-to-r from-blue-500/20 to-green-500/20 text-white border-crypto-silver/30 text-xs">
-              TRADING PLATFORM
+              STOCK INDEX
             </Badge>
           </div>
           <button
-            onClick={() => openInNewTab('https://www.tradingview.com/')}
+            onClick={() => openInNewTab('https://www.tradingview.com/chart/e5l95XgZ/?symbol=SP%3ASPX')}
             className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm"
           >
             Open Full View →
@@ -461,9 +461,9 @@ export default function CryptoStocksSection() {
 
         <div className="w-full">
           <iframe
-            src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]"
+            src="https://www.tradingview.com/chart/e5l95XgZ/?symbol=SP%3ASPX"
             className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
-            title="TradingView Advanced Chart"
+            title="S&P 500 (SPX) Chart"
             frameBorder="0"
             scrolling="no"
           />
