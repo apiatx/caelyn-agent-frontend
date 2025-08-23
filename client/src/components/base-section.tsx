@@ -298,16 +298,16 @@ export default function BaseSection() {
             
             {/* Trending AI Agents */}
             <button
-              onClick={() => openInNewTab('https://www.geckoterminal.com/category/ai-agents/base')}
+              onClick={() => openInNewTab('https://www.coingecko.com/en/categories/artificial-intelligence')}
               className="w-full p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors text-left"
             >
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
                   <ExternalLink className="w-4 h-4 text-white" />
                 </div>
-                <h4 className="text-purple-400 font-semibold">Trending AI Agents on Coingecko</h4>
+                <h4 className="text-purple-400 font-semibold">Trending AI Agents on CoinGecko</h4>
               </div>
-              <p className="text-gray-400 text-sm">View trending AI agent tokens on Base network</p>
+              <p className="text-gray-400 text-sm">View trending AI agent tokens and artificial intelligence category</p>
             </button>
           </div>
         </div>
