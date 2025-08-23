@@ -149,6 +149,74 @@ export function HypeSection() {
         </div>
       </div>
 
+
+
+      {/* Social Perps Signal Section */}
+      <div className="space-y-6">
+        <GlassCard className="p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <div className="w-6 h-6 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
+              <TrendingUp className="w-4 h-4 text-white" />
+            </div>
+            <h3 className="text-xl font-semibold text-white">Social Perps Signal</h3>
+            <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 text-xs">
+              TRADING SIGNALS
+            </Badge>
+          </div>
+          
+          <div className="grid grid-cols-1 gap-4">
+            <button
+              onClick={() => window.open('https://x.com/cnj_trading', '_blank')}
+              className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-orange-500/30 transition-all duration-200 group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
+                  <TrendingUp className="w-4 h-4 text-white" />
+                </div>
+                <div className="text-left">
+                  <h4 className="text-white font-medium text-sm">CNJ Trading</h4>
+                  <p className="text-gray-400 text-xs">@cnj_trading - Perpetuals trading signals and analysis</p>
+                </div>
+              </div>
+              <div className="w-4 h-4 text-gray-400 group-hover:text-orange-400 transition-colors">→</div>
+            </button>
+          </div>
+        </GlassCard>
+      </div>
+
+      {/* Copy Trading Section */}
+      <div className="space-y-6">
+        <GlassCard className="p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full flex items-center justify-center">
+              <span className="text-white text-xs font-bold">CT</span>
+            </div>
+            <h3 className="text-xl font-semibold text-white">Copy Trading</h3>
+            <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-xs">
+              VAULT STRATEGY
+            </Badge>
+          </div>
+          
+          <div className="grid grid-cols-1 gap-4">
+            <button
+              onClick={() => window.open('https://app.hyperliquid.xyz/vaults/0xe11b12a81ad743ae805078b0da61e9166475a829', '_blank')}
+              className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-purple-500/30 transition-all duration-200 group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">V</span>
+                </div>
+                <div className="text-left">
+                  <h4 className="text-white font-medium text-sm">HyperLiquid Vault</h4>
+                  <p className="text-gray-400 text-xs">Copy trading vault strategy - 0xe11b12a81ad743ae805078b0da61e9166475a829</p>
+                </div>
+              </div>
+              <div className="w-4 h-4 text-gray-400 group-hover:text-purple-400 transition-colors">→</div>
+            </button>
+          </div>
+        </GlassCard>
+      </div>
+
       {/* HyperEVM DeFi Ecosystem */}
       <div className="mt-6">
         <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
@@ -258,39 +326,6 @@ export function HypeSection() {
             Complete HyperEVM DeFi ecosystem • Trading, swapping, and liquidity management
           </p>
         </div>
-      </div>
-
-      {/* Social Perps Signal Section */}
-      <div className="space-y-6">
-        <GlassCard className="p-6">
-          <div className="flex items-center gap-2 mb-6">
-            <div className="w-6 h-6 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
-              <TrendingUp className="w-4 h-4 text-white" />
-            </div>
-            <h3 className="text-xl font-semibold text-white">Social Perps Signal</h3>
-            <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 text-xs">
-              TRADING SIGNALS
-            </Badge>
-          </div>
-          
-          <div className="grid grid-cols-1 gap-4">
-            <button
-              onClick={() => window.open('https://x.com/cnj_trading', '_blank')}
-              className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-orange-500/30 transition-all duration-200 group"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
-                  <TrendingUp className="w-4 h-4 text-white" />
-                </div>
-                <div className="text-left">
-                  <h4 className="text-white font-medium text-sm">CNJ Trading</h4>
-                  <p className="text-gray-400 text-xs">@cnj_trading - Perpetuals trading signals and analysis</p>
-                </div>
-              </div>
-              <div className="w-4 h-4 text-gray-400 group-hover:text-orange-400 transition-colors">→</div>
-            </button>
-          </div>
-        </GlassCard>
       </div>
     </div>
   );
