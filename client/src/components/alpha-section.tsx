@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, Star, Zap, DollarSign, Wallet, TrendingDown, Brain, Loader2, BarChart3, ExternalLink } from "lucide-react";
 import { useSocialPulse } from "@/hooks/useSocialPulse";
-import chainIcon from "@assets/pngtree-dollar-sign-gold-chain-image_2289755_1755979050520.jpg";
+import chainIcon from "@assets/images_1755979136215.jpeg";
 // Glass card component for alpha section
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
   <Card className={`bg-black/40 backdrop-blur-lg border-crypto-silver/20 ${className}`}>
