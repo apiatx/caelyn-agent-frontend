@@ -1,7 +1,7 @@
 import React, { Suspense } from 'react';
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink } from "lucide-react";
-import hippoImage from "@assets/image_1753204691716.png";
+import bitcoinLogo from "@assets/Bitcoin.svg_1755979187828.webp";
 import { SectionLoadingState } from "@/components/loading-screen";
 import { openSecureLink, getSecureIframeProps } from "@/utils/security";
 import { UniversalNavigation } from "@/components/universal-navigation";
@@ -17,11 +17,12 @@ export default function TopChartsPage() {
         <div className="max-w-[95vw] mx-auto px-2 sm:px-3">
           <div className="flex justify-between items-center py-3 lg:py-4">
             <div className="flex items-center space-x-2 sm:space-x-3">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg overflow-hidden">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-black rounded-xl flex items-center justify-center">
                 <img 
-                  src={hippoImage}
-                  alt="CryptoHippo"
-                  className="w-full h-full object-cover"
+                  src={bitcoinLogo}
+                  alt="Bitcoin"
+                  className="w-8 h-8 sm:w-10 sm:h-10 object-contain"
+                  style={{filter: 'drop-shadow(0 0 4px rgba(255, 165, 0, 0.3))'}}
                 />
               </div>
               <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-white">
