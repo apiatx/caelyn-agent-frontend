@@ -150,7 +150,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
                 : "hover:bg-white/5 text-crypto-silver"
             }`}
           >
-            <Building2 className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />Stocks
+            <Building2 className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />Stonks
           </button>
           <button
             onClick={() => navigateTo("/app/about")}
@@ -286,7 +286,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
                     : "hover:bg-white/5 text-crypto-silver"
                 }`}
               >
-                <Building2 className="w-4 h-4 mr-1 inline" />Stocks
+                <Building2 className="w-4 h-4 mr-1 inline" />Stonks
               </button>
               <button
                 onClick={() => navigateTo("/app/about")}
