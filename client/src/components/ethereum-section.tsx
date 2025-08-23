@@ -44,7 +44,7 @@ export function EthereumSection() {
       {/* Page Header */}
       <div className="text-center mb-6">
         <div className="flex items-center justify-center gap-3 mb-3">
-          <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
+          <div className="w-12 h-12 bg-black rounded-xl flex items-center justify-center">
             <img src={ethereumLogo} alt="Ethereum" className="w-8 h-8 rounded-lg" />
           </div>
           <h1 className="text-3xl font-bold text-white">Ethereum Network</h1>

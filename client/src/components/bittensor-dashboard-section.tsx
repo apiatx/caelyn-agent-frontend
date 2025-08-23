@@ -15,7 +15,7 @@ export default function BittensorDashboardSection() {
     <div className="space-y-6">
       <div className="text-center">
         <div className="flex items-center justify-center gap-3 mb-3">
-          <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center">
+          <div className="w-12 h-12 bg-black rounded-xl flex items-center justify-center">
             <img src={bittensorLogo} alt="Bittensor" className="w-8 h-8 rounded-lg" />
           </div>
           <h1 className="text-3xl font-bold text-white">Bittensor</h1>
