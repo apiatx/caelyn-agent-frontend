@@ -143,17 +143,6 @@ export default function AboutPage() {
                 </div>
               </div>
 
-              {/* Second Hippo Image - Laser Eyes */}
-              <div className="flex justify-end my-12">
-                <div className="w-40 h-40 rounded-xl overflow-hidden shadow-xl border-2 border-green-500/30">
-                  <img 
-                    src={hippoLaserEyes} 
-                    alt="Hippo with Laser Eyes" 
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              </div>
-
               <div>
                 <h2 className="text-2xl font-semibold text-white mb-4">Who It's For</h2>
                 <div className="space-y-1 text-crypto-silver ml-4">
@@ -161,6 +150,17 @@ export default function AboutPage() {
                   <p>• DeFi farmers and liquidity providers</p>
                   <p>• On-chain analysts chasing alpha</p>
                   <p>• Swing traders who mix crypto and equities</p>
+                </div>
+              </div>
+
+              {/* Second Hippo Image - Laser Eyes - Moved down and left */}
+              <div className="flex justify-start my-10">
+                <div className="w-40 h-40 rounded-xl overflow-hidden shadow-xl border-2 border-green-500/30">
+                  <img 
+                    src={hippoLaserEyes} 
+                    alt="Hippo with Laser Eyes" 
+                    className="w-full h-full object-cover"
+                  />
                 </div>
               </div>
 
@@ -221,17 +221,6 @@ export default function AboutPage() {
               </div>
             </div>
 
-            {/* Fifth Hippo Image - Right aligned */}
-            <div className="flex justify-end my-10">
-              <div className="w-38 h-38 rounded-2xl overflow-hidden shadow-xl border-3 border-blue-500/40">
-                <img 
-                  src={hippoImages1} 
-                  alt="Hippo" 
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            </div>
-
             {/* About .locker Section */}
             <div className="space-y-6 text-left">
               <div>
@@ -243,6 +232,17 @@ export default function AboutPage() {
                   
                   <p>By using .locker, CryptoHippo signals its commitment to that future — one where traders, investors, and everyday users can control their own identity, data, and assets without relying on centralized gatekeepers.</p>
                 </div>
+              </div>
+            </div>
+
+            {/* Fifth Hippo Image - Moved down and left */}
+            <div className="flex justify-start my-12">
+              <div className="w-40 h-40 rounded-2xl overflow-hidden shadow-xl border-3 border-blue-500/40">
+                <img 
+                  src={hippoImages1} 
+                  alt="Hippo" 
+                  className="w-full h-full object-cover"
+                />
               </div>
             </div>
 
