@@ -40,6 +40,16 @@ export function EthereumSection() {
 
   return (
     <div className="space-y-6">
+      {/* Page Header */}
+      <div className="text-center mb-6">
+        <div className="flex items-center justify-center gap-3 mb-3">
+          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
+            <span className="text-white font-bold text-xl">Ξ</span>
+          </div>
+          <h1 className="text-2xl font-bold text-white">Ethereum Network</h1>
+        </div>
+        <p className="text-crypto-silver">Live Ethereum charts and trending tokens analysis</p>
+      </div>
       {/* Ethereum Price Chart */}
       <div>
         <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">

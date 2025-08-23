@@ -30,6 +30,17 @@ export default function CryptoStocksSection() {
 
   return (
     <div className="space-y-4 lg:space-y-8">
+      {/* Page Header */}
+      <div className="text-center mb-6">
+        <div className="flex items-center justify-center gap-3 mb-3">
+          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
+            <Building2 className="text-white text-xl" />
+          </div>
+          <h1 className="text-2xl font-bold text-white">Crypto & Stocks</h1>
+        </div>
+        <p className="text-crypto-silver">AI-powered financial analysis and market intelligence</p>
+      </div>
+
       {/* Screening */}
       <GlassCard className="p-3 sm:p-4 lg:p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">

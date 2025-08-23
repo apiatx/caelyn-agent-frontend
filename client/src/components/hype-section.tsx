@@ -12,6 +12,16 @@ const GlassCard = ({ children, className = "" }: { children: React.ReactNode; cl
 export function HypeSection() {
   return (
     <div className="space-y-6">
+      {/* Page Header */}
+      <div className="text-center mb-6">
+        <div className="flex items-center justify-center gap-3 mb-3">
+          <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+            <span className="text-white font-bold text-xl">H</span>
+          </div>
+          <h1 className="text-2xl font-bold text-white">HyperLiquid Trading</h1>
+        </div>
+        <p className="text-crypto-silver">Live HYPE trading, analytics, and HyperEVM ecosystem</p>
+      </div>
       {/* Hyperliquid Trading */}
       <div>
         <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
@@ -209,7 +219,7 @@ export function HypeSection() {
                   <span className="text-white font-bold text-sm">V</span>
                 </div>
                 <div className="text-left">
-                  <h4 className="text-white font-medium text-sm">HyperLiquid Vault</h4>
+                  <h4 className="text-white font-medium text-sm">DegenAI Vault</h4>
                   <p className="text-gray-400 text-xs">Copy trading vault strategy - 0xe11b12a81ad743ae805078b0da61e9166475a829</p>
                 </div>
               </div>
@@ -220,7 +230,7 @@ export function HypeSection() {
       </div>
 
       {/* HyperEVM DeFi Ecosystem */}
-      <div className="mt-6">
+      <div className="mt-12">
         <div className="text-center mb-6">
           <h3 className="text-lg font-semibold text-white mb-4 flex items-center justify-center gap-2">
             <div className="w-6 h-6 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">

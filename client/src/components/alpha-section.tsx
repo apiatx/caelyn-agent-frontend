@@ -51,14 +51,14 @@ export default function AlphaSection() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-xl flex items-center justify-center">
-          <BarChart3 className="text-white text-xl" />
-        </div>
-        <div>
+      <div className="text-center mb-6">
+        <div className="flex items-center justify-center gap-3 mb-3">
+          <div className="w-10 h-10 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-xl flex items-center justify-center">
+            <BarChart3 className="text-white text-xl" />
+          </div>
           <h1 className="text-2xl font-bold text-white">Onchain Analytics</h1>
-          <p className="text-crypto-silver">Comprehensive blockchain data and intelligence</p>
         </div>
+        <p className="text-crypto-silver">Comprehensive blockchain data and intelligence</p>
       </div>
 
       {/* Onchain - Artemis Analytics */}
