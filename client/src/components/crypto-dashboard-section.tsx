@@ -21,51 +21,121 @@ export default function CryptoDashboardSection() {
 
   return (
     <div className="space-y-4 lg:space-y-8">
-      {/* MacroEdge - Moved to top */}
-      <GlassCard className="p-3 sm:p-4 lg:p-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-purple-500 rounded-full flex items-center justify-center">
-              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-            </div>
-            <h3 className="text-lg sm:text-xl font-semibold text-white">MacroEdge</h3>
-            <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-xs">
-              MACRO ANALYTICS
-            </Badge>
-          </div>
-        </div>
-
-        <div className="mb-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
-            <button
-              onClick={() => openInNewTab('https://macroedge.ai/app')}
-              className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm ml-auto"
-            >
-              Open Full View →
-            </button>
-          </div>
-          <div className="w-full bg-gray-900/50 rounded-lg border border-crypto-silver/20 overflow-hidden">
-            <iframe
-              src="https://macroedge.ai/app"
-              className="w-full h-[400px] sm:h-[500px] lg:h-[600px]"
-              title="MacroEdge Analytics"
-              sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
-              referrerPolicy="no-referrer-when-downgrade"
-              loading="lazy"
-              allow="fullscreen; web-share; clipboard-read; clipboard-write; camera; microphone"
-              style={{ border: 'none' }}
-            />
-          </div>
-        </div>
-      </GlassCard>
-
       {/* Crypto Market Overview */}
       <div className="space-y-4">
         <div className="text-center px-3 sm:px-0">
           <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-2">Crypto Market Overview</h2>
           <p className="text-sm sm:text-base text-crypto-silver">Global market metrics and key indicators</p>
         </div>
-        <MarketOverviewSection />
+        
+        {/* MacroEdge - Under the title */}
+        <GlassCard className="p-3 sm:p-4 lg:p-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 sm:w-6 sm:h-6 bg-purple-500 rounded-full flex items-center justify-center">
+                <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+              </div>
+              <h3 className="text-lg sm:text-xl font-semibold text-white">MacroEdge</h3>
+              <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-xs">
+                MACRO ANALYTICS
+              </Badge>
+            </div>
+          </div>
+
+          <div className="mb-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
+              <button
+                onClick={() => openInNewTab('https://macroedge.ai/app')}
+                className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm ml-auto"
+              >
+                Open Full View →
+              </button>
+            </div>
+            <div className="w-full bg-gray-900/50 rounded-lg border border-crypto-silver/20 overflow-hidden">
+              <iframe
+                src="https://macroedge.ai/app"
+                className="w-full h-[400px] sm:h-[500px] lg:h-[600px]"
+                title="MacroEdge Analytics"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+                referrerPolicy="no-referrer-when-downgrade"
+                loading="lazy"
+                allow="fullscreen; web-share; clipboard-read; clipboard-write; camera; microphone"
+                style={{ border: 'none' }}
+              />
+            </div>
+          </div>
+        </GlassCard>
+
+        {/* Market Overview Links - Simple Links Only */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <button
+            onClick={() => openInNewTab('https://coinmarketcap.com/charts/')}
+            className="p-4 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/20 rounded-lg hover:border-blue-400/50 transition-all duration-200 text-left group"
+          >
+            <div className="flex items-center gap-3">
+              <BarChart3 className="w-6 h-6 text-blue-400" />
+              <div>
+                <div className="font-medium text-blue-200 group-hover:text-blue-100 transition-colors">
+                  Crypto Market Overview
+                </div>
+                <div className="text-xs text-gray-400 mt-1">
+                  CoinMarketCap Charts
+                </div>
+              </div>
+            </div>
+          </button>
+
+          <button
+            onClick={() => openInNewTab('https://coinmarketcap.com/charts/fear-and-greed-index/')}
+            className="p-4 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-lg hover:border-purple-400/50 transition-all duration-200 text-left group"
+          >
+            <div className="flex items-center gap-3">
+              <Activity className="w-6 h-6 text-purple-400" />
+              <div>
+                <div className="font-medium text-purple-200 group-hover:text-purple-100 transition-colors">
+                  Fear & Greed Index
+                </div>
+                <div className="text-xs text-gray-400 mt-1">
+                  Market Sentiment
+                </div>
+              </div>
+            </div>
+          </button>
+
+          <button
+            onClick={() => openInNewTab('https://coinmarketcap.com/etf/')}
+            className="p-4 bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20 rounded-lg hover:border-green-400/50 transition-all duration-200 text-left group"
+          >
+            <div className="flex items-center gap-3">
+              <DollarSign className="w-6 h-6 text-green-400" />
+              <div>
+                <div className="font-medium text-green-200 group-hover:text-green-100 transition-colors">
+                  ETF Net Flows
+                </div>
+                <div className="text-xs text-gray-400 mt-1">
+                  Institutional Flow
+                </div>
+              </div>
+            </div>
+          </button>
+
+          <button
+            onClick={() => openInNewTab('https://coinmarketcap.com/charts/altcoin-season-index/')}
+            className="p-4 bg-gradient-to-r from-orange-500/10 to-yellow-500/10 border border-orange-500/20 rounded-lg hover:border-orange-400/50 transition-all duration-200 text-left group"
+          >
+            <div className="flex items-center gap-3">
+              <TrendingUp className="w-6 h-6 text-orange-400" />
+              <div>
+                <div className="font-medium text-orange-200 group-hover:text-orange-100 transition-colors">
+                  Alt Season Index
+                </div>
+                <div className="text-xs text-gray-400 mt-1">
+                  Altcoin Performance
+                </div>
+              </div>
+            </div>
+          </button>
+        </div>
       </div>
 
       {/* Quick Analytics Links - moved between Alt Season and Onchain */}
