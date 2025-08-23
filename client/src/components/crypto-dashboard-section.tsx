@@ -27,46 +27,8 @@ export default function CryptoDashboardSection() {
           <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-2">Crypto Market Overview</h2>
           <p className="text-sm sm:text-base text-crypto-silver">Global market metrics and key indicators</p>
         </div>
-        
-        {/* MacroEdge - Under the title */}
-        <GlassCard className="p-3 sm:p-4 lg:p-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
-            <div className="flex items-center gap-2">
-              <div className="w-5 h-5 sm:w-6 sm:h-6 bg-purple-500 rounded-full flex items-center justify-center">
-                <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-              </div>
-              <h3 className="text-lg sm:text-xl font-semibold text-white">MacroEdge</h3>
-              <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-xs">
-                MACRO ANALYTICS
-              </Badge>
-            </div>
-          </div>
 
-          <div className="mb-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
-              <button
-                onClick={() => openInNewTab('https://macroedge.ai/app')}
-                className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm ml-auto"
-              >
-                Open Full View →
-              </button>
-            </div>
-            <div className="w-full bg-gray-900/50 rounded-lg border border-crypto-silver/20 overflow-hidden">
-              <iframe
-                src="https://macroedge.ai/app"
-                className="w-full h-[400px] sm:h-[500px] lg:h-[600px]"
-                title="MacroEdge Analytics"
-                sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
-                referrerPolicy="no-referrer-when-downgrade"
-                loading="lazy"
-                allow="fullscreen; web-share; clipboard-read; clipboard-write; camera; microphone"
-                style={{ border: 'none' }}
-              />
-            </div>
-          </div>
-        </GlassCard>
-
-        {/* Market Overview Links - Simple Links Only */}
+        {/* Market Overview Links - Above MacroEdge */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <button
             onClick={() => openInNewTab('https://coinmarketcap.com/charts/')}
@@ -136,6 +98,44 @@ export default function CryptoDashboardSection() {
             </div>
           </button>
         </div>
+        
+        {/* MacroEdge - After the links */}
+        <GlassCard className="p-3 sm:p-4 lg:p-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 sm:w-6 sm:h-6 bg-purple-500 rounded-full flex items-center justify-center">
+                <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+              </div>
+              <h3 className="text-lg sm:text-xl font-semibold text-white">MacroEdge</h3>
+              <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-xs">
+                MACRO ANALYTICS
+              </Badge>
+            </div>
+          </div>
+
+          <div className="mb-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
+              <button
+                onClick={() => openInNewTab('https://macroedge.ai/app')}
+                className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm ml-auto"
+              >
+                Open Full View →
+              </button>
+            </div>
+            <div className="w-full bg-gray-900/50 rounded-lg border border-crypto-silver/20 overflow-hidden">
+              <iframe
+                src="https://macroedge.ai/app"
+                className="w-full h-[400px] sm:h-[500px] lg:h-[600px]"
+                title="MacroEdge Analytics"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+                referrerPolicy="no-referrer-when-downgrade"
+                loading="lazy"
+                allow="fullscreen; web-share; clipboard-read; clipboard-write; camera; microphone"
+                style={{ border: 'none' }}
+              />
+            </div>
+          </div>
+        </GlassCard>
       </div>
 
       {/* Quick Analytics Links - moved between Alt Season and Onchain */}
