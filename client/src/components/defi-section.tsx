@@ -535,9 +535,9 @@ export default function DeFiSection() {
           </div>
         </div>
 
-        {/* DeFAI */}
-        <GlassCard className="p-6">
-          
+        {/* Trading & Analysis Subsection */}
+        <div className="space-y-4">
+          <h4 className="text-lg font-medium text-cyan-400 mb-3">Trading & Analysis</h4>
           <div className="grid grid-cols-1 gap-4">
             {/* Senpi AI */}
             <Button
@@ -552,6 +552,39 @@ export default function DeFiSection() {
               </div>
             </Button>
             
+            {/* Ethy.ai */}
+            <a
+              href="https://chat.ethyai.app/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-black/20 border border-crypto-silver/20 hover:bg-purple-500/20 hover:border-purple-500/30 text-white justify-start p-4 h-auto rounded-md transition-colors flex items-center"
+            >
+              <Brain className="w-4 h-4 mr-2" />
+              <div className="text-left">
+                <div className="font-semibold">Ethy.ai</div>
+                <div className="text-sm text-crypto-silver">AI-powered crypto chat assistant</div>
+              </div>
+            </a>
+            
+            {/* Bankr */}
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://bankr.bot/')}
+              className="bg-black/20 border-crypto-silver/20 hover:bg-blue-500/20 hover:border-blue-500/30 text-white justify-start p-4 h-auto"
+            >
+              <Brain className="w-4 h-4 mr-2" />
+              <div className="text-left">
+                <div className="font-semibold">Bankr</div>
+                <div className="text-sm text-crypto-silver">AI crypto analysis bot</div>
+              </div>
+            </Button>
+          </div>
+        </div>
+
+        {/* Yield Optimization & AI Hedge Funds Subsection */}
+        <div className="space-y-4">
+          <h4 className="text-lg font-medium text-green-400 mb-3">Yield Optimization & AI Hedge Funds</h4>
+          <div className="grid grid-cols-1 gap-4">
             {/* AIxVC */}
             <Button
               variant="outline"
@@ -577,20 +610,6 @@ export default function DeFiSection() {
                 <div className="text-sm text-crypto-silver">Yield farming protocol</div>
               </div>
             </Button>
-            
-            {/* Ethy.ai */}
-            <a
-              href="https://chat.ethyai.app/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-black/20 border border-crypto-silver/20 hover:bg-purple-500/20 hover:border-purple-500/30 text-white justify-start p-4 h-auto rounded-md transition-colors flex items-center"
-            >
-              <Brain className="w-4 h-4 mr-2" />
-              <div className="text-left">
-                <div className="font-semibold">Ethy.ai</div>
-                <div className="text-sm text-crypto-silver">AI-powered crypto chat assistant</div>
-              </div>
-            </a>
             
             {/* ZyFAI */}
             <Button
@@ -631,7 +650,7 @@ export default function DeFiSection() {
               </div>
             </Button>
           </div>
-        </GlassCard>
+        </div>
       </div>
 
 
