@@ -312,18 +312,7 @@ export default function AlphaSection() {
             <p className="text-gray-400 text-sm">Trending Altcoin Timeframes</p>
           </SafeLink>
 
-          <SafeLink
-            href='https://indexy.xyz/home'
-            className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                <TrendingUp className="w-4 h-4 text-white" />
-              </div>
-              <h4 className="text-green-400 font-semibold">Indexy</h4>
-            </div>
-            <p className="text-gray-400 text-sm">Crypto market indexing platform</p>
-          </SafeLink>
+
         </div>
 
         {/* Alphanomics Platform */}
@@ -356,6 +345,133 @@ export default function AlphaSection() {
             />
           </div>
         </div>
+      </GlassCard>
+
+      {/* Smart Wallets */}
+      <GlassCard className="p-6">
+        <div className="flex items-center gap-2 mb-6">
+          <div className="w-6 h-6 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center">
+            <Wallet className="w-4 h-4 text-white" />
+          </div>
+          <h3 className="text-xl font-semibold text-white">Smart Wallets</h3>
+          <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
+            COMING SOON
+          </Badge>
+        </div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+          <SafeLink
+            href='https://indexy.xyz/home'
+            className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                <TrendingUp className="w-4 h-4 text-white" />
+              </div>
+              <h4 className="text-green-400 font-semibold">Indexy</h4>
+            </div>
+            <p className="text-gray-400 text-sm">Crypto market indexing platform</p>
+          </SafeLink>
+
+          <SafeLink
+            href='https://hyperdash.info/trader/0x15b325660a1c4a9582a7d834c31119c0cb9e3a42'
+            className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                <Wallet className="w-4 h-4 text-white" />
+              </div>
+              <h4 className="text-purple-400 font-semibold">HyperLiquid Whale</h4>
+            </div>
+            <p className="text-gray-400 text-sm">Hyperdash Trader Analytics</p>
+          </SafeLink>
+
+          <SafeLink
+            href='https://debank.com/profile/0x3f135ba020d0ed288d8dd85cd3d600451b121013'
+            className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                <Wallet className="w-4 h-4 text-white" />
+              </div>
+              <h4 className="text-green-400 font-semibold">WhaleAI - ETH/BASE</h4>
+            </div>
+            <p className="text-gray-400 text-sm">DeBank Portfolio Analysis</p>
+          </SafeLink>
+
+          <SafeLink
+            href='https://debank.com/profile/0xb1058c959987e3513600eb5b4fd82aeee2a0e4f9'
+            className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg hover:bg-emerald-500/20 transition-colors"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center">
+                <Wallet className="w-4 h-4 text-white" />
+              </div>
+              <h4 className="text-emerald-400 font-semibold">Debt Relief Bot</h4>
+            </div>
+            <p className="text-gray-400 text-sm">DeBank wallet tracker</p>
+          </SafeLink>
+
+          <SafeLink
+            href='https://app.hyperliquid.xyz/vaults/0xe11b12a81ad743ae805078b0da61e9166475a829'
+            className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-lg hover:bg-indigo-500/20 transition-colors"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-indigo-500 rounded-full flex items-center justify-center">
+                <Wallet className="w-4 h-4 text-white" />
+              </div>
+              <h4 className="text-indigo-400 font-semibold">DegenAI HL Vault</h4>
+            </div>
+            <p className="text-gray-400 text-sm">Copy trading vault strategy</p>
+          </SafeLink>
+
+          <SafeLink
+            href='https://degenai.dev/'
+            className="p-4 bg-pink-500/10 border border-pink-500/20 rounded-lg hover:bg-pink-500/20 transition-colors"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-pink-500 rounded-full flex items-center justify-center">
+                <Brain className="w-4 h-4 text-white" />
+              </div>
+              <h4 className="text-pink-400 font-semibold">DegenAI Perps Bot</h4>
+            </div>
+            <p className="text-gray-400 text-sm">AI-powered perpetual trading bot</p>
+          </SafeLink>
+        </div>
+
+        {/* Chainlyze Smart Wallet Iframe - Moved from More Analysis */}
+        <div className="mt-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 sm:w-6 sm:h-6 bg-cyan-500 rounded-full flex items-center justify-center">
+                <Wallet className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+              </div>
+              <h4 className="text-lg font-semibold text-white">Chainlyze Smart Wallet Tracker</h4>
+              <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 text-xs">
+                ANALYTICS
+              </Badge>
+            </div>
+            <button
+              onClick={() => openInNewTab('https://app.chainlyze.ai/smart-wallet')}
+              className="text-cyan-400 hover:text-cyan-300 text-xs sm:text-sm ml-auto"
+            >
+              Open Full View →
+            </button>
+          </div>
+          <div className="w-full bg-gray-900/50 rounded-lg border border-crypto-silver/20 overflow-hidden">
+            <iframe
+              src="https://app.chainlyze.ai/smart-wallet"
+              className="w-full h-[400px] sm:h-[500px] lg:h-[600px]"
+              title="Chainlyze Smart Wallet"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+              referrerPolicy="no-referrer-when-downgrade"
+              loading="lazy"
+              allow="fullscreen; web-share; clipboard-read; clipboard-write; camera; microphone"
+              style={{ border: 'none' }}
+            />
+          </div>
+        </div>
+
       </GlassCard>
 
       {/* Social - Moved underneath Signal section */}
@@ -780,122 +896,6 @@ export default function AlphaSection() {
           </div>
         </div>
       </GlassCard>
-
-      {/* Smart Wallets */}
-      <GlassCard className="p-6">
-        <div className="flex items-center gap-2 mb-6">
-          <div className="w-6 h-6 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center">
-            <Wallet className="w-4 h-4 text-white" />
-          </div>
-          <h3 className="text-xl font-semibold text-white">Smart Wallets</h3>
-          <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
-            COMING SOON
-          </Badge>
-        </div>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-          <SafeLink
-            href='https://hyperdash.info/trader/0x15b325660a1c4a9582a7d834c31119c0cb9e3a42'
-            className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
-                <Wallet className="w-4 h-4 text-white" />
-              </div>
-              <h4 className="text-purple-400 font-semibold">HyperLiquid Whale</h4>
-            </div>
-            <p className="text-gray-400 text-sm">Hyperdash Trader Analytics</p>
-          </SafeLink>
-
-          <SafeLink
-            href='https://debank.com/profile/0x3f135ba020d0ed288d8dd85cd3d600451b121013'
-            className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                <Wallet className="w-4 h-4 text-white" />
-              </div>
-              <h4 className="text-green-400 font-semibold">WhaleAI - ETH/BASE</h4>
-            </div>
-            <p className="text-gray-400 text-sm">DeBank Portfolio Analysis</p>
-          </SafeLink>
-
-          <SafeLink
-            href='https://debank.com/profile/0xb1058c959987e3513600eb5b4fd82aeee2a0e4f9'
-            className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg hover:bg-emerald-500/20 transition-colors"
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center">
-                <Wallet className="w-4 h-4 text-white" />
-              </div>
-              <h4 className="text-emerald-400 font-semibold">Debt Relief Bot</h4>
-            </div>
-            <p className="text-gray-400 text-sm">DeBank wallet tracker</p>
-          </SafeLink>
-
-          <SafeLink
-            href='https://app.hyperliquid.xyz/vaults/0xe11b12a81ad743ae805078b0da61e9166475a829'
-            className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-lg hover:bg-indigo-500/20 transition-colors"
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 bg-indigo-500 rounded-full flex items-center justify-center">
-                <Wallet className="w-4 h-4 text-white" />
-              </div>
-              <h4 className="text-indigo-400 font-semibold">DegenAI HL Vault</h4>
-            </div>
-            <p className="text-gray-400 text-sm">Copy trading vault strategy</p>
-          </SafeLink>
-
-          <SafeLink
-            href='https://degenai.dev/'
-            className="p-4 bg-pink-500/10 border border-pink-500/20 rounded-lg hover:bg-pink-500/20 transition-colors"
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 bg-pink-500 rounded-full flex items-center justify-center">
-                <Brain className="w-4 h-4 text-white" />
-              </div>
-              <h4 className="text-pink-400 font-semibold">DegenAI Perps Bot</h4>
-            </div>
-            <p className="text-gray-400 text-sm">AI-powered perpetual trading bot</p>
-          </SafeLink>
-        </div>
-
-        {/* Chainlyze Smart Wallet Iframe - Moved from More Analysis */}
-        <div className="mt-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
-            <div className="flex items-center gap-2">
-              <div className="w-5 h-5 sm:w-6 sm:h-6 bg-cyan-500 rounded-full flex items-center justify-center">
-                <Wallet className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-              </div>
-              <h4 className="text-lg font-semibold text-white">Chainlyze Smart Wallet Tracker</h4>
-              <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 text-xs">
-                ANALYTICS
-              </Badge>
-            </div>
-            <button
-              onClick={() => openInNewTab('https://app.chainlyze.ai/smart-wallet')}
-              className="text-cyan-400 hover:text-cyan-300 text-xs sm:text-sm ml-auto"
-            >
-              Open Full View →
-            </button>
-          </div>
-          <div className="w-full bg-gray-900/50 rounded-lg border border-crypto-silver/20 overflow-hidden">
-            <iframe
-              src="https://app.chainlyze.ai/smart-wallet"
-              className="w-full h-[400px] sm:h-[500px] lg:h-[600px]"
-              title="Chainlyze Smart Wallet"
-              sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
-              referrerPolicy="no-referrer-when-downgrade"
-              loading="lazy"
-              allow="fullscreen; web-share; clipboard-read; clipboard-write; camera; microphone"
-              style={{ border: 'none' }}
-            />
-          </div>
-        </div>
-
-      </GlassCard>
-
-
 
 
 
