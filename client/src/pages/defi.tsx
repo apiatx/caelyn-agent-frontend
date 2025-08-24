@@ -16,7 +16,7 @@ export default function DeFiPage() {
       >
         {/* Background Image */}
         <div 
-          className="absolute inset-0 opacity-20"
+          className="absolute inset-0 opacity-50"
           style={{
             backgroundImage: `url(${paintColorsBackground})`,
             backgroundSize: 'cover',
