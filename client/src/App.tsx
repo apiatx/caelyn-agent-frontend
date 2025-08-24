@@ -40,6 +40,7 @@ function Router() {
       <Route path="/defi" component={DeFiPage} />
       <Route path="/app/crypto-stocks" component={CryptoStocks} />
       <Route path="/app/stocks" component={CryptoStocks} />
+      <Route path="/app/stonks" component={CryptoStocks} />
       <Route path="/app/portfolio" component={PortfolioPage} />
       <Route path="/portfolio" component={PortfolioPage} />
       <Route path="/app/about" component={AboutPage} />
