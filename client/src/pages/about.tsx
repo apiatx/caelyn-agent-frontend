@@ -7,6 +7,7 @@ import hippoLaserEyes from "@assets/image_1755979639049.png";
 import hippoDownload1 from "@assets/download (1)_1755979612947.jpeg";
 import hippoDownload2 from "@assets/download_1755979612950.jpeg";
 import hippoImages1 from "@assets/images (1)_1755979629737.jpeg";
+import cuteHippo from "@assets/cute-cartoon-hippo-showing-off-butt-vector_1756060620427.jpg";
 import { useScrollFade } from "@/hooks/useScrollFade";
 
 export default function AboutPage() {
@@ -237,6 +238,17 @@ export default function AboutPage() {
                   <p>
                     If you're curious why now is the time to get into Bitcoin and crypto, this blog is a must-read. It breaks down — in plain language — how our current financial system is broken and why digital assets represent the future of money, ownership, and freedom.
                   </p>
+                </div>
+              </div>
+
+              {/* Cute Hippo Image - Between Recommended Reading and About .locker */}
+              <div className="flex justify-center my-10">
+                <div className="w-48 h-48 rounded-2xl overflow-hidden shadow-xl border-2 border-pink-500/30">
+                  <img 
+                    src={cuteHippo} 
+                    alt="Cute Hippo" 
+                    className="w-full h-full object-cover"
+                  />
                 </div>
               </div>
             </div>
