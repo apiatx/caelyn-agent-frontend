@@ -185,18 +185,50 @@ export default function DeFiSection() {
               </div>
             </Button>
 
-            <Button
-              variant="outline"
-              onClick={() => openInNewTab('https://pro.edgex.exchange/trade/BTCUSD')}
-              className="bg-black/20 border-crypto-silver/20 hover:bg-yellow-500/20 hover:border-yellow-500/30 text-white justify-start p-4 h-auto"
-            >
-              <TrendingUp className="w-4 h-4 mr-2" />
-              <div className="text-left">
-                <div className="font-semibold">EdgeX Pro</div>
-                <div className="text-sm text-crypto-silver">Professional Bitcoin trading terminal</div>
-              </div>
-            </Button>
           </div>
+        </div>
+
+        {/* EdgeX Pro Trading Terminal */}
+        <div className="mt-8">
+          <GlassCard className="p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-white flex items-center">
+                <TrendingUp className="w-4 h-4 mr-2" />
+                EdgeX Pro
+              </h3>
+              <div className="flex items-center gap-2">
+                <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">
+                  Bitcoin Trading
+                </Badge>
+                <a 
+                  href="https://pro.edgex.exchange/trade/BTCUSD"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-crypto-silver hover:text-white transition-colors group"
+                >
+                  <ExternalLink className="h-4 w-4 group-hover:scale-110 transition-transform" />
+                </a>
+              </div>
+            </div>
+            
+            <div className="relative w-full">
+              <iframe
+                src="https://pro.edgex.exchange/trade/BTCUSD"
+                className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+                title="EdgeX Pro Bitcoin Trading Terminal"
+                frameBorder="0"
+                loading="lazy"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+                style={{
+                  background: 'transparent',
+                  colorScheme: 'dark'
+                }}
+              />
+              <div className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+                Professional Bitcoin Trading
+              </div>
+            </div>
+          </GlassCard>
         </div>
       </div>
 
