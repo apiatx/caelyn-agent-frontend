@@ -285,7 +285,7 @@ export default function TopChartsPage() {
           <div className="space-y-6">
             <div className="text-center px-3 sm:px-0">
               <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-2">Altcoin Price Charts</h2>
-              <p className="text-sm sm:text-base text-crypto-silver">XRP, ADA, SOL and other major altcoin price analysis</p>
+              <p className="text-sm sm:text-base text-crypto-silver">XRP, SOL, BNB and other major altcoin price analysis</p>
             </div>
             
             {/* XRP Chart */}
