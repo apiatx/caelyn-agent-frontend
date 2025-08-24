@@ -70,7 +70,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
                 : "hover:bg-white/5 text-crypto-silver"
             }`}
           >
-            <Coins className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />Ethereum
+            <Coins className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />ETH
           </button>
           <button
             onClick={() => navigateTo("/app/base")}
@@ -100,7 +100,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
                 : "hover:bg-white/5 text-crypto-silver"
             }`}
           >
-            <Brain className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />HyperLiquid
+            <Brain className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />HYPE
           </button>
           <button
             onClick={() => navigateTo("/app#bittensor")}
@@ -206,7 +206,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
                     : "hover:bg-white/5 text-crypto-silver"
                 }`}
               >
-                <Coins className="w-4 h-4 mr-1 inline" />Ethereum
+                <Coins className="w-4 h-4 mr-1 inline" />ETH
               </button>
               <button
                 onClick={() => navigateTo("/app/base")}
@@ -236,7 +236,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
                     : "hover:bg-white/5 text-crypto-silver"
                 }`}
               >
-                <Brain className="w-4 h-4 mr-1 inline" />HyperLiquid
+                <Brain className="w-4 h-4 mr-1 inline" />HYPE
               </button>
               <button
                 onClick={() => navigateTo("/app#bittensor")}
