@@ -131,7 +131,8 @@ const TRUSTED_DOMAINS = [
   'wallet.coinbase.com',
   'app.teller.org',
   'app.seamlessprotocol.com',
-  'app.lotusfinance.io'
+  'app.lotusfinance.io',
+  'app.spectra.finance'
 ];
 
 /**
