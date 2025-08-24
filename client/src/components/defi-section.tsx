@@ -185,6 +185,18 @@ export default function DeFiSection() {
               </div>
             </Button>
 
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://perps.saros.xyz/trade/PERP_SOL_USDC')}
+              className="bg-black/20 border-crypto-silver/20 hover:bg-yellow-500/20 hover:border-yellow-500/30 text-white justify-start p-4 h-auto"
+            >
+              <TrendingUp className="w-4 h-4 mr-2" />
+              <div className="text-left">
+                <div className="font-semibold">Saros</div>
+                <div className="text-sm text-crypto-silver">Solana perpetual futures</div>
+              </div>
+            </Button>
+
           </div>
         </div>
 

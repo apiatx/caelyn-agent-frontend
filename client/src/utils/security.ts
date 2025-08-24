@@ -101,7 +101,12 @@ const TRUSTED_DOMAINS = [
   'app.intellectia.ai',
   'intellectia.ai',
   'investing.com',
-  'www.investing.com'
+  'www.investing.com',
+  'quanto.trade',
+  'perps.saros.xyz',
+  'saros.xyz',
+  'degenai.dev',
+  'messari.io'
 ];
 
 /**
