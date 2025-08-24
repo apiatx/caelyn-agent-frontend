@@ -113,7 +113,10 @@ const TRUSTED_DOMAINS = [
   'edgex.exchange',
   'trade.perpsdao.xyz',
   'perpsdao.xyz',
-  'deri.io'
+  'deri.io',
+  'www.hegic.co',
+  'hegic.co',
+  'indexy.xyz'
 ];
 
 /**
