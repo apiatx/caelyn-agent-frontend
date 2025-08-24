@@ -305,6 +305,18 @@ export default function DeFiSection() {
               </div>
             </Button>
 
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://limitless.exchange/advanced')}
+              className="bg-black/20 border-crypto-silver/20 hover:bg-green-500/20 hover:border-green-500/30 text-white justify-start p-4 h-auto"
+            >
+              <TrendingUp className="w-4 h-4 mr-2" />
+              <div className="text-left">
+                <div className="font-semibold">Limitless Exchange</div>
+                <div className="text-sm text-crypto-silver">Predict future crypto and stocks prices</div>
+              </div>
+            </Button>
+
           </div>
         </div>
       </div>
@@ -476,6 +488,34 @@ export default function DeFiSection() {
               <div className="text-sm text-crypto-silver">Restaking protocol</div>
             </div>
           </a>
+
+          <Button
+            variant="outline"
+            onClick={() => openInNewTab('https://morpho.org/')}
+            className="bg-black/20 border-crypto-silver/20 hover:bg-blue-500/20 hover:border-blue-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
+          >
+            <div className="p-3 rounded-lg bg-gradient-to-r from-blue-500/20 to-indigo-500/20">
+              <DollarSign className="h-6 w-6 text-blue-400" />
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-lg">Morpho</div>
+              <div className="text-sm text-crypto-silver">Lending protocol optimizer</div>
+            </div>
+          </Button>
+
+          <Button
+            variant="outline"
+            onClick={() => openInNewTab('https://www.ether.fi/app/cash/safe')}
+            className="bg-black/20 border-crypto-silver/20 hover:bg-purple-500/20 hover:border-purple-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
+          >
+            <div className="p-3 rounded-lg bg-gradient-to-r from-purple-500/20 to-pink-500/20">
+              <Wallet className="h-6 w-6 text-purple-400" />
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-lg">Ether.fi</div>
+              <div className="text-sm text-crypto-silver">Liquid restaking protocol</div>
+            </div>
+          </Button>
 
           <Button
             variant="outline"
@@ -773,7 +813,7 @@ export default function DeFiSection() {
                 </div>
                 <div>
                   <h4 className="text-lg font-semibold text-white">Limitless Exchange</h4>
-                  <p className="text-sm text-crypto-silver">Advanced prediction markets platform</p>
+                  <p className="text-sm text-crypto-silver">Predict future crypto and stocks prices</p>
                 </div>
               </div>
               <Badge className="bg-gradient-to-r from-orange-500/20 to-red-500/20 text-orange-400 border-orange-500/30">
@@ -781,7 +821,7 @@ export default function DeFiSection() {
               </Badge>
             </div>
             <p className="text-crypto-silver mb-4 text-sm">
-              Access sophisticated prediction markets with advanced trading features and analytics.
+              Predict future crypto and stocks prices with sophisticated trading features and analytics.
             </p>
             <Button
               variant="outline"

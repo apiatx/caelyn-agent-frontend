@@ -124,7 +124,10 @@ const TRUSTED_DOMAINS = [
   'quant.fun',
   'www.ourbit.com',
   'ourbit.com',
-  'limitless.exchange'
+  'limitless.exchange',
+  'morpho.org',
+  'www.ether.fi',
+  'ether.fi'
 ];
 
 /**
