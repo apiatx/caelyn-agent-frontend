@@ -132,7 +132,7 @@ export default function DeFiSection() {
             >
               <ArrowLeftRight className="w-4 h-4 mr-2" />
               <div className="text-left">
-                <div className="font-semibold text-base">Definitive Edge</div>
+                <div className="font-semibold">Definitive Edge</div>
                 <div className="text-sm text-crypto-silver">Trade any token, on any chain</div>
               </div>
             </a>
@@ -236,7 +236,19 @@ export default function DeFiSection() {
               <TrendingUp className="w-4 h-4 mr-2" />
               <div className="text-left">
                 <div className="font-semibold">EdgeX Pro</div>
-                <div className="text-sm text-crypto-silver">Bitcoin perpetual futures</div>
+                <div className="text-sm text-crypto-silver">Perpetual futures trading</div>
+              </div>
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://trade.perpsdao.xyz/en/perp/PERP_BTC_USDC')}
+              className="bg-black/20 border-crypto-silver/20 hover:bg-orange-500/20 hover:border-orange-500/30 text-white justify-start p-4 h-auto"
+            >
+              <TrendingUp className="w-4 h-4 mr-2" />
+              <div className="text-left">
+                <div className="font-semibold">PerpsDAO</div>
+                <div className="text-sm text-crypto-silver">Decentralized perpetual futures</div>
               </div>
             </Button>
 

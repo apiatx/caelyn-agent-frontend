@@ -110,7 +110,9 @@ const TRUSTED_DOMAINS = [
   'perps.raydium.io',
   'raydium.io',
   'pro.edgex.exchange',
-  'edgex.exchange'
+  'edgex.exchange',
+  'trade.perpsdao.xyz',
+  'perpsdao.xyz'
 ];
 
 /**
