@@ -63,13 +63,13 @@ export default function AboutPage() {
               </div>
             </div>
 
-            <div className="space-y-6 text-left">
+            <div className="space-y-6 text-center">
               <div>
                 <h2 className="text-2xl font-semibold text-white mb-4 text-center">Why It Exists</h2>
                 <div className="text-crypto-silver space-y-4">
                   <p>Crypto trading moves fast. Every second you spend switching between different sites is a second you might miss an opportunity. Traders often have:</p>
                   
-                  <div className="space-y-1 ml-4">
+                  <div className="space-y-1">
                     <p>• CMC open for token stats.</p>
                     <p>• TradingView for charting.</p>
                     <p>• Separate dashboards for DeFi positions.</p>
@@ -157,7 +157,7 @@ export default function AboutPage() {
 
               <div>
                 <h2 className="text-2xl font-semibold text-white mb-4 text-center">Who It's For</h2>
-                <div className="space-y-1 text-crypto-silver ml-4">
+                <div className="space-y-1 text-crypto-silver">
                   <p>• Day traders who need speed and clarity</p>
                   <p>• DeFi farmers and liquidity providers</p>
                   <p>• On-chain analysts chasing alpha</p>
@@ -167,7 +167,7 @@ export default function AboutPage() {
 
               <div>
                 <h2 className="text-2xl font-semibold text-white mb-4 text-center">Why Traders Use It</h2>
-                <div className="space-y-1 text-crypto-silver ml-4">
+                <div className="space-y-1 text-crypto-silver">
                   <p>• <span className="text-white font-medium">Save Time:</span> Skip the endless tab-switching.</p>
                   <p>• <span className="text-white font-medium">Trade Smarter:</span> Market, on-chain, and sentiment data together.</p>
                   <p>• <span className="text-white font-medium">React Faster:</span> Spot setups before the crowd moves.</p>
@@ -255,7 +255,7 @@ export default function AboutPage() {
             </div>
 
             {/* About .locker Section */}
-            <div className="space-y-6 text-left">
+            <div className="space-y-6 text-center">
               <div>
                 <h2 className="text-2xl font-semibold text-white mb-4 text-center">About .locker</h2>
                 <div className="text-crypto-silver space-y-4">
