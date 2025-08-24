@@ -41,6 +41,81 @@ export default function CryptoStocksSection() {
         <p className="text-crypto-silver">AI-powered financial analysis and market intelligence</p>
       </div>
 
+      {/* TradingView - SPX */}
+      <GlassCard className="p-3 sm:p-4 lg:p-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-blue-500 to-green-500 rounded-full flex items-center justify-center">
+              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+            </div>
+            <h3 className="text-lg sm:text-xl font-semibold text-white">S&P 500</h3>
+            <Badge className="bg-gradient-to-r from-blue-500/20 to-green-500/20 text-white border-crypto-silver/30 text-xs">
+              SPX
+            </Badge>
+          </div>
+        </div>
+
+        <div className="flex justify-end items-center gap-4 mb-3">
+          <button
+            onClick={() => openInNewTab('https://www.tradingview.com/symbols/SPX/?exchange=SP&timeframe=ALL')}
+            className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm"
+          >
+            Open Symbol →
+          </button>
+          <button
+            onClick={() => openInNewTab('https://www.tradingview.com/chart/e5l95XgZ/?symbol=SP%3ASPX')}
+            className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm"
+          >
+            Open Chart →
+          </button>
+        </div>
+
+        <div className="w-full">
+          <iframe
+            src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_e5l95&symbol=CAPITALCOM%3AUS500&interval=D&hidesidetoolbar=1&hidetoptoolbar=1&symboledit=1&saveimage=1&toolbarbg=0a0a0a&studies=[]&hideideas=1&theme=dark&style=1&timezone=Etc%2FUTC&withdateranges=1&range=3M&allow_symbol_change=1&src=e5l95XgZ"
+            className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+            title="S&P 500 (CAPITALCOM:US500) Chart"
+            frameBorder="0"
+            scrolling="no"
+            allow="fullscreen"
+          />
+        </div>
+      </GlassCard>
+
+      {/* Stock Market Data */}
+      <GlassCard className="p-3 sm:p-4 lg:p-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center">
+              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+            </div>
+            <h3 className="text-lg sm:text-xl font-semibold text-white">Stock Market Data</h3>
+            <Badge className="bg-gradient-to-r from-green-500/20 to-blue-500/20 text-white border-crypto-silver/30 text-xs">
+              SLICKCHARTS
+            </Badge>
+          </div>
+          <button
+            onClick={() => openInNewTab('https://www.slickcharts.com/')}
+            className="text-crypto-silver hover:text-white text-xs sm:text-sm flex items-center gap-1"
+          >
+            <ExternalLink className="w-3 h-3" />
+            Open Full View
+          </button>
+        </div>
+
+        <div className="w-full">
+          <iframe
+            src="https://www.slickcharts.com/"
+            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+            title="Slickcharts Stock Market Data"
+            loading="eager"
+            referrerPolicy="unsafe-url"
+            allow="fullscreen; clipboard-write; autoplay; camera; microphone; geolocation"
+            frameBorder="0"
+          />
+        </div>
+      </GlassCard>
+
       {/* Screening */}
       <GlassCard className="p-3 sm:p-4 lg:p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
@@ -405,80 +480,7 @@ export default function CryptoStocksSection() {
         </div>
       </GlassCard>
 
-      {/* Stock Market Data */}
-      <GlassCard className="p-3 sm:p-4 lg:p-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center">
-              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-            </div>
-            <h3 className="text-lg sm:text-xl font-semibold text-white">Stock Market Data</h3>
-            <Badge className="bg-gradient-to-r from-green-500/20 to-blue-500/20 text-white border-crypto-silver/30 text-xs">
-              SLICKCHARTS
-            </Badge>
-          </div>
-          <button
-            onClick={() => openInNewTab('https://www.slickcharts.com/')}
-            className="text-crypto-silver hover:text-white text-xs sm:text-sm flex items-center gap-1"
-          >
-            <ExternalLink className="w-3 h-3" />
-            Open Full View
-          </button>
-        </div>
 
-        <div className="w-full">
-          <iframe
-            src="https://www.slickcharts.com/"
-            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            title="Slickcharts Stock Market Data"
-            loading="eager"
-            referrerPolicy="unsafe-url"
-            allow="fullscreen; clipboard-write; autoplay; camera; microphone; geolocation"
-            frameBorder="0"
-          />
-        </div>
-      </GlassCard>
-
-      {/* TradingView */}
-      <GlassCard className="p-3 sm:p-4 lg:p-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-blue-500 to-green-500 rounded-full flex items-center justify-center">
-              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-            </div>
-            <h3 className="text-lg sm:text-xl font-semibold text-white">S&P 500 (SPX)</h3>
-            <Badge className="bg-gradient-to-r from-blue-500/20 to-green-500/20 text-white border-crypto-silver/30 text-xs">
-              STOCK INDEX
-            </Badge>
-          </div>
-        </div>
-
-        <div className="flex justify-end items-center gap-4 mb-3">
-          <button
-            onClick={() => openInNewTab('https://www.tradingview.com/symbols/SPX/?exchange=SP&timeframe=ALL')}
-            className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm"
-          >
-            Open Symbol →
-          </button>
-          <button
-            onClick={() => openInNewTab('https://www.tradingview.com/chart/e5l95XgZ/?symbol=SP%3ASPX')}
-            className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm"
-          >
-            Open Chart →
-          </button>
-        </div>
-
-        <div className="w-full">
-          <iframe
-            src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_e5l95&symbol=CAPITALCOM%3AUS500&interval=D&hidesidetoolbar=1&hidetoptoolbar=1&symboledit=1&saveimage=1&toolbarbg=0a0a0a&studies=[]&hideideas=1&theme=dark&style=1&timezone=Etc%2FUTC&withdateranges=1&range=3M&allow_symbol_change=1&src=e5l95XgZ"
-            className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
-            title="S&P 500 (CAPITALCOM:US500) Chart"
-            frameBorder="0"
-            scrolling="no"
-            allow="fullscreen"
-          />
-        </div>
-      </GlassCard>
 
       {/* Portfolio */}
       <GlassCard className="p-3 sm:p-4 lg:p-6">
