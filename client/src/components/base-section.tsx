@@ -483,17 +483,32 @@ export default function BaseSection() {
           </button>
         </div>
         
-        <div className="mb-4">
-          <p className="text-crypto-silver text-sm">
-            Official Coinbase wallet app for Base network interactions and DeFi access.
+        <div className="p-6 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/20 rounded-lg">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-sm font-bold">CB</span>
+              </div>
+              <div>
+                <h4 className="text-lg font-semibold text-white">Coinbase Wallet</h4>
+                <p className="text-sm text-crypto-silver">Official Base network wallet app</p>
+              </div>
+            </div>
+            <Badge className="bg-gradient-to-r from-blue-500/20 to-cyan-500/20 text-blue-400 border-blue-500/30">
+              OFFICIAL
+            </Badge>
+          </div>
+          <p className="text-crypto-silver mb-4 text-sm">
+            Access your Base network assets, interact with DeFi protocols, and manage your crypto portfolio with Coinbase's official wallet app.
           </p>
+          <button
+            onClick={() => openInNewTab('https://wallet.coinbase.com/home')}
+            className="w-full bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border border-blue-500/30 hover:bg-blue-500/30 text-white py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
+          >
+            <ExternalLink className="w-4 h-4" />
+            Open Coinbase Wallet
+          </button>
         </div>
-        
-        <SafeIframe
-          src="https://wallet.coinbase.com/home"
-          title="Base App - Coinbase Wallet"
-          className="mb-4"
-        />
       </GlassCard>
 
       {/* Ecosystems Section */}
