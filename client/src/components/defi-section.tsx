@@ -62,6 +62,11 @@ export default function DeFiSection() {
         <p className="text-crypto-silver">Comprehensive Decentralized Finance access and analytics</p>
       </div>
 
+      {/* TRADE Section */}
+      <div className="text-center mb-8">
+        <h2 className="text-3xl font-bold text-white mb-2">TRADE</h2>
+      </div>
+
       {/* Cross-Chain Section */}
       <div className="space-y-6">
         <h3 className="text-xl font-semibold text-white mb-4">Cross-Chain</h3>
@@ -345,6 +350,17 @@ export default function DeFiSection() {
         </div>
       </div>
 
+      {/* DeFi Section Header */}
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-blue-500 rounded-xl flex items-center justify-center">
+          <DollarSign className="text-white text-xl" />
+        </div>
+        <div>
+          <h2 className="text-2xl font-bold text-white">DeFi</h2>
+          <p className="text-crypto-silver">Core DeFi protocols and platforms</p>
+        </div>
+      </div>
+
       {/* DeFiLlama */}
       <div className="mt-6">
         <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
@@ -369,17 +385,8 @@ export default function DeFiSection() {
         </div>
       </div>
 
-      {/* DeFi Section */}
+      {/* DeFi Protocols Section */}
       <div className="space-y-6">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-blue-500 rounded-xl flex items-center justify-center">
-            <DollarSign className="text-white text-xl" />
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold text-white">DeFi</h2>
-            <p className="text-crypto-silver">Core DeFi protocols and platforms</p>
-          </div>
-        </div>
         
         {/* Peapods Finance Iframe */}
         <GlassCard className="p-6">
