@@ -12,15 +12,15 @@ export default function PortfolioPage() {
       <header className="glass-card-dark border-b border-crypto-silver/20 sticky top-0 z-50 transition-opacity duration-300" style={{ opacity: headerOpacity }}>
         <div className="max-w-[95vw] mx-auto px-2 sm:px-3">
           <div className="flex justify-between items-center py-3 lg:py-4">
-            <div className="flex items-center space-x-2 sm:space-x-3">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg overflow-hidden">
+            <div className="flex items-center space-x-3 sm:space-x-4">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-lg overflow-hidden">
                 <img 
                   src={cryptoHippoImage}
                   alt="CryptoHippo"
                   className="w-full h-full object-cover"
                 />
               </div>
-              <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-white">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-white">
                 CryptoHippo
               </h1>
             </div>

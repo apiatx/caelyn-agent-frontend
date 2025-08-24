@@ -16,16 +16,16 @@ export default function TopChartsPage() {
       <header className="glass-card-dark border-b border-crypto-silver/20 sticky top-0 z-50 transition-opacity duration-300" style={{ opacity: headerOpacity }}>
         <div className="max-w-[95vw] mx-auto px-2 sm:px-3">
           <div className="flex justify-between items-center py-3 lg:py-4">
-            <div className="flex items-center space-x-2 sm:space-x-3">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-black rounded-xl flex items-center justify-center">
+            <div className="flex items-center space-x-3 sm:space-x-4">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 bg-black rounded-xl flex items-center justify-center">
                 <img 
                   src={bitcoinLogo}
                   alt="Bitcoin"
-                  className="w-8 h-8 sm:w-10 sm:h-10 object-contain"
+                  className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 object-contain"
                   style={{filter: 'drop-shadow(0 0 4px rgba(255, 165, 0, 0.3))'}}
                 />
               </div>
-              <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-white">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-white">
                 CryptoHippo
               </h1>
             </div>
