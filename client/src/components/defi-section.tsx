@@ -527,19 +527,6 @@ export default function DeFiSection() {
         <GlassCard className="p-6">
           
           <div className="grid grid-cols-1 gap-4">
-            {/* Indexy */}
-            <Button
-              variant="outline"
-              onClick={() => openInNewTab('https://indexy.xyz/index/194')}
-              className="bg-black/20 border-crypto-silver/20 hover:bg-indigo-500/20 hover:border-indigo-500/30 text-white justify-start p-4 h-auto"
-            >
-              <Brain className="w-4 h-4 mr-2" />
-              <div className="text-left">
-                <div className="font-semibold">Indexy</div>
-                <div className="text-sm text-crypto-silver">AI-powered index protocols</div>
-              </div>
-            </Button>
-
             {/* Senpi AI */}
             <Button
               variant="outline"
