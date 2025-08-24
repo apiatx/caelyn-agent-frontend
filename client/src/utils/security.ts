@@ -128,7 +128,9 @@ const TRUSTED_DOMAINS = [
   'morpho.org',
   'www.ether.fi',
   'ether.fi',
-  'wallet.coinbase.com'
+  'wallet.coinbase.com',
+  'app.teller.org',
+  'app.seamlessprotocol.com'
 ];
 
 /**

@@ -533,6 +533,34 @@ export default function DeFiSection() {
 
           <Button
             variant="outline"
+            onClick={() => openInNewTab('https://app.teller.org/ethereum/borrow')}
+            className="bg-black/20 border-crypto-silver/20 hover:bg-cyan-500/20 hover:border-cyan-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
+          >
+            <div className="p-3 rounded-lg bg-gradient-to-r from-cyan-500/20 to-blue-500/20">
+              <DollarSign className="h-6 w-6 text-cyan-400" />
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-lg">Teller</div>
+              <div className="text-sm text-crypto-silver">Decentralized lending protocol</div>
+            </div>
+          </Button>
+
+          <Button
+            variant="outline"
+            onClick={() => openInNewTab('https://app.seamlessprotocol.com/#/?tab=Vaults')}
+            className="bg-black/20 border-crypto-silver/20 hover:bg-teal-500/20 hover:border-teal-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
+          >
+            <div className="p-3 rounded-lg bg-gradient-to-r from-teal-500/20 to-emerald-500/20">
+              <Shield className="h-6 w-6 text-teal-400" />
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-lg">Seamless Protocol</div>
+              <div className="text-sm text-crypto-silver">Yield farming vaults</div>
+            </div>
+          </Button>
+
+          <Button
+            variant="outline"
             onClick={() => openInNewTab('https://www.tarot.to/')}
             className="bg-black/20 border-crypto-silver/20 hover:bg-pink-500/20 hover:border-pink-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
           >
