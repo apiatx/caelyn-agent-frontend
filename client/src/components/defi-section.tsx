@@ -152,7 +152,7 @@ export default function DeFiSection() {
               onClick={() => openInNewTab('https://ave.ai/')}
               className="bg-black/20 border-crypto-silver/20 hover:bg-green-500/20 hover:border-green-500/30 text-white justify-start p-4 h-auto"
             >
-              <TrendingUp className="w-4 h-4 mr-2" />
+              <ArrowLeftRight className="w-4 h-4 mr-2" />
               <div className="text-left">
                 <div className="font-semibold">Ave.ai</div>
                 <div className="text-sm text-crypto-silver">AI-powered multi-chain trading terminal</div>
@@ -164,7 +164,7 @@ export default function DeFiSection() {
               onClick={() => openInNewTab('https://universalx.app/home')}
               className="bg-black/20 border-crypto-silver/20 hover:bg-purple-500/20 hover:border-purple-500/30 text-white justify-start p-4 h-auto"
             >
-              <TrendingUp className="w-4 h-4 mr-2" />
+              <ArrowLeftRight className="w-4 h-4 mr-2" />
               <div className="text-left">
                 <div className="font-semibold">UniversalX</div>
                 <div className="text-sm text-crypto-silver">Trade any token, on any chain</div>
@@ -176,7 +176,7 @@ export default function DeFiSection() {
               onClick={() => openInNewTab('https://o1.exchange/')}
               className="bg-black/20 border-crypto-silver/20 hover:bg-cyan-500/20 hover:border-cyan-500/30 text-white justify-start p-4 h-auto"
             >
-              <TrendingUp className="w-4 h-4 mr-2" />
+              <ArrowLeftRight className="w-4 h-4 mr-2" />
               <div className="text-left">
                 <div className="font-semibold">O1 Exchange</div>
                 <div className="text-sm text-crypto-silver">Advanced trading on Base and Solana</div>
@@ -188,7 +188,7 @@ export default function DeFiSection() {
               onClick={() => openInNewTab('https://www.ourbit.com/')}
               className="bg-black/20 border-crypto-silver/20 hover:bg-orange-500/20 hover:border-orange-500/30 text-white justify-start p-4 h-auto"
             >
-              <TrendingUp className="w-4 h-4 mr-2" />
+              <ArrowLeftRight className="w-4 h-4 mr-2" />
               <div className="text-left">
                 <div className="font-semibold">OurBit</div>
                 <div className="text-sm text-crypto-silver">CEX & DEX, Spot & Futures</div>
