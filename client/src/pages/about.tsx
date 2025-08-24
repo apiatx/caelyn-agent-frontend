@@ -65,7 +65,7 @@ export default function AboutPage() {
 
             <div className="space-y-6 text-left">
               <div>
-                <h2 className="text-2xl font-semibold text-white mb-4">Why It Exists</h2>
+                <h2 className="text-2xl font-semibold text-white mb-4 text-center">Why It Exists</h2>
                 <div className="text-crypto-silver space-y-4">
                   <p>Crypto trading moves fast. Every second you spend switching between different sites is a second you might miss an opportunity. Traders often have:</p>
                   
@@ -82,7 +82,7 @@ export default function AboutPage() {
               </div>
 
               <div>
-                <h2 className="text-2xl font-semibold text-white mb-4">What You Get</h2>
+                <h2 className="text-2xl font-semibold text-white mb-4 text-center">What You Get</h2>
                 <div className="space-y-4 text-crypto-silver">
                   <div>
                     <h3 className="text-lg font-medium text-white mb-2">Market Overview</h3>
@@ -156,7 +156,7 @@ export default function AboutPage() {
               </div>
 
               <div>
-                <h2 className="text-2xl font-semibold text-white mb-4">Who It's For</h2>
+                <h2 className="text-2xl font-semibold text-white mb-4 text-center">Who It's For</h2>
                 <div className="space-y-1 text-crypto-silver ml-4">
                   <p>• Day traders who need speed and clarity</p>
                   <p>• DeFi farmers and liquidity providers</p>
@@ -166,7 +166,7 @@ export default function AboutPage() {
               </div>
 
               <div>
-                <h2 className="text-2xl font-semibold text-white mb-4">Why Traders Use It</h2>
+                <h2 className="text-2xl font-semibold text-white mb-4 text-center">Why Traders Use It</h2>
                 <div className="space-y-1 text-crypto-silver ml-4">
                   <p>• <span className="text-white font-medium">Save Time:</span> Skip the endless tab-switching.</p>
                   <p>• <span className="text-white font-medium">Trade Smarter:</span> Market, on-chain, and sentiment data together.</p>
@@ -187,7 +187,7 @@ export default function AboutPage() {
               </div>
 
               <div>
-                <h2 className="text-2xl font-semibold text-white mb-4">Why This Matters</h2>
+                <h2 className="text-2xl font-semibold text-white mb-4 text-center">Why This Matters</h2>
                 <div className="text-crypto-silver space-y-4">
                   <p>Crypto is still early. The tools, data, and opportunities are out there — but for newcomers, the learning curve can be steep. Finding the right charts, understanding on-chain activity, navigating DeFi platforms... it can take months (or years) to piece it all together.</p>
                   <p>CryptoHippo is built to shorten that curve.</p>
@@ -210,7 +210,7 @@ export default function AboutPage() {
               </div>
 
               <div>
-                <h2 className="text-2xl font-semibold text-white mb-4">The Bigger Picture</h2>
+                <h2 className="text-2xl font-semibold text-white mb-4 text-center">The Bigger Picture</h2>
                 <div className="text-crypto-silver space-y-4">
                   <p>Bitcoin isn't just code — it's a declaration of independence from a system designed to keep you playing a game you can never win. Fiat is debt. Inflation is theft. And the central banking model ensures you're always running just to stay in place.</p>
                   <p>The future belongs to those who think in satoshis, not cents.</p>
@@ -233,7 +233,7 @@ export default function AboutPage() {
               </div>
 
               <div>
-                <h2 className="text-2xl font-semibold text-white mb-4">Recommended Reading</h2>
+                <h2 className="text-2xl font-semibold text-white mb-4 text-center">Recommended Reading</h2>
                 <div className="text-crypto-silver space-y-4">
                   <p>
                     🔗{' '}
@@ -257,7 +257,7 @@ export default function AboutPage() {
             {/* About .locker Section */}
             <div className="space-y-6 text-left">
               <div>
-                <h2 className="text-2xl font-semibold text-white mb-4">About .locker</h2>
+                <h2 className="text-2xl font-semibold text-white mb-4 text-center">About .locker</h2>
                 <div className="text-crypto-silver space-y-4">
                   <p>CryptoHippo uses a .locker domain — a new kind of web address that's both a traditional domain and a blockchain-secured identity. When you register a .locker, it's linked to the Bitcoin Naming System (BNS), meaning your Web3 identity is anchored to the most secure and decentralized blockchain in existence.</p>
                   
@@ -281,7 +281,7 @@ export default function AboutPage() {
 
             {/* Support Section */}
             <div className="mt-12 pt-8 border-t border-crypto-silver/20">
-              <h2 className="text-2xl font-semibold text-white mb-6">Support CryptoHippo</h2>
+              <h2 className="text-2xl font-semibold text-white mb-6 text-center">Support CryptoHippo</h2>
               <a
                 href="https://buymeacoffee.com/aidanpilonb?new=1"
                 target="_blank"
