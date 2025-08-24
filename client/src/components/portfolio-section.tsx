@@ -601,7 +601,7 @@ export default function PortfolioSection() {
       {/* HyperLiquid Analytics */}
       <GlassCard className="p-6">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-white flex items-center">
+          <h3 className="text-2xl font-bold text-white flex items-center">
             <div className="w-5 h-5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mr-2 flex items-center justify-center text-xs font-bold">
               H
             </div>
@@ -632,14 +632,14 @@ export default function PortfolioSection() {
         </div>
       </GlassCard>
 
-      {/* Hyperfolio Integration */}
+      {/* HyperEVM Integration */}
       <GlassCard className="p-6">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-white flex items-center">
+          <h3 className="text-2xl font-bold text-white flex items-center">
             <div className="w-5 h-5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mr-2 flex items-center justify-center text-xs font-bold">
               H
             </div>
-            Hyperfolio
+            HyperEVM
           </h3>
           <div className="flex items-center gap-2">
             <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
@@ -660,7 +660,7 @@ export default function PortfolioSection() {
           <iframe
             src="https://app.hyperbeat.org/hyperfolio"
             className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            title="Hyperfolio Portfolio Analytics"
+            title="HyperEVM Portfolio Analytics"
             frameBorder="0"
             loading="lazy"
             allow="clipboard-read; clipboard-write"
