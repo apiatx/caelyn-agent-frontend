@@ -187,6 +187,47 @@ export default function CryptoDashboardSection() {
         </div>
       </GlassCard>
 
+      {/* Messari Integration */}
+      <GlassCard className="p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-semibold text-white flex items-center">
+            <BarChart3 className="w-4 h-4 mr-2" />
+            Messari
+          </h3>
+          <div className="flex items-center gap-2">
+            <Badge className="bg-indigo-500/20 text-indigo-400 border-indigo-500/30">
+              Crypto Research
+            </Badge>
+            <a 
+              href="https://messari.io/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-crypto-silver hover:text-white transition-colors group"
+            >
+              <ExternalLink className="h-4 w-4 group-hover:scale-110 transition-transform" />
+            </a>
+          </div>
+        </div>
+        
+        <div className="relative w-full">
+          <iframe
+            src="https://messari.io/"
+            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+            title="Messari Crypto Research"
+            frameBorder="0"
+            loading="lazy"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+            style={{
+              background: 'transparent',
+              colorScheme: 'dark'
+            }}
+          />
+          <div className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+            Crypto Research & Analytics
+          </div>
+        </div>
+      </GlassCard>
+
       {/* Coinglass Bull Market Peak Signals */}
       <GlassCard className="p-3 sm:p-4 lg:p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
