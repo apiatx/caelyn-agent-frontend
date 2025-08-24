@@ -140,50 +140,63 @@ export default function CryptoDashboardSection() {
 
       {/* Quick Analytics Links - moved between Alt Season and Onchain */}
       <GlassCard className="p-3 sm:p-4 lg:p-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
-          <button
-            onClick={() => openInNewTab('https://coinmarketcap.com/')}
-            className="p-3 sm:p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
-          >
-            <h5 className="text-blue-400 font-semibold mb-1 text-sm sm:text-base">CMC Leaderboard</h5>
-            <p className="text-gray-400 text-xs sm:text-sm">Market Rankings</p>
-          </button>
+        <div className="space-y-3 sm:space-y-4">
+          {/* Row 1: CMC Leaderboard + CoinGecko Chains */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <button
+              onClick={() => openInNewTab('https://coinmarketcap.com/')}
+              className="p-3 sm:p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+            >
+              <h5 className="text-blue-400 font-semibold mb-1 text-sm sm:text-base">CMC Leaderboard</h5>
+              <p className="text-gray-400 text-xs sm:text-sm">Market Rankings</p>
+            </button>
 
-          <button
-            onClick={() => openInNewTab('https://charts.bitbo.io/index/')}
-            className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
-          >
-            <h5 className="text-purple-400 font-semibold mb-1">BitBo Charts</h5>
-            <p className="text-gray-400 text-sm">Crypto Indices</p>
-          </button>
-          <button
-            onClick={() => openInNewTab('https://coinalyze.net/futures-data/global-charts/')}
-            className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
-          >
-            <h5 className="text-orange-400 font-semibold mb-1">Open Interest</h5>
-            <p className="text-gray-400 text-sm">Futures Data</p>
-          </button>
-          <button
-            onClick={() => openInNewTab('https://sosovalue.com/assets/cryptoindex')}
-            className="p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-lg hover:bg-cyan-500/20 transition-colors"
-          >
-            <h5 className="text-cyan-400 font-semibold mb-1">SoSo Value</h5>
-            <p className="text-gray-400 text-sm">Crypto Index</p>
-          </button>
-          <button
-            onClick={() => openInNewTab('https://www.coingecko.com/en/chains')}
-            className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
-          >
-            <h5 className="text-green-400 font-semibold mb-1">CoinGecko Chains</h5>
-            <p className="text-gray-400 text-sm">Blockchain Analytics</p>
-          </button>
-          <button
-            onClick={() => openInNewTab('https://messari.io/')}
-            className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-lg hover:bg-indigo-500/20 transition-colors"
-          >
-            <h5 className="text-indigo-400 font-semibold mb-1">Messari</h5>
-            <p className="text-gray-400 text-sm">Crypto Research</p>
-          </button>
+            <button
+              onClick={() => openInNewTab('https://www.coingecko.com/en/chains')}
+              className="p-3 sm:p-4 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
+            >
+              <h5 className="text-green-400 font-semibold mb-1 text-sm sm:text-base">CoinGecko Chains</h5>
+              <p className="text-gray-400 text-xs sm:text-sm">Blockchain Analytics</p>
+            </button>
+          </div>
+
+          {/* Row 2: BitBo Charts + Open Interest */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <button
+              onClick={() => openInNewTab('https://charts.bitbo.io/index/')}
+              className="p-3 sm:p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
+            >
+              <h5 className="text-purple-400 font-semibold mb-1 text-sm sm:text-base">BitBo Charts</h5>
+              <p className="text-gray-400 text-xs sm:text-sm">Crypto Indices</p>
+            </button>
+
+            <button
+              onClick={() => openInNewTab('https://coinalyze.net/futures-data/global-charts/')}
+              className="p-3 sm:p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
+            >
+              <h5 className="text-orange-400 font-semibold mb-1 text-sm sm:text-base">Open Interest</h5>
+              <p className="text-gray-400 text-xs sm:text-sm">Futures Data</p>
+            </button>
+          </div>
+
+          {/* Row 3: SoSo Value + Messari */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <button
+              onClick={() => openInNewTab('https://sosovalue.com/assets/cryptoindex')}
+              className="p-3 sm:p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-lg hover:bg-cyan-500/20 transition-colors"
+            >
+              <h5 className="text-cyan-400 font-semibold mb-1 text-sm sm:text-base">SoSo Value</h5>
+              <p className="text-gray-400 text-xs sm:text-sm">Crypto Index</p>
+            </button>
+
+            <button
+              onClick={() => openInNewTab('https://messari.io/')}
+              className="p-3 sm:p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-lg hover:bg-indigo-500/20 transition-colors"
+            >
+              <h5 className="text-indigo-400 font-semibold mb-1 text-sm sm:text-base">Messari</h5>
+              <p className="text-gray-400 text-xs sm:text-sm">Crypto Research</p>
+            </button>
+          </div>
         </div>
       </GlassCard>
 
