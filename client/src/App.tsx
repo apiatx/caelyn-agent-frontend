@@ -12,6 +12,7 @@ import HypePage from "@/pages/hype";
 import AbstractPage from "@/pages/abstract";
 import CryptoStocks from "@/pages/crypto-stocks";
 import BittensorPage from "@/pages/bittensor";
+import BTCPage from "@/pages/btc";
 
 import OnchainPage from "@/pages/onchain";
 import BasePage from "@/pages/base";
@@ -25,7 +26,9 @@ function Router() {
     <Switch>
       <Route path="/" component={Dashboard} />
       <Route path="/app" component={Dashboard} />
-      <Route path="/app/majors" component={TopChartsPage} />
+      <Route path="/app/majors" component={BTCPage} />
+      <Route path="/btc" component={BTCPage} />
+      <Route path="/majors" component={BTCPage} />
       <Route path="/app/onchain" component={OnchainPage} />
       <Route path="/onchain" component={OnchainPage} />
       <Route path="/app/base" component={BasePage} />
