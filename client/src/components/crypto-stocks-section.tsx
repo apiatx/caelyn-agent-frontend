@@ -125,7 +125,7 @@ export default function CryptoStocksSection() {
             </div>
             <h3 className="text-lg sm:text-xl font-semibold text-white">Screening</h3>
             <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
-              SCREENING
+              STOCK SCREENERS
             </Badge>
           </div>
         </div>
@@ -272,7 +272,7 @@ export default function CryptoStocksSection() {
             </div>
             <h3 className="text-lg sm:text-xl font-semibold text-white">X Alpha</h3>
             <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
-              TRADING
+              SIGNAL
             </Badge>
           </div>
         </div>
