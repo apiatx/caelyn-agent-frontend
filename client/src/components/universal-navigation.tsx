@@ -17,13 +17,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
   const [location, setLocation] = useLocation();
   
   const navigateTo = (url: string) => {
-    // Special handling for Market Overview to clear hash
-    if (url === "/app") {
-      window.location.hash = "";
-      setLocation(url);
-    } else {
-      setLocation(url);
-    }
+    setLocation(url);
   };
 
   const isActive = (page: string) => {
@@ -113,7 +107,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
             <Brain className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />HYPE
           </button>
           <button
-            onClick={() => navigateTo("/app#bittensor")}
+            onClick={() => navigateTo("/app/bittensor")}
             className={`flex-1 min-w-0 py-3 px-1 xl:px-3 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
               isActive("bittensor")
                 ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
