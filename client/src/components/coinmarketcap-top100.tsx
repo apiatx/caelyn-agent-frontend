@@ -3,6 +3,7 @@ import { TrendingUp, TrendingDown, DollarSign, BarChart3, Globe, ArrowUpDown, Ar
 import { GlassCard } from './glass-card';
 import { Badge } from '@/components/ui/badge';
 import { useState, useMemo } from 'react';
+import { openCoinMarketCapLink } from '@/utils/mobile-links';
 
 interface CoinMarketCapCrypto {
   id: number;
@@ -151,7 +152,7 @@ export function CoinMarketCapTop100() {
   };
 
   const openCoinMarketCap = (slug: string) => {
-    window.open(`https://coinmarketcap.com/currencies/${slug}/`, '_blank');
+    openCoinMarketCapLink(`currencies/${slug}/`);
   };
 
   return (

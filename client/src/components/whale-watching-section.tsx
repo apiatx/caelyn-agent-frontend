@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useWhaleWatching } from "@/hooks/use-whale-watching";
+import { openDexScreenerLink } from "@/utils/mobile-links";
 
 
 export default function WhaleWatchingSection() {
@@ -133,14 +134,12 @@ export default function WhaleWatchingSection() {
                                     <div>
                                       <h3 className="font-medium text-white">
                                         {parseFloat(tx.amount).toLocaleString()}{' '}
-                                        <a 
-                                          href={`https://dexscreener.com/base/${getTokenInfo(tx.token).address}`}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="hover:text-blue-400 transition-colors"
+                                        <span 
+                                          onClick={() => openDexScreenerLink(`base/${getTokenInfo(tx.token).address}`)}
+                                          className="hover:text-blue-400 transition-colors cursor-pointer"
                                         >
                                           {getTokenInfo(tx.token).ticker}
-                                        </a>
+                                        </span>
                                       </h3>
                                       <p className="text-xs text-crypto-silver">
                                         {getTokenInfo(tx.token).name}

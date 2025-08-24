@@ -4,6 +4,7 @@ import { ArrowUpRight, ArrowDownRight, TrendingUp, Eye, Users, MessageCircle, Br
 import { useQuery } from "@tanstack/react-query";
 import { useTopMovers, useMarketAnalysis, useSocialSentiment, useWhaleActivity } from "@/hooks/use-real-time-data";
 import { formatCurrency, formatPercentage } from "@/lib/utils";
+import { openDexScreenerLink } from "@/utils/mobile-links";
 
 interface DashboardData {
   portfolioValue: number;
@@ -156,14 +157,17 @@ export default function DashboardSection() {
               topMovers?.filter(m => m.network === 'BASE').slice(0, 5).map((token, index) => {
                 // Use contract address from API response for real-time DexScreener links
                 const contractAddress = token.contractAddress;
-                const dexScreenerUrl = contractAddress ? `https://dexscreener.com/base/${contractAddress}` : null;
+                const handleTokenClick = (e: React.MouseEvent) => {
+                  e.preventDefault();
+                  if (contractAddress) {
+                    openDexScreenerLink(`base/${contractAddress}`);
+                  }
+                };
                 
                 return (
-                  <a 
+                  <div 
                     key={`${token.symbol}-${index}`} 
-                    href={dexScreenerUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    onClick={handleTokenClick}
                     className="flex items-center justify-between p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer group"
                   >
                   <div className="flex items-center gap-3">
@@ -183,7 +187,7 @@ export default function DashboardSection() {
                       {token.change24h >= 0 ? '+' : ''}{token.change24h.toFixed(2)}%
                     </div>
                   </div>
-                  </a>
+                  </div>
                 );
               })
             )}

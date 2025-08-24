@@ -11,6 +11,7 @@ import {
   LineChart,
   PieChart
 } from 'lucide-react';
+import { openCoinMarketCapLink } from '@/utils/mobile-links';
 
 interface GlobalMetrics {
   active_cryptocurrencies: number;
@@ -187,19 +188,19 @@ export function MarketOverviewSection() {
   };
 
   const openAltSeasonChart = () => {
-    window.open('https://coinmarketcap.com/charts/altcoin-season-index/', '_blank');
+    openCoinMarketCapLink('charts/altcoin-season-index/');
   };
 
   const openETFPage = () => {
-    window.open('https://coinmarketcap.com/etf/', '_blank');
+    openCoinMarketCapLink('etf/');
   };
 
   const openFearGreedChart = () => {
-    window.open('https://coinmarketcap.com/charts/fear-and-greed-index/', '_blank');
+    openCoinMarketCapLink('charts/fear-and-greed-index/');
   };
 
   const openMarketCharts = () => {
-    window.open('https://coinmarketcap.com/charts/', '_blank');
+    openCoinMarketCapLink('charts/');
   };
 
   const getFearGreedColor = (value: number) => {

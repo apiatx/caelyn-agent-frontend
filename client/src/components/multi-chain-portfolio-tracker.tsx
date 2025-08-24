@@ -5,6 +5,7 @@ import { GlassCard } from './glass-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { openDexScreenerLink } from '@/utils/mobile-links';
 
 interface TokenBalance {
   token: string;
@@ -57,7 +58,7 @@ export function MultiChainPortfolioTracker() {
   const openDexScreener = (contractAddress: string, chain: string) => {
     const chainName = chain.toLowerCase();
     if (contractAddress !== 'native') {
-      window.open(`https://dexscreener.com/${chainName}/${contractAddress}`, '_blank');
+      openDexScreenerLink(`${chainName}/${contractAddress}`);
     }
   };
 

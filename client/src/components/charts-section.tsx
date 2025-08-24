@@ -2,6 +2,7 @@ import { GlassCard } from "@/components/ui/glass-card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, ExternalLink, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { openDexScreenerLink } from "@/utils/mobile-links";
 
 export default function ChartsSection() {
   const openInNewTab = (url: string) => {
@@ -30,7 +31,7 @@ export default function ChartsSection() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => openInNewTab('https://dexscreener.com/multicharts')}
+            onClick={() => openDexScreenerLink('multicharts')}
             className="text-crypto-silver hover:text-white"
           >
             <ExternalLink className="h-4 w-4 mr-2" />

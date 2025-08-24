@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Layers, ExternalLink } from "lucide-react";
 import { openSecureLink, getSecureIframeProps } from "@/utils/security";
+import { openDexScreenerLink } from "@/utils/mobile-links";
 import abstractLogo from "@assets/abstract chain_1755977414942.jpg";
 
 // Glass card component for abstract section
@@ -33,7 +34,7 @@ export default function AbstractSection() {
             </Badge>
           </div>
           <button
-            onClick={() => openInNewTab('https://dexscreener.com/abstract?theme=dark')}
+            onClick={() => openDexScreenerLink('abstract?theme=dark')}
             className="flex items-center gap-1 text-purple-400 hover:text-purple-300 text-sm transition-colors"
           >
             Open Full View <ExternalLink className="w-3 h-3" />
