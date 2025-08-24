@@ -24,6 +24,12 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
     // Use both props and current location for active state
     const currentPath = location.replace(/^\/+/, '').replace(/\/+$/, '');
     const isActiveByPath = currentPath === `app/${page}` || (page === 'dashboard' && (currentPath === '' || currentPath === 'app'));
+    
+    // Special handling: Don't activate dashboard when bittensor is active
+    if (page === 'dashboard' && activePage === 'bittensor') {
+      return false;
+    }
+    
     return activePage === page || isActiveByPath;
   };
 
