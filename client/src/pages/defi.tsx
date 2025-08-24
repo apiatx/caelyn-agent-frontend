@@ -1,5 +1,5 @@
 import DeFiSection from "@/components/defi-section";
-import cryptoHippoImage from "@assets/cute-cartoon-hippo-showing-off-butt-vector_1756060620427.jpg";
+import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
 import { UniversalNavigation } from "@/components/universal-navigation";
 import { useScrollFade } from "@/hooks/useScrollFade";
 

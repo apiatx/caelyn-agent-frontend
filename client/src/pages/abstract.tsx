@@ -4,7 +4,7 @@ import AbstractSection from "@/components/abstract-section";
 import { Loader2, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { openSecureLink } from "@/utils/security";
-import cryptoHippoImage from "@assets/cute-cartoon-hippo-showing-off-butt-vector_1756060620427.jpg";
+import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
 import abstractLogo from "@assets/abstract chain_1755977414942.jpg";
 import { useScrollFade } from "@/hooks/useScrollFade";
 
