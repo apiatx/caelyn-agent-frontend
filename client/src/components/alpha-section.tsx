@@ -788,7 +788,7 @@ export default function AlphaSection() {
               <div className="w-8 h-8 bg-indigo-500 rounded-full flex items-center justify-center">
                 <Wallet className="w-4 h-4 text-white" />
               </div>
-              <h4 className="text-indigo-400 font-semibold">HyperLiquid Vault</h4>
+              <h4 className="text-indigo-400 font-semibold">DegenAI HL Vault</h4>
             </div>
             <p className="text-gray-400 text-sm">Copy trading vault strategy</p>
           </SafeLink>
