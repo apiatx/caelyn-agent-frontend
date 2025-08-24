@@ -63,8 +63,14 @@ export default function DeFiSection() {
       </div>
 
       {/* TRADE Section */}
-      <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-white mb-2">TRADE</h2>
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
+          <ArrowLeftRight className="text-white text-xl" />
+        </div>
+        <div>
+          <h2 className="text-2xl font-bold text-white">TRADE</h2>
+          <p className="text-crypto-silver">Cross-chain trading and exchange platforms</p>
+        </div>
       </div>
 
       {/* Cross-Chain Section */}
