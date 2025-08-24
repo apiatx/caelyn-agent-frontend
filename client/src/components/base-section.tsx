@@ -465,6 +465,37 @@ export default function BaseSection() {
         </GlassCard>
       </div>
 
+      {/* Base App Section */}
+      <GlassCard className="p-6">
+        <div className="flex items-center gap-2 mb-6">
+          <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
+            <span className="text-white text-xs font-bold">B</span>
+          </div>
+          <h3 className="text-xl font-semibold text-white">Base App</h3>
+          <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
+            OFFICIAL
+          </Badge>
+          <button
+            onClick={() => openInNewTab('https://wallet.coinbase.com/home')}
+            className="text-blue-400 hover:text-blue-300 text-sm ml-auto"
+          >
+            Open Full View →
+          </button>
+        </div>
+        
+        <div className="mb-4">
+          <p className="text-crypto-silver text-sm">
+            Official Coinbase wallet app for Base network interactions and DeFi access.
+          </p>
+        </div>
+        
+        <SafeIframe
+          src="https://wallet.coinbase.com/home"
+          title="Base App - Coinbase Wallet"
+          className="mb-4"
+        />
+      </GlassCard>
+
       {/* Ecosystems Section */}
       <div className="space-y-6">
         <div className="flex items-center gap-3 mb-6">

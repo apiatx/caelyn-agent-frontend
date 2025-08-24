@@ -127,7 +127,8 @@ const TRUSTED_DOMAINS = [
   'limitless.exchange',
   'morpho.org',
   'www.ether.fi',
-  'ether.fi'
+  'ether.fi',
+  'wallet.coinbase.com'
 ];
 
 /**
