@@ -290,7 +290,7 @@ export default function PortfolioSection() {
 
         {/* Cerebro */}
         <GlassCard className="p-6">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-sm font-bold">
                 C
@@ -312,18 +312,6 @@ export default function PortfolioSection() {
               </button>
             </div>
           </div>
-          
-          <div className="w-full">
-            <div className="h-[120px] rounded-lg border border-crypto-silver/20 bg-gradient-to-br from-cyan-900/20 to-blue-900/20 flex items-center justify-center p-6">
-              <button
-                onClick={() => window.open('https://cerebro.xyz/dashboard', '_blank', 'noopener,noreferrer')}
-                className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 hover:scale-105 flex items-center gap-2"
-              >
-                <ExternalLink className="w-4 h-4" />
-                Open Cerebro Dashboard
-              </button>
-            </div>
-          </div>
         </GlassCard>
       </div>
 
@@ -341,7 +329,7 @@ export default function PortfolioSection() {
 
         {/* DeBank */}
         <GlassCard className="p-6">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center text-sm font-bold">
                 DB
@@ -360,18 +348,6 @@ export default function PortfolioSection() {
                 className="text-crypto-silver hover:text-white transition-colors group"
               >
                 <ExternalLink className="h-4 w-4 group-hover:scale-110 transition-transform" />
-              </button>
-            </div>
-          </div>
-          
-          <div className="w-full">
-            <div className="h-[120px] rounded-lg border border-crypto-silver/20 bg-gradient-to-br from-green-900/20 to-blue-900/20 flex items-center justify-center p-6">
-              <button
-                onClick={() => window.open('https://debank.com/profile', '_blank', 'noopener,noreferrer')}
-                className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 hover:scale-105 flex items-center gap-2"
-              >
-                <ExternalLink className="w-4 h-4" />
-                Open DeBank Portfolio
               </button>
             </div>
           </div>
@@ -568,15 +544,15 @@ export default function PortfolioSection() {
           </div>
         </div>
 
-        {/* TaoHub Portfolio */}
+        {/* Bittensor */}
         <GlassCard className="p-6">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-sm font-bold">
-                TH
+                B
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-white">TaoHub Portfolio</h3>
+                <h3 className="text-lg font-semibold text-white">Bittensor</h3>
                 <p className="text-crypto-silver text-sm">TAO Network Portfolio Tracker</p>
               </div>
             </div>
@@ -592,50 +568,30 @@ export default function PortfolioSection() {
               </button>
             </div>
           </div>
-          
-          <div className="w-full">
-            <div className="h-[120px] rounded-lg border border-crypto-silver/20 bg-gradient-to-br from-blue-900/20 to-purple-900/20 flex items-center justify-center p-6">
-              <button
-                onClick={() => window.open('https://www.taohub.info/portfolio', '_blank', 'noopener,noreferrer')}
-                className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 hover:scale-105 flex items-center gap-2"
-              >
-                <ExternalLink className="w-4 h-4" />
-                Open TaoHub Portfolio
-              </button>
-            </div>
-          </div>
         </GlassCard>
       </div>
 
       {/* HyperLiquid Analytics */}
       <GlassCard className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-2xl font-bold text-white flex items-center">
-            <div className="w-5 h-5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mr-2 flex items-center justify-center text-xs font-bold">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-sm font-bold">
               H
             </div>
-            HyperLiquid
-          </h3>
+            <div>
+              <h3 className="text-lg font-semibold text-white">HyperLiquid</h3>
+              <p className="text-crypto-silver text-sm">Portfolio Analytics</p>
+            </div>
+          </div>
           <div className="flex items-center gap-2">
             <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
-              Portfolio Analytics
+              PERPS
             </Badge>
-          </div>
-        </div>
-        
-        <div className="bg-black/20 border border-crypto-silver/20 rounded-lg p-6">
-          <div className="grid grid-cols-1 gap-3">
             <button
               onClick={() => window.open('https://app.coinmarketman.com/hypertracker', '_blank', 'noopener,noreferrer')}
-              className="bg-gradient-to-br from-purple-500/10 to-pink-600/10 hover:from-purple-500/20 hover:to-pink-600/20 border border-purple-500/20 hover:border-purple-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+              className="text-crypto-silver hover:text-white transition-colors group"
             >
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-medium text-white group-hover:text-purple-300 mb-1">HyperTracker</div>
-                  <div className="text-xs text-crypto-silver">Comprehensive portfolio tracking and metrics</div>
-                </div>
-                <ExternalLink className="w-4 h-4 text-purple-400 group-hover:text-purple-300" />
-              </div>
+              <ExternalLink className="h-4 w-4 group-hover:scale-110 transition-transform" />
             </button>
           </div>
         </div>
