@@ -181,6 +181,78 @@ export default function AlphaSection() {
         </div>
       </GlassCard>
 
+      {/* More Analysis - Moved from bottom to under Messari.io */}
+      <GlassCard className="p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
+            <BarChart3 className="w-4 h-4 text-white" />
+          </div>
+          <h3 className="text-xl font-semibold text-white">More Analysis</h3>
+          <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-xs">
+            TOOLS
+          </Badge>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* Chainspect */}
+          <div className="bg-gray-900/50 rounded-lg border border-crypto-silver/20 p-4 text-center">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-sm font-bold">C</span>
+              </div>
+              <div>
+                <h5 className="text-white font-semibold">Chainspect</h5>
+                <p className="text-gray-400 text-xs mb-3">Chain scalability and decentralization analytics</p>
+                <button
+                  onClick={() => openInNewTab('https://chainspect.app/')}
+                  className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors text-xs font-medium"
+                >
+                  Open Dashboard
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          {/* Token Terminal */}
+          <div className="bg-gray-900/50 rounded-lg border border-crypto-silver/20 p-4 text-center">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-sm font-bold">T</span>
+              </div>
+              <div>
+                <h5 className="text-white font-semibold">Token Terminal</h5>
+                <p className="text-gray-400 text-xs mb-3">Protocol metrics explorer</p>
+                <button
+                  onClick={() => openInNewTab('https://tokenterminal.com/explorer')}
+                  className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition-colors text-xs font-medium"
+                >
+                  Open Explorer
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* OKLink */}
+          <div className="bg-gray-900/50 rounded-lg border border-crypto-silver/20 p-4 text-center">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-sm font-bold">OK</span>
+              </div>
+              <div>
+                <h5 className="text-white font-semibold">OKLink</h5>
+                <p className="text-gray-400 text-xs mb-3">Blockchain explorer and analytics</p>
+                <button
+                  onClick={() => openInNewTab('https://www.oklink.com/')}
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors text-xs font-medium"
+                >
+                  Open OKLink
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </GlassCard>
+
       {/* Alpha Analytics Platforms */}
       <GlassCard className="p-6">
         <div className="flex items-center gap-2 mb-6">
@@ -807,77 +879,44 @@ export default function AlphaSection() {
           </SafeLink>
         </div>
 
-
-      </GlassCard>
-
-
-
-      {/* Resources - Moved to bottom */}
-      <GlassCard className="p-6">
-        <div className="flex items-center gap-2 mb-6">
-          <div className="w-6 h-6 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center">
-            <Brain className="w-4 h-4 text-white" />
+        {/* Chainlyze Smart Wallet Iframe - Moved from More Analysis */}
+        <div className="mt-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 sm:w-6 sm:h-6 bg-cyan-500 rounded-full flex items-center justify-center">
+                <Wallet className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+              </div>
+              <h4 className="text-lg font-semibold text-white">Chainlyze Smart Wallet Tracker</h4>
+              <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 text-xs">
+                ANALYTICS
+              </Badge>
+            </div>
+            <button
+              onClick={() => openInNewTab('https://app.chainlyze.ai/smart-wallet')}
+              className="text-cyan-400 hover:text-cyan-300 text-xs sm:text-sm ml-auto"
+            >
+              Open Full View →
+            </button>
           </div>
-          <h3 className="text-xl font-semibold text-white">Resources</h3>
-          <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 text-xs">
-            AI POWERED
-          </Badge>
+          <div className="w-full bg-gray-900/50 rounded-lg border border-crypto-silver/20 overflow-hidden">
+            <iframe
+              src="https://app.chainlyze.ai/smart-wallet"
+              className="w-full h-[400px] sm:h-[500px] lg:h-[600px]"
+              title="Chainlyze Smart Wallet"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+              referrerPolicy="no-referrer-when-downgrade"
+              loading="lazy"
+              allow="fullscreen; web-share; clipboard-read; clipboard-write; camera; microphone"
+              style={{ border: 'none' }}
+            />
+          </div>
         </div>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <SafeLink
-            href='https://chatgpt.com/g/g-ma6mK7m5t-crypto-trading-investing'
-            className="p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-lg hover:bg-cyan-500/20 transition-colors"
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center">
-                <Brain className="w-4 h-4 text-white" />
-              </div>
-              <h4 className="text-cyan-400 font-semibold">ChatGPT Crypto AI</h4>
-            </div>
-            <p className="text-gray-400 text-sm">Crypto Trading & Investing GPT</p>
-          </SafeLink>
 
-          <SafeLink
-            href='https://app.bubblemaps.io/'
-            className="p-4 bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg hover:from-blue-500/20 hover:to-purple-500/20 transition-colors"
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                <TrendingUp className="w-4 h-4 text-white" />
-              </div>
-              <h4 className="text-blue-400 font-semibold">Bubblemaps</h4>
-            </div>
-            <p className="text-gray-400 text-sm">Token Analytics & Visualization</p>
-          </SafeLink>
-
-          <SafeLink
-            href='https://substack.com/home'
-            className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-bold">📰</span>
-              </div>
-              <h4 className="text-orange-400 font-semibold">Substack</h4>
-            </div>
-            <p className="text-gray-400 text-sm">Newsletter Publishing Platform</p>
-          </SafeLink>
-
-          <SafeLink
-            href='https://x.com/home'
-            className="p-4 bg-gray-800/10 border border-gray-600/20 rounded-lg hover:bg-gray-800/20 transition-colors"
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-bold">𝕏</span>
-              </div>
-              <h4 className="text-gray-300 font-semibold">X Home</h4>
-            </div>
-            <p className="text-gray-400 text-sm">Social Media & News Feed</p>
-          </SafeLink>
-        </div>
       </GlassCard>
+
+
+
+
 
       {/* WachXBT Token Sniffer */}
       <GlassCard className="p-6">
@@ -912,110 +951,7 @@ export default function AlphaSection() {
         </div>
       </GlassCard>
 
-      {/* More Analysis */}
-      <GlassCard className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
-            <BarChart3 className="w-4 h-4 text-white" />
-          </div>
-          <h3 className="text-xl font-semibold text-white">More Analysis</h3>
-          <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-xs">
-            TOOLS
-          </Badge>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* Chainspect */}
-          <div className="bg-gray-900/50 rounded-lg border border-crypto-silver/20 p-4 text-center">
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-bold">C</span>
-              </div>
-              <div>
-                <h5 className="text-white font-semibold">Chainspect</h5>
-                <p className="text-gray-400 text-xs mb-3">Chain scalability and decentralization analytics</p>
-                <button
-                  onClick={() => openInNewTab('https://chainspect.app/')}
-                  className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors text-xs font-medium"
-                >
-                  Open Dashboard
-                </button>
-              </div>
-            </div>
-          </div>
-          
-          {/* Token Terminal */}
-          <div className="bg-gray-900/50 rounded-lg border border-crypto-silver/20 p-4 text-center">
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-bold">T</span>
-              </div>
-              <div>
-                <h5 className="text-white font-semibold">Token Terminal</h5>
-                <p className="text-gray-400 text-xs mb-3">Protocol metrics explorer</p>
-                <button
-                  onClick={() => openInNewTab('https://tokenterminal.com/explorer')}
-                  className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition-colors text-xs font-medium"
-                >
-                  Open Explorer
-                </button>
-              </div>
-            </div>
-          </div>
 
-          {/* OKLink */}
-          <div className="bg-gray-900/50 rounded-lg border border-crypto-silver/20 p-4 text-center">
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-bold">OK</span>
-              </div>
-              <div>
-                <h5 className="text-white font-semibold">OKLink</h5>
-                <p className="text-gray-400 text-xs mb-3">Blockchain explorer and analytics</p>
-                <button
-                  onClick={() => openInNewTab('https://www.oklink.com/')}
-                  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors text-xs font-medium"
-                >
-                  Open OKLink
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Chainlyze Smart Wallet Iframe */}
-        <div className="mt-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
-            <div className="flex items-center gap-2">
-              <div className="w-5 h-5 sm:w-6 sm:h-6 bg-cyan-500 rounded-full flex items-center justify-center">
-                <Wallet className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-              </div>
-              <h4 className="text-lg font-semibold text-white">Chainlyze Smart Wallet Tracker</h4>
-              <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 text-xs">
-                ANALYTICS
-              </Badge>
-            </div>
-            <button
-              onClick={() => openInNewTab('https://app.chainlyze.ai/smart-wallet')}
-              className="text-cyan-400 hover:text-cyan-300 text-xs sm:text-sm ml-auto"
-            >
-              Open Full View →
-            </button>
-          </div>
-          <div className="w-full bg-gray-900/50 rounded-lg border border-crypto-silver/20 overflow-hidden">
-            <iframe
-              src="https://app.chainlyze.ai/smart-wallet"
-              className="w-full h-[400px] sm:h-[500px] lg:h-[600px]"
-              title="Chainlyze Smart Wallet"
-              sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
-              referrerPolicy="no-referrer-when-downgrade"
-              loading="lazy"
-              allow="fullscreen; web-share; clipboard-read; clipboard-write; camera; microphone"
-              style={{ border: 'none' }}
-            />
-          </div>
-        </div>
-      </GlassCard>
 
       {/* Discover Web3 */}
       <GlassCard className="p-6">
@@ -1108,6 +1044,73 @@ export default function AlphaSection() {
             className="w-full h-[600px] border-0"
             sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
           />
+        </div>
+      </GlassCard>
+
+      {/* Resources - Moved to bottom of page */}
+      <GlassCard className="p-6">
+        <div className="flex items-center gap-2 mb-6">
+          <div className="w-6 h-6 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center">
+            <Brain className="w-4 h-4 text-white" />
+          </div>
+          <h3 className="text-xl font-semibold text-white">Resources</h3>
+          <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 text-xs">
+            AI POWERED
+          </Badge>
+        </div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <SafeLink
+            href='https://chatgpt.com/g/g-ma6mK7m5t-crypto-trading-investing'
+            className="p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-lg hover:bg-cyan-500/20 transition-colors"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center">
+                <Brain className="w-4 h-4 text-white" />
+              </div>
+              <h4 className="text-cyan-400 font-semibold">ChatGPT Crypto AI</h4>
+            </div>
+            <p className="text-gray-400 text-sm">Crypto Trading & Investing GPT</p>
+          </SafeLink>
+
+          <SafeLink
+            href='https://app.bubblemaps.io/'
+            className="p-4 bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg hover:from-blue-500/20 hover:to-purple-500/20 transition-colors"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                <TrendingUp className="w-4 h-4 text-white" />
+              </div>
+              <h4 className="text-blue-400 font-semibold">Bubblemaps</h4>
+            </div>
+            <p className="text-gray-400 text-sm">Token Analytics & Visualization</p>
+          </SafeLink>
+
+          <SafeLink
+            href='https://substack.com/home'
+            className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-sm font-bold">📰</span>
+              </div>
+              <h4 className="text-orange-400 font-semibold">Substack</h4>
+            </div>
+            <p className="text-gray-400 text-sm">Newsletter Publishing Platform</p>
+          </SafeLink>
+
+          <SafeLink
+            href='https://x.com/home'
+            className="p-4 bg-gray-800/10 border border-gray-600/20 rounded-lg hover:bg-gray-800/20 transition-colors"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center">
+                <span className="text-white text-sm font-bold">𝕏</span>
+              </div>
+              <h4 className="text-gray-300 font-semibold">X Home</h4>
+            </div>
+            <p className="text-gray-400 text-sm">Social Media & News Feed</p>
+          </SafeLink>
         </div>
       </GlassCard>
     </div>
