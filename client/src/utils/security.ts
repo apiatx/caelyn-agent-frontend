@@ -119,7 +119,11 @@ const TRUSTED_DOMAINS = [
   'indexy.xyz',
   'www.tarot.to',
   'tarot.to',
-  'arcadia.finance'
+  'arcadia.finance',
+  'mamo.bot',
+  'quant.fun',
+  'www.ourbit.com',
+  'ourbit.com'
 ];
 
 /**
