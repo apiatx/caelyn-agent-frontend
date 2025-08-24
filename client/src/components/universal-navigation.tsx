@@ -21,16 +21,16 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
   };
 
   const isActive = (page: string) => {
-    // Use both props and current location for active state
+    // If activePage is explicitly provided, use it for the main dashboard tabs
+    if (activePage && ['dashboard', 'bittensor', 'alpha', 'base', 'solana', 'abstract', 'defi', 'portfolio'].includes(activePage)) {
+      return activePage === page;
+    }
+    
+    // For other pages, use URL-based detection
     const currentPath = location.replace(/^\/+/, '').replace(/\/+$/, '');
     const isActiveByPath = currentPath === `app/${page}` || (page === 'dashboard' && (currentPath === '' || currentPath === 'app'));
     
-    // Special handling: Don't activate dashboard when bittensor is active
-    if (page === 'dashboard' && activePage === 'bittensor') {
-      return false;
-    }
-    
-    return activePage === page || isActiveByPath;
+    return isActiveByPath;
   };
 
   return (
