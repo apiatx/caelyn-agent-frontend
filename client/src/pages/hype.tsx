@@ -38,7 +38,7 @@ export default function HypePage() {
       <main className="max-w-[95vw] mx-auto px-2 sm:px-3 py-4">
         <div className="space-y-8">
           {/* Hype Section */}
-          <Suspense fallback={<SectionLoadingState title="Hyperliquid Trading" />}>
+          <Suspense fallback={<SectionLoadingState title="HyperLiquid" />}>
             <HypeSection />
           </Suspense>
           
