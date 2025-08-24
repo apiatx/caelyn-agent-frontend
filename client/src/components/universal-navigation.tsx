@@ -21,16 +21,9 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
   };
 
   const isActive = (page: string) => {
-    // If activePage is explicitly provided, use it for the main dashboard tabs
-    if (activePage && ['dashboard', 'bittensor', 'alpha', 'base', 'solana', 'abstract', 'defi', 'portfolio'].includes(activePage)) {
-      return activePage === page;
-    }
-    
-    // For other pages, use URL-based detection
-    const currentPath = location.replace(/^\/+/, '').replace(/\/+$/, '');
-    const isActiveByPath = currentPath === `app/${page}` || (page === 'dashboard' && (currentPath === '' || currentPath === 'app'));
-    
-    return isActiveByPath;
+    // Simply check if this page matches the activePage prop
+    // This ensures only one button is highlighted at a time
+    return activePage === page;
   };
 
   return (
