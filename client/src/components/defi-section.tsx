@@ -173,6 +173,18 @@ export default function DeFiSection() {
               </div>
             </Button>
 
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://www.ourbit.com/')}
+              className="bg-black/20 border-crypto-silver/20 hover:bg-orange-500/20 hover:border-orange-500/30 text-white justify-start p-4 h-auto"
+            >
+              <TrendingUp className="w-4 h-4 mr-2" />
+              <div className="text-left">
+                <div className="font-semibold">OurBit</div>
+                <div className="text-sm text-crypto-silver">CEX & DEX, Spot & Futures</div>
+              </div>
+            </Button>
+
           </div>
         </div>
 
