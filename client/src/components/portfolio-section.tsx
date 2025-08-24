@@ -20,6 +20,10 @@ import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import type { Holding, Subnet } from "@shared/schema";
 import { getSecureIframeProps, getSecureLinkProps } from "@/utils/security";
+import ethereumLogo from "@assets/Ethereum_logo_2014.svg_1755977414942.png";
+import solanaLogo from "@assets/solana_1755977414939.png";
+import bittensorLogo from "@assets/bittensor_1755977414942.png";
+import hyperliquidLogo from "@assets/hyperliquid-logo_1755977414943.png";
 
 
 export default function PortfolioSection() {
@@ -318,8 +322,8 @@ export default function PortfolioSection() {
       {/* EVM Section */}
       <div className="space-y-6">
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-blue-500 rounded-xl flex items-center justify-center">
-            <span className="text-white text-xl font-bold">⚡</span>
+          <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center">
+            <img src={ethereumLogo} alt="Ethereum" className="w-8 h-8 rounded-lg" />
           </div>
           <div>
             <h2 className="text-2xl font-bold text-white">EVM</h2>
@@ -481,8 +485,8 @@ export default function PortfolioSection() {
       {/* Solana Section */}
       <div className="space-y-6">
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl flex items-center justify-center">
-            <span className="text-white text-xl font-bold">◎</span>
+          <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center">
+            <img src={solanaLogo} alt="Solana" className="w-8 h-8 rounded-lg" />
           </div>
           <div>
             <h2 className="text-2xl font-bold text-white">Solana</h2>
@@ -535,8 +539,8 @@ export default function PortfolioSection() {
       {/* Bittensor Section */}
       <div className="space-y-6">
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
-            <Brain className="text-white text-xl" />
+          <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center">
+            <img src={bittensorLogo} alt="Bittensor" className="w-8 h-8 rounded-lg" />
           </div>
           <div>
             <h2 className="text-2xl font-bold text-white">Bittensor</h2>
@@ -574,8 +578,8 @@ export default function PortfolioSection() {
       {/* HyperLiquid Section */}
       <div className="space-y-6">
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
-            <span className="text-white text-xl font-bold">⚡</span>
+          <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center">
+            <img src={hyperliquidLogo} alt="HyperLiquid" className="w-8 h-8 rounded-lg" />
           </div>
           <div>
             <h2 className="text-2xl font-bold text-white">HyperLiquid</h2>
