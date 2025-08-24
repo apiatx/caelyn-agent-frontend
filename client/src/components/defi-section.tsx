@@ -184,6 +184,18 @@ export default function DeFiSection() {
                 <div className="text-sm text-crypto-silver">Advanced trading platform</div>
               </div>
             </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://pro.edgex.exchange/trade/BTCUSD')}
+              className="bg-black/20 border-crypto-silver/20 hover:bg-yellow-500/20 hover:border-yellow-500/30 text-white justify-start p-4 h-auto"
+            >
+              <TrendingUp className="w-4 h-4 mr-2" />
+              <div className="text-left">
+                <div className="font-semibold">EdgeX Pro</div>
+                <div className="text-sm text-crypto-silver">Professional Bitcoin trading terminal</div>
+              </div>
+            </Button>
           </div>
         </div>
       </div>
