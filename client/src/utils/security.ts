@@ -106,7 +106,9 @@ const TRUSTED_DOMAINS = [
   'perps.saros.xyz',
   'saros.xyz',
   'degenai.dev',
-  'messari.io'
+  'messari.io',
+  'perps.raydium.io',
+  'raydium.io'
 ];
 
 /**

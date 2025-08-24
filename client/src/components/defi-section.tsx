@@ -139,25 +139,13 @@ export default function DeFiSection() {
 
             <Button
               variant="outline"
-              onClick={() => openInNewTab('https://quanto.trade/en/markets/BTC-USD-SWAP-LIN')}
-              className="bg-black/20 border-crypto-silver/20 hover:bg-orange-500/20 hover:border-orange-500/30 text-white justify-start p-4 h-auto"
-            >
-              <TrendingUp className="w-4 h-4 mr-2" />
-              <div className="text-left">
-                <div className="font-semibold">Quanto</div>
-                <div className="text-sm text-crypto-silver">Perpetual futures trading</div>
-              </div>
-            </Button>
-
-            <Button
-              variant="outline"
               onClick={() => openInNewTab('https://ave.ai/')}
               className="bg-black/20 border-crypto-silver/20 hover:bg-green-500/20 hover:border-green-500/30 text-white justify-start p-4 h-auto"
             >
               <TrendingUp className="w-4 h-4 mr-2" />
               <div className="text-left">
                 <div className="font-semibold">Ave.ai</div>
-                <div className="text-sm text-crypto-silver">AI-powered trading terminal</div>
+                <div className="text-sm text-crypto-silver">AI-powered multi-chain trading terminal</div>
               </div>
             </Button>
 
@@ -181,7 +169,38 @@ export default function DeFiSection() {
               <TrendingUp className="w-4 h-4 mr-2" />
               <div className="text-left">
                 <div className="font-semibold">O1 Exchange</div>
-                <div className="text-sm text-crypto-silver">Advanced trading platform</div>
+                <div className="text-sm text-crypto-silver">Advanced trading on Base and Solana</div>
+              </div>
+            </Button>
+
+          </div>
+        </div>
+
+        {/* Perps Subsection */}
+        <div className="space-y-4">
+          <h4 className="text-lg font-medium text-orange-400 mb-3">Perps</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://app.hyperliquid.xyz/trade')}
+              className="bg-black/20 border-crypto-silver/20 hover:bg-indigo-500/20 hover:border-indigo-500/30 text-white justify-start p-4 h-auto"
+            >
+              <TrendingUp className="w-4 h-4 mr-2" />
+              <div className="text-left">
+                <div className="font-semibold">Hyperliquid</div>
+                <div className="text-sm text-crypto-silver">Onchain perpetual DEX</div>
+              </div>
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://quanto.trade/en/markets/BTC-USD-SWAP-LIN')}
+              className="bg-black/20 border-crypto-silver/20 hover:bg-orange-500/20 hover:border-orange-500/30 text-white justify-start p-4 h-auto"
+            >
+              <TrendingUp className="w-4 h-4 mr-2" />
+              <div className="text-left">
+                <div className="font-semibold">Quanto</div>
+                <div className="text-sm text-crypto-silver">Perpetual futures trading</div>
               </div>
             </Button>
 
@@ -193,6 +212,18 @@ export default function DeFiSection() {
               <TrendingUp className="w-4 h-4 mr-2" />
               <div className="text-left">
                 <div className="font-semibold">Saros</div>
+                <div className="text-sm text-crypto-silver">Solana perpetual futures</div>
+              </div>
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://perps.raydium.io/')}
+              className="bg-black/20 border-crypto-silver/20 hover:bg-purple-500/20 hover:border-purple-500/30 text-white justify-start p-4 h-auto"
+            >
+              <TrendingUp className="w-4 h-4 mr-2" />
+              <div className="text-left">
+                <div className="font-semibold">Raydium</div>
                 <div className="text-sm text-crypto-silver">Solana perpetual futures</div>
               </div>
             </Button>
