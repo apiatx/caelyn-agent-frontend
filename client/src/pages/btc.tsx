@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, Activity, BarChart3, Brain, Wallet, Zap, DollarSign, Layers, ChartLine, Settings } from "lucide-react";
 import hippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
-import paintColorsBackground from "@assets/paint-colors-background-header_1756066539167.jpg";
+import paintColorsBackground from "@assets/paint-colors-background-header_1756067291555.jpg";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 import { useScrollFade } from "@/hooks/useScrollFade";
