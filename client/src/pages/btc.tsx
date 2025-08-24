@@ -19,15 +19,15 @@ export default function BTCPage() {
       <header className="glass-card-dark border-b border-crypto-silver/20 sticky top-0 z-50">
         <div className="max-w-[95vw] mx-auto px-2 sm:px-3">
           <div className="flex justify-between items-center py-3 lg:py-4">
-            <div className="flex items-center space-x-2 sm:space-x-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg overflow-hidden">
+            <div className="flex items-center space-x-3 sm:space-x-4">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-lg overflow-hidden">
                 <img 
                   src={hippoImage}
                   alt="CryptoHippo"
                   className="w-full h-full object-cover"
                 />
               </div>
-              <h1 className="text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-white to-crypto-silver bg-clip-text text-transparent">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold bg-gradient-to-r from-white to-crypto-silver bg-clip-text text-transparent">
                 CryptoHippo
               </h1>
             </div>
