@@ -6,10 +6,13 @@ import hippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
 import paintColorsBackground from "@assets/paint-colors-background-header_1756066539167.jpg";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
+import { useScrollFade } from "@/hooks/useScrollFade";
 
 
 
 export default function BTCPage() {
+  const headerOpacity = useScrollFade(30, 120);
+  
   const openInNewTab = (url: string) => {
     window.open(url, '_blank', 'noopener,noreferrer');
   };
@@ -17,7 +20,10 @@ export default function BTCPage() {
   return (
     <div className="min-h-screen text-white" style={{background: 'linear-gradient(135deg, hsl(0, 0%, 0%) 0%, hsl(0, 0%, 10%) 50%, hsl(0, 0%, 0%) 100%)'}}>
       {/* Header */}
-      <header className="glass-card-dark border-b border-crypto-silver/20 sticky top-0 z-50 relative overflow-hidden">
+      <header 
+        className="glass-card-dark border-b border-crypto-silver/20 sticky top-0 z-50 transition-opacity duration-300 relative overflow-hidden" 
+        style={{ opacity: headerOpacity }}
+      >
         {/* Background Image */}
         <div 
           className="absolute inset-0 opacity-75"
