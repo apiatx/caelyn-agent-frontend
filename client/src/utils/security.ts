@@ -108,7 +108,9 @@ const TRUSTED_DOMAINS = [
   'degenai.dev',
   'messari.io',
   'perps.raydium.io',
-  'raydium.io'
+  'raydium.io',
+  'pro.edgex.exchange',
+  'edgex.exchange'
 ];
 
 /**
