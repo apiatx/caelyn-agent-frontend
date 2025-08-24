@@ -24,16 +24,16 @@ export default function CryptoDashboardSection() {
       {/* Crypto Market Overview */}
       <div className="space-y-4">
         <div className="text-center px-3 sm:px-0">
-          <div className="flex justify-center mb-4">
-            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden shadow-xl border-2 border-pink-500/30">
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-2xl overflow-hidden shadow-xl border-2 border-pink-500/30">
               <img 
                 src={cuteHippo} 
                 alt="Market Overview Hippo" 
                 className="w-full h-full object-cover"
               />
             </div>
+            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white">Crypto Market Overview</h2>
           </div>
-          <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-2">Crypto Market Overview</h2>
           <p className="text-sm sm:text-base text-crypto-silver">Global market metrics and key indicators</p>
         </div>
 
