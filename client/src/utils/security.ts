@@ -130,7 +130,8 @@ const TRUSTED_DOMAINS = [
   'ether.fi',
   'wallet.coinbase.com',
   'app.teller.org',
-  'app.seamlessprotocol.com'
+  'app.seamlessprotocol.com',
+  'app.lotusfinance.io'
 ];
 
 /**

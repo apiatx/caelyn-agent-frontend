@@ -600,6 +600,20 @@ export default function DeFiSection() {
               <div className="text-sm text-crypto-silver">Yield derivatives protocol</div>
             </div>
           </Button>
+
+          <Button
+            variant="outline"
+            onClick={() => openInNewTab('https://app.lotusfinance.io/explore-pools')}
+            className="bg-black/20 border-crypto-silver/20 hover:bg-orange-500/20 hover:border-orange-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
+          >
+            <div className="p-3 rounded-lg bg-gradient-to-r from-orange-500/20 to-yellow-500/20">
+              <DollarSign className="h-6 w-6 text-orange-400" />
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-lg">Lotus Finance</div>
+              <div className="text-sm text-crypto-silver">LP and Farm on SUI</div>
+            </div>
+          </Button>
         </div>
       </div>
 
