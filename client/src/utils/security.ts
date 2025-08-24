@@ -116,7 +116,10 @@ const TRUSTED_DOMAINS = [
   'deri.io',
   'www.hegic.co',
   'hegic.co',
-  'indexy.xyz'
+  'indexy.xyz',
+  'www.tarot.to',
+  'tarot.to',
+  'arcadia.finance'
 ];
 
 /**

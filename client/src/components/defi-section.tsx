@@ -469,6 +469,34 @@ export default function DeFiSection() {
 
           <Button
             variant="outline"
+            onClick={() => openInNewTab('https://www.tarot.to/')}
+            className="bg-black/20 border-crypto-silver/20 hover:bg-pink-500/20 hover:border-pink-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
+          >
+            <div className="p-3 rounded-lg bg-gradient-to-r from-pink-500/20 to-rose-500/20">
+              <DollarSign className="h-6 w-6 text-pink-400" />
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-lg">Tarot</div>
+              <div className="text-sm text-crypto-silver">Lending and leverage protocol</div>
+            </div>
+          </Button>
+
+          <Button
+            variant="outline"
+            onClick={() => openInNewTab('https://arcadia.finance/farm')}
+            className="bg-black/20 border-crypto-silver/20 hover:bg-yellow-500/20 hover:border-yellow-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
+          >
+            <div className="p-3 rounded-lg bg-gradient-to-r from-yellow-500/20 to-amber-500/20">
+              <TrendingUp className="h-6 w-6 text-yellow-400" />
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-lg">Arcadia Finance</div>
+              <div className="text-sm text-crypto-silver">DeFi portfolio management</div>
+            </div>
+          </Button>
+
+          <Button
+            variant="outline"
             onClick={() => openInNewTab('https://app.spectra.finance/pools')}
             className="bg-black/20 border-crypto-silver/20 hover:bg-purple-500/20 hover:border-purple-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
           >
