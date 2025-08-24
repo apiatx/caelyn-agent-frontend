@@ -75,7 +75,6 @@ export default function DeFiSection() {
 
       {/* Cross-Chain Section */}
       <div className="space-y-6">
-        <h3 className="text-xl font-semibold text-white mb-4">Cross-Chain</h3>
         
         {/* Swidge Subsection */}
         <div className="space-y-4">
