@@ -5,7 +5,7 @@ import { Loader2, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { openSecureLink } from "@/utils/security";
 import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
-import paintColorsBackground from "@assets/paint-colors-background-header_1756066539167.jpg";
+import paintColorsBackground from "@assets/paint-colors-background-header_1756067291555.jpg";
 import abstractLogo from "@assets/abstract chain_1755977414942.jpg";
 import { useScrollFade } from "@/hooks/useScrollFade";
 

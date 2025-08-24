@@ -1,7 +1,7 @@
 import { UniversalNavigation } from "@/components/universal-navigation";
 import PortfolioSection from "@/components/portfolio-section";
 import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
-import paintColorsBackground from "@assets/paint-colors-background-header_1756066539167.jpg";
+import paintColorsBackground from "@assets/paint-colors-background-header_1756067291555.jpg";
 import { useScrollFade } from "@/hooks/useScrollFade";
 
 export default function PortfolioPage() {

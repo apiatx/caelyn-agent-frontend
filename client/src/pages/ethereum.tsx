@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { EthereumSection } from "@/components/ethereum-section";
 import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
-import paintColorsBackground from "@assets/paint-colors-background-header_1756066539167.jpg";
+import paintColorsBackground from "@assets/paint-colors-background-header_1756067291555.jpg";
 import { UniversalNavigation } from "@/components/universal-navigation";
 import { SectionLoadingState } from "@/components/loading-screen";
 import { useScrollFade } from "@/hooks/useScrollFade";

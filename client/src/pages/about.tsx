@@ -2,7 +2,7 @@ import { UniversalNavigation } from "@/components/universal-navigation";
 import { GlassCard } from "@/components/ui/glass-card";
 import { ExternalLink } from "lucide-react";
 import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
-import paintColorsBackground from "@assets/paint-colors-background-header_1756066539167.jpg";
+import paintColorsBackground from "@assets/paint-colors-background-header_1756067291555.jpg";
 import hippoMouthOpen from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
 import hippoLaserEyes from "@assets/image_1755979639049.png";
 import hippoDownload1 from "@assets/download (1)_1755979612947.jpeg";
