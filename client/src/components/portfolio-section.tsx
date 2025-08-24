@@ -552,7 +552,7 @@ export default function PortfolioSection() {
                 B
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-white">Bittensor</h3>
+                <h3 className="text-lg font-semibold text-white">TaoHub</h3>
                 <p className="text-crypto-silver text-sm">TAO Network Portfolio Tracker</p>
               </div>
             </div>
@@ -571,31 +571,44 @@ export default function PortfolioSection() {
         </GlassCard>
       </div>
 
-      {/* HyperLiquid Analytics */}
-      <GlassCard className="p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-sm font-bold">
-              H
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-white">HyperLiquid</h3>
-              <p className="text-crypto-silver text-sm">Portfolio Analytics</p>
-            </div>
+      {/* HyperLiquid Section */}
+      <div className="space-y-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+            <span className="text-white text-xl font-bold">⚡</span>
           </div>
-          <div className="flex items-center gap-2">
-            <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
-              PERPS
-            </Badge>
-            <button
-              onClick={() => window.open('https://app.coinmarketman.com/hypertracker', '_blank', 'noopener,noreferrer')}
-              className="text-crypto-silver hover:text-white transition-colors group"
-            >
-              <ExternalLink className="h-4 w-4 group-hover:scale-110 transition-transform" />
-            </button>
+          <div>
+            <h2 className="text-2xl font-bold text-white">HyperLiquid</h2>
+            <p className="text-crypto-silver">Perpetuals trading and portfolio analytics</p>
           </div>
         </div>
-      </GlassCard>
+
+        {/* CoinMarketMan */}
+        <GlassCard className="p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-sm font-bold">
+                CM
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-white">CoinMarketMan</h3>
+                <p className="text-crypto-silver text-sm">HyperLiquid Perps Portfolio Analytics</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
+                PERPS
+              </Badge>
+              <button
+                onClick={() => window.open('https://app.coinmarketman.com/hypertracker', '_blank', 'noopener,noreferrer')}
+                className="text-crypto-silver hover:text-white transition-colors group"
+              >
+                <ExternalLink className="h-4 w-4 group-hover:scale-110 transition-transform" />
+              </button>
+            </div>
+          </div>
+        </GlassCard>
+      </div>
 
       {/* HyperEVM Integration */}
       <GlassCard className="p-6">
