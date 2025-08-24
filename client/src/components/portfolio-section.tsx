@@ -276,70 +276,96 @@ export default function PortfolioSection() {
         <p className="text-crypto-silver">Track your crypto portfolio across multiple chains and platforms</p>
       </div>
 
-      {/* Cerebro Multi-Chain Portfolio Tracker */}
-      <GlassCard className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-sm font-bold">
-              C
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-white">Cerebro</h3>
-              <p className="text-crypto-silver text-sm">Multi-Chain Portfolio Tracker</p>
-            </div>
+      {/* Multi-Chain Section */}
+      <div className="space-y-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-xl flex items-center justify-center">
+            <span className="text-white text-xl font-bold">🌐</span>
           </div>
-          <div className="flex items-center gap-2">
-            <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30">
-              MULTI-CHAIN
-            </Badge>
-            <button
-              onClick={() => window.open('https://cerebro.xyz/dashboard', '_blank', 'noopener,noreferrer')}
-              className="text-crypto-silver hover:text-white transition-colors group"
-            >
-              <ExternalLink className="h-4 w-4 group-hover:scale-110 transition-transform" />
-            </button>
+          <div>
+            <h2 className="text-2xl font-bold text-white">Multi-Chain</h2>
+            <p className="text-crypto-silver">Cross-chain portfolio tracking and analytics</p>
           </div>
         </div>
-        
-        <div className="w-full">
-          <div className="h-[120px] rounded-lg border border-crypto-silver/20 bg-gradient-to-br from-cyan-900/20 to-blue-900/20 flex items-center justify-center p-6">
-            <button
-              onClick={() => window.open('https://cerebro.xyz/dashboard', '_blank', 'noopener,noreferrer')}
-              className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 hover:scale-105 flex items-center gap-2"
-            >
-              <ExternalLink className="w-4 h-4" />
-              Open Cerebro Dashboard
-            </button>
-          </div>
-        </div>
-      </GlassCard>
 
-      {/* DeBank EVM Portfolio */}
-      <GlassCard className="p-3 sm:p-4 lg:p-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center text-xs font-bold">
-              DB
+        {/* Cerebro */}
+        <GlassCard className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-sm font-bold">
+                C
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-white">Cerebro</h3>
+                <p className="text-crypto-silver text-sm">Multi-Chain Portfolio Tracker</p>
+              </div>
             </div>
-            <h3 className="text-lg sm:text-xl font-semibold text-white">DeBank</h3>
-            <p className="text-crypto-silver text-sm">EVM Portfolio Tracker</p>
-            <Badge className="bg-gradient-to-r from-green-500/20 to-blue-500/20 text-green-300 border-green-500/30 text-xs">
-              EVM CHAINS
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30">
+                MULTI-CHAIN
+              </Badge>
+              <button
+                onClick={() => window.open('https://cerebro.xyz/dashboard', '_blank', 'noopener,noreferrer')}
+                className="text-crypto-silver hover:text-white transition-colors group"
+              >
+                <ExternalLink className="h-4 w-4 group-hover:scale-110 transition-transform" />
+              </button>
+            </div>
+          </div>
+          
+          <div className="w-full">
+            <div className="h-[120px] rounded-lg border border-crypto-silver/20 bg-gradient-to-br from-cyan-900/20 to-blue-900/20 flex items-center justify-center p-6">
+              <button
+                onClick={() => window.open('https://cerebro.xyz/dashboard', '_blank', 'noopener,noreferrer')}
+                className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 hover:scale-105 flex items-center gap-2"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Open Cerebro Dashboard
+              </button>
+            </div>
+          </div>
+        </GlassCard>
+      </div>
+
+      {/* EVM Section */}
+      <div className="space-y-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-blue-500 rounded-xl flex items-center justify-center">
+            <span className="text-white text-xl font-bold">⚡</span>
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-white">EVM</h2>
+            <p className="text-crypto-silver">Ethereum Virtual Machine portfolio tracking</p>
           </div>
         </div>
-        <div className="w-full">
-          <div className="h-[120px] rounded-lg border border-crypto-silver/20 bg-gradient-to-br from-green-900/20 to-blue-900/20 flex items-center justify-center p-6">
-            <button
-              onClick={() => window.open('https://debank.com/profile', '_blank', 'noopener,noreferrer')}
-              className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 hover:scale-105 flex items-center gap-2"
-            >
-              <ExternalLink className="w-4 h-4" />
-              Open DeBank Portfolio
-            </button>
+
+        {/* DeBank */}
+        <GlassCard className="p-3 sm:p-4 lg:p-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center text-xs font-bold">
+                DB
+              </div>
+              <h3 className="text-lg sm:text-xl font-semibold text-white">DeBank</h3>
+              <p className="text-crypto-silver text-sm">EVM Portfolio Tracker</p>
+              <Badge className="bg-gradient-to-r from-green-500/20 to-blue-500/20 text-green-300 border-green-500/30 text-xs">
+                EVM CHAINS
+              </Badge>
+            </div>
           </div>
-        </div>
-      </GlassCard>
+          <div className="w-full">
+            <div className="h-[120px] rounded-lg border border-crypto-silver/20 bg-gradient-to-br from-green-900/20 to-blue-900/20 flex items-center justify-center p-6">
+              <button
+                onClick={() => window.open('https://debank.com/profile', '_blank', 'noopener,noreferrer')}
+                className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 hover:scale-105 flex items-center gap-2"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Open DeBank Portfolio
+              </button>
+            </div>
+          </div>
+        </GlassCard>
+      </div>
 
 
 
@@ -465,8 +491,20 @@ export default function PortfolioSection() {
           </GlassCard>
         )}
 
-      {/* Jupiter Portfolio */}
-      <GlassCard className="p-6">
+      {/* Solana Section */}
+      <div className="space-y-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl flex items-center justify-center">
+            <span className="text-white text-xl font-bold">◎</span>
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-white">Solana</h2>
+            <p className="text-crypto-silver">Solana ecosystem portfolio tracking</p>
+          </div>
+        </div>
+
+        {/* Jupiter Portfolio */}
+        <GlassCard className="p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-sm font-bold">
@@ -505,9 +543,22 @@ export default function PortfolioSection() {
           />
         </div>
       </GlassCard>
+      </div>
 
-      {/* TaoHub Portfolio Integration */}
-      <GlassCard className="p-6">
+      {/* Bittensor Section */}
+      <div className="space-y-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
+            <Brain className="text-white text-xl" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-white">Bittensor</h2>
+            <p className="text-crypto-silver">TAO network portfolio and staking analytics</p>
+          </div>
+        </div>
+
+        {/* TaoHub Portfolio */}
+        <GlassCard className="p-6">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-semibold text-white flex items-center">
             <Brain className="w-4 h-4 mr-2" />
@@ -545,8 +596,7 @@ export default function PortfolioSection() {
           </div>
         </div>
       </GlassCard>
-
-
+      </div>
 
       {/* HyperLiquid Analytics */}
       <GlassCard className="p-6">
@@ -596,7 +646,7 @@ export default function PortfolioSection() {
               Portfolio Analytics
             </Badge>
             <a 
-              href="https://www.hyperfolio.xyz/"
+              href="https://app.hyperbeat.org/hyperfolio"
               target="_blank"
               rel="noopener noreferrer"
               className="text-crypto-silver hover:text-white transition-colors group"
@@ -608,7 +658,7 @@ export default function PortfolioSection() {
         
         <div className="relative w-full">
           <iframe
-            src="https://www.hyperfolio.xyz/"
+            src="https://app.hyperbeat.org/hyperfolio"
             className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
             title="Hyperfolio Portfolio Analytics"
             frameBorder="0"
