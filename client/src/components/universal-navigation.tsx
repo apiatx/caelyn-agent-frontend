@@ -17,13 +17,24 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
   const [location, setLocation] = useLocation();
   
   const navigateTo = (url: string) => {
-    setLocation(url);
+    // Special handling for Market Overview to clear hash
+    if (url === "/app") {
+      window.location.hash = "";
+      setLocation(url);
+    } else {
+      setLocation(url);
+    }
   };
 
   const isActive = (page: string) => {
-    // Simply check if this page matches the activePage prop
-    // This ensures only one button is highlighted at a time
-    return activePage === page;
+    // Use both props and current location for active state, but prioritize activePage for dashboard tabs
+    if (activePage) {
+      return activePage === page;
+    }
+    
+    // Fallback to URL-based detection for other pages
+    const currentPath = location.replace(/^\/+/, '').replace(/\/+$/, '');
+    return currentPath === `app/${page}` || (page === 'dashboard' && (currentPath === '' || currentPath === 'app'));
   };
 
   return (
