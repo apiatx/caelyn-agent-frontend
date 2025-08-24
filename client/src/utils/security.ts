@@ -123,7 +123,8 @@ const TRUSTED_DOMAINS = [
   'mamo.bot',
   'quant.fun',
   'www.ourbit.com',
-  'ourbit.com'
+  'ourbit.com',
+  'limitless.exchange'
 ];
 
 /**

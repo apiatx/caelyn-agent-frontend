@@ -746,7 +746,7 @@ export default function DeFiSection() {
           <div className="w-6 h-6 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
             <TrendingUp className="w-4 h-4 text-white" />
           </div>
-          <h3 className="text-xl font-semibold text-white">Betting Markets</h3>
+          <h3 className="text-xl font-semibold text-white">Prediction Markets</h3>
           <Badge className="bg-gradient-to-r from-orange-500/20 to-red-500/20 text-orange-400 border-orange-500/30">
             PREDICTION MARKETS
           </Badge>
@@ -763,6 +763,23 @@ export default function DeFiSection() {
           title="Polymarket Crypto"
           sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
         />
+        
+        <div className="mt-6">
+          <div className="flex items-center gap-2 mb-4">
+            <button
+              onClick={() => openInNewTab('https://limitless.exchange/advanced')}
+              className="text-orange-400 hover:text-orange-300 text-sm ml-auto"
+            >
+              Open Limitless Exchange →
+            </button>
+          </div>
+          <iframe
+            src="https://limitless.exchange/advanced"
+            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+            title="Limitless Exchange Advanced"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+          />
+        </div>
       </GlassCard>
 
     </div>
