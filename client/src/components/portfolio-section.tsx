@@ -568,6 +568,43 @@ export default function PortfolioSection() {
           </div>
         </div>
 
+        {/* TaoHub Portfolio */}
+        <GlassCard className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-sm font-bold">
+                TH
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-white">TaoHub Portfolio</h3>
+                <p className="text-crypto-silver text-sm">TAO Network Portfolio Tracker</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+                TAO NETWORK
+              </Badge>
+              <button
+                onClick={() => window.open('https://www.taohub.info/portfolio', '_blank', 'noopener,noreferrer')}
+                className="text-crypto-silver hover:text-white transition-colors group"
+              >
+                <ExternalLink className="h-4 w-4 group-hover:scale-110 transition-transform" />
+              </button>
+            </div>
+          </div>
+          
+          <div className="w-full">
+            <div className="h-[120px] rounded-lg border border-crypto-silver/20 bg-gradient-to-br from-blue-900/20 to-purple-900/20 flex items-center justify-center p-6">
+              <button
+                onClick={() => window.open('https://www.taohub.info/portfolio', '_blank', 'noopener,noreferrer')}
+                className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 hover:scale-105 flex items-center gap-2"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Open TaoHub Portfolio
+              </button>
+            </div>
+          </div>
+        </GlassCard>
       </div>
 
       {/* HyperLiquid Analytics */}
