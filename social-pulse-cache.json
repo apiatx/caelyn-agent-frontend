@@ -1,60 +1,60 @@
 {
   "tickers": [
     {
-      "symbol": "POPCAT",
-      "sentiment": 45,
-      "mentions": 3437,
-      "lastUpdated": "2025-08-24T14:30:02.623Z"
-    },
-    {
-      "symbol": "BONK",
-      "sentiment": 44,
-      "mentions": 4584,
-      "lastUpdated": "2025-08-24T14:30:02.623Z"
-    },
-    {
-      "symbol": "MEME",
-      "sentiment": 44,
-      "mentions": 5632,
-      "lastUpdated": "2025-08-24T14:30:02.623Z"
-    },
-    {
       "symbol": "FARTCOIN",
-      "sentiment": 43,
-      "mentions": 5999,
-      "lastUpdated": "2025-08-24T14:30:02.623Z"
+      "sentiment": 47,
+      "mentions": 3370,
+      "lastUpdated": "2025-08-24T19:00:57.162Z"
     },
     {
       "symbol": "JESUS",
-      "sentiment": 43,
-      "mentions": 2485,
-      "lastUpdated": "2025-08-24T14:30:02.623Z"
+      "sentiment": 47,
+      "mentions": 5201,
+      "lastUpdated": "2025-08-24T19:00:57.162Z"
+    },
+    {
+      "symbol": "TRUMP",
+      "sentiment": 46,
+      "mentions": 3952,
+      "lastUpdated": "2025-08-24T19:00:57.162Z"
+    },
+    {
+      "symbol": "BRETT",
+      "sentiment": 41,
+      "mentions": 2653,
+      "lastUpdated": "2025-08-24T19:00:57.162Z"
+    },
+    {
+      "symbol": "AI16Z",
+      "sentiment": 40,
+      "mentions": 5010,
+      "lastUpdated": "2025-08-24T19:00:57.162Z"
     },
     {
       "symbol": "DEGEN",
-      "sentiment": 43,
-      "mentions": 2935,
-      "lastUpdated": "2025-08-24T14:30:02.623Z"
+      "sentiment": 40,
+      "mentions": 2072,
+      "lastUpdated": "2025-08-24T19:00:57.162Z"
+    },
+    {
+      "symbol": "POPCAT",
+      "sentiment": 39,
+      "mentions": 3863,
+      "lastUpdated": "2025-08-24T19:00:57.162Z"
     },
     {
       "symbol": "MOODENG",
-      "sentiment": 40,
-      "mentions": 4517,
-      "lastUpdated": "2025-08-24T14:30:02.623Z"
-    },
-    {
-      "symbol": "BASEDOG",
-      "sentiment": 40,
-      "mentions": 4292,
-      "lastUpdated": "2025-08-24T14:30:02.623Z"
-    },
-    {
-      "symbol": "HYPE",
       "sentiment": 39,
-      "mentions": 5799,
-      "lastUpdated": "2025-08-24T14:30:02.623Z"
+      "mentions": 4653,
+      "lastUpdated": "2025-08-24T19:00:57.162Z"
+    },
+    {
+      "symbol": "MYRO",
+      "sentiment": 39,
+      "mentions": 1478,
+      "lastUpdated": "2025-08-24T19:00:57.162Z"
     }
   ],
-  "lastUpdated": "2025-08-24T14:30:02.623Z",
-  "nextUpdate": "2025-08-24T17:30:02.623Z"
+  "lastUpdated": "2025-08-24T19:00:57.162Z",
+  "nextUpdate": "2025-08-24T22:00:57.162Z"
 }

@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DollarSign, TrendingUp, BarChart3, Brain, ArrowLeftRight, Wallet, ExternalLink, Layers, Shield } from "lucide-react";
 import { openSecureLink, getSecureIframeProps } from "@/utils/security";
+import hippoLaserEyes from "@assets/image_1755979639049.png";
 
 // Safe components for external links and iframes
 const SafeLink = ({ href, children, className = "", ...props }: { 
@@ -58,6 +59,15 @@ export default function DeFiSection() {
   return (
     <div className="space-y-8">
       <div className="text-center">
+        <div className="flex justify-center mb-4">
+          <div className="w-24 h-24 rounded-xl overflow-hidden shadow-xl border-2 border-green-500/30">
+            <img 
+              src={hippoLaserEyes} 
+              alt="DeFi Hippo" 
+              className="w-full h-full object-cover"
+            />
+          </div>
+        </div>
         <h2 className="text-3xl font-bold text-white mb-2">DeFi Hub</h2>
         <p className="text-crypto-silver">Comprehensive Decentralized Finance access and analytics</p>
       </div>

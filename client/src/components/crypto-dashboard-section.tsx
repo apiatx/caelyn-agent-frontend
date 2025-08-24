@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, BarChart3, DollarSign, Activity, Eye, Globe, Wallet, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
+import cuteHippo from "@assets/cute-cartoon-hippo-showing-off-butt-vector_1756060620427.jpg";
 
 import { MarketOverviewSection } from './market-overview-section';
 
@@ -24,6 +24,15 @@ export default function CryptoDashboardSection() {
       {/* Crypto Market Overview */}
       <div className="space-y-4">
         <div className="text-center px-3 sm:px-0">
+          <div className="flex justify-center mb-4">
+            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden shadow-xl border-2 border-pink-500/30">
+              <img 
+                src={cuteHippo} 
+                alt="Market Overview Hippo" 
+                className="w-full h-full object-cover"
+              />
+            </div>
+          </div>
           <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-2">Crypto Market Overview</h2>
           <p className="text-sm sm:text-base text-crypto-silver">Global market metrics and key indicators</p>
         </div>

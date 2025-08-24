@@ -7,7 +7,7 @@ import BaseSection from "@/components/base-section";
 import SolanaSection from "@/components/solana-section";
 import AbstractSection from "@/components/abstract-section";
 import DeFiSection from "@/components/defi-section";
-import cryptoHippoImage from "@assets/image_1753204691716.png";
+import cryptoHippoImage from "@assets/download_1755979612950.jpeg";
 import { UniversalNavigation } from "@/components/universal-navigation";
 import { SectionLoadingState } from "@/components/loading-screen";
 import { useScrollFade } from "@/hooks/useScrollFade";
