@@ -341,34 +341,23 @@ export default function PortfolioSection() {
 
         {/* DeBank */}
         <GlassCard className="p-3 sm:p-4 lg:p-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
-            <div className="flex items-center gap-2">
+          <button
+            onClick={() => window.open('https://debank.com/profile', '_blank', 'noopener,noreferrer')}
+            className="w-full flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4 hover:bg-green-500/5 rounded-lg p-2 -m-2 transition-all duration-200 group"
+          >
+            <div className="flex items-center gap-2 w-full">
               <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center text-xs font-bold">
                 DB
               </div>
-              <h3 className="text-lg sm:text-xl font-semibold text-white">DeBank</h3>
+              <h3 className="text-lg sm:text-xl font-semibold text-white group-hover:text-green-300 transition-colors">DeBank</h3>
               <p className="text-crypto-silver text-sm">EVM Portfolio Tracker</p>
               <Badge className="bg-gradient-to-r from-green-500/20 to-blue-500/20 text-green-300 border-green-500/30 text-xs">
                 EVM CHAINS
               </Badge>
+              <div className="flex-grow"></div>
+              <ExternalLink className="h-4 w-4 text-green-400 group-hover:text-green-300 group-hover:scale-110 transition-all" />
             </div>
-          </div>
-          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg p-6">
-            <div className="grid grid-cols-1 gap-3">
-              <button
-                onClick={() => window.open('https://debank.com/profile', '_blank', 'noopener,noreferrer')}
-                className="bg-gradient-to-br from-green-500/10 to-blue-500/10 hover:from-green-500/20 hover:to-blue-500/20 border border-green-500/20 hover:border-green-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-sm font-medium text-white group-hover:text-green-300 mb-1">DeBank EVM Portfolio Tracker</div>
-                    <div className="text-xs text-crypto-silver">Track your portfolio across all EVM chains</div>
-                  </div>
-                  <ExternalLink className="w-4 h-4 text-green-400 group-hover:text-green-300" />
-                </div>
-              </button>
-            </div>
-          </div>
+          </button>
         </GlassCard>
       </div>
 
