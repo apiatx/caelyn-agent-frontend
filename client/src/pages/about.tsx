@@ -81,17 +81,6 @@ export default function AboutPage() {
                 </div>
               </div>
 
-              {/* Second Hippo Image - Laser Eyes - Above "What You Get" */}
-              <div className="flex justify-start my-10">
-                <div className="w-40 h-40 rounded-xl overflow-hidden shadow-xl border-2 border-green-500/30">
-                  <img 
-                    src={hippoLaserEyes} 
-                    alt="Hippo with Laser Eyes" 
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              </div>
-
               <div>
                 <h2 className="text-2xl font-semibold text-white mb-4">What You Get</h2>
                 <div className="space-y-4 text-crypto-silver">
@@ -155,12 +144,12 @@ export default function AboutPage() {
                 </div>
               </div>
 
-              {/* Third Hippo Image - Above "Who It's For" */}
-              <div className="flex justify-center my-10">
-                <div className="w-36 h-36 rounded-lg overflow-hidden shadow-lg border-2 border-purple-500/30">
+              {/* Second Hippo Image - Above "Who It's For" */}
+              <div className="flex justify-start my-10">
+                <div className="w-40 h-40 rounded-xl overflow-hidden shadow-xl border-2 border-green-500/30">
                   <img 
-                    src={hippoDownload1} 
-                    alt="Hippo" 
+                    src={hippoLaserEyes} 
+                    alt="Hippo with Laser Eyes" 
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -186,11 +175,11 @@ export default function AboutPage() {
                 </div>
               </div>
 
-              {/* Fourth Hippo Image - Above "Why This Matters" */}
-              <div className="flex justify-end my-12">
-                <div className="w-40 h-40 rounded-2xl overflow-hidden shadow-xl border-3 border-blue-500/40">
+              {/* Third Hippo Image - Above "Why This Matters" */}
+              <div className="flex justify-center my-10">
+                <div className="w-36 h-36 rounded-lg overflow-hidden shadow-lg border-2 border-purple-500/30">
                   <img 
-                    src={hippoImages1} 
+                    src={hippoDownload1} 
                     alt="Hippo" 
                     className="w-full h-full object-cover"
                   />
@@ -209,12 +198,12 @@ export default function AboutPage() {
                 </div>
               </div>
 
-              {/* Fifth Hippo Image - Above "The Bigger Picture" */}
-              <div className="flex justify-center my-10">
-                <div className="w-48 h-48 rounded-2xl overflow-hidden shadow-xl border-2 border-pink-500/30">
+              {/* Fourth Hippo Image - Above "The Bigger Picture" */}
+              <div className="flex justify-end my-12">
+                <div className="w-40 h-40 rounded-2xl overflow-hidden shadow-xl border-3 border-blue-500/40">
                   <img 
-                    src={cuteHippo} 
-                    alt="Cute Hippo" 
+                    src={hippoImages1} 
+                    alt="Hippo" 
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -229,6 +218,17 @@ export default function AboutPage() {
                   <p>Going on-chain isn't just about making trades — it's about reclaiming sovereignty over your wealth and moving beyond a centralized system that's stacked against you.</p>
                   <p>Every position you take, every move you make is a vote for decentralization, transparency, and wealth that can't be inflated away.</p>
                   <p>CryptoHippo exists to help you take that step with clarity, speed, and confidence.</p>
+                </div>
+              </div>
+
+              {/* Fifth Hippo Image - Above "Recommended Reading" */}
+              <div className="flex justify-center my-10">
+                <div className="w-48 h-48 rounded-2xl overflow-hidden shadow-xl border-2 border-pink-500/30">
+                  <img 
+                    src={cuteHippo} 
+                    alt="Cute Hippo" 
+                    className="w-full h-full object-cover"
+                  />
                 </div>
               </div>
 
