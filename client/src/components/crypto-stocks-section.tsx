@@ -452,7 +452,7 @@ export default function CryptoStocksSection() {
             </Badge>
           </div>
           <button
-            onClick={() => openInNewTab('https://www.tradingview.com/chart/e5l95XgZ/?symbol=SPREADEX%3ASPX')}
+            onClick={() => openInNewTab('https://www.tradingview.com/chart/e5l95XgZ/?symbol=SP%3ASPX')}
             className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm"
           >
             Open Full View →
@@ -461,9 +461,9 @@ export default function CryptoStocksSection() {
 
         <div className="w-full">
           <iframe
-            src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_e5l95&symbol=SPREADEX%3ASPX&interval=D&hidesidetoolbar=1&hidetoptoolbar=1&symboledit=1&saveimage=1&toolbarbg=0a0a0a&studies=[]&hideideas=1&theme=dark&style=1&timezone=Etc%2FUTC&withdateranges=1&range=3M&allow_symbol_change=1&src=e5l95XgZ"
+            src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_e5l95&symbol=SP%3ASPX&interval=D&hidesidetoolbar=1&hidetoptoolbar=1&symboledit=1&saveimage=1&toolbarbg=0a0a0a&studies=[]&hideideas=1&theme=dark&style=1&timezone=Etc%2FUTC&withdateranges=1&range=3M&allow_symbol_change=1&src=e5l95XgZ"
             className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
-            title="S&P 500 (SPREADEX:SPX) Chart"
+            title="S&P 500 (SP:SPX) Chart"
             frameBorder="0"
             scrolling="no"
             allow="fullscreen"
