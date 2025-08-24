@@ -43,7 +43,7 @@ export default function CryptoStocksSection() {
 
       {/* TradingView - SPX */}
       <GlassCard className="p-3 sm:p-4 lg:p-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-6">
           <div className="flex items-center gap-2">
             <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-blue-500 to-green-500 rounded-full flex items-center justify-center">
               <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
@@ -53,21 +53,20 @@ export default function CryptoStocksSection() {
               SPX
             </Badge>
           </div>
-        </div>
-
-        <div className="flex justify-end items-center gap-4 mb-3">
-          <button
-            onClick={() => openInNewTab('https://www.tradingview.com/symbols/SPX/?exchange=SP&timeframe=ALL')}
-            className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm"
-          >
-            Open Symbol →
-          </button>
-          <button
-            onClick={() => openInNewTab('https://www.tradingview.com/chart/e5l95XgZ/?symbol=SP%3ASPX')}
-            className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm"
-          >
-            Open Chart →
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => openInNewTab('https://www.tradingview.com/symbols/SPX/?exchange=SP&timeframe=ALL')}
+              className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm"
+            >
+              Open Symbol →
+            </button>
+            <button
+              onClick={() => openInNewTab('https://www.tradingview.com/chart/e5l95XgZ/?symbol=SP%3ASPX')}
+              className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm"
+            >
+              Open Chart →
+            </button>
+          </div>
         </div>
 
         <div className="w-full">
