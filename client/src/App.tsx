@@ -26,6 +26,8 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/app" component={Dashboard} />
       <Route path="/app/majors" component={TopChartsPage} />
+      <Route path="/majors" component={TopChartsPage} />
+      <Route path="/alts" component={TopChartsPage} />
       <Route path="/app/onchain" component={OnchainPage} />
       <Route path="/onchain" component={OnchainPage} />
       <Route path="/app/base" component={BasePage} />
