@@ -254,6 +254,25 @@ export default function DeFiSection() {
 
           </div>
         </div>
+
+        {/* Options Subsection */}
+        <div className="space-y-4">
+          <h4 className="text-lg font-medium text-green-400 mb-3">Options</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://deri.io/#/lite/trade/option/BTCUSD-50000-P')}
+              className="bg-black/20 border-crypto-silver/20 hover:bg-green-500/20 hover:border-green-500/30 text-white justify-start p-4 h-auto"
+            >
+              <TrendingUp className="w-4 h-4 mr-2" />
+              <div className="text-left">
+                <div className="font-semibold">Deri Protocol</div>
+                <div className="text-sm text-crypto-silver">Bitcoin options trading</div>
+              </div>
+            </Button>
+
+          </div>
+        </div>
       </div>
 
       {/* DeFi Everything Apps */}
