@@ -79,7 +79,7 @@ export default function AbstractSection() {
           </Badge>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-4xl">
           <button
             onClick={() => openInNewTab('https://portal.abs.xyz/discover')}
             className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-lg hover:bg-indigo-500/20 transition-colors"
@@ -92,8 +92,6 @@ export default function AbstractSection() {
             </div>
             <p className="text-gray-400 text-sm">Discover the Abstract ecosystem</p>
           </button>
-          
-
           
           <button
             onClick={() => openInNewTab('https://pudgyinvest.com/')}
