@@ -13,7 +13,7 @@ export default function BasePage() {
         <div className="max-w-[95vw] mx-auto px-2 sm:px-3">
           <div className="flex justify-between items-center py-3 lg:py-4">
             <div className="flex items-center space-x-3 sm:space-x-4">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-lg overflow-hidden">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-full overflow-hidden">
                 <img 
                   src={cryptoHippoImage}
                   alt="CryptoHippo"
