@@ -58,18 +58,18 @@ const openInNewTab = (url: string) => {
 export default function DeFiSection() {
   return (
     <div className="space-y-8">
-      <div className="text-center">
-        <div className="flex items-center justify-center gap-3 mb-2">
-          <div className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-xl overflow-hidden shadow-xl border-2 border-green-500/30">
+      <div className="text-center px-3 sm:px-0">
+        <div className="flex justify-center mb-4">
+          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden shadow-xl border-2 border-green-500/30">
             <img 
               src={hippoLaserEyes} 
               alt="DeFi Hippo" 
               className="w-full h-full object-cover"
             />
           </div>
-          <h2 className="text-3xl font-bold text-white">DeFi Hub</h2>
         </div>
-        <p className="text-crypto-silver">Comprehensive Decentralized Finance access and analytics</p>
+        <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-2">DeFi Hub</h2>
+        <p className="text-sm sm:text-base text-crypto-silver">Comprehensive Decentralized Finance access and analytics</p>
       </div>
 
       {/* TRADE Section */}
