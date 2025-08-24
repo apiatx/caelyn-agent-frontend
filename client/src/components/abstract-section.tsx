@@ -80,7 +80,7 @@ export default function AbstractSection() {
           </Badge>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-4xl">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
           <button
             onClick={() => openInNewTab('https://portal.abs.xyz/discover')}
             className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-lg hover:bg-indigo-500/20 transition-colors"
