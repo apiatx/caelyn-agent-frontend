@@ -21,7 +21,7 @@ export default function AbstractPage() {
       >
         {/* Background Image */}
         <div 
-          className="absolute inset-0 opacity-50"
+          className="absolute inset-0 opacity-75"
           style={{
             backgroundImage: `url(${paintColorsBackground})`,
             backgroundSize: 'cover',

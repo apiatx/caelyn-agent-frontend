@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, Activity, BarChart3, Brain, Wallet, Zap, DollarSign, Layers, ChartLine, Settings } from "lucide-react";
 import hippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
+import paintColorsBackground from "@assets/paint-colors-background-header_1756066539167.jpg";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 
@@ -16,18 +17,29 @@ export default function BTCPage() {
   return (
     <div className="min-h-screen text-white" style={{background: 'linear-gradient(135deg, hsl(0, 0%, 0%) 0%, hsl(0, 0%, 10%) 50%, hsl(0, 0%, 0%) 100%)'}}>
       {/* Header */}
-      <header className="glass-card-dark border-b border-crypto-silver/20 sticky top-0 z-50">
-        <div className="max-w-[95vw] mx-auto px-2 sm:px-3">
+      <header className="glass-card-dark border-b border-crypto-silver/20 sticky top-0 z-50 relative overflow-hidden">
+        {/* Background Image */}
+        <div 
+          className="absolute inset-0 opacity-75"
+          style={{
+            backgroundImage: `url(${paintColorsBackground})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat'
+          }}
+        />
+        {/* Content Layer */}
+        <div className="relative z-10 max-w-[95vw] mx-auto px-2 sm:px-3">
           <div className="flex justify-between items-center py-3 lg:py-4">
             <div className="flex items-center space-x-3 sm:space-x-4">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-full overflow-hidden">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-full overflow-hidden border-2 border-white/20 shadow-lg">
                 <img 
                   src={hippoImage}
                   alt="CryptoHippo"
                   className="w-full h-full object-cover"
                 />
               </div>
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold bg-gradient-to-r from-white to-crypto-silver bg-clip-text text-transparent">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-white drop-shadow-lg">
                 CryptoHippo
               </h1>
             </div>

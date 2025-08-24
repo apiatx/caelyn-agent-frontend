@@ -17,7 +17,7 @@ export default function AltsPage() {
       <header className="glass-card-dark border-b border-crypto-silver/20 sticky top-0 z-50 relative overflow-hidden">
         {/* Background Image */}
         <div 
-          className="absolute inset-0 opacity-50"
+          className="absolute inset-0 opacity-75"
           style={{
             backgroundImage: `url(${paintColorsBackground})`,
             backgroundSize: 'cover',
