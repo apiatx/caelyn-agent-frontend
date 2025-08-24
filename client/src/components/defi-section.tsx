@@ -367,6 +367,20 @@ export default function DeFiSection() {
               <div className="text-sm text-crypto-silver">Base Network Liquidity Hub</div>
             </div>
           </Button>
+
+          <Button
+            variant="outline"
+            onClick={() => openInNewTab('https://app.spectra.finance/pools')}
+            className="bg-black/20 border-crypto-silver/20 hover:bg-purple-500/20 hover:border-purple-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
+          >
+            <div className="p-3 rounded-lg bg-gradient-to-r from-purple-500/20 to-indigo-500/20">
+              <Layers className="h-6 w-6 text-purple-400" />
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-lg">Spectra</div>
+              <div className="text-sm text-crypto-silver">Yield derivatives protocol</div>
+            </div>
+          </Button>
         </div>
       </div>
 
