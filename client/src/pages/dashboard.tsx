@@ -7,7 +7,7 @@ import BaseSection from "@/components/base-section";
 import SolanaSection from "@/components/solana-section";
 import AbstractSection from "@/components/abstract-section";
 import DeFiSection from "@/components/defi-section";
-import cryptoHippoImage from "@assets/download_1755979612950.jpeg";
+import cryptoHippoImage from "@assets/cute-cartoon-hippo-showing-off-butt-vector_1756060620427.jpg";
 import { UniversalNavigation } from "@/components/universal-navigation";
 import { SectionLoadingState } from "@/components/loading-screen";
 import { useScrollFade } from "@/hooks/useScrollFade";

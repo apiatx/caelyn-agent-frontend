@@ -1,6 +1,6 @@
 import { useState, Suspense } from "react";
 import { useLocation } from "wouter";
-import cryptoHippoImage from "@assets/image_1753204691716.png";
+import cryptoHippoImage from "@assets/cute-cartoon-hippo-showing-off-butt-vector_1756060620427.jpg";
 import { HypeSection } from "@/components/hype-section";
 import { UniversalNavigation } from "@/components/universal-navigation";
 import { SectionLoadingState } from "@/components/loading-screen";

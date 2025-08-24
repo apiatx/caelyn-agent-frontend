@@ -1,7 +1,7 @@
 import { UniversalNavigation } from "@/components/universal-navigation";
 import { GlassCard } from "@/components/ui/glass-card";
 import { ExternalLink } from "lucide-react";
-import cryptoHippoImage from "@assets/image_1753204691716.png";
+import cryptoHippoImage from "@assets/cute-cartoon-hippo-showing-off-butt-vector_1756060620427.jpg";
 import hippoMouthOpen from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
 import hippoLaserEyes from "@assets/image_1755979639049.png";
 import hippoDownload1 from "@assets/download (1)_1755979612947.jpeg";

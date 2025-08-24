@@ -1,6 +1,6 @@
 import { UniversalNavigation } from "@/components/universal-navigation";
 import PortfolioSection from "@/components/portfolio-section";
-import cryptoHippoImage from "@assets/image_1753204691716.png";
+import cryptoHippoImage from "@assets/cute-cartoon-hippo-showing-off-butt-vector_1756060620427.jpg";
 import { useScrollFade } from "@/hooks/useScrollFade";
 
 export default function PortfolioPage() {

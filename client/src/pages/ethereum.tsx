@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { EthereumSection } from "@/components/ethereum-section";
-import cryptoHippoImage from "@assets/image_1753204691716.png";
+import cryptoHippoImage from "@assets/cute-cartoon-hippo-showing-off-butt-vector_1756060620427.jpg";
 import { UniversalNavigation } from "@/components/universal-navigation";
 import { SectionLoadingState } from "@/components/loading-screen";
 import { useScrollFade } from "@/hooks/useScrollFade";
