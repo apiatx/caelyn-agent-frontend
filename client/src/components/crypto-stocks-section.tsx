@@ -451,20 +451,21 @@ export default function CryptoStocksSection() {
               STOCK INDEX
             </Badge>
           </div>
-          <div className="flex gap-4">
-            <button
-              onClick={() => openInNewTab('https://www.tradingview.com/symbols/SPX/?exchange=SP&timeframe=ALL')}
-              className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm"
-            >
-              Open Symbol
-            </button>
-            <button
-              onClick={() => openInNewTab('https://www.tradingview.com/chart/e5l95XgZ/?symbol=SP%3ASPX')}
-              className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm"
-            >
-              Open Chart
-            </button>
-          </div>
+        </div>
+
+        <div className="flex justify-end items-center gap-4 mb-3">
+          <button
+            onClick={() => openInNewTab('https://www.tradingview.com/symbols/SPX/?exchange=SP&timeframe=ALL')}
+            className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm"
+          >
+            Open Symbol →
+          </button>
+          <button
+            onClick={() => openInNewTab('https://www.tradingview.com/chart/e5l95XgZ/?symbol=SP%3ASPX')}
+            className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm"
+          >
+            Open Chart →
+          </button>
         </div>
 
         <div className="w-full">
