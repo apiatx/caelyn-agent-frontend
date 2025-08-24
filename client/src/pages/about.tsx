@@ -145,7 +145,7 @@ export default function AboutPage() {
               </div>
 
               {/* Second Hippo Image - Above "Who It's For" */}
-              <div className="flex justify-start my-10">
+              <div className="flex justify-center my-10">
                 <div className="w-40 h-40 rounded-xl overflow-hidden shadow-xl border-2 border-green-500/30">
                   <img 
                     src={hippoLaserEyes} 
@@ -199,7 +199,7 @@ export default function AboutPage() {
               </div>
 
               {/* Fourth Hippo Image - Above "The Bigger Picture" */}
-              <div className="flex justify-end my-12">
+              <div className="flex justify-center my-12">
                 <div className="w-40 h-40 rounded-2xl overflow-hidden shadow-xl border-3 border-blue-500/40">
                   <img 
                     src={hippoImages1} 
