@@ -340,24 +340,41 @@ export default function PortfolioSection() {
         </div>
 
         {/* DeBank */}
-        <GlassCard className="p-3 sm:p-4 lg:p-6">
-          <button
-            onClick={() => window.open('https://debank.com/profile', '_blank', 'noopener,noreferrer')}
-            className="w-full flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4 hover:bg-green-500/5 rounded-lg p-2 -m-2 transition-all duration-200 group"
-          >
-            <div className="flex items-center gap-2 w-full">
-              <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center text-xs font-bold">
+        <GlassCard className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center text-sm font-bold">
                 DB
               </div>
-              <h3 className="text-lg sm:text-xl font-semibold text-white group-hover:text-green-300 transition-colors">DeBank</h3>
-              <p className="text-crypto-silver text-sm">EVM Portfolio Tracker</p>
-              <Badge className="bg-gradient-to-r from-green-500/20 to-blue-500/20 text-green-300 border-green-500/30 text-xs">
+              <div>
+                <h3 className="text-lg font-semibold text-white">DeBank</h3>
+                <p className="text-crypto-silver text-sm">EVM Portfolio Tracker</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
                 EVM CHAINS
               </Badge>
-              <div className="flex-grow"></div>
-              <ExternalLink className="h-4 w-4 text-green-400 group-hover:text-green-300 group-hover:scale-110 transition-all" />
+              <button
+                onClick={() => window.open('https://debank.com/profile', '_blank', 'noopener,noreferrer')}
+                className="text-crypto-silver hover:text-white transition-colors group"
+              >
+                <ExternalLink className="h-4 w-4 group-hover:scale-110 transition-transform" />
+              </button>
             </div>
-          </button>
+          </div>
+          
+          <div className="w-full">
+            <div className="h-[120px] rounded-lg border border-crypto-silver/20 bg-gradient-to-br from-green-900/20 to-blue-900/20 flex items-center justify-center p-6">
+              <button
+                onClick={() => window.open('https://debank.com/profile', '_blank', 'noopener,noreferrer')}
+                className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 hover:scale-105 flex items-center gap-2"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Open DeBank Portfolio
+              </button>
+            </div>
+          </div>
         </GlassCard>
       </div>
 
