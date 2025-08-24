@@ -59,16 +59,16 @@ export default function DeFiSection() {
   return (
     <div className="space-y-8">
       <div className="text-center">
-        <div className="flex justify-center mb-4">
-          <div className="w-24 h-24 rounded-xl overflow-hidden shadow-xl border-2 border-green-500/30">
+        <div className="flex items-center justify-center gap-3 mb-2">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl overflow-hidden shadow-xl border-2 border-green-500/30">
             <img 
               src={hippoLaserEyes} 
               alt="DeFi Hippo" 
               className="w-full h-full object-cover"
             />
           </div>
+          <h2 className="text-3xl font-bold text-white">DeFi Hub</h2>
         </div>
-        <h2 className="text-3xl font-bold text-white mb-2">DeFi Hub</h2>
         <p className="text-crypto-silver">Comprehensive Decentralized Finance access and analytics</p>
       </div>
 
