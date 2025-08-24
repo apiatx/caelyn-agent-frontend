@@ -50,17 +50,6 @@ export default function AboutPage() {
               <p className="text-lg text-crypto-silver leading-relaxed">
                 CryptoHippo is an all-in-one trading dashboard designed to put everything you need in one place — market data, technical analysis, on-chain flows, sentiment, DeFi tools, and portfolio tracking. No more juggling tabs, apps, and bookmarks.
               </p>
-              
-              {/* First Hippo Image - Mouth Open */}
-              <div className="flex justify-center my-8">
-                <div className="w-32 h-32 rounded-full overflow-hidden shadow-lg border-2 border-crypto-silver/20">
-                  <img 
-                    src={hippoMouthOpen} 
-                    alt="Hippo" 
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              </div>
             </div>
 
             <div className="space-y-6 text-left">
@@ -78,6 +67,17 @@ export default function AboutPage() {
                   </div>
                   
                   <p>This scattered workflow slows you down. CryptoHippo solves that.</p>
+                </div>
+              </div>
+
+              {/* First Hippo Image - Mouth Open - Between "Why It Exists" and "What You Get" */}
+              <div className="flex justify-center my-8">
+                <div className="w-32 h-32 rounded-full overflow-hidden shadow-lg border-2 border-crypto-silver/20">
+                  <img 
+                    src={hippoMouthOpen} 
+                    alt="Hippo" 
+                    className="w-full h-full object-cover"
+                  />
                 </div>
               </div>
 
@@ -144,7 +144,7 @@ export default function AboutPage() {
                 </div>
               </div>
 
-              {/* Second Hippo Image - Laser Eyes - Above "Who It's For" */}
+              {/* Second Hippo Image - Laser Eyes - Between "What You Get" and "Who It's For" */}
               <div className="flex justify-start my-10">
                 <div className="w-40 h-40 rounded-xl overflow-hidden shadow-xl border-2 border-green-500/30">
                   <img 
@@ -175,7 +175,7 @@ export default function AboutPage() {
                 </div>
               </div>
 
-              {/* Third Hippo Image - Centered */}
+              {/* Third Hippo Image - Centered - Between "Why Traders Use It" and "Why This Matters" */}
               <div className="flex justify-center my-10">
                 <div className="w-36 h-36 rounded-lg overflow-hidden shadow-lg border-2 border-purple-500/30">
                   <img 
@@ -198,7 +198,7 @@ export default function AboutPage() {
                 </div>
               </div>
 
-              {/* Fourth Hippo Image - Right aligned */}
+              {/* Fourth Hippo Image - Right aligned - Between "Why This Matters" and "The Bigger Picture" */}
               <div className="flex justify-end my-12">
                 <div className="w-40 h-40 rounded-2xl overflow-hidden shadow-xl border-3 border-blue-500/40">
                   <img 
