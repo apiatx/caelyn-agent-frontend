@@ -191,7 +191,7 @@ export default function AlphaSection() {
           </Badge>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-4xl">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
           {/* Chainspect */}
           <div className="bg-gray-900/50 rounded-lg border border-crypto-silver/20 p-4 text-center">
             <div className="flex flex-col items-center gap-3">
