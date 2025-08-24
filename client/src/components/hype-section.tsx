@@ -121,6 +121,22 @@ export function HypeSection() {
               </div>
               <div className="w-4 h-4 text-gray-400 group-hover:text-purple-400 transition-colors">→</div>
             </button>
+
+            <button
+              onClick={() => window.open('https://degenai.dev/', '_blank')}
+              className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-pink-500/30 transition-all duration-200 group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">AI</span>
+                </div>
+                <div className="text-left">
+                  <h4 className="text-white font-medium text-sm">DegenAI Perps Bot</h4>
+                  <p className="text-gray-400 text-xs">AI-powered perpetual trading bot - Advanced trading automation</p>
+                </div>
+              </div>
+              <div className="w-4 h-4 text-gray-400 group-hover:text-pink-400 transition-colors">→</div>
+            </button>
           </div>
         </GlassCard>
       </div>

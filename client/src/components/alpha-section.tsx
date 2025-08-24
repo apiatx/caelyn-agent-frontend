@@ -792,6 +792,19 @@ export default function AlphaSection() {
             </div>
             <p className="text-gray-400 text-sm">Copy trading vault strategy</p>
           </SafeLink>
+
+          <SafeLink
+            href='https://degenai.dev/'
+            className="p-4 bg-pink-500/10 border border-pink-500/20 rounded-lg hover:bg-pink-500/20 transition-colors"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-pink-500 rounded-full flex items-center justify-center">
+                <Brain className="w-4 h-4 text-white" />
+              </div>
+              <h4 className="text-pink-400 font-semibold">DegenAI Perps Bot</h4>
+            </div>
+            <p className="text-gray-400 text-sm">AI-powered perpetual trading bot</p>
+          </SafeLink>
         </div>
 
 
