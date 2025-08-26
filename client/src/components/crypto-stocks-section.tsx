@@ -631,7 +631,7 @@ export default function CryptoStocksSection() {
                 </Badge>
               </div>
               <button
-                onClick={() => openInNewTab('https://thenew.money/sol')}
+                onClick={() => openInNewTab('https://www.coingecko.com/en/treasuries/solana/companies')}
                 className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm"
               >
                 Open Full View →
@@ -639,7 +639,7 @@ export default function CryptoStocksSection() {
             </div>
             <div className="w-full">
               <button
-                onClick={() => openInNewTab('https://thenew.money/sol')}
+                onClick={() => openInNewTab('https://www.coingecko.com/en/treasuries/solana/companies')}
                 className="w-full bg-gradient-to-r from-purple-500/10 to-purple-600/10 hover:from-purple-500/20 hover:to-purple-600/20 border border-purple-500/20 hover:border-purple-400/30 rounded-lg p-4 transition-all duration-300 group"
               >
                 <div className="flex items-center justify-between">
