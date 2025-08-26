@@ -153,6 +153,14 @@ export default function CryptoStocksSection() {
             <div className="text-sm font-medium text-white group-hover:text-green-300 mb-1">AInvest</div>
             <div className="text-xs text-crypto-silver">AI-powered stock screening and analysis</div>
           </button>
+
+          <button
+            onClick={() => openInNewTab('https://www.thenew.money/')}
+            className="bg-gradient-to-br from-emerald-500/10 to-emerald-600/10 hover:from-emerald-500/20 hover:to-emerald-600/20 border border-emerald-500/20 hover:border-emerald-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-emerald-300 mb-1">TheNew.Money</div>
+            <div className="text-xs text-crypto-silver">Financial market intelligence and analysis</div>
+          </button>
           
           <button
             onClick={() => openInNewTab('https://stockanalysis.com/trending/')}
