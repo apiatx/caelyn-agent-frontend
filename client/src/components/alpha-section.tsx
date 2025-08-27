@@ -191,7 +191,7 @@ export default function AlphaSection() {
           </Badge>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
           {/* Chainspect */}
           <div className="bg-gray-900/50 rounded-lg border border-crypto-silver/20 p-4 text-center">
             <div className="flex flex-col items-center gap-3">
@@ -225,6 +225,25 @@ export default function AlphaSection() {
                   className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition-colors text-xs font-medium"
                 >
                   Open Explorer
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Dune Analytics */}
+          <div className="bg-gray-900/50 rounded-lg border border-crypto-silver/20 p-4 text-center">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-sm font-bold">D</span>
+              </div>
+              <div>
+                <h5 className="text-white font-semibold">Dune Analytics: DEX Metrics</h5>
+                <p className="text-gray-400 text-xs mb-3">Comprehensive DEX analytics and metrics</p>
+                <button
+                  onClick={() => openInNewTab('https://dune.com/Henrystats/dex-metrics')}
+                  className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg transition-colors text-xs font-medium"
+                >
+                  Open Dashboard
                 </button>
               </div>
             </div>
