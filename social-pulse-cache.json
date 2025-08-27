@@ -1,60 +1,60 @@
 {
   "tickers": [
     {
-      "symbol": "TRUMP",
-      "sentiment": 51,
-      "mentions": 5532,
-      "lastUpdated": "2025-08-24T22:08:54.821Z"
+      "symbol": "POPCAT",
+      "sentiment": 47,
+      "mentions": 3172,
+      "lastUpdated": "2025-08-27T16:29:04.600Z"
+    },
+    {
+      "symbol": "MEME",
+      "sentiment": 46,
+      "mentions": 5106,
+      "lastUpdated": "2025-08-27T16:29:04.600Z"
+    },
+    {
+      "symbol": "BASEDOG",
+      "sentiment": 44,
+      "mentions": 4006,
+      "lastUpdated": "2025-08-27T16:29:04.600Z"
+    },
+    {
+      "symbol": "CHILLGUY",
+      "sentiment": 43,
+      "mentions": 5990,
+      "lastUpdated": "2025-08-27T16:29:04.600Z"
+    },
+    {
+      "symbol": "PENGU",
+      "sentiment": 42,
+      "mentions": 5628,
+      "lastUpdated": "2025-08-27T16:29:04.600Z"
+    },
+    {
+      "symbol": "BRETT",
+      "sentiment": 41,
+      "mentions": 2917,
+      "lastUpdated": "2025-08-27T16:29:04.600Z"
     },
     {
       "symbol": "FARTCOIN",
-      "sentiment": 51,
-      "mentions": 5135,
-      "lastUpdated": "2025-08-24T22:08:54.821Z"
+      "sentiment": 41,
+      "mentions": 3382,
+      "lastUpdated": "2025-08-27T16:29:04.600Z"
     },
     {
-      "symbol": "POPCAT",
-      "sentiment": 48,
-      "mentions": 4108,
-      "lastUpdated": "2025-08-24T22:08:54.821Z"
-    },
-    {
-      "symbol": "DEGEN",
-      "sentiment": 47,
-      "mentions": 4803,
-      "lastUpdated": "2025-08-24T22:08:54.821Z"
-    },
-    {
-      "symbol": "WIF",
-      "sentiment": 44,
-      "mentions": 4795,
-      "lastUpdated": "2025-08-24T22:08:54.820Z"
+      "symbol": "BONK",
+      "sentiment": 40,
+      "mentions": 4180,
+      "lastUpdated": "2025-08-27T16:29:04.600Z"
     },
     {
       "symbol": "PNUT",
-      "sentiment": 44,
-      "mentions": 4437,
-      "lastUpdated": "2025-08-24T22:08:54.821Z"
-    },
-    {
-      "symbol": "GOAT",
-      "sentiment": 42,
-      "mentions": 1387,
-      "lastUpdated": "2025-08-24T22:08:54.821Z"
-    },
-    {
-      "symbol": "ACT",
       "sentiment": 40,
-      "mentions": 2636,
-      "lastUpdated": "2025-08-24T22:08:54.821Z"
-    },
-    {
-      "symbol": "MOODENG",
-      "sentiment": 40,
-      "mentions": 5618,
-      "lastUpdated": "2025-08-24T22:08:54.821Z"
+      "mentions": 1865,
+      "lastUpdated": "2025-08-27T16:29:04.600Z"
     }
   ],
-  "lastUpdated": "2025-08-24T22:08:54.820Z",
-  "nextUpdate": "2025-08-25T01:08:54.820Z"
+  "lastUpdated": "2025-08-27T16:29:04.599Z",
+  "nextUpdate": "2025-08-27T19:29:04.599Z"
 }

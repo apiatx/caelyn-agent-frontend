@@ -491,7 +491,205 @@ export default function AlphaSection() {
 
       </GlassCard>
 
-      {/* Social - Moved underneath Signal section */}
+
+
+      {/* WachXBT Token Sniffer */}
+      <GlassCard className="p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+            <span className="text-white text-xs font-bold">W</span>
+          </div>
+          <h3 className="text-xl font-semibold text-white">WachXBT Token Sniffer</h3>
+          <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
+            AI CHAT
+          </Badge>
+          <SafeLink
+            href="https://wach.ai/chat"
+            className="ml-auto text-blue-400 hover:text-blue-300 text-xs"
+          >
+            Open in New Tab →
+          </SafeLink>
+        </div>
+        <div className="w-full">
+          <iframe
+            src="https://wach.ai/chat"
+            title="WachXBT Token Sniffer"
+            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+            referrerPolicy="no-referrer-when-downgrade"
+            loading="lazy"
+            style={{
+              background: 'transparent',
+              colorScheme: 'dark'
+            }}
+          />
+        </div>
+      </GlassCard>
+
+
+
+      {/* Discover Web3 */}
+      <GlassCard className="p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-6 h-6 bg-gradient-to-r from-cyan-500 to-teal-500 rounded-full flex items-center justify-center">
+            <ExternalLink className="w-4 h-4 text-white" />
+          </div>
+          <h3 className="text-xl font-semibold text-white">Discover Web3</h3>
+          <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 text-xs">
+            ECOSYSTEM
+          </Badge>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* Gravity Ecosystem */}
+          <div className="bg-gray-900/50 rounded-lg border border-crypto-silver/20 p-4 text-center">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-sm font-bold">G</span>
+              </div>
+              <div>
+                <h5 className="text-white font-semibold">Gravity Ecosystem</h5>
+                <p className="text-gray-400 text-xs mb-3">Explore the Gravity network</p>
+                <button
+                  onClick={() => openInNewTab('https://ecosystem.gravity.xyz/')}
+                  className="bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white px-4 py-2 rounded-lg transition-colors text-xs font-medium"
+                >
+                  Explore Gravity
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          {/* DappRadar */}
+          <div className="bg-gray-900/50 rounded-lg border border-crypto-silver/20 p-4 text-center">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-sm font-bold">D</span>
+              </div>
+              <div>
+                <h5 className="text-white font-semibold">DappRadar</h5>
+                <p className="text-gray-400 text-xs mb-3">Discover DApps & analytics</p>
+                <button
+                  onClick={() => openInNewTab('https://dappradar.com/')}
+                  className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white px-4 py-2 rounded-lg transition-colors text-xs font-medium"
+                >
+                  Open DappRadar
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          {/* Zapper */}
+          <div className="bg-gray-900/50 rounded-lg border border-crypto-silver/20 p-4 text-center">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-sm font-bold">Z</span>
+              </div>
+              <div>
+                <h5 className="text-white font-semibold">Zapper</h5>
+                <p className="text-gray-400 text-xs mb-3">DeFi portfolio management</p>
+                <button
+                  onClick={() => openInNewTab('https://zapper.xyz/')}
+                  className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white px-4 py-2 rounded-lg transition-colors text-xs font-medium"
+                >
+                  Open Zapper
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </GlassCard>
+
+      {/* Memecoins */}
+      <GlassCard className="p-6">
+        <div className="flex items-center gap-2 mb-6">
+          <div className="w-6 h-6 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full flex items-center justify-center">
+            <span className="text-white text-sm">🚀</span>
+          </div>
+          <h3 className="text-xl font-semibold text-white">Memecoins</h3>
+          <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-xs">
+            CAPITODAY
+          </Badge>
+        </div>
+        
+        <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+          <iframe
+            src="https://capitoday.com/"
+            title="Capitoday Memecoin Analytics"
+            className="w-full h-[600px] border-0"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+          />
+        </div>
+      </GlassCard>
+
+      {/* Resources - Moved to bottom of page */}
+      <GlassCard className="p-6">
+        <div className="flex items-center gap-2 mb-6">
+          <div className="w-6 h-6 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center">
+            <Brain className="w-4 h-4 text-white" />
+          </div>
+          <h3 className="text-xl font-semibold text-white">Resources</h3>
+          <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 text-xs">
+            AI POWERED
+          </Badge>
+        </div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <SafeLink
+            href='https://chatgpt.com/g/g-ma6mK7m5t-crypto-trading-investing'
+            className="p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-lg hover:bg-cyan-500/20 transition-colors"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center">
+                <Brain className="w-4 h-4 text-white" />
+              </div>
+              <h4 className="text-cyan-400 font-semibold">ChatGPT Crypto AI</h4>
+            </div>
+            <p className="text-gray-400 text-sm">Crypto Trading & Investing GPT</p>
+          </SafeLink>
+
+          <SafeLink
+            href='https://app.bubblemaps.io/'
+            className="p-4 bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg hover:from-blue-500/20 hover:to-purple-500/20 transition-colors"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                <TrendingUp className="w-4 h-4 text-white" />
+              </div>
+              <h4 className="text-blue-400 font-semibold">Bubblemaps</h4>
+            </div>
+            <p className="text-gray-400 text-sm">Token Analytics & Visualization</p>
+          </SafeLink>
+
+          <SafeLink
+            href='https://substack.com/home'
+            className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-sm font-bold">📰</span>
+              </div>
+              <h4 className="text-orange-400 font-semibold">Substack</h4>
+            </div>
+            <p className="text-gray-400 text-sm">Newsletter Publishing Platform</p>
+          </SafeLink>
+
+          <SafeLink
+            href='https://x.com/home'
+            className="p-4 bg-gray-800/10 border border-gray-600/20 rounded-lg hover:bg-gray-800/20 transition-colors"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center">
+                <span className="text-white text-sm font-bold">𝕏</span>
+              </div>
+              <h4 className="text-gray-300 font-semibold">X Home</h4>
+            </div>
+            <p className="text-gray-400 text-sm">Social Media & News Feed</p>
+          </SafeLink>
+        </div>
+      </GlassCard>
+
+      {/* Social - Moved to bottom of page */}
       <GlassCard className="p-6">
         <div className="flex items-center gap-2 mb-6">
           <div className="w-6 h-6 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
@@ -502,8 +700,6 @@ export default function AlphaSection() {
             INTELLIGENCE
           </Badge>
         </div>
-
-
 
         {/* X Accounts */}
         <div>
@@ -877,14 +1073,10 @@ export default function AlphaSection() {
                 <h5 className="text-fuchsia-400 font-semibold text-sm">martypartymusic</h5>
               </div>
             </SafeLink>
-
-
           </div>
         </div>
 
-
-
-        {/* Social Analytics - Moved to bottom */}
+        {/* Social Analytics */}
         <div className="mt-8">
           <div className="flex items-center gap-2 mb-4">
             <div className="w-5 h-5 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
@@ -923,204 +1115,6 @@ export default function AlphaSection() {
               <p className="text-gray-400 text-sm">Social Signal Analytics</p>
             </SafeLink>
           </div>
-        </div>
-      </GlassCard>
-
-
-
-      {/* WachXBT Token Sniffer */}
-      <GlassCard className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-            <span className="text-white text-xs font-bold">W</span>
-          </div>
-          <h3 className="text-xl font-semibold text-white">WachXBT Token Sniffer</h3>
-          <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
-            AI CHAT
-          </Badge>
-          <SafeLink
-            href="https://wach.ai/chat"
-            className="ml-auto text-blue-400 hover:text-blue-300 text-xs"
-          >
-            Open in New Tab →
-          </SafeLink>
-        </div>
-        <div className="w-full">
-          <iframe
-            src="https://wach.ai/chat"
-            title="WachXBT Token Sniffer"
-            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
-            referrerPolicy="no-referrer-when-downgrade"
-            loading="lazy"
-            style={{
-              background: 'transparent',
-              colorScheme: 'dark'
-            }}
-          />
-        </div>
-      </GlassCard>
-
-
-
-      {/* Discover Web3 */}
-      <GlassCard className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-6 h-6 bg-gradient-to-r from-cyan-500 to-teal-500 rounded-full flex items-center justify-center">
-            <ExternalLink className="w-4 h-4 text-white" />
-          </div>
-          <h3 className="text-xl font-semibold text-white">Discover Web3</h3>
-          <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 text-xs">
-            ECOSYSTEM
-          </Badge>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* Gravity Ecosystem */}
-          <div className="bg-gray-900/50 rounded-lg border border-crypto-silver/20 p-4 text-center">
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-bold">G</span>
-              </div>
-              <div>
-                <h5 className="text-white font-semibold">Gravity Ecosystem</h5>
-                <p className="text-gray-400 text-xs mb-3">Explore the Gravity network</p>
-                <button
-                  onClick={() => openInNewTab('https://ecosystem.gravity.xyz/')}
-                  className="bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white px-4 py-2 rounded-lg transition-colors text-xs font-medium"
-                >
-                  Explore Gravity
-                </button>
-              </div>
-            </div>
-          </div>
-          
-          {/* DappRadar */}
-          <div className="bg-gray-900/50 rounded-lg border border-crypto-silver/20 p-4 text-center">
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-bold">D</span>
-              </div>
-              <div>
-                <h5 className="text-white font-semibold">DappRadar</h5>
-                <p className="text-gray-400 text-xs mb-3">Discover DApps & analytics</p>
-                <button
-                  onClick={() => openInNewTab('https://dappradar.com/')}
-                  className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white px-4 py-2 rounded-lg transition-colors text-xs font-medium"
-                >
-                  Open DappRadar
-                </button>
-              </div>
-            </div>
-          </div>
-          
-          {/* Zapper */}
-          <div className="bg-gray-900/50 rounded-lg border border-crypto-silver/20 p-4 text-center">
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-bold">Z</span>
-              </div>
-              <div>
-                <h5 className="text-white font-semibold">Zapper</h5>
-                <p className="text-gray-400 text-xs mb-3">DeFi portfolio management</p>
-                <button
-                  onClick={() => openInNewTab('https://zapper.xyz/')}
-                  className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white px-4 py-2 rounded-lg transition-colors text-xs font-medium"
-                >
-                  Open Zapper
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </GlassCard>
-
-      {/* Memecoins */}
-      <GlassCard className="p-6">
-        <div className="flex items-center gap-2 mb-6">
-          <div className="w-6 h-6 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full flex items-center justify-center">
-            <span className="text-white text-sm">🚀</span>
-          </div>
-          <h3 className="text-xl font-semibold text-white">Memecoins</h3>
-          <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-xs">
-            CAPITODAY
-          </Badge>
-        </div>
-        
-        <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-          <iframe
-            src="https://capitoday.com/"
-            title="Capitoday Memecoin Analytics"
-            className="w-full h-[600px] border-0"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-          />
-        </div>
-      </GlassCard>
-
-      {/* Resources - Moved to bottom of page */}
-      <GlassCard className="p-6">
-        <div className="flex items-center gap-2 mb-6">
-          <div className="w-6 h-6 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center">
-            <Brain className="w-4 h-4 text-white" />
-          </div>
-          <h3 className="text-xl font-semibold text-white">Resources</h3>
-          <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 text-xs">
-            AI POWERED
-          </Badge>
-        </div>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <SafeLink
-            href='https://chatgpt.com/g/g-ma6mK7m5t-crypto-trading-investing'
-            className="p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-lg hover:bg-cyan-500/20 transition-colors"
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center">
-                <Brain className="w-4 h-4 text-white" />
-              </div>
-              <h4 className="text-cyan-400 font-semibold">ChatGPT Crypto AI</h4>
-            </div>
-            <p className="text-gray-400 text-sm">Crypto Trading & Investing GPT</p>
-          </SafeLink>
-
-          <SafeLink
-            href='https://app.bubblemaps.io/'
-            className="p-4 bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg hover:from-blue-500/20 hover:to-purple-500/20 transition-colors"
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                <TrendingUp className="w-4 h-4 text-white" />
-              </div>
-              <h4 className="text-blue-400 font-semibold">Bubblemaps</h4>
-            </div>
-            <p className="text-gray-400 text-sm">Token Analytics & Visualization</p>
-          </SafeLink>
-
-          <SafeLink
-            href='https://substack.com/home'
-            className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-bold">📰</span>
-              </div>
-              <h4 className="text-orange-400 font-semibold">Substack</h4>
-            </div>
-            <p className="text-gray-400 text-sm">Newsletter Publishing Platform</p>
-          </SafeLink>
-
-          <SafeLink
-            href='https://x.com/home'
-            className="p-4 bg-gray-800/10 border border-gray-600/20 rounded-lg hover:bg-gray-800/20 transition-colors"
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-bold">𝕏</span>
-              </div>
-              <h4 className="text-gray-300 font-semibold">X Home</h4>
-            </div>
-            <p className="text-gray-400 text-sm">Social Media & News Feed</p>
-          </SafeLink>
         </div>
       </GlassCard>
     </div>
