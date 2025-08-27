@@ -632,6 +632,18 @@ export default function AlphaSection() {
             </SafeLink>
 
             <SafeLink
+              href='https://x.com/ethimedes'
+              className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg hover:bg-emerald-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">𝕏</span>
+                </div>
+                <h5 className="text-emerald-400 font-semibold text-sm">Ethimedes</h5>
+              </div>
+            </SafeLink>
+
+            <SafeLink
               href='https://x.com/Whale_AI_net'
               className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
             >
