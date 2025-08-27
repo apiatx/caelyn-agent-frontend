@@ -484,6 +484,14 @@ export default function CryptoStocksSection() {
             <div className="text-sm font-medium text-white group-hover:text-blue-300">NFT Lunatic</div>
             <div className="text-xs text-crypto-silver">@NFTLunatic</div>
           </SafeLink>
+
+          <SafeLink
+            href='https://x.com/alliseeis_W'
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-3 transition-all duration-300 text-left group block"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-blue-300">AllISeeIs_W</div>
+            <div className="text-xs text-crypto-silver">@alliseeis_W</div>
+          </SafeLink>
         </div>
       </GlassCard>
 
