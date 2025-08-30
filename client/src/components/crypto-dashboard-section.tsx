@@ -122,26 +122,26 @@ export default function CryptoDashboardSection() {
               BITCOIN ANALYSIS
             </Badge>
           </div>
-          <button
-            onClick={() => openInNewTab('https://www.bitcoinmagazinepro.com/charts/pi-cycle-top-indicator/')}
-            className="text-orange-400 hover:text-orange-300 text-xs sm:text-sm flex items-center gap-1"
-          >
-            <ExternalLink className="w-3 h-3" />
-            Open Full View
-          </button>
         </div>
 
-        <div className="w-full">
-          <iframe
-            src="https://www.bitcoinmagazinepro.com/charts/pi-cycle-top-indicator/"
-            className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
-            title="Bitcoin Magazine Pro - Pi Cycle Top Indicator"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
-            referrerPolicy="no-referrer-when-downgrade"
-            loading="lazy"
-            allow="fullscreen; web-share; clipboard-read; clipboard-write; camera; microphone"
-            style={{ border: 'none' }}
-          />
+        <div className="grid grid-cols-1 gap-4">
+          <button
+            onClick={() => openInNewTab('https://www.bitcoinmagazinepro.com/charts/pi-cycle-top-indicator/')}
+            className="p-6 bg-gradient-to-br from-orange-500/10 to-orange-600/10 hover:from-orange-500/20 hover:to-orange-600/20 border border-orange-500/20 hover:border-orange-400/40 rounded-lg transition-all duration-300 text-left group"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center">
+                <TrendingUp className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1">
+                <div className="text-lg font-semibold text-white group-hover:text-orange-300 mb-2">Bitcoin Magazine Pro - Pi Cycle Top Indicator</div>
+                <div className="text-sm text-crypto-silver">Advanced Bitcoin market cycle analysis and top prediction indicator</div>
+              </div>
+              <div className="text-orange-400 group-hover:text-orange-300">
+                <span className="text-sm">Open Analysis →</span>
+              </div>
+            </div>
+          </button>
         </div>
       </GlassCard>
 
