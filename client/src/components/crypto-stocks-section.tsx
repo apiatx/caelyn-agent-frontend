@@ -81,37 +81,60 @@ export default function CryptoStocksSection() {
         </div>
       </GlassCard>
 
-      {/* Stock Market Data */}
+
+      {/* Portfolio */}
       <GlassCard className="p-3 sm:p-4 lg:p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center">
-              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-green-500 rounded-full flex items-center justify-center">
+              <Briefcase className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
             </div>
-            <h3 className="text-lg sm:text-xl font-semibold text-white">Indices</h3>
-            <Badge className="bg-gradient-to-r from-green-500/20 to-blue-500/20 text-white border-crypto-silver/30 text-xs">
-              STOCK MARKET DATA
+            <h3 className="text-lg sm:text-xl font-semibold text-white">Portfolio</h3>
+            <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
+              PORTFOLIO
             </Badge>
           </div>
           <button
-            onClick={() => openInNewTab('https://www.slickcharts.com/')}
-            className="text-crypto-silver hover:text-white text-xs sm:text-sm flex items-center gap-1"
+            onClick={() => openInNewTab('https://finance.yahoo.com/portfolios')}
+            className="text-green-400 hover:text-green-300 text-xs sm:text-sm flex items-center gap-1"
           >
             <ExternalLink className="w-3 h-3" />
             Open Full View
           </button>
         </div>
 
-        <div className="w-full">
-          <iframe
-            src="https://www.slickcharts.com/"
-            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            title="Slickcharts Stock Market Data"
-            loading="eager"
-            referrerPolicy="unsafe-url"
-            allow="fullscreen; clipboard-write; autoplay; camera; microphone; geolocation"
-            frameBorder="0"
-          />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <button
+            onClick={() => openInNewTab('https://finance.yahoo.com/portfolios')}
+            className="bg-gradient-to-br from-yellow-500/10 to-yellow-600/10 hover:from-yellow-500/20 hover:to-yellow-600/20 border border-yellow-500/20 hover:border-yellow-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-yellow-300 mb-1">Yahoo Finance Portfolios</div>
+            <div className="text-xs text-crypto-silver">Portfolio tracking and analysis</div>
+          </button>
+          
+          <button
+            onClick={() => openInNewTab('https://simplywall.st/portfolio/65b1f9ab-7fa4-4d25-95c6-b8fa93d94d77/holdings')}
+            className="bg-gradient-to-br from-green-500/10 to-green-600/10 hover:from-green-500/20 hover:to-green-600/20 border border-green-500/20 hover:border-green-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-green-300 mb-1">Simply Wall St - Portfolio Analytics</div>
+            <div className="text-xs text-crypto-silver">Portfolio analysis and stock insights</div>
+          </button>
+          
+          <button
+            onClick={() => openInNewTab('https://client.schwab.com/clientapps/accounts/summary/')}
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">Charles Schwab</div>
+            <div className="text-xs text-crypto-silver">Investment account dashboard</div>
+          </button>
+          
+          <button
+            onClick={() => openInNewTab('https://home.personalcapital.com/page/login/app#/dashboard')}
+            className="bg-gradient-to-br from-purple-500/10 to-purple-600/10 hover:from-purple-500/20 hover:to-purple-600/20 border border-purple-500/20 hover:border-purple-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-purple-300 mb-1">Empower Net Worth</div>
+            <div className="text-xs text-crypto-silver">Net worth tracking and financial planning</div>
+          </button>
         </div>
       </GlassCard>
 
@@ -497,59 +520,37 @@ export default function CryptoStocksSection() {
 
 
 
-      {/* Portfolio */}
+      {/* Indices */}
       <GlassCard className="p-3 sm:p-4 lg:p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-green-500 rounded-full flex items-center justify-center">
-              <Briefcase className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center">
+              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
             </div>
-            <h3 className="text-lg sm:text-xl font-semibold text-white">Portfolio</h3>
-            <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
-              PORTFOLIO
+            <h3 className="text-lg sm:text-xl font-semibold text-white">Indices</h3>
+            <Badge className="bg-gradient-to-r from-green-500/20 to-blue-500/20 text-white border-crypto-silver/30 text-xs">
+              STOCK MARKET DATA
             </Badge>
           </div>
           <button
-            onClick={() => openInNewTab('https://finance.yahoo.com/portfolios')}
-            className="text-green-400 hover:text-green-300 text-xs sm:text-sm flex items-center gap-1"
+            onClick={() => openInNewTab('https://www.slickcharts.com/')}
+            className="text-crypto-silver hover:text-white text-xs sm:text-sm flex items-center gap-1"
           >
             <ExternalLink className="w-3 h-3" />
             Open Full View
           </button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <button
-            onClick={() => openInNewTab('https://finance.yahoo.com/portfolios')}
-            className="bg-gradient-to-br from-yellow-500/10 to-yellow-600/10 hover:from-yellow-500/20 hover:to-yellow-600/20 border border-yellow-500/20 hover:border-yellow-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
-          >
-            <div className="text-sm font-medium text-white group-hover:text-yellow-300 mb-1">Yahoo Finance Portfolios</div>
-            <div className="text-xs text-crypto-silver">Portfolio tracking and analysis</div>
-          </button>
-          
-          <button
-            onClick={() => openInNewTab('https://simplywall.st/portfolio/65b1f9ab-7fa4-4d25-95c6-b8fa93d94d77/holdings')}
-            className="bg-gradient-to-br from-green-500/10 to-green-600/10 hover:from-green-500/20 hover:to-green-600/20 border border-green-500/20 hover:border-green-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
-          >
-            <div className="text-sm font-medium text-white group-hover:text-green-300 mb-1">Simply Wall St - Portfolio Analytics</div>
-            <div className="text-xs text-crypto-silver">Portfolio analysis and stock insights</div>
-          </button>
-          
-          <button
-            onClick={() => openInNewTab('https://client.schwab.com/clientapps/accounts/summary/')}
-            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
-          >
-            <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">Charles Schwab</div>
-            <div className="text-xs text-crypto-silver">Investment account dashboard</div>
-          </button>
-          
-          <button
-            onClick={() => openInNewTab('https://home.personalcapital.com/page/login/app#/dashboard')}
-            className="bg-gradient-to-br from-purple-500/10 to-purple-600/10 hover:from-purple-500/20 hover:to-purple-600/20 border border-purple-500/20 hover:border-purple-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
-          >
-            <div className="text-sm font-medium text-white group-hover:text-purple-300 mb-1">Empower Net Worth</div>
-            <div className="text-xs text-crypto-silver">Net worth tracking and financial planning</div>
-          </button>
+        <div className="w-full">
+          <iframe
+            src="https://www.slickcharts.com/"
+            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+            title="Slickcharts Stock Market Data"
+            loading="eager"
+            referrerPolicy="unsafe-url"
+            allow="fullscreen; clipboard-write; autoplay; camera; microphone; geolocation"
+            frameBorder="0"
+          />
         </div>
       </GlassCard>
 
@@ -694,6 +695,41 @@ export default function CryptoStocksSection() {
               />
             </div>
           </div>
+        </div>
+      </GlassCard>
+
+      {/* CaseBitcoin Charts */}
+      <GlassCard className="p-3 sm:p-4 lg:p-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-orange-500 rounded-full flex items-center justify-center">
+              <Bitcoin className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+            </div>
+            <h3 className="text-lg sm:text-xl font-semibold text-white">CaseBitcoin Charts</h3>
+            <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 text-xs">
+              BITCOIN ANALYTICS
+            </Badge>
+          </div>
+          <button
+            onClick={() => openInNewTab('https://casebitcoin.com/charts')}
+            className="text-orange-400 hover:text-orange-300 text-xs sm:text-sm flex items-center gap-1"
+          >
+            <ExternalLink className="w-3 h-3" />
+            Open Full View
+          </button>
+        </div>
+
+        <div className="w-full">
+          <iframe
+            src="https://casebitcoin.com/charts"
+            className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+            title="CaseBitcoin Charts"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+            referrerPolicy="no-referrer-when-downgrade"
+            loading="lazy"
+            allow="fullscreen; web-share; clipboard-read; clipboard-write; camera; microphone"
+            style={{ border: 'none' }}
+          />
         </div>
       </GlassCard>
 
