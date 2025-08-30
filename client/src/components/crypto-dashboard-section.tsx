@@ -110,21 +110,21 @@ export default function CryptoDashboardSection() {
         
       </div>
 
-      {/* CryptoQuant Dashboard */}
+      {/* Bitcoin Magazine Pro - Pi Cycle Top Indicator */}
       <GlassCard className="p-3 sm:p-4 lg:p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-blue-500 rounded-full flex items-center justify-center">
-              <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-orange-500 rounded-full flex items-center justify-center">
+              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
             </div>
-            <h3 className="text-lg sm:text-xl font-semibold text-white">CryptoQuant Analytics</h3>
-            <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
-              ON-CHAIN METRICS
+            <h3 className="text-lg sm:text-xl font-semibold text-white">Pi Cycle Top Indicator</h3>
+            <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 text-xs">
+              BITCOIN ANALYSIS
             </Badge>
           </div>
           <button
-            onClick={() => openInNewTab('https://cryptoquant.com/community/dashboard/67c05819d6c9383057d3df58')}
-            className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm flex items-center gap-1"
+            onClick={() => openInNewTab('https://www.bitcoinmagazinepro.com/charts/pi-cycle-top-indicator/')}
+            className="text-orange-400 hover:text-orange-300 text-xs sm:text-sm flex items-center gap-1"
           >
             <ExternalLink className="w-3 h-3" />
             Open Full View
@@ -133,9 +133,9 @@ export default function CryptoDashboardSection() {
 
         <div className="w-full">
           <iframe
-            src="https://cryptoquant.com/community/dashboard/67c05819d6c9383057d3df58"
+            src="https://www.bitcoinmagazinepro.com/charts/pi-cycle-top-indicator/"
             className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
-            title="CryptoQuant Community Dashboard"
+            title="Bitcoin Magazine Pro - Pi Cycle Top Indicator"
             sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
             referrerPolicy="no-referrer-when-downgrade"
             loading="lazy"
@@ -200,7 +200,7 @@ export default function CryptoDashboardSection() {
               onClick={() => openInNewTab('https://cryptoquant.com/community/dashboard/67c05819d6c9383057d3df58')}
               className="p-3 sm:p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
             >
-              <h5 className="text-blue-400 font-semibold mb-1 text-sm sm:text-base">CryptoQuant Analytics</h5>
+              <h5 className="text-blue-400 font-semibold mb-1 text-sm sm:text-base">CryptoQuant</h5>
               <p className="text-gray-400 text-xs sm:text-sm">On-Chain Metrics</p>
             </button>
           </div>
