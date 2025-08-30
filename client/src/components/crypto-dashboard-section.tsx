@@ -186,7 +186,7 @@ export default function CryptoDashboardSection() {
             </button>
           </div>
 
-          {/* Row 3: Open Interest */}
+          {/* Row 3: Open Interest + CryptoQuant */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <button
               onClick={() => openInNewTab('https://coinalyze.net/futures-data/global-charts/')}
@@ -194,6 +194,14 @@ export default function CryptoDashboardSection() {
             >
               <h5 className="text-orange-400 font-semibold mb-1 text-sm sm:text-base">Open Interest</h5>
               <p className="text-gray-400 text-xs sm:text-sm">Futures Data</p>
+            </button>
+
+            <button
+              onClick={() => openInNewTab('https://cryptoquant.com/community/dashboard/67c05819d6c9383057d3df58')}
+              className="p-3 sm:p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+            >
+              <h5 className="text-blue-400 font-semibold mb-1 text-sm sm:text-base">CryptoQuant Analytics</h5>
+              <p className="text-gray-400 text-xs sm:text-sm">On-Chain Metrics</p>
             </button>
           </div>
 
