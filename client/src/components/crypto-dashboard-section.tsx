@@ -108,41 +108,38 @@ export default function CryptoDashboardSection() {
           </button>
         </div>
         
-        {/* MacroEdge - After the links */}
+        {/* NewHedge Bitcoin Analytics - After the links */}
         <GlassCard className="p-3 sm:p-4 lg:p-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
             <div className="flex items-center gap-2">
               <div className="w-5 h-5 sm:w-6 sm:h-6 bg-purple-500 rounded-full flex items-center justify-center">
                 <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
               </div>
-              <h3 className="text-lg sm:text-xl font-semibold text-white">NewHedge</h3>
+              <h3 className="text-lg sm:text-xl font-semibold text-white">NewHedge Bitcoin Analytics</h3>
               <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-xs">
-                MACRO ANALYTICS
+                BITCOIN ANALYSIS
               </Badge>
             </div>
           </div>
 
-          <div className="mb-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
-              <button
-                onClick={() => openInNewTab('https://newhedge.io/bitcoin')}
-                className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm ml-auto"
-              >
-                Open Full View →
-              </button>
-            </div>
-            <div className="w-full bg-gray-900/50 rounded-lg border border-crypto-silver/20 overflow-hidden">
-              <iframe
-                src="https://newhedge.io/bitcoin"
-                className="w-full h-[400px] sm:h-[500px] lg:h-[600px]"
-                title="NewHedge Bitcoin Analytics"
-                sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
-                referrerPolicy="no-referrer-when-downgrade"
-                loading="lazy"
-                allow="fullscreen; web-share; clipboard-read; clipboard-write; camera; microphone"
-                style={{ border: 'none' }}
-              />
-            </div>
+          <div className="grid grid-cols-1 gap-4">
+            <button
+              onClick={() => openInNewTab('https://newhedge.io/bitcoin')}
+              className="p-6 bg-gradient-to-br from-purple-500/10 to-purple-600/10 hover:from-purple-500/20 hover:to-purple-600/20 border border-purple-500/20 hover:border-purple-400/40 rounded-lg transition-all duration-300 text-left group"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center">
+                  <TrendingUp className="w-6 h-6 text-white" />
+                </div>
+                <div className="flex-1">
+                  <div className="text-lg font-semibold text-white group-hover:text-purple-300 mb-2">NewHedge Bitcoin Dashboard</div>
+                  <div className="text-sm text-crypto-silver">Comprehensive Bitcoin analytics, market insights, and macro trends</div>
+                </div>
+                <div className="text-purple-400 group-hover:text-purple-300">
+                  <span className="text-sm">Open Analysis →</span>
+                </div>
+              </div>
+            </button>
           </div>
         </GlassCard>
       </div>
