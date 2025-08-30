@@ -291,7 +291,39 @@ export default function CryptoStocksSection() {
         </div>
       </GlassCard>
 
+      {/* Indices */}
+      <GlassCard className="p-3 sm:p-4 lg:p-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center">
+              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+            </div>
+            <h3 className="text-lg sm:text-xl font-semibold text-white">Indices</h3>
+            <Badge className="bg-gradient-to-r from-green-500/20 to-blue-500/20 text-white border-crypto-silver/30 text-xs">
+              STOCK MARKET DATA
+            </Badge>
+          </div>
+          <button
+            onClick={() => openInNewTab('https://www.slickcharts.com/')}
+            className="text-crypto-silver hover:text-white text-xs sm:text-sm flex items-center gap-1"
+          >
+            <ExternalLink className="w-3 h-3" />
+            Open Full View
+          </button>
+        </div>
 
+        <div className="w-full">
+          <iframe
+            src="https://www.slickcharts.com/"
+            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+            title="Slickcharts Stock Market Data"
+            loading="eager"
+            referrerPolicy="unsafe-url"
+            allow="fullscreen; clipboard-write; autoplay; camera; microphone; geolocation"
+            frameBorder="0"
+          />
+        </div>
+      </GlassCard>
 
       {/* X Alpha */}
       <GlassCard className="p-3 sm:p-4 lg:p-6">
@@ -520,40 +552,6 @@ export default function CryptoStocksSection() {
 
 
 
-      {/* Indices */}
-      <GlassCard className="p-3 sm:p-4 lg:p-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center">
-              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-            </div>
-            <h3 className="text-lg sm:text-xl font-semibold text-white">Indices</h3>
-            <Badge className="bg-gradient-to-r from-green-500/20 to-blue-500/20 text-white border-crypto-silver/30 text-xs">
-              STOCK MARKET DATA
-            </Badge>
-          </div>
-          <button
-            onClick={() => openInNewTab('https://www.slickcharts.com/')}
-            className="text-crypto-silver hover:text-white text-xs sm:text-sm flex items-center gap-1"
-          >
-            <ExternalLink className="w-3 h-3" />
-            Open Full View
-          </button>
-        </div>
-
-        <div className="w-full">
-          <iframe
-            src="https://www.slickcharts.com/"
-            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            title="Slickcharts Stock Market Data"
-            loading="eager"
-            referrerPolicy="unsafe-url"
-            allow="fullscreen; clipboard-write; autoplay; camera; microphone; geolocation"
-            frameBorder="0"
-          />
-        </div>
-      </GlassCard>
-
       {/* Crypto Stocks */}
       <GlassCard className="p-3 sm:p-4 lg:p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
@@ -705,7 +703,7 @@ export default function CryptoStocksSection() {
             <div className="w-5 h-5 sm:w-6 sm:h-6 bg-orange-500 rounded-full flex items-center justify-center">
               <Bitcoin className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
             </div>
-            <h3 className="text-lg sm:text-xl font-semibold text-white">CaseBitcoin Charts</h3>
+            <h3 className="text-lg sm:text-xl font-semibold text-white">CaseBitcoin</h3>
             <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 text-xs">
               BITCOIN ANALYTICS
             </Badge>
@@ -723,7 +721,7 @@ export default function CryptoStocksSection() {
           <iframe
             src="https://casebitcoin.com/charts"
             className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
-            title="CaseBitcoin Charts"
+            title="CaseBitcoin"
             sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
             referrerPolicy="no-referrer-when-downgrade"
             loading="lazy"
