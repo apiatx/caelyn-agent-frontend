@@ -50,23 +50,16 @@ export function HypeSection() {
 
       {/* HyperDash */}
       <div className="mt-6">
-        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-          <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
-            <span className="text-white font-bold text-xs">H</span>
-          </div>
-          HyperDash
-          <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full border border-blue-500/30">
-            ANALYTICS
-          </span>
+        <div className="flex justify-end mb-3">
           <a
             href="https://hyperdash.info/analytics"
             target="_blank"
             rel="noopener noreferrer"
-            className="ml-auto text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
+            className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
           >
             Open Full View <ExternalLink className="w-3 h-3" />
           </a>
-        </h3>
+        </div>
         
         <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
           <iframe
