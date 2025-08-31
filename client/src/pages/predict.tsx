@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, ExternalLink } from "lucide-react";
 import { openSecureLink } from "@/utils/security";
-import diceImage from "@assets/two-game-dices-isolated-vector_1756664478409.jpg";
+import diceImage from "@assets/istockphoto-163834625-612x612_1756664644474.jpg";
 
 // Safe components for external links
 const openInNewTab = (url: string) => {
@@ -19,7 +19,7 @@ export default function PredictPage() {
         <div className="max-w-[95vw] mx-auto px-2 sm:px-3">
           <div className="flex justify-between items-center py-3 lg:py-4">
             <div className="flex items-center space-x-3 sm:space-x-4">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-full overflow-hidden border-2 border-orange-400 shadow-lg">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-full overflow-hidden border-2 border-yellow-400 shadow-lg">
                 <img 
                   src={diceImage}
                   alt="Prediction Markets"
