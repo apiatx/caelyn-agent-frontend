@@ -339,18 +339,18 @@ export default function TradeSection() {
       </div>
 
       {/* Multi-Charts Section */}
-      <div className="space-y-4">
-        <h4 className="text-lg font-medium text-cyan-400 mb-3">Multi-Charts</h4>
-        <div className="grid grid-cols-1 gap-4">
+      <div className="space-y-6 text-center">
+        <h4 className="text-xl font-medium text-cyan-400 mb-4">Multi-Charts</h4>
+        <div className="flex justify-center">
           <Button
             variant="outline"
             onClick={() => openInNewTab('https://dexscreener.com/multicharts?theme=dark')}
-            className="bg-black/20 border-crypto-silver/20 hover:bg-cyan-500/20 hover:border-cyan-500/30 text-white justify-start p-4 h-auto"
+            className="bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border-cyan-400/50 hover:from-cyan-400/30 hover:to-blue-400/30 hover:border-cyan-300 text-white justify-center p-6 h-auto shadow-lg shadow-cyan-500/20 hover:shadow-cyan-400/30 transition-all duration-300"
           >
-            <TrendingUp className="w-4 h-4 mr-2" />
-            <div className="text-left">
-              <div className="font-semibold">DexScreener Multi-Charts</div>
-              <div className="text-sm text-crypto-silver">Advanced charting and analytics</div>
+            <TrendingUp className="w-5 h-5 mr-3 text-cyan-300" />
+            <div className="text-center">
+              <div className="font-semibold text-lg text-white">DexScreener Multi-Charts</div>
+              <div className="text-sm text-cyan-200 mt-1">Multi-Chart Tracking for Watchlist and Active Trades</div>
             </div>
           </Button>
         </div>
