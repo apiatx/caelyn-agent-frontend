@@ -179,98 +179,7 @@ export default function AlphaSection() {
         </div>
       </GlassCard>
 
-      {/* More Analysis - Moved from bottom to under Messari.io */}
-      <GlassCard className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
-            <BarChart3 className="w-4 h-4 text-white" />
-          </div>
-          <h3 className="text-xl font-semibold text-white">Inspect</h3>
-          <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-xs">
-            TOOLS
-          </Badge>
-        </div>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
-          {/* De.Fi - First */}
-          <div className="bg-gray-900/50 rounded-lg border border-crypto-silver/20 p-4 text-center">
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-gray-600 to-gray-500 rounded-full flex items-center justify-center">
-                <BarChart3 className="w-4 h-4 text-white" />
-              </div>
-              <div>
-                <h5 className="text-white font-semibold">De.Fi</h5>
-                <p className="text-gray-400 text-xs mb-3">Portfolio overview and analytics, address book, wallet watcher, scanner, shield, yield explorer, rekt database</p>
-                <button
-                  onClick={() => openInNewTab('https://de.fi/')}
-                  className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors text-xs font-medium"
-                >
-                  Open Platform
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Chainspect */}
-          <div className="bg-gray-900/50 rounded-lg border border-crypto-silver/20 p-4 text-center">
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-bold">C</span>
-              </div>
-              <div>
-                <h5 className="text-white font-semibold">Chainspect</h5>
-                <p className="text-gray-400 text-xs mb-3">Chain scalability and decentralization analytics</p>
-                <button
-                  onClick={() => openInNewTab('https://chainspect.app/')}
-                  className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors text-xs font-medium"
-                >
-                  Open Dashboard
-                </button>
-              </div>
-            </div>
-          </div>
-          
-          {/* Token Terminal */}
-          <div className="bg-gray-900/50 rounded-lg border border-crypto-silver/20 p-4 text-center">
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-bold">T</span>
-              </div>
-              <div>
-                <h5 className="text-white font-semibold">Token Terminal</h5>
-                <p className="text-gray-400 text-xs mb-3">Protocol metrics explorer</p>
-                <button
-                  onClick={() => openInNewTab('https://tokenterminal.com/explorer')}
-                  className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition-colors text-xs font-medium"
-                >
-                  Open Explorer
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Dune Analytics */}
-          <div className="bg-gray-900/50 rounded-lg border border-crypto-silver/20 p-4 text-center">
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-bold">D</span>
-              </div>
-              <div>
-                <h5 className="text-white font-semibold">Dune Analytics: DEX Metrics</h5>
-                <p className="text-gray-400 text-xs mb-3">Comprehensive DEX analytics and metrics</p>
-                <button
-                  onClick={() => openInNewTab('https://dune.com/Henrystats/dex-metrics')}
-                  className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg transition-colors text-xs font-medium"
-                >
-                  Open Dashboard
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </GlassCard>
-
-      {/* Alpha Analytics Platforms */}
+      {/* Alpha Analytics Platforms */
       <GlassCard className="p-6">
         <div className="flex items-center gap-2 mb-6">
           <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
@@ -283,6 +192,19 @@ export default function AlphaSection() {
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <SafeLink
+            href='https://dexcheck.ai/app'
+            className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                <BarChart3 className="w-4 h-4 text-white" />
+              </div>
+              <h4 className="text-blue-400 font-semibold">DexCheck.ai</h4>
+            </div>
+            <p className="text-gray-400 text-sm">AI-powered analytics platform</p>
+          </SafeLink>
+
           <SafeLink
             href='https://app.elfa.ai/leaderboard/token?sortBy=mindshare:change'
             className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
@@ -347,42 +269,10 @@ export default function AlphaSection() {
             </div>
             <p className="text-gray-400 text-sm">Trending Altcoin Timeframes</p>
           </SafeLink>
-
-
         </div>
+      </GlassCard>
 
-        {/* DexCheck.ai Platform */}
-        <div className="mt-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <div className="w-5 h-5 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
-                <BarChart3 className="w-3 h-3 text-white" />
-              </div>
-              <h4 className="text-lg font-semibold text-white">DexCheck.ai</h4>
-              <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
-                AI ANALYTICS
-              </Badge>
-            </div>
-            <button
-              onClick={() => openInNewTab('https://dexcheck.ai/app')}
-              className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm flex items-center gap-1"
-            >
-              <ExternalLink className="w-3 h-3" />
-              Open Full View →
-            </button>
-          </div>
-          
-          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-            <iframe
-              src="https://dexcheck.ai/app"
-              title="DexCheck.ai Analytics Platform"
-              className="w-full h-[600px] border-0"
-              sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-            />
-          </div>
-        </div>
-
-        {/* Alphanomics Platform */}
+      <GlassCard className="p-6">
         <div className="mt-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
@@ -577,6 +467,97 @@ export default function AlphaSection() {
       </GlassCard>
 
 
+
+      {/* Inspect - Moved above Discover Web3 */}
+      <GlassCard className="p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
+            <BarChart3 className="w-4 h-4 text-white" />
+          </div>
+          <h3 className="text-xl font-semibold text-white">Inspect</h3>
+          <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-xs">
+            TOOLS
+          </Badge>
+        </div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
+          {/* De.Fi - First */}
+          <div className="bg-gray-900/50 rounded-lg border border-crypto-silver/20 p-4 text-center">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-r from-gray-600 to-gray-500 rounded-full flex items-center justify-center">
+                <BarChart3 className="w-4 h-4 text-white" />
+              </div>
+              <div>
+                <h5 className="text-white font-semibold">De.Fi</h5>
+                <p className="text-gray-400 text-xs mb-3">Portfolio overview and analytics, address book, wallet watcher, scanner, shield, yield explorer, rekt database</p>
+                <button
+                  onClick={() => openInNewTab('https://de.fi/')}
+                  className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors text-xs font-medium"
+                >
+                  Open Platform
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Chainspect */}
+          <div className="bg-gray-900/50 rounded-lg border border-crypto-silver/20 p-4 text-center">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-sm font-bold">C</span>
+              </div>
+              <div>
+                <h5 className="text-white font-semibold">Chainspect</h5>
+                <p className="text-gray-400 text-xs mb-3">Chain scalability and decentralization analytics</p>
+                <button
+                  onClick={() => openInNewTab('https://chainspect.app/')}
+                  className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors text-xs font-medium"
+                >
+                  Open Dashboard
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          {/* Token Terminal */}
+          <div className="bg-gray-900/50 rounded-lg border border-crypto-silver/20 p-4 text-center">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-sm font-bold">T</span>
+              </div>
+              <div>
+                <h5 className="text-white font-semibold">Token Terminal</h5>
+                <p className="text-gray-400 text-xs mb-3">Protocol metrics explorer</p>
+                <button
+                  onClick={() => openInNewTab('https://tokenterminal.com/explorer')}
+                  className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition-colors text-xs font-medium"
+                >
+                  Open Explorer
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Dune Analytics */}
+          <div className="bg-gray-900/50 rounded-lg border border-crypto-silver/20 p-4 text-center">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-sm font-bold">D</span>
+              </div>
+              <div>
+                <h5 className="text-white font-semibold">Dune Analytics: DEX Metrics</h5>
+                <p className="text-gray-400 text-xs mb-3">Comprehensive DEX analytics and metrics</p>
+                <button
+                  onClick={() => openInNewTab('https://dune.com/Henrystats/dex-metrics')}
+                  className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg transition-colors text-xs font-medium"
+                >
+                  Open Dashboard
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </GlassCard>
 
       {/* Discover Web3 */}
       <GlassCard className="p-6">
