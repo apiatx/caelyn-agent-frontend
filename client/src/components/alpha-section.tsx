@@ -69,34 +69,36 @@ export default function AlphaSection() {
       </div>
 
       <div className="space-y-8">
-        {/* Artemis, Nansen.ai, and Messari.io grouped together */}
-        <GlassCard className="p-6">
-          {/* Artemis */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <h3 className="text-xl font-semibold text-white">Artemis</h3>
-                <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30">
-                  COMPREHENSIVE
-                </Badge>
+        {/* Artemis */}
+        <GlassCard className="p-0 overflow-hidden">
+          <div className="flex items-center justify-between p-4 bg-gradient-to-r from-slate-900/50 to-slate-800/50 border-b border-white/10">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-lg flex items-center justify-center">
+                <BarChart3 className="w-5 h-5 text-white" />
               </div>
-              <button
-                onClick={() => openInNewTab('https://app.artemisanalytics.com/')}
-                className="text-cyan-400 hover:text-cyan-300 text-sm"
-              >
-                Open Full View →
-              </button>
+              <h3 className="text-xl font-bold text-white">Artemis</h3>
+              <Badge className="bg-cyan-500/20 text-cyan-300 border-cyan-400/30 font-medium">
+                COMPREHENSIVE
+              </Badge>
             </div>
-            <div className="mb-6">
-              <h4 className="text-lg font-semibold text-white mb-2">Artemis Dashboard</h4>
-              <SafeIframe
-                src="https://app.artemisanalytics.com/"
-                title="Artemis Analytics Dashboard"
-                className="h-[600px]"
-              />
-            </div>
+            <button
+              onClick={() => openInNewTab('https://app.artemisanalytics.com/')}
+              className="text-cyan-300 hover:text-cyan-200 text-sm font-medium transition-colors"
+            >
+              Open Full View →
+            </button>
           </div>
+          <div className="relative">
+            <SafeIframe
+              src="https://app.artemisanalytics.com/"
+              title="Artemis Analytics Dashboard"
+              className="h-[500px] border-0"
+            />
+          </div>
+        </GlassCard>
 
+        {/* Nansen.ai and Messari.io grouped together */}
+        <GlassCard className="p-6">
           {/* Nansen.ai */}
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
