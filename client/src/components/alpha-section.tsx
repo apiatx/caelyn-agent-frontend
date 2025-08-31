@@ -1,5 +1,5 @@
 import { Badge } from '@/components/ui/badge';
-import { GlassCard } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { BarChart3, ExternalLink, TrendingUp, Link2 } from 'lucide-react';
 
 interface SafeLinkProps {
@@ -40,7 +40,7 @@ export default function AlphaSection() {
       {/* All analytics sections */}
       <div className="space-y-8">
         {/* Onchain - Artemis Analytics */}
-        <GlassCard className="p-3 sm:p-4 lg:p-6">
+        <Card className="p-3 sm:p-4 lg:p-6 bg-black/40 backdrop-blur-md border-white/10">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-6">
             <div className="flex items-center gap-2">
               <div className="w-5 h-5 sm:w-6 sm:h-6 bg-cyan-500 rounded-full flex items-center justify-center">
@@ -103,7 +103,7 @@ export default function AlphaSection() {
               <p className="text-gray-400 text-sm">Trending Altcoin Timeframes</p>
             </SafeLink>
           </div>
-        </GlassCard>
+        </Card>
       </div>
     </div>
   );
