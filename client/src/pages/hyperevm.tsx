@@ -137,23 +137,6 @@ export default function HyperEVMPage() {
                   <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-green-400 transition-colors" />
                 </a>
                 
-                <a
-                  href="https://www.hyperliquid.magpiexyz.io/meme"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-green-500/30 transition-all duration-200 group"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                      <span className="text-white font-bold text-sm">H</span>
-                    </div>
-                    <div>
-                      <h3 className="text-white font-medium text-sm">Hyperpie</h3>
-                      <p className="text-gray-400 text-xs">HyperLiquid Core Launchpad</p>
-                    </div>
-                  </div>
-                  <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-green-400 transition-colors" />
-                </a>
               </div>
             </div>
           </div>

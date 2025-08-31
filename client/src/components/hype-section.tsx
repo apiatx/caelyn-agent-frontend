@@ -19,9 +19,9 @@ export function HypeSection() {
           <div className="w-12 h-12 bg-black rounded-xl flex items-center justify-center">
             <img src={hyperliquidLogo} alt="HyperLiquid" className="w-8 h-8 rounded-lg" />
           </div>
-          <h1 className="text-3xl font-bold text-white">HyperLiquid</h1>
+          <h1 className="text-3xl font-bold text-white">HL Core</h1>
         </div>
-        <p className="text-crypto-silver">Live HYPE trading, analytics, and HyperEVM ecosystem</p>
+        <p className="text-crypto-silver">Live HYPE trading, analytics, and core launchpad ecosystem</p>
       </div>
       {/* Hyperliquid Trading */}
       <div>
@@ -211,8 +211,40 @@ export function HypeSection() {
         </div>
       </div>
 
-
-
+      {/* Hyperpie - HyperLiquid Core Launchpad */}
+      <div className="space-y-6">
+        <GlassCard className="p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+              <span className="text-white text-xs font-bold">H</span>
+            </div>
+            <h3 className="text-xl font-semibold text-white">HyperLiquid Core</h3>
+            <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-xs">
+              LAUNCHPAD
+            </Badge>
+          </div>
+          
+          <div className="grid grid-cols-1 gap-4">
+            <a
+              href="https://www.hyperliquid.magpiexyz.io/meme"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-purple-500/30 transition-all duration-200 group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">H</span>
+                </div>
+                <div className="text-left">
+                  <h4 className="text-white font-medium text-sm">Hyperpie</h4>
+                  <p className="text-gray-400 text-xs">HyperLiquid Core Launchpad</p>
+                </div>
+              </div>
+              <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-purple-400 transition-colors" />
+            </a>
+          </div>
+        </GlassCard>
+      </div>
 
     </div>
   );
