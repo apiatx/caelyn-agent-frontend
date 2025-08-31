@@ -167,6 +167,16 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
             </DropdownMenuContent>
           </DropdownMenu>
           <button
+            onClick={() => navigateTo("/app/trade")}
+            className={`flex-1 min-w-0 py-3 px-1 xl:px-3 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
+              isActive("trade")
+                ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
+                : "hover:bg-white/5 text-crypto-silver"
+            }`}
+          >
+            <TrendingUp className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />Trade
+          </button>
+          <button
             onClick={() => navigateTo("/app/defi")}
             className={`flex-1 min-w-0 py-3 px-1 xl:px-3 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
               isActive("defi")

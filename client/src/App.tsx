@@ -15,6 +15,7 @@ import BNBPage from "@/pages/bnb";
 import SUIPage from "@/pages/sui";
 import CryptoStocks from "@/pages/crypto-stocks";
 import BittensorPage from "@/pages/bittensor";
+import TradePage from "@/pages/trade";
 
 import OnchainPage from "@/pages/onchain";
 import BasePage from "@/pages/base";
@@ -42,6 +43,8 @@ function Router() {
       <Route path="/app/hyperevm" component={HyperEVMPage} />
       <Route path="/app/bnb" component={BNBPage} />
       <Route path="/app/sui" component={SUIPage} />
+      <Route path="/app/trade" component={TradePage} />
+      <Route path="/trade" component={TradePage} />
       <Route path="/app/defi" component={DeFiPage} />
       <Route path="/defi" component={DeFiPage} />
       <Route path="/app/crypto-stocks" component={CryptoStocks} />
