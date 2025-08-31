@@ -1,6 +1,12 @@
-import { Activity, BarChart3, TrendingUp, ChartLine, Brain, Zap, DollarSign, Building2, Layers, Coins } from "lucide-react";
+import { Activity, BarChart3, TrendingUp, ChartLine, Brain, Zap, DollarSign, Building2, Layers, Coins, ChevronDown } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { useLocation } from "wouter";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 // Glass card component
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
@@ -116,16 +122,29 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
           >
             <Brain className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />Bittensor
           </button>
-          <button
-            onClick={() => navigateTo("/app/abstract")}
-            className={`flex-1 min-w-0 py-3 px-1 xl:px-3 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
-              isActive("abstract")
-                ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
-                : "hover:bg-white/5 text-crypto-silver"
-            }`}
-          >
-            <Layers className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />Abstract
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className={`flex-1 min-w-0 py-3 px-1 xl:px-3 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
+                  isActive("abstract")
+                    ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
+                    : "hover:bg-white/5 text-crypto-silver"
+                }`}
+              >
+                <Layers className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />Other Ecosystems
+                <ChevronDown className="w-3 h-3 xl:w-4 xl:h-4 ml-1 inline" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="bg-black/80 backdrop-blur-lg border-crypto-silver/20">
+              <DropdownMenuItem
+                onClick={() => navigateTo("/app/abstract")}
+                className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
+              >
+                <Layers className="w-4 h-4 mr-2" />
+                Abstract
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <button
             onClick={() => navigateTo("/app/defi")}
             className={`flex-1 min-w-0 py-3 px-1 xl:px-3 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
@@ -252,16 +271,29 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
               >
                 <Brain className="w-4 h-4 mr-1 inline" />Bittensor
               </button>
-              <button
-                onClick={() => navigateTo("/app/abstract")}
-                className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
-                  isActive("abstract")
-                    ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
-                    : "hover:bg-white/5 text-crypto-silver"
-                }`}
-              >
-                <Layers className="w-4 h-4 mr-1 inline" />Abstract
-              </button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+                      isActive("abstract")
+                        ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
+                        : "hover:bg-white/5 text-crypto-silver"
+                    }`}
+                  >
+                    <Layers className="w-4 h-4 mr-1 inline" />Other Ecosystems
+                    <ChevronDown className="w-4 h-4 ml-1 inline" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="bg-black/80 backdrop-blur-lg border-crypto-silver/20">
+                  <DropdownMenuItem
+                    onClick={() => navigateTo("/app/abstract")}
+                    className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
+                  >
+                    <Layers className="w-4 h-4 mr-2" />
+                    Abstract
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <button
                 onClick={() => navigateTo("/app/defi")}
                 className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
