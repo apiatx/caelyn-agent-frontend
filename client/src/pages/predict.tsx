@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, ExternalLink } from "lucide-react";
 import { openSecureLink } from "@/utils/security";
+import diceImage from "@assets/two-game-dices-isolated-vector_1756664478409.jpg";
 
 // Safe components for external links
 const openInNewTab = (url: string) => {
@@ -18,8 +19,15 @@ export default function PredictPage() {
         <div className="max-w-[95vw] mx-auto px-2 sm:px-3">
           <div className="flex justify-between items-center py-3 lg:py-4">
             <div className="flex items-center space-x-3 sm:space-x-4">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-full overflow-hidden border-2 border-orange-400 shadow-lg">
+                <img 
+                  src={diceImage}
+                  alt="Prediction Markets"
+                  className="w-full h-full object-cover"
+                />
+              </div>
               <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-white drop-shadow-lg">
-                Predict
+                Prediction Markets
               </h1>
             </div>
           </div>
@@ -33,17 +41,10 @@ export default function PredictPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Prediction Markets Section */}
         <GlassCard className="p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-6 h-6 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
-              <TrendingUp className="w-4 h-4 text-white" />
-            </div>
-            <h3 className="text-xl font-semibold text-white">Prediction Markets</h3>
-            <Badge className="bg-gradient-to-r from-orange-500/20 to-red-500/20 text-orange-400 border-orange-500/30">
-              PREDICTION MARKETS
-            </Badge>
+          <div className="flex items-center justify-end mb-4">
             <button
               onClick={() => openInNewTab('https://polymarket.com/crypto')}
-              className="text-orange-400 hover:text-orange-300 text-sm ml-auto"
+              className="text-orange-400 hover:text-orange-300 text-sm"
             >
               Open Full View →
             </button>
