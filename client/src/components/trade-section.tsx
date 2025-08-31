@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ArrowLeftRight, TrendingUp, ExternalLink, Wallet } from "lucide-react";
-import { openSecureLink } from "@/utils/security";
+import { openSecureLink, getSecureIframeProps } from "@/utils/security";
 
 // Safe components for external links and iframes
 const SafeLink = ({ href, children, className = "", ...props }: { 
@@ -339,10 +339,12 @@ export default function TradeSection() {
         
         <div className="w-full">
           <iframe
-            src="https://dexscreener.com/multicharts?theme=dark"
+            {...getSecureIframeProps('https://dexscreener.com/multicharts?theme=dark', 'DexScreener Multicharts')}
             className="w-full h-[600px] lg:h-[800px] rounded-lg border border-crypto-silver/20"
-            title="DexScreener Multicharts"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+            style={{
+              background: '#000000',
+              colorScheme: 'dark'
+            }}
           />
         </div>
       </div>
