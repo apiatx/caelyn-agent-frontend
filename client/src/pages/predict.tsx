@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { TrendingUp, ExternalLink } from "lucide-react";
 import { openSecureLink } from "@/utils/security";
 import { useScrollFade } from "@/hooks/useScrollFade";
-import diceImage from "@assets/two-game-dices-isolated-vector_1756664478409.jpg";
+import diceImage from "@assets/istockphoto-163834625-612x612_1756665026465.jpg";
 import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
 import paintColorsBackground from "@assets/paint-colors-background-header_1756067291555.jpg";
 
