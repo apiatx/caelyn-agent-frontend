@@ -58,112 +58,105 @@ export default function AlphaSection() {
     <div className="space-y-8">
       <div className="text-center mb-6">
         <div className="flex items-center justify-center gap-3 mb-3">
-          <div className="w-12 h-12 bg-black rounded-xl flex items-center justify-center">
-            <Link2 className="w-8 h-8 text-yellow-400" style={{filter: 'drop-shadow(0 0 4px rgba(255, 215, 0, 0.3))'}} />
-          </div>
+          <img 
+            src="https://cryptohippo.locker/assets/images_1755979136215-BhggG6DI.jpeg" 
+            alt="Onchain" 
+            className="w-12 h-12 rounded-xl object-cover"
+          />
           <h1 className="text-3xl font-bold text-white">Onchain Analytics</h1>
         </div>
         <p className="text-crypto-silver">Comprehensive blockchain data and intelligence</p>
       </div>
 
       <div className="space-y-8">
-        {/* Artemis */}
+        {/* Artemis, Nansen.ai, and Messari.io grouped together */}
         <GlassCard className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-cyan-500 rounded-full flex items-center justify-center">
-                <BarChart3 className="w-4 h-4 text-white" />
+          {/* Artemis */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <h3 className="text-xl font-semibold text-white">Artemis</h3>
+                <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30">
+                  COMPREHENSIVE
+                </Badge>
               </div>
-              <h3 className="text-xl font-semibold text-white">Artemis</h3>
-              <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30">
-                COMPREHENSIVE
-              </Badge>
+              <button
+                onClick={() => openInNewTab('https://app.artemisanalytics.com/')}
+                className="text-cyan-400 hover:text-cyan-300 text-sm"
+              >
+                Open Full View →
+              </button>
             </div>
-            <button
-              onClick={() => openInNewTab('https://app.artemisanalytics.com/')}
-              className="text-cyan-400 hover:text-cyan-300 text-sm"
-            >
-              Open Full View →
-            </button>
+            <div className="mb-6">
+              <h4 className="text-lg font-semibold text-white mb-2">Artemis Dashboard</h4>
+              <SafeIframe
+                src="https://app.artemisanalytics.com/"
+                title="Artemis Analytics Dashboard"
+                className="h-[600px]"
+              />
+            </div>
           </div>
-          <div className="mb-6">
-            <h4 className="text-lg font-semibold text-white mb-2">Artemis Dashboard</h4>
-            <SafeIframe
-              src="https://app.artemisanalytics.com/"
-              title="Artemis Analytics Dashboard"
-              className="h-[600px]"
-            />
-          </div>
-        </GlassCard>
 
-        {/* Nansen.ai */}
-        <GlassCard className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
-                <BarChart3 className="w-4 h-4 text-white" />
+          {/* Nansen.ai */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <h4 className="text-lg font-semibold text-white">Nansen.ai</h4>
+                <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
+                  ANALYTICS
+                </Badge>
               </div>
-              <h3 className="text-xl font-semibold text-white">Nansen.ai</h3>
-              <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
-                ANALYTICS
-              </Badge>
+              <button
+                onClick={() => openInNewTab('https://app.nansen.ai/')}
+                className="text-purple-400 hover:text-purple-300 text-sm"
+              >
+                Open Full View →
+              </button>
             </div>
-            <button
-              onClick={() => openInNewTab('https://app.nansen.ai/')}
-              className="text-purple-400 hover:text-purple-300 text-sm"
-            >
-              Open Full View →
-            </button>
+            <div className="mb-4">
+              <h5 className="text-md font-semibold text-white mb-2">Nansen.ai Analytics</h5>
+              <p className="text-crypto-silver mb-4">Blockchain analytics platform with on-chain insights and wallet tracking</p>
+              <button
+                onClick={() => openInNewTab('https://app.nansen.ai/')}
+                className="bg-purple-500/10 border border-purple-500/20 text-purple-400 px-4 py-2 rounded-lg hover:bg-purple-500/20 transition-colors"
+              >
+                Open Nansen.ai Dashboard
+              </button>
+            </div>
           </div>
-          <div className="mb-4">
-            <h4 className="text-lg font-semibold text-white mb-2">Nansen.ai Analytics</h4>
-            <p className="text-crypto-silver mb-4">Blockchain analytics platform with on-chain insights and wallet tracking</p>
-            <button
-              onClick={() => openInNewTab('https://app.nansen.ai/')}
-              className="bg-purple-500/10 border border-purple-500/20 text-purple-400 px-4 py-2 rounded-lg hover:bg-purple-500/20 transition-colors"
-            >
-              Open Nansen.ai Dashboard
-            </button>
-          </div>
-        </GlassCard>
 
-        {/* Messari.io */}
-        <GlassCard className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                <BarChart3 className="w-4 h-4 text-white" />
+          {/* Messari.io */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <h4 className="text-lg font-semibold text-white">Messari.io</h4>
+                <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                  RESEARCH
+                </Badge>
               </div>
-              <h3 className="text-xl font-semibold text-white">Messari.io</h3>
-              <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-                RESEARCH
-              </Badge>
+              <button
+                onClick={() => openInNewTab('https://messari.io/')}
+                className="text-green-400 hover:text-green-300 text-sm"
+              >
+                Open Full View →
+              </button>
             </div>
-            <button
-              onClick={() => openInNewTab('https://messari.io/')}
-              className="text-green-400 hover:text-green-300 text-sm"
-            >
-              Open Full View →
-            </button>
-          </div>
-          <div className="mb-4">
-            <h4 className="text-lg font-semibold text-white mb-2">Messari.io Research</h4>
-            <p className="text-crypto-silver mb-4">Crypto intelligence platform with research reports, market data, and institutional-grade analysis</p>
-            <button
-              onClick={() => openInNewTab('https://messari.io/')}
-              className="bg-green-500/10 border border-green-500/20 text-green-400 px-4 py-2 rounded-lg hover:bg-green-500/20 transition-colors"
-            >
-              Open Messari.io Platform
-            </button>
+            <div className="mb-4">
+              <h5 className="text-md font-semibold text-white mb-2">Messari.io Research</h5>
+              <p className="text-crypto-silver mb-4">Crypto intelligence platform with research reports, market data, and institutional-grade analysis</p>
+              <button
+                onClick={() => openInNewTab('https://messari.io/')}
+                className="bg-green-500/10 border border-green-500/20 text-green-400 px-4 py-2 rounded-lg hover:bg-green-500/20 transition-colors"
+              >
+                Open Messari.io Platform
+              </button>
+            </div>
           </div>
         </GlassCard>
 
         {/* More Analysis */}
         <GlassCard className="p-6">
           <div className="flex items-center gap-2 mb-6">
-            <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-              <Activity className="w-4 h-4 text-white" />
-            </div>
             <h3 className="text-xl font-semibold text-white">More Analysis</h3>
             <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
               TOOLS
@@ -224,9 +217,6 @@ export default function AlphaSection() {
         {/* Signal */}
         <GlassCard className="p-6">
           <div className="flex items-center gap-2 mb-6">
-            <div className="w-6 h-6 bg-indigo-500 rounded-full flex items-center justify-center">
-              <TrendingUp className="w-4 h-4 text-white" />
-            </div>
             <h3 className="text-xl font-semibold text-white">Signal</h3>
             <Badge className="bg-indigo-500/20 text-indigo-400 border-indigo-500/30">
               MULTI-CHAIN
@@ -239,9 +229,6 @@ export default function AlphaSection() {
               className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
-                  <TrendingUp className="w-4 h-4 text-white" />
-                </div>
                 <h4 className="text-purple-400 font-semibold">Mindshare by Elfi</h4>
               </div>
               <p className="text-gray-400 text-sm">AI Token Analytics & Social Intelligence</p>
@@ -265,9 +252,6 @@ export default function AlphaSection() {
               className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                  <Globe className="w-4 h-4 text-white" />
-                </div>
                 <h4 className="text-blue-400 font-semibold">Velvet Capital</h4>
               </div>
               <p className="text-gray-400 text-sm">DeFi Portfolio Management</p>
@@ -278,9 +262,6 @@ export default function AlphaSection() {
               className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-lg hover:bg-indigo-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-indigo-500 rounded-full flex items-center justify-center">
-                  <TrendingUp className="w-4 h-4 text-white" />
-                </div>
                 <h4 className="text-indigo-400 font-semibold">Aya AI</h4>
               </div>
               <p className="text-gray-400 text-sm">Crypto AI Agent Analytics</p>
@@ -291,9 +272,6 @@ export default function AlphaSection() {
               className="p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-lg hover:bg-cyan-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center">
-                  <TrendingUp className="w-4 h-4 text-white" />
-                </div>
                 <h4 className="text-cyan-400 font-semibold">OpenSea</h4>
               </div>
               <p className="text-gray-400 text-sm">Trending Altcoin Timeframes</p>
@@ -303,9 +281,6 @@ export default function AlphaSection() {
           <div className="border-t border-crypto-silver/20 pt-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                  <Star className="w-4 h-4 text-white" />
-                </div>
                 <h4 className="text-lg font-semibold text-white">Alphanomics</h4>
                 <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
                   ANALYTICS
@@ -332,9 +307,6 @@ export default function AlphaSection() {
         {/* Smart Wallets */}
         <GlassCard className="p-6">
           <div className="flex items-center gap-2 mb-6">
-            <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-              <Wallet className="w-4 h-4 text-white" />
-            </div>
             <h3 className="text-xl font-semibold text-white">Smart Wallets</h3>
             <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
               COMING SOON
@@ -347,9 +319,6 @@ export default function AlphaSection() {
               className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                  <TrendingUp className="w-4 h-4 text-white" />
-                </div>
                 <h4 className="text-green-400 font-semibold">Indexy</h4>
               </div>
               <p className="text-gray-400 text-sm">Crypto market indexing platform</p>
@@ -360,9 +329,6 @@ export default function AlphaSection() {
               className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
-                  <Wallet className="w-4 h-4 text-white" />
-                </div>
                 <h4 className="text-purple-400 font-semibold">HyperLiquid Whale</h4>
               </div>
               <p className="text-gray-400 text-sm">Hyperdash Trader Analytics</p>
@@ -373,9 +339,6 @@ export default function AlphaSection() {
               className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                  <Wallet className="w-4 h-4 text-white" />
-                </div>
                 <h4 className="text-blue-400 font-semibold">WhaleAI - ETH/BASE</h4>
               </div>
               <p className="text-gray-400 text-sm">DeBank Portfolio Analysis</p>
@@ -386,9 +349,6 @@ export default function AlphaSection() {
               className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
-                  <Wallet className="w-4 h-4 text-white" />
-                </div>
                 <h4 className="text-orange-400 font-semibold">Debt Relief Bot</h4>
               </div>
               <p className="text-gray-400 text-sm">DeBank wallet tracker</p>
@@ -399,9 +359,6 @@ export default function AlphaSection() {
               className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg hover:bg-red-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
-                  <TrendingUp className="w-4 h-4 text-white" />
-                </div>
                 <h4 className="text-red-400 font-semibold">DegenAI HL Vault</h4>
               </div>
               <p className="text-gray-400 text-sm">Copy trading vault strategy</p>
@@ -412,9 +369,6 @@ export default function AlphaSection() {
               className="p-4 bg-pink-500/10 border border-pink-500/20 rounded-lg hover:bg-pink-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-pink-500 rounded-full flex items-center justify-center">
-                  <Activity className="w-4 h-4 text-white" />
-                </div>
                 <h4 className="text-pink-400 font-semibold">DegenAI Perps Bot</h4>
               </div>
               <p className="text-gray-400 text-sm">AI-powered perpetual trading bot</p>
@@ -422,13 +376,10 @@ export default function AlphaSection() {
           </div>
         </GlassCard>
 
-        {/* Chainlyze Smart Wallet Tracker */}
+        {/* Chainlyze Smart Wallet Tracker - WITH IFRAME */}
         <GlassCard className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-teal-500 rounded-full flex items-center justify-center">
-                <Wallet className="w-4 h-4 text-white" />
-              </div>
               <h3 className="text-xl font-semibold text-white">Chainlyze Smart Wallet Tracker</h3>
               <Badge className="bg-teal-500/20 text-teal-400 border-teal-500/30">
                 ANALYTICS
@@ -440,6 +391,13 @@ export default function AlphaSection() {
             >
               Open Full View →
             </button>
+          </div>
+          <div className="mb-6">
+            <SafeIframe
+              src="https://chainlyze.com/"
+              title="Chainlyze Smart Wallet Tracker"
+              className="h-[600px]"
+            />
           </div>
         </GlassCard>
 
@@ -475,9 +433,6 @@ export default function AlphaSection() {
         {/* Discover Web3 */}
         <GlassCard className="p-6">
           <div className="flex items-center gap-2 mb-6">
-            <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center">
-              <Globe className="w-4 h-4 text-white" />
-            </div>
             <h3 className="text-xl font-semibold text-white">Discover Web3</h3>
             <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
               ECOSYSTEM
@@ -558,9 +513,6 @@ export default function AlphaSection() {
         {/* Resources */}
         <GlassCard className="p-6">
           <div className="flex items-center gap-2 mb-6">
-            <div className="w-6 h-6 bg-indigo-500 rounded-full flex items-center justify-center">
-              <Star className="w-4 h-4 text-white" />
-            </div>
             <h3 className="text-xl font-semibold text-white">Resources</h3>
             <Badge className="bg-indigo-500/20 text-indigo-400 border-indigo-500/30">
               AI POWERED
@@ -573,9 +525,6 @@ export default function AlphaSection() {
               className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                  <Activity className="w-4 h-4 text-white" />
-                </div>
                 <h4 className="text-green-400 font-semibold">ChatGPT Crypto AI</h4>
               </div>
               <p className="text-gray-400 text-sm">Crypto Trading & Investing GPT</p>
@@ -586,9 +535,6 @@ export default function AlphaSection() {
               className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
-                  <Globe className="w-4 h-4 text-white" />
-                </div>
                 <h4 className="text-purple-400 font-semibold">Bubblemaps</h4>
               </div>
               <p className="text-gray-400 text-sm">Token Analytics & Visualization</p>
@@ -622,92 +568,80 @@ export default function AlphaSection() {
           </div>
         </GlassCard>
 
-        {/* Social */}
+        {/* Social Intelligence, X Accounts, and Social Analytics grouped together */}
         <GlassCard className="p-6">
           <div className="flex items-center gap-2 mb-6">
-            <div className="w-6 h-6 bg-pink-500 rounded-full flex items-center justify-center">
-              <TrendingUp className="w-4 h-4 text-white" />
-            </div>
             <h3 className="text-xl font-semibold text-white">Social</h3>
             <Badge className="bg-pink-500/20 text-pink-400 border-pink-500/30">
               INTELLIGENCE
             </Badge>
           </div>
-        </GlassCard>
 
-        {/* X Accounts */}
-        <GlassCard className="p-6">
-          <div className="flex items-center gap-2 mb-6">
-            <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold text-sm">𝕏</span>
+          {/* X Accounts */}
+          <div className="mb-8">
+            <div className="flex items-center gap-2 mb-6">
+              <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-sm">𝕏</span>
+              </div>
+              <h4 className="text-lg font-semibold text-white">X Accounts</h4>
+              <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+                PERSONAL PICKS
+              </Badge>
             </div>
-            <h3 className="text-xl font-semibold text-white">X Accounts</h3>
-            <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
-              PERSONAL PICKS
-            </Badge>
+            
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mb-8">
+              {[
+                'TechDev_52', 'Market Watcher', 'WolverCrypto', 'altcoinvector', 'AltcoinMarksman',
+                'Voice of the Gods', 'CoinGurruu', 'CryptoZer0_', 'DeFi_Paanda', 'aicryptopattern',
+                'bittybitbit86', 'Ethimedes', 'Whale_AI_net', 'Defi0xJeff', 'EricCryptoman',
+                'cryptorinweb3', 'OverkillTrading', 'jkrdoc', 'chironchain', 'goodvimonly',
+                'Agent_rsch', 'dontbuytops', 'bruhbearr', 'MetaverseRanger', 'Shake51_',
+                '0x_tesseract', 'TheEuroSniper', 'CryptoThannos', 'stacy_muur', 'martypartymusic'
+              ].map((account) => (
+                <SafeLink
+                  key={account}
+                  href={`https://x.com/${account}`}
+                  className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-blue-400 font-bold text-sm">𝕏</span>
+                    <span className="text-blue-400 font-semibold text-sm">{account}</span>
+                  </div>
+                </SafeLink>
+              ))}
+            </div>
           </div>
-          
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {[
-              'TechDev_52', 'Market Watcher', 'WolverCrypto', 'altcoinvector', 'AltcoinMarksman',
-              'Voice of the Gods', 'CoinGurruu', 'CryptoZer0_', 'DeFi_Paanda', 'aicryptopattern',
-              'bittybitbit86', 'Ethimedes', 'Whale_AI_net', 'Defi0xJeff', 'EricCryptoman',
-              'cryptorinweb3', 'OverkillTrading', 'jkrdoc', 'chironchain', 'goodvimonly',
-              'Agent_rsch', 'dontbuytops', 'bruhbearr', 'MetaverseRanger', 'Shake51_',
-              '0x_tesseract', 'TheEuroSniper', 'CryptoThannos', 'stacy_muur', 'martypartymusic'
-            ].map((account) => (
+
+          {/* Social Analytics */}
+          <div>
+            <div className="flex items-center gap-2 mb-6">
+              <h4 className="text-lg font-semibold text-white">Social Analytics</h4>
+              <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
+                AI POWERED
+              </Badge>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <SafeLink
-                key={account}
-                href={`https://x.com/${account}`}
-                className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+                href='https://yaps.kaito.ai/'
+                className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
               >
-                <div className="flex items-center gap-2">
-                  <span className="text-blue-400 font-bold text-sm">𝕏</span>
-                  <span className="text-blue-400 font-semibold text-sm">{account}</span>
+                <div className="flex items-center gap-2 mb-2">
+                  <h4 className="text-orange-400 font-semibold">Kaito</h4>
                 </div>
+                <p className="text-gray-400 text-sm">AI-Powered Social Intelligence</p>
               </SafeLink>
-            ))}
-          </div>
-        </GlassCard>
 
-        {/* Social Analytics */}
-        <GlassCard className="p-6">
-          <div className="flex items-center gap-2 mb-6">
-            <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
-              <Activity className="w-4 h-4 text-white" />
+              <SafeLink
+                href='https://app.kolytics.pro/leaderboard'
+                className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg hover:bg-red-500/20 transition-colors"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <h4 className="text-red-400 font-semibold">Kolytics</h4>
+                </div>
+                <p className="text-gray-400 text-sm">Social Signal Analytics</p>
+              </SafeLink>
             </div>
-            <h3 className="text-xl font-semibold text-white">Social Analytics</h3>
-            <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
-              AI POWERED
-            </Badge>
-          </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <SafeLink
-              href='https://yaps.kaito.ai/'
-              className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
-                  <TrendingUp className="w-4 h-4 text-white" />
-                </div>
-                <h4 className="text-orange-400 font-semibold">Kaito</h4>
-              </div>
-              <p className="text-gray-400 text-sm">AI-Powered Social Intelligence</p>
-            </SafeLink>
-
-            <SafeLink
-              href='https://app.kolytics.pro/leaderboard'
-              className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg hover:bg-red-500/20 transition-colors"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
-                  <TrendingUp className="w-4 h-4 text-white" />
-                </div>
-                <h4 className="text-red-400 font-semibold">Kolytics</h4>
-              </div>
-              <p className="text-gray-400 text-sm">Social Signal Analytics</p>
-            </SafeLink>
           </div>
         </GlassCard>
       </div>
