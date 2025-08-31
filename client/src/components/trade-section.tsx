@@ -337,11 +337,12 @@ export default function TradeSection() {
           </SafeLink>
         </div>
         
-        <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-          <SafeIframe
+        <div className="w-full">
+          <iframe
             src="https://dexscreener.com/multicharts?theme=dark"
-            title="Multi-Charts"
-            className="w-full h-[600px] border-0"
+            className="w-full h-[600px] lg:h-[800px] rounded-lg border border-crypto-silver/20"
+            title="DexScreener Multicharts"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
           />
         </div>
       </div>
