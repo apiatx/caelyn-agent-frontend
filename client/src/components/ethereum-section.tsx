@@ -113,7 +113,7 @@ export function EthereumSection() {
               <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
                 <ExternalLink className="w-4 h-4 text-white" />
               </div>
-              <h4 className="text-green-400 font-semibold">DexScreener Ethereum</h4>
+              <h4 className="text-green-400 font-semibold">DexScreener</h4>
             </div>
             <p className="text-gray-400 text-sm">Live trending Ethereum tokens and pair analytics with real-time charts</p>
           </button>
@@ -128,7 +128,7 @@ export function EthereumSection() {
                 <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
                   <ExternalLink className="w-4 h-4 text-white" />
                 </div>
-                <h4 className="text-orange-400 font-semibold">Birdeye Ethereum</h4>
+                <h4 className="text-orange-400 font-semibold">Birdeye</h4>
               </div>
               <p className="text-gray-400 text-sm">Comprehensive Ethereum token analytics with advanced charts and market insights</p>
             </button>
@@ -144,9 +144,9 @@ export function EthereumSection() {
                 <div className="w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center">
                   <ExternalLink className="w-4 h-4 text-white" />
                 </div>
-                <h4 className="text-cyan-400 font-semibold">30 Day Trending on OpenSea</h4>
+                <h4 className="text-cyan-400 font-semibold">OpenSea</h4>
               </div>
-              <p className="text-gray-400 text-sm">View trending Ethereum tokens by 30-day price changes</p>
+              <p className="text-gray-400 text-sm">Trending Ethereum tokens by 30-day price changes</p>
             </button>
           </div>
         </div>
@@ -274,42 +274,6 @@ export function EthereumSection() {
         </div>
       </div>
 
-      {/* Ethereum Network Stats */}
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-        <GlassCard className="p-4">
-          <h4 className="text-sm font-medium text-white mb-2 flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-blue-400" />
-            Network Activity
-          </h4>
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-xs text-gray-400">Active Addresses</span>
-              <Badge variant="secondary" className="text-xs">Live Data</Badge>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-xs text-gray-400">Daily Transactions</span>
-              <Badge variant="secondary" className="text-xs">Live Data</Badge>
-            </div>
-          </div>
-        </GlassCard>
-
-        <GlassCard className="p-4">
-          <h4 className="text-sm font-medium text-white mb-2 flex items-center gap-2">
-            <div className="w-4 h-4 bg-purple-500 rounded-full"></div>
-            DeFi Metrics
-          </h4>
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-xs text-gray-400">Total Value Locked</span>
-              <Badge variant="secondary" className="text-xs">$50B+</Badge>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-xs text-gray-400">Top Protocol</span>
-              <Badge variant="secondary" className="text-xs">Uniswap</Badge>
-            </div>
-          </div>
-        </GlassCard>
-      </div>
     </div>
   );
 }
