@@ -48,7 +48,9 @@ export default function AlphaSection() {
         <p className="text-crypto-silver">Comprehensive blockchain data and intelligence</p>
       </div>
 
+      {/* All analytics sections */}
       <div className="space-y-8">
+      <>
       {/* Onchain - Artemis Analytics */}
       <GlassCard className="p-3 sm:p-4 lg:p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-6">
@@ -256,35 +258,6 @@ export default function AlphaSection() {
             </div>
             <p className="text-gray-400 text-sm">Trending Altcoin Timeframes</p>
           </SafeLink>
-        </div>
-        
-        {/* DexCheck.ai Iframe */}
-        <div className="mt-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-                <BarChart3 className="w-3 h-3 text-white" />
-              </div>
-              <h4 className="text-lg font-semibold text-white">DexCheck.ai</h4>
-              <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
-                AI ANALYTICS
-              </Badge>
-            </div>
-            <button
-              onClick={() => openInNewTab('https://dexcheck.ai/app')}
-              className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm"
-            >
-              Open Full View →
-            </button>
-          </div>
-          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-            <iframe
-              src="https://dexcheck.ai/app"
-              title="DexCheck.ai Analytics Dashboard"
-              className="w-full h-[600px] border-0"
-              sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-            />
-          </div>
         </div>
       </GlassCard>
 
@@ -1164,6 +1137,7 @@ export default function AlphaSection() {
           </div>
         </div>
       </GlassCard>
+      </>
       </div>
     </div>
   );
