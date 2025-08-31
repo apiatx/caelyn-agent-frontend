@@ -105,11 +105,35 @@ export function EthereumSection() {
         </h3>
         
         <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden space-y-4">
-          <SafeIframe
-            src="https://dexscreener.com/ethereum?theme=dark"
-            title="Trending Ethereum Tokens"
-            className="w-full h-[600px] border-0"
-          />
+          <div className="p-6 bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20 rounded-lg">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
+                  <TrendingUp className="w-4 h-4 text-white" />
+                </div>
+                <h3 className="text-xl font-semibold text-white">DexScreener Ethereum</h3>
+              </div>
+              <button
+                onClick={() => openInNewTab("https://dexscreener.com/ethereum?theme=dark")}
+                className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-semibold px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Open DexScreener
+              </button>
+            </div>
+            <p className="text-crypto-silver mb-4">
+              Live trending Ethereum tokens and pair analytics with real-time charts and data.
+            </p>
+            <div className="bg-black/20 rounded-lg p-4 border border-green-500/20">
+              <p className="text-sm text-crypto-silver">
+                🔥 Real-time trending tokens on Ethereum network
+                <br />
+                📊 Live price charts and trading pairs
+                <br />
+                📈 Volume, liquidity, and market cap data
+              </p>
+            </div>
+          </div>
           
           {/* 30 Day Trending on OpenSea */}
           <div className="border-t border-crypto-silver/20 pt-4 px-4 pb-4">

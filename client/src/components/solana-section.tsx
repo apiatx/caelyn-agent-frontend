@@ -79,14 +79,35 @@ export default function SolanaSection() {
           </button>
         </div>
         <div className="w-full space-y-4">
-          <iframe
-            {...getSecureIframeProps('https://dexscreener.com/solana?theme=dark', 'DexScreener Solana Network')}
-            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            style={{
-              background: '#000000',
-              colorScheme: 'dark'
-            }}
-          />
+          <div className="p-6 bg-gradient-to-r from-purple-500/10 to-violet-500/10 border border-purple-500/20 rounded-lg">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-violet-500 rounded-full flex items-center justify-center">
+                  <BarChart3 className="w-4 h-4 text-white" />
+                </div>
+                <h3 className="text-xl font-semibold text-white">DexScreener Solana</h3>
+              </div>
+              <button
+                onClick={() => openSecureLink("https://dexscreener.com/solana?theme=dark")}
+                className="bg-gradient-to-r from-purple-500 to-violet-500 hover:from-purple-600 hover:to-violet-600 text-white font-semibold px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Open DexScreener
+              </button>
+            </div>
+            <p className="text-crypto-silver mb-4">
+              Live trending Solana tokens and pair analytics with real-time charts and data.
+            </p>
+            <div className="bg-black/20 rounded-lg p-4 border border-purple-500/20">
+              <p className="text-sm text-crypto-silver">
+                ⚡ Fast Solana network token tracking
+                <br />
+                📊 Real-time price charts and trading data
+                <br />
+                🚀 DEX pair analytics and volume metrics
+              </p>
+            </div>
+          </div>
           
           {/* 30 Day Trending on OpenSea */}
           <div className="border-t border-crypto-silver/20 pt-4">

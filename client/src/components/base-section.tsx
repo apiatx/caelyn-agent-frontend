@@ -185,10 +185,35 @@ export default function BaseSection() {
               Open Full View <ExternalLink className="w-3 h-3" />
             </SafeLink>
           </div>
-          <SafeIframe 
-            src="https://dexscreener.com/base?theme=dark"
-            title="DexScreener Base Network"
-          />
+          <div className="p-6 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/20 rounded-lg">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
+                  <TrendingUp className="w-4 h-4 text-white" />
+                </div>
+                <h3 className="text-xl font-semibold text-white">DexScreener Base</h3>
+              </div>
+              <button
+                onClick={() => openInNewTab("https://dexscreener.com/base?theme=dark")}
+                className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-semibold px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Open DexScreener
+              </button>
+            </div>
+            <p className="text-crypto-silver mb-4">
+              Live trending Base network tokens and pair analytics with real-time charts.
+            </p>
+            <div className="bg-black/20 rounded-lg p-4 border border-blue-500/20">
+              <p className="text-sm text-crypto-silver">
+                🚀 Trending tokens on Base network
+                <br />
+                📊 Real-time price and volume data
+                <br />
+                💰 DEX trading pairs and liquidity pools
+              </p>
+            </div>
+          </div>
         </GlassCard>
 
         <GlassCard className="p-6">

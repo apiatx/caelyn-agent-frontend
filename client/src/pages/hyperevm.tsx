@@ -79,13 +79,35 @@ export default function HyperEVMPage() {
                 </a>
               </div>
               <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-                <iframe
-                  src="https://dexscreener.com/hyperevm?theme=dark"
-                  className="w-full h-[600px] border-0"
-                  title="HyperEVM DexScreener"
-                  allow="clipboard-read; clipboard-write"
-                  sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation-by-user-activation"
-                />
+                <div className="p-6 bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20 rounded-lg">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
+                        <span className="text-white font-bold text-sm">H</span>
+                      </div>
+                      <h3 className="text-xl font-semibold text-white">DexScreener HyperEVM</h3>
+                    </div>
+                    <button
+                      onClick={() => window.open("https://dexscreener.com/hyperevm?theme=dark", "_blank")}
+                      className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-semibold px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      Open DexScreener
+                    </button>
+                  </div>
+                  <p className="text-crypto-silver mb-4">
+                    Live HyperEVM network analytics with trending tokens and real-time trading data.
+                  </p>
+                  <div className="bg-black/20 rounded-lg p-4 border border-green-500/20">
+                    <p className="text-sm text-crypto-silver">
+                      ⚡ HyperEVM network token trends
+                      <br />
+                      📊 Real-time charts and pair analytics
+                      <br />
+                      💎 DEX trading data and liquidity pools
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
 

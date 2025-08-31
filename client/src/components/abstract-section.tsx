@@ -41,14 +41,35 @@ export default function AbstractSection() {
           </button>
         </div>
         <div className="w-full space-y-6">
-          <iframe
-            {...getSecureIframeProps('https://dexscreener.com/abstract?theme=dark', 'DexScreener Abstract')}
-            className="w-full h-[800px] rounded-lg border border-crypto-silver/20"
-            style={{
-              background: '#000000',
-              colorScheme: 'dark'
-            }}
-          />
+          <div className="p-6 bg-gradient-to-r from-purple-500/10 to-indigo-500/10 border border-purple-500/20 rounded-lg">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full flex items-center justify-center">
+                  <Layers className="w-4 h-4 text-white" />
+                </div>
+                <h3 className="text-xl font-semibold text-white">DexScreener Abstract</h3>
+              </div>
+              <button
+                onClick={() => openInNewTab("https://dexscreener.com/abstract?theme=dark")}
+                className="bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-semibold px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Open DexScreener
+              </button>
+            </div>
+            <p className="text-crypto-silver mb-4">
+              Live trending Abstract network tokens and pair analytics with real-time data.
+            </p>
+            <div className="bg-black/20 rounded-lg p-4 border border-purple-500/20">
+              <p className="text-sm text-crypto-silver">
+                🔮 Trending tokens on Abstract network
+                <br />
+                📊 Real-time trading data and charts
+                <br />
+                🚀 DEX analytics and liquidity information
+              </p>
+            </div>
+          </div>
           
           {/* 30 Day Trending on OpenSea */}
           <div className="border-t border-crypto-silver/20 pt-4">
