@@ -25,21 +25,14 @@ export function HypeSection() {
       </div>
       {/* Hyperliquid Trading */}
       <div>
-        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-          <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-            <span className="text-white font-bold text-xs">H</span>
-          </div>
-          HyperLiquid Dashboard
-          <span className="text-xs bg-purple-500/20 text-purple-400 px-2 py-1 rounded-full border border-purple-500/30">
-            LIVE TRADING
-          </span>
+        <div className="flex justify-end mb-3">
           <a
             {...getSecureLinkProps('https://app.hyperliquid.xyz/trade/HYPE')}
-            className="ml-auto text-xs text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-1"
+            className="text-xs text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-1"
           >
             Open Full View <ExternalLink className="w-3 h-3" />
           </a>
-        </h3>
+        </div>
         
         <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
           <iframe
