@@ -95,12 +95,35 @@ export default function PredictPage() {
           
           {/* Cloudbet Sports Betting */}
           <div className="mt-6">
-            <iframe
-              src="https://www.cloudbet.com/en/sports"
-              className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-              title="Cloudbet Sports Betting"
-              sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-            />
+            <div className="p-6 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                    <TrendingUp className="w-4 h-4 text-white" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-white">Cloudbet Sports Betting</h3>
+                </div>
+                <Button
+                  onClick={() => openInNewTab("https://www.cloudbet.com/en/sports")}
+                  className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-semibold px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  Open Cloudbet
+                </Button>
+              </div>
+              <p className="text-crypto-silver mb-4">
+                Professional crypto sports betting platform with competitive odds and live betting options.
+              </p>
+              <div className="bg-black/20 rounded-lg p-4 border border-blue-500/20">
+                <p className="text-sm text-crypto-silver">
+                  🎯 Crypto-first sportsbook with Bitcoin, Ethereum, and altcoin betting
+                  <br />
+                  ⚡ Live betting on major sports events
+                  <br />
+                  🔒 Provably fair gaming and instant withdrawals
+                </p>
+              </div>
+            </div>
           </div>
           
           <div className="mt-6">
