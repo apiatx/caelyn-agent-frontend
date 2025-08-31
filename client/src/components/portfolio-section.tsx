@@ -495,34 +495,20 @@ export default function PortfolioSection() {
         </div>
 
         {/* Jupiter Portfolio */}
-        <GlassCard className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-sm font-bold">
-              J
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-white">Jupiter Portfolio</h3>
-              <p className="text-crypto-silver text-sm">Solana DeFi portfolio tracking</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
-              SOLANA DEX
-            </Badge>
+        <div>
+          <div className="flex justify-end mb-3">
             <button
               onClick={() => window.open('https://jup.ag/portfolio', '_blank', 'noopener,noreferrer')}
-              className="text-crypto-silver hover:text-white transition-colors group"
+              className="text-xs text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-1"
             >
-              <ExternalLink className="h-4 w-4 group-hover:scale-110 transition-transform" />
+              Open Full View <ExternalLink className="w-3 h-3" />
             </button>
           </div>
-        </div>
         
-        <div className="w-full">
+        <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
           <iframe
             src="https://jup.ag/portfolio"
-            className="w-full h-[600px] sm:h-[700px] lg:h-[800px] rounded-lg border border-crypto-silver/20"
+            className="w-full h-[600px] sm:h-[700px] lg:h-[800px] border-0"
             title="Jupiter Portfolio"
             frameBorder="0"
             loading="lazy"
@@ -533,7 +519,7 @@ export default function PortfolioSection() {
             }}
           />
         </div>
-      </GlassCard>
+      </div>
       </div>
 
       {/* Bittensor Section */}
