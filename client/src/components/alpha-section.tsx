@@ -517,64 +517,6 @@ export default function AlphaSection() {
           </div>
         </GlassCard>
 
-        {/* Resources */}
-        <GlassCard className="p-6">
-          <div className="flex items-center gap-2 mb-6">
-            <h3 className="text-xl font-semibold text-white">Resources</h3>
-            <Badge className="bg-indigo-500/20 text-indigo-400 border-indigo-500/30">
-              AI POWERED
-            </Badge>
-          </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <SafeLink
-              href='https://chat.openai.com/'
-              className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <h4 className="text-green-400 font-semibold">ChatGPT Crypto AI</h4>
-              </div>
-              <p className="text-gray-400 text-sm">Crypto Trading & Investing GPT</p>
-            </SafeLink>
-
-            <SafeLink
-              href='https://bubblemaps.io/'
-              className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <h4 className="text-purple-400 font-semibold">Bubblemaps</h4>
-              </div>
-              <p className="text-gray-400 text-sm">Token Analytics & Visualization</p>
-            </SafeLink>
-
-            <SafeLink
-              href='https://substack.com/'
-              className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm">📰</span>
-                </div>
-                <h4 className="text-orange-400 font-semibold">Substack</h4>
-              </div>
-              <p className="text-gray-400 text-sm">Newsletter Publishing Platform</p>
-            </SafeLink>
-
-            <SafeLink
-              href='https://x.com/home'
-              className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold">𝕏</span>
-                </div>
-                <h4 className="text-blue-400 font-semibold">X Home</h4>
-              </div>
-              <p className="text-gray-400 text-sm">Social Media & News Feed</p>
-            </SafeLink>
-          </div>
-        </GlassCard>
-
         {/* Discover Web3 */}
         <GlassCard className="p-6">
           <div className="flex items-center gap-2 mb-6">
@@ -632,6 +574,64 @@ export default function AlphaSection() {
                 Open Zapper
               </button>
             </div>
+          </div>
+        </GlassCard>
+
+        {/* Resources */}
+        <GlassCard className="p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <h3 className="text-xl font-semibold text-white">Resources</h3>
+            <Badge className="bg-indigo-500/20 text-indigo-400 border-indigo-500/30">
+              AI POWERED
+            </Badge>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <SafeLink
+              href='https://chat.openai.com/'
+              className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <h4 className="text-green-400 font-semibold">ChatGPT Crypto AI</h4>
+              </div>
+              <p className="text-gray-400 text-sm">Crypto Trading & Investing GPT</p>
+            </SafeLink>
+
+            <SafeLink
+              href='https://bubblemaps.io/'
+              className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <h4 className="text-purple-400 font-semibold">Bubblemaps</h4>
+              </div>
+              <p className="text-gray-400 text-sm">Token Analytics & Visualization</p>
+            </SafeLink>
+
+            <SafeLink
+              href='https://substack.com/'
+              className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-sm">📰</span>
+                </div>
+                <h4 className="text-orange-400 font-semibold">Substack</h4>
+              </div>
+              <p className="text-gray-400 text-sm">Newsletter Publishing Platform</p>
+            </SafeLink>
+
+            <SafeLink
+              href='https://x.com/home'
+              className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold">𝕏</span>
+                </div>
+                <h4 className="text-blue-400 font-semibold">X Home</h4>
+              </div>
+              <p className="text-gray-400 text-sm">Social Media & News Feed</p>
+            </SafeLink>
           </div>
         </GlassCard>
       </div>
