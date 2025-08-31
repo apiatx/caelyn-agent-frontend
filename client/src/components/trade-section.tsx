@@ -178,7 +178,7 @@ export default function TradeSection() {
               <Wallet className="w-4 h-4 mr-2" />
               <div className="text-left">
                 <div className="font-semibold">DeFi.app</div>
-                <div className="text-sm text-crypto-silver">Complete DeFi platform with portfolio tracking, crypto onramp, trending token discovery, and perpetual trading</div>
+                <div className="text-sm text-crypto-silver">Onchain Perpetuals Super App</div>
               </div>
             </Button>
 
