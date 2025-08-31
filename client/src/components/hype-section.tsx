@@ -28,7 +28,7 @@ export function HypeSection() {
         <div className="flex justify-end mb-3">
           <a
             {...getSecureLinkProps('https://app.hyperliquid.xyz/trade/HYPE')}
-            className="text-xs text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-1"
+            className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1"
           >
             Open Full View <ExternalLink className="w-3 h-3" />
           </a>
@@ -55,7 +55,7 @@ export function HypeSection() {
             href="https://hyperdash.info/analytics"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
+            className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1"
           >
             Open Full View <ExternalLink className="w-3 h-3" />
           </a>
