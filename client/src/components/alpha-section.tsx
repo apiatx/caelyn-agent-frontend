@@ -70,12 +70,12 @@ export default function AlphaSection() {
 
       <div className="space-y-8">
         {/* Artemis */}
-        <GlassCard className="p-0 overflow-hidden">
-          <div className="h-[600px]">
+        <GlassCard className="p-0">
+          <div className="h-[800px] w-full">
             <SafeIframe
               src="https://app.artemisanalytics.com/"
               title="Artemis Analytics Dashboard"
-              className="h-full w-full border-0"
+              className="h-full w-full border-0 rounded-lg"
             />
           </div>
         </GlassCard>
