@@ -351,6 +351,37 @@ export default function AlphaSection() {
 
         </div>
 
+        {/* DexCheck.ai Platform */}
+        <div className="mt-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
+                <BarChart3 className="w-3 h-3 text-white" />
+              </div>
+              <h4 className="text-lg font-semibold text-white">DexCheck.ai</h4>
+              <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
+                AI ANALYTICS
+              </Badge>
+            </div>
+            <button
+              onClick={() => openInNewTab('https://dexcheck.ai/app')}
+              className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm flex items-center gap-1"
+            >
+              <ExternalLink className="w-3 h-3" />
+              Open Full View →
+            </button>
+          </div>
+          
+          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+            <iframe
+              src="https://dexcheck.ai/app"
+              title="DexCheck.ai Analytics Platform"
+              className="w-full h-[600px] border-0"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+            />
+          </div>
+        </div>
+
         {/* Alphanomics Platform */}
         <div className="mt-6">
           <div className="flex items-center justify-between mb-4">
