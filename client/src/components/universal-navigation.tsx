@@ -207,6 +207,16 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
             <Building2 className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />Stonks
           </button>
           <button
+            onClick={() => navigateTo("/app/predict")}
+            className={`flex-1 min-w-0 py-3 px-1 xl:px-3 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
+              isActive("predict")
+                ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
+                : "hover:bg-white/5 text-crypto-silver"
+            }`}
+          >
+            <TrendingUp className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />Predict
+          </button>
+          <button
             onClick={() => navigateTo("/app/about")}
             className={`flex-1 min-w-0 py-3 px-1 xl:px-3 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
               isActive("about")
@@ -375,6 +385,16 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
                 }`}
               >
                 <Building2 className="w-4 h-4 mr-1 inline" />Stonks
+              </button>
+              <button
+                onClick={() => navigateTo("/app/predict")}
+                className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+                  isActive("predict")
+                    ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
+                    : "hover:bg-white/5 text-crypto-silver"
+                }`}
+              >
+                <TrendingUp className="w-4 h-4 mr-1 inline" />Predict
               </button>
               <button
                 onClick={() => navigateTo("/app/about")}

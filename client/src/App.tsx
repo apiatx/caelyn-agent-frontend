@@ -20,6 +20,7 @@ import TradePage from "@/pages/trade";
 import OnchainPage from "@/pages/onchain";
 import BasePage from "@/pages/base";
 import PortfolioPage from "@/pages/portfolio";
+import PredictPage from "@/pages/predict";
 import AboutPage from "@/pages/about";
 
 import NotFound from "@/pages/not-found";
@@ -50,6 +51,8 @@ function Router() {
       <Route path="/app/crypto-stocks" component={CryptoStocks} />
       <Route path="/app/stocks" component={CryptoStocks} />
       <Route path="/app/stonks" component={CryptoStocks} />
+      <Route path="/app/predict" component={PredictPage} />
+      <Route path="/predict" component={PredictPage} />
       <Route path="/app/portfolio" component={PortfolioPage} />
       <Route path="/portfolio" component={PortfolioPage} />
       <Route path="/app/about" component={AboutPage} />

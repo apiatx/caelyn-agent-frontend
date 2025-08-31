@@ -1,0 +1,91 @@
+import { UniversalNavigation } from "@/components/universal-navigation";
+import { GlassCard } from "@/components/ui/glass-card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { TrendingUp, ExternalLink } from "lucide-react";
+import { openSecureLink } from "@/utils/security";
+
+// Safe components for external links
+const openInNewTab = (url: string) => {
+  openSecureLink(url);
+};
+
+export default function PredictPage() {
+  return (
+    <div className="min-h-screen bg-background text-foreground">
+      {/* Header */}
+      <header className="glass-card-dark border-b border-crypto-silver/20 sticky top-0 z-50">
+        <div className="max-w-[95vw] mx-auto px-2 sm:px-3">
+          <div className="flex justify-between items-center py-3 lg:py-4">
+            <div className="flex items-center space-x-3 sm:space-x-4">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-white drop-shadow-lg">
+                Predict
+              </h1>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Navigation */}
+      <UniversalNavigation activePage="predict" />
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Prediction Markets Section */}
+        <GlassCard className="p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-6 h-6 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
+              <TrendingUp className="w-4 h-4 text-white" />
+            </div>
+            <h3 className="text-xl font-semibold text-white">Prediction Markets</h3>
+            <Badge className="bg-gradient-to-r from-orange-500/20 to-red-500/20 text-orange-400 border-orange-500/30">
+              PREDICTION MARKETS
+            </Badge>
+            <button
+              onClick={() => openInNewTab('https://polymarket.com/crypto')}
+              className="text-orange-400 hover:text-orange-300 text-sm ml-auto"
+            >
+              Open Full View →
+            </button>
+          </div>
+          <iframe
+            src="https://polymarket.com/crypto"
+            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+            title="Polymarket Crypto"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+          />
+          
+          <div className="mt-6">
+            <div className="p-6 bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/20 rounded-lg">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
+                    <TrendingUp className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-semibold text-white">Limitless Exchange</h4>
+                    <p className="text-sm text-crypto-silver">Predict future crypto and stocks prices</p>
+                  </div>
+                </div>
+                <Badge className="bg-gradient-to-r from-orange-500/20 to-red-500/20 text-orange-400 border-orange-500/30">
+                  ADVANCED
+                </Badge>
+              </div>
+              <p className="text-crypto-silver mb-4 text-sm">
+                Predict future crypto and stocks prices with sophisticated trading features and analytics.
+              </p>
+              <Button
+                variant="outline"
+                onClick={() => openInNewTab('https://limitless.exchange/advanced')}
+                className="w-full bg-gradient-to-r from-orange-500/20 to-red-500/20 border-orange-500/30 hover:bg-orange-500/30 text-white"
+              >
+                <ExternalLink className="w-4 h-4 mr-2" />
+                Open Limitless Exchange Platform
+              </Button>
+            </div>
+          </div>
+        </GlassCard>
+      </main>
+    </div>
+  );
+}
