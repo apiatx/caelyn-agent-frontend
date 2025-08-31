@@ -484,7 +484,7 @@ export default function PortfolioSection() {
 
       {/* Solana Section */}
       <div className="space-y-6">
-        <div className="flex items-center gap-3 mb-6">
+        <div className="flex items-center gap-3 mb-3">
           <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center">
             <img src={solanaLogo} alt="Solana" className="w-8 h-8 rounded-lg" />
           </div>
