@@ -93,6 +93,16 @@ export default function PredictPage() {
             sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
           />
           
+          {/* Cloudbet Sports Betting */}
+          <div className="mt-6">
+            <iframe
+              src="https://www.cloudbet.com/en/sports"
+              className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+              title="Cloudbet Sports Betting"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+            />
+          </div>
+          
           <div className="mt-6">
             <div className="p-6 bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/20 rounded-lg">
               <div className="flex items-center justify-between mb-4">
