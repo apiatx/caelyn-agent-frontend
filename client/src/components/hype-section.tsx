@@ -201,7 +201,7 @@ export function HypeSection() {
       <div className="space-y-6">
         <GlassCard className="p-6">
           <div className="flex items-center gap-2 mb-6">
-            <h3 className="text-xl font-semibold text-white">Launchpad</h3>
+            <h3 className="text-xl font-semibold text-white">Trenches</h3>
           </div>
           
           <div className="grid grid-cols-1 gap-4">
