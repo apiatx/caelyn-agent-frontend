@@ -113,6 +113,46 @@ export default function HyperEVMPage() {
               </div>
             </div>
 
+            {/* HyperEVM Portfolio Integration */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-2xl font-bold text-white flex items-center">
+                  <div className="w-5 h-5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mr-2 flex items-center justify-center text-xs font-bold">
+                    H
+                  </div>
+                  HyperEVM Portfolio
+                </h3>
+                <div className="flex items-center gap-2">
+                  <span className="bg-purple-500/20 text-purple-400 border border-purple-500/30 px-2 py-1 rounded text-xs">
+                    Portfolio Analytics
+                  </span>
+                  <a 
+                    href="https://app.hyperbeat.org/hyperfolio"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-green-400 hover:text-green-300 transition-colors flex items-center gap-1"
+                  >
+                    Open Full View <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+              </div>
+              
+              <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+                <div className="relative w-full">
+                  <iframe
+                    src="https://app.hyperbeat.org/hyperfolio"
+                    className="w-full h-[600px] border-0"
+                    title="HyperEVM Portfolio Analytics"
+                    allow="clipboard-read; clipboard-write"
+                    sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation-by-user-activation"
+                  />
+                  <div className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+                    Hyperliquid Portfolio
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Trenches */}
             <div className="mb-6">
               <div className="flex items-center justify-between mb-3">
