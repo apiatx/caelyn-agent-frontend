@@ -281,22 +281,7 @@ export default function AlphaSection() {
           </div>
 
           <div>
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <h4 className="text-lg font-semibold text-white">Alphanomics</h4>
-                <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
-                  ANALYTICS
-                </Badge>
-              </div>
-              <button
-                onClick={() => openInNewTab('https://platform.alphanomics.io/')}
-                className="text-purple-400 hover:text-purple-300 text-sm"
-              >
-                Open Full View →
-              </button>
-            </div>
             <div className="mb-6">
-              <h4 className="text-lg font-semibold text-white mb-2">Alphanomics Dashboard</h4>
               <SafeIframe
                 src="https://platform.alphanomics.io/"
                 title="Alphanomics Analytics Platform"
@@ -379,20 +364,6 @@ export default function AlphaSection() {
 
           {/* Chainlyze Smart Wallet Tracker - EMBEDDED */}
           <div>
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <h4 className="text-lg font-semibold text-white">Chainlyze Smart Wallet Tracker</h4>
-                <Badge className="bg-teal-500/20 text-teal-400 border-teal-500/30">
-                  ANALYTICS
-                </Badge>
-              </div>
-              <button
-                onClick={() => openInNewTab('https://app.chainlyze.ai/smart-wallet')}
-                className="text-teal-400 hover:text-teal-300 text-sm"
-              >
-                Open Full View →
-              </button>
-            </div>
             <div className="mb-4">
               <SafeIframe
                 src="https://app.chainlyze.ai/smart-wallet"
