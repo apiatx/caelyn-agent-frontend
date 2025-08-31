@@ -248,6 +248,25 @@ export default function AlphaSection() {
               </div>
             </div>
           </div>
+
+          {/* De.Fi */}
+          <div className="bg-gray-900/50 rounded-lg border border-crypto-silver/20 p-4 text-center">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-r from-gray-600 to-gray-500 rounded-full flex items-center justify-center">
+                <BarChart3 className="w-4 h-4 text-white" />
+              </div>
+              <div>
+                <h5 className="text-white font-semibold">De.Fi</h5>
+                <p className="text-gray-400 text-xs mb-3">Portfolio overview and analytics, address book, wallet watcher, scanner, shield, yield explorer, rekt database</p>
+                <button
+                  onClick={() => openInNewTab('https://de.fi/')}
+                  className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors text-xs font-medium"
+                >
+                  Open Platform
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </GlassCard>
 

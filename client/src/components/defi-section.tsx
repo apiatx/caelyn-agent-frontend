@@ -341,12 +341,12 @@ export default function DeFiSection() {
         </h3>
         
         <div className="bg-black/20 border border-crypto-silver/20 rounded-lg p-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="flex justify-center">
             <a
               href="https://app.defi.app/portfolio"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex flex-col items-center gap-3 p-4 bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg hover:border-blue-400/40 transition-colors group"
+              className="flex flex-col items-center gap-3 p-4 bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg hover:border-blue-400/40 transition-colors group max-w-sm"
             >
               <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
                 <Wallet className="w-6 h-6 text-white" />
@@ -356,22 +356,6 @@ export default function DeFiSection() {
                 <p className="text-gray-400 text-sm mt-1">Complete DeFi platform with portfolio tracking, crypto onramp, trending token discovery, and perpetual trading</p>
               </div>
               <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-blue-300 transition-colors" />
-            </a>
-            
-            <a
-              href="https://de.fi/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex flex-col items-center gap-3 p-4 bg-gray-600/10 border border-gray-500/30 rounded-lg hover:border-gray-400/40 transition-colors group"
-            >
-              <div className="w-12 h-12 bg-gradient-to-r from-gray-600 to-gray-500 rounded-full flex items-center justify-center">
-                <BarChart3 className="w-6 h-6 text-white" />
-              </div>
-              <div className="text-center">
-                <h4 className="text-white font-semibold group-hover:text-gray-300 transition-colors">De.Fi</h4>
-                <p className="text-gray-400 text-sm mt-1">Portfolio overview and analytics, address book, wallet watcher, scanner, shield, yield explorer, rekt database</p>
-              </div>
-              <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-gray-300 transition-colors" />
             </a>
           </div>
         </div>
