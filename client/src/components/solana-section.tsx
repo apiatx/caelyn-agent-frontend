@@ -107,8 +107,7 @@ export default function SolanaSection() {
           </button>
           
           {/* 30 Day Trending on OpenSea */}
-          <div className="border-t border-crypto-silver/20 pt-4">
-            <button
+          <button
               onClick={() => openSecureLink('https://opensea.io/stats/tokens?sortBy=thirtyDayPriceChange&chains=solana')}
               className="w-full p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-lg hover:bg-cyan-500/20 transition-colors text-left"
             >
@@ -120,7 +119,6 @@ export default function SolanaSection() {
               </div>
               <p className="text-gray-400 text-sm">Trending Solana tokens by 30-day price changes</p>
             </button>
-          </div>
         </div>
       </GlassCard>
 
