@@ -85,7 +85,7 @@ export default function SolanaSection() {
                 <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-violet-500 rounded-full flex items-center justify-center">
                   <BarChart3 className="w-4 h-4 text-white" />
                 </div>
-                <h3 className="text-xl font-semibold text-white">DexScreener Solana</h3>
+                <h3 className="text-xl font-semibold text-white">DexScreener</h3>
               </div>
               <button
                 onClick={() => openSecureLink("https://dexscreener.com/solana?theme=dark")}
@@ -117,7 +117,7 @@ export default function SolanaSection() {
                   <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-yellow-500 rounded-full flex items-center justify-center">
                     <span className="text-white font-bold text-sm">🐦</span>
                   </div>
-                  <h3 className="text-xl font-semibold text-white">Birdeye Solana</h3>
+                  <h3 className="text-xl font-semibold text-white">Birdeye</h3>
                 </div>
                 <button
                   onClick={() => openSecureLink("https://birdeye.so/solana")}
@@ -152,9 +152,9 @@ export default function SolanaSection() {
                 <div className="w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center">
                   <ExternalLink className="w-4 h-4 text-white" />
                 </div>
-                <h4 className="text-cyan-400 font-semibold">30 Day Trending on OpenSea</h4>
+                <h4 className="text-cyan-400 font-semibold">OpenSea</h4>
               </div>
-              <p className="text-gray-400 text-sm">View trending Solana tokens by 30-day price changes</p>
+              <p className="text-gray-400 text-sm">Trending Solana tokens by 30-day price changes</p>
             </button>
           </div>
         </div>
