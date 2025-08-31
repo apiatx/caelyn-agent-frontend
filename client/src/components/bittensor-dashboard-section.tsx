@@ -26,22 +26,13 @@ export default function BittensorDashboardSection() {
       <div className="grid grid-cols-1 gap-6">
         {/* TaoStats Integration */}
         <GlassCard className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-white flex items-center">
-              <Brain className="w-4 h-4 mr-2" />
-              taostats
-            </h3>
-            <div className="flex items-center gap-2">
-              <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30">
-                τ TaoStats
-              </Badge>
-              <a 
-                {...getSecureLinkProps('https://taostats.io/')}
-                className="text-crypto-silver hover:text-white transition-colors group"
-              >
-                <ExternalLink className="h-4 w-4 group-hover:scale-110 transition-transform" />
-              </a>
-            </div>
+          <div className="flex justify-end mb-3">
+            <a
+              {...getSecureLinkProps('https://taostats.io/')}
+              className="text-xs text-orange-400 hover:text-orange-300 transition-colors flex items-center gap-1"
+            >
+              Open Full View <ExternalLink className="w-3 h-3" />
+            </a>
           </div>
           
           <div className="relative w-full">
@@ -61,24 +52,15 @@ export default function BittensorDashboardSection() {
 
         {/* Backprop Finance */}
         <GlassCard className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-white flex items-center">
-              <Brain className="w-4 h-4 mr-2" />
-              Backprop Finance
-            </h3>
-            <div className="flex items-center gap-2">
-              <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-                SUBNET SCREENER
-              </Badge>
-              <a 
-                href="https://backprop.finance/screener/bubbles"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-crypto-silver hover:text-white transition-colors group"
-              >
-                <ExternalLink className="h-4 w-4 group-hover:scale-110 transition-transform" />
-              </a>
-            </div>
+          <div className="flex justify-end mb-3">
+            <a
+              href="https://backprop.finance/screener/bubbles"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-green-400 hover:text-green-300 transition-colors flex items-center gap-1"
+            >
+              Open Full View <ExternalLink className="w-3 h-3" />
+            </a>
           </div>
           
           <div className="relative w-full">
@@ -101,24 +83,15 @@ export default function BittensorDashboardSection() {
 
         {/* Swordscan TensorPulse Integration */}
         <GlassCard className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-white flex items-center">
-              <Brain className="w-4 h-4 mr-2" />
-              swordscan
-            </h3>
-            <div className="flex items-center gap-2">
-              <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
-                TensorPulse
-              </Badge>
-              <a 
-                href="https://swordscan.com/tensorpulse-mindshare"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-crypto-silver hover:text-white transition-colors group"
-              >
-                <ExternalLink className="h-4 w-4 group-hover:scale-110 transition-transform" />
-              </a>
-            </div>
+          <div className="flex justify-end mb-3">
+            <a
+              href="https://swordscan.com/tensorpulse-mindshare"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-1"
+            >
+              Open Full View <ExternalLink className="w-3 h-3" />
+            </a>
           </div>
           
           <div className="relative w-full">
@@ -141,24 +114,15 @@ export default function BittensorDashboardSection() {
 
         {/* TaoBot */}
         <GlassCard className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-white flex items-center">
-              <Brain className="w-4 h-4 mr-2" />
-              TaoBot
-            </h3>
-            <div className="flex items-center gap-2">
-              <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
-                τ Explorer
-              </Badge>
-              <a 
-                href="https://www.tao.bot/explore"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-crypto-silver hover:text-white transition-colors group"
-              >
-                <ExternalLink className="h-4 w-4 group-hover:scale-110 transition-transform" />
-              </a>
-            </div>
+          <div className="flex justify-end mb-3">
+            <a
+              href="https://www.tao.bot/explore"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
+            >
+              Open Full View <ExternalLink className="w-3 h-3" />
+            </a>
           </div>
           
           <div className="relative w-full">
@@ -181,24 +145,15 @@ export default function BittensorDashboardSection() {
 
         {/* Top dTAO Wallets */}
         <GlassCard className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-white flex items-center">
-              <Brain className="w-4 h-4 mr-2" />
-              Top dTAO Wallets
-            </h3>
-            <div className="flex items-center gap-2">
-              <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30">
-                τ Wallets
-              </Badge>
-              <a 
-                href="https://taomarketcap.com/blockchain/accounts"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-crypto-silver hover:text-white transition-colors group"
-              >
-                <ExternalLink className="h-4 w-4 group-hover:scale-110 transition-transform" />
-              </a>
-            </div>
+          <div className="flex justify-end mb-3">
+            <a
+              href="https://taomarketcap.com/blockchain/accounts"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-orange-400 hover:text-orange-300 transition-colors flex items-center gap-1"
+            >
+              Open Full View <ExternalLink className="w-3 h-3" />
+            </a>
           </div>
           
           <div className="relative w-full">
@@ -344,24 +299,15 @@ export default function BittensorDashboardSection() {
 
         {/* TaoFi Swap Integration */}
         <GlassCard className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-white flex items-center">
-              <Brain className="w-4 h-4 mr-2" />
-              TaoFi Swap
-            </h3>
-            <div className="flex items-center gap-2">
-              <Badge className="bg-teal-500/20 text-teal-400 border-teal-500/30">
-                DEX SWAP
-              </Badge>
-              <a 
-                href="https://www.taofi.com/swap"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-crypto-silver hover:text-white transition-colors group"
-              >
-                <ExternalLink className="h-4 w-4 group-hover:scale-110 transition-transform" />
-              </a>
-            </div>
+          <div className="flex justify-end mb-3">
+            <a
+              href="https://www.taofi.com/swap"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-teal-400 hover:text-teal-300 transition-colors flex items-center gap-1"
+            >
+              Open Full View <ExternalLink className="w-3 h-3" />
+            </a>
           </div>
           
           <div className="relative w-full">
