@@ -311,11 +311,11 @@ export default function AlphaSection() {
           <div className="flex items-center gap-2 mb-6">
             <h3 className="text-xl font-semibold text-white">Smart Wallets</h3>
             <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-              COMING SOON
+              ANALYTICS
             </Badge>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
             <SafeLink
               href='https://indexy.xyz/home'
               className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
@@ -376,32 +376,33 @@ export default function AlphaSection() {
               <p className="text-gray-400 text-sm">AI-powered perpetual trading bot</p>
             </SafeLink>
           </div>
+
+          {/* Chainlyze Smart Wallet Tracker - EMBEDDED */}
+          <div className="border-t border-white/10 pt-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <h4 className="text-lg font-semibold text-white">Chainlyze Smart Wallet Tracker</h4>
+                <Badge className="bg-teal-500/20 text-teal-400 border-teal-500/30">
+                  ANALYTICS
+                </Badge>
+              </div>
+              <button
+                onClick={() => openInNewTab('https://app.chainlyze.ai/smart-wallet')}
+                className="text-teal-400 hover:text-teal-300 text-sm"
+              >
+                Open Full View →
+              </button>
+            </div>
+            <div className="mb-4">
+              <SafeIframe
+                src="https://app.chainlyze.ai/smart-wallet"
+                title="Chainlyze Smart Wallet Tracker"
+                className="h-[600px]"
+              />
+            </div>
+          </div>
         </GlassCard>
 
-        {/* Chainlyze Smart Wallet Tracker - WITH IFRAME */}
-        <GlassCard className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <h3 className="text-xl font-semibold text-white">Chainlyze Smart Wallet Tracker</h3>
-              <Badge className="bg-teal-500/20 text-teal-400 border-teal-500/30">
-                ANALYTICS
-              </Badge>
-            </div>
-            <button
-              onClick={() => openInNewTab('https://app.chainlyze.ai/smart-wallet')}
-              className="text-teal-400 hover:text-teal-300 text-sm"
-            >
-              Open Full View →
-            </button>
-          </div>
-          <div className="mb-6">
-            <SafeIframe
-              src="https://app.chainlyze.ai/smart-wallet"
-              title="Chainlyze Smart Wallet Tracker"
-              className="h-[600px]"
-            />
-          </div>
-        </GlassCard>
 
         {/* WachXBT Token Sniffer */}
         <GlassCard className="p-6">
