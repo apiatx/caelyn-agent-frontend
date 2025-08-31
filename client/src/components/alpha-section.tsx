@@ -68,7 +68,13 @@ export default function AlphaSection() {
         <p className="text-crypto-silver">Comprehensive blockchain data and intelligence</p>
       </div>
 
+      {/* Onchain Macro Section */}
       <div className="space-y-8">
+        <div className="text-center mb-8">
+          <h2 className="text-2xl font-bold text-white mb-2">Onchain Macro</h2>
+          <p className="text-crypto-silver">High-level blockchain analytics and market intelligence</p>
+        </div>
+
         {/* Artemis */}
         <GlassCard className="p-0">
           <div className="h-[900px] w-full">
@@ -85,40 +91,6 @@ export default function AlphaSection() {
                 colorScheme: 'dark'
               }}
             />
-          </div>
-        </GlassCard>
-
-        {/* Nansen.ai */}
-        <GlassCard className="p-0 overflow-hidden">
-          <div className="flex items-center justify-between p-4 bg-gradient-to-r from-slate-900/30 to-slate-800/30">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
-                <span className="text-white font-bold text-sm">N</span>
-              </div>
-              <h3 className="text-lg font-semibold text-white">Nansen.ai</h3>
-              <Badge className="bg-purple-500/20 text-purple-300 border-purple-400/30 text-xs">
-                ANALYTICS
-              </Badge>
-            </div>
-            <button
-              onClick={() => openInNewTab('https://app.nansen.ai/')}
-              className="text-purple-300 hover:text-purple-200 text-sm"
-            >
-              Open Full View →
-            </button>
-          </div>
-          <div className="p-8 text-center bg-gradient-to-b from-slate-900/20 to-slate-900/40">
-            <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <BarChart3 className="w-8 h-8 text-white" />
-            </div>
-            <h4 className="text-xl font-bold text-white mb-3">Nansen.ai Analytics</h4>
-            <p className="text-gray-400 mb-6 max-w-md mx-auto">Blockchain analytics platform with on-chain insights and wallet tracking</p>
-            <button
-              onClick={() => openInNewTab('https://app.nansen.ai/')}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg transition-colors font-medium"
-            >
-              Open Nansen.ai Dashboard
-            </button>
           </div>
         </GlassCard>
 
@@ -156,10 +128,10 @@ export default function AlphaSection() {
           </div>
         </GlassCard>
 
-        {/* More Analysis */}
+        {/* Inspect */}
         <GlassCard className="p-6">
           <div className="flex items-center gap-2 mb-6">
-            <h3 className="text-xl font-semibold text-white">More Analysis</h3>
+            <h3 className="text-xl font-semibold text-white">Inspect</h3>
             <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
               TOOLS
             </Badge>
@@ -213,6 +185,48 @@ export default function AlphaSection() {
                 Open Dashboard
               </button>
             </div>
+          </div>
+        </GlassCard>
+      </div>
+
+      {/* Onchain Micro Section */}
+      <div className="space-y-8 mt-12">
+        <div className="text-center mb-8">
+          <h2 className="text-2xl font-bold text-white mb-2">Onchain Micro</h2>
+          <p className="text-crypto-silver">Detailed analytics and specialized tools</p>
+        </div>
+
+        {/* Nansen.ai */}
+        <GlassCard className="p-0 overflow-hidden">
+          <div className="flex items-center justify-between p-4 bg-gradient-to-r from-slate-900/30 to-slate-800/30">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-sm">N</span>
+              </div>
+              <h3 className="text-lg font-semibold text-white">Nansen.ai</h3>
+              <Badge className="bg-purple-500/20 text-purple-300 border-purple-400/30 text-xs">
+                ANALYTICS
+              </Badge>
+            </div>
+            <button
+              onClick={() => openInNewTab('https://app.nansen.ai/')}
+              className="text-purple-300 hover:text-purple-200 text-sm"
+            >
+              Open Full View →
+            </button>
+          </div>
+          <div className="p-8 text-center bg-gradient-to-b from-slate-900/20 to-slate-900/40">
+            <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <BarChart3 className="w-8 h-8 text-white" />
+            </div>
+            <h4 className="text-xl font-bold text-white mb-3">Nansen.ai Analytics</h4>
+            <p className="text-gray-400 mb-6 max-w-md mx-auto">Blockchain analytics platform with on-chain insights and wallet tracking</p>
+            <button
+              onClick={() => openInNewTab('https://app.nansen.ai/')}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg transition-colors font-medium"
+            >
+              Open Nansen.ai Dashboard
+            </button>
           </div>
         </GlassCard>
 
