@@ -2,7 +2,6 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ArrowLeftRight, TrendingUp, ExternalLink, Wallet } from "lucide-react";
 import { openSecureLink } from "@/utils/security";
-import hippoLaserEyes from "@assets/image_1755979639049.png";
 
 // Glass card component for Trade section
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
@@ -19,29 +18,15 @@ const openInNewTab = (url: string) => {
 export default function TradeSection() {
   return (
     <div className="space-y-8">
+      {/* TRADE Section - Moved to top center */}
       <div className="text-center px-3 sm:px-0">
-        <div className="flex justify-center mb-4">
-          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden shadow-xl border-2 border-yellow-400">
-            <img 
-              src={hippoLaserEyes} 
-              alt="Trade Hippo" 
-              className="w-full h-full object-cover"
-            />
+        <div className="flex justify-center items-center gap-3 mb-4">
+          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
+            <ArrowLeftRight className="text-white text-xl" />
           </div>
+          <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white">TRADE</h2>
         </div>
-        <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-2">Trading Hub</h2>
         <p className="text-sm sm:text-base text-crypto-silver">Cross-chain trading and exchange platforms</p>
-      </div>
-
-      {/* TRADE Section */}
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
-          <ArrowLeftRight className="text-white text-xl" />
-        </div>
-        <div>
-          <h2 className="text-2xl font-bold text-white">TRADE</h2>
-          <p className="text-crypto-silver">Cross-chain trading and exchange platforms</p>
-        </div>
       </div>
 
       {/* Cross-Chain Section */}
