@@ -484,19 +484,18 @@ export default function PortfolioSection() {
 
       {/* Solana Section */}
       <div className="space-y-6">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center">
-            <img src={solanaLogo} alt="Solana" className="w-8 h-8 rounded-lg" />
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold text-white">Solana</h2>
-            <p className="text-crypto-silver">Solana ecosystem portfolio tracking</p>
-          </div>
-        </div>
-
         {/* Jupiter Portfolio */}
         <div>
-          <div className="flex justify-end mb-3">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center">
+                <img src={solanaLogo} alt="Solana" className="w-8 h-8 rounded-lg" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-white">Solana</h2>
+                <p className="text-crypto-silver">Solana ecosystem portfolio tracking</p>
+              </div>
+            </div>
             <button
               onClick={() => window.open('https://jup.ag/portfolio', '_blank', 'noopener,noreferrer')}
               className="text-xs text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-1"
