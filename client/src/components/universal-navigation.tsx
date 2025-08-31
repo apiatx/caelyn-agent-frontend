@@ -41,7 +41,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
     <nav className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4">
       <GlassCard className="p-4 overflow-hidden">
         {/* Desktop Navigation */}
-        <div className="hidden lg:flex lg:flex-wrap xl:flex-nowrap gap-1 xl:gap-2">
+        <div className="hidden lg:flex lg:flex-wrap xl:flex-nowrap gap-2 xl:gap-3">
           <button
             onClick={() => navigateTo("/app")}
             className={`flex-1 min-w-0 py-3 px-1 xl:px-3 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
@@ -125,7 +125,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                className={`flex-1 min-w-0 py-3 px-1 xl:px-3 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
+                className={`flex-1 min-w-[120px] lg:min-w-[140px] xl:min-w-[160px] py-3 px-2 xl:px-3 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
                   isActive("abstract") || isActive("bnb") || isActive("hyperevm") || isActive("sui")
                     ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                     : "hover:bg-white/5 text-crypto-silver"
