@@ -330,7 +330,7 @@ export default function TradeSection() {
       <div className="mt-8">
         <div className="flex justify-end mb-3">
           <SafeLink
-            href="https://dexscreener.com/multicharts"
+            href="https://dexscreener.com/multicharts?theme=dark"
             className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
           >
             Open Full View <ExternalLink className="w-3 h-3" />
@@ -339,7 +339,7 @@ export default function TradeSection() {
         
         <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
           <SafeIframe
-            src="https://dexscreener.com/multicharts"
+            src="https://dexscreener.com/multicharts?theme=dark"
             title="Multi-Charts"
             className="w-full h-[600px] border-0"
           />
