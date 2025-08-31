@@ -3,6 +3,43 @@ import { Card } from "@/components/ui/card";
 import { ArrowLeftRight, TrendingUp, ExternalLink, Wallet } from "lucide-react";
 import { openSecureLink } from "@/utils/security";
 
+// Safe components for external links and iframes
+const SafeLink = ({ href, children, className = "", ...props }: { 
+  href: string; 
+  children: React.ReactNode; 
+  className?: string; 
+  [key: string]: any; 
+}) => (
+  <a
+    href={href}
+    target="_blank"
+    rel="noopener noreferrer"
+    className={className}
+    onClick={(e) => {
+      e.preventDefault();
+      openSecureLink(href);
+    }}
+    {...props}
+  >
+    {children}
+  </a>
+);
+
+const SafeIframe = ({ src, title, className = "", ...props }: { 
+  src: string; 
+  title: string; 
+  className?: string; 
+  [key: string]: any; 
+}) => (
+  <iframe
+    src={src}
+    title={title}
+    className={className}
+    sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+    {...props}
+  />
+);
+
 // Glass card component for Trade section
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
   <Card className={`bg-black/40 backdrop-blur-lg border-crypto-silver/20 ${className}`}>
@@ -286,6 +323,26 @@ export default function TradeSection() {
             </Button>
 
           </div>
+        </div>
+      </div>
+
+      {/* Multi-Charts Section */}
+      <div className="mt-8">
+        <div className="flex justify-end mb-3">
+          <SafeLink
+            href="https://dexscreener.com/multicharts"
+            className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
+          >
+            Open Full View <ExternalLink className="w-3 h-3" />
+          </SafeLink>
+        </div>
+        
+        <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+          <SafeIframe
+            src="https://dexscreener.com/multicharts"
+            title="Multi-Charts"
+            className="w-full h-[600px] border-0"
+          />
         </div>
       </div>
 
