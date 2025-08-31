@@ -1,6 +1,35 @@
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
-import { BarChart3, ExternalLink, TrendingUp, Link2, Star, Wallet, TrendingDown } from 'lucide-react';
+import { BarChart3, ExternalLink, TrendingUp, Link2, Star, Wallet, TrendingDown, Globe, Layers, Activity } from 'lucide-react';
+import { openSecureLink } from '@/utils/security';
+
+// Safe Glass Card component
+const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+  <Card className={`backdrop-blur-sm bg-gradient-to-br from-white/10 to-white/5 border border-white/20 ${className}`}>
+    {children}
+  </Card>
+);
+
+// Safe iframe component
+const SafeIframe = ({ src, title, className = "" }: { src: string; title: string; className?: string }) => {
+  return (
+    <div className="w-full">
+      <iframe
+        src={src}
+        title={title}
+        className={`w-full h-[600px] rounded-lg border border-crypto-silver/20 ${className}`}
+        frameBorder="0"
+        loading="lazy"
+        sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation-by-user-activation"
+        referrerPolicy="strict-origin-when-cross-origin"
+        style={{
+          background: '#000000',
+          colorScheme: 'dark'
+        }}
+      />
+    </div>
+  );
+};
 
 interface SafeLinkProps {
   href: string;
@@ -10,7 +39,7 @@ interface SafeLinkProps {
 
 const SafeLink: React.FC<SafeLinkProps> = ({ href, children, className = "" }) => {
   const openInNewTab = (url: string) => {
-    window.open(url, '_blank', 'noopener,noreferrer');
+    openSecureLink(url);
   };
 
   return (
@@ -22,7 +51,7 @@ const SafeLink: React.FC<SafeLinkProps> = ({ href, children, className = "" }) =
 
 export default function AlphaSection() {
   const openInNewTab = (url: string) => {
-    window.open(url, '_blank', 'noopener,noreferrer');
+    openSecureLink(url);
   };
 
   return (
@@ -40,7 +69,7 @@ export default function AlphaSection() {
       {/* All analytics sections */}
       <div className="space-y-8">
         {/* Onchain - Artemis Analytics */}
-        <Card className="p-3 sm:p-4 lg:p-6 bg-black/40 backdrop-blur-md border-white/10">
+        <GlassCard className="p-3 sm:p-4 lg:p-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-6">
             <div className="flex items-center gap-2">
               <div className="w-5 h-5 sm:w-6 sm:h-6 bg-cyan-500 rounded-full flex items-center justify-center">
@@ -61,18 +90,11 @@ export default function AlphaSection() {
 
           {/* Artemis Analytics Iframe */}
           <div className="mb-6">
-            <div className="w-full bg-gray-900/50 rounded-lg border border-crypto-silver/20 overflow-hidden">
-              <iframe
-                src="https://app.artemisanalytics.com/"
-                className="w-full h-[400px] sm:h-[500px] lg:h-[600px]"
-                title="Artemis Analytics Dashboard"
-                sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
-                referrerPolicy="no-referrer-when-downgrade"
-                loading="lazy"
-                allow="fullscreen; web-share; clipboard-read; clipboard-write; camera; microphone"
-                style={{ border: 'none' }}
-              />
-            </div>
+            <SafeIframe
+              src="https://app.artemisanalytics.com/"
+              title="Artemis Analytics Dashboard"
+              className="h-[400px] sm:h-[500px] lg:h-[600px]"
+            />
           </div>
 
           {/* Nansen.ai */}
@@ -94,15 +116,11 @@ export default function AlphaSection() {
                 Open Full View →
               </button>
             </div>
-            <div className="w-full bg-gray-900/50 rounded-lg border border-crypto-silver/20 overflow-hidden mb-6">
-              <iframe
+            <div className="mb-6">
+              <SafeIframe
                 src="https://app.nansen.ai/"
-                className="w-full h-[400px] sm:h-[500px] lg:h-[600px]"
                 title="Nansen Analytics Dashboard"
-                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-                referrerPolicy="no-referrer-when-downgrade"
-                loading="lazy"
-                style={{ border: 'none' }}
+                className="h-[400px] sm:h-[500px] lg:h-[600px]"
               />
             </div>
           </div>
@@ -126,15 +144,11 @@ export default function AlphaSection() {
                 Open Full View →
               </button>
             </div>
-            <div className="w-full bg-gray-900/50 rounded-lg border border-crypto-silver/20 overflow-hidden mb-6">
-              <iframe
+            <div className="mb-6">
+              <SafeIframe
                 src="https://messari.io/"
-                className="w-full h-[400px] sm:h-[500px] lg:h-[600px]"
                 title="Messari Research Platform"
-                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-                referrerPolicy="no-referrer-when-downgrade"
-                loading="lazy"
-                style={{ border: 'none' }}
+                className="h-[400px] sm:h-[500px] lg:h-[600px]"
               />
             </div>
           </div>
@@ -166,11 +180,65 @@ export default function AlphaSection() {
               </div>
               <p className="text-gray-400 text-sm">Trending Altcoin Timeframes</p>
             </SafeLink>
+
+            <SafeLink
+              href='https://www.terminal.co/'
+              className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                  <Activity className="w-4 h-4 text-white" />
+                </div>
+                <h4 className="text-green-400 font-semibold">Terminal</h4>
+              </div>
+              <p className="text-gray-400 text-sm">Advanced Trading Terminal</p>
+            </SafeLink>
+
+            <SafeLink
+              href='https://www.zoracle.xyz/'
+              className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                  <Globe className="w-4 h-4 text-white" />
+                </div>
+                <h4 className="text-purple-400 font-semibold">Zoracle</h4>
+              </div>
+              <p className="text-gray-400 text-sm">Onchain Oracle Data</p>
+            </SafeLink>
           </div>
-        </Card>
+        </GlassCard>
+
+        {/* DexScreener Analytics */}
+        <GlassCard className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                <TrendingUp className="w-4 h-4 text-white" />
+              </div>
+              <h3 className="text-xl font-semibold text-white">DexScreener</h3>
+              <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+                LIVE CHARTS
+              </Badge>
+            </div>
+            <button
+              onClick={() => openInNewTab('https://dexscreener.com/')}
+              className="flex items-center gap-1 text-blue-400 hover:text-blue-300 text-sm transition-colors"
+            >
+              Open Full View <ExternalLink className="w-3 h-3" />
+            </button>
+          </div>
+          <div className="mb-6">
+            <SafeIframe
+              src="https://dexscreener.com/"
+              title="DexScreener Analytics"
+              className="h-[600px]"
+            />
+          </div>
+        </GlassCard>
 
         {/* DexCheck - Signal Section */}
-        <Card className="p-6 bg-black/40 backdrop-blur-md border-white/10">
+        <GlassCard className="p-6">
           <div className="mt-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -189,12 +257,11 @@ export default function AlphaSection() {
                 Open Full View →
               </button>
             </div>
-            <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-              <iframe
+            <div className="mb-6">
+              <SafeIframe
                 src="https://dexcheck.ai/app"
                 title="DexCheck.ai Analytics Dashboard"
-                className="w-full h-[600px] border-0"
-                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+                className="h-[600px]"
               />
             </div>
           </div>
@@ -219,26 +286,118 @@ export default function AlphaSection() {
               </button>
             </div>
             
-            <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-              <iframe
+            <div className="mb-6">
+              <SafeIframe
                 src="https://platform.alphanomics.io/"
                 title="Alphanomics Analytics Platform"
-                className="w-full h-[600px] border-0"
-                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+                className="h-[600px]"
               />
             </div>
           </div>
-        </Card>
+        </GlassCard>
+
+        {/* Trading Platforms */}
+        <GlassCard className="p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <div className="w-6 h-6 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center">
+              <ExternalLink className="w-4 h-4 text-white" />
+            </div>
+            <h3 className="text-xl font-semibold text-white">Trading & Analytics</h3>
+            <Badge className="bg-gradient-to-r from-green-500 to-blue-500 text-white border-green-500/30 text-xs">
+              PREMIUM TOOLS
+            </Badge>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+            <SafeLink
+              href='https://www.blockcreeper.com/'
+              className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
+                  <Activity className="w-4 h-4 text-white" />
+                </div>
+                <h4 className="text-orange-400 font-semibold">Blockcreeper</h4>
+              </div>
+              <p className="text-gray-400 text-sm">Blockchain Analytics & Tracking</p>
+            </SafeLink>
+
+            <SafeLink
+              href='https://checkr.social/'
+              className="p-4 bg-pink-500/10 border border-pink-500/20 rounded-lg hover:bg-pink-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-pink-500 rounded-full flex items-center justify-center">
+                  <Globe className="w-4 h-4 text-white" />
+                </div>
+                <h4 className="text-pink-400 font-semibold">Checkr</h4>
+              </div>
+              <p className="text-gray-400 text-sm">Social Analytics Platform</p>
+            </SafeLink>
+
+            <SafeLink
+              href='https://creator.bid/agents'
+              className="p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-lg hover:bg-cyan-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center">
+                  <Star className="w-4 h-4 text-white" />
+                </div>
+                <h4 className="text-cyan-400 font-semibold">Creator Bid</h4>
+              </div>
+              <p className="text-gray-400 text-sm">Creator Economy Platform</p>
+            </SafeLink>
+
+            <SafeLink
+              href='https://bankr.bot/terminal'
+              className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg hover:bg-yellow-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center">
+                  <TrendingUp className="w-4 h-4 text-white" />
+                </div>
+                <h4 className="text-yellow-400 font-semibold">Bankr Bot</h4>
+              </div>
+              <p className="text-gray-400 text-sm">Automated Trading Terminal</p>
+            </SafeLink>
+
+            <SafeLink
+              href='https://zora.co/explore'
+              className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-lg hover:bg-indigo-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-indigo-500 rounded-full flex items-center justify-center">
+                  <Layers className="w-4 h-4 text-white" />
+                </div>
+                <h4 className="text-indigo-400 font-semibold">Zora</h4>
+              </div>
+              <p className="text-gray-400 text-sm">NFT Marketplace & Creator Tools</p>
+            </SafeLink>
+
+            <SafeLink
+              href='https://app.virtuals.io/'
+              className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                  <Globe className="w-4 h-4 text-white" />
+                </div>
+                <h4 className="text-purple-400 font-semibold">Virtuals</h4>
+              </div>
+              <p className="text-gray-400 text-sm">Virtual AI Agent Ecosystem</p>
+            </SafeLink>
+          </div>
+        </GlassCard>
 
         {/* Smart Wallets */}
-        <Card className="p-6 bg-black/40 backdrop-blur-md border-white/10">
+        <GlassCard className="p-6">
           <div className="flex items-center gap-2 mb-6">
             <div className="w-6 h-6 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center">
               <Wallet className="w-4 h-4 text-white" />
             </div>
             <h3 className="text-xl font-semibold text-white">Smart Wallets</h3>
             <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
-              COMING SOON
+              WHALE TRACKING
             </Badge>
           </div>
           
@@ -323,7 +482,7 @@ export default function AlphaSection() {
               </SafeLink>
             </div>
           </div>
-        </Card>
+        </GlassCard>
       </div>
     </div>
   );
