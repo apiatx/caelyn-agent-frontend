@@ -350,40 +350,47 @@ export default function BaseSection() {
           </SafeLink>
         </div>
         <div className="space-y-4">
-          <SafeIframe 
-            src="https://dexscreener.com/base?theme=dark"
-            title="DexScreener Base Network"
-          />
+          {/* DexScreener Button */}
+          <button
+            onClick={() => openInNewTab('https://dexscreener.com/base?theme=dark')}
+            className="w-full p-4 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors text-left"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                <ExternalLink className="w-4 h-4 text-white" />
+              </div>
+              <h4 className="text-green-400 font-semibold">DexScreener</h4>
+            </div>
+            <p className="text-gray-400 text-sm">Live trending Base tokens and pair analytics with real-time charts</p>
+          </button>
           
           {/* 30 Day Trending on OpenSea */}
-          <div className="border-t border-crypto-silver/20 pt-4 space-y-3">
-            <button
-              onClick={() => openInNewTab('https://opensea.io/stats/tokens?sortBy=thirtyDayPriceChange&chains=base')}
-              className="w-full p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-lg hover:bg-cyan-500/20 transition-colors text-left"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center">
-                  <ExternalLink className="w-4 h-4 text-white" />
-                </div>
-                <h4 className="text-cyan-400 font-semibold">30 Day Trending on OpenSea</h4>
+          <button
+            onClick={() => openInNewTab('https://opensea.io/stats/tokens?sortBy=thirtyDayPriceChange&chains=base')}
+            className="w-full p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-lg hover:bg-cyan-500/20 transition-colors text-left"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center">
+                <ExternalLink className="w-4 h-4 text-white" />
               </div>
-              <p className="text-gray-400 text-sm">View trending Base tokens by 30-day price changes</p>
-            </button>
+              <h4 className="text-cyan-400 font-semibold">OpenSea</h4>
+            </div>
+            <p className="text-gray-400 text-sm">Trending Base tokens by 30-day price changes</p>
+          </button>
             
-            {/* Trending AI Agents */}
-            <button
-              onClick={() => openInNewTab('https://www.coingecko.com/en/categories/artificial-intelligence')}
-              className="w-full p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors text-left"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
-                  <ExternalLink className="w-4 h-4 text-white" />
-                </div>
-                <h4 className="text-purple-400 font-semibold">Trending AI Agents on CoinGecko</h4>
+          {/* Trending AI Agents */}
+          <button
+            onClick={() => openInNewTab('https://www.coingecko.com/en/categories/artificial-intelligence')}
+            className="w-full p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors text-left"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                <ExternalLink className="w-4 h-4 text-white" />
               </div>
-              <p className="text-gray-400 text-sm">View trending AI agent tokens and artificial intelligence category</p>
-            </button>
-          </div>
+              <h4 className="text-purple-400 font-semibold">Trending AI Agents on CoinGecko</h4>
+            </div>
+            <p className="text-gray-400 text-sm">View trending AI agent tokens and artificial intelligence category</p>
+          </button>
         </div>
       </GlassCard>
 
