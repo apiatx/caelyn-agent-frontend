@@ -35,20 +35,6 @@ export default function AlphaSection() {
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
-  const getTickerColor = (index: number) => {
-    const colors = [
-      { bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', hover: 'hover:bg-yellow-500/20', icon: 'bg-yellow-500', text: 'text-yellow-400' },
-      { bg: 'bg-blue-500/10', border: 'border-blue-500/20', hover: 'hover:bg-blue-500/20', icon: 'bg-blue-500', text: 'text-blue-400' },
-      { bg: 'bg-purple-500/10', border: 'border-purple-500/20', hover: 'hover:bg-purple-500/20', icon: 'bg-purple-500', text: 'text-purple-400' },
-      { bg: 'bg-green-500/10', border: 'border-green-500/20', hover: 'hover:bg-green-500/20', icon: 'bg-green-500', text: 'text-green-400' },
-      { bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', hover: 'hover:bg-emerald-500/20', icon: 'bg-emerald-500', text: 'text-emerald-400' },
-      { bg: 'bg-orange-500/10', border: 'border-orange-500/20', hover: 'hover:bg-orange-500/20', icon: 'bg-orange-500', text: 'text-orange-400' },
-      { bg: 'bg-indigo-500/10', border: 'border-indigo-500/20', hover: 'hover:bg-indigo-500/20', icon: 'bg-indigo-500', text: 'text-indigo-400' },
-      { bg: 'bg-red-500/10', border: 'border-red-500/20', hover: 'hover:bg-red-500/20', icon: 'bg-red-500', text: 'text-red-400' },
-      { bg: 'bg-cyan-500/10', border: 'border-cyan-500/20', hover: 'hover:bg-cyan-500/20', icon: 'bg-cyan-500', text: 'text-cyan-400' }
-    ];
-    return colors[index % colors.length];
-  };
 
   return (
     <div className="space-y-8">
@@ -269,6 +255,13 @@ export default function AlphaSection() {
             </div>
             <p className="text-gray-400 text-sm">Trending Altcoin Timeframes</p>
           </SafeLink>
+        </div>
+      </GlassCard>
+
+      <GlassCard className="p-6">
+        <div className="p-6">
+          <h3 className="text-xl font-semibold text-white mb-4">Alphanomics Analytics</h3>
+          <p className="text-gray-400">Analytics platform temporarily simplified for debugging.</p>
         </div>
       </GlassCard>
 
