@@ -378,7 +378,7 @@ export default function DeFiSection() {
       </div>
 
       {/* DeFi Section Header */}
-      <div className="flex items-center gap-3 mb-6">
+      <div className="flex items-center gap-3 mb-8 mt-8">
         <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-blue-500 rounded-xl flex items-center justify-center">
           <DollarSign className="text-white text-xl" />
         </div>
