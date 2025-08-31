@@ -135,6 +135,39 @@ export function EthereumSection() {
             </div>
           </div>
           
+          {/* Birdeye Ethereum */}
+          <div className="border-t border-crypto-silver/20 pt-4 px-4 pb-4">
+            <div className="p-6 bg-gradient-to-r from-orange-500/10 to-yellow-500/10 border border-orange-500/20 rounded-lg">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-yellow-500 rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">🐦</span>
+                  </div>
+                  <h3 className="text-xl font-semibold text-white">Birdeye Ethereum</h3>
+                </div>
+                <button
+                  onClick={() => openInNewTab("https://birdeye.so/ethereum")}
+                  className="bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white font-semibold px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  Open Birdeye
+                </button>
+              </div>
+              <p className="text-crypto-silver mb-4">
+                Comprehensive Ethereum token analytics with advanced charts and market insights.
+              </p>
+              <div className="bg-black/20 rounded-lg p-4 border border-orange-500/20">
+                <p className="text-sm text-crypto-silver">
+                  🔍 Advanced token search and analytics
+                  <br />
+                  📊 Professional trading charts and data
+                  <br />
+                  💎 Portfolio tracking and market research
+                </p>
+              </div>
+            </div>
+          </div>
+          
           {/* 30 Day Trending on OpenSea */}
           <div className="border-t border-crypto-silver/20 pt-4 px-4 pb-4">
             <button
