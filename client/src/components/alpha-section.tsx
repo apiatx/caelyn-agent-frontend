@@ -280,7 +280,7 @@ export default function AlphaSection() {
             </SafeLink>
           </div>
 
-          <div className="border-t border-crypto-silver/20 pt-6">
+          <div>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <h4 className="text-lg font-semibold text-white">Alphanomics</h4>
@@ -378,7 +378,7 @@ export default function AlphaSection() {
           </div>
 
           {/* Chainlyze Smart Wallet Tracker - EMBEDDED */}
-          <div className="border-t border-white/10 pt-6">
+          <div>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <h4 className="text-lg font-semibold text-white">Chainlyze Smart Wallet Tracker</h4>
