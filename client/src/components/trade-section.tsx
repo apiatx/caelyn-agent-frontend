@@ -279,6 +279,18 @@ export default function TradeSection() {
               </div>
             </Button>
 
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://app.extended.exchange/perp')}
+              className="bg-black/20 border-crypto-silver/20 hover:bg-green-500/20 hover:border-green-500/30 text-white justify-start p-4 h-auto"
+            >
+              <TrendingUp className="w-4 h-4 mr-2" />
+              <div className="text-left">
+                <div className="font-semibold">Extended Exchange</div>
+                <div className="text-sm text-crypto-silver">Perpetual futures platform</div>
+              </div>
+            </Button>
+
           </div>
         </div>
 
@@ -327,25 +339,20 @@ export default function TradeSection() {
       </div>
 
       {/* Multi-Charts Section */}
-      <div className="mt-8">
-        <div className="flex justify-end mb-3">
-          <SafeLink
-            href="https://dexscreener.com/multicharts?theme=dark"
-            className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
+      <div className="space-y-4">
+        <h4 className="text-lg font-medium text-cyan-400 mb-3">Multi-Charts</h4>
+        <div className="grid grid-cols-1 gap-4">
+          <Button
+            variant="outline"
+            onClick={() => openInNewTab('https://dexscreener.com/multicharts?theme=dark')}
+            className="bg-black/20 border-crypto-silver/20 hover:bg-cyan-500/20 hover:border-cyan-500/30 text-white justify-start p-4 h-auto"
           >
-            Open Full View <ExternalLink className="w-3 h-3" />
-          </SafeLink>
-        </div>
-        
-        <div className="w-full">
-          <iframe
-            {...getSecureIframeProps('https://dexscreener.com/multicharts?theme=dark', 'DexScreener Multicharts')}
-            className="w-full h-[600px] lg:h-[800px] rounded-lg border border-crypto-silver/20"
-            style={{
-              background: '#000000',
-              colorScheme: 'dark'
-            }}
-          />
+            <TrendingUp className="w-4 h-4 mr-2" />
+            <div className="text-left">
+              <div className="font-semibold">DexScreener Multi-Charts</div>
+              <div className="text-sm text-crypto-silver">Advanced charting and analytics</div>
+            </div>
+          </Button>
         </div>
       </div>
 
