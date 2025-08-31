@@ -1,4 +1,4 @@
-import { ExternalLink, TrendingUp } from "lucide-react";
+import { ExternalLink, TrendingUp, BarChart3 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { openSecureLink } from "@/utils/security";
@@ -86,22 +86,26 @@ export function EthereumSection() {
         </div>
       </div>
 
-      {/* Trending Ethereum Tokens */}
-      <div>
-        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-          <div className="w-6 h-6 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
-            <span className="text-white font-bold text-xs">🔥</span>
+      {/* DexScreener Ethereum */}
+      <GlassCard className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+              <BarChart3 className="w-4 h-4 text-white" />
+            </div>
+            <h3 className="text-xl font-semibold text-white">Trending</h3>
+            <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+              LIVE CHARTS
+            </Badge>
           </div>
-          Trending
-          <SafeLink
-            href="https://dexscreener.com/ethereum"
-            className="ml-auto text-xs text-green-400 hover:text-green-300 transition-colors flex items-center gap-1"
+          <button
+            onClick={() => openInNewTab('https://dexscreener.com/ethereum')}
+            className="text-green-400 hover:text-green-300 text-xs sm:text-sm"
           >
-            Open Full View <ExternalLink className="w-3 h-3" />
-          </SafeLink>
-        </h3>
-        
-        <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden space-y-4">
+            Open Full View →
+          </button>
+        </div>
+        <div className="w-full space-y-4">
           <button
             onClick={() => openInNewTab("https://dexscreener.com/ethereum?theme=dark")}
             className="w-full p-4 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors text-left"
@@ -143,7 +147,7 @@ export function EthereumSection() {
             <p className="text-gray-400 text-sm">Trending Ethereum tokens by 30-day price changes</p>
           </button>
         </div>
-      </div>
+      </GlassCard>
 
 
       {/* Ethereum Layer 2 Solutions */}
