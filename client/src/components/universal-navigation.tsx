@@ -110,7 +110,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
                 : "hover:bg-white/5 text-crypto-silver"
             }`}
           >
-            <Brain className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />HYPE
+            <Brain className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />Hyperliquid
           </button>
           <button
             onClick={() => navigateTo("/app/bittensor")}
@@ -273,7 +273,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
                     : "hover:bg-white/5 text-crypto-silver"
                 }`}
               >
-                <Brain className="w-4 h-4 mr-1 inline" />HYPE
+                <Brain className="w-4 h-4 mr-1 inline" />Hyperliquid
               </button>
               <button
                 onClick={() => navigateTo("/app#bittensor")}
