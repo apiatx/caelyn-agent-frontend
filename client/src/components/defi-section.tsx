@@ -60,7 +60,7 @@ export default function DeFiSection() {
     <div className="space-y-8">
       <div className="text-center px-3 sm:px-0">
         <div className="flex justify-center mb-4">
-          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden shadow-xl border-2 border-green-500/30">
+          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden shadow-xl border-2 border-yellow-400">
             <img 
               src={hippoLaserEyes} 
               alt="DeFi Hippo" 
