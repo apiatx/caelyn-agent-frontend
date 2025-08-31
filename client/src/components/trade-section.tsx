@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { ArrowLeftRight, TrendingUp, ExternalLink, Wallet } from "lucide-react";
 import { openSecureLink, getSecureIframeProps } from "@/utils/security";
 
@@ -339,18 +340,43 @@ export default function TradeSection() {
       </div>
 
       {/* Multi-Charts Section */}
-      <div className="flex justify-center">
-        <Button
-          variant="outline"
-          onClick={() => openInNewTab('https://dexscreener.com/multicharts?theme=dark')}
-          className="bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border-cyan-400/50 hover:from-cyan-400/30 hover:to-blue-400/30 hover:border-cyan-300 text-white justify-center p-8 h-auto shadow-lg shadow-cyan-500/20 hover:shadow-cyan-400/30 transition-all duration-300 min-w-[400px]"
-        >
-          <TrendingUp className="w-6 h-6 mr-4 text-cyan-300" />
-          <div className="text-center">
-            <div className="font-semibold text-xl text-white">Multi-Charts</div>
-            <div className="text-base text-cyan-200 mt-2">Multi-Chart Tracking for Watchlist and Active Trades</div>
+      <div className="mt-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-cyan-500 rounded-full flex items-center justify-center">
+              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+            </div>
+            <h4 className="text-lg font-semibold text-white">Multi-Charts</h4>
+            <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 text-xs">
+              CHARTING
+            </Badge>
           </div>
-        </Button>
+          <button
+            onClick={() => openInNewTab('https://dexscreener.com/multicharts?theme=dark')}
+            className="text-cyan-400 hover:text-cyan-300 text-xs sm:text-sm ml-auto"
+          >
+            Open Full View →
+          </button>
+        </div>
+        <div className="w-full bg-gray-900/50 rounded-lg border border-crypto-silver/20 p-8 text-center">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-16 h-16 bg-cyan-500 rounded-full flex items-center justify-center">
+              <TrendingUp className="w-8 h-8 text-white" />
+            </div>
+            <div>
+              <h5 className="text-xl font-semibold text-white mb-2">Multi-Charts</h5>
+              <p className="text-gray-400 text-sm mb-4">
+                Multi-Chart Tracking for Watchlist and Active Trades
+              </p>
+              <button
+                onClick={() => openInNewTab('https://dexscreener.com/multicharts?theme=dark')}
+                className="bg-cyan-500 hover:bg-cyan-600 text-white px-6 py-2 rounded-lg transition-colors text-sm font-medium"
+              >
+                Open Multi-Charts Dashboard
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
 
