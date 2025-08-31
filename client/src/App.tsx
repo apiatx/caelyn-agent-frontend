@@ -36,14 +36,23 @@ function Router() {
       <Route path="/app/onchain" component={OnchainPage} />
       <Route path="/onchain" component={OnchainPage} />
       <Route path="/app/base" component={BasePage} />
+      <Route path="/base" component={BasePage} />
       <Route path="/app/ethereum" component={EthereumPage} />
+      <Route path="/ethereum" component={EthereumPage} />
       <Route path="/app/solana" component={SolanaPage} />
+      <Route path="/solana" component={SolanaPage} />
       <Route path="/app/hype" component={HypePage} />
+      <Route path="/hype" component={HypePage} />
       <Route path="/app/bittensor" component={BittensorPage} />
+      <Route path="/bittensor" component={BittensorPage} />
       <Route path="/app/abstract" component={AbstractPage} />
+      <Route path="/abstract" component={AbstractPage} />
       <Route path="/app/hyperevm" component={HyperEVMPage} />
+      <Route path="/hyperevm" component={HyperEVMPage} />
       <Route path="/app/bnb" component={BNBPage} />
+      <Route path="/bnb" component={BNBPage} />
       <Route path="/app/sui" component={SUIPage} />
+      <Route path="/sui" component={SUIPage} />
       <Route path="/app/trade" component={TradePage} />
       <Route path="/trade" component={TradePage} />
       <Route path="/app/defi" component={DeFiPage} />
