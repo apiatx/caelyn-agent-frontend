@@ -390,18 +390,14 @@ export default function DeFiSection() {
 
       {/* DeFiLlama */}
       <div className="mt-6">
-        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-          <div className="w-6 h-6 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full flex items-center justify-center">
-            <span className="text-white font-bold text-xs">🔥</span>
-          </div>
-          DeFiLlama
+        <div className="mb-4 flex justify-end">
           <SafeLink
             href="https://defillama.com/"
-            className="ml-auto text-xs text-yellow-400 hover:text-yellow-300 transition-colors flex items-center gap-1"
+            className="text-xs text-yellow-400 hover:text-yellow-300 transition-colors flex items-center gap-1"
           >
             Open Full View <ExternalLink className="w-3 h-3" />
           </SafeLink>
-        </h3>
+        </div>
         
         <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
           <SafeIframe
