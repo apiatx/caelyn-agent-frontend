@@ -75,16 +75,7 @@ export default function DeFiSection() {
 
       {/* DeFi Section with DeFiLlama */}
       <div className="mt-8">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-blue-500 rounded-xl flex items-center justify-center">
-              <DollarSign className="text-white text-xl" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-white">DeFi</h2>
-              <p className="text-crypto-silver">Core DeFi protocols and platforms</p>
-            </div>
-          </div>
+        <div className="flex justify-end mb-3">
           <SafeLink
             href="https://defillama.com/"
             className="text-xs text-yellow-400 hover:text-yellow-300 transition-colors flex items-center gap-1"
