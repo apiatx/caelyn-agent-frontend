@@ -1,60 +1,60 @@
 {
   "tickers": [
     {
-      "symbol": "POPCAT",
-      "sentiment": 47,
-      "mentions": 3172,
-      "lastUpdated": "2025-08-27T16:29:04.600Z"
-    },
-    {
-      "symbol": "MEME",
-      "sentiment": 46,
-      "mentions": 5106,
-      "lastUpdated": "2025-08-27T16:29:04.600Z"
-    },
-    {
-      "symbol": "BASEDOG",
-      "sentiment": 44,
-      "mentions": 4006,
-      "lastUpdated": "2025-08-27T16:29:04.600Z"
-    },
-    {
-      "symbol": "CHILLGUY",
-      "sentiment": 43,
-      "mentions": 5990,
-      "lastUpdated": "2025-08-27T16:29:04.600Z"
-    },
-    {
-      "symbol": "PENGU",
-      "sentiment": 42,
-      "mentions": 5628,
-      "lastUpdated": "2025-08-27T16:29:04.600Z"
-    },
-    {
-      "symbol": "BRETT",
-      "sentiment": 41,
-      "mentions": 2917,
-      "lastUpdated": "2025-08-27T16:29:04.600Z"
+      "symbol": "JESUS",
+      "sentiment": 50,
+      "mentions": 5467,
+      "lastUpdated": "2025-08-30T15:11:09.620Z"
     },
     {
       "symbol": "FARTCOIN",
-      "sentiment": 41,
-      "mentions": 3382,
-      "lastUpdated": "2025-08-27T16:29:04.600Z"
+      "sentiment": 46,
+      "mentions": 4048,
+      "lastUpdated": "2025-08-30T15:11:09.620Z"
     },
     {
-      "symbol": "BONK",
-      "sentiment": 40,
-      "mentions": 4180,
-      "lastUpdated": "2025-08-27T16:29:04.600Z"
+      "symbol": "POPCAT",
+      "sentiment": 45,
+      "mentions": 2016,
+      "lastUpdated": "2025-08-30T15:11:09.620Z"
     },
     {
-      "symbol": "PNUT",
+      "symbol": "TRUMP",
+      "sentiment": 43,
+      "mentions": 4196,
+      "lastUpdated": "2025-08-30T15:11:09.620Z"
+    },
+    {
+      "symbol": "GOAT",
+      "sentiment": 43,
+      "mentions": 2841,
+      "lastUpdated": "2025-08-30T15:11:09.620Z"
+    },
+    {
+      "symbol": "NORMIE",
       "sentiment": 40,
-      "mentions": 1865,
-      "lastUpdated": "2025-08-27T16:29:04.600Z"
+      "mentions": 1584,
+      "lastUpdated": "2025-08-30T15:11:09.620Z"
+    },
+    {
+      "symbol": "XRP",
+      "sentiment": 39,
+      "mentions": 3087,
+      "lastUpdated": "2025-08-30T15:11:09.620Z"
+    },
+    {
+      "symbol": "BASE",
+      "sentiment": 39,
+      "mentions": 4299,
+      "lastUpdated": "2025-08-30T15:11:09.620Z"
+    },
+    {
+      "symbol": "WIF",
+      "sentiment": 37,
+      "mentions": 5477,
+      "lastUpdated": "2025-08-30T15:11:09.620Z"
     }
   ],
-  "lastUpdated": "2025-08-27T16:29:04.599Z",
-  "nextUpdate": "2025-08-27T19:29:04.599Z"
+  "lastUpdated": "2025-08-30T15:11:09.619Z",
+  "nextUpdate": "2025-08-30T18:11:09.619Z"
 }
