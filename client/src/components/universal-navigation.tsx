@@ -76,7 +76,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
             <DropdownMenuTrigger asChild>
               <button
                 className={`flex-1 min-w-[120px] lg:min-w-[140px] xl:min-w-[160px] py-3 px-2 xl:px-3 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
-                  isActive("ethereum") || isActive("base") || isActive("solana") || isActive("hype") || isActive("bittensor")
+                  isActive("ethereum") || isActive("base") || isActive("solana") || isActive("hype") || isActive("bittensor") || isActive("abstract") || isActive("bnb") || isActive("sui") || isActive("hyperevm")
                     ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                     : "hover:bg-white/5 text-crypto-silver"
                 }`}
@@ -120,6 +120,34 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
               >
                 <Brain className="w-4 h-4 mr-2" />
                 Bittensor
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => navigateTo("/app/abstract")}
+                className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
+              >
+                <Layers className="w-4 h-4 mr-2" />
+                Abstract
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => navigateTo("/app/bnb")}
+                className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
+              >
+                <Coins className="w-4 h-4 mr-2" />
+                BNB
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => navigateTo("/app/sui")}
+                className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
+              >
+                <Zap className="w-4 h-4 mr-2" />
+                SUI
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => navigateTo("/app/hyperevm")}
+                className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
+              >
+                <Brain className="w-4 h-4 mr-2" />
+                HyperEVM
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -273,7 +301,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
                 <DropdownMenuTrigger asChild>
                   <button
                     className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
-                      isActive("ethereum") || isActive("base") || isActive("solana") || isActive("hype") || isActive("bittensor")
+                      isActive("ethereum") || isActive("base") || isActive("solana") || isActive("hype") || isActive("bittensor") || isActive("abstract") || isActive("bnb") || isActive("sui") || isActive("hyperevm")
                         ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                         : "hover:bg-white/5 text-crypto-silver"
                     }`}
@@ -317,6 +345,34 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
                   >
                     <Brain className="w-4 h-4 mr-2" />
                     Bittensor
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => navigateTo("/app/abstract")}
+                    className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
+                  >
+                    <Layers className="w-4 h-4 mr-2" />
+                    Abstract
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => navigateTo("/app/bnb")}
+                    className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
+                  >
+                    <Coins className="w-4 h-4 mr-2" />
+                    BNB
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => navigateTo("/app/sui")}
+                    className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
+                  >
+                    <Zap className="w-4 h-4 mr-2" />
+                    SUI
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => navigateTo("/app/hyperevm")}
+                    className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
+                  >
+                    <Brain className="w-4 h-4 mr-2" />
+                    HyperEVM
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
