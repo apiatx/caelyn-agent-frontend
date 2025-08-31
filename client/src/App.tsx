@@ -9,6 +9,7 @@ import EthereumPage from "@/pages/ethereum";
 import SolanaPage from "@/pages/solana";
 import DeFiPage from "@/pages/defi";
 import HypePage from "@/pages/hype";
+import HyperEVMPage from "@/pages/hyperevm";
 import AbstractPage from "@/pages/abstract";
 import BNBPage from "@/pages/bnb";
 import SUIPage from "@/pages/sui";
@@ -38,6 +39,7 @@ function Router() {
       <Route path="/app/hype" component={HypePage} />
       <Route path="/app/bittensor" component={BittensorPage} />
       <Route path="/app/abstract" component={AbstractPage} />
+      <Route path="/app/hyperevm" component={HyperEVMPage} />
       <Route path="/app/bnb" component={BNBPage} />
       <Route path="/app/sui" component={SUIPage} />
       <Route path="/app/defi" component={DeFiPage} />
