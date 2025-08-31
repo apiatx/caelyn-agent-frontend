@@ -71,88 +71,80 @@ export default function AlphaSection() {
       <div className="space-y-8">
         {/* Artemis */}
         <GlassCard className="p-0 overflow-hidden">
-          <div className="flex items-center justify-between p-4 bg-gradient-to-r from-slate-900/50 to-slate-800/50 border-b border-white/10">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-lg flex items-center justify-center">
-                <BarChart3 className="w-5 h-5 text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-white">Artemis</h3>
-              <Badge className="bg-cyan-500/20 text-cyan-300 border-cyan-400/30 font-medium">
-                COMPREHENSIVE
-              </Badge>
-            </div>
-            <button
-              onClick={() => openInNewTab('https://app.artemisanalytics.com/')}
-              className="text-cyan-300 hover:text-cyan-200 text-sm font-medium transition-colors"
-            >
-              Open Full View →
-            </button>
-          </div>
-          <div className="relative">
+          <div className="h-[400px]">
             <SafeIframe
               src="https://app.artemisanalytics.com/"
               title="Artemis Analytics Dashboard"
-              className="h-[500px] border-0"
+              className="h-full border-0"
             />
           </div>
         </GlassCard>
 
-        {/* Nansen.ai and Messari.io grouped together */}
-        <GlassCard className="p-6">
-          {/* Nansen.ai */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <h4 className="text-lg font-semibold text-white">Nansen.ai</h4>
-                <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
-                  ANALYTICS
-                </Badge>
+        {/* Nansen.ai */}
+        <GlassCard className="p-0 overflow-hidden">
+          <div className="flex items-center justify-between p-4 bg-gradient-to-r from-slate-900/30 to-slate-800/30">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-sm">N</span>
               </div>
-              <button
-                onClick={() => openInNewTab('https://app.nansen.ai/')}
-                className="text-purple-400 hover:text-purple-300 text-sm"
-              >
-                Open Full View →
-              </button>
+              <h3 className="text-lg font-semibold text-white">Nansen.ai</h3>
+              <Badge className="bg-purple-500/20 text-purple-300 border-purple-400/30 text-xs">
+                ANALYTICS
+              </Badge>
             </div>
-            <div className="mb-4">
-              <h5 className="text-md font-semibold text-white mb-2">Nansen.ai Analytics</h5>
-              <p className="text-crypto-silver mb-4">Blockchain analytics platform with on-chain insights and wallet tracking</p>
-              <button
-                onClick={() => openInNewTab('https://app.nansen.ai/')}
-                className="bg-purple-500/10 border border-purple-500/20 text-purple-400 px-4 py-2 rounded-lg hover:bg-purple-500/20 transition-colors"
-              >
-                Open Nansen.ai Dashboard
-              </button>
-            </div>
+            <button
+              onClick={() => openInNewTab('https://app.nansen.ai/')}
+              className="text-purple-300 hover:text-purple-200 text-sm"
+            >
+              Open Full View →
+            </button>
           </div>
+          <div className="p-8 text-center bg-gradient-to-b from-slate-900/20 to-slate-900/40">
+            <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <BarChart3 className="w-8 h-8 text-white" />
+            </div>
+            <h4 className="text-xl font-bold text-white mb-3">Nansen.ai Analytics</h4>
+            <p className="text-gray-400 mb-6 max-w-md mx-auto">Blockchain analytics platform with on-chain insights and wallet tracking</p>
+            <button
+              onClick={() => openInNewTab('https://app.nansen.ai/')}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg transition-colors font-medium"
+            >
+              Open Nansen.ai Dashboard
+            </button>
+          </div>
+        </GlassCard>
 
-          {/* Messari.io */}
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <h4 className="text-lg font-semibold text-white">Messari.io</h4>
-                <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-                  RESEARCH
-                </Badge>
+        {/* Messari.io */}
+        <GlassCard className="p-0 overflow-hidden">
+          <div className="flex items-center justify-between p-4 bg-gradient-to-r from-slate-900/30 to-slate-800/30">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-orange-600 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-sm">M</span>
               </div>
-              <button
-                onClick={() => openInNewTab('https://messari.io/')}
-                className="text-green-400 hover:text-green-300 text-sm"
-              >
-                Open Full View →
-              </button>
+              <h3 className="text-lg font-semibold text-white">Messari.io</h3>
+              <Badge className="bg-orange-500/20 text-orange-300 border-orange-400/30 text-xs">
+                RESEARCH
+              </Badge>
             </div>
-            <div className="mb-4">
-              <h5 className="text-md font-semibold text-white mb-2">Messari.io Research</h5>
-              <p className="text-crypto-silver mb-4">Crypto intelligence platform with research reports, market data, and institutional-grade analysis</p>
-              <button
-                onClick={() => openInNewTab('https://messari.io/')}
-                className="bg-green-500/10 border border-green-500/20 text-green-400 px-4 py-2 rounded-lg hover:bg-green-500/20 transition-colors"
-              >
-                Open Messari.io Platform
-              </button>
+            <button
+              onClick={() => openInNewTab('https://messari.io/')}
+              className="text-orange-300 hover:text-orange-200 text-sm"
+            >
+              Open Full View →
+            </button>
+          </div>
+          <div className="p-8 text-center bg-gradient-to-b from-slate-900/20 to-slate-900/40">
+            <div className="w-16 h-16 bg-orange-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <BarChart3 className="w-8 h-8 text-white" />
             </div>
+            <h4 className="text-xl font-bold text-white mb-3">Messari.io Research</h4>
+            <p className="text-gray-400 mb-6 max-w-md mx-auto">Crypto intelligence platform with research reports, market data, and institutional-grade analysis</p>
+            <button
+              onClick={() => openInNewTab('https://messari.io/')}
+              className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded-lg transition-colors font-medium"
+            >
+              Open Messari.io Platform
+            </button>
           </div>
         </GlassCard>
 
