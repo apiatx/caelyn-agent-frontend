@@ -170,6 +170,17 @@ export default function CryptoDashboardSection() {
             </button>
           </div>
 
+          {/* Row 3: Bitcoin Monthly Returns Heatmap - Full Width */}
+          <div className="grid grid-cols-1 gap-3 sm:gap-4">
+            <button
+              onClick={() => openInNewTab('https://newhedge.io/bitcoin/monthly-returns-heatmap')}
+              className="p-3 sm:p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
+            >
+              <h5 className="text-orange-400 font-semibold mb-1 text-sm sm:text-base">Bitcoin Monthly Returns Heatmap</h5>
+              <p className="text-gray-400 text-xs sm:text-sm">Historical performance analysis</p>
+            </button>
+          </div>
+
         </div>
       </GlassCard>
 
@@ -244,39 +255,6 @@ export default function CryptoDashboardSection() {
         />
       </div>
 
-      {/* Bitcoin Monthly Returns */}
-      <GlassCard className="p-3 sm:p-4 lg:p-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-orange-500 rounded-full flex items-center justify-center">
-              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-            </div>
-            <h3 className="text-lg sm:text-xl font-semibold text-white">Bitcoin Monthly Returns</h3>
-            <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 text-xs">
-              HEATMAP
-            </Badge>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 gap-3">
-          <button
-            onClick={() => openInNewTab('https://newhedge.io/bitcoin/monthly-returns-heatmap')}
-            className="p-4 bg-gradient-to-r from-orange-500/20 to-red-500/20 border border-orange-500/30 rounded-lg hover:border-orange-400/50 transition-all duration-200 text-left"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="font-medium text-orange-200 group-hover:text-orange-100 transition-colors">
-                  View Heatmap
-                </div>
-                <div className="text-xs text-gray-400 mt-1">
-                  Historical performance analysis
-                </div>
-              </div>
-              <ExternalLink className="w-4 h-4 text-orange-400 opacity-60 group-hover:opacity-100 transition-opacity" />
-            </div>
-          </button>
-        </div>
-      </GlassCard>
 
 
 
