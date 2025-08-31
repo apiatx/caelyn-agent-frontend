@@ -71,11 +71,19 @@ export default function AlphaSection() {
       <div className="space-y-8">
         {/* Artemis */}
         <GlassCard className="p-0">
-          <div className="h-[800px] w-full">
-            <SafeIframe
+          <div className="h-[900px] w-full">
+            <iframe
               src="https://app.artemisanalytics.com/"
               title="Artemis Analytics Dashboard"
-              className="h-full w-full border-0 rounded-lg"
+              className="w-full h-full border-0 rounded-lg"
+              frameBorder="0"
+              loading="lazy"
+              sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation-by-user-activation"
+              referrerPolicy="strict-origin-when-cross-origin"
+              style={{
+                background: '#000000',
+                colorScheme: 'dark'
+              }}
             />
           </div>
         </GlassCard>
