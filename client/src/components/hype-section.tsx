@@ -19,7 +19,7 @@ export function HypeSection() {
           <div className="w-12 h-12 bg-black rounded-xl flex items-center justify-center">
             <img src={hyperliquidLogo} alt="HyperLiquid" className="w-8 h-8 rounded-lg" />
           </div>
-          <h1 className="text-3xl font-bold text-white">HL Core</h1>
+          <h1 className="text-3xl font-bold text-white">Hyperliquid</h1>
         </div>
         <p className="text-crypto-silver">Live HYPE trading, analytics, and core launchpad ecosystem</p>
       </div>
