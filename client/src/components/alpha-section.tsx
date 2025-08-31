@@ -101,7 +101,7 @@ export default function AlphaSection() {
               </Badge>
             </div>
             <button
-              onClick={() => openInNewTab('https://nansen.ai/')}
+              onClick={() => openInNewTab('https://app.nansen.ai/')}
               className="text-purple-300 hover:text-purple-200 text-sm"
             >
               Open Full View →
@@ -114,7 +114,7 @@ export default function AlphaSection() {
             <h4 className="text-xl font-bold text-white mb-3">Nansen.ai Analytics</h4>
             <p className="text-gray-400 mb-6 max-w-md mx-auto">Blockchain analytics platform with on-chain insights and wallet tracking</p>
             <button
-              onClick={() => openInNewTab('https://nansen.ai/')}
+              onClick={() => openInNewTab('https://app.nansen.ai/')}
               className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg transition-colors font-medium"
             >
               Open Nansen.ai Dashboard
