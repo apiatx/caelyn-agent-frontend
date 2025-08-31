@@ -105,67 +105,33 @@ export function EthereumSection() {
         </h3>
         
         <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden space-y-4">
-          <div className="p-6 bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20 rounded-lg">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
-                  <TrendingUp className="w-4 h-4 text-white" />
-                </div>
-                <h3 className="text-xl font-semibold text-white">DexScreener Ethereum</h3>
+          <button
+            onClick={() => openInNewTab("https://dexscreener.com/ethereum?theme=dark")}
+            className="w-full p-4 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors text-left"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                <ExternalLink className="w-4 h-4 text-white" />
               </div>
-              <button
-                onClick={() => openInNewTab("https://dexscreener.com/ethereum?theme=dark")}
-                className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-semibold px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2"
-              >
-                <ExternalLink className="w-4 h-4" />
-                Open DexScreener
-              </button>
+              <h4 className="text-green-400 font-semibold">DexScreener Ethereum</h4>
             </div>
-            <p className="text-crypto-silver mb-4">
-              Live trending Ethereum tokens and pair analytics with real-time charts and data.
-            </p>
-            <div className="bg-black/20 rounded-lg p-4 border border-green-500/20">
-              <p className="text-sm text-crypto-silver">
-                🔥 Real-time trending tokens on Ethereum network
-                <br />
-                📊 Live price charts and trading pairs
-                <br />
-                📈 Volume, liquidity, and market cap data
-              </p>
-            </div>
-          </div>
+            <p className="text-gray-400 text-sm">Live trending Ethereum tokens and pair analytics with real-time charts</p>
+          </button>
           
           {/* Birdeye Ethereum */}
           <div className="border-t border-crypto-silver/20 pt-4 px-4 pb-4">
-            <div className="p-6 bg-gradient-to-r from-orange-500/10 to-yellow-500/10 border border-orange-500/20 rounded-lg">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-yellow-500 rounded-full flex items-center justify-center">
-                    <span className="text-white font-bold text-sm">🐦</span>
-                  </div>
-                  <h3 className="text-xl font-semibold text-white">Birdeye Ethereum</h3>
+            <button
+              onClick={() => openInNewTab("https://birdeye.so/ethereum")}
+              className="w-full p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors text-left"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
+                  <ExternalLink className="w-4 h-4 text-white" />
                 </div>
-                <button
-                  onClick={() => openInNewTab("https://birdeye.so/ethereum")}
-                  className="bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white font-semibold px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  Open Birdeye
-                </button>
+                <h4 className="text-orange-400 font-semibold">Birdeye Ethereum</h4>
               </div>
-              <p className="text-crypto-silver mb-4">
-                Comprehensive Ethereum token analytics with advanced charts and market insights.
-              </p>
-              <div className="bg-black/20 rounded-lg p-4 border border-orange-500/20">
-                <p className="text-sm text-crypto-silver">
-                  🔍 Advanced token search and analytics
-                  <br />
-                  📊 Professional trading charts and data
-                  <br />
-                  💎 Portfolio tracking and market research
-                </p>
-              </div>
-            </div>
+              <p className="text-gray-400 text-sm">Comprehensive Ethereum token analytics with advanced charts and market insights</p>
+            </button>
           </div>
           
           {/* 30 Day Trending on OpenSea */}
