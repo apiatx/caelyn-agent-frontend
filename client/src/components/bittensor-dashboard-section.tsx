@@ -25,7 +25,7 @@ export default function BittensorDashboardSection() {
 
       <div className="grid grid-cols-1 gap-6">
         {/* TaoStats Integration */}
-        <GlassCard className="p-6">
+        <div>
           <div className="flex justify-end mb-3">
             <a
               {...getSecureLinkProps('https://taostats.io/')}
@@ -35,23 +35,20 @@ export default function BittensorDashboardSection() {
             </a>
           </div>
           
-          <div className="relative w-full">
+          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
             <iframe
               {...getSecureIframeProps('https://taostats.io/', 'TaoStats')}
-              className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+              className="w-full h-[600px] border-0"
               style={{
                 background: 'transparent',
                 colorScheme: 'dark'
               }}
             />
-            <div className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
-              Live Bittensor Data
-            </div>
           </div>
-        </GlassCard>
+        </div>
 
         {/* Backprop Finance */}
-        <GlassCard className="p-6">
+        <div>
           <div className="flex justify-end mb-3">
             <a
               href="https://backprop.finance/screener/bubbles"
@@ -63,10 +60,10 @@ export default function BittensorDashboardSection() {
             </a>
           </div>
           
-          <div className="relative w-full">
+          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
             <iframe
               src="https://backprop.finance/screener/bubbles"
-              className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+              className="w-full h-[600px] border-0"
               title="Backprop Finance Screener"
               frameBorder="0"
               loading="lazy"
@@ -75,14 +72,11 @@ export default function BittensorDashboardSection() {
                 colorScheme: 'dark'
               }}
             />
-            <div className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
-              Subnet Screener
-            </div>
           </div>
-        </GlassCard>
+        </div>
 
         {/* Swordscan TensorPulse Integration */}
-        <GlassCard className="p-6">
+        <div>
           <div className="flex justify-end mb-3">
             <a
               href="https://swordscan.com/tensorpulse-mindshare"
@@ -94,10 +88,10 @@ export default function BittensorDashboardSection() {
             </a>
           </div>
           
-          <div className="relative w-full">
+          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
             <iframe
               src="https://swordscan.com/tensorpulse-mindshare"
-              className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+              className="w-full h-[600px] border-0"
               title="Swordscan TensorPulse Mindshare"
               frameBorder="0"
               loading="lazy"
@@ -106,14 +100,11 @@ export default function BittensorDashboardSection() {
                 colorScheme: 'dark'
               }}
             />
-            <div className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
-              Live Mindshare Analytics
-            </div>
           </div>
-        </GlassCard>
+        </div>
 
         {/* TaoBot */}
-        <GlassCard className="p-6">
+        <div>
           <div className="flex justify-end mb-3">
             <a
               href="https://www.tao.bot/explore"
@@ -125,10 +116,10 @@ export default function BittensorDashboardSection() {
             </a>
           </div>
           
-          <div className="relative w-full">
+          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
             <iframe
               src="https://www.tao.bot/explore"
-              className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+              className="w-full h-[600px] border-0"
               title="TaoBot"
               frameBorder="0"
               loading="lazy"
@@ -137,14 +128,11 @@ export default function BittensorDashboardSection() {
                 colorScheme: 'dark'
               }}
             />
-            <div className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
-              τ Bot Explorer
-            </div>
           </div>
-        </GlassCard>
+        </div>
 
         {/* Top dTAO Wallets */}
-        <GlassCard className="p-6">
+        <div>
           <div className="flex justify-end mb-3">
             <a
               href="https://taomarketcap.com/blockchain/accounts"
@@ -156,10 +144,10 @@ export default function BittensorDashboardSection() {
             </a>
           </div>
           
-          <div className="relative w-full">
+          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
             <iframe
               src="https://taomarketcap.com/blockchain/accounts"
-              className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+              className="w-full h-[600px] border-0"
               title="Top dTAO Wallets"
               frameBorder="0"
               loading="lazy"
@@ -168,11 +156,8 @@ export default function BittensorDashboardSection() {
                 colorScheme: 'dark'
               }}
             />
-            <div className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
-              τ Wallet Analytics
-            </div>
           </div>
-        </GlassCard>
+        </div>
 
 
 
@@ -298,7 +283,7 @@ export default function BittensorDashboardSection() {
 
 
         {/* TaoFi Swap Integration */}
-        <GlassCard className="p-6">
+        <div>
           <div className="flex justify-end mb-3">
             <a
               href="https://www.taofi.com/swap"
@@ -310,10 +295,10 @@ export default function BittensorDashboardSection() {
             </a>
           </div>
           
-          <div className="relative w-full">
+          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
             <iframe
               src="https://www.taofi.com/swap"
-              className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+              className="w-full h-[600px] border-0"
               title="TaoFi Swap"
               frameBorder="0"
               loading="lazy"
@@ -323,11 +308,8 @@ export default function BittensorDashboardSection() {
                 colorScheme: 'dark'
               }}
             />
-            <div className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
-              τ DEX Trading
-            </div>
           </div>
-        </GlassCard>
+        </div>
       </div>
     </div>
   );
