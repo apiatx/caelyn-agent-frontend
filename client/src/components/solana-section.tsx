@@ -79,68 +79,32 @@ export default function SolanaSection() {
           </button>
         </div>
         <div className="w-full space-y-4">
-          <div className="p-6 bg-gradient-to-r from-purple-500/10 to-violet-500/10 border border-purple-500/20 rounded-lg">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-violet-500 rounded-full flex items-center justify-center">
-                  <BarChart3 className="w-4 h-4 text-white" />
-                </div>
-                <h3 className="text-xl font-semibold text-white">DexScreener</h3>
+          <button
+            onClick={() => openSecureLink("https://dexscreener.com/solana?theme=dark")}
+            className="w-full p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors text-left"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                <ExternalLink className="w-4 h-4 text-white" />
               </div>
-              <button
-                onClick={() => openSecureLink("https://dexscreener.com/solana?theme=dark")}
-                className="bg-gradient-to-r from-purple-500 to-violet-500 hover:from-purple-600 hover:to-violet-600 text-white font-semibold px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2"
-              >
-                <ExternalLink className="w-4 h-4" />
-                Open DexScreener
-              </button>
+              <h4 className="text-purple-400 font-semibold">DexScreener</h4>
             </div>
-            <p className="text-crypto-silver mb-4">
-              Live trending Solana tokens and pair analytics with real-time charts and data.
-            </p>
-            <div className="bg-black/20 rounded-lg p-4 border border-purple-500/20">
-              <p className="text-sm text-crypto-silver">
-                ⚡ Fast Solana network token tracking
-                <br />
-                📊 Real-time price charts and trading data
-                <br />
-                🚀 DEX pair analytics and volume metrics
-              </p>
-            </div>
-          </div>
+            <p className="text-gray-400 text-sm">Live trending Solana tokens and pair analytics with real-time charts</p>
+          </button>
           
           {/* Birdeye Solana */}
-          <div className="border-t border-crypto-silver/20 pt-4">
-            <div className="p-6 bg-gradient-to-r from-orange-500/10 to-yellow-500/10 border border-orange-500/20 rounded-lg mb-4">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-yellow-500 rounded-full flex items-center justify-center">
-                    <span className="text-white font-bold text-sm">🐦</span>
-                  </div>
-                  <h3 className="text-xl font-semibold text-white">Birdeye</h3>
-                </div>
-                <button
-                  onClick={() => openSecureLink("https://birdeye.so/solana")}
-                  className="bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white font-semibold px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  Open Birdeye
-                </button>
+          <button
+            onClick={() => openSecureLink("https://birdeye.so/solana")}
+            className="w-full p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors text-left"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
+                <ExternalLink className="w-4 h-4 text-white" />
               </div>
-              <p className="text-crypto-silver mb-4">
-                Advanced Solana token analytics with comprehensive market data and research tools.
-              </p>
-              <div className="bg-black/20 rounded-lg p-4 border border-orange-500/20">
-                <p className="text-sm text-crypto-silver">
-                  ⚡ Fast Solana token analytics
-                  <br />
-                  📊 Advanced charting and market data
-                  <br />
-                  🚀 Portfolio management and insights
-                </p>
-              </div>
+              <h4 className="text-orange-400 font-semibold">Birdeye</h4>
             </div>
-          </div>
+            <p className="text-gray-400 text-sm">Advanced Solana token analytics with comprehensive market data</p>
+          </button>
           
           {/* 30 Day Trending on OpenSea */}
           <div className="border-t border-crypto-silver/20 pt-4">

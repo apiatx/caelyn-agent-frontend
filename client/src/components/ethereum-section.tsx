@@ -92,10 +92,7 @@ export function EthereumSection() {
           <div className="w-6 h-6 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
             <span className="text-white font-bold text-xs">🔥</span>
           </div>
-          Trending Ethereum Tokens
-          <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded-full border border-green-500/30">
-            LIVE TRENDING
-          </span>
+          Trending
           <SafeLink
             href="https://dexscreener.com/ethereum"
             className="ml-auto text-xs text-green-400 hover:text-green-300 transition-colors flex items-center gap-1"
