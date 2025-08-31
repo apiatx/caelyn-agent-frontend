@@ -68,7 +68,7 @@ export default function AboutPage() {
               
               {/* First Hippo Image - Between "What is CryptoHippo" and "Why It Exists" */}
               <div className="flex justify-center my-8">
-                <div className="w-32 h-32 rounded-full overflow-hidden shadow-lg border-2 border-crypto-silver/20">
+                <div className="w-32 h-32 rounded-full overflow-hidden shadow-lg border-2 border-yellow-400">
                   <img 
                     src={hippoDownload2} 
                     alt="Hippo" 
@@ -161,7 +161,7 @@ export default function AboutPage() {
 
               {/* Second Hippo Image - Above "Who It's For" */}
               <div className="flex justify-center my-10">
-                <div className="w-40 h-40 rounded-xl overflow-hidden shadow-xl border-2 border-green-500/30">
+                <div className="w-40 h-40 rounded-xl overflow-hidden shadow-xl border-2 border-yellow-400">
                   <img 
                     src={hippoLaserEyes} 
                     alt="Hippo with Laser Eyes" 
@@ -192,7 +192,7 @@ export default function AboutPage() {
 
               {/* Third Hippo Image - Above "Why This Matters" */}
               <div className="flex justify-center my-10">
-                <div className="w-36 h-36 rounded-lg overflow-hidden shadow-lg border-2 border-purple-500/30">
+                <div className="w-36 h-36 rounded-lg overflow-hidden shadow-lg border-2 border-yellow-400">
                   <img 
                     src={hippoDownload1} 
                     alt="Hippo" 
@@ -215,7 +215,7 @@ export default function AboutPage() {
 
               {/* Fourth Hippo Image - Above "The Bigger Picture" */}
               <div className="flex justify-center my-12">
-                <div className="w-40 h-40 rounded-2xl overflow-hidden shadow-xl border-3 border-blue-500/40">
+                <div className="w-40 h-40 rounded-2xl overflow-hidden shadow-xl border-2 border-yellow-400">
                   <img 
                     src={hippoImages1} 
                     alt="Hippo" 
@@ -238,7 +238,7 @@ export default function AboutPage() {
 
               {/* Fifth Hippo Image - Above "Recommended Reading" */}
               <div className="flex justify-center my-10">
-                <div className="w-48 h-48 rounded-2xl overflow-hidden shadow-xl border-2 border-pink-500/30">
+                <div className="w-48 h-48 rounded-2xl overflow-hidden shadow-xl border-2 border-yellow-400">
                   <img 
                     src={cuteHippo} 
                     alt="Cute Hippo" 
@@ -285,7 +285,7 @@ export default function AboutPage() {
 
             {/* Fifth Hippo Image - Centered */}
             <div className="flex justify-center my-12">
-              <div className="w-44 h-44 rounded-full overflow-hidden shadow-2xl border-4 border-orange-500/40">
+              <div className="w-44 h-44 rounded-full overflow-hidden shadow-2xl border-2 border-yellow-400">
                 <img 
                   src={hippoMouthOpen} 
                   alt="Hippo" 
