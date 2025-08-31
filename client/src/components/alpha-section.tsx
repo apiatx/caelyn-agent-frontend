@@ -10,6 +10,27 @@ const GlassCard = ({ children, className = "" }: { children: React.ReactNode; cl
   </Card>
 );
 
+// Safe iframe component
+const SafeIframe = ({ src, title, className = "" }: { src: string; title: string; className?: string }) => {
+  return (
+    <div className="w-full">
+      <iframe
+        src={src}
+        title={title}
+        className={`w-full h-[600px] rounded-lg border border-crypto-silver/20 ${className}`}
+        frameBorder="0"
+        loading="lazy"
+        sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation-by-user-activation"
+        referrerPolicy="strict-origin-when-cross-origin"
+        style={{
+          background: '#000000',
+          colorScheme: 'dark'
+        }}
+      />
+    </div>
+  );
+};
+
 interface SafeLinkProps {
   href: string;
   children: React.ReactNode;
@@ -64,6 +85,14 @@ export default function AlphaSection() {
             >
               Open Full View →
             </button>
+          </div>
+          <div className="mb-6">
+            <h4 className="text-lg font-semibold text-white mb-2">Artemis Dashboard</h4>
+            <SafeIframe
+              src="https://app.artemisanalytics.com/"
+              title="Artemis Analytics Dashboard"
+              className="h-[600px]"
+            />
           </div>
         </GlassCard>
 
@@ -289,6 +318,14 @@ export default function AlphaSection() {
                 Open Full View →
               </button>
             </div>
+            <div className="mb-6">
+              <h4 className="text-lg font-semibold text-white mb-2">Alphanomics Dashboard</h4>
+              <SafeIframe
+                src="https://platform.alphanomics.io/"
+                title="Alphanomics Analytics Platform"
+                className="h-[600px]"
+              />
+            </div>
           </div>
         </GlassCard>
 
@@ -419,11 +456,19 @@ export default function AlphaSection() {
               </Badge>
             </div>
             <button
-              onClick={() => openInNewTab('https://wachxbt.com/')}
+              onClick={() => openInNewTab('https://wach.ai/')}
               className="text-yellow-400 hover:text-yellow-300 text-sm"
             >
               Open in New Tab →
             </button>
+          </div>
+          <div className="mb-6">
+            <h4 className="text-lg font-semibold text-white mb-2">WachAI Chat</h4>
+            <SafeIframe
+              src="https://wach.ai/"
+              title="WachAI Chat Interface"
+              className="h-[500px]"
+            />
           </div>
         </GlassCard>
 
@@ -500,6 +545,13 @@ export default function AlphaSection() {
             <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30">
               CAPITODAY
             </Badge>
+          </div>
+          <div className="mb-6">
+            <SafeIframe
+              src="https://capitoday.com/"
+              title="Capitoday Memecoins Platform"
+              className="h-[600px]"
+            />
           </div>
         </GlassCard>
 
