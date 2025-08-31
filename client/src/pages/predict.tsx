@@ -19,15 +19,8 @@ export default function PredictPage() {
         <div className="max-w-[95vw] mx-auto px-2 sm:px-3">
           <div className="flex justify-between items-center py-3 lg:py-4">
             <div className="flex items-center space-x-3 sm:space-x-4">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-full overflow-hidden border-2 border-orange-400 shadow-lg">
-                <img 
-                  src={diceImage}
-                  alt="Prediction Markets"
-                  className="w-full h-full object-cover"
-                />
-              </div>
               <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-white drop-shadow-lg">
-                Prediction Markets
+                Predict
               </h1>
             </div>
           </div>
@@ -36,6 +29,24 @@ export default function PredictPage() {
 
       {/* Navigation */}
       <UniversalNavigation activePage="predict" />
+
+      {/* Page Header */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="text-center">
+          <div className="flex justify-center items-center space-x-4 mb-4">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-2 border-orange-400 shadow-lg">
+              <img 
+                src={diceImage}
+                alt="Prediction Markets"
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white drop-shadow-lg">
+              Prediction Markets
+            </h1>
+          </div>
+        </div>
+      </div>
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
