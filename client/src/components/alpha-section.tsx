@@ -117,34 +117,22 @@ export default function AlphaSection() {
 
           {/* Messari.io */}
           <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <div className="w-5 h-5 bg-orange-600 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold text-xs">M</span>
-                </div>
-                <h4 className="text-white font-medium">Messari.io Research</h4>
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-5 h-5 bg-orange-600 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-xs">M</span>
               </div>
-              <button
-                onClick={() => openInNewTab('https://messari.io/')}
-                className="text-orange-400 hover:text-orange-300 text-xs sm:text-sm flex items-center gap-1"
-              >
-                <ExternalLink className="w-3 h-3" />
-                Open Full View
-              </button>
+              <h4 className="text-white font-medium">Messari.io Research</h4>
             </div>
-            <div className="p-8 text-center bg-gradient-to-b from-slate-900/20 to-slate-900/40 rounded-lg border border-crypto-silver/20">
-              <div className="w-16 h-16 bg-orange-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <BarChart3 className="w-8 h-8 text-white" />
+            <button
+              onClick={() => openInNewTab('https://messari.io/')}
+              className="w-full p-6 text-center bg-gradient-to-b from-orange-600/10 to-orange-700/10 hover:from-orange-600/20 hover:to-orange-700/20 border border-orange-600/20 hover:border-orange-500/40 rounded-lg transition-all duration-300 group"
+            >
+              <div className="w-12 h-12 bg-orange-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                <BarChart3 className="w-6 h-6 text-white" />
               </div>
-              <h4 className="text-xl font-bold text-white mb-3">Crypto Intelligence Platform</h4>
-              <p className="text-gray-400 mb-6 max-w-md mx-auto">Research reports, market data, and institutional-grade analysis</p>
-              <button
-                onClick={() => openInNewTab('https://messari.io/')}
-                className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded-lg transition-colors font-medium"
-              >
-                Open Messari.io Platform
-              </button>
-            </div>
+              <h4 className="text-lg font-bold text-white group-hover:text-orange-300 mb-2">Crypto Intelligence Platform</h4>
+              <p className="text-gray-400 group-hover:text-gray-300 text-sm max-w-md mx-auto">Research reports, market data, and institutional-grade analysis</p>
+            </button>
           </div>
 
           {/* Inspect Tools */}
@@ -199,34 +187,22 @@ export default function AlphaSection() {
 
           {/* Nansen.ai */}
           <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <div className="w-5 h-5 bg-purple-600 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold text-xs">N</span>
-                </div>
-                <h4 className="text-white font-medium">Nansen.ai Analytics</h4>
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-5 h-5 bg-purple-600 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-xs">N</span>
               </div>
-              <button
-                onClick={() => openInNewTab('https://app.nansen.ai/')}
-                className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm flex items-center gap-1"
-              >
-                <ExternalLink className="w-3 h-3" />
-                Open Full View
-              </button>
+              <h4 className="text-white font-medium">Nansen.ai Analytics</h4>
             </div>
-            <div className="p-8 text-center bg-gradient-to-b from-slate-900/20 to-slate-900/40 rounded-lg border border-crypto-silver/20">
-              <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <BarChart3 className="w-8 h-8 text-white" />
+            <button
+              onClick={() => openInNewTab('https://app.nansen.ai/')}
+              className="w-full p-6 text-center bg-gradient-to-b from-purple-600/10 to-purple-700/10 hover:from-purple-600/20 hover:to-purple-700/20 border border-purple-600/20 hover:border-purple-500/40 rounded-lg transition-all duration-300 group"
+            >
+              <div className="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                <BarChart3 className="w-6 h-6 text-white" />
               </div>
-              <h4 className="text-xl font-bold text-white mb-3">Blockchain Analytics Platform</h4>
-              <p className="text-gray-400 mb-6 max-w-md mx-auto">On-chain insights and wallet tracking analytics</p>
-              <button
-                onClick={() => openInNewTab('https://app.nansen.ai/')}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg transition-colors font-medium"
-              >
-                Open Nansen.ai Dashboard
-              </button>
-            </div>
+              <h4 className="text-lg font-bold text-white group-hover:text-purple-300 mb-2">Blockchain Analytics Platform</h4>
+              <p className="text-gray-400 group-hover:text-gray-300 text-sm max-w-md mx-auto">On-chain insights and wallet tracking analytics</p>
+            </button>
           </div>
 
           {/* Signal */}
