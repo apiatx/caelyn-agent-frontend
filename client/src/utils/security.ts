@@ -63,6 +63,8 @@ const TRUSTED_DOMAINS = [
   'zapper.xyz',
   'wach.ai',
   'chatgpt.com',
+  'chat.openai.com',
+  'substack.com',
   'bubblemaps.io',
   'kolytics.com',
   'kaito.ai',
