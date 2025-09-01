@@ -337,12 +337,21 @@ export default function CryptoStocksSection() {
               LIQUIDITY
             </Badge>
           </div>
-          <button
-            onClick={() => openInNewTab('https://www.tradingview.com/chart/e5l95XgZ/')}
-            className="text-indigo-400 hover:text-indigo-300 text-xs sm:text-sm"
-          >
-            Open in New Tab →
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => openInNewTab('https://www.tradingview.com/script/34U4rcdC/')}
+              className="text-indigo-400 hover:text-indigo-300 text-xs sm:text-sm flex items-center gap-1"
+            >
+              M2 / BTC <ExternalLink className="w-3 h-3" />
+            </button>
+            <span className="text-crypto-silver text-xs">|</span>
+            <button
+              onClick={() => openInNewTab('https://www.tradingview.com/chart/e5l95XgZ/')}
+              className="text-indigo-400 hover:text-indigo-300 text-xs sm:text-sm"
+            >
+              Open in New Tab →
+            </button>
+          </div>
         </div>
 
         <div className="w-full">
