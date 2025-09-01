@@ -68,13 +68,8 @@ export default function AlphaSection() {
         <p className="text-crypto-silver">Comprehensive blockchain data and intelligence</p>
       </div>
 
-      {/* Onchain Macro Section */}
+      {/* Macro Analytics */}
       <div className="space-y-8">
-        <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold text-white mb-2">Macro</h2>
-          <p className="text-crypto-silver">High-level blockchain analytics and market intelligence</p>
-        </div>
-
         {/* Macro Analytics */}
         <GlassCard className="p-3 sm:p-4 lg:p-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
@@ -84,7 +79,7 @@ export default function AlphaSection() {
               </div>
               <h3 className="text-lg sm:text-xl font-semibold text-white">Macro Analytics</h3>
               <Badge className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white border-crypto-silver/30 text-xs">
-                CORPORATE
+                High-level blockchain analytics and market intelligence
               </Badge>
             </div>
           </div>
