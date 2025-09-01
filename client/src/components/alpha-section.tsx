@@ -437,7 +437,7 @@ export default function AlphaSection() {
               <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
                 <span className="text-white font-bold text-sm">𝕏</span>
               </div>
-              <h4 className="text-lg font-semibold text-white">X Accounts</h4>
+              <h4 className="text-lg font-semibold text-white">X</h4>
               <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
                 PERSONAL PICKS
               </Badge>
@@ -469,7 +469,7 @@ export default function AlphaSection() {
           {/* Social Analytics */}
           <div>
             <div className="flex items-center gap-2 mb-6">
-              <h4 className="text-lg font-semibold text-white">Social Analytics</h4>
+              <h4 className="text-lg font-semibold text-white">Analytics</h4>
               <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
                 AI POWERED
               </Badge>
