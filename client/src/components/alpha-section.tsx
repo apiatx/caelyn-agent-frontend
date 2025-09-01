@@ -185,65 +185,39 @@ export default function AlphaSection() {
             </div>
           </div>
 
-          {/* DexCheck */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold text-xs">D</span>
-                </div>
-                <h4 className="text-white font-medium">DexCheck Analytics</h4>
-              </div>
-              <button
-                onClick={() => openInNewTab('https://dexcheck.ai/app')}
-                className="text-green-400 hover:text-green-300 text-xs sm:text-sm flex items-center gap-1"
-              >
-                <ExternalLink className="w-3 h-3" />
-                Open Full View
-              </button>
-            </div>
-            <div className="mb-6">
-              <SafeIframe
-                src="https://dexcheck.ai/app"
-                title="DexCheck Analytics Platform"
-                className="h-[600px]"
-              />
-            </div>
-          </div>
-
-          {/* Nansen.ai */}
-          <div className="mb-8">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-5 h-5 bg-purple-600 rounded-full flex items-center justify-center">
-                <span className="text-white font-bold text-xs">N</span>
-              </div>
-              <h4 className="text-white font-medium">Nansen.ai Analytics</h4>
-            </div>
-            <button
-              onClick={() => openInNewTab('https://app.nansen.ai/')}
-              className="w-full p-6 text-center bg-gradient-to-b from-purple-600/10 to-purple-700/10 hover:from-purple-600/20 hover:to-purple-700/20 border border-purple-600/20 hover:border-purple-500/40 rounded-lg transition-all duration-300 group"
-            >
-              <div className="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-3">
-                <BarChart3 className="w-6 h-6 text-white" />
-              </div>
-              <h4 className="text-lg font-bold text-white group-hover:text-purple-300 mb-2">Blockchain Analytics Platform</h4>
-              <p className="text-gray-400 group-hover:text-gray-300 text-sm max-w-md mx-auto">On-chain insights and wallet tracking analytics</p>
-            </button>
-          </div>
-
           {/* Signal */}
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-4">
               <div className="w-5 h-5 bg-indigo-500 rounded-full flex items-center justify-center">
                 <span className="text-white font-bold text-xs">S</span>
               </div>
-              <h4 className="text-white font-medium">Signal Analytics</h4>
+              <h4 className="text-white font-medium">Signal</h4>
               <Badge className="bg-indigo-500/20 text-indigo-400 border-indigo-500/30 text-xs">
                 MULTI-CHAIN
               </Badge>
             </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+            <SafeLink
+              href='https://dexcheck.ai/app'
+              className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <h4 className="text-green-400 font-semibold">DexCheck</h4>
+              </div>
+              <p className="text-gray-400 text-sm">Multi-chain analytics platform</p>
+            </SafeLink>
+
+            <SafeLink
+              href='https://app.nansen.ai/'
+              className="p-4 bg-purple-600/10 border border-purple-600/20 rounded-lg hover:bg-purple-600/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <h4 className="text-purple-400 font-semibold">Nansen.ai</h4>
+              </div>
+              <p className="text-gray-400 text-sm">On-chain insights and wallet tracking</p>
+            </SafeLink>
+
             <SafeLink
               href='https://mindshare.elfi.io/'
               className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
