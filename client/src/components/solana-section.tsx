@@ -27,20 +27,14 @@ export default function SolanaSection() {
 
       {/* Solana Price Chart */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <h3 className="text-lg font-semibold text-purple-400">Solana Price Chart</h3>
-            <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/30">
-              SOL
-            </Badge>
-            <button
-              onClick={() => openSecureLink('https://coinmarketcap.com/currencies/solana/')}
-              className="flex items-center gap-1 text-purple-400 hover:text-purple-300 text-xs transition-colors"
-            >
-              <span>CoinMarketCap</span>
-              <ExternalLink className="w-3 h-3" />
-            </button>
-          </div>
+        <div className="flex items-center justify-end gap-4">
+          <button
+            onClick={() => openSecureLink('https://coinmarketcap.com/currencies/solana/')}
+            className="flex items-center gap-1 text-purple-400 hover:text-purple-300 text-xs transition-colors"
+          >
+            <span>CoinMarketCap</span>
+            <ExternalLink className="w-3 h-3" />
+          </button>
           <button
             onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=BINANCE%3ASOLUSDT')}
             className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm"

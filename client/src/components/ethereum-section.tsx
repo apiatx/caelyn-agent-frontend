@@ -53,17 +53,10 @@ export function EthereumSection() {
       </div>
       {/* Ethereum Price Chart */}
       <div>
-        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-          <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-            <span className="text-white font-bold text-xs">ETH</span>
-          </div>
-          Ethereum Price Chart
-          <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full border border-blue-500/30">
-            LIVE CHART
-          </span>
+        <div className="flex items-center justify-end gap-4 mb-4">
           <SafeLink
             href="https://coinmarketcap.com/currencies/ethereum/"
-            className="ml-auto text-xs text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-1"
+            className="text-xs text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-1"
           >
             CoinMarketCap <ExternalLink className="w-3 h-3" />
           </SafeLink>
@@ -73,7 +66,7 @@ export function EthereumSection() {
           >
             Open Full Chart <ExternalLink className="w-3 h-3" />
           </SafeLink>
-        </h3>
+        </div>
         
         <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
           <iframe
