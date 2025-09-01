@@ -711,6 +711,35 @@ export default function SolanaSection() {
           </div>
         </div>
       </GlassCard>
+
+      {/* Ecosystem */}
+      <GlassCard className="p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full flex items-center justify-center">
+            <span className="text-white text-xs font-bold">E</span>
+          </div>
+          <h3 className="text-xl font-semibold text-white">Ecosystem</h3>
+          <span className="px-2 py-1 bg-purple-500/20 text-purple-400 text-xs rounded-full font-medium">
+            ECOSYSTEM GUIDE
+          </span>
+        </div>
+        <div className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg">
+          <button
+            onClick={() => openSecureLink('https://academy.swissborg.com/en/learn/solana-ecosystem')}
+            className="w-full text-left hover:bg-purple-500/20 transition-colors rounded-lg p-3"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-xs">S</span>
+              </div>
+              <div>
+                <p className="text-purple-400 font-medium">Solana Ecosystem</p>
+                <p className="text-sm text-gray-400">SwissBorg Academy ecosystem guide</p>
+              </div>
+            </div>
+          </button>
+        </div>
+      </GlassCard>
     </div>
   );
 }

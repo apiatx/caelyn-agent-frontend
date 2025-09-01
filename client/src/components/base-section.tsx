@@ -818,6 +818,29 @@ export default function BaseSection() {
           title="BlockCreeper Explorer"
         />
       </GlassCard>
+
+      {/* Ecosystem */}
+      <GlassCard className="p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
+            <span className="text-white text-xs font-bold">E</span>
+          </div>
+          <h3 className="text-xl font-semibold text-white">Ecosystem</h3>
+          <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs rounded-full font-medium">
+            ECOSYSTEM GUIDE
+          </span>
+          <SafeLink 
+            href="https://www.base.org/ecosystem"
+            className="ml-auto text-blue-400 hover:text-blue-300 text-xs"
+          >
+            Open in New Tab →
+          </SafeLink>
+        </div>
+        <SafeIframe 
+          src="https://www.base.org/ecosystem"
+          title="Base Ecosystem"
+        />
+      </GlassCard>
     </div>
   );
 }

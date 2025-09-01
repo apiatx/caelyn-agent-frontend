@@ -271,6 +271,27 @@ export function EthereumSection() {
         </div>
       </div>
 
+      {/* Ecosystem */}
+      <div className="mt-6">
+        <h4 className="text-md font-semibold text-white mb-3">Ecosystem</h4>
+        <div className="p-4 bg-gray-500/10 border border-gray-500/20 rounded-lg">
+          <SafeLink
+            href="https://www.ethereum-ecosystem.com/"
+            className="block text-gray-400 hover:text-gray-300 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gray-500 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-xs">E</span>
+              </div>
+              <div>
+                <p className="text-white font-medium">Ethereum Ecosystem</p>
+                <p className="text-sm text-gray-400">Comprehensive ecosystem guide</p>
+              </div>
+            </div>
+          </SafeLink>
+        </div>
+      </div>
+
     </div>
   );
 }
