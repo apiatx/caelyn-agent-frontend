@@ -88,7 +88,7 @@ export default function AlphaSection() {
                 <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
                   <span className="text-white font-bold text-xs">A</span>
                 </div>
-                <h4 className="text-white font-medium">Artemis Analytics</h4>
+                <h4 className="text-white font-medium">Artemis</h4>
               </div>
               <button
                 onClick={() => openInNewTab('https://app.artemisanalytics.com/')}
@@ -121,7 +121,7 @@ export default function AlphaSection() {
               <div className="w-5 h-5 bg-orange-600 rounded-full flex items-center justify-center">
                 <span className="text-white font-bold text-xs">M</span>
               </div>
-              <h4 className="text-white font-medium">Messari.io Research</h4>
+              <h4 className="text-white font-medium">Messari.io</h4>
             </div>
             <button
               onClick={() => openInNewTab('https://messari.io/')}
@@ -141,7 +141,7 @@ export default function AlphaSection() {
               <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
                 <span className="text-white font-bold text-xs">I</span>
               </div>
-              <h4 className="text-white font-medium">Inspect Tools</h4>
+              <h4 className="text-white font-medium">Inspect</h4>
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
