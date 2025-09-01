@@ -75,13 +75,14 @@ export default function AlphaSection() {
           <p className="text-crypto-silver">High-level blockchain analytics and market intelligence</p>
         </div>
 
-        {/* Artemis */}
-        <GlassCard className="p-0">
+        {/* Combined Macro Analytics Section */}
+        <GlassCard className="p-0 overflow-hidden bg-gradient-to-b from-black/90 to-black/95">
+          {/* Artemis */}
           <div className="h-[900px] w-full">
             <iframe
               src="https://app.artemisanalytics.com/"
               title="Artemis Analytics Dashboard"
-              className="w-full h-full border-0 rounded-lg"
+              className="w-full h-full border-0"
               frameBorder="0"
               loading="lazy"
               sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation-by-user-activation"
@@ -92,90 +93,90 @@ export default function AlphaSection() {
               }}
             />
           </div>
-        </GlassCard>
 
-        {/* Messari.io */}
-        <GlassCard className="p-0 overflow-hidden">
-          <div className="flex items-center justify-between p-4 bg-gradient-to-r from-slate-900/30 to-slate-800/30">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-orange-600 rounded-full flex items-center justify-center">
-                <span className="text-white font-bold text-sm">M</span>
+          {/* Messari.io */}
+          <div className="bg-gradient-to-b from-black/90 to-black/95">
+            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-slate-900/30 to-slate-800/30">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-orange-600 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">M</span>
+                </div>
+                <h3 className="text-lg font-semibold text-white">Messari.io</h3>
+                <Badge className="bg-orange-500/20 text-orange-300 border-orange-400/30 text-xs">
+                  RESEARCH
+                </Badge>
               </div>
-              <h3 className="text-lg font-semibold text-white">Messari.io</h3>
-              <Badge className="bg-orange-500/20 text-orange-300 border-orange-400/30 text-xs">
-                RESEARCH
+              <button
+                onClick={() => openInNewTab('https://messari.io/')}
+                className="text-orange-300 hover:text-orange-200 text-sm"
+              >
+                Open Full View →
+              </button>
+            </div>
+            <div className="p-8 text-center bg-gradient-to-b from-slate-900/20 to-slate-900/40">
+              <div className="w-16 h-16 bg-orange-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <BarChart3 className="w-8 h-8 text-white" />
+              </div>
+              <h4 className="text-xl font-bold text-white mb-3">Messari.io Research</h4>
+              <p className="text-gray-400 mb-6 max-w-md mx-auto">Crypto intelligence platform with research reports, market data, and institutional-grade analysis</p>
+              <button
+                onClick={() => openInNewTab('https://messari.io/')}
+                className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded-lg transition-colors font-medium"
+              >
+                Open Messari.io Platform
+              </button>
+            </div>
+          </div>
+
+          {/* Inspect */}
+          <div className="p-6 bg-gradient-to-b from-black/90 to-black/95">
+            <div className="flex items-center gap-2 mb-6">
+              <h3 className="text-xl font-semibold text-white">Inspect</h3>
+              <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+                TOOLS
               </Badge>
             </div>
-            <button
-              onClick={() => openInNewTab('https://messari.io/')}
-              className="text-orange-300 hover:text-orange-200 text-sm"
-            >
-              Open Full View →
-            </button>
-          </div>
-          <div className="p-8 text-center bg-gradient-to-b from-slate-900/20 to-slate-900/40">
-            <div className="w-16 h-16 bg-orange-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <BarChart3 className="w-8 h-8 text-white" />
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <SafeLink
+                href='https://chainspect.app/dashboard'
+                className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold">C</span>
+                  </div>
+                  <h4 className="text-blue-400 font-semibold">Chainspect</h4>
+                </div>
+                <p className="text-gray-400 text-sm">Chain scalability and decentralization analytics</p>
+              </SafeLink>
+
+              <SafeLink
+                href='https://tokenterminal.com/explorer'
+                className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold">T</span>
+                  </div>
+                  <h4 className="text-purple-400 font-semibold">Token Terminal</h4>
+                </div>
+                <p className="text-gray-400 text-sm">Protocol metrics explorer</p>
+              </SafeLink>
+
+              <SafeLink
+                href='https://www.theblock.co/data/decentralized-finance/dex-non-custodial'
+                className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold">D</span>
+                  </div>
+                  <h4 className="text-orange-400 font-semibold">The Block: DEX Metrics</h4>
+                </div>
+                <p className="text-gray-400 text-sm">Comprehensive DEX analytics and metrics</p>
+              </SafeLink>
             </div>
-            <h4 className="text-xl font-bold text-white mb-3">Messari.io Research</h4>
-            <p className="text-gray-400 mb-6 max-w-md mx-auto">Crypto intelligence platform with research reports, market data, and institutional-grade analysis</p>
-            <button
-              onClick={() => openInNewTab('https://messari.io/')}
-              className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded-lg transition-colors font-medium"
-            >
-              Open Messari.io Platform
-            </button>
-          </div>
-        </GlassCard>
-
-        {/* Inspect */}
-        <GlassCard className="p-6">
-          <div className="flex items-center gap-2 mb-6">
-            <h3 className="text-xl font-semibold text-white">Inspect</h3>
-            <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
-              TOOLS
-            </Badge>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <SafeLink
-              href='https://chainspect.app/dashboard'
-              className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold">C</span>
-                </div>
-                <h4 className="text-blue-400 font-semibold">Chainspect</h4>
-              </div>
-              <p className="text-gray-400 text-sm">Chain scalability and decentralization analytics</p>
-            </SafeLink>
-
-            <SafeLink
-              href='https://tokenterminal.com/explorer'
-              className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold">T</span>
-                </div>
-                <h4 className="text-purple-400 font-semibold">Token Terminal</h4>
-              </div>
-              <p className="text-gray-400 text-sm">Protocol metrics explorer</p>
-            </SafeLink>
-
-            <SafeLink
-              href='https://www.theblock.co/data/decentralized-finance/dex-non-custodial'
-              className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold">D</span>
-                </div>
-                <h4 className="text-orange-400 font-semibold">The Block: DEX Metrics</h4>
-              </div>
-              <p className="text-gray-400 text-sm">Comprehensive DEX analytics and metrics</p>
-            </SafeLink>
           </div>
         </GlassCard>
       </div>
