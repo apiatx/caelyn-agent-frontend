@@ -276,6 +276,36 @@ export default function TopChartsPage() {
             </div>
           </div>
 
+          {/* M2 Global Liquidity Index Chart */}
+          <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-indigo-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-xs">M2</span>
+                </div>
+                <h3 className="text-lg sm:text-xl font-semibold text-white">M2 Global Liquidity Index</h3>
+                <Badge className="bg-indigo-500/20 text-indigo-400 border-indigo-500/30 text-xs">
+                  LIQUIDITY
+                </Badge>
+              </div>
+              <button
+                onClick={() => openSecureLink('https://www.tradingview.com/chart/e5l95XgZ/')}
+                className="text-indigo-400 hover:text-indigo-300 text-xs sm:text-sm sm:ml-auto"
+              >
+                Open in New Tab →
+              </button>
+            </div>
+            <div className="w-full">
+              <iframe
+                src="https://www.tradingview.com/chart/e5l95XgZ/"
+                className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
+                title="M2 Global Liquidity Index Chart"
+                frameBorder="0"
+                scrolling="no"
+              />
+            </div>
+          </div>
+
           {/* OTHERS Dominance Chart */}
           <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
