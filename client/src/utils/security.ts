@@ -72,6 +72,7 @@ const TRUSTED_DOMAINS = [
   'mindshare.elfi.ai',
   'mindshare.elfi.io',
   'dexcheck.ai',
+  'birdeye.so',
   'velvet.capital',
   'dapp.velvet.capital',
   'cointelegraph.com',

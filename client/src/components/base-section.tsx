@@ -223,10 +223,10 @@ export default function BaseSection() {
                   <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-yellow-500 rounded-full flex items-center justify-center">
                     <span className="text-white font-bold text-sm">🐦</span>
                   </div>
-                  <h3 className="text-xl font-semibold text-white">Birdeye Base</h3>
+                  <h3 className="text-xl font-semibold text-white">Birdeye</h3>
                 </div>
                 <button
-                  onClick={() => openInNewTab("https://birdeye.so/base")}
+                  onClick={() => openInNewTab("https://birdeye.so/base/find-gems")}
                   className="bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white font-semibold px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2"
                 >
                   <ExternalLink className="w-4 h-4" />
