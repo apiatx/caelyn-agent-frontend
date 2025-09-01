@@ -56,7 +56,7 @@ export function EthereumSection() {
         <div className="flex items-center justify-end gap-4 mb-4">
           <SafeLink
             href="https://coinmarketcap.com/currencies/ethereum/"
-            className="text-xs text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-1"
+            className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
           >
             CoinMarketCap <ExternalLink className="w-3 h-3" />
           </SafeLink>
