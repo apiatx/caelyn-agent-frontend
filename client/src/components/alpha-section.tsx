@@ -270,6 +270,26 @@ export default function AlphaSection() {
               </div>
               <p className="text-gray-400 text-sm">Trending Altcoin Timeframes</p>
             </SafeLink>
+
+            <SafeLink
+              href='https://coinmarketcap.com/leaderboard/'
+              className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <h4 className="text-blue-400 font-semibold">CMC Leaderboard</h4>
+              </div>
+              <p className="text-gray-400 text-sm">Market Rankings</p>
+            </SafeLink>
+
+            <SafeLink
+              href='https://www.coingecko.com/en/chains'
+              className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <h4 className="text-green-400 font-semibold">CoinGecko Chains</h4>
+              </div>
+              <p className="text-gray-400 text-sm">Blockchain Analytics</p>
+            </SafeLink>
           </div>
 
             <div className="mb-6">
