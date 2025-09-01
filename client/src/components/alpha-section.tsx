@@ -451,10 +451,19 @@ export default function AlphaSection() {
                 'cryptorinweb3', 'OverkillTrading', 'jkrdoc', 'chironchain', 'goodvimonly',
                 'Agent_rsch', 'dontbuytops', 'bruhbearr', 'MetaverseRanger', 'Shake51_',
                 '0x_tesseract', 'TheEuroSniper', 'CryptoThannos', 'stacy_muur', 'martypartymusic'
-              ].map((account) => (
+              ].map((account) => {
+                // Special mapping for accounts with different URLs
+                const getAccountUrl = (accountName: string) => {
+                  if (accountName === 'Market Watcher') {
+                    return 'https://x.com/watchingmarkets';
+                  }
+                  return `https://x.com/${accountName}`;
+                };
+
+                return (
                 <SafeLink
                   key={account}
-                  href={`https://x.com/${account}`}
+                  href={getAccountUrl(account)}
                   className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
                 >
                   <div className="flex items-center gap-2">
@@ -462,7 +471,8 @@ export default function AlphaSection() {
                     <span className="text-blue-400 font-semibold text-sm">{account}</span>
                   </div>
                 </SafeLink>
-              ))}
+                );
+              })}
             </div>
           </div>
 
