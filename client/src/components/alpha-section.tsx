@@ -185,6 +185,32 @@ export default function AlphaSection() {
             </div>
           </div>
 
+          {/* DexCheck */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-xs">D</span>
+                </div>
+                <h4 className="text-white font-medium">DexCheck Analytics</h4>
+              </div>
+              <button
+                onClick={() => openInNewTab('https://dexcheck.ai/app')}
+                className="text-green-400 hover:text-green-300 text-xs sm:text-sm flex items-center gap-1"
+              >
+                <ExternalLink className="w-3 h-3" />
+                Open Full View
+              </button>
+            </div>
+            <div className="mb-6">
+              <SafeIframe
+                src="https://dexcheck.ai/app"
+                title="DexCheck Analytics Platform"
+                className="h-[600px]"
+              />
+            </div>
+          </div>
+
           {/* Nansen.ai */}
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-4">
