@@ -77,10 +77,7 @@ export default function AlphaSection() {
               <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
                 <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
               </div>
-              <h3 className="text-lg sm:text-xl font-semibold text-white">Macro Analytics</h3>
-              <Badge className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white border-crypto-silver/30 text-xs">
-                High-level blockchain analytics and market intelligence
-              </Badge>
+              <h3 className="text-2xl sm:text-3xl font-bold text-white">Macro</h3>
             </div>
           </div>
 
@@ -196,10 +193,7 @@ export default function AlphaSection() {
               <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full flex items-center justify-center">
                 <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
               </div>
-              <h3 className="text-lg sm:text-xl font-semibold text-white">Micro Analytics</h3>
-              <Badge className="bg-gradient-to-r from-purple-500/20 to-indigo-500/20 text-white border-crypto-silver/30 text-xs">
-                Detailed analytics and specialized tools
-              </Badge>
+              <h3 className="text-xl sm:text-2xl font-semibold text-white">Micro</h3>
             </div>
           </div>
 
