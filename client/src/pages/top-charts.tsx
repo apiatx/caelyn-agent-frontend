@@ -155,13 +155,6 @@ export default function TopChartsPage() {
                   </button>
                   <span className="text-crypto-silver text-xs">|</span>
                   <button
-                    onClick={() => openSecureLink('https://www.tradingview.com/chart/e5l95XgZ/')}
-                    className="text-orange-400 hover:text-orange-300 text-xs sm:text-sm flex items-center gap-1"
-                  >
-                    Chart <ExternalLink className="w-3 h-3" />
-                  </button>
-                  <span className="text-crypto-silver text-xs">|</span>
-                  <button
                     onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=BTCUSD')}
                     className="text-orange-400 hover:text-orange-300 text-xs sm:text-sm"
                   >
