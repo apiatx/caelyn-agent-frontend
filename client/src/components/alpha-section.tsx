@@ -188,61 +188,55 @@ export default function AlphaSection() {
         </GlassCard>
       </div>
 
-      {/* Micro Analytics */}
+      {/* Onchain Micro Section */}
       <div className="space-y-8 mt-12">
-        <GlassCard className="p-3 sm:p-4 lg:p-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
-            <div className="flex items-center gap-2">
-              <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full flex items-center justify-center">
-                <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+        <div className="text-center mb-8">
+          <h2 className="text-2xl font-bold text-white mb-2">Micro</h2>
+          <p className="text-crypto-silver">Detailed analytics and specialized tools</p>
+        </div>
+
+        {/* Nansen.ai */}
+        <GlassCard className="p-0 overflow-hidden">
+          <div className="flex items-center justify-between p-4 bg-gradient-to-r from-slate-900/30 to-slate-800/30">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-sm">N</span>
               </div>
-              <h3 className="text-lg sm:text-xl font-semibold text-white">Micro Analytics</h3>
-              <Badge className="bg-gradient-to-r from-purple-500/20 to-indigo-500/20 text-white border-crypto-silver/30 text-xs">
-                Detailed analytics and specialized tools
+              <h3 className="text-lg font-semibold text-white">Nansen.ai</h3>
+              <Badge className="bg-purple-500/20 text-purple-300 border-purple-400/30 text-xs">
+                ANALYTICS
               </Badge>
             </div>
+            <button
+              onClick={() => openInNewTab('https://app.nansen.ai/')}
+              className="text-purple-300 hover:text-purple-200 text-sm"
+            >
+              Open Full View →
+            </button>
           </div>
-
-          {/* Nansen.ai */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <div className="w-5 h-5 bg-purple-600 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold text-xs">N</span>
-                </div>
-                <h4 className="text-white font-medium">Nansen.ai Analytics</h4>
-              </div>
-              <button
-                onClick={() => openInNewTab('https://app.nansen.ai/')}
-                className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm flex items-center gap-1"
-              >
-                <ExternalLink className="w-3 h-3" />
-                Open Full View
-              </button>
+          <div className="p-8 text-center bg-gradient-to-b from-slate-900/20 to-slate-900/40">
+            <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <BarChart3 className="w-8 h-8 text-white" />
             </div>
-            <div className="p-8 text-center bg-gradient-to-b from-slate-900/20 to-slate-900/40 rounded-lg border border-crypto-silver/20">
-              <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <BarChart3 className="w-8 h-8 text-white" />
-              </div>
-              <h4 className="text-xl font-bold text-white mb-3">Blockchain Analytics Platform</h4>
-              <p className="text-gray-400 mb-6 max-w-md mx-auto">On-chain insights and wallet tracking</p>
-              <button
-                onClick={() => openInNewTab('https://app.nansen.ai/')}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg transition-colors font-medium"
-              >
-                Open Nansen.ai Dashboard
-              </button>
-            </div>
+            <h4 className="text-xl font-bold text-white mb-3">Nansen.ai Analytics</h4>
+            <p className="text-gray-400 mb-6 max-w-md mx-auto">Blockchain analytics platform with on-chain insights and wallet tracking</p>
+            <button
+              onClick={() => openInNewTab('https://app.nansen.ai/')}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg transition-colors font-medium"
+            >
+              Open Nansen.ai Dashboard
+            </button>
           </div>
+        </GlassCard>
 
-          {/* Signal */}
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-5 h-5 bg-indigo-500 rounded-full flex items-center justify-center">
-                <span className="text-white font-bold text-xs">S</span>
-              </div>
-              <h4 className="text-white font-medium">Signal Tools</h4>
-            </div>
+        {/* Signal */}
+        <GlassCard className="p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <h3 className="text-xl font-semibold text-white">Signal</h3>
+            <Badge className="bg-indigo-500/20 text-indigo-400 border-indigo-500/30">
+              MULTI-CHAIN
+            </Badge>
+          </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
             <SafeLink
@@ -486,7 +480,6 @@ export default function AlphaSection() {
                 </SafeLink>
               ))}
             </div>
-          </div>
           </div>
 
           {/* Social Analytics */}
