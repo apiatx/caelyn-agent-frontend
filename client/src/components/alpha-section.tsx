@@ -148,7 +148,7 @@ export default function AlphaSection() {
               <p className="text-gray-400 text-sm mb-3">Chain scalability and decentralization analytics</p>
               <button
                 onClick={() => openInNewTab('https://chainspect.app/dashboard')}
-                className="text-blue-400 hover:text-blue-300 text-sm"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors font-medium"
               >
                 Open Dashboard
               </button>
@@ -164,7 +164,7 @@ export default function AlphaSection() {
               <p className="text-gray-400 text-sm mb-3">Protocol metrics explorer</p>
               <button
                 onClick={() => openInNewTab('https://tokenterminal.com/explorer')}
-                className="text-purple-400 hover:text-purple-300 text-sm"
+                className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg transition-colors font-medium"
               >
                 Open Explorer
               </button>
@@ -180,7 +180,7 @@ export default function AlphaSection() {
               <p className="text-gray-400 text-sm mb-3">Comprehensive DEX analytics and metrics</p>
               <button
                 onClick={() => openInNewTab('https://www.theblock.co/data/decentralized-finance/dex-non-custodial')}
-                className="text-orange-400 hover:text-orange-300 text-sm"
+                className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded-lg transition-colors font-medium"
               >
                 Open Dashboard
               </button>
@@ -403,7 +403,7 @@ export default function AlphaSection() {
             </div>
             <button
               onClick={() => openInNewTab('https://wach.ai/chat')}
-              className="text-yellow-400 hover:text-yellow-300 text-sm"
+              className="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-2 rounded-lg transition-colors font-medium"
             >
               Open in New Tab →
             </button>
@@ -536,7 +536,7 @@ export default function AlphaSection() {
               <p className="text-gray-400 text-sm mb-3">Comprehensive ecosystem guide</p>
               <button
                 onClick={() => openInNewTab('https://www.ethereum-ecosystem.com/')}
-                className="text-gray-400 hover:text-gray-300 text-sm"
+                className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg transition-colors font-medium"
               >
                 Explore Ethereum
               </button>
@@ -552,7 +552,7 @@ export default function AlphaSection() {
               <p className="text-gray-400 text-sm mb-3">SwissBorg Academy ecosystem guide</p>
               <button
                 onClick={() => openInNewTab('https://academy.swissborg.com/en/learn/solana-ecosystem')}
-                className="text-indigo-400 hover:text-indigo-300 text-sm"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg transition-colors font-medium"
               >
                 Explore Solana
               </button>
@@ -568,7 +568,7 @@ export default function AlphaSection() {
               <p className="text-gray-400 text-sm mb-3">Official Base ecosystem directory</p>
               <button
                 onClick={() => openInNewTab('https://www.base.org/ecosystem')}
-                className="text-cyan-400 hover:text-cyan-300 text-sm"
+                className="bg-cyan-600 hover:bg-cyan-700 text-white px-6 py-2 rounded-lg transition-colors font-medium"
               >
                 Explore Base
               </button>
@@ -586,7 +586,7 @@ export default function AlphaSection() {
               <p className="text-gray-400 text-sm mb-3">Explore the Gravity network</p>
               <button
                 onClick={() => openInNewTab('https://gravity.xyz/')}
-                className="text-emerald-400 hover:text-emerald-300 text-sm"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-lg transition-colors font-medium"
               >
                 Explore Gravity
               </button>
@@ -602,7 +602,7 @@ export default function AlphaSection() {
               <p className="text-gray-400 text-sm mb-3">Discover DApps & analytics</p>
               <button
                 onClick={() => openInNewTab('https://dappradar.com/')}
-                className="text-blue-400 hover:text-blue-300 text-sm"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors font-medium"
               >
                 Open DappRadar
               </button>
@@ -618,7 +618,7 @@ export default function AlphaSection() {
               <p className="text-gray-400 text-sm mb-3">DeFi portfolio management</p>
               <button
                 onClick={() => openInNewTab('https://zapper.xyz/')}
-                className="text-purple-400 hover:text-purple-300 text-sm"
+                className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg transition-colors font-medium"
               >
                 Open Zapper
               </button>
