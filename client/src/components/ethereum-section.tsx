@@ -161,15 +161,18 @@ export function EthereumSection() {
           </SafeLink>
         </h3>
         
-        <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden space-y-4">
-          <SafeIframe
-            src="https://l2beat.com/"
-            title="Layer 2 Analytics by L2Beat"
-            className="w-full h-[600px] border-0"
-          />
+        <div className="bg-black/20 border border-crypto-silver/20 rounded-lg p-4 space-y-6">
+          {/* L2Beat iframe */}
+          <div>
+            <SafeIframe
+              src="https://l2beat.com/"
+              title="Layer 2 Analytics by L2Beat"
+              className="w-full h-[600px] border-0 rounded-lg"
+            />
+          </div>
           
           {/* GrowThePie Analytics */}
-          <div className="border-t border-crypto-silver/20 mt-6 pt-6 px-4 pb-4">
+          <div>
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
               <div className="flex items-center gap-2">
                 <div className="w-5 h-5 sm:w-6 sm:h-6 bg-orange-500 rounded-full flex items-center justify-center">
