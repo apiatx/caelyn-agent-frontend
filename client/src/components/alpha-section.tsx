@@ -147,7 +147,7 @@ export default function AlphaSection() {
               </div>
               <p className="text-gray-400 text-sm mb-3">Chain scalability and decentralization analytics</p>
               <button
-                onClick={() => openInNewTab('https://chainspect.app/')}
+                onClick={() => openInNewTab('https://chainspect.app/dashboard')}
                 className="text-blue-400 hover:text-blue-300 text-sm"
               >
                 Open Dashboard
@@ -163,7 +163,7 @@ export default function AlphaSection() {
               </div>
               <p className="text-gray-400 text-sm mb-3">Protocol metrics explorer</p>
               <button
-                onClick={() => openInNewTab('https://tokenterminal.com/')}
+                onClick={() => openInNewTab('https://tokenterminal.com/explorer')}
                 className="text-purple-400 hover:text-purple-300 text-sm"
               >
                 Open Explorer
@@ -175,11 +175,11 @@ export default function AlphaSection() {
                 <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
                   <span className="text-white font-bold">D</span>
                 </div>
-                <h4 className="text-orange-400 font-semibold">Dune Analytics: DEX Metrics</h4>
+                <h4 className="text-orange-400 font-semibold">The Block: DEX Metrics</h4>
               </div>
               <p className="text-gray-400 text-sm mb-3">Comprehensive DEX analytics and metrics</p>
               <button
-                onClick={() => openInNewTab('https://dune.com/')}
+                onClick={() => openInNewTab('https://www.theblock.co/data/decentralized-finance/dex-non-custodial')}
                 className="text-orange-400 hover:text-orange-300 text-sm"
               >
                 Open Dashboard
