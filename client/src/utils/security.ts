@@ -61,6 +61,7 @@ const TRUSTED_DOMAINS = [
   'gravity.xyz',
   'dappradar.com',
   'zapper.xyz',
+  'wach.ai',
   'chatgpt.com',
   'bubblemaps.io',
   'kolytics.com',

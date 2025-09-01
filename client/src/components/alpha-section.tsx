@@ -402,16 +402,15 @@ export default function AlphaSection() {
               </Badge>
             </div>
             <button
-              onClick={() => openInNewTab('https://wach.ai/')}
+              onClick={() => openInNewTab('https://wach.ai/chat')}
               className="text-yellow-400 hover:text-yellow-300 text-sm"
             >
               Open in New Tab →
             </button>
           </div>
           <div className="mb-6">
-            <h4 className="text-lg font-semibold text-white mb-2">WachAI Chat</h4>
             <SafeIframe
-              src="https://wach.ai/"
+              src="https://wach.ai/chat"
               title="WachAI Chat Interface"
               className="h-[500px]"
             />
