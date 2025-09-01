@@ -526,6 +526,56 @@ export default function AlphaSection() {
             </Badge>
           </div>
           
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="p-4 bg-gray-500/10 border border-gray-500/20 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-gray-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold">E</span>
+                </div>
+                <h4 className="text-gray-400 font-semibold">Ethereum Ecosystem</h4>
+              </div>
+              <p className="text-gray-400 text-sm mb-3">Comprehensive ecosystem guide</p>
+              <button
+                onClick={() => openInNewTab('https://www.ethereum-ecosystem.com/')}
+                className="text-gray-400 hover:text-gray-300 text-sm"
+              >
+                Explore Ethereum
+              </button>
+            </div>
+
+            <div className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-indigo-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold">S</span>
+                </div>
+                <h4 className="text-indigo-400 font-semibold">Solana Ecosystem</h4>
+              </div>
+              <p className="text-gray-400 text-sm mb-3">SwissBorg Academy ecosystem guide</p>
+              <button
+                onClick={() => openInNewTab('https://academy.swissborg.com/en/learn/solana-ecosystem')}
+                className="text-indigo-400 hover:text-indigo-300 text-sm"
+              >
+                Explore Solana
+              </button>
+            </div>
+
+            <div className="p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold">B</span>
+                </div>
+                <h4 className="text-cyan-400 font-semibold">Base Ecosystem</h4>
+              </div>
+              <p className="text-gray-400 text-sm mb-3">Official Base ecosystem directory</p>
+              <button
+                onClick={() => openInNewTab('https://www.base.org/ecosystem')}
+                className="text-cyan-400 hover:text-cyan-300 text-sm"
+              >
+                Explore Base
+              </button>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
