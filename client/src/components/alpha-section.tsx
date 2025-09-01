@@ -363,7 +363,7 @@ export default function AlphaSection() {
             </SafeLink>
 
             <SafeLink
-              href='https://debank.com/'
+              href='https://debank.com/profile/0xb1058c959987e3513600eb5b4fd82aeee2a0e4f9'
               className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-2">
@@ -373,7 +373,7 @@ export default function AlphaSection() {
             </SafeLink>
 
             <SafeLink
-              href='https://hyperliquid.xyz/'
+              href='https://app.hyperliquid.xyz/vaults/0xe11b12a81ad743ae805078b0da61e9166475a829'
               className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg hover:bg-red-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-2">
@@ -383,7 +383,7 @@ export default function AlphaSection() {
             </SafeLink>
 
             <SafeLink
-              href='https://hyperliquid.xyz/'
+              href='https://degenai.dev/'
               className="p-4 bg-pink-500/10 border border-pink-500/20 rounded-lg hover:bg-pink-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-2">
