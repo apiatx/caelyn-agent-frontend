@@ -138,53 +138,44 @@ export default function AlphaSection() {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+            <SafeLink
+              href='https://chainspect.app/dashboard'
+              className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+            >
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
                   <span className="text-white font-bold">C</span>
                 </div>
                 <h4 className="text-blue-400 font-semibold">Chainspect</h4>
               </div>
-              <p className="text-gray-400 text-sm mb-3">Chain scalability and decentralization analytics</p>
-              <button
-                onClick={() => openInNewTab('https://chainspect.app/dashboard')}
-                className="text-blue-400 hover:text-blue-300 text-sm"
-              >
-                Open Dashboard
-              </button>
-            </div>
+              <p className="text-gray-400 text-sm">Chain scalability and decentralization analytics</p>
+            </SafeLink>
 
-            <div className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg">
+            <SafeLink
+              href='https://tokenterminal.com/explorer'
+              className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
+            >
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
                   <span className="text-white font-bold">T</span>
                 </div>
                 <h4 className="text-purple-400 font-semibold">Token Terminal</h4>
               </div>
-              <p className="text-gray-400 text-sm mb-3">Protocol metrics explorer</p>
-              <button
-                onClick={() => openInNewTab('https://tokenterminal.com/explorer')}
-                className="text-purple-400 hover:text-purple-300 text-sm"
-              >
-                Open Explorer
-              </button>
-            </div>
+              <p className="text-gray-400 text-sm">Protocol metrics explorer</p>
+            </SafeLink>
 
-            <div className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg">
+            <SafeLink
+              href='https://www.theblock.co/data/decentralized-finance/dex-non-custodial'
+              className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
+            >
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
                   <span className="text-white font-bold">D</span>
                 </div>
                 <h4 className="text-orange-400 font-semibold">The Block: DEX Metrics</h4>
               </div>
-              <p className="text-gray-400 text-sm mb-3">Comprehensive DEX analytics and metrics</p>
-              <button
-                onClick={() => openInNewTab('https://www.theblock.co/data/decentralized-finance/dex-non-custodial')}
-                className="text-orange-400 hover:text-orange-300 text-sm"
-              >
-                Open Dashboard
-              </button>
-            </div>
+              <p className="text-gray-400 text-sm">Comprehensive DEX analytics and metrics</p>
+            </SafeLink>
           </div>
         </GlassCard>
       </div>
@@ -526,103 +517,85 @@ export default function AlphaSection() {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div className="p-4 bg-gray-500/10 border border-gray-500/20 rounded-lg">
+            <SafeLink
+              href='https://www.ethereum-ecosystem.com/'
+              className="p-4 bg-gray-500/10 border border-gray-500/20 rounded-lg hover:bg-gray-500/20 transition-colors"
+            >
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-8 h-8 bg-gray-500 rounded-full flex items-center justify-center">
                   <span className="text-white font-bold">E</span>
                 </div>
                 <h4 className="text-gray-400 font-semibold">Ethereum Ecosystem</h4>
               </div>
-              <p className="text-gray-400 text-sm mb-3">Comprehensive ecosystem guide</p>
-              <button
-                onClick={() => openInNewTab('https://www.ethereum-ecosystem.com/')}
-                className="text-gray-400 hover:text-gray-300 text-sm"
-              >
-                Explore Ethereum
-              </button>
-            </div>
+              <p className="text-gray-400 text-sm">Comprehensive ecosystem guide</p>
+            </SafeLink>
 
-            <div className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-lg">
+            <SafeLink
+              href='https://academy.swissborg.com/en/learn/solana-ecosystem'
+              className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-lg hover:bg-indigo-500/20 transition-colors"
+            >
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-8 h-8 bg-indigo-500 rounded-full flex items-center justify-center">
                   <span className="text-white font-bold">S</span>
                 </div>
                 <h4 className="text-indigo-400 font-semibold">Solana Ecosystem</h4>
               </div>
-              <p className="text-gray-400 text-sm mb-3">SwissBorg Academy ecosystem guide</p>
-              <button
-                onClick={() => openInNewTab('https://academy.swissborg.com/en/learn/solana-ecosystem')}
-                className="text-indigo-400 hover:text-indigo-300 text-sm"
-              >
-                Explore Solana
-              </button>
-            </div>
+              <p className="text-gray-400 text-sm">SwissBorg Academy ecosystem guide</p>
+            </SafeLink>
 
-            <div className="p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-lg">
+            <SafeLink
+              href='https://www.base.org/ecosystem'
+              className="p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-lg hover:bg-cyan-500/20 transition-colors"
+            >
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center">
                   <span className="text-white font-bold">B</span>
                 </div>
                 <h4 className="text-cyan-400 font-semibold">Base Ecosystem</h4>
               </div>
-              <p className="text-gray-400 text-sm mb-3">Official Base ecosystem directory</p>
-              <button
-                onClick={() => openInNewTab('https://www.base.org/ecosystem')}
-                className="text-cyan-400 hover:text-cyan-300 text-sm"
-              >
-                Explore Base
-              </button>
-            </div>
+              <p className="text-gray-400 text-sm">Official Base ecosystem directory</p>
+            </SafeLink>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+            <SafeLink
+              href='https://gravity.xyz/'
+              className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg hover:bg-emerald-500/20 transition-colors"
+            >
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center">
                   <span className="text-white font-bold">G</span>
                 </div>
                 <h4 className="text-emerald-400 font-semibold">Gravity Ecosystem</h4>
               </div>
-              <p className="text-gray-400 text-sm mb-3">Explore the Gravity network</p>
-              <button
-                onClick={() => openInNewTab('https://gravity.xyz/')}
-                className="text-emerald-400 hover:text-emerald-300 text-sm"
-              >
-                Explore Gravity
-              </button>
-            </div>
+              <p className="text-gray-400 text-sm">Explore the Gravity network</p>
+            </SafeLink>
 
-            <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+            <SafeLink
+              href='https://dappradar.com/'
+              className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+            >
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
                   <span className="text-white font-bold">D</span>
                 </div>
                 <h4 className="text-blue-400 font-semibold">DappRadar</h4>
               </div>
-              <p className="text-gray-400 text-sm mb-3">Discover DApps & analytics</p>
-              <button
-                onClick={() => openInNewTab('https://dappradar.com/')}
-                className="text-blue-400 hover:text-blue-300 text-sm"
-              >
-                Open DappRadar
-              </button>
-            </div>
+              <p className="text-gray-400 text-sm">Discover DApps & analytics</p>
+            </SafeLink>
 
-            <div className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg">
+            <SafeLink
+              href='https://zapper.xyz/'
+              className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
+            >
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
                   <span className="text-white font-bold">Z</span>
                 </div>
                 <h4 className="text-purple-400 font-semibold">Zapper</h4>
               </div>
-              <p className="text-gray-400 text-sm mb-3">DeFi portfolio management</p>
-              <button
-                onClick={() => openInNewTab('https://zapper.xyz/')}
-                className="text-purple-400 hover:text-purple-300 text-sm"
-              >
-                Open Zapper
-              </button>
-            </div>
+              <p className="text-gray-400 text-sm">DeFi portfolio management</p>
+            </SafeLink>
           </div>
         </GlassCard>
 
