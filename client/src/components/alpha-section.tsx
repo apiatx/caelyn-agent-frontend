@@ -309,19 +309,42 @@ export default function AlphaSection() {
                 className="h-[600px]"
               />
             </div>
-          </div>
 
-          {/* Smart Wallets */}
-          <div className="mb-8">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-                <span className="text-white font-bold text-xs">W</span>
+            {/* Memecoins */}
+            <div className="mb-6">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs">🚀</span>
+                </div>
+                <h5 className="text-sm font-medium text-white">Memecoins</h5>
+                <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 text-xs">
+                  CAPITODAY
+                </Badge>
               </div>
-              <h4 className="text-white font-medium">Smart Wallets</h4>
-              <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
-                ANALYTICS
-              </Badge>
+              <div>
+                <SafeIframe
+                  src="https://capitoday.com/"
+                  title="Capitoday Memecoins Platform"
+                  className="h-[600px]"
+                />
+              </div>
             </div>
+          </div>
+        </GlassCard>
+      </div>
+
+      {/* Smart Wallets */}
+      <div className="space-y-8 mt-12">
+        <GlassCard className="p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+              <span className="text-white font-bold text-sm">W</span>
+            </div>
+            <h3 className="text-xl font-semibold text-white">Smart Wallets</h3>
+            <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+              ANALYTICS
+            </Badge>
+          </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
             <SafeLink
@@ -385,155 +408,140 @@ export default function AlphaSection() {
             </SafeLink>
           </div>
 
-            <div className="mb-8">
-              <SafeIframe
-                src="https://app.chainlyze.ai/smart-wallet"
-                title="Chainlyze Smart Wallet Tracker"
-                className="h-[600px]"
-              />
-            </div>
-          </div>
-
-          {/* WachXBT Token Sniffer */}
           <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <div className="w-5 h-5 bg-yellow-500 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold text-xs">W</span>
-                </div>
-                <h4 className="text-white font-medium">WachXBT Token Sniffer</h4>
-                <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-xs">
-                  AI CHAT
-                </Badge>
-              </div>
-              <button
-                onClick={() => openInNewTab('https://wach.ai/chat')}
-                className="text-yellow-400 hover:text-yellow-300 text-xs sm:text-sm flex items-center gap-1"
-              >
-                <ExternalLink className="w-3 h-3" />
-                Open Full View
-              </button>
-            </div>
-            <div className="mb-6">
-              <SafeIframe
-                src="https://wach.ai/chat"
-                title="WachAI Chat Interface"
-                className="h-[500px]"
-              />
-            </div>
+            <SafeIframe
+              src="https://app.chainlyze.ai/smart-wallet"
+              title="Chainlyze Smart Wallet Tracker"
+              className="h-[600px]"
+            />
           </div>
+        </GlassCard>
+      </div>
 
-          {/* Memecoins */}
-          <div className="mb-8">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">
-                <span className="text-white text-xs">🚀</span>
+      {/* Token Sniffer */}
+      <div className="space-y-8 mt-12">
+        <GlassCard className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-sm">T</span>
               </div>
-              <h4 className="text-white font-medium">Memecoins</h4>
-              <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 text-xs">
-                CAPITODAY
+              <h3 className="text-xl font-semibold text-white">Token Sniffer</h3>
+              <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">
+                AI CHAT
               </Badge>
             </div>
-            <div className="mb-6">
-              <SafeIframe
-                src="https://capitoday.com/"
-                title="Capitoday Memecoins Platform"
-                className="h-[600px]"
-              />
+            <button
+              onClick={() => openInNewTab('https://wach.ai/chat')}
+              className="text-yellow-400 hover:text-yellow-300 text-sm"
+            >
+              Open in New Tab →
+            </button>
+          </div>
+          <div className="mb-6">
+            <SafeIframe
+              src="https://wach.ai/chat"
+              title="WachAI Chat Interface"
+              className="h-[500px]"
+            />
+          </div>
+        </GlassCard>
+      </div>
+
+      {/* Social Intelligence */}
+      <div className="space-y-8 mt-12">
+        <GlassCard className="p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <div className="w-6 h-6 bg-pink-500 rounded-full flex items-center justify-center">
+              <span className="text-white font-bold text-sm">S</span>
             </div>
+            <h3 className="text-xl font-semibold text-white">Social Intelligence</h3>
+            <Badge className="bg-pink-500/20 text-pink-400 border-pink-500/30">
+              ANALYTICS
+            </Badge>
           </div>
 
-          {/* Social Intelligence */}
+          {/* X Accounts */}
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-6">
-              <div className="w-5 h-5 bg-pink-500 rounded-full flex items-center justify-center">
-                <span className="text-white font-bold text-xs">S</span>
+              <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-sm">𝕏</span>
               </div>
-              <h4 className="text-white font-medium">Social Intelligence</h4>
-              <Badge className="bg-pink-500/20 text-pink-400 border-pink-500/30 text-xs">
-                ANALYTICS
+              <h4 className="text-lg font-semibold text-white">X Accounts</h4>
+              <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+                PERSONAL PICKS
               </Badge>
             </div>
-
-            {/* X Accounts */}
-            <div className="mb-6">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold text-xs">𝕏</span>
-                </div>
-                <h5 className="text-sm font-medium text-white">X Accounts</h5>
-                <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
-                  PERSONAL PICKS
-                </Badge>
-              </div>
-              
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mb-6">
-                {[
-                  'TechDev_52', 'Market Watcher', 'WolverCrypto', 'altcoinvector', 'AltcoinMarksman',
-                  'Voice of the Gods', 'CoinGurruu', 'CryptoZer0_', 'DeFi_Paanda', 'aicryptopattern',
-                  'bittybitbit86', 'Ethimedes', 'Whale_AI_net', 'Defi0xJeff', 'EricCryptoman',
-                  'cryptorinweb3', 'OverkillTrading', 'jkrdoc', 'chironchain', 'goodvimonly',
-                  'Agent_rsch', 'dontbuytops', 'bruhbearr', 'MetaverseRanger', 'Shake51_',
-                  '0x_tesseract', 'TheEuroSniper', 'CryptoThannos', 'stacy_muur', 'martypartymusic'
-                ].map((account) => (
-                  <SafeLink
-                    key={account}
-                    href={`https://x.com/${account}`}
-                    className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="text-blue-400 font-bold text-sm">𝕏</span>
-                      <span className="text-blue-400 font-semibold text-sm">{account}</span>
-                    </div>
-                  </SafeLink>
-                ))}
-              </div>
-            </div>
-
-            {/* Social Analytics */}
-            <div className="mb-6">
-              <div className="flex items-center gap-2 mb-4">
-                <h5 className="text-sm font-medium text-white">Social Analytics</h5>
-                <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-xs">
-                  AI POWERED
-                </Badge>
-              </div>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mb-8">
+              {[
+                'TechDev_52', 'Market Watcher', 'WolverCrypto', 'altcoinvector', 'AltcoinMarksman',
+                'Voice of the Gods', 'CoinGurruu', 'CryptoZer0_', 'DeFi_Paanda', 'aicryptopattern',
+                'bittybitbit86', 'Ethimedes', 'Whale_AI_net', 'Defi0xJeff', 'EricCryptoman',
+                'cryptorinweb3', 'OverkillTrading', 'jkrdoc', 'chironchain', 'goodvimonly',
+                'Agent_rsch', 'dontbuytops', 'bruhbearr', 'MetaverseRanger', 'Shake51_',
+                '0x_tesseract', 'TheEuroSniper', 'CryptoThannos', 'stacy_muur', 'martypartymusic'
+              ].map((account) => (
                 <SafeLink
-                  href='https://yaps.kaito.ai/'
-                  className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
+                  key={account}
+                  href={`https://x.com/${account}`}
+                  className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
                 >
-                  <div className="flex items-center gap-2 mb-2">
-                    <h4 className="text-orange-400 font-semibold">Kaito</h4>
+                  <div className="flex items-center gap-2">
+                    <span className="text-blue-400 font-bold text-sm">𝕏</span>
+                    <span className="text-blue-400 font-semibold text-sm">{account}</span>
                   </div>
-                  <p className="text-gray-400 text-sm">AI-Powered Social Intelligence</p>
                 </SafeLink>
-
-                <SafeLink
-                  href='https://app.kolytics.pro/leaderboard'
-                  className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg hover:bg-red-500/20 transition-colors"
-                >
-                  <div className="flex items-center gap-2 mb-2">
-                    <h4 className="text-red-400 font-semibold">Kolytics</h4>
-                  </div>
-                  <p className="text-gray-400 text-sm">Social Signal Analytics</p>
-                </SafeLink>
-              </div>
+              ))}
             </div>
           </div>
 
-          {/* Discover Web3 */}
-          <div className="mb-8">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center">
-                <span className="text-white font-bold text-xs">D</span>
-              </div>
-              <h4 className="text-white font-medium">Discover Web3</h4>
-              <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-xs">
-                ECOSYSTEM
+          {/* Social Analytics */}
+          <div>
+            <div className="flex items-center gap-2 mb-6">
+              <h4 className="text-lg font-semibold text-white">Social Analytics</h4>
+              <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
+                AI POWERED
               </Badge>
             </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <SafeLink
+                href='https://yaps.kaito.ai/'
+                className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <h4 className="text-orange-400 font-semibold">Kaito</h4>
+                </div>
+                <p className="text-gray-400 text-sm">AI-Powered Social Intelligence</p>
+              </SafeLink>
+
+              <SafeLink
+                href='https://app.kolytics.pro/leaderboard'
+                className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg hover:bg-red-500/20 transition-colors"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <h4 className="text-red-400 font-semibold">Kolytics</h4>
+                </div>
+                <p className="text-gray-400 text-sm">Social Signal Analytics</p>
+              </SafeLink>
+            </div>
+          </div>
+        </GlassCard>
+      </div>
+
+      {/* Discover Web3 */}
+      <div className="space-y-8 mt-12">
+        <GlassCard className="p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center">
+              <span className="text-white font-bold text-sm">D</span>
+            </div>
+            <h3 className="text-xl font-semibold text-white">Discover Web3</h3>
+            <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
+              ECOSYSTEM
+            </Badge>
+          </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <SafeLink
@@ -576,107 +584,108 @@ export default function AlphaSection() {
             </SafeLink>
           </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <SafeLink
-                href='https://gravity.xyz/'
-                className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg hover:bg-emerald-500/20 transition-colors"
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center">
-                    <span className="text-white font-bold">G</span>
-                  </div>
-                  <h4 className="text-emerald-400 font-semibold">Gravity Ecosystem</h4>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <SafeLink
+              href='https://gravity.xyz/'
+              className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg hover:bg-emerald-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold">G</span>
                 </div>
-                <p className="text-gray-400 text-sm">Explore the Gravity network</p>
-              </SafeLink>
-
-              <SafeLink
-                href='https://dappradar.com/'
-                className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                    <span className="text-white font-bold">D</span>
-                  </div>
-                  <h4 className="text-blue-400 font-semibold">DappRadar</h4>
-                </div>
-                <p className="text-gray-400 text-sm">Discover DApps & analytics</p>
-              </SafeLink>
-
-              <SafeLink
-                href='https://zapper.xyz/'
-                className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
-                    <span className="text-white font-bold">Z</span>
-                  </div>
-                  <h4 className="text-purple-400 font-semibold">Zapper</h4>
-                </div>
-                <p className="text-gray-400 text-sm">DeFi portfolio management</p>
-              </SafeLink>
-            </div>
-          </div>
-
-          {/* Resources */}
-          <div className="mb-8">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-5 h-5 bg-indigo-500 rounded-full flex items-center justify-center">
-                <span className="text-white font-bold text-xs">R</span>
+                <h4 className="text-emerald-400 font-semibold">Gravity Ecosystem</h4>
               </div>
-              <h4 className="text-white font-medium">Resources</h4>
-              <Badge className="bg-indigo-500/20 text-indigo-400 border-indigo-500/30 text-xs">
-                AI POWERED
-              </Badge>
+              <p className="text-gray-400 text-sm">Explore the Gravity network</p>
+            </SafeLink>
+
+            <SafeLink
+              href='https://dappradar.com/'
+              className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold">D</span>
+                </div>
+                <h4 className="text-blue-400 font-semibold">DappRadar</h4>
+              </div>
+              <p className="text-gray-400 text-sm">Discover DApps & analytics</p>
+            </SafeLink>
+
+            <SafeLink
+              href='https://zapper.xyz/'
+              className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold">Z</span>
+                </div>
+                <h4 className="text-purple-400 font-semibold">Zapper</h4>
+              </div>
+              <p className="text-gray-400 text-sm">DeFi portfolio management</p>
+            </SafeLink>
+          </div>
+        </GlassCard>
+      </div>
+
+      {/* Resources */}
+      <div className="space-y-8 mt-12">
+        <GlassCard className="p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <div className="w-6 h-6 bg-indigo-500 rounded-full flex items-center justify-center">
+              <span className="text-white font-bold text-sm">R</span>
             </div>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <SafeLink
-                href='https://chat.openai.com/'
-                className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <h4 className="text-green-400 font-semibold">ChatGPT Crypto AI</h4>
-                </div>
-                <p className="text-gray-400 text-sm">Crypto Trading & Investing GPT</p>
-              </SafeLink>
+            <h3 className="text-xl font-semibold text-white">Resources</h3>
+            <Badge className="bg-indigo-500/20 text-indigo-400 border-indigo-500/30">
+              AI POWERED
+            </Badge>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <SafeLink
+              href='https://chat.openai.com/'
+              className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <h4 className="text-green-400 font-semibold">ChatGPT Crypto AI</h4>
+              </div>
+              <p className="text-gray-400 text-sm">Crypto Trading & Investing GPT</p>
+            </SafeLink>
 
-              <SafeLink
-                href='https://bubblemaps.io/'
-                className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <h4 className="text-purple-400 font-semibold">Bubblemaps</h4>
-                </div>
-                <p className="text-gray-400 text-sm">Token Analytics & Visualization</p>
-              </SafeLink>
+            <SafeLink
+              href='https://bubblemaps.io/'
+              className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <h4 className="text-purple-400 font-semibold">Bubblemaps</h4>
+              </div>
+              <p className="text-gray-400 text-sm">Token Analytics & Visualization</p>
+            </SafeLink>
 
-              <SafeLink
-                href='https://substack.com/'
-                className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
-                    <span className="text-white text-sm">📰</span>
-                  </div>
-                  <h4 className="text-orange-400 font-semibold">Substack</h4>
+            <SafeLink
+              href='https://substack.com/'
+              className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-sm">📰</span>
                 </div>
-                <p className="text-gray-400 text-sm">Newsletter Publishing Platform</p>
-              </SafeLink>
+                <h4 className="text-orange-400 font-semibold">Substack</h4>
+              </div>
+              <p className="text-gray-400 text-sm">Newsletter Publishing Platform</p>
+            </SafeLink>
 
-              <SafeLink
-                href='https://x.com/home'
-                className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                    <span className="text-white font-bold">𝕏</span>
-                  </div>
-                  <h4 className="text-blue-400 font-semibold">X Home</h4>
+            <SafeLink
+              href='https://x.com/home'
+              className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold">𝕏</span>
                 </div>
-                <p className="text-gray-400 text-sm">Social Media & News Feed</p>
-              </SafeLink>
-            </div>
+                <h4 className="text-blue-400 font-semibold">X Home</h4>
+              </div>
+              <p className="text-gray-400 text-sm">Social Media & News Feed</p>
+            </SafeLink>
           </div>
         </GlassCard>
       </div>
