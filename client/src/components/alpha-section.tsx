@@ -85,6 +85,9 @@ export default function AlphaSection() {
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
+                <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-xs">A</span>
+                </div>
                 <h4 className="text-white font-medium">Artemis</h4>
               </div>
               <button
@@ -115,6 +118,9 @@ export default function AlphaSection() {
           {/* Messari.io */}
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-4">
+              <div className="w-5 h-5 bg-orange-600 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-xs">M</span>
+              </div>
               <h4 className="text-white font-medium">Messari.io</h4>
             </div>
             <button
@@ -132,6 +138,9 @@ export default function AlphaSection() {
           {/* Inspect Tools */}
           <div>
             <div className="flex items-center gap-2 mb-4">
+              <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-xs">I</span>
+              </div>
               <h4 className="text-white font-medium">Inspect</h4>
             </div>
             
@@ -179,6 +188,9 @@ export default function AlphaSection() {
           {/* Signal */}
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-4">
+              <div className="w-5 h-5 bg-indigo-500 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-xs">S</span>
+              </div>
               <h4 className="text-white font-medium">Signal</h4>
               <Badge className="bg-indigo-500/20 text-indigo-400 border-indigo-500/30 text-xs">
                 MULTI-CHAIN
@@ -221,6 +233,9 @@ export default function AlphaSection() {
               className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg hover:bg-yellow-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-sm">🍪</span>
+                </div>
                 <h4 className="text-yellow-400 font-semibold">Cookie.fun</h4>
               </div>
               <p className="text-gray-400 text-sm">Interactive Trading Platform</p>
@@ -407,6 +422,9 @@ export default function AlphaSection() {
       <div className="space-y-8 mt-12">
         <GlassCard className="p-6">
           <div className="flex items-center gap-2 mb-6">
+            <div className="w-6 h-6 bg-pink-500 rounded-full flex items-center justify-center">
+              <span className="text-white font-bold text-sm">S</span>
+            </div>
             <h3 className="text-xl font-semibold text-white">Social Intelligence</h3>
             <Badge className="bg-pink-500/20 text-pink-400 border-pink-500/30">
               ANALYTICS
@@ -416,6 +434,9 @@ export default function AlphaSection() {
           {/* X Accounts */}
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-6">
+              <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-sm">𝕏</span>
+              </div>
               <h4 className="text-lg font-semibold text-white">X</h4>
               <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
                 PERSONAL PICKS
@@ -446,6 +467,7 @@ export default function AlphaSection() {
                   className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
                 >
                   <div className="flex items-center gap-2">
+                    <span className="text-blue-400 font-bold text-sm">𝕏</span>
                     <span className="text-blue-400 font-semibold text-sm">{account}</span>
                   </div>
                 </SafeLink>
