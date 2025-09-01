@@ -71,7 +71,7 @@ export default function AlphaSection() {
       {/* Onchain Macro Section */}
       <div className="space-y-8">
         <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold text-white mb-2">Onchain Macro</h2>
+          <h2 className="text-2xl font-bold text-white mb-2">Macro</h2>
           <p className="text-crypto-silver">High-level blockchain analytics and market intelligence</p>
         </div>
 
@@ -183,7 +183,7 @@ export default function AlphaSection() {
       {/* Onchain Micro Section */}
       <div className="space-y-8 mt-12">
         <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold text-white mb-2">Onchain Micro</h2>
+          <h2 className="text-2xl font-bold text-white mb-2">Micro</h2>
           <p className="text-crypto-silver">Detailed analytics and specialized tools</p>
         </div>
 
