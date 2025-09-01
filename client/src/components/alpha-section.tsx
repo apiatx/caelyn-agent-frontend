@@ -242,7 +242,7 @@ export default function AlphaSection() {
             </SafeLink>
 
             <SafeLink
-              href='https://www.velvet.capital/'
+              href='https://dapp.velvet.capital/'
               className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-2">
