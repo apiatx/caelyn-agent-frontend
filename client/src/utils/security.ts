@@ -154,7 +154,27 @@ const TRUSTED_DOMAINS = [
   'app.teller.org',
   'app.seamlessprotocol.com',
   'app.lotusfinance.io',
-  'app.spectra.finance'
+  'app.spectra.finance',
+  'www.theblock.co',
+  'theblock.co',
+  'l2beat.com',
+  'www.l2beat.com',
+  'growthepie.com',
+  'www.growthepie.com',
+  'coinglass.com',
+  'www.coinglass.com',
+  'buymeacoffee.com',
+  'cloudbet.com',
+  'www.cloudbet.com',
+  'cryptoquant.com',
+  'bitcoinmagazinepro.com',
+  'www.bitcoinmagazinepro.com',
+  'charts.bitbo.io',
+  'bitbo.io',
+  'taofi.com',
+  'www.taofi.com',
+  'tao.bot',
+  'www.tao.bot'
 ];
 
 /**
