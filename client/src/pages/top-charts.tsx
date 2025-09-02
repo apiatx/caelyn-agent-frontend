@@ -372,47 +372,6 @@ export default function TopChartsPage() {
               </div>
             </Suspense>
 
-            {/* Solana Chart */}
-            <Suspense fallback={<SectionLoadingState title="Solana Chart" />}>
-              <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6 space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <h3 className="text-lg font-semibold text-purple-400">Solana</h3>
-                    <Badge variant="outline" className="bg-purple-500/20 text-purple-300 border-purple-500/30">
-                      SOL
-                    </Badge>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <button
-                      onClick={() => openSecureLink('https://coinmarketcap.com/currencies/solana/')}
-                      className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm flex items-center gap-1"
-                    >
-                      <ExternalLink className="w-3 h-3" />
-                      CoinMarketCap
-                    </button>
-                    <button
-                      onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=BINANCE%3ASOLUSDT')}
-                      className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm"
-                    >
-                      Open Full View →
-                    </button>
-                  </div>
-                </div>
-                <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
-                  <iframe
-                    src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]&symbol=BINANCE%3ASOLUSDT"
-                    className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
-                    title="Solana Advanced Chart"
-                    frameBorder="0"
-                    scrolling="no"
-                  />
-                </div>
-                
-                {/* Solana Real-time Data */}
-                <CryptoMarketDataBare symbol="SOL" />
-              </div>
-            </Suspense>
-
             {/* BNB Chart */}
             <Suspense fallback={<SectionLoadingState title="BNB Chart" />}>
               <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6 space-y-4">
@@ -451,6 +410,47 @@ export default function TopChartsPage() {
                 
                 {/* BNB Real-time Data */}
                 <CryptoMarketDataBare symbol="BNB" />
+              </div>
+            </Suspense>
+
+            {/* Solana Chart */}
+            <Suspense fallback={<SectionLoadingState title="Solana Chart" />}>
+              <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <h3 className="text-lg font-semibold text-purple-400">Solana</h3>
+                    <Badge variant="outline" className="bg-purple-500/20 text-purple-300 border-purple-500/30">
+                      SOL
+                    </Badge>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <button
+                      onClick={() => openSecureLink('https://coinmarketcap.com/currencies/solana/')}
+                      className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm flex items-center gap-1"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                      CoinMarketCap
+                    </button>
+                    <button
+                      onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=BINANCE%3ASOLUSDT')}
+                      className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm"
+                    >
+                      Open Full View →
+                    </button>
+                  </div>
+                </div>
+                <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
+                  <iframe
+                    src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]&symbol=BINANCE%3ASOLUSDT"
+                    className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+                    title="Solana Advanced Chart"
+                    frameBorder="0"
+                    scrolling="no"
+                  />
+                </div>
+                
+                {/* Solana Real-time Data */}
+                <CryptoMarketDataBare symbol="SOL" />
               </div>
             </Suspense>
 
