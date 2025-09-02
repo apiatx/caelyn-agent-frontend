@@ -302,25 +302,6 @@ export default function AlphaSection() {
               />
             </div>
 
-            {/* Memecoins */}
-            <div className="mb-6">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">
-                  <span className="text-white text-xs">🚀</span>
-                </div>
-                <h5 className="text-sm font-medium text-white">Memecoins</h5>
-                <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 text-xs">
-                  CAPITODAY
-                </Badge>
-              </div>
-              <div>
-                <SafeIframe
-                  src="https://capitoday.com/"
-                  title="Capitoday Memecoins Platform"
-                  className="h-[600px]"
-                />
-              </div>
-            </div>
           </div>
         </GlassCard>
       </div>
@@ -411,6 +392,57 @@ export default function AlphaSection() {
         </GlassCard>
       </div>
 
+      {/* Memecoins */}
+      <div className="space-y-8 mt-12">
+        <GlassCard className="p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
+              <span className="text-white text-sm">🚀</span>
+            </div>
+            <h3 className="text-xl font-semibold text-white">Memecoins</h3>
+            <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30">
+              ANALYTICS
+            </Badge>
+          </div>
+
+          {/* Capitoday */}
+          <div className="mb-8">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-xs">C</span>
+              </div>
+              <h4 className="text-white font-medium">Capitoday</h4>
+              <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 text-xs">
+                PLATFORM
+              </Badge>
+            </div>
+            <SafeIframe
+              src="https://capitoday.com/"
+              title="Capitoday Memecoins Platform"
+              className="h-[600px]"
+            />
+          </div>
+
+          {/* HolderScan */}
+          <div className="mb-8">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-xs">H</span>
+              </div>
+              <h4 className="text-white font-medium">HolderScan</h4>
+              <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
+                ANALYTICS
+              </Badge>
+            </div>
+            <SafeIframe
+              src="https://holderscan.com/"
+              title="HolderScan Memecoins Analytics"
+              className="h-[600px]"
+            />
+          </div>
+        </GlassCard>
+      </div>
+
       {/* Token Sniffer */}
       <div className="space-y-8 mt-12">
         <GlassCard className="p-6">
@@ -473,7 +505,8 @@ export default function AlphaSection() {
                 'bittybitbit86', 'Ethimedes', 'Whale_AI_net', 'Defi0xJeff', 'EricCryptoman',
                 'cryptorinweb3', 'OverkillTrading', 'jkrdoc', 'chironchain', 'goodvimonly',
                 'Agent_rsch', 'dontbuytops', 'bruhbearr', 'MetaverseRanger', 'Shake51_',
-                '0x_tesseract', 'TheEuroSniper', 'CryptoThannos', 'stacy_muur', 'martypartymusic'
+                '0x_tesseract', 'TheEuroSniper', 'CryptoThannos', 'stacy_muur', 'martypartymusic',
+                'HolderScan'
               ].map((account) => {
                 // Special mapping for accounts with different URLs
                 const getAccountUrl = (accountName: string) => {
