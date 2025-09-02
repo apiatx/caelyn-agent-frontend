@@ -265,7 +265,87 @@ class CoinMarketCapService {
 
   private async getTopGainersAllCoinsFallback(): Promise<CoinMarketCapCrypto[]> {
     try {
-      console.log('🔍 [CMC] Using fallback method for top gainers from all coins...');
+      console.log('🔍 [CMC] Using DEX API for real DEX token gainers...');
+      // Use the dedicated DEX API endpoint for real DEX token data
+      const url = `${this.baseUrl}/v4/dex/spot-pairs/latest?limit=100&sort=percent_change_24h&convert=USD`;
+      
+      const response = await fetch(url, {
+        headers: {
+          'X-CMC_PRO_API_KEY': this.apiKey,
+          'Accept': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        console.log('🔍 [CMC] DEX API failed, falling back to standard listings...');
+        return this.getStandardListingsFallback();
+      }
+
+      const data = await response.json() as any;
+      
+      if (data.status && data.status.error_code !== 0) {
+        console.log('🔍 [CMC] DEX API error, falling back to standard listings...');
+        return this.getStandardListingsFallback();
+      }
+
+      console.log(`🔍 [CMC] Received ${data.data?.length || 0} DEX pairs from API`);
+      
+      // Process DEX pairs and convert to our format
+      const dexTokens = data.data || [];
+      const processedTokens: CoinMarketCapCrypto[] = [];
+      
+      for (const pair of dexTokens.slice(0, 50)) { // Process top 50 pairs
+        if (pair.quote?.USD?.percent_change_24h > 0 && pair.base_token) {
+          // Convert DEX pair format to our expected format
+          const token: CoinMarketCapCrypto = {
+            id: pair.base_token.id || Math.random() * 1000000,
+            name: pair.base_token.name || pair.base_token.symbol,
+            symbol: pair.base_token.symbol,
+            slug: pair.base_token.slug || pair.base_token.symbol.toLowerCase(),
+            cmc_rank: pair.base_token.cmc_rank || 9999,
+            quote: {
+              USD: {
+                price: pair.quote.USD.price || 0,
+                volume_24h: pair.quote.USD.volume_24h || 0,
+                percent_change_1h: pair.quote.USD.percent_change_1h || 0,
+                percent_change_24h: pair.quote.USD.percent_change_24h,
+                percent_change_7d: pair.quote.USD.percent_change_7d || 0,
+                percent_change_30d: pair.quote.USD.percent_change_30d || 0,
+                percent_change_60d: pair.quote.USD.percent_change_60d || 0,
+                percent_change_90d: pair.quote.USD.percent_change_90d || 0,
+                market_cap: pair.quote.USD.market_cap || pair.base_token.market_cap || 0,
+              }
+            }
+          };
+          processedTokens.push(token);
+        }
+      }
+      
+      console.log(`🔍 [CMC] Found ${processedTokens.length} DEX token gainers`);
+      
+      // Sort by 24h change descending and take top 10
+      const gainers = processedTokens
+        .sort((a, b) => b.quote.USD.percent_change_24h - a.quote.USD.percent_change_24h)
+        .slice(0, 10);
+
+      console.log(`✅ [CMC] Successfully retrieved ${gainers.length} DEX token gainers`);
+      console.log('🔍 [CMC] Top DEX gainers:', gainers.map(g => ({ 
+        name: g.name, 
+        symbol: g.symbol, 
+        change: g.quote.USD.percent_change_24h,
+        rank: g.cmc_rank,
+        marketCap: g.quote.USD.market_cap ? `$${(g.quote.USD.market_cap/1e6).toFixed(1)}M` : 'N/A'
+      })));
+      return gainers;
+    } catch (error) {
+      console.error('❌ [CMC] DEX API method failed, using standard fallback:', error);
+      return this.getStandardListingsFallback();
+    }
+  }
+
+  private async getStandardListingsFallback(): Promise<CoinMarketCapCrypto[]> {
+    try {
+      console.log('🔍 [CMC] Using standard listings fallback for gainers...');
       // Fetch from a much larger pool - top 2000 coins instead of just 100
       const url = `${this.baseUrl}/cryptocurrency/listings/latest?start=1&limit=2000&convert=USD`;
       
@@ -286,7 +366,7 @@ class CoinMarketCapService {
         throw new Error(`CoinMarketCap API error: ${data.status.error_message}`);
       }
 
-      console.log(`🔍 [CMC] Received ${data.data.length} cryptocurrencies from all coins API`);
+      console.log(`🔍 [CMC] Received ${data.data.length} cryptocurrencies from standard API`);
       
       // Filter for positive gains from ALL coins (no market cap restriction)
       let validCryptos = data.data.filter(crypto => 
@@ -295,11 +375,11 @@ class CoinMarketCapService {
         crypto.quote.USD.percent_change_24h > 0 // Any positive gain
       );
       
-      console.log(`🔍 [CMC] Found ${validCryptos.length} positive gainers from all coins`);
+      console.log(`🔍 [CMC] Found ${validCryptos.length} positive gainers from standard listings`);
       
       // If we don't have enough results, use the best performing coins (even if negative)
       if (validCryptos.length < 10) {
-        console.log('🔍 [CMC] Not enough positive gainers, including all coins...');
+        console.log('🔍 [CMC] Not enough positive gainers, including all standard listings...');
         validCryptos = data.data.filter(crypto => 
           crypto.quote.USD.percent_change_24h !== null && 
           crypto.quote.USD.percent_change_24h !== undefined
@@ -311,8 +391,8 @@ class CoinMarketCapService {
         .sort((a, b) => b.quote.USD.percent_change_24h - a.quote.USD.percent_change_24h)
         .slice(0, 10);
 
-      console.log(`✅ [CMC] Successfully retrieved ${gainers.length} daily gainers from all coins using fallback`);
-      console.log('🔍 [CMC] Top all-coin gainers:', gainers.map(g => ({ 
+      console.log(`✅ [CMC] Successfully retrieved ${gainers.length} gainers from standard listings`);
+      console.log('🔍 [CMC] Top standard gainers:', gainers.map(g => ({ 
         name: g.name, 
         symbol: g.symbol, 
         change: g.quote.USD.percent_change_24h,
@@ -321,7 +401,7 @@ class CoinMarketCapService {
       })));
       return gainers;
     } catch (error) {
-      console.error('❌ [CMC] All coins fallback method also failed:', error);
+      console.error('❌ [CMC] Standard listings fallback also failed:', error);
       throw error;
     }
   }
