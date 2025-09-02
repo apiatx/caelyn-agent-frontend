@@ -326,7 +326,7 @@ export default function TopChartsPage() {
             
             {/* XRP Chart */}
             <Suspense fallback={<SectionLoadingState title="XRP Chart" />}>
-              <div className="space-y-3">
+              <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <h3 className="text-lg font-semibold text-gray-400">XRP</h3>
@@ -359,17 +359,15 @@ export default function TopChartsPage() {
                     scrolling="no"
                   />
                 </div>
-              </div>
-              
-              {/* XRP Real-time Data */}
-              <div className="mt-4">
+                
+                {/* XRP Real-time Data */}
                 <CryptoMarketData symbol="XRP" />
               </div>
             </Suspense>
 
             {/* Solana Chart */}
             <Suspense fallback={<SectionLoadingState title="Solana Chart" />}>
-              <div className="space-y-3">
+              <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <h3 className="text-lg font-semibold text-purple-400">Solana</h3>
@@ -402,17 +400,15 @@ export default function TopChartsPage() {
                     scrolling="no"
                   />
                 </div>
-              </div>
-              
-              {/* Solana Real-time Data */}
-              <div className="mt-4">
+                
+                {/* Solana Real-time Data */}
                 <CryptoMarketData symbol="SOL" />
               </div>
             </Suspense>
 
             {/* BNB Chart */}
             <Suspense fallback={<SectionLoadingState title="BNB Chart" />}>
-              <div className="space-y-3">
+              <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <h3 className="text-lg font-semibold text-yellow-400">BNB</h3>
@@ -445,10 +441,8 @@ export default function TopChartsPage() {
                     scrolling="no"
                   />
                 </div>
-              </div>
-              
-              {/* BNB Real-time Data */}
-              <div className="mt-4">
+                
+                {/* BNB Real-time Data */}
                 <CryptoMarketData symbol="BNB" />
               </div>
             </Suspense>
