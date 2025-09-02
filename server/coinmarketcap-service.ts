@@ -32,10 +32,12 @@ interface CoinMarketCapResponse {
 
 class CoinMarketCapService {
   private apiKey: string;
+  private dexApiKey: string;
   private baseUrl = 'https://pro-api.coinmarketcap.com/v1';
 
   constructor() {
     this.apiKey = process.env.CMC_API_KEY || '7d9a361e-596d-4914-87e2-f1124da24897';
+    this.dexApiKey = process.env.CMC_DEX_API_KEY || '7d9a361e-596d-4914-87e2-f1124da24897';
   }
 
   async getTop100Cryptocurrencies(): Promise<CoinMarketCapCrypto[]> {
@@ -234,16 +236,15 @@ class CoinMarketCapService {
     try {
       console.log('🔍 [CMC DEX] Fetching top DEX token gainers from CoinMarketCap DexScan...');
       
-      // Use the correct DEX spot pairs endpoint with sorting by 24h change
-      // Start with Ethereum network (1027), which typically has the most DEX activity
-      const url = `${this.baseUrl.replace('/v1', '/v4')}/dex/spot-pairs/latest?network_id=1027&sort=percent_change_24h&sort_dir=desc&limit=20&convert=USD`;
+      // Try CMC DexScan API without network restriction to get all networks  
+      const url = `${this.baseUrl.replace('/v1', '/v4')}/dex/spot-pairs/latest?sort=percent_change_24h&sort_dir=desc&limit=100&convert=USD`;
       
       console.log('🔍 [CMC DEX] API URL:', url);
-      console.log('🔍 [CMC DEX] API Key:', this.apiKey ? '***KEY_SET***' : 'NO_KEY');
+      console.log('🔍 [CMC DEX] DEX API Key:', this.dexApiKey ? '***DEX_KEY_SET***' : 'NO_DEX_KEY');
       
       const response = await fetch(url, {
         headers: {
-          'X-CMC_PRO_API_KEY': this.apiKey,
+          'X-CMC_PRO_API_KEY': this.dexApiKey,
           'Accept': 'application/json',
         },
       });
