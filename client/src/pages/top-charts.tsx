@@ -9,6 +9,7 @@ import { UniversalNavigation } from "@/components/universal-navigation";
 import { useScrollFade } from "@/hooks/useScrollFade";
 import paintColorsBackground from "@assets/paint-colors-background-header_1756067291555.jpg";
 import CryptoMarketData from "@/components/crypto-market-data";
+import CryptoMarketDataBare from "@/components/crypto-market-data-bare";
 
 export default function TopChartsPage() {
   const headerOpacity = useScrollFade(30, 120);
@@ -361,7 +362,7 @@ export default function TopChartsPage() {
                 </div>
                 
                 {/* XRP Real-time Data */}
-                <CryptoMarketData symbol="XRP" />
+                <CryptoMarketDataBare symbol="XRP" />
               </div>
             </Suspense>
 
@@ -402,7 +403,7 @@ export default function TopChartsPage() {
                 </div>
                 
                 {/* Solana Real-time Data */}
-                <CryptoMarketData symbol="SOL" />
+                <CryptoMarketDataBare symbol="SOL" />
               </div>
             </Suspense>
 
@@ -443,7 +444,7 @@ export default function TopChartsPage() {
                 </div>
                 
                 {/* BNB Real-time Data */}
-                <CryptoMarketData symbol="BNB" />
+                <CryptoMarketDataBare symbol="BNB" />
               </div>
             </Suspense>
 
