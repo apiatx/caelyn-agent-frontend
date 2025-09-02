@@ -35,7 +35,7 @@ class CoinMarketCapService {
   private baseUrl = 'https://pro-api.coinmarketcap.com/v1';
 
   constructor() {
-    this.apiKey = '7d9a361e-596d-4914-87e2-f1124da24897';
+    this.apiKey = process.env.CMC_API_KEY || '7d9a361e-596d-4914-87e2-f1124da24897';
   }
 
   async getTop100Cryptocurrencies(): Promise<CoinMarketCapCrypto[]> {
@@ -110,3 +110,46 @@ class CoinMarketCapService {
 }
 
 export const coinMarketCapService = new CoinMarketCapService();
+
+// Additional method for fetching multiple specific cryptocurrencies
+export async function getMajorCryptocurrencies(): Promise<CoinMarketCapCrypto[]> {
+  try {
+    console.log('🔍 [CMC] Fetching major cryptocurrencies for Majors page...');
+    
+    const majorSymbols = ['BTC', 'ETH', 'XRP', 'SOL', 'BNB', 'ADA', 'DOGE', 'AVAX', 'TRX', 'DOT'];
+    const symbolsParam = majorSymbols.join(',');
+    
+    const response = await fetch(`https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=${symbolsParam}&convert=USD`, {
+      headers: {
+        'X-CMC_PRO_API_KEY': process.env.CMC_API_KEY || '7d9a361e-596d-4914-87e2-f1124da24897',
+        'Accept': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.log('🔍 [CMC] Error response body:', errorText);
+      throw new Error(`CoinMarketCap API error: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json() as any;
+    
+    if (data.status.error_code !== 0) {
+      throw new Error(`CoinMarketCap API error: ${data.status.error_message}`);
+    }
+
+    // Convert the response data object to an array
+    const cryptoArray: CoinMarketCapCrypto[] = [];
+    for (const symbol of majorSymbols) {
+      if (data.data[symbol]) {
+        cryptoArray.push(data.data[symbol]);
+      }
+    }
+
+    console.log(`✅ [CMC] Successfully retrieved ${cryptoArray.length} major cryptocurrencies`);
+    return cryptoArray;
+  } catch (error) {
+    console.error('❌ [CMC] Failed to fetch major cryptocurrencies:', error);
+    throw error;
+  }
+}

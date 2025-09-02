@@ -8,6 +8,7 @@ import { openSecureLink, getSecureIframeProps } from "@/utils/security";
 import { UniversalNavigation } from "@/components/universal-navigation";
 import { useScrollFade } from "@/hooks/useScrollFade";
 import paintColorsBackground from "@assets/paint-colors-background-header_1756067291555.jpg";
+import CryptoMarketData from "@/components/crypto-market-data";
 
 export default function TopChartsPage() {
   const headerOpacity = useScrollFade(30, 120);
@@ -202,6 +203,11 @@ export default function TopChartsPage() {
                 />
               </div>
             </div>
+            
+            {/* Bitcoin Real-time Data */}
+            <div className="mt-4">
+              <CryptoMarketData symbol="BTC" />
+            </div>
           </div>
 
           {/* Ethereum Charts - Side by Side */}
@@ -273,6 +279,11 @@ export default function TopChartsPage() {
                   scrolling="no"
                 />
               </div>
+            </div>
+            
+            {/* Ethereum Real-time Data */}
+            <div className="mt-4">
+              <CryptoMarketData symbol="ETH" />
             </div>
           </div>
 
@@ -349,6 +360,11 @@ export default function TopChartsPage() {
                   />
                 </div>
               </div>
+              
+              {/* XRP Real-time Data */}
+              <div className="mt-4">
+                <CryptoMarketData symbol="XRP" />
+              </div>
             </Suspense>
 
             {/* Solana Chart */}
@@ -387,6 +403,11 @@ export default function TopChartsPage() {
                   />
                 </div>
               </div>
+              
+              {/* Solana Real-time Data */}
+              <div className="mt-4">
+                <CryptoMarketData symbol="SOL" />
+              </div>
             </Suspense>
 
             {/* BNB Chart */}
@@ -424,6 +445,11 @@ export default function TopChartsPage() {
                     scrolling="no"
                   />
                 </div>
+              </div>
+              
+              {/* BNB Real-time Data */}
+              <div className="mt-4">
+                <CryptoMarketData symbol="BNB" />
               </div>
             </Suspense>
 

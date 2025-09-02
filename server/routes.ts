@@ -577,6 +577,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // CoinMarketCap major cryptocurrencies endpoint for Majors page
+  app.get('/api/coinmarketcap/majors', async (req, res) => {
+    try {
+      console.log('🔍 [API] Fetching major cryptocurrencies data from CoinMarketCap...');
+      
+      // Import the function we created in the service
+      const { getMajorCryptocurrencies } = await import('./coinmarketcap-service');
+      const majors = await getMajorCryptocurrencies();
+      
+      console.log(`✅ [API] Successfully retrieved ${majors.length} major cryptocurrencies`);
+      res.json(majors);
+    } catch (error) {
+      console.error('❌ [API] Failed to fetch major cryptocurrencies:', error);
+      res.status(500).json({ message: 'Failed to fetch major cryptocurrencies data' });
+    }
+  });
+
   // Get comprehensive mindshare data with X.com sentiment and swordscan integration
   app.get('/api/mindshare/comprehensive', async (req, res) => {
     try {
