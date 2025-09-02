@@ -131,16 +131,7 @@ export default function CryptoMarketDataBare({ symbol, className = "" }: CryptoM
   return (
     <div className={`${className}`}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 bg-crypto-silver/20 rounded-full flex items-center justify-center">
-            <span className="text-white font-bold text-xs">{crypto.symbol}</span>
-          </div>
-          <div>
-            <h4 className="text-white font-semibold text-sm">Live Market Data</h4>
-            <p className="text-crypto-silver text-xs">Rank #{crypto.cmc_rank}</p>
-          </div>
-        </div>
+      <div className="flex items-center justify-end mb-3">
         <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
           LIVE
         </Badge>
