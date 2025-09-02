@@ -109,7 +109,7 @@ const TopDailyGainers = () => {
       <div className="mt-6 bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-6">
         <div className="flex items-center justify-center space-x-2 mb-4">
           <TrendingUp className="w-5 h-5 text-green-400" />
-          <h3 className="text-lg font-semibold text-white">Top 10 Daily Gainers</h3>
+          <h3 className="text-lg font-semibold text-white">Top 10 Daily Gainers: CMC Top 100</h3>
         </div>
         <div className="flex items-center justify-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-400"></div>
@@ -124,7 +124,7 @@ const TopDailyGainers = () => {
       <div className="mt-6 bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-6">
         <div className="flex items-center justify-center space-x-2 mb-4">
           <TrendingUp className="w-5 h-5 text-green-400" />
-          <h3 className="text-lg font-semibold text-white">Top 10 Daily Gainers</h3>
+          <h3 className="text-lg font-semibold text-white">Top 10 Daily Gainers: CMC Top 100</h3>
         </div>
         <div className="text-center py-8">
           <TrendingDown className="w-12 h-12 text-red-400 mx-auto mb-2" />
@@ -138,7 +138,7 @@ const TopDailyGainers = () => {
     <div className="mt-6 bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-6" data-testid="top-daily-gainers">
       <div className="flex items-center justify-center space-x-2 mb-6">
         <TrendingUp className="w-5 h-5 text-green-400" />
-        <h3 className="text-lg font-semibold text-white">Top 10 Daily Gainers</h3>
+        <h3 className="text-lg font-semibold text-white">Top 10 Daily Gainers: CMC Top 100</h3>
         <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
           24H
         </Badge>
