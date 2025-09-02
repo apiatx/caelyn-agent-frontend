@@ -229,6 +229,145 @@ class CoinMarketCapService {
       throw error;
     }
   }
+
+  async getTopDexGainers(): Promise<CoinMarketCapCrypto[]> {
+    try {
+      console.log('🔍 [CMC DEX] Fetching top DEX token gainers from CoinMarketCap...');
+      
+      // First try the DEX listings endpoint if available
+      let url = `${this.baseUrl.replace('/v1', '/v4')}/dex/listings/quotes?start=1&limit=200&convert=USD`;
+      
+      const response = await fetch(url, {
+        headers: {
+          'X-CMC_PRO_API_KEY': this.apiKey,
+          'Accept': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        // If DEX endpoint fails, fall back to regular trending gainers with higher limit
+        console.log('🔍 [CMC DEX] DEX endpoint failed, using trending gainers fallback...');
+        return this.getDexGainersFallback();
+      }
+
+      const data = await response.json() as any;
+      
+      if (data.status && data.status.error_code !== 0) {
+        console.log('🔍 [CMC DEX] DEX endpoint error, using fallback method...');
+        return this.getDexGainersFallback();
+      }
+
+      // Process DEX data similar to regular crypto data
+      const dexTokens = data.data || [];
+      console.log(`🔍 [CMC DEX] Received ${dexTokens.length} DEX tokens from API`);
+      
+      // Filter for positive gainers and sort by 24h change
+      const gainers = dexTokens
+        .filter((token: any) => 
+          token.quote?.USD?.percent_change_24h > 0 &&
+          token.quote?.USD?.market_cap > 1000000 // Minimum $1M market cap
+        )
+        .sort((a: any, b: any) => b.quote.USD.percent_change_24h - a.quote.USD.percent_change_24h)
+        .slice(0, 20);
+
+      console.log(`✅ [CMC DEX] Successfully retrieved ${gainers.length} DEX gainers`);
+      return gainers;
+    } catch (error) {
+      console.error('❌ [CMC DEX] Failed to fetch DEX gainers, using fallback:', error);
+      return this.getDexGainersFallback();
+    }
+  }
+
+  private async getDexGainersFallback(): Promise<CoinMarketCapCrypto[]> {
+    try {
+      console.log('🔍 [CMC DEX] Using fallback method for DEX gainers...');
+      
+      // Use a larger limit to get more diverse tokens and focus on smaller market caps
+      const url = `${this.baseUrl}/cryptocurrency/listings/latest?start=1&limit=500&convert=USD`;
+      
+      const response = await fetch(url, {
+        headers: {
+          'X-CMC_PRO_API_KEY': this.apiKey,
+          'Accept': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`CoinMarketCap API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json() as CoinMarketCapResponse;
+      
+      if (data.status.error_code !== 0) {
+        throw new Error(`CoinMarketCap API error: ${data.status.error_message}`);
+      }
+
+      console.log(`🔍 [CMC DEX] Received ${data.data.length} tokens from fallback API`);
+      
+      // For DEX-like tokens, we want smaller caps that might be more like DEX tokens
+      const MIN_MARKET_CAP = 1000000; // $1 million
+      const MAX_MARKET_CAP = 500000000; // $500 million (to focus on smaller tokens)
+      
+      const dexLikeTokens = data.data.filter(crypto => 
+        crypto.quote.USD.percent_change_24h !== null && 
+        crypto.quote.USD.percent_change_24h !== undefined &&
+        crypto.quote.USD.percent_change_24h > 0 && // Only positive gainers
+        crypto.quote.USD.market_cap !== null &&
+        crypto.quote.USD.market_cap !== undefined &&
+        crypto.quote.USD.market_cap >= MIN_MARKET_CAP &&
+        crypto.quote.USD.market_cap <= MAX_MARKET_CAP &&
+        crypto.cmc_rank > 100 // Focus on tokens outside top 100
+      );
+      
+      console.log(`🔍 [CMC DEX] Found ${dexLikeTokens.length} DEX-like token gainers`);
+      
+      // If we don't have enough, expand the criteria
+      if (dexLikeTokens.length < 20) {
+        console.log('🔍 [CMC DEX] Expanding criteria to get more tokens...');
+        const expandedTokens = data.data.filter(crypto => 
+          crypto.quote.USD.percent_change_24h !== null && 
+          crypto.quote.USD.percent_change_24h !== undefined &&
+          crypto.quote.USD.percent_change_24h > 0 &&
+          crypto.quote.USD.market_cap !== null &&
+          crypto.quote.USD.market_cap !== undefined &&
+          crypto.quote.USD.market_cap >= MIN_MARKET_CAP &&
+          crypto.cmc_rank > 50 // Expand to tokens outside top 50
+        );
+        
+        const gainers = expandedTokens
+          .sort((a, b) => b.quote.USD.percent_change_24h - a.quote.USD.percent_change_24h)
+          .slice(0, 20);
+
+        console.log(`✅ [CMC DEX] Retrieved ${gainers.length} DEX-style gainers (expanded criteria)`);
+        console.log('🔍 [CMC DEX] Top DEX gainers:', gainers.slice(0, 5).map(g => ({ 
+          name: g.name, 
+          symbol: g.symbol, 
+          change: g.quote.USD.percent_change_24h,
+          rank: g.cmc_rank,
+          marketCap: `$${(g.quote.USD.market_cap/1e6).toFixed(1)}M`
+        })));
+        return gainers;
+      }
+      
+      // Sort by 24h change and take top 20
+      const gainers = dexLikeTokens
+        .sort((a, b) => b.quote.USD.percent_change_24h - a.quote.USD.percent_change_24h)
+        .slice(0, 20);
+
+      console.log(`✅ [CMC DEX] Successfully retrieved ${gainers.length} DEX-style gainers`);
+      console.log('🔍 [CMC DEX] Top DEX gainers:', gainers.slice(0, 5).map(g => ({ 
+        name: g.name, 
+        symbol: g.symbol, 
+        change: g.quote.USD.percent_change_24h,
+        rank: g.cmc_rank,
+        marketCap: `$${(g.quote.USD.market_cap/1e6).toFixed(1)}M`
+      })));
+      return gainers;
+    } catch (error) {
+      console.error('❌ [CMC DEX] Fallback method also failed:', error);
+      throw error;
+    }
+  }
 }
 
 export const coinMarketCapService = new CoinMarketCapService();
