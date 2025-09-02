@@ -134,158 +134,160 @@ export default function TopChartsPage() {
             </div>
           </div>
 
-          {/* Bitcoin Charts - Side by Side */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-            {/* Bitcoin Price Chart */}
-            <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 sm:w-6 sm:h-6 bg-orange-500 rounded-full flex items-center justify-center">
-                    <span className="text-white font-bold text-xs">₿</span>
+          {/* Bitcoin Section - Unified */}
+          <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6 space-y-6">
+            {/* Bitcoin Charts - Side by Side */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+              {/* Bitcoin Price Chart */}
+              <div>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 sm:w-6 sm:h-6 bg-orange-500 rounded-full flex items-center justify-center">
+                      <span className="text-white font-bold text-xs">₿</span>
+                    </div>
+                    <h3 className="text-lg sm:text-xl font-semibold text-white">Bitcoin Price Chart</h3>
+                    <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 text-xs">
+                      BITCOIN
+                    </Badge>
                   </div>
-                  <h3 className="text-lg sm:text-xl font-semibold text-white">Bitcoin Price Chart</h3>
-                  <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 text-xs">
-                    BITCOIN
-                  </Badge>
+                  <div className="flex items-center gap-2 sm:ml-auto">
+                    <button
+                      onClick={() => openSecureLink('https://coinmarketcap.com/currencies/bitcoin/')}
+                      className="text-orange-400 hover:text-orange-300 text-xs sm:text-sm flex items-center gap-1"
+                    >
+                      CMC <ExternalLink className="w-3 h-3" />
+                    </button>
+                    <span className="text-crypto-silver text-xs">|</span>
+                    <button
+                      onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=BTCUSD')}
+                      className="text-orange-400 hover:text-orange-300 text-xs sm:text-sm"
+                    >
+                      Open in New Tab →
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 sm:ml-auto">
+                <div className="w-full">
+                  <iframe
+                    src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]&symbol=BINANCE%3ABTCUSDT"
+                    className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
+                    title="Bitcoin Chart"
+                    frameBorder="0"
+                    scrolling="no"
+                  />
+                </div>
+              </div>
+
+              {/* BTC Dominance Chart */}
+              <div>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 sm:w-6 sm:h-6 bg-yellow-500 rounded-full flex items-center justify-center">
+                      <span className="text-white font-bold text-xs">%</span>
+                    </div>
+                    <h3 className="text-lg sm:text-xl font-semibold text-white">BTC Dominance</h3>
+                    <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-xs">
+                      BTC.D
+                    </Badge>
+                  </div>
                   <button
-                    onClick={() => openSecureLink('https://coinmarketcap.com/currencies/bitcoin/')}
-                    className="text-orange-400 hover:text-orange-300 text-xs sm:text-sm flex items-center gap-1"
-                  >
-                    CMC <ExternalLink className="w-3 h-3" />
-                  </button>
-                  <span className="text-crypto-silver text-xs">|</span>
-                  <button
-                    onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=BTCUSD')}
-                    className="text-orange-400 hover:text-orange-300 text-xs sm:text-sm"
+                    onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=CRYPTOCAP%3ABTC.D')}
+                    className="text-yellow-400 hover:text-yellow-300 text-xs sm:text-sm sm:ml-auto"
                   >
                     Open in New Tab →
                   </button>
                 </div>
-              </div>
-              <div className="w-full">
-                <iframe
-                  src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]&symbol=BINANCE%3ABTCUSDT"
-                  className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
-                  title="Bitcoin Chart"
-                  frameBorder="0"
-                  scrolling="no"
-                />
+                <div className="w-full">
+                  <iframe
+                    src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]&symbol=CRYPTOCAP%3ABTC.D"
+                    className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
+                    title="BTC Dominance Chart"
+                    frameBorder="0"
+                    scrolling="no"
+                  />
+                </div>
               </div>
             </div>
-
-            {/* BTC Dominance Chart */}
-            <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 sm:w-6 sm:h-6 bg-yellow-500 rounded-full flex items-center justify-center">
-                    <span className="text-white font-bold text-xs">%</span>
-                  </div>
-                  <h3 className="text-lg sm:text-xl font-semibold text-white">BTC Dominance</h3>
-                  <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-xs">
-                    BTC.D
-                  </Badge>
-                </div>
-                <button
-                  onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=CRYPTOCAP%3ABTC.D')}
-                  className="text-yellow-400 hover:text-yellow-300 text-xs sm:text-sm sm:ml-auto"
-                >
-                  Open in New Tab →
-                </button>
-              </div>
-              <div className="w-full">
-                <iframe
-                  src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]&symbol=CRYPTOCAP%3ABTC.D"
-                  className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
-                  title="BTC Dominance Chart"
-                  frameBorder="0"
-                  scrolling="no"
-                />
-              </div>
-            </div>
-          </div>
-          
-          {/* Bitcoin Real-time Data - Full Width */}
-          <div className="mt-4">
-            <CryptoMarketData symbol="BTC" />
+            
+            {/* Bitcoin Real-time Data */}
+            <CryptoMarketDataBare symbol="BTC" />
           </div>
 
-          {/* Ethereum Charts - Side by Side */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-            {/* Ethereum Price Chart */}
-            <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 sm:w-6 sm:h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                    <span className="text-white font-bold text-xs">Ξ</span>
+          {/* Ethereum Section - Unified */}
+          <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6 space-y-6">
+            {/* Ethereum Charts - Side by Side */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+              {/* Ethereum Price Chart */}
+              <div>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 sm:w-6 sm:h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                      <span className="text-white font-bold text-xs">Ξ</span>
+                    </div>
+                    <h3 className="text-lg sm:text-xl font-semibold text-white">Ethereum Price Chart</h3>
+                    <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
+                      ETHEREUM
+                    </Badge>
                   </div>
-                  <h3 className="text-lg sm:text-xl font-semibold text-white">Ethereum Price Chart</h3>
-                  <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
-                    ETHEREUM
-                  </Badge>
+                  <div className="flex items-center gap-2 sm:ml-auto">
+                    <button
+                      onClick={() => openSecureLink('https://coinmarketcap.com/currencies/ethereum/')}
+                      className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm flex items-center gap-1"
+                    >
+                      CMC <ExternalLink className="w-3 h-3" />
+                    </button>
+                    <span className="text-crypto-silver text-xs">|</span>
+                    <button
+                      onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=ETHUSD')}
+                      className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm"
+                    >
+                      Open in New Tab →
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 sm:ml-auto">
+                <div className="w-full">
+                  <iframe
+                    src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]&symbol=BINANCE%3AETHUSDT"
+                    className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
+                    title="Ethereum Chart"
+                    frameBorder="0"
+                    scrolling="no"
+                  />
+                </div>
+              </div>
+
+              {/* ETH Dominance Chart */}
+              <div>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 sm:w-6 sm:h-6 bg-purple-500 rounded-full flex items-center justify-center">
+                      <span className="text-white font-bold text-xs">%</span>
+                    </div>
+                    <h3 className="text-lg sm:text-xl font-semibold text-white">ETH Dominance</h3>
+                    <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-xs">
+                      ETH.D
+                    </Badge>
+                  </div>
                   <button
-                    onClick={() => openSecureLink('https://coinmarketcap.com/currencies/ethereum/')}
-                    className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm flex items-center gap-1"
-                  >
-                    CMC <ExternalLink className="w-3 h-3" />
-                  </button>
-                  <span className="text-crypto-silver text-xs">|</span>
-                  <button
-                    onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=ETHUSD')}
-                    className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm"
+                    onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=CRYPTOCAP%3AETH.D')}
+                    className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm sm:ml-auto"
                   >
                     Open in New Tab →
                   </button>
                 </div>
-              </div>
-              <div className="w-full">
-                <iframe
-                  src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]&symbol=BINANCE%3AETHUSDT"
-                  className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
-                  title="Ethereum Chart"
-                  frameBorder="0"
-                  scrolling="no"
-                />
-              </div>
-            </div>
-
-            {/* ETH Dominance Chart */}
-            <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 sm:w-6 sm:h-6 bg-purple-500 rounded-full flex items-center justify-center">
-                    <span className="text-white font-bold text-xs">%</span>
-                  </div>
-                  <h3 className="text-lg sm:text-xl font-semibold text-white">ETH Dominance</h3>
-                  <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-xs">
-                    ETH.D
-                  </Badge>
+                <div className="w-full">
+                  <iframe
+                    src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]&symbol=CRYPTOCAP%3AETH.D"
+                    className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
+                    title="ETH Dominance Chart"
+                    frameBorder="0"
+                    scrolling="no"
+                  />
                 </div>
-                <button
-                  onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=CRYPTOCAP%3AETH.D')}
-                  className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm sm:ml-auto"
-                >
-                  Open in New Tab →
-                </button>
-              </div>
-              <div className="w-full">
-                <iframe
-                  src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]&symbol=CRYPTOCAP%3AETH.D"
-                  className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
-                  title="ETH Dominance Chart"
-                  frameBorder="0"
-                  scrolling="no"
-                />
               </div>
             </div>
-          </div>
-          
-          {/* Ethereum Real-time Data - Full Width */}
-          <div className="mt-4">
-            <CryptoMarketData symbol="ETH" />
+            
+            {/* Ethereum Real-time Data */}
+            <CryptoMarketDataBare symbol="ETH" />
           </div>
 
           {/* OTHERS Dominance Chart */}
