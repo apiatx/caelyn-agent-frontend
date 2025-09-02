@@ -609,18 +609,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // CoinMarketCap top daily gainers from ALL coins endpoint
-  app.get('/api/coinmarketcap/daily-gainers-all', async (req, res) => {
+  // CoinMarketCap DEX token gainers endpoint
+  app.get('/api/coinmarketcap/dex-gainers', async (req, res) => {
     try {
-      console.log('🔍 [API] Fetching top daily gainers from ALL coins via CoinMarketCap...');
+      console.log('🔍 [API] Fetching top DEX token gainers from CoinMarketCap...');
       
-      const gainers = await coinMarketCapService.getTopDailyGainersAllCoins();
+      const dexGainers = await coinMarketCapService.getTopDexGainers();
       
-      console.log(`✅ [API] Successfully retrieved ${gainers.length} daily gainers from all coins`);
-      res.json(gainers);
+      console.log(`✅ [API] Successfully retrieved ${dexGainers.length} DEX token gainers`);
+      res.json(dexGainers);
     } catch (error) {
-      console.error('❌ [API] Failed to fetch daily gainers from all coins:', error);
-      res.status(500).json({ message: 'Failed to fetch daily gainers from all coins' });
+      console.error('❌ [API] Failed to fetch DEX token gainers:', error);
+      res.status(500).json({ message: 'Failed to fetch DEX token gainers data' });
     }
   });
 
