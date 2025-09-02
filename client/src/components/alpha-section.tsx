@@ -3,7 +3,6 @@ import { Card } from '@/components/ui/card';
 import { BarChart3, ExternalLink, TrendingUp, Link2, Star, Wallet, TrendingDown, Globe, Layers, Activity } from 'lucide-react';
 import { openSecureLink } from '@/utils/security';
 import onchainImage from "@assets/images_1756750962640.jpeg";
-import TopDexGainers from './top-dex-gainers';
 
 // Safe Glass Card component
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
@@ -74,7 +73,7 @@ export default function AlphaSection() {
       <div className="space-y-8">
         {/* Macro Analytics */}
         <GlassCard className="p-3 sm:p-4 lg:p-6">
-          <div className="flex justify-center items-center mb-6">
+          <div className="flex items-center mb-6">
             <div className="flex items-center gap-2">
               <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
                 <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
@@ -172,7 +171,7 @@ export default function AlphaSection() {
       {/* Micro Analytics */}
       <div className="space-y-8 mt-12">
         <GlassCard className="p-3 sm:p-4 lg:p-6">
-          <div className="flex justify-center items-center mb-6">
+          <div className="flex items-center mb-6">
             <div className="flex items-center gap-2">
               <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full flex items-center justify-center">
                 <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
@@ -319,10 +318,6 @@ export default function AlphaSection() {
         </GlassCard>
       </div>
 
-      {/* Top 20 DEX Token Gainers */}
-      <div className="space-y-8 mt-12">
-        <TopDexGainers />
-      </div>
 
       {/* Smart Wallets */}
       <div className="space-y-8 mt-12">
