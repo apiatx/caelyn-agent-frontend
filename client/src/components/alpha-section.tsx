@@ -116,7 +116,6 @@ export default function AlphaSection() {
               <div className="w-5 h-5 bg-orange-600 rounded-full flex items-center justify-center">
                 <span className="text-white font-bold text-xs">M</span>
               </div>
-              <h4 className="text-white font-medium">Messari.io</h4>
             </div>
             <button
               onClick={() => openInNewTab('https://messari.io/')}
@@ -125,7 +124,7 @@ export default function AlphaSection() {
               <div className="w-12 h-12 bg-orange-600 rounded-full flex items-center justify-center mx-auto mb-3">
                 <BarChart3 className="w-6 h-6 text-white" />
               </div>
-              <h4 className="text-lg font-bold text-white group-hover:text-orange-300 mb-2">Crypto Intelligence Platform</h4>
+              <h4 className="text-lg font-bold text-white group-hover:text-orange-300 mb-2">Messari.io</h4>
               <p className="text-gray-400 group-hover:text-gray-300 text-sm max-w-md mx-auto">Research reports, market data, and institutional-grade analysis</p>
             </button>
           </div>
