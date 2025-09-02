@@ -13,6 +13,11 @@ import {
 } from 'lucide-react';
 import { openCoinMarketCapLink } from '@/utils/mobile-links';
 
+// Function to open external links
+const openInNewTab = (url: string) => {
+  window.open(url, '_blank', 'noopener,noreferrer');
+};
+
 interface GlobalMetrics {
   active_cryptocurrencies: number;
   total_cryptocurrencies: number;
@@ -665,6 +670,60 @@ export function MarketOverviewSection() {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* News Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-1 gap-6 mt-6">
+        <div>
+          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <Globe className="w-5 h-5 text-green-400" />
+            News
+          </h3>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div 
+              onClick={() => openInNewTab('https://www.binance.com/en/square')}
+              className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-4 cursor-pointer group hover:opacity-80 transition-opacity duration-200"
+              title="Click to view Binance Square"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-xs">B</span>
+                </div>
+                <h4 className="text-white font-medium">Binance Square</h4>
+              </div>
+              <p className="text-gray-400 text-sm">Crypto news and social updates</p>
+            </div>
+
+            <div 
+              onClick={() => openCoinMarketCapLink('leaderboard/')}
+              className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-4 cursor-pointer group hover:opacity-80 transition-opacity duration-200"
+              title="Click to view CMC Leaderboard"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-xs">C</span>
+                </div>
+                <h4 className="text-white font-medium">CMC Leaderboard</h4>
+              </div>
+              <p className="text-gray-400 text-sm">Market Rankings</p>
+            </div>
+
+            <div 
+              onClick={() => openInNewTab('https://www.coingecko.com/en/chains')}
+              className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-4 cursor-pointer group hover:opacity-80 transition-opacity duration-200"
+              title="Click to view CoinGecko Chains"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-xs">G</span>
+                </div>
+                <h4 className="text-white font-medium">CoinGecko Chains</h4>
+              </div>
+              <p className="text-gray-400 text-sm">Blockchain Analytics</p>
             </div>
           </div>
         </div>

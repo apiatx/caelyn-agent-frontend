@@ -292,6 +292,18 @@ export default function TradeSection() {
               </div>
             </Button>
 
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://www.novaex.com/trade')}
+              className="bg-black/20 border-crypto-silver/20 hover:bg-blue-500/20 hover:border-blue-500/30 text-white justify-start p-4 h-auto"
+            >
+              <TrendingUp className="w-4 h-4 mr-2" />
+              <div className="text-left">
+                <div className="font-semibold">NovaEx: Insured perpetual futures</div>
+                <div className="text-sm text-crypto-silver">Insurance-backed perpetual trading</div>
+              </div>
+            </Button>
+
           </div>
         </div>
 
