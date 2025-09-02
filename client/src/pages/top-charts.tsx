@@ -203,11 +203,11 @@ export default function TopChartsPage() {
                 />
               </div>
             </div>
-            
-            {/* Bitcoin Real-time Data */}
-            <div className="mt-4">
-              <CryptoMarketData symbol="BTC" />
-            </div>
+          </div>
+          
+          {/* Bitcoin Real-time Data - Full Width */}
+          <div className="mt-4">
+            <CryptoMarketData symbol="BTC" />
           </div>
 
           {/* Ethereum Charts - Side by Side */}
@@ -280,11 +280,11 @@ export default function TopChartsPage() {
                 />
               </div>
             </div>
-            
-            {/* Ethereum Real-time Data */}
-            <div className="mt-4">
-              <CryptoMarketData symbol="ETH" />
-            </div>
+          </div>
+          
+          {/* Ethereum Real-time Data - Full Width */}
+          <div className="mt-4">
+            <CryptoMarketData symbol="ETH" />
           </div>
 
           {/* OTHERS Dominance Chart */}
