@@ -107,6 +107,75 @@ class CoinMarketCapService {
       throw error;
     }
   }
+
+  async getTopDailyGainers(): Promise<CoinMarketCapCrypto[]> {
+    try {
+      console.log('🔍 [CMC] Fetching top daily gainers from CoinMarketCap...');
+      const url = `${this.baseUrl}/cryptocurrency/trending/gainers-losers?time_period=24h&convert=USD&limit=10`;
+      
+      const response = await fetch(url, {
+        headers: {
+          'X-CMC_PRO_API_KEY': this.apiKey,
+          'Accept': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        // If gainers-losers endpoint fails, fall back to listings sorted by 24h change
+        console.log('🔍 [CMC] Trending endpoint failed, using fallback method...');
+        return this.getTopGainersFallback();
+      }
+
+      const data = await response.json() as any;
+      
+      if (data.status && data.status.error_code !== 0) {
+        console.log('🔍 [CMC] Trending endpoint error, using fallback method...');
+        return this.getTopGainersFallback();
+      }
+
+      console.log(`✅ [CMC] Successfully retrieved ${data.data?.gainers?.length || 0} daily gainers`);
+      return data.data?.gainers || [];
+    } catch (error) {
+      console.error('❌ [CMC] Failed to fetch daily gainers, using fallback:', error);
+      return this.getTopGainersFallback();
+    }
+  }
+
+  private async getTopGainersFallback(): Promise<CoinMarketCapCrypto[]> {
+    try {
+      console.log('🔍 [CMC] Using fallback method for top gainers...');
+      const url = `${this.baseUrl}/cryptocurrency/listings/latest?start=1&limit=100&convert=USD&sort=percent_change_24h&sort_dir=desc`;
+      
+      const response = await fetch(url, {
+        headers: {
+          'X-CMC_PRO_API_KEY': this.apiKey,
+          'Accept': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`CoinMarketCap API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json() as CoinMarketCapResponse;
+      
+      if (data.status.error_code !== 0) {
+        throw new Error(`CoinMarketCap API error: ${data.status.error_message}`);
+      }
+
+      // Filter out stablecoins and get top 10 gainers (24h change > 0)
+      const gainers = data.data
+        .filter(crypto => crypto.quote.USD.percent_change_24h > 0)
+        .filter(crypto => crypto.cmc_rank <= 500) // Only include top 500 by rank to avoid micro-caps
+        .slice(0, 10);
+
+      console.log(`✅ [CMC] Successfully retrieved ${gainers.length} daily gainers using fallback`);
+      return gainers;
+    } catch (error) {
+      console.error('❌ [CMC] Fallback method also failed:', error);
+      throw error;
+    }
+  }
 }
 
 export const coinMarketCapService = new CoinMarketCapService();

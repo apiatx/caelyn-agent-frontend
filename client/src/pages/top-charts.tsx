@@ -10,6 +10,7 @@ import { useScrollFade } from "@/hooks/useScrollFade";
 import paintColorsBackground from "@assets/paint-colors-background-header_1756067291555.jpg";
 import CryptoMarketData from "@/components/crypto-market-data";
 import CryptoMarketDataBare from "@/components/crypto-market-data-bare";
+import TopDailyGainers from "@/components/top-daily-gainers";
 
 export default function TopChartsPage() {
   const headerOpacity = useScrollFade(30, 120);
@@ -329,6 +330,23 @@ export default function TopChartsPage() {
             <div className="text-center px-3 sm:px-0">
               <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-2">Altcoin Price Charts</h2>
               <p className="text-sm sm:text-base text-crypto-silver">XRP, SOL, BNB and other major altcoin price analysis</p>
+              
+              {/* CoinMarketCap Button */}
+              <div className="mt-4">
+                <button
+                  onClick={() => openSecureLink('https://coinmarketcap.com/')}
+                  className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 hover:scale-105 flex items-center gap-2 mx-auto"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                  </svg>
+                  View on CoinMarketCap
+                  <ExternalLink className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Top 10 Daily Gainers */}
+              <TopDailyGainers />
             </div>
             
             {/* XRP Chart */}
