@@ -232,10 +232,14 @@ class CoinMarketCapService {
 
   async getTopDexGainers(): Promise<CoinMarketCapCrypto[]> {
     try {
-      console.log('🔍 [CMC DEX] Fetching top DEX token gainers from CoinMarketCap...');
+      console.log('🔍 [CMC DEX] Fetching top DEX token gainers from CoinMarketCap DexScan...');
       
-      // First try the DEX listings endpoint if available
-      let url = `${this.baseUrl.replace('/v1', '/v4')}/dex/listings/quotes?start=1&limit=200&convert=USD`;
+      // Use the correct DEX spot pairs endpoint with sorting by 24h change
+      // Start with Ethereum network (1027), which typically has the most DEX activity
+      const url = `${this.baseUrl.replace('/v1', '/v4')}/dex/spot-pairs/latest?network_id=1027&sort=percent_change_24h&sort_dir=desc&limit=20&convert=USD`;
+      
+      console.log('🔍 [CMC DEX] API URL:', url);
+      console.log('🔍 [CMC DEX] API Key:', this.apiKey ? '***KEY_SET***' : 'NO_KEY');
       
       const response = await fetch(url, {
         headers: {
@@ -244,33 +248,62 @@ class CoinMarketCapService {
         },
       });
 
+      console.log('🔍 [CMC DEX] Response status:', response.status, response.statusText);
+
       if (!response.ok) {
-        // If DEX endpoint fails, fall back to regular trending gainers with higher limit
-        console.log('🔍 [CMC DEX] DEX endpoint failed, using trending gainers fallback...');
+        const errorText = await response.text();
+        console.log('🔍 [CMC DEX] Error response body:', errorText);
+        console.log('🔍 [CMC DEX] DEX endpoint failed, using fallback method...');
         return this.getDexGainersFallback();
       }
 
       const data = await response.json() as any;
       
       if (data.status && data.status.error_code !== 0) {
-        console.log('🔍 [CMC DEX] DEX endpoint error, using fallback method...');
+        console.log('🔍 [CMC DEX] DEX endpoint error:', data.status.error_message);
+        console.log('🔍 [CMC DEX] Using fallback method...');
         return this.getDexGainersFallback();
       }
 
-      // Process DEX data similar to regular crypto data
-      const dexTokens = data.data || [];
-      console.log(`🔍 [CMC DEX] Received ${dexTokens.length} DEX tokens from API`);
+      // Process DEX spot pairs data
+      const dexPairs = data.data || [];
+      console.log(`🔍 [CMC DEX] Received ${dexPairs.length} DEX spot pairs from API`);
       
-      // Filter for positive gainers and sort by 24h change
-      const gainers = dexTokens
-        .filter((token: any) => 
-          token.quote?.USD?.percent_change_24h > 0 &&
-          token.quote?.USD?.market_cap > 1000000 // Minimum $1M market cap
+      // Convert DEX pairs to crypto format and filter for positive gainers
+      const gainers = dexPairs
+        .filter((pair: any) => 
+          pair.quote?.USD?.percent_change_24h > 0 &&
+          pair.quote?.USD?.market_cap > 10000 // Minimum $10K market cap for DEX tokens
         )
-        .sort((a: any, b: any) => b.quote.USD.percent_change_24h - a.quote.USD.percent_change_24h)
+        .map((pair: any) => ({
+          id: pair.dex_id || Math.random() * 1000000, // Use dex_id or generate random ID
+          name: pair.base_token_name || pair.pair_name || 'Unknown Token',
+          symbol: pair.base_token_symbol || pair.symbol || 'UNK',
+          slug: pair.slug || pair.base_token_symbol?.toLowerCase() || 'unknown',
+          cmc_rank: pair.rank || 999999, // DEX tokens typically don't have CMC ranks
+          quote: {
+            USD: {
+              price: pair.quote?.USD?.price || 0,
+              volume_24h: pair.quote?.USD?.volume_24h || 0,
+              percent_change_1h: pair.quote?.USD?.percent_change_1h || 0,
+              percent_change_24h: pair.quote?.USD?.percent_change_24h || 0,
+              percent_change_7d: pair.quote?.USD?.percent_change_7d || 0,
+              percent_change_30d: pair.quote?.USD?.percent_change_30d || 0,
+              percent_change_60d: pair.quote?.USD?.percent_change_60d || 0,
+              percent_change_90d: pair.quote?.USD?.percent_change_90d || 0,
+              market_cap: pair.quote?.USD?.market_cap || 0,
+            }
+          }
+        }))
         .slice(0, 20);
 
       console.log(`✅ [CMC DEX] Successfully retrieved ${gainers.length} DEX gainers`);
+      console.log('🔍 [CMC DEX] Top DEX gainers:', gainers.slice(0, 5).map((g: CoinMarketCapCrypto) => ({ 
+        name: g.name, 
+        symbol: g.symbol, 
+        change: g.quote.USD.percent_change_24h,
+        marketCap: `$${(g.quote.USD.market_cap/1e6).toFixed(1)}M`
+      })));
       return gainers;
     } catch (error) {
       console.error('❌ [CMC DEX] Failed to fetch DEX gainers, using fallback:', error);
