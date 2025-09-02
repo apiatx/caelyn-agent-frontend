@@ -299,7 +299,7 @@ export default function TradeSection() {
             >
               <TrendingUp className="w-4 h-4 mr-2" />
               <div className="text-left">
-                <div className="font-semibold">NovaEx: Insured perpetual futures</div>
+                <div className="font-semibold">NovaEx</div>
                 <div className="text-sm text-crypto-silver">Insurance-backed perpetual trading</div>
               </div>
             </Button>
