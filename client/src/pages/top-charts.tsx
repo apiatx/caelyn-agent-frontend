@@ -616,7 +616,7 @@ export default function TopChartsPage() {
 
             {/* XLM Chart */}
             <Suspense fallback={<SectionLoadingState title="XLM Chart" />}>
-              <div className="space-y-3">
+              <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <h3 className="text-lg font-semibold text-blue-400">Stellar</h3>
@@ -649,6 +649,9 @@ export default function TopChartsPage() {
                     scrolling="no"
                   />
                 </div>
+                
+                {/* Stellar Real-time Data */}
+                <CryptoMarketDataBare symbol="XLM" />
               </div>
             </Suspense>
 
