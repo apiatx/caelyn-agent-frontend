@@ -609,21 +609,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // CoinMarketCap DEX token gainers endpoint
-  app.get('/api/coinmarketcap/dex-gainers', async (req, res) => {
-    try {
-      console.log('🔍 [API] Fetching top DEX token gainers from CoinMarketCap...');
-      
-      const dexGainers = await coinMarketCapService.getTopDexGainers();
-      
-      console.log(`✅ [API] Successfully retrieved ${dexGainers.length} DEX token gainers`);
-      res.json(dexGainers);
-    } catch (error) {
-      console.error('❌ [API] Failed to fetch DEX token gainers:', error);
-      res.status(500).json({ message: 'Failed to fetch DEX token gainers data' });
-    }
-  });
-
   // Get comprehensive mindshare data with X.com sentiment and swordscan integration
   app.get('/api/mindshare/comprehensive', async (req, res) => {
     try {
