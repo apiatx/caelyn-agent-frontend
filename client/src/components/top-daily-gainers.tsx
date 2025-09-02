@@ -112,7 +112,7 @@ const TopDailyGainers = () => {
             <TrendingUp className="w-5 h-5 text-green-400" />
             <h3 className="text-lg font-semibold text-white">Top 10 Daily Gainers</h3>
           </div>
-          <p className="text-sm text-crypto-silver">(CMC Top 100)</p>
+          <p className="text-sm text-crypto-silver">CMC Top 100</p>
         </div>
         <div className="flex items-center justify-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-400"></div>
@@ -130,7 +130,7 @@ const TopDailyGainers = () => {
             <TrendingUp className="w-5 h-5 text-green-400" />
             <h3 className="text-lg font-semibold text-white">Top 10 Daily Gainers</h3>
           </div>
-          <p className="text-sm text-crypto-silver">(CMC Top 100)</p>
+          <p className="text-sm text-crypto-silver">CMC Top 100</p>
         </div>
         <div className="text-center py-8">
           <TrendingDown className="w-12 h-12 text-red-400 mx-auto mb-2" />
