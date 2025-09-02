@@ -13,6 +13,8 @@ import HyperEVMPage from "@/pages/hyperevm";
 import AbstractPage from "@/pages/abstract";
 import BNBPage from "@/pages/bnb";
 import SUIPage from "@/pages/sui";
+import HederaPage from "@/pages/hedera";
+import SonicPage from "@/pages/sonic";
 import CryptoStocks from "@/pages/crypto-stocks";
 import BittensorPage from "@/pages/bittensor";
 import TradePage from "@/pages/trade";
@@ -53,6 +55,10 @@ function Router() {
       <Route path="/bnb" component={BNBPage} />
       <Route path="/app/sui" component={SUIPage} />
       <Route path="/sui" component={SUIPage} />
+      <Route path="/app/hedera" component={HederaPage} />
+      <Route path="/hedera" component={HederaPage} />
+      <Route path="/app/sonic" component={SonicPage} />
+      <Route path="/sonic" component={SonicPage} />
       <Route path="/app/trade" component={TradePage} />
       <Route path="/trade" component={TradePage} />
       <Route path="/app/defi" component={DeFiPage} />
