@@ -142,36 +142,33 @@ export default function CryptoMarketData({ symbol, className = "" }: CryptoMarke
         </Badge>
       </div>
 
-      {/* Price and Change */}
-      <div className="grid grid-cols-2 gap-4 mb-3">
+      {/* Main Data Points - All in one row */}
+      <div className="grid grid-cols-4 gap-3 text-xs">
         <div>
           <div className="flex items-center gap-1 mb-1">
             <DollarSign className="w-3 h-3 text-crypto-silver" />
-            <span className="text-crypto-silver text-xs">Price</span>
+            <span className="text-crypto-silver">Price</span>
           </div>
-          <p className="text-white font-semibold">{formatPrice(quote.price)}</p>
+          <p className="text-white font-semibold text-sm">{formatPrice(quote.price)}</p>
         </div>
         
         <div>
           <div className="flex items-center gap-1 mb-1">
             <Clock className="w-3 h-3 text-crypto-silver" />
-            <span className="text-crypto-silver text-xs">24h Change</span>
+            <span className="text-crypto-silver">24h Change</span>
           </div>
-          <div className={`flex items-center gap-1 font-semibold ${getChangeColor(quote.percent_change_24h)}`}>
+          <div className={`flex items-center gap-1 font-semibold text-sm ${getChangeColor(quote.percent_change_24h)}`}>
             {getChangeIcon(quote.percent_change_24h)}
             <span>{quote.percent_change_24h >= 0 ? '+' : ''}{quote.percent_change_24h.toFixed(2)}%</span>
           </div>
         </div>
-      </div>
-
-      {/* Market Cap and Volume */}
-      <div className="grid grid-cols-2 gap-4 text-xs">
+        
         <div>
           <div className="flex items-center gap-1 mb-1">
             <BarChart3 className="w-3 h-3 text-crypto-silver" />
             <span className="text-crypto-silver">Market Cap</span>
           </div>
-          <p className="text-white font-medium">{formatMarketCap(quote.market_cap)}</p>
+          <p className="text-white font-semibold text-sm">{formatMarketCap(quote.market_cap)}</p>
         </div>
         
         <div>
@@ -179,7 +176,7 @@ export default function CryptoMarketData({ symbol, className = "" }: CryptoMarke
             <TrendingUp className="w-3 h-3 text-crypto-silver" />
             <span className="text-crypto-silver">24h Volume</span>
           </div>
-          <p className="text-white font-medium">{formatVolume(quote.volume_24h)}</p>
+          <p className="text-white font-semibold text-sm">{formatVolume(quote.volume_24h)}</p>
         </div>
       </div>
 
