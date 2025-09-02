@@ -143,84 +143,28 @@ class CoinMarketCapService {
 
   private async getTopGainersFallback(): Promise<CoinMarketCapCrypto[]> {
     try {
-      console.log('🔍 [CMC] Using comprehensive method for true top gainers...');
+      console.log('🔍 [CMC] Using fallback method for top gainers...');
+      // Use regular top 100 by market cap, then find best gainers among large caps
+      const url = `${this.baseUrl}/cryptocurrency/listings/latest?start=1&limit=100&convert=USD`;
       
-      // Make two API calls to get comprehensive data
-      // 1. Top cryptocurrencies by market cap
-      const marketCapUrl = `${this.baseUrl}/cryptocurrency/listings/latest?start=1&limit=200&convert=USD`;
-      // 2. Top cryptocurrencies by 24h gain
-      const gainersUrl = `${this.baseUrl}/cryptocurrency/listings/latest?start=1&limit=200&convert=USD&sort=percent_change_24h&sort_dir=desc`;
-      
-      const [marketCapResponse, gainersResponse] = await Promise.all([
-        fetch(marketCapUrl, {
-          headers: {
-            'X-CMC_PRO_API_KEY': this.apiKey,
-            'Accept': 'application/json',
-          },
-        }),
-        fetch(gainersUrl, {
-          headers: {
-            'X-CMC_PRO_API_KEY': this.apiKey,
-            'Accept': 'application/json',
-          },
-        })
-      ]);
+      const response = await fetch(url, {
+        headers: {
+          'X-CMC_PRO_API_KEY': this.apiKey,
+          'Accept': 'application/json',
+        },
+      });
 
-      if (!marketCapResponse.ok || !gainersResponse.ok) {
-        console.log('🔍 [CMC] One of the comprehensive calls failed, using single call fallback...');
-        // Fallback to single call if dual approach fails
-        const response = await fetch(marketCapUrl, {
-          headers: {
-            'X-CMC_PRO_API_KEY': this.apiKey,
-            'Accept': 'application/json',
-          },
-        });
-        if (!response.ok) {
-          throw new Error(`CoinMarketCap API error: ${response.status} ${response.statusText}`);
-        }
-        const data = await response.json() as CoinMarketCapResponse;
-        return this.processGainersData(data);
+      if (!response.ok) {
+        throw new Error(`CoinMarketCap API error: ${response.status} ${response.statusText}`);
       }
 
-      const [marketCapData, gainersData] = await Promise.all([
-        marketCapResponse.json() as Promise<CoinMarketCapResponse>,
-        gainersResponse.json() as Promise<CoinMarketCapResponse>
-      ]);
-      
-      // Combine the datasets and remove duplicates
-      const allCryptos = new Map();
-      
-      // Add market cap data
-      marketCapData.data.forEach(crypto => {
-        allCryptos.set(crypto.id, crypto);
-      });
-      
-      // Add/update with gainers data
-      gainersData.data.forEach(crypto => {
-        allCryptos.set(crypto.id, crypto);
-      });
-      
-      const combinedData = {
-        ...marketCapData,
-        data: Array.from(allCryptos.values())
-      };
-      
-      console.log(`🔍 [CMC] Combined dataset: ${combinedData.data.length} unique cryptocurrencies`);
-      
-      return this.processGainersData(combinedData);
-    } catch (error) {
-      console.error('❌ [CMC] Comprehensive method failed:', error);
-      throw error;
-    }
-  }
-
-  private processGainersData(data: CoinMarketCapResponse): CoinMarketCapCrypto[] {
+      const data = await response.json() as CoinMarketCapResponse;
       
       if (data.status.error_code !== 0) {
         throw new Error(`CoinMarketCap API error: ${data.status.error_message}`);
       }
 
-      console.log(`🔍 [CMC] Received ${data.data.length} cryptocurrencies from API (expanded dataset for better gainer detection)`);
+      console.log(`🔍 [CMC] Received ${data.data.length} cryptocurrencies from API`);
       
       // First, let's see the distribution of changes and market caps
       const changes = data.data.map(c => c.quote.USD.percent_change_24h).filter(c => c !== null && c !== undefined);
@@ -230,14 +174,12 @@ class CoinMarketCapService {
       console.log('🔍 [CMC] 24h change distribution:', {
         positive: changes.filter(c => c > 0).length,
         negative: changes.filter(c => c < 0).length,
-        total: changes.length,
-        maxGain: Math.max(...changes).toFixed(2) + '%'
+        total: changes.length
       });
       
       console.log('🔍 [CMC] Market cap distribution:', {
         totalWithMarketCap: marketCaps.length,
         over100M: largeCapValues.length,
-        largestMC: `$${(Math.max(...marketCaps)/1e6).toFixed(0)}M`,
         sampleMarketCaps: marketCaps.slice(0, 5).map(mc => `$${(mc/1e6).toFixed(1)}M`)
       });
 
@@ -281,24 +223,11 @@ class CoinMarketCapService {
         rank: g.cmc_rank,
         marketCap: `$${(g.quote.USD.market_cap/1e6).toFixed(1)}M`
       })));
-      
-      // Log some stats about what we filtered out
-      const allPositiveGainers = largeCaps.filter(crypto => crypto.quote.USD.percent_change_24h > 0);
-      console.log(`🔍 [CMC] Total large-cap positive gainers found: ${allPositiveGainers.length}`);
-      if (allPositiveGainers.length > 10) {
-        const topFive = allPositiveGainers
-          .sort((a, b) => b.quote.USD.percent_change_24h - a.quote.USD.percent_change_24h)
-          .slice(0, 15); // Top 15 to see if we're missing any
-        console.log('🔍 [CMC] All top 15 large-cap gainers for verification:', topFive.map(g => ({ 
-          name: g.name, 
-          symbol: g.symbol, 
-          change: g.quote.USD.percent_change_24h.toFixed(2) + '%',
-          rank: g.cmc_rank,
-          marketCap: `$${(g.quote.USD.market_cap/1e6).toFixed(1)}M`
-        })));
-      }
-      
       return gainers;
+    } catch (error) {
+      console.error('❌ [CMC] Fallback method also failed:', error);
+      throw error;
+    }
   }
 }
 
