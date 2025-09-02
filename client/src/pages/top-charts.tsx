@@ -654,7 +654,7 @@ export default function TopChartsPage() {
 
             {/* HBAR Chart */}
             <Suspense fallback={<SectionLoadingState title="HBAR Chart" />}>
-              <div className="space-y-3">
+              <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <h3 className="text-lg font-semibold text-green-400">Hedera</h3>
@@ -687,12 +687,15 @@ export default function TopChartsPage() {
                     scrolling="no"
                   />
                 </div>
+                
+                {/* Hedera Real-time Data */}
+                <CryptoMarketDataBare symbol="HBAR" />
               </div>
             </Suspense>
 
             {/* LTC Chart */}
             <Suspense fallback={<SectionLoadingState title="LTC Chart" />}>
-              <div className="space-y-3">
+              <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <h3 className="text-lg font-semibold text-gray-400">Litecoin</h3>
@@ -725,12 +728,15 @@ export default function TopChartsPage() {
                     scrolling="no"
                   />
                 </div>
+                
+                {/* Litecoin Real-time Data */}
+                <CryptoMarketDataBare symbol="LTC" />
               </div>
             </Suspense>
 
             {/* XMR Chart */}
             <Suspense fallback={<SectionLoadingState title="XMR Chart" />}>
-              <div className="space-y-3">
+              <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <h3 className="text-lg font-semibold text-orange-400">Monero</h3>
@@ -763,12 +769,15 @@ export default function TopChartsPage() {
                     scrolling="no"
                   />
                 </div>
+                
+                {/* Monero Real-time Data */}
+                <CryptoMarketDataBare symbol="XMR" />
               </div>
             </Suspense>
 
             {/* AERO Chart */}
             <Suspense fallback={<SectionLoadingState title="AERO Chart" />}>
-              <div className="space-y-3">
+              <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <h3 className="text-lg font-semibold text-blue-400">Aerodrome Finance</h3>
@@ -801,12 +810,15 @@ export default function TopChartsPage() {
                     scrolling="no"
                   />
                 </div>
+                
+                {/* Aerodrome Finance Real-time Data */}
+                <CryptoMarketDataBare symbol="AERO" />
               </div>
             </Suspense>
 
             {/* ENA Chart */}
             <Suspense fallback={<SectionLoadingState title="ENA Chart" />}>
-              <div className="space-y-3">
+              <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <h3 className="text-lg font-semibold text-purple-400">Ethena</h3>
@@ -839,12 +851,15 @@ export default function TopChartsPage() {
                     scrolling="no"
                   />
                 </div>
+                
+                {/* Ethena Real-time Data */}
+                <CryptoMarketDataBare symbol="ENA" />
               </div>
             </Suspense>
 
             {/* SEI Chart */}
             <Suspense fallback={<SectionLoadingState title="SEI Chart" />}>
-              <div className="space-y-3">
+              <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <h3 className="text-lg font-semibold text-red-400">Sei</h3>
@@ -877,12 +892,15 @@ export default function TopChartsPage() {
                     scrolling="no"
                   />
                 </div>
+                
+                {/* SEI Real-time Data */}
+                <CryptoMarketDataBare symbol="SEI" />
               </div>
             </Suspense>
 
             {/* VIRTUAL Chart */}
             <Suspense fallback={<SectionLoadingState title="VIRTUAL Chart" />}>
-              <div className="space-y-3">
+              <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <h3 className="text-lg font-semibold text-cyan-400">VIRTUAL</h3>
@@ -915,12 +933,15 @@ export default function TopChartsPage() {
                     scrolling="no"
                   />
                 </div>
+                
+                {/* VIRTUAL Real-time Data */}
+                <CryptoMarketDataBare symbol="VIRTUAL" />
               </div>
             </Suspense>
 
             {/* DOGE Chart */}
             <Suspense fallback={<SectionLoadingState title="DOGE Chart" />}>
-              <div className="space-y-3">
+              <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <h3 className="text-lg font-semibold text-orange-400">DOGE</h3>
@@ -953,12 +974,15 @@ export default function TopChartsPage() {
                     scrolling="no"
                   />
                 </div>
+                
+                {/* DOGE Real-time Data */}
+                <CryptoMarketDataBare symbol="DOGE" />
               </div>
             </Suspense>
 
             {/* BONK Chart */}
             <Suspense fallback={<SectionLoadingState title="BONK Chart" />}>
-              <div className="space-y-3">
+              <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <h3 className="text-lg font-semibold text-yellow-400">BONK</h3>
@@ -991,12 +1015,15 @@ export default function TopChartsPage() {
                     scrolling="no"
                   />
                 </div>
+                
+                {/* BONK Real-time Data */}
+                <CryptoMarketDataBare symbol="BONK" />
               </div>
             </Suspense>
 
             {/* PENGU Chart */}
             <Suspense fallback={<SectionLoadingState title="PENGU Chart" />}>
-              <div className="space-y-3">
+              <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <h3 className="text-lg font-semibold text-cyan-400">PENGU</h3>
@@ -1029,6 +1056,9 @@ export default function TopChartsPage() {
                     scrolling="no"
                   />
                 </div>
+                
+                {/* PENGU Real-time Data */}
+                <CryptoMarketDataBare symbol="PENGU" />
               </div>
             </Suspense>
 
