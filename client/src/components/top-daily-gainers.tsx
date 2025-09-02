@@ -10,7 +10,11 @@ interface CoinData {
   quote: {
     USD: {
       price: number;
+      volume_24h: number;
+      percent_change_1h: number;
       percent_change_24h: number;
+      percent_change_7d: number;
+      percent_change_30d: number;
       market_cap: number;
     };
   };
@@ -32,7 +36,11 @@ const TopDailyGainers = () => {
         }
         
         const data = await response.json();
-        setGainers(data);
+        // Sort by 24h percent change in descending order
+        const sortedGainers = data.sort((a: CoinData, b: CoinData) => 
+          b.quote.USD.percent_change_24h - a.quote.USD.percent_change_24h
+        );
+        setGainers(sortedGainers);
         setError(null);
       } catch (err) {
         console.error('Error fetching daily gainers:', err);
@@ -70,6 +78,26 @@ const TopDailyGainers = () => {
     } else {
       return `$${(marketCap / 1e3).toFixed(0)}K`;
     }
+  };
+
+  const formatVolume = (volume: number) => {
+    if (volume >= 1e9) {
+      return `$${(volume / 1e9).toFixed(1)}B`;
+    } else if (volume >= 1e6) {
+      return `$${(volume / 1e6).toFixed(0)}M`;
+    } else {
+      return `$${(volume / 1e3).toFixed(0)}K`;
+    }
+  };
+
+  const formatPercentChange = (change: number) => {
+    const isPositive = change > 0;
+    const prefix = isPositive ? '+' : '';
+    return `${prefix}${change.toFixed(2)}%`;
+  };
+
+  const getChangeColor = (change: number) => {
+    return change > 0 ? 'text-green-400' : 'text-red-400';
   };
 
   const openCoinPage = (symbol: string) => {
@@ -116,7 +144,7 @@ const TopDailyGainers = () => {
         </Badge>
       </div>
       
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="space-y-4">
         {gainers.slice(0, 10).map((coin, index) => (
           <div
             key={coin.id}
@@ -124,38 +152,65 @@ const TopDailyGainers = () => {
             onClick={() => openCoinPage(coin.symbol)}
             data-testid={`gainer-card-${coin.symbol}`}
           >
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center space-x-2">
-                <span className="text-xs font-bold text-green-400">#{index + 1}</span>
-                <span className="text-xs text-gray-400">#{coin.cmc_rank}</span>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center space-x-3">
+                <span className="text-sm font-bold text-green-400">#{index + 1}</span>
+                <div>
+                  <h4 className="font-semibold text-white text-sm">{coin.name}</h4>
+                  <div className="flex items-center space-x-2">
+                    <p className="text-xs text-crypto-silver">{coin.symbol}</p>
+                    <span className="text-xs text-gray-400">Rank #{coin.cmc_rank}</span>
+                  </div>
+                </div>
               </div>
-              <ExternalLink className="w-3 h-3 text-gray-400 group-hover:text-green-400 transition-colors" />
+              <div className="text-right">
+                <div className="text-sm font-medium text-white">{formatPrice(coin.quote.USD.price)}</div>
+                <ExternalLink className="w-3 h-3 text-gray-400 group-hover:text-green-400 transition-colors ml-auto mt-1" />
+              </div>
             </div>
             
-            <div className="mb-2">
-              <h4 className="font-semibold text-white text-sm truncate">{coin.name}</h4>
-              <p className="text-xs text-crypto-silver">{coin.symbol}</p>
-            </div>
-            
-            <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-crypto-silver">Price:</span>
-                <span className="text-xs font-medium text-white">{formatPrice(coin.quote.USD.price)}</span>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+              <div className="text-center">
+                <div className="text-crypto-silver mb-1">1h Change</div>
+                <div className={`font-medium ${getChangeColor(coin.quote.USD.percent_change_1h)}`}>
+                  {formatPercentChange(coin.quote.USD.percent_change_1h)}
+                </div>
               </div>
               
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-crypto-silver">24h:</span>
-                <div className="flex items-center space-x-1">
+              <div className="text-center">
+                <div className="text-crypto-silver mb-1">24h Change</div>
+                <div className="flex items-center justify-center space-x-1">
                   <TrendingUp className="w-3 h-3 text-green-400" />
-                  <span className="text-xs font-bold text-green-400">
-                    +{coin.quote.USD.percent_change_24h.toFixed(1)}%
+                  <span className="font-medium text-green-400">
+                    {formatPercentChange(coin.quote.USD.percent_change_24h)}
                   </span>
                 </div>
               </div>
               
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-crypto-silver">MCap:</span>
-                <span className="text-xs text-white">{formatMarketCap(coin.quote.USD.market_cap)}</span>
+              <div className="text-center">
+                <div className="text-crypto-silver mb-1">7d Change</div>
+                <div className={`font-medium ${getChangeColor(coin.quote.USD.percent_change_7d)}`}>
+                  {formatPercentChange(coin.quote.USD.percent_change_7d)}
+                </div>
+              </div>
+              
+              <div className="text-center">
+                <div className="text-crypto-silver mb-1">30d Change</div>
+                <div className={`font-medium ${getChangeColor(coin.quote.USD.percent_change_30d)}`}>
+                  {formatPercentChange(coin.quote.USD.percent_change_30d)}
+                </div>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-gray-600/30 text-xs">
+              <div className="text-center">
+                <div className="text-crypto-silver mb-1">Market Cap</div>
+                <div className="font-medium text-white">{formatMarketCap(coin.quote.USD.market_cap)}</div>
+              </div>
+              
+              <div className="text-center">
+                <div className="text-crypto-silver mb-1">24h Volume</div>
+                <div className="font-medium text-white">{formatVolume(coin.quote.USD.volume_24h)}</div>
               </div>
             </div>
           </div>

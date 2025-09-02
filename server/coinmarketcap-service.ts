@@ -163,13 +163,57 @@ class CoinMarketCapService {
         throw new Error(`CoinMarketCap API error: ${data.status.error_message}`);
       }
 
-      // Filter out stablecoins and get top 10 gainers (24h change > 0)
-      const gainers = data.data
-        .filter(crypto => crypto.quote.USD.percent_change_24h > 0)
-        .filter(crypto => crypto.cmc_rank <= 500) // Only include top 500 by rank to avoid micro-caps
+      console.log(`🔍 [CMC] Received ${data.data.length} cryptocurrencies from API`);
+      
+      // First, let's see the distribution of changes
+      const changes = data.data.map(c => c.quote.USD.percent_change_24h).filter(c => c !== null && c !== undefined);
+      console.log('🔍 [CMC] 24h change distribution:', {
+        positive: changes.filter(c => c > 0).length,
+        negative: changes.filter(c => c < 0).length,
+        total: changes.length
+      });
+
+      // Get top 10 gainers with more lenient filtering
+      let validCryptos = data.data.filter(crypto => 
+        crypto.quote.USD.percent_change_24h !== null && 
+        crypto.quote.USD.percent_change_24h !== undefined &&
+        crypto.quote.USD.percent_change_24h > 5 && // At least 5% gain to be considered significant
+        crypto.cmc_rank <= 2000 // Include more coins to get better selection
+      );
+      
+      // If we don't have enough significant gainers, include smaller gains
+      if (validCryptos.length < 10) {
+        console.log('🔍 [CMC] Not enough significant gainers, expanding criteria...');
+        validCryptos = data.data.filter(crypto => 
+          crypto.quote.USD.percent_change_24h !== null && 
+          crypto.quote.USD.percent_change_24h !== undefined &&
+          crypto.quote.USD.percent_change_24h > 0 && // Any positive gain
+          crypto.cmc_rank <= 1500 // Expand to top 1500 coins
+        );
+        console.log(`🔍 [CMC] Found ${validCryptos.length} positive gainers in top 1500`);
+      }
+      
+      // If still not enough, further expand
+      if (validCryptos.length < 10) {
+        console.log('🔍 [CMC] Still not enough, using all 100 results...');
+        validCryptos = data.data.filter(crypto => 
+          crypto.quote.USD.percent_change_24h !== null && 
+          crypto.quote.USD.percent_change_24h !== undefined
+        );
+      }
+      
+      // Sort by 24h change descending and take top 10
+      const gainers = validCryptos
+        .sort((a, b) => b.quote.USD.percent_change_24h - a.quote.USD.percent_change_24h)
         .slice(0, 10);
 
       console.log(`✅ [CMC] Successfully retrieved ${gainers.length} daily gainers using fallback`);
+      console.log('🔍 [CMC] Top gainers:', gainers.map(g => ({ 
+        name: g.name, 
+        symbol: g.symbol, 
+        change: g.quote.USD.percent_change_24h,
+        rank: g.cmc_rank
+      })));
       return gainers;
     } catch (error) {
       console.error('❌ [CMC] Fallback method also failed:', error);
