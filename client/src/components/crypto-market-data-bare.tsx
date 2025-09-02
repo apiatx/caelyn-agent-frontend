@@ -138,25 +138,25 @@ export default function CryptoMarketDataBare({ symbol, className = "" }: CryptoM
       </div>
 
       {/* Main Data Points - All in one row */}
-      <div className="grid grid-cols-3 gap-3 text-xs mb-3">
-        <div>
-          <div className="flex items-center gap-1 mb-1">
+      <div className="grid grid-cols-3 gap-4 text-xs mb-4">
+        <div className="text-center">
+          <div className="flex items-center justify-center gap-1 mb-1">
             <DollarSign className="w-3 h-3 text-crypto-silver" />
             <span className="text-crypto-silver">Price</span>
           </div>
           <p className="text-white font-semibold text-sm">{formatPrice(quote.price)}</p>
         </div>
         
-        <div>
-          <div className="flex items-center gap-1 mb-1">
+        <div className="text-center">
+          <div className="flex items-center justify-center gap-1 mb-1">
             <BarChart3 className="w-3 h-3 text-crypto-silver" />
             <span className="text-crypto-silver">Market Cap</span>
           </div>
           <p className="text-white font-semibold text-sm">{formatMarketCap(quote.market_cap)}</p>
         </div>
         
-        <div>
-          <div className="flex items-center gap-1 mb-1">
+        <div className="text-center">
+          <div className="flex items-center justify-center gap-1 mb-1">
             <TrendingUp className="w-3 h-3 text-crypto-silver" />
             <span className="text-crypto-silver">24h Volume</span>
           </div>
@@ -165,27 +165,27 @@ export default function CryptoMarketDataBare({ symbol, className = "" }: CryptoM
       </div>
 
       {/* Performance Indicators */}
-      <div className="grid grid-cols-4 gap-2 text-xs pt-3 border-t border-crypto-silver/10">
+      <div className="grid grid-cols-4 gap-3 text-xs pt-3 border-t border-crypto-silver/10">
         <div className="text-center">
-          <span className="text-crypto-silver block">1h</span>
+          <span className="text-crypto-silver block mb-1">1h</span>
           <span className={`font-medium ${getChangeColor(quote.percent_change_1h)}`}>
             {quote.percent_change_1h >= 0 ? '+' : ''}{quote.percent_change_1h.toFixed(2)}%
           </span>
         </div>
         <div className="text-center">
-          <span className="text-crypto-silver block">24h</span>
+          <span className="text-crypto-silver block mb-1">24h</span>
           <span className={`font-medium ${getChangeColor(quote.percent_change_24h)}`}>
             {quote.percent_change_24h >= 0 ? '+' : ''}{quote.percent_change_24h.toFixed(2)}%
           </span>
         </div>
         <div className="text-center">
-          <span className="text-crypto-silver block">7d</span>
+          <span className="text-crypto-silver block mb-1">7d</span>
           <span className={`font-medium ${getChangeColor(quote.percent_change_7d)}`}>
             {quote.percent_change_7d >= 0 ? '+' : ''}{quote.percent_change_7d.toFixed(2)}%
           </span>
         </div>
         <div className="text-center">
-          <span className="text-crypto-silver block">30d</span>
+          <span className="text-crypto-silver block mb-1">30d</span>
           <span className={`font-medium ${getChangeColor(quote.percent_change_30d)}`}>
             {quote.percent_change_30d >= 0 ? '+' : ''}{quote.percent_change_30d.toFixed(2)}%
           </span>
