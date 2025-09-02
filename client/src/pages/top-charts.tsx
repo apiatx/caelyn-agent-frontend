@@ -452,7 +452,7 @@ export default function TopChartsPage() {
 
             {/* SUI Chart */}
             <Suspense fallback={<SectionLoadingState title="SUI Chart" />}>
-              <div className="space-y-3">
+              <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <h3 className="text-lg font-semibold text-green-400">SUI</h3>
@@ -485,12 +485,15 @@ export default function TopChartsPage() {
                     scrolling="no"
                   />
                 </div>
+                
+                {/* SUI Real-time Data */}
+                <CryptoMarketDataBare symbol="SUI" />
               </div>
             </Suspense>
 
             {/* CHAINLINK Chart */}
             <Suspense fallback={<SectionLoadingState title="CHAINLINK Chart" />}>
-              <div className="space-y-3">
+              <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <h3 className="text-lg font-semibold text-blue-400">Chainlink</h3>
@@ -523,30 +526,33 @@ export default function TopChartsPage() {
                     scrolling="no"
                   />
                 </div>
+                
+                {/* Chainlink Real-time Data */}
+                <CryptoMarketDataBare symbol="LINK" />
               </div>
             </Suspense>
 
             {/* Hyperliquid Chart */}
             <Suspense fallback={<SectionLoadingState title="Hyperliquid Chart" />}>
-              <div className="space-y-3">
+              <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <h3 className="text-lg font-semibold text-blue-400">Hyperliquid</h3>
-                    <Badge variant="outline" className="bg-blue-500/20 text-blue-300 border-blue-500/30">
+                    <h3 className="text-lg font-semibold text-cyan-400">Hyperliquid</h3>
+                    <Badge variant="outline" className="bg-cyan-500/20 text-cyan-300 border-cyan-500/30">
                       HYPE
                     </Badge>
                   </div>
                   <div className="flex items-center space-x-3">
                     <button
                       onClick={() => openSecureLink('https://coinmarketcap.com/currencies/hyperliquid/')}
-                      className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm flex items-center gap-1"
+                      className="text-cyan-400 hover:text-cyan-300 text-xs sm:text-sm flex items-center gap-1"
                     >
                       <ExternalLink className="w-3 h-3" />
                       CoinMarketCap
                     </button>
                     <button
                       onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=PYTH%3AHYPEUSD')}
-                      className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm"
+                      className="text-cyan-400 hover:text-cyan-300 text-xs sm:text-sm"
                     >
                       Open Full View →
                     </button>
@@ -561,12 +567,15 @@ export default function TopChartsPage() {
                     scrolling="no"
                   />
                 </div>
+                
+                {/* Hyperliquid Real-time Data */}
+                <CryptoMarketDataBare symbol="HYPE" />
               </div>
             </Suspense>
 
             {/* Bittensor Chart */}
             <Suspense fallback={<SectionLoadingState title="Bittensor Chart" />}>
-              <div className="space-y-3">
+              <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <h3 className="text-lg font-semibold text-orange-400">Bittensor</h3>
@@ -599,6 +608,9 @@ export default function TopChartsPage() {
                     scrolling="no"
                   />
                 </div>
+                
+                {/* Bittensor Real-time Data */}
+                <CryptoMarketDataBare symbol="TAO" />
               </div>
             </Suspense>
 

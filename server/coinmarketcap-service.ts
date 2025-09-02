@@ -116,7 +116,7 @@ export async function getMajorCryptocurrencies(): Promise<CoinMarketCapCrypto[]>
   try {
     console.log('🔍 [CMC] Fetching major cryptocurrencies for Majors page...');
     
-    const majorSymbols = ['BTC', 'ETH', 'XRP', 'SOL', 'BNB', 'ADA', 'DOGE', 'AVAX', 'TRX', 'DOT'];
+    const majorSymbols = ['BTC', 'ETH', 'XRP', 'SOL', 'BNB', 'ADA', 'DOGE', 'AVAX', 'TRX', 'DOT', 'SUI', 'LINK', 'HYPE', 'TAO'];
     const symbolsParam = majorSymbols.join(',');
     
     const response = await fetch(`https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=${symbolsParam}&convert=USD`, {
