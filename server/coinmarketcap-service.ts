@@ -229,6 +229,102 @@ class CoinMarketCapService {
       throw error;
     }
   }
+
+  async getTopDailyGainersAllCoins(): Promise<CoinMarketCapCrypto[]> {
+    try {
+      console.log('🔍 [CMC] Fetching top daily gainers from ALL coins...');
+      const url = `${this.baseUrl}/cryptocurrency/trending/gainers-losers?time_period=24h&convert=USD&limit=10`;
+      
+      const response = await fetch(url, {
+        headers: {
+          'X-CMC_PRO_API_KEY': this.apiKey,
+          'Accept': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        // If gainers-losers endpoint fails, fall back to broader listings
+        console.log('🔍 [CMC] Trending endpoint failed, using all coins fallback method...');
+        return this.getTopGainersAllCoinsFallback();
+      }
+
+      const data = await response.json() as any;
+      
+      if (data.status && data.status.error_code !== 0) {
+        console.log('🔍 [CMC] Trending endpoint error, using all coins fallback method...');
+        return this.getTopGainersAllCoinsFallback();
+      }
+
+      console.log(`✅ [CMC] Successfully retrieved ${data.data?.gainers?.length || 0} daily gainers from all coins`);
+      return data.data?.gainers || [];
+    } catch (error) {
+      console.error('❌ [CMC] Failed to fetch daily gainers from all coins, using fallback:', error);
+      return this.getTopGainersAllCoinsFallback();
+    }
+  }
+
+  private async getTopGainersAllCoinsFallback(): Promise<CoinMarketCapCrypto[]> {
+    try {
+      console.log('🔍 [CMC] Using fallback method for top gainers from all coins...');
+      // Fetch from a much larger pool - top 2000 coins instead of just 100
+      const url = `${this.baseUrl}/cryptocurrency/listings/latest?start=1&limit=2000&convert=USD`;
+      
+      const response = await fetch(url, {
+        headers: {
+          'X-CMC_PRO_API_KEY': this.apiKey,
+          'Accept': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`CoinMarketCap API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json() as CoinMarketCapResponse;
+      
+      if (data.status.error_code !== 0) {
+        throw new Error(`CoinMarketCap API error: ${data.status.error_message}`);
+      }
+
+      console.log(`🔍 [CMC] Received ${data.data.length} cryptocurrencies from all coins API`);
+      
+      // Filter for positive gains from ALL coins (no market cap restriction)
+      let validCryptos = data.data.filter(crypto => 
+        crypto.quote.USD.percent_change_24h !== null && 
+        crypto.quote.USD.percent_change_24h !== undefined &&
+        crypto.quote.USD.percent_change_24h > 0 // Any positive gain
+      );
+      
+      console.log(`🔍 [CMC] Found ${validCryptos.length} positive gainers from all coins`);
+      
+      // If we don't have enough results, use the best performing coins (even if negative)
+      if (validCryptos.length < 10) {
+        console.log('🔍 [CMC] Not enough positive gainers, including all coins...');
+        validCryptos = data.data.filter(crypto => 
+          crypto.quote.USD.percent_change_24h !== null && 
+          crypto.quote.USD.percent_change_24h !== undefined
+        );
+      }
+      
+      // Sort by 24h change descending and take top 10
+      const gainers = validCryptos
+        .sort((a, b) => b.quote.USD.percent_change_24h - a.quote.USD.percent_change_24h)
+        .slice(0, 10);
+
+      console.log(`✅ [CMC] Successfully retrieved ${gainers.length} daily gainers from all coins using fallback`);
+      console.log('🔍 [CMC] Top all-coin gainers:', gainers.map(g => ({ 
+        name: g.name, 
+        symbol: g.symbol, 
+        change: g.quote.USD.percent_change_24h,
+        rank: g.cmc_rank,
+        marketCap: g.quote.USD.market_cap ? `$${(g.quote.USD.market_cap/1e6).toFixed(1)}M` : 'N/A'
+      })));
+      return gainers;
+    } catch (error) {
+      console.error('❌ [CMC] All coins fallback method also failed:', error);
+      throw error;
+    }
+  }
 }
 
 export const coinMarketCapService = new CoinMarketCapService();

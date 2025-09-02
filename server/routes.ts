@@ -609,6 +609,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // CoinMarketCap top daily gainers from ALL coins endpoint
+  app.get('/api/coinmarketcap/daily-gainers-all', async (req, res) => {
+    try {
+      console.log('🔍 [API] Fetching top daily gainers from ALL coins via CoinMarketCap...');
+      
+      const gainers = await coinMarketCapService.getTopDailyGainersAllCoins();
+      
+      console.log(`✅ [API] Successfully retrieved ${gainers.length} daily gainers from all coins`);
+      res.json(gainers);
+    } catch (error) {
+      console.error('❌ [API] Failed to fetch daily gainers from all coins:', error);
+      res.status(500).json({ message: 'Failed to fetch daily gainers from all coins' });
+    }
+  });
+
   // Get comprehensive mindshare data with X.com sentiment and swordscan integration
   app.get('/api/mindshare/comprehensive', async (req, res) => {
     try {
