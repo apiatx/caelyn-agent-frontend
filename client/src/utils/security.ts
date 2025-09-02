@@ -174,7 +174,26 @@ const TRUSTED_DOMAINS = [
   'taofi.com',
   'www.taofi.com',
   'tao.bot',
-  'www.tao.bot'
+  'www.tao.bot',
+  'bscscan.com',
+  'pancakeswap.finance',
+  'cetus.zone',
+  'www.cetus.zone',
+  'suivision.xyz',
+  'hashscan.io',
+  'hedera.com',
+  'app.sonic.game',
+  'bridge.sonic.game',
+  'wallet.sonic.game',
+  'games.sonic.game',
+  'nft.sonic.game',
+  'analytics.sonic.game',
+  'binance.com',
+  'www.binance.com',
+  'novaex.com',
+  'www.novaex.com',
+  'app.extended.exchange',
+  'extended.exchange'
 ];
 
 /**
