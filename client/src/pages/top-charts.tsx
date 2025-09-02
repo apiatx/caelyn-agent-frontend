@@ -345,8 +345,6 @@ export default function TopChartsPage() {
                 </button>
               </div>
 
-              {/* Top 10 Daily Gainers */}
-              <TopDailyGainers />
             </div>
             
             {/* XRP Chart */}
@@ -1086,6 +1084,9 @@ export default function TopChartsPage() {
                 <CryptoMarketDataBare symbol="VIRTUAL" />
               </div>
             </Suspense>
+
+            {/* Top 10 Daily Gainers */}
+            <TopDailyGainers />
 
             {/* Velo Chart */}
             <Suspense fallback={<SectionLoadingState title="Velo Chart" />}>
