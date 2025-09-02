@@ -73,6 +73,22 @@ export default function SolanaSection() {
           </button>
         </div>
         <div className="w-full space-y-4">
+          {/* Moby Screener iframe */}
+          <div className="w-full">
+            <iframe
+              src="https://www.mobyscreener.com/"
+              title="Moby Screener Analytics"
+              className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+              referrerPolicy="no-referrer-when-downgrade"
+              loading="lazy"
+              style={{
+                background: 'transparent',
+                colorScheme: 'dark'
+              }}
+            />
+          </div>
+          
           <button
             onClick={() => openSecureLink("https://dexscreener.com/solana?theme=dark")}
             className="w-full p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors text-left"
@@ -116,42 +132,6 @@ export default function SolanaSection() {
         </div>
       </GlassCard>
 
-
-
-      {/* Moby Screener */}
-      <GlassCard className="p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-cyan-500 rounded-full flex items-center justify-center">
-              <Activity className="w-4 h-4 text-white" />
-            </div>
-            <h3 className="text-xl font-semibold text-white">Moby Screener</h3>
-            <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30">
-              ANALYTICS
-            </Badge>
-          </div>
-          <button
-            onClick={() => openSecureLink('https://www.mobyscreener.com/')}
-            className="text-cyan-400 hover:text-cyan-300 text-xs sm:text-sm"
-          >
-            Open Full View →
-          </button>
-        </div>
-        <div className="w-full">
-          <iframe
-            src="https://www.mobyscreener.com/"
-            title="Moby Screener Analytics"
-            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
-            referrerPolicy="no-referrer-when-downgrade"
-            loading="lazy"
-            style={{
-              background: 'transparent',
-              colorScheme: 'dark'
-            }}
-          />
-        </div>
-      </GlassCard>
 
 
 
