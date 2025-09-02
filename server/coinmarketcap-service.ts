@@ -144,7 +144,8 @@ class CoinMarketCapService {
   private async getTopGainersFallback(): Promise<CoinMarketCapCrypto[]> {
     try {
       console.log('🔍 [CMC] Using fallback method for top gainers...');
-      const url = `${this.baseUrl}/cryptocurrency/listings/latest?start=1&limit=100&convert=USD&sort=percent_change_24h&sort_dir=desc`;
+      // Use regular top 100 by market cap, then find best gainers among large caps
+      const url = `${this.baseUrl}/cryptocurrency/listings/latest?start=1&limit=100&convert=USD`;
       
       const response = await fetch(url, {
         headers: {
@@ -165,41 +166,48 @@ class CoinMarketCapService {
 
       console.log(`🔍 [CMC] Received ${data.data.length} cryptocurrencies from API`);
       
-      // First, let's see the distribution of changes
+      // First, let's see the distribution of changes and market caps
       const changes = data.data.map(c => c.quote.USD.percent_change_24h).filter(c => c !== null && c !== undefined);
+      const marketCaps = data.data.map(c => c.quote.USD.market_cap).filter(mc => mc !== null && mc !== undefined && mc > 0);
+      const largeCapValues = marketCaps.filter(mc => mc > 100000000); // > $100M
+      
       console.log('🔍 [CMC] 24h change distribution:', {
         positive: changes.filter(c => c > 0).length,
         negative: changes.filter(c => c < 0).length,
         total: changes.length
       });
+      
+      console.log('🔍 [CMC] Market cap distribution:', {
+        totalWithMarketCap: marketCaps.length,
+        over100M: largeCapValues.length,
+        sampleMarketCaps: marketCaps.slice(0, 5).map(mc => `$${(mc/1e6).toFixed(1)}M`)
+      });
 
-      // Get top 10 gainers with more lenient filtering
-      let validCryptos = data.data.filter(crypto => 
+      // First, filter by market cap > $100M, then sort by gains
+      const MIN_MARKET_CAP = 100000000; // $100 million
+      
+      // Start with all cryptos that have market cap > $100M
+      const largeCaps = data.data.filter(crypto => 
         crypto.quote.USD.percent_change_24h !== null && 
         crypto.quote.USD.percent_change_24h !== undefined &&
-        crypto.quote.USD.percent_change_24h > 5 && // At least 5% gain to be considered significant
-        crypto.cmc_rank <= 2000 // Include more coins to get better selection
+        crypto.quote.USD.market_cap !== null &&
+        crypto.quote.USD.market_cap !== undefined &&
+        crypto.quote.USD.market_cap > MIN_MARKET_CAP
       );
       
-      // If we don't have enough significant gainers, include smaller gains
-      if (validCryptos.length < 10) {
-        console.log('🔍 [CMC] Not enough significant gainers, expanding criteria...');
-        validCryptos = data.data.filter(crypto => 
-          crypto.quote.USD.percent_change_24h !== null && 
-          crypto.quote.USD.percent_change_24h !== undefined &&
-          crypto.quote.USD.percent_change_24h > 0 && // Any positive gain
-          crypto.cmc_rank <= 1500 // Expand to top 1500 coins
-        );
-        console.log(`🔍 [CMC] Found ${validCryptos.length} positive gainers in top 1500`);
-      }
+      console.log(`🔍 [CMC] Found ${largeCaps.length} cryptocurrencies with market cap > $100M`);
       
-      // If still not enough, further expand
+      // Filter for positive gains among large caps
+      let validCryptos = largeCaps.filter(crypto => 
+        crypto.quote.USD.percent_change_24h > 0 // Any positive gain
+      );
+      
+      console.log(`🔍 [CMC] Found ${validCryptos.length} large-cap positive gainers`);
+      
+      // If we don't have enough results, use the best performing large caps (even if negative)
       if (validCryptos.length < 10) {
-        console.log('🔍 [CMC] Still not enough, using all 100 results...');
-        validCryptos = data.data.filter(crypto => 
-          crypto.quote.USD.percent_change_24h !== null && 
-          crypto.quote.USD.percent_change_24h !== undefined
-        );
+        console.log('🔍 [CMC] Not enough positive large-cap gainers, including all large caps...');
+        validCryptos = largeCaps;
       }
       
       // Sort by 24h change descending and take top 10
@@ -212,7 +220,8 @@ class CoinMarketCapService {
         name: g.name, 
         symbol: g.symbol, 
         change: g.quote.USD.percent_change_24h,
-        rank: g.cmc_rank
+        rank: g.cmc_rank,
+        marketCap: `$${(g.quote.USD.market_cap/1e6).toFixed(1)}M`
       })));
       return gainers;
     } catch (error) {
