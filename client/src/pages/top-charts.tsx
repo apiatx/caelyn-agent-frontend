@@ -71,62 +71,95 @@ export default function TopChartsPage() {
             <p className="text-sm sm:text-base text-crypto-silver">Bitcoin and Ethereum price action and market dominance analysis</p>
           </div>
 
-          {/* Market Cap Charts Row */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-            {/* Crypto Total Market Cap Chart */}
-            <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 sm:w-6 sm:h-6 bg-yellow-500 rounded-full flex items-center justify-center">
-                    <span className="text-white font-bold text-xs">$</span>
+          {/* Market Cap Charts - Combined Glass Card */}
+          <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6">
+            {/* Top Row - Market Cap Charts Side by Side */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 mb-6">
+              {/* Crypto Total Market Cap Chart */}
+              <div>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 sm:w-6 sm:h-6 bg-yellow-500 rounded-full flex items-center justify-center">
+                      <span className="text-white font-bold text-xs">$</span>
+                    </div>
+                    <h3 className="text-lg sm:text-xl font-semibold text-white">Crypto Total Market Cap</h3>
+                    <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-xs">
+                      TOTAL
+                    </Badge>
                   </div>
-                  <h3 className="text-lg sm:text-xl font-semibold text-white">Crypto Total Market Cap</h3>
-                  <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-xs">
-                    TOTAL
-                  </Badge>
+                  <button
+                    onClick={() => openSecureLink('https://www.tradingview.com/chart/e5l95XgZ/?symbol=CRYPTOCAP%3ATOTAL')}
+                    className="text-yellow-400 hover:text-yellow-300 text-xs sm:text-sm sm:ml-auto"
+                  >
+                    Open in New Tab →
+                  </button>
                 </div>
-                <button
-                  onClick={() => openSecureLink('https://www.tradingview.com/chart/e5l95XgZ/?symbol=CRYPTOCAP%3ATOTAL')}
-                  className="text-yellow-400 hover:text-yellow-300 text-xs sm:text-sm sm:ml-auto"
-                >
-                  Open in New Tab →
-                </button>
+                <div className="w-full">
+                  <iframe
+                    src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]&symbol=CRYPTOCAP%3ATOTAL"
+                    className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
+                    title="Crypto Total Market Cap"
+                    frameBorder="0"
+                    scrolling="no"
+                  />
+                </div>
               </div>
-              <div className="w-full">
-                <iframe
-                  src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]&symbol=CRYPTOCAP%3ATOTAL"
-                  className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
-                  title="Crypto Total Market Cap"
-                  frameBorder="0"
-                  scrolling="no"
-                />
+
+              {/* Total Market Cap Excluding BTC Chart */}
+              <div>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 sm:w-6 sm:h-6 bg-teal-500 rounded-full flex items-center justify-center">
+                      <span className="text-white font-bold text-xs">$</span>
+                    </div>
+                    <h3 className="text-lg sm:text-xl font-semibold text-white">Total Market Cap Excluding BTC</h3>
+                    <Badge className="bg-teal-500/20 text-teal-400 border-teal-500/30 text-xs">
+                      TOTAL2
+                    </Badge>
+                  </div>
+                  <button
+                    onClick={() => openSecureLink('https://www.tradingview.com/chart/e5l95XgZ/?symbol=CRYPTOCAP%3ATOTAL2')}
+                    className="text-teal-400 hover:text-teal-300 text-xs sm:text-sm sm:ml-auto"
+                  >
+                    Open in New Tab →
+                  </button>
+                </div>
+                <div className="w-full">
+                  <iframe
+                    src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]&symbol=CRYPTOCAP%3ATOTAL2"
+                    className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
+                    title="Total Market Cap Excluding BTC"
+                    frameBorder="0"
+                    scrolling="no"
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Total Market Cap Excluding BTC Chart */}
-            <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6">
+            {/* Bottom Row - OTHERS Dominance Chart Full Width */}
+            <div>
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
                 <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 sm:w-6 sm:h-6 bg-teal-500 rounded-full flex items-center justify-center">
-                    <span className="text-white font-bold text-xs">$</span>
+                  <div className="w-5 h-5 sm:w-6 sm:h-6 bg-green-500 rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold text-xs">%</span>
                   </div>
-                  <h3 className="text-lg sm:text-xl font-semibold text-white">Total Market Cap Excluding BTC</h3>
-                  <Badge className="bg-teal-500/20 text-teal-400 border-teal-500/30 text-xs">
-                    TOTAL2
+                  <h3 className="text-lg sm:text-xl font-semibold text-white">OTHERS Dominance</h3>
+                  <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
+                    OTHERS.D
                   </Badge>
                 </div>
                 <button
-                  onClick={() => openSecureLink('https://www.tradingview.com/chart/e5l95XgZ/?symbol=CRYPTOCAP%3ATOTAL2')}
-                  className="text-teal-400 hover:text-teal-300 text-xs sm:text-sm sm:ml-auto"
+                  onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=CRYPTOCAP%3AOTHERS.D')}
+                  className="text-green-400 hover:text-green-300 text-xs sm:text-sm sm:ml-auto"
                 >
                   Open in New Tab →
                 </button>
               </div>
               <div className="w-full">
                 <iframe
-                  src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]&symbol=CRYPTOCAP%3ATOTAL2"
+                  src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]&symbol=CRYPTOCAP%3AOTHERS.D"
                   className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
-                  title="Total Market Cap Excluding BTC"
+                  title="OTHERS Dominance Chart"
                   frameBorder="0"
                   scrolling="no"
                 />
@@ -290,35 +323,6 @@ export default function TopChartsPage() {
             <CryptoMarketDataBare symbol="ETH" />
           </div>
 
-          {/* OTHERS Dominance Chart */}
-          <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3 sm:mb-4">
-              <div className="flex items-center gap-2">
-                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-green-500 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold text-xs">%</span>
-                </div>
-                <h3 className="text-lg sm:text-xl font-semibold text-white">OTHERS Dominance</h3>
-                <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
-                  OTHERS.D
-                </Badge>
-              </div>
-              <button
-                onClick={() => openSecureLink('https://www.tradingview.com/chart/?symbol=CRYPTOCAP%3AOTHERS.D')}
-                className="text-green-400 hover:text-green-300 text-xs sm:text-sm sm:ml-auto"
-              >
-                Open in New Tab →
-              </button>
-            </div>
-            <div className="w-full">
-              <iframe
-                src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]&symbol=CRYPTOCAP%3AOTHERS.D"
-                className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
-                title="OTHERS Dominance Chart"
-                frameBorder="0"
-                scrolling="no"
-              />
-            </div>
-          </div>
 
           {/* Additional Charts Section */}
           <div className="space-y-6">
