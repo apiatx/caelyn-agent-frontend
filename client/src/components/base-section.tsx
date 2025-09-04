@@ -821,25 +821,23 @@ export default function BaseSection() {
 
       {/* Ecosystem */}
       <GlassCard className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
-            <span className="text-white text-xs font-bold">E</span>
-          </div>
-          <h3 className="text-xl font-semibold text-white">Ecosystem</h3>
-          <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs rounded-full font-medium">
-            ECOSYSTEM GUIDE
-          </span>
-          <SafeLink 
+        <h4 className="text-md font-semibold text-white mb-3">Ecosystem</h4>
+        <div className="p-4 bg-gray-500/10 border border-gray-500/20 rounded-lg">
+          <SafeLink
             href="https://www.base.org/ecosystem"
-            className="ml-auto text-blue-400 hover:text-blue-300 text-xs"
+            className="block text-gray-400 hover:text-gray-300 transition-colors"
           >
-            Open in New Tab →
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-xs">B</span>
+              </div>
+              <div>
+                <p className="text-white font-medium">Base Ecosystem</p>
+                <p className="text-sm text-gray-400">Comprehensive ecosystem guide</p>
+              </div>
+            </div>
           </SafeLink>
         </div>
-        <SafeIframe 
-          src="https://www.base.org/ecosystem"
-          title="Base Ecosystem"
-        />
       </GlassCard>
     </div>
   );
