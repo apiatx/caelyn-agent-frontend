@@ -152,22 +152,15 @@ export default function CryptoStocksSection() {
           </div>
         </div>
 
-        {/* Finviz iframe */}
-        <div className="mb-6">
-          <div className="w-full">
-            <iframe
-              src="https://finviz.com/"
-              className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
-              title="Finviz Stock Screener"
-              frameBorder="0"
-              loading="lazy"
-              sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation-by-user-activation"
-              referrerPolicy="strict-origin-when-cross-origin"
-            />
-          </div>
-        </div>
-
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+          <button
+            onClick={() => openInNewTab('https://finviz.com/')}
+            className="bg-gradient-to-br from-purple-500/10 to-purple-600/10 hover:from-purple-500/20 hover:to-purple-600/20 border border-purple-500/20 hover:border-purple-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-purple-300 mb-1">Finviz</div>
+            <div className="text-xs text-crypto-silver">Stock screener and market visualization</div>
+          </button>
+
           <button
             onClick={() => openInNewTab('https://stocktwits.com/')}
             className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
