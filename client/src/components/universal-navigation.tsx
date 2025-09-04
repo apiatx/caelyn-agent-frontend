@@ -247,56 +247,6 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
               >
                 <BarChart3 className="w-4 h-4 mr-1 inline" />Onchain
               </button>
-              <button
-                onClick={() => navigateTo("/app/ethereum")}
-                className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
-                  isActive("ethereum")
-                    ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
-                    : "hover:bg-white/5 text-crypto-silver"
-                }`}
-              >
-                <Coins className="w-4 h-4 mr-1 inline" />ETH
-              </button>
-              <button
-                onClick={() => navigateTo("/app/base")}
-                className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
-                  isActive("base")
-                    ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
-                    : "hover:bg-white/5 text-crypto-silver"
-                }`}
-              >
-                <ChartLine className="w-4 h-4 mr-1 inline" />Base
-              </button>
-              <button
-                onClick={() => navigateTo("/app/solana")}
-                className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
-                  isActive("solana")
-                    ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
-                    : "hover:bg-white/5 text-crypto-silver"
-                }`}
-              >
-                <Zap className="w-4 h-4 mr-1 inline" />Solana
-              </button>
-              <button
-                onClick={() => navigateTo("/app/hype")}
-                className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
-                  isActive("hype")
-                    ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
-                    : "hover:bg-white/5 text-crypto-silver"
-                }`}
-              >
-                <Brain className="w-4 h-4 mr-1 inline" />HL Core
-              </button>
-              <button
-                onClick={() => navigateTo("/app#bittensor")}
-                className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
-                  isActive("bittensor")
-                    ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
-                    : "hover:bg-white/5 text-crypto-silver"
-                }`}
-              >
-                <Brain className="w-4 h-4 mr-1 inline" />Bittensor
-              </button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
