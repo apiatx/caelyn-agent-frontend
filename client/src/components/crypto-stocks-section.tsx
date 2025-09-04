@@ -756,27 +756,20 @@ export default function CryptoStocksSection() {
               VANECK RESEARCH
             </Badge>
           </div>
-          <button
-            onClick={() => openInNewTab('https://www.vaneck.com/us/en/blogs/digital-assets/the-investment-case-for-bitcoin/')}
-            className="text-orange-400 hover:text-orange-300 text-xs sm:text-sm flex items-center gap-1"
-          >
-            <ExternalLink className="w-3 h-3" />
-            Open Full View
-          </button>
         </div>
 
-        <div className="w-full">
-          <iframe
-            src="https://www.vaneck.com/us/en/blogs/digital-assets/the-investment-case-for-bitcoin/"
-            className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
-            title="The Case for Bitcoin"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
-            referrerPolicy="no-referrer-when-downgrade"
-            loading="lazy"
-            allow="fullscreen; web-share; clipboard-read; clipboard-write; camera; microphone"
-            style={{ border: 'none' }}
-          />
-        </div>
+        <button
+          onClick={() => openInNewTab('https://www.vaneck.com/us/en/blogs/digital-assets/the-investment-case-for-bitcoin/')}
+          className="bg-gradient-to-br from-orange-500/10 to-orange-600/10 hover:from-orange-500/20 hover:to-orange-600/20 border border-orange-500/20 hover:border-orange-400/40 rounded-lg p-6 transition-all duration-300 text-left group w-full"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-lg font-medium text-white group-hover:text-orange-300 mb-2">VanEck: The Investment Case for Bitcoin</div>
+              <div className="text-sm text-crypto-silver">Comprehensive institutional research on Bitcoin as an investment asset</div>
+            </div>
+            <ExternalLink className="w-5 h-5 text-orange-400 group-hover:text-orange-300" />
+          </div>
+        </button>
       </GlassCard>
 
       {/* Tokenized Stocks */}
