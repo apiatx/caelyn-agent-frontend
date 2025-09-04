@@ -152,6 +152,21 @@ export default function CryptoStocksSection() {
           </div>
         </div>
 
+        {/* Finviz iframe */}
+        <div className="mb-6">
+          <div className="w-full">
+            <iframe
+              src="https://finviz.com/"
+              className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+              title="Finviz Stock Screener"
+              frameBorder="0"
+              loading="lazy"
+              sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation-by-user-activation"
+              referrerPolicy="strict-origin-when-cross-origin"
+            />
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
           <button
             onClick={() => openInNewTab('https://stocktwits.com/')}
