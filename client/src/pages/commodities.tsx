@@ -1,7 +1,7 @@
 import { UniversalNavigation } from "@/components/universal-navigation";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { TrendingUp, Coins, Diamond } from "lucide-react";
+import { TrendingUp, Coins, Diamond, Droplets, Flame, Zap, Gem } from "lucide-react";
 import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
 import paintColorsBackground from "@assets/paint-colors-background-header_1756067291555.jpg";
 import { useScrollFade } from "@/hooks/useScrollFade";
@@ -173,6 +173,154 @@ export default function CommoditiesPage() {
                     </div>
                   </div>
                   <div className="text-orange-400 group-hover:text-orange-300 text-sm">
+                    Click to Open →
+                  </div>
+                </div>
+              </button>
+            </div>
+          </GlassCard>
+
+          {/* Oil */}
+          <GlassCard className="p-3 sm:p-4 lg:p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-slate-800 rounded-full flex items-center justify-center">
+                  <Droplets className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-semibold text-white">Oil</h3>
+                <Badge className="bg-slate-800/20 text-slate-300 border-slate-800/30 text-xs">
+                  USOIL
+                </Badge>
+              </div>
+            </div>
+            
+            <div className="w-full">
+              <button
+                onClick={() => window.open('https://www.tradingview.com/chart/e5l95XgZ/?symbol=TVC%3AUSOIL', '_blank', 'noopener,noreferrer')}
+                className="w-full bg-gradient-to-r from-slate-800/10 to-slate-900/10 hover:from-slate-800/20 hover:to-slate-900/20 border border-slate-800/20 hover:border-slate-700/30 rounded-lg p-6 transition-all duration-300 group"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center">
+                      <Droplets className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="text-left">
+                      <h4 className="text-xl font-semibold text-slate-300 group-hover:text-slate-200">USOIL</h4>
+                      <p className="text-crypto-silver">View real-time oil prices on TradingView</p>
+                    </div>
+                  </div>
+                  <div className="text-slate-300 group-hover:text-slate-200 text-sm">
+                    Click to Open →
+                  </div>
+                </div>
+              </button>
+            </div>
+          </GlassCard>
+
+          {/* Natural Gas */}
+          <GlassCard className="p-3 sm:p-4 lg:p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-blue-600 rounded-full flex items-center justify-center">
+                  <Flame className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-semibold text-white">Natural Gas</h3>
+                <Badge className="bg-blue-600/20 text-blue-300 border-blue-600/30 text-xs">
+                  XNGUSD
+                </Badge>
+              </div>
+            </div>
+            
+            <div className="w-full">
+              <button
+                onClick={() => window.open('https://www.tradingview.com/chart/e5l95XgZ/?symbol=FXOPEN%3AXNGUSD', '_blank', 'noopener,noreferrer')}
+                className="w-full bg-gradient-to-r from-blue-600/10 to-blue-700/10 hover:from-blue-600/20 hover:to-blue-700/20 border border-blue-600/20 hover:border-blue-500/30 rounded-lg p-6 transition-all duration-300 group"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center">
+                      <Flame className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="text-left">
+                      <h4 className="text-xl font-semibold text-blue-400 group-hover:text-blue-300">XNGUSD</h4>
+                      <p className="text-crypto-silver">View real-time natural gas prices on TradingView</p>
+                    </div>
+                  </div>
+                  <div className="text-blue-400 group-hover:text-blue-300 text-sm">
+                    Click to Open →
+                  </div>
+                </div>
+              </button>
+            </div>
+          </GlassCard>
+
+          {/* Uranium */}
+          <GlassCard className="p-3 sm:p-4 lg:p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-green-600 rounded-full flex items-center justify-center">
+                  <Zap className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-semibold text-white">Uranium</h3>
+                <Badge className="bg-green-600/20 text-green-300 border-green-600/30 text-xs">
+                  UX1!
+                </Badge>
+              </div>
+            </div>
+            
+            <div className="w-full">
+              <button
+                onClick={() => window.open('https://www.tradingview.com/chart/e5l95XgZ/?symbol=COMEX%3AUX1%21', '_blank', 'noopener,noreferrer')}
+                className="w-full bg-gradient-to-r from-green-600/10 to-green-700/10 hover:from-green-600/20 hover:to-green-700/20 border border-green-600/20 hover:border-green-500/30 rounded-lg p-6 transition-all duration-300 group"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center">
+                      <Zap className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="text-left">
+                      <h4 className="text-xl font-semibold text-green-400 group-hover:text-green-300">UX1!</h4>
+                      <p className="text-crypto-silver">View real-time uranium prices on TradingView</p>
+                    </div>
+                  </div>
+                  <div className="text-green-400 group-hover:text-green-300 text-sm">
+                    Click to Open →
+                  </div>
+                </div>
+              </button>
+            </div>
+          </GlassCard>
+
+          {/* Platinum */}
+          <GlassCard className="p-3 sm:p-4 lg:p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-slate-400 rounded-full flex items-center justify-center">
+                  <Gem className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-semibold text-white">Platinum</h3>
+                <Badge className="bg-slate-400/20 text-slate-300 border-slate-400/30 text-xs">
+                  PLATINUM
+                </Badge>
+              </div>
+            </div>
+            
+            <div className="w-full">
+              <button
+                onClick={() => window.open('https://www.tradingview.com/chart/e5l95XgZ/?symbol=CAPITALCOM%3APLATINUM', '_blank', 'noopener,noreferrer')}
+                className="w-full bg-gradient-to-r from-slate-400/10 to-slate-500/10 hover:from-slate-400/20 hover:to-slate-500/20 border border-slate-400/20 hover:border-slate-300/30 rounded-lg p-6 transition-all duration-300 group"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-slate-400 rounded-full flex items-center justify-center">
+                      <Gem className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="text-left">
+                      <h4 className="text-xl font-semibold text-slate-300 group-hover:text-slate-200">PLATINUM</h4>
+                      <p className="text-crypto-silver">View real-time platinum prices on TradingView</p>
+                    </div>
+                  </div>
+                  <div className="text-slate-300 group-hover:text-slate-200 text-sm">
                     Click to Open →
                   </div>
                 </div>
