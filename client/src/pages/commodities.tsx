@@ -1,7 +1,7 @@
 import { UniversalNavigation } from "@/components/universal-navigation";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { TrendingUp, Coins, Diamond, Droplets, Flame, Zap, Gem } from "lucide-react";
+import { TrendingUp, Coins, Diamond, Droplets, Flame, Zap, Gem, Mountain, Hammer, Wheat, Box } from "lucide-react";
 import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
 import paintColorsBackground from "@assets/paint-colors-background-header_1756067291555.jpg";
 import { useScrollFade } from "@/hooks/useScrollFade";
@@ -316,11 +316,159 @@ export default function CommoditiesPage() {
                       <Gem className="w-6 h-6 text-white" />
                     </div>
                     <div className="text-left">
-                      <h4 className="text-xl font-semibold text-slate-300 group-hover:text-slate-200">PLATINUM</h4>
+                      <h4 className="text-xl font-semibold text-slate-300 group-hover:text-slate-200">XPT/USD</h4>
                       <p className="text-crypto-silver">View real-time platinum prices on TradingView</p>
                     </div>
                   </div>
                   <div className="text-slate-300 group-hover:text-slate-200 text-sm">
+                    Click to Open →
+                  </div>
+                </div>
+              </button>
+            </div>
+          </GlassCard>
+
+          {/* Coal */}
+          <GlassCard className="p-3 sm:p-4 lg:p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gray-800 rounded-full flex items-center justify-center">
+                  <Mountain className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-semibold text-white">Coal</h3>
+                <Badge className="bg-gray-800/20 text-gray-300 border-gray-800/30 text-xs">
+                  NCF1!
+                </Badge>
+              </div>
+            </div>
+            
+            <div className="w-full">
+              <button
+                onClick={() => window.open('https://www.tradingview.com/chart/e5l95XgZ/?symbol=ICEEUR%3ANCF1%21', '_blank', 'noopener,noreferrer')}
+                className="w-full bg-gradient-to-r from-gray-800/10 to-gray-900/10 hover:from-gray-800/20 hover:to-gray-900/20 border border-gray-800/20 hover:border-gray-700/30 rounded-lg p-6 transition-all duration-300 group"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-gray-800 rounded-full flex items-center justify-center">
+                      <Mountain className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="text-left">
+                      <h4 className="text-xl font-semibold text-gray-300 group-hover:text-gray-200">NCF1!</h4>
+                      <p className="text-crypto-silver">View real-time coal prices on TradingView</p>
+                    </div>
+                  </div>
+                  <div className="text-gray-300 group-hover:text-gray-200 text-sm">
+                    Click to Open →
+                  </div>
+                </div>
+              </button>
+            </div>
+          </GlassCard>
+
+          {/* Iron */}
+          <GlassCard className="p-3 sm:p-4 lg:p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-red-800 rounded-full flex items-center justify-center">
+                  <Hammer className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-semibold text-white">Iron</h3>
+                <Badge className="bg-red-800/20 text-red-300 border-red-800/30 text-xs">
+                  TIO1!
+                </Badge>
+              </div>
+            </div>
+            
+            <div className="w-full">
+              <button
+                onClick={() => window.open('https://www.tradingview.com/chart/e5l95XgZ/?symbol=COMEX%3ATIO1%21', '_blank', 'noopener,noreferrer')}
+                className="w-full bg-gradient-to-r from-red-800/10 to-red-900/10 hover:from-red-800/20 hover:to-red-900/20 border border-red-800/20 hover:border-red-700/30 rounded-lg p-6 transition-all duration-300 group"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-red-800 rounded-full flex items-center justify-center">
+                      <Hammer className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="text-left">
+                      <h4 className="text-xl font-semibold text-red-400 group-hover:text-red-300">TIO1!</h4>
+                      <p className="text-crypto-silver">View real-time iron prices on TradingView</p>
+                    </div>
+                  </div>
+                  <div className="text-red-400 group-hover:text-red-300 text-sm">
+                    Click to Open →
+                  </div>
+                </div>
+              </button>
+            </div>
+          </GlassCard>
+
+          {/* Soybeans */}
+          <GlassCard className="p-3 sm:p-4 lg:p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-amber-600 rounded-full flex items-center justify-center">
+                  <Wheat className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-semibold text-white">Soybeans</h3>
+                <Badge className="bg-amber-600/20 text-amber-300 border-amber-600/30 text-xs">
+                  SOYBNUSD
+                </Badge>
+              </div>
+            </div>
+            
+            <div className="w-full">
+              <button
+                onClick={() => window.open('https://www.tradingview.com/chart/e5l95XgZ/?symbol=OANDA%3ASOYBNUSD', '_blank', 'noopener,noreferrer')}
+                className="w-full bg-gradient-to-r from-amber-600/10 to-amber-700/10 hover:from-amber-600/20 hover:to-amber-700/20 border border-amber-600/20 hover:border-amber-500/30 rounded-lg p-6 transition-all duration-300 group"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-amber-600 rounded-full flex items-center justify-center">
+                      <Wheat className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="text-left">
+                      <h4 className="text-xl font-semibold text-amber-400 group-hover:text-amber-300">SOYBNUSD</h4>
+                      <p className="text-crypto-silver">View real-time soybean prices on TradingView</p>
+                    </div>
+                  </div>
+                  <div className="text-amber-400 group-hover:text-amber-300 text-sm">
+                    Click to Open →
+                  </div>
+                </div>
+              </button>
+            </div>
+          </GlassCard>
+
+          {/* Aluminum */}
+          <GlassCard className="p-3 sm:p-4 lg:p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-cyan-600 rounded-full flex items-center justify-center">
+                  <Box className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-semibold text-white">Aluminum</h3>
+                <Badge className="bg-cyan-600/20 text-cyan-300 border-cyan-600/30 text-xs">
+                  ALUMINIUM
+                </Badge>
+              </div>
+            </div>
+            
+            <div className="w-full">
+              <button
+                onClick={() => window.open('https://www.tradingview.com/chart/e5l95XgZ/?symbol=PEPPERSTONE%3AALUMINIUM', '_blank', 'noopener,noreferrer')}
+                className="w-full bg-gradient-to-r from-cyan-600/10 to-cyan-700/10 hover:from-cyan-600/20 hover:to-cyan-700/20 border border-cyan-600/20 hover:border-cyan-500/30 rounded-lg p-6 transition-all duration-300 group"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-cyan-600 rounded-full flex items-center justify-center">
+                      <Box className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="text-left">
+                      <h4 className="text-xl font-semibold text-cyan-400 group-hover:text-cyan-300">ALUMINIUM</h4>
+                      <p className="text-crypto-silver">View real-time aluminum prices on TradingView</p>
+                    </div>
+                  </div>
+                  <div className="text-cyan-400 group-hover:text-cyan-300 text-sm">
                     Click to Open →
                   </div>
                 </div>
