@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Building2, ExternalLink, Bitcoin, FileText, TrendingUp, Briefcase, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import stonksIcon from "@assets/download (2)_1757104529784.jpeg";
 
 // SafeLink component for secure external links
 const SafeLink = ({ href, children, className }: { href: string; children: React.ReactNode; className?: string }) => (
@@ -33,8 +34,12 @@ export default function CryptoStocksSection() {
       {/* Page Header */}
       <div className="text-center mb-6">
         <div className="flex items-center justify-center gap-3 mb-3">
-          <div className="w-12 h-12 bg-black rounded-xl flex items-center justify-center">
-            <span className="text-white font-bold text-2xl">📈</span>
+          <div className="w-16 h-16 rounded-xl overflow-hidden border-2 border-yellow-500 shadow-lg">
+            <img 
+              src={stonksIcon} 
+              alt="Stonks Icon" 
+              className="w-full h-full object-cover"
+            />
           </div>
           <h1 className="text-3xl font-bold text-white">Stonks</h1>
         </div>
