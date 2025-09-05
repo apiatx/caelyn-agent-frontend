@@ -9,12 +9,9 @@ import {
   Activity,
   Bitcoin,
   LineChart,
-  PieChart,
-  ExternalLink
+  PieChart
 } from 'lucide-react';
 import { openCoinMarketCapLink } from '@/utils/mobile-links';
-import { GlassCard } from '@/components/glass-card';
-import { Badge } from '@/components/ui/badge';
 
 // Function to open external links
 const openInNewTab = (url: string) => {
@@ -677,7 +674,6 @@ export function MarketOverviewSection() {
           </div>
         </div>
       </div>
-
 
       {/* News Section */}
       <div className="grid grid-cols-1 lg:grid-cols-1 gap-6 mt-6">

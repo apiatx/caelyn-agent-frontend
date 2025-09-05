@@ -16,7 +16,6 @@ import SUIPage from "@/pages/sui";
 import CryptoStocks from "@/pages/crypto-stocks";
 import BittensorPage from "@/pages/bittensor";
 import TradePage from "@/pages/trade";
-import MarketOverviewPage from "@/pages/market-overview";
 
 import OnchainPage from "@/pages/onchain";
 import BasePage from "@/pages/base";
@@ -66,8 +65,6 @@ function Router() {
       <Route path="/predict" component={PredictPage} />
       <Route path="/app/portfolio" component={PortfolioPage} />
       <Route path="/portfolio" component={PortfolioPage} />
-      <Route path="/app/market-overview" component={MarketOverviewPage} />
-      <Route path="/market-overview" component={MarketOverviewPage} />
       <Route path="/app/about" component={AboutPage} />
       <Route component={NotFound} />
     </Switch>
