@@ -89,9 +89,11 @@ export default function CommoditiesPage() {
                 className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
                 title="Gold"
                 frameBorder="0"
-                loading="lazy"
-                sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation-by-user-activation"
-                referrerPolicy="strict-origin-when-cross-origin"
+                loading="eager"
+                sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation allow-top-navigation-by-user-activation"
+                referrerPolicy="no-referrer-when-downgrade"
+                allow="fullscreen; web-share; clipboard-read; clipboard-write"
+                style={{ border: 'none' }}
               />
             </div>
           </GlassCard>
