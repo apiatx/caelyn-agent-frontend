@@ -475,6 +475,43 @@ export default function CommoditiesPage() {
               </button>
             </div>
           </GlassCard>
+
+          {/* Wheat */}
+          <GlassCard className="p-3 sm:p-4 lg:p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-yellow-700 rounded-full flex items-center justify-center">
+                  <Wheat className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-semibold text-white">Wheat</h3>
+                <Badge className="bg-yellow-700/20 text-yellow-300 border-yellow-700/30 text-xs">
+                  WHEATUSD
+                </Badge>
+              </div>
+            </div>
+            
+            <div className="w-full">
+              <button
+                onClick={() => window.open('https://www.tradingview.com/chart/e5l95XgZ/?symbol=OANDA%3AWHEATUSD', '_blank', 'noopener,noreferrer')}
+                className="w-full bg-gradient-to-r from-yellow-700/10 to-yellow-800/10 hover:from-yellow-700/20 hover:to-yellow-800/20 border border-yellow-700/20 hover:border-yellow-600/30 rounded-lg p-6 transition-all duration-300 group"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-yellow-700 rounded-full flex items-center justify-center">
+                      <Wheat className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="text-left">
+                      <h4 className="text-xl font-semibold text-yellow-500 group-hover:text-yellow-400">WHEATUSD</h4>
+                      <p className="text-crypto-silver">View real-time wheat prices on TradingView</p>
+                    </div>
+                  </div>
+                  <div className="text-yellow-500 group-hover:text-yellow-400 text-sm">
+                    Click to Open →
+                  </div>
+                </div>
+              </button>
+            </div>
+          </GlassCard>
         </div>
       </main>
     </div>
