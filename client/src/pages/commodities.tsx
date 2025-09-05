@@ -84,17 +84,25 @@ export default function CommoditiesPage() {
             </div>
             
             <div className="w-full">
-              <iframe
-                src="https://www.tradingview.com/chart/e5l95XgZ/?symbol=FXOPEN%3AXAUUSD"
-                className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
-                title="Gold"
-                frameBorder="0"
-                loading="eager"
-                sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation allow-top-navigation-by-user-activation"
-                referrerPolicy="no-referrer-when-downgrade"
-                allow="fullscreen; web-share; clipboard-read; clipboard-write"
-                style={{ border: 'none' }}
-              />
+              <button
+                onClick={() => window.open('https://www.tradingview.com/chart/e5l95XgZ/?symbol=OANDA%3AXAUUSD', '_blank', 'noopener,noreferrer')}
+                className="w-full bg-gradient-to-r from-yellow-500/10 to-yellow-600/10 hover:from-yellow-500/20 hover:to-yellow-600/20 border border-yellow-500/20 hover:border-yellow-400/30 rounded-lg p-6 transition-all duration-300 group"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center">
+                      <Coins className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="text-left">
+                      <h4 className="text-xl font-semibold text-yellow-400 group-hover:text-yellow-300">Gold Chart (XAU/USD)</h4>
+                      <p className="text-crypto-silver">View real-time gold prices on TradingView</p>
+                    </div>
+                  </div>
+                  <div className="text-yellow-400 group-hover:text-yellow-300 text-sm">
+                    Click to Open →
+                  </div>
+                </div>
+              </button>
             </div>
           </GlassCard>
 
