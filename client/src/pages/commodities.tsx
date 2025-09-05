@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { TrendingUp, Coins, Diamond, Droplets, Flame, Zap, Gem, Mountain, Hammer, Wheat, Box } from "lucide-react";
 import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
 import paintColorsBackground from "@assets/paint-colors-background-header_1756067291555.jpg";
+import goldBarsImage from "@assets/istockphoto-1455233823-612x612_1757104224615.jpg";
 import { useScrollFade } from "@/hooks/useScrollFade";
 
 // Glass card component
@@ -61,8 +62,12 @@ export default function CommoditiesPage() {
           {/* Page Header */}
           <div className="text-center mb-6">
             <div className="flex items-center justify-center gap-3 mb-3">
-              <div className="w-12 h-12 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center">
-                <Coins className="w-8 h-8 text-white" />
+              <div className="w-12 h-12 rounded-xl overflow-hidden">
+                <img 
+                  src={goldBarsImage} 
+                  alt="Gold Bars" 
+                  className="w-full h-full object-cover"
+                />
               </div>
               <h1 className="text-3xl font-bold text-white">Commodities</h1>
             </div>
