@@ -190,7 +190,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
                     : "hover:bg-white/5 text-crypto-silver"
                 }`}
               >
-                <Building2 className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />Stonks
+                <Building2 className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />TradFi
                 <ChevronDown className="w-3 h-3 xl:w-4 xl:h-4 ml-1 inline" />
               </button>
             </DropdownMenuTrigger>
@@ -382,7 +382,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
                         : "hover:bg-white/5 text-crypto-silver"
                     }`}
                   >
-                    <Building2 className="w-4 h-4 mr-1 inline" />Stonks
+                    <Building2 className="w-4 h-4 mr-1 inline" />TradFi
                     <ChevronDown className="w-4 h-4 ml-1 inline" />
                   </button>
                 </DropdownMenuTrigger>
