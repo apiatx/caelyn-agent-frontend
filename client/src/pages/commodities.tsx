@@ -85,7 +85,7 @@ export default function CommoditiesPage() {
             
             <div className="w-full">
               <iframe
-                src="https://www.tradingview.com/chart/e5l95XgZ/?symbol=PEPPERSTONE%3AXAUUSD"
+                src="https://www.tradingview.com/chart/e5l95XgZ/?symbol=FXOPEN%3AXAUUSD"
                 className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
                 title="Gold"
                 frameBorder="0"
