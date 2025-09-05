@@ -62,19 +62,19 @@ export default function CryptoStonksPage() {
       {/* Main Content */}
       <main className="max-w-[95vw] mx-auto px-2 sm:px-3 py-4">
         <div className="space-y-6">
-          {/* Crypto Stocks */}
-          <GlassCard className="p-3 sm:p-4 lg:p-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
-              <div className="flex items-center gap-2">
-                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-orange-500 via-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                  <Bitcoin className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-                </div>
-                <h3 className="text-lg sm:text-xl font-semibold text-white">Crypto Stocks</h3>
-                <Badge className="bg-gradient-to-r from-orange-500/20 via-blue-500/20 to-purple-500/20 text-white border-crypto-silver/30 text-xs">
-                  CORPORATE
-                </Badge>
+          {/* Page Header */}
+          <div className="text-center mb-6">
+            <div className="flex items-center justify-center gap-3 mb-3">
+              <div className="w-12 h-12 bg-gradient-to-r from-orange-500 via-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
+                <Bitcoin className="w-8 h-8 text-white" />
               </div>
+              <h1 className="text-3xl font-bold text-white">Crypto Stocks</h1>
             </div>
+            <p className="text-crypto-silver">Track corporate Bitcoin treasuries and crypto adoption by public companies</p>
+          </div>
+
+          {/* Crypto Treasuries */}
+          <GlassCard className="p-3 sm:p-4 lg:p-6">
 
             <div className="space-y-6">
               {/* Bitcoin Treasuries */}
