@@ -678,45 +678,6 @@ export function MarketOverviewSection() {
         </div>
       </div>
 
-      {/* M2 Global Liquidity Index Chart */}
-      <GlassCard className="p-3 sm:p-4 lg:p-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-indigo-500 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold text-xs">M2</span>
-            </div>
-            <h3 className="text-lg sm:text-xl font-semibold text-white">M2 Global Liquidity Index</h3>
-            <Badge className="bg-indigo-500/20 text-indigo-400 border-indigo-500/30 text-xs">
-              LIQUIDITY
-            </Badge>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => openInNewTab('https://www.tradingview.com/script/34U4rcdC/')}
-              className="text-indigo-400 hover:text-indigo-300 text-xs sm:text-sm flex items-center gap-1"
-            >
-              M2 / BTC <ExternalLink className="w-3 h-3" />
-            </button>
-            <span className="text-crypto-silver text-xs">|</span>
-            <button
-              onClick={() => openInNewTab('https://www.tradingview.com/chart/e5l95XgZ/')}
-              className="text-indigo-400 hover:text-indigo-300 text-xs sm:text-sm"
-            >
-              Open in New Tab →
-            </button>
-          </div>
-        </div>
-
-        <div className="w-full">
-          <iframe
-            src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_m2global&symbol=FRED%3AM2SL&interval=1M&hidesidetoolbar=0&hidetoptoolbar=0&symboledit=1&saveimage=1&toolbarbg=0a0a0a&studies=[]&hideideas=1&theme=dark&style=1&timezone=Etc%2FUTC&studies_overrides={}&overrides={}&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22,%22timeframes_toolbar%22,%22show_interval_dialog_on_key_press%22]&disabled_features=[]&locale=en&utm_source=cryptohippo.com&utm_medium=widget&utm_campaign=chart&utm_term=FRED%3AM2SL"
-            className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
-            title="M2 Global Liquidity Index Chart"
-            frameBorder="0"
-            scrolling="no"
-          />
-        </div>
-      </GlassCard>
 
       {/* News Section */}
       <div className="grid grid-cols-1 lg:grid-cols-1 gap-6 mt-6">
