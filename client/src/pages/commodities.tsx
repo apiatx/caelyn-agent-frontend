@@ -94,7 +94,7 @@ export default function CommoditiesPage() {
                       <Coins className="w-6 h-6 text-white" />
                     </div>
                     <div className="text-left">
-                      <h4 className="text-xl font-semibold text-yellow-400 group-hover:text-yellow-300">XAU/USD</h4>
+                      <h4 className="text-xl font-semibold text-yellow-400 group-hover:text-yellow-300">XAUUSD</h4>
                       <p className="text-crypto-silver">View real-time gold prices on TradingView</p>
                     </div>
                   </div>
@@ -131,7 +131,7 @@ export default function CommoditiesPage() {
                       <Diamond className="w-6 h-6 text-white" />
                     </div>
                     <div className="text-left">
-                      <h4 className="text-xl font-semibold text-gray-300 group-hover:text-gray-200">XAG/USD</h4>
+                      <h4 className="text-xl font-semibold text-gray-300 group-hover:text-gray-200">XAGUSD</h4>
                       <p className="text-crypto-silver">View real-time silver prices on TradingView</p>
                     </div>
                   </div>
@@ -168,7 +168,7 @@ export default function CommoditiesPage() {
                       <TrendingUp className="w-6 h-6 text-white" />
                     </div>
                     <div className="text-left">
-                      <h4 className="text-xl font-semibold text-orange-400 group-hover:text-orange-300">HG/USD</h4>
+                      <h4 className="text-xl font-semibold text-orange-400 group-hover:text-orange-300">HGUSD</h4>
                       <p className="text-crypto-silver">View real-time copper prices on TradingView</p>
                     </div>
                   </div>
@@ -316,7 +316,7 @@ export default function CommoditiesPage() {
                       <Gem className="w-6 h-6 text-white" />
                     </div>
                     <div className="text-left">
-                      <h4 className="text-xl font-semibold text-slate-300 group-hover:text-slate-200">XPT/USD</h4>
+                      <h4 className="text-xl font-semibold text-slate-300 group-hover:text-slate-200">XPTUSD</h4>
                       <p className="text-crypto-silver">View real-time platinum prices on TradingView</p>
                     </div>
                   </div>
