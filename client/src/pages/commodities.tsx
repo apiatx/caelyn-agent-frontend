@@ -62,7 +62,7 @@ export default function CommoditiesPage() {
           {/* Page Header */}
           <div className="text-center mb-6">
             <div className="flex items-center justify-center gap-3 mb-3">
-              <div className="w-12 h-12 rounded-xl overflow-hidden">
+              <div className="w-16 h-16 rounded-xl overflow-hidden border-2 border-yellow-500 shadow-lg">
                 <img 
                   src={goldBarsImage} 
                   alt="Gold Bars" 
