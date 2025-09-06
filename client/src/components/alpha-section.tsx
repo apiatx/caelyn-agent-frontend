@@ -3,6 +3,7 @@ import { Card } from '@/components/ui/card';
 import { BarChart3, ExternalLink, TrendingUp, Link2, Star, Wallet, TrendingDown, Globe, Layers, Activity } from 'lucide-react';
 import { openSecureLink } from '@/utils/security';
 import onchainImage from "@assets/images_1756750962640.jpeg";
+import TopDailyGainersTop500 from './top-daily-gainers-top500';
 
 // Safe Glass Card component
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
@@ -173,6 +174,9 @@ export default function AlphaSection() {
             </div>
           </div>
         </GlassCard>
+
+        {/* Top 20 Daily Gainers from CMC Top 500 */}
+        <TopDailyGainersTop500 />
       </div>
 
       {/* Micro Analytics */}
