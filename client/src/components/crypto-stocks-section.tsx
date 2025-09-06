@@ -331,7 +331,8 @@ export default function CryptoStocksSection() {
             className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
             title="Slickcharts Stock Market Data"
             loading="eager"
-            referrerPolicy="unsafe-url"
+            referrerPolicy="no-referrer"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
             allow="fullscreen; clipboard-write; autoplay; camera; microphone; geolocation"
             frameBorder="0"
           />
