@@ -338,30 +338,6 @@ export default function CryptoStocksSection() {
         </div>
       </GlassCard>
 
-      {/* Tokenized Stocks */}
-      <GlassCard className="p-3 sm:p-4 lg:p-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-              <Building2 className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-            </div>
-            <h3 className="text-lg sm:text-xl font-semibold text-white">Tokenized Stocks</h3>
-            <Badge className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-white border-crypto-silver/30 text-xs">
-              TOKENIZED ASSETS
-            </Badge>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          <button
-            onClick={() => openInNewTab('https://jup.ag/pro?tab=stocks')}
-            className="bg-gradient-to-br from-purple-500/10 to-purple-600/10 hover:from-purple-500/20 hover:to-purple-600/20 border border-purple-500/20 hover:border-purple-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
-          >
-            <div className="text-sm font-medium text-white group-hover:text-purple-300 mb-1">Jupiter Pro - Stocks</div>
-            <div className="text-xs text-crypto-silver">Tokenized stock trading on Solana</div>
-          </button>
-        </div>
-      </GlassCard>
 
       {/* X Alpha */}
       <GlassCard className="p-3 sm:p-4 lg:p-6">

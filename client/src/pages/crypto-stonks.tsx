@@ -235,8 +235,16 @@ export default function CryptoStonksPage() {
                 <div className="text-xs text-crypto-silver">Real-world asset tokenization and yield products</div>
               </button>
 
-              {/* xStocks */}
+              {/* Jupiter Pro & xStocks */}
               <div className="grid grid-cols-1 gap-3">
+                <button
+                  onClick={() => openInNewTab('https://jup.ag/pro?tab=stocks')}
+                  className="bg-gradient-to-br from-purple-500/10 to-blue-600/10 hover:from-purple-500/20 hover:to-blue-600/20 border border-purple-500/20 hover:border-purple-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+                >
+                  <div className="text-sm font-medium text-white group-hover:text-purple-300 mb-1">Jupiter Pro - Stocks</div>
+                  <div className="text-xs text-crypto-silver">Tokenized stock trading on Solana</div>
+                </button>
+                
                 <button
                   onClick={() => openInNewTab('https://xstocks.com/us/products')}
                   className="bg-gradient-to-br from-purple-500/10 to-blue-600/10 hover:from-purple-500/20 hover:to-blue-600/20 border border-purple-500/20 hover:border-purple-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
