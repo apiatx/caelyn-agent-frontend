@@ -284,17 +284,6 @@ export default function AboutPage() {
               </div>
             </div>
 
-            {/* Fifth Hippo Image - Centered */}
-            <div className="flex justify-center my-12">
-              <div className="w-44 h-44 rounded-full overflow-hidden shadow-2xl border-2 border-yellow-400">
-                <img 
-                  src={hippoMouthOpen} 
-                  alt="Hippo" 
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            </div>
-
             {/* The Case for Bitcoin */}
             <div className="mt-12 pt-8 border-t border-crypto-silver/20">
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
@@ -321,6 +310,17 @@ export default function AboutPage() {
                   <ExternalLink className="w-5 h-5 text-orange-400 group-hover:text-orange-300" />
                 </div>
               </button>
+              
+              {/* Hippo Image - Within Bitcoin Section */}
+              <div className="flex justify-center my-8">
+                <div className="w-44 h-44 rounded-full overflow-hidden shadow-2xl border-2 border-yellow-400">
+                  <img 
+                    src={hippoMouthOpen} 
+                    alt="Hippo" 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Support Section */}
