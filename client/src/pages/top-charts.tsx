@@ -327,8 +327,11 @@ export default function TopChartsPage() {
 
           {/* Additional Charts Section */}
           <div className="space-y-6">
+            {/* Top 10 Daily Gainers */}
+            <TopDailyGainers />
+            
             <div className="text-center px-3 sm:px-0">
-              <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-2">Altcoin Price Charts</h2>
+              <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-2">Major Altcoin Price Charts</h2>
               <p className="text-sm sm:text-base text-crypto-silver">XRP, SOL, BNB and other major altcoin price analysis</p>
               
               {/* CoinMarketCap Button */}
@@ -346,9 +349,6 @@ export default function TopChartsPage() {
               </div>
 
             </div>
-            
-            {/* Top 10 Daily Gainers */}
-            <TopDailyGainers />
             
             {/* XRP Chart */}
             <Suspense fallback={<SectionLoadingState title="XRP Chart" />}>
