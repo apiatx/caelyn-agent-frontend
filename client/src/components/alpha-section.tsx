@@ -78,7 +78,7 @@ export default function AlphaSection() {
 
           {/* Artemis */}
           <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-end mb-4">
               <button
                 onClick={() => openInNewTab('https://app.artemisanalytics.com/')}
                 className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm flex items-center gap-1"
@@ -197,7 +197,7 @@ export default function AlphaSection() {
                 <span className="text-white font-bold text-sm">S</span>
               </div>
               <h4 className="text-2xl font-bold bg-gradient-to-r from-white to-indigo-100 bg-clip-text text-transparent">Signal</h4>
-              <Badge className="bg-gradient-to-r from-indigo-500/20 to-purple-500/20 text-indigo-300 border border-indigo-400/40 text-sm font-semibold px-3 py-1 shadow-md">
+              <Badge className="bg-gradient-to-r from-indigo-500/20 to-purple-500/20 text-black border border-indigo-400/40 text-sm font-semibold px-3 py-1 shadow-md">
                 MULTI-CHAIN
               </Badge>
             </div>
@@ -337,7 +337,7 @@ export default function AlphaSection() {
               <span className="text-white font-bold text-lg">D</span>
             </div>
             <h3 className="text-2xl font-bold bg-gradient-to-r from-white to-emerald-100 bg-clip-text text-transparent">Discover Web3</h3>
-            <Badge className="bg-gradient-to-r from-emerald-500/20 to-green-500/20 text-emerald-300 border border-emerald-400/40 text-sm font-semibold px-3 py-1 shadow-md">
+            <Badge className="bg-gradient-to-r from-emerald-500/20 to-green-500/20 text-black border border-emerald-400/40 text-sm font-semibold px-3 py-1 shadow-md">
               ECOSYSTEM
             </Badge>
           </div>
@@ -434,7 +434,7 @@ export default function AlphaSection() {
               <span className="text-white text-xl">🚀</span>
             </div>
             <h3 className="text-2xl font-bold bg-gradient-to-r from-white to-orange-100 bg-clip-text text-transparent">Memecoins</h3>
-            <Badge className="bg-gradient-to-r from-orange-500/20 to-red-500/20 text-orange-300 border border-orange-400/40 text-sm font-semibold px-3 py-1 shadow-md">
+            <Badge className="bg-gradient-to-r from-orange-500/20 to-red-500/20 text-black border border-orange-400/40 text-sm font-semibold px-3 py-1 shadow-md">
               ANALYTICS
             </Badge>
           </div>
