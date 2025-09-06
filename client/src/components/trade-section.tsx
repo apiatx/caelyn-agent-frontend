@@ -392,6 +392,49 @@ export default function TradeSection() {
       </div>
 
 
+      {/* Token Sniffer */}
+      <div className="space-y-8 mt-12">
+        <GlassCard className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-sm">T</span>
+              </div>
+              <h3 className="text-xl font-semibold text-white">Token Sniffer</h3>
+              <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">
+                AI CHAT
+              </Badge>
+            </div>
+            <button
+              onClick={() => openInNewTab('https://wach.ai/chat')}
+              className="text-yellow-400 hover:text-yellow-300 text-sm"
+            >
+              Open in New Tab →
+            </button>
+          </div>
+          <div className="mb-6">
+            <SafeIframe
+              src="https://wach.ai/chat"
+              title="WachAI Chat Interface"
+              className="h-[500px]"
+            />
+          </div>
+
+          {/* Bubblemaps */}
+          <div className="mb-6">
+            <SafeLink
+              href='https://bubblemaps.io/'
+              className="w-full p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors block"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <h4 className="text-purple-400 font-semibold">Bubblemaps</h4>
+              </div>
+              <p className="text-gray-400 text-sm">Token Analytics & Visualization</p>
+            </SafeLink>
+          </div>
+        </GlassCard>
+      </div>
+
     </div>
   );
 }
