@@ -293,43 +293,6 @@ export default function AlphaSection() {
         </GlassCard>
       </div>
 
-
-
-      {/* Memecoins */}
-      <div className="space-y-8 mt-12">
-        <GlassCard className="p-6">
-          <div className="flex items-center gap-2 mb-6">
-            <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
-              <span className="text-white text-sm">🚀</span>
-            </div>
-            <h3 className="text-xl font-semibold text-white">Memecoins</h3>
-            <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30">
-              ANALYTICS
-            </Badge>
-          </div>
-
-          {/* Capitoday */}
-          <div className="mb-8">
-            <SafeIframe
-              src="https://capitoday.com/"
-              title="Capitoday Memecoins Platform"
-              className="h-[600px]"
-            />
-          </div>
-
-          {/* HolderScan */}
-          <div className="mb-8">
-            <SafeIframe
-              src="https://holderscan.com/"
-              title="HolderScan Memecoins Analytics"
-              className="h-[600px]"
-            />
-          </div>
-        </GlassCard>
-      </div>
-
-
-
       {/* Discover Web3 */}
       <div className="space-y-8 mt-12">
         <GlassCard className="p-6">
@@ -427,6 +390,38 @@ export default function AlphaSection() {
         </GlassCard>
       </div>
 
+      {/* Memecoins */}
+      <div className="space-y-8 mt-12">
+        <GlassCard className="p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
+              <span className="text-white text-sm">🚀</span>
+            </div>
+            <h3 className="text-xl font-semibold text-white">Memecoins</h3>
+            <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30">
+              ANALYTICS
+            </Badge>
+          </div>
+
+          {/* Capitoday */}
+          <div className="mb-8">
+            <SafeIframe
+              src="https://capitoday.com/"
+              title="Capitoday Memecoins Platform"
+              className="h-[600px]"
+            />
+          </div>
+
+          {/* HolderScan */}
+          <div className="mb-8">
+            <SafeIframe
+              src="https://holderscan.com/"
+              title="HolderScan Memecoins Analytics"
+              className="h-[600px]"
+            />
+          </div>
+        </GlassCard>
+      </div>
 
     </div>
   );
