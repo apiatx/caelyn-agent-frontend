@@ -100,8 +100,16 @@ const TopDailyGainers = () => {
     return change > 0 ? 'text-green-400' : 'text-red-400';
   };
 
-  const openCoinPage = (symbol: string) => {
-    window.open(`https://coinmarketcap.com/currencies/${symbol.toLowerCase()}/`, '_blank', 'noopener,noreferrer');
+  const openCoinPage = (coin: CoinData) => {
+    // Convert coin name to CMC URL slug format
+    const slug = coin.name
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/-+/g, '-') // Replace multiple hyphens with single
+      .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
+    
+    window.open(`https://coinmarketcap.com/currencies/${slug}/`, '_blank', 'noopener,noreferrer');
   };
 
   if (isLoading) {
@@ -176,7 +184,7 @@ const TopDailyGainers = () => {
           <div
             key={coin.id}
             className="bg-gradient-to-r from-green-500/5 to-emerald-600/5 border border-green-500/10 rounded-lg p-3 hover:border-green-400/30 hover:bg-green-500/10 transition-all duration-200 cursor-pointer group"
-            onClick={() => openCoinPage(coin.symbol)}
+            onClick={() => openCoinPage(coin)}
             data-testid={`gainer-card-${coin.symbol}`}
           >
             <div className="flex items-center justify-between">
