@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { openSecureLink } from "@/utils/security";
 import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
 import paintColorsBackground from "@assets/paint-colors-background-header_1756067291555.jpg";
+import suiLogo from "@assets/images (2)_1757139042170.jpeg";
 import { useScrollFade } from "@/hooks/useScrollFade";
 
 // Glass card component
@@ -62,8 +63,12 @@ export default function SUIPage() {
         {/* SUI Header */}
         <div className="text-center mb-6">
           <div className="flex items-center justify-center gap-3 mb-3">
-            <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center">
-              <span className="text-white font-bold text-lg">SUI</span>
+            <div className="w-12 h-12 rounded-full overflow-hidden shadow-lg">
+              <img 
+                src={suiLogo}
+                alt="SUI Logo"
+                className="w-full h-full object-cover"
+              />
             </div>
             <h1 className="text-3xl font-bold text-white">Sui Network</h1>
           </div>

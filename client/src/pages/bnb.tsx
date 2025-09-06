@@ -63,7 +63,7 @@ export default function BNBPage() {
         {/* BNB Header */}
         <div className="text-center mb-6">
           <div className="flex items-center justify-center gap-3 mb-3">
-            <div className="w-12 h-12 rounded-xl overflow-hidden border-2 border-yellow-400 shadow-lg">
+            <div className="w-12 h-12 rounded-xl overflow-hidden shadow-lg">
               <img 
                 src={bnbLogo}
                 alt="BNB Logo"
