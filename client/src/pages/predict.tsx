@@ -93,6 +93,38 @@ export default function PredictPage() {
             sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
           />
 
+          {/* Betly.trade */}
+          <div className="mt-6">
+            <div className="p-6 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-lg">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                    <TrendingUp className="w-4 h-4 text-white" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-white">Betly.trade</h3>
+                </div>
+                <Button
+                  onClick={() => openInNewTab("https://www.betly.trade/categories")}
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  Open Full View
+                </Button>
+              </div>
+              <p className="text-crypto-silver mb-4">
+                Social betting made simple. Swipe on prediction markets, not thots.
+              </p>
+              <iframe
+                src="https://www.betly.trade/categories"
+                className="w-full h-[500px] rounded-lg border border-purple-500/20"
+                title="Betly.trade Categories"
+                frameBorder="0"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
+          </div>
+
           {/* Moby Screener Predictions */}
           <div className="mt-6">
             <div className="p-6 bg-gradient-to-r from-green-500/10 to-teal-500/10 border border-green-500/20 rounded-lg">
