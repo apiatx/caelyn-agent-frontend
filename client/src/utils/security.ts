@@ -200,9 +200,7 @@ const TRUSTED_DOMAINS = [
   'app.debridge.finance',
   'debridge.finance',
   'app.definitive.fi',
-  'definitive.fi',
-  'holdstation.com',
-  'www.holdstation.com'
+  'definitive.fi'
 ];
 
 /**
