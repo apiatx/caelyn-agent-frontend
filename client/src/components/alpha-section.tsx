@@ -188,6 +188,38 @@ export default function AlphaSection() {
             </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+            {/* Top priority: CMC Leaderboard, OpenSea, CoinGecko Chains */}
+            <SafeLink
+              href='https://coinmarketcap.com/leaderboard/'
+              className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <h4 className="text-blue-400 font-semibold">CMC Leaderboard</h4>
+              </div>
+              <p className="text-gray-400 text-sm">Market Rankings</p>
+            </SafeLink>
+
+            <SafeLink
+              href='https://opensea.io/stats/tokens'
+              className="p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-lg hover:bg-cyan-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <h4 className="text-cyan-400 font-semibold">OpenSea</h4>
+              </div>
+              <p className="text-gray-400 text-sm">Trending Altcoin Timeframes</p>
+            </SafeLink>
+
+            <SafeLink
+              href='https://www.coingecko.com/en/chains'
+              className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <h4 className="text-green-400 font-semibold">CoinGecko Chains</h4>
+              </div>
+              <p className="text-gray-400 text-sm">Blockchain Analytics</p>
+            </SafeLink>
+
+            {/* Rest of the analytics tools */}
             <SafeLink
               href='https://dexcheck.ai/app'
               className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
@@ -246,36 +278,6 @@ export default function AlphaSection() {
                 <h4 className="text-indigo-400 font-semibold">Aya AI</h4>
               </div>
               <p className="text-gray-400 text-sm">Crypto AI Agent Analytics</p>
-            </SafeLink>
-
-            <SafeLink
-              href='https://opensea.io/stats/tokens'
-              className="p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-lg hover:bg-cyan-500/20 transition-colors"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <h4 className="text-cyan-400 font-semibold">OpenSea</h4>
-              </div>
-              <p className="text-gray-400 text-sm">Trending Altcoin Timeframes</p>
-            </SafeLink>
-
-            <SafeLink
-              href='https://coinmarketcap.com/leaderboard/'
-              className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <h4 className="text-blue-400 font-semibold">CMC Leaderboard</h4>
-              </div>
-              <p className="text-gray-400 text-sm">Market Rankings</p>
-            </SafeLink>
-
-            <SafeLink
-              href='https://www.coingecko.com/en/chains'
-              className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <h4 className="text-green-400 font-semibold">CoinGecko Chains</h4>
-              </div>
-              <p className="text-gray-400 text-sm">Blockchain Analytics</p>
             </SafeLink>
           </div>
 
