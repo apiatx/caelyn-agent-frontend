@@ -196,33 +196,36 @@ export default function PredictPage() {
             </div>
           </div>
           
+          {/* Limitless Exchange */}
           <div className="mt-6">
             <div className="p-6 bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/20 rounded-lg">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
-                    <TrendingUp className="w-5 h-5 text-white" />
+                    <TrendingUp className="w-4 h-4 text-white" />
                   </div>
-                  <div>
-                    <h4 className="text-lg font-semibold text-white">Limitless Exchange</h4>
-                    <p className="text-sm text-crypto-silver">Predict future crypto and stocks prices</p>
-                  </div>
+                  <h3 className="text-xl font-semibold text-white">Limitless Exchange</h3>
                 </div>
-                <Badge className="bg-gradient-to-r from-orange-500/20 to-red-500/20 text-orange-400 border-orange-500/30">
-                  ADVANCED
-                </Badge>
+                <Button
+                  onClick={() => openInNewTab("https://limitless.exchange/advanced")}
+                  className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  Open Limitless
+                </Button>
               </div>
-              <p className="text-crypto-silver mb-4 text-sm">
+              <p className="text-crypto-silver mb-4">
                 Predict future crypto and stocks prices with sophisticated trading features and analytics.
               </p>
-              <Button
-                variant="outline"
-                onClick={() => openInNewTab('https://limitless.exchange/advanced')}
-                className="w-full bg-gradient-to-r from-orange-500/20 to-red-500/20 border-orange-500/30 hover:bg-orange-500/30 text-white"
-              >
-                <ExternalLink className="w-4 h-4 mr-2" />
-                Open Limitless Exchange Platform
-              </Button>
+              <div className="bg-black/20 rounded-lg p-4 border border-orange-500/20">
+                <p className="text-sm text-crypto-silver">
+                  📈 Advanced prediction market trading platform
+                  <br />
+                  💹 Crypto and stock price predictions
+                  <br />
+                  🎯 Sophisticated analytics and trading features
+                </p>
+              </div>
             </div>
           </div>
         </GlassCard>
