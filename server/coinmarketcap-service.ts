@@ -232,6 +232,64 @@ class CoinMarketCapService {
     }
   }
 
+  async getTopDailyGainersFromTop500(): Promise<CoinMarketCapCrypto[]> {
+    try {
+      console.log('🔍 [CMC] Fetching top daily gainers from Top 500 cryptocurrencies...');
+      // Use regular top 500 by market cap, then find best gainers among them
+      const url = `${this.baseUrl}/cryptocurrency/listings/latest?start=1&limit=500&convert=USD`;
+      
+      const response = await fetch(url, {
+        headers: {
+          'X-CMC_PRO_API_KEY': this.apiKey,
+          'Accept': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`CoinMarketCap API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json() as CoinMarketCapResponse;
+      
+      if (data.status.error_code !== 0) {
+        throw new Error(`CoinMarketCap API error: ${data.status.error_message}`);
+      }
+
+      console.log(`🔍 [CMC] Received ${data.data.length} cryptocurrencies from Top 500`);
+      
+      // Filter for valid data and positive 24h change
+      const validCryptos = data.data.filter(crypto => 
+        crypto.quote.USD.percent_change_24h !== null && 
+        crypto.quote.USD.percent_change_24h !== undefined &&
+        crypto.quote.USD.percent_change_24h > 0 && // Only positive gainers
+        crypto.quote.USD.market_cap !== null &&
+        crypto.quote.USD.market_cap !== undefined &&
+        crypto.quote.USD.market_cap > 10000000 // > $10M market cap
+      );
+      
+      console.log(`🔍 [CMC] Found ${validCryptos.length} positive gainers in Top 500`);
+      
+      // Sort by 24h change descending and take top 20
+      const gainers = validCryptos
+        .sort((a, b) => b.quote.USD.percent_change_24h - a.quote.USD.percent_change_24h)
+        .slice(0, 20);
+      
+      console.log(`✅ [CMC] Successfully retrieved ${gainers.length} daily gainers from Top 500`);
+      console.log('🔍 [CMC] Top 20 gainers from 500:', gainers.slice(0, 20).map(g => ({
+        name: g.name,
+        symbol: g.symbol,
+        change: g.quote.USD.percent_change_24h,
+        rank: g.cmc_rank,
+        marketCap: `$${(g.quote.USD.market_cap/1e6).toFixed(1)}M`
+      })));
+      
+      return gainers;
+    } catch (error) {
+      console.error('❌ [CMC] Failed to get gainers from Top 500:', error);
+      return [];
+    }
+  }
+
   async getTopDexGainers(): Promise<CoinMarketCapCrypto[]> {
     try {
       console.log('🔍 [CMC DEX] Fetching top DEX token gainers from CoinMarketCap DexScan...');
