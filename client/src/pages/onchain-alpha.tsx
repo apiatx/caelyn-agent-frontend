@@ -44,7 +44,7 @@ export default function OnchainAlphaPage() {
       </header>
 
       {/* Navigation */}
-      <UniversalNavigation activePage="onchain-alpha" />
+      <UniversalNavigation activePage="onchain-analytics" />
 
       {/* Main Content */}
       <main className="max-w-[95vw] mx-auto px-2 sm:px-3 py-4">

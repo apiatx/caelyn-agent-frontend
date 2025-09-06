@@ -66,7 +66,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
             <DropdownMenuTrigger asChild>
               <button
                 className={`flex-1 min-w-[120px] lg:min-w-[140px] xl:min-w-[160px] py-3 px-2 xl:px-3 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
-                  isActive("onchain-alpha") || isActive("onchain-smart-wallets") || isActive("onchain-social")
+                  isActive("onchain-analytics") || isActive("onchain-smart-wallets") || isActive("onchain-social")
                     ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                     : "hover:bg-white/5 text-crypto-silver"
                 }`}
@@ -77,11 +77,11 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
             </DropdownMenuTrigger>
             <DropdownMenuContent className="bg-black/80 backdrop-blur-lg border-crypto-silver/20">
               <DropdownMenuItem
-                onClick={() => navigateTo("/app/onchain/alpha")}
+                onClick={() => navigateTo("/app/onchain/analytics")}
                 className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
               >
                 <TrendingUp className="w-4 h-4 mr-2" />
-                Alpha
+                Analytics
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => navigateTo("/app/onchain/smart-wallets")}

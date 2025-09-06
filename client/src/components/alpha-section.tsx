@@ -70,18 +70,8 @@ export default function AlphaSection() {
         <p className="text-crypto-silver">Comprehensive blockchain data and intelligence</p>
       </div>
 
-      {/* Macro Analytics */}
       <div className="space-y-8">
-        {/* Macro Analytics */}
         <GlassCard className="p-3 sm:p-4 lg:p-6">
-          <div className="flex items-center mb-6">
-            <div className="flex items-center gap-2">
-              <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-              </div>
-              <h3 className="text-2xl sm:text-3xl font-bold text-white">Macro Analytics</h3>
-            </div>
-          </div>
 
           {/* Artemis */}
           <div className="mb-8">
@@ -130,66 +120,14 @@ export default function AlphaSection() {
             </button>
           </div>
 
-          {/* Inspect Tools */}
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-                <span className="text-white font-bold text-xs">I</span>
-              </div>
-              <h4 className="text-white font-medium">Inspect</h4>
-            </div>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              <button
-                onClick={() => openInNewTab('https://chainspect.app/dashboard')}
-                className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
-              >
-                <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">Chainspect</div>
-                <div className="text-xs text-crypto-silver">Chain scalability and decentralization analytics</div>
-              </button>
-
-              <button
-                onClick={() => openInNewTab('https://tokenterminal.com/explorer')}
-                className="bg-gradient-to-br from-purple-500/10 to-purple-600/10 hover:from-purple-500/20 hover:to-purple-600/20 border border-purple-500/20 hover:border-purple-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
-              >
-                <div className="text-sm font-medium text-white group-hover:text-purple-300 mb-1">Token Terminal</div>
-                <div className="text-xs text-crypto-silver">Protocol metrics explorer</div>
-              </button>
-
-              <button
-                onClick={() => openInNewTab('https://www.theblock.co/data/decentralized-finance/dex-non-custodial')}
-                className="bg-gradient-to-br from-orange-500/10 to-orange-600/10 hover:from-orange-500/20 hover:to-orange-600/20 border border-orange-500/20 hover:border-orange-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
-              >
-                <div className="text-sm font-medium text-white group-hover:text-orange-300 mb-1">The Block: DEX Metrics</div>
-                <div className="text-xs text-crypto-silver">Comprehensive DEX analytics and metrics</div>
-              </button>
-
-              <button
-                onClick={() => openInNewTab('https://www.developerreport.com/')}
-                className="bg-gradient-to-br from-green-500/10 to-green-600/10 hover:from-green-500/20 hover:to-green-600/20 border border-green-500/20 hover:border-green-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
-              >
-                <div className="text-sm font-medium text-white group-hover:text-green-300 mb-1">Developer Report</div>
-                <div className="text-xs text-crypto-silver">Developer activity by blockchain</div>
-              </button>
-            </div>
-          </div>
         </GlassCard>
 
         {/* Top 20 Daily Gainers from CMC Top 500 */}
         <TopDailyGainersTop500 />
       </div>
 
-      {/* Micro Analytics */}
       <div className="space-y-8 mt-12">
         <GlassCard className="p-3 sm:p-4 lg:p-6">
-          <div className="flex items-center mb-6">
-            <div className="flex items-center gap-2">
-              <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full flex items-center justify-center">
-                <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-              </div>
-              <h3 className="text-2xl sm:text-3xl font-bold text-white">Micro Analytics</h3>
-            </div>
-          </div>
 
           {/* Signal */}
           <div className="mb-8">
@@ -437,6 +375,52 @@ export default function AlphaSection() {
               </div>
               <p className="text-gray-400 text-sm">DeFi portfolio management</p>
             </SafeLink>
+          </div>
+        </GlassCard>
+      </div>
+
+      {/* Inspect Tools - Moved to bottom as requested */}
+      <div className="space-y-8 mt-12">
+        <GlassCard className="p-3 sm:p-4 lg:p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+              <span className="text-white font-bold text-xs">I</span>
+            </div>
+            <h4 className="text-white font-medium">Inspect</h4>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <button
+              onClick={() => openInNewTab('https://chainspect.app/dashboard')}
+              className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+            >
+              <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">Chainspect</div>
+              <div className="text-xs text-crypto-silver">Chain scalability and decentralization analytics</div>
+            </button>
+
+            <button
+              onClick={() => openInNewTab('https://tokenterminal.com/explorer')}
+              className="bg-gradient-to-br from-purple-500/10 to-purple-600/10 hover:from-purple-500/20 hover:to-purple-600/20 border border-purple-500/20 hover:border-purple-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+            >
+              <div className="text-sm font-medium text-white group-hover:text-purple-300 mb-1">Token Terminal</div>
+              <div className="text-xs text-crypto-silver">Protocol metrics explorer</div>
+            </button>
+
+            <button
+              onClick={() => openInNewTab('https://www.theblock.co/data/decentralized-finance/dex-non-custodial')}
+              className="bg-gradient-to-br from-orange-500/10 to-orange-600/10 hover:from-orange-500/20 hover:to-orange-600/20 border border-orange-500/20 hover:border-orange-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+            >
+              <div className="text-sm font-medium text-white group-hover:text-orange-300 mb-1">The Block: DEX Metrics</div>
+              <div className="text-xs text-crypto-silver">Comprehensive DEX analytics and metrics</div>
+            </button>
+
+            <button
+              onClick={() => openInNewTab('https://www.developerreport.com/')}
+              className="bg-gradient-to-br from-green-500/10 to-green-600/10 hover:from-green-500/20 hover:to-green-600/20 border border-green-500/20 hover:border-green-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+            >
+              <div className="text-sm font-medium text-white group-hover:text-green-300 mb-1">Developer Report</div>
+              <div className="text-xs text-crypto-silver">Developer activity by blockchain</div>
+            </button>
           </div>
         </GlassCard>
       </div>

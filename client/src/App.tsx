@@ -40,7 +40,7 @@ function Router() {
       <Route path="/alts" component={TopChartsPage} />
       <Route path="/app/onchain" component={OnchainPage} />
       <Route path="/onchain" component={OnchainPage} />
-      <Route path="/app/onchain/alpha" component={OnchainAlphaPage} />
+      <Route path="/app/onchain/analytics" component={OnchainAlphaPage} />
       <Route path="/app/onchain/smart-wallets" component={OnchainSmartWalletsPage} />
       <Route path="/app/onchain/social" component={OnchainSocialPage} />
       <Route path="/app/base" component={BasePage} />
