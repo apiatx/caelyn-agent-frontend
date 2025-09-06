@@ -19,6 +19,9 @@ import BittensorPage from "@/pages/bittensor";
 import TradePage from "@/pages/trade";
 
 import OnchainPage from "@/pages/onchain";
+import OnchainAlphaPage from "@/pages/onchain-alpha";
+import OnchainSmartWalletsPage from "@/pages/onchain-smart-wallets";
+import OnchainSocialPage from "@/pages/onchain-social";
 import BasePage from "@/pages/base";
 import PortfolioPage from "@/pages/portfolio";
 import PredictPage from "@/pages/predict";
@@ -37,6 +40,9 @@ function Router() {
       <Route path="/alts" component={TopChartsPage} />
       <Route path="/app/onchain" component={OnchainPage} />
       <Route path="/onchain" component={OnchainPage} />
+      <Route path="/app/onchain/alpha" component={OnchainAlphaPage} />
+      <Route path="/app/onchain/smart-wallets" component={OnchainSmartWalletsPage} />
+      <Route path="/app/onchain/social" component={OnchainSocialPage} />
       <Route path="/app/base" component={BasePage} />
       <Route path="/base" component={BasePage} />
       <Route path="/app/ethereum" component={EthereumPage} />
