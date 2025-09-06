@@ -202,7 +202,9 @@ const TRUSTED_DOMAINS = [
   'app.definitive.fi',
   'definitive.fi',
   'holdstation.com',
-  'www.holdstation.com'
+  'www.holdstation.com',
+  'developerreport.com',
+  'www.developerreport.com'
 ];
 
 /**
