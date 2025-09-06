@@ -86,7 +86,7 @@ export default function OnchainSmartWalletsPage() {
               <img 
                 src={smartWalletsImage} 
                 alt="Smart Wallets" 
-                className="w-12 h-12 rounded-xl object-cover border-2 border-yellow-400"
+                className="w-16 h-16 rounded-xl object-cover border-2 border-yellow-400"
               />
               <h1 className="text-3xl font-bold text-white">Smart Wallets</h1>
             </div>
