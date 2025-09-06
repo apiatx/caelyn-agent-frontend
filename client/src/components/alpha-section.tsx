@@ -565,7 +565,7 @@ export default function AlphaSection() {
               </Badge>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <SafeLink
                 href='https://yaps.kaito.ai/'
                 className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
@@ -584,6 +584,16 @@ export default function AlphaSection() {
                   <h4 className="text-red-400 font-semibold">Kolytics</h4>
                 </div>
                 <p className="text-gray-400 text-sm">Social Signal Analytics</p>
+              </SafeLink>
+
+              <SafeLink
+                href='https://www.alphabot.app/pulse'
+                className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <h4 className="text-blue-400 font-semibold">Alphabot</h4>
+                </div>
+                <p className="text-gray-400 text-sm">AI Analytics Platform</p>
               </SafeLink>
             </div>
           </div>
