@@ -348,7 +348,7 @@ export default function TopChartsPage() {
             </div>
             
             {/* Top 10 Daily Gainers */}
-            <TopDailyGainers />
+            {/* <TopDailyGainers /> */}
             
             {/* XRP Chart */
             <Suspense fallback={<SectionLoadingState title="XRP Chart" />}>
