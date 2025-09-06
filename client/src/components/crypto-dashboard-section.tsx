@@ -3,9 +3,36 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, BarChart3, DollarSign, Activity, Eye, Globe, Wallet, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
 import cuteHippo from "@assets/cute-cartoon-hippo-showing-off-butt-vector_1756060620427.jpg";
 
 import { MarketOverviewSection } from './market-overview-section';
+
+// Market Overview data type
+interface MarketOverview {
+  globalMetrics: {
+    total_market_cap: number;
+    total_volume_24h: number;
+    bitcoin_dominance_percentage: number;
+    active_cryptocurrencies: number;
+    market_cap_change_percentage_24h_usd: number;
+  };
+  altSeasonIndex: {
+    value: number;
+    isAltSeason: boolean;
+    description: string;
+  };
+  fearGreedIndex: {
+    value: number;
+    classification: string;
+    description: string;
+  };
+  etfData: {
+    totalNetFlow: number;
+    bitcoinFlow: number;
+    ethereumFlow: number;
+  };
+}
 
 // Glass card component for crypto dashboard
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
@@ -17,6 +44,54 @@ const GlassCard = ({ children, className = "" }: { children: React.ReactNode; cl
 export default function CryptoDashboardSection() {
   const openInNewTab = (url: string) => {
     window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  // Fetch real-time market overview data
+  const { data: overview, isLoading } = useQuery<MarketOverview>({
+    queryKey: ['/api/coinmarketcap/market-overview'],
+    refetchInterval: 180000, // Refresh every 3 minutes
+    staleTime: 120000, // 2 minutes
+    retry: 3,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true
+  });
+
+  // Format currency values
+  const formatCurrency = (value: number) => {
+    if (value >= 1e12) {
+      return `$${(value / 1e12).toFixed(2)}T`;
+    } else if (value >= 1e9) {
+      return `$${(value / 1e9).toFixed(2)}B`;
+    } else if (value >= 1e6) {
+      return `$${(value / 1e6).toFixed(2)}M`;
+    }
+    return `$${value.toFixed(2)}`;
+  };
+
+  // Format percentage
+  const formatPercentage = (value: number) => {
+    const formatted = value.toFixed(2);
+    return value >= 0 ? `+${formatted}%` : `${formatted}%`;
+  };
+
+  // Get color for percentage change
+  const getPercentageColor = (value: number) => {
+    return value >= 0 ? 'text-green-400' : 'text-red-400';
+  };
+
+  // Get fear & greed color
+  const getFearGreedColor = (value: number) => {
+    if (value >= 75) return 'text-green-400';
+    if (value >= 55) return 'text-yellow-400';
+    if (value >= 35) return 'text-orange-400';
+    return 'text-red-400';
+  };
+
+  // Get alt season color
+  const getAltSeasonColor = (value: number) => {
+    if (value > 75) return 'text-green-400';
+    if (value > 25) return 'text-yellow-400';
+    return 'text-red-400';
   };
 
   return (
@@ -42,16 +117,28 @@ export default function CryptoDashboardSection() {
           <button
             onClick={() => openInNewTab('https://coinmarketcap.com/charts/')}
             className="p-4 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/20 rounded-lg hover:border-blue-400/50 transition-all duration-200 text-left group"
+            data-testid="button-crypto-market-overview"
           >
             <div className="flex items-center gap-3">
               <BarChart3 className="w-6 h-6 text-blue-400" />
-              <div>
+              <div className="flex-1">
                 <div className="font-medium text-blue-200 group-hover:text-blue-100 transition-colors">
                   Crypto Market Overview
                 </div>
                 <div className="text-xs text-gray-400 mt-1">
                   CoinMarketCap Charts
                 </div>
+                {/* Real-time data display */}
+                {isLoading ? (
+                  <div className="text-xs text-blue-300 mt-1 animate-pulse">Loading...</div>
+                ) : overview?.globalMetrics ? (
+                  <div className="text-xs mt-1">
+                    <div className="text-blue-300">{formatCurrency(overview.globalMetrics.total_market_cap)}</div>
+                    <div className={`${getPercentageColor(overview.globalMetrics.market_cap_change_percentage_24h_usd)}`}>
+                      {formatPercentage(overview.globalMetrics.market_cap_change_percentage_24h_usd)} 24h
+                    </div>
+                  </div>
+                ) : null}
               </div>
             </div>
           </button>
@@ -59,16 +146,28 @@ export default function CryptoDashboardSection() {
           <button
             onClick={() => openInNewTab('https://coinmarketcap.com/charts/fear-and-greed-index/')}
             className="p-4 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-lg hover:border-purple-400/50 transition-all duration-200 text-left group"
+            data-testid="button-fear-greed-index"
           >
             <div className="flex items-center gap-3">
               <Activity className="w-6 h-6 text-purple-400" />
-              <div>
+              <div className="flex-1">
                 <div className="font-medium text-purple-200 group-hover:text-purple-100 transition-colors">
                   Fear & Greed Index
                 </div>
                 <div className="text-xs text-gray-400 mt-1">
                   Market Sentiment
                 </div>
+                {/* Real-time data display */}
+                {isLoading ? (
+                  <div className="text-xs text-purple-300 mt-1 animate-pulse">Loading...</div>
+                ) : overview?.fearGreedIndex ? (
+                  <div className="text-xs mt-1">
+                    <div className={`font-bold ${getFearGreedColor(overview.fearGreedIndex.value)}`}>
+                      {overview.fearGreedIndex.value}/100
+                    </div>
+                    <div className="text-purple-300">{overview.fearGreedIndex.classification}</div>
+                  </div>
+                ) : null}
               </div>
             </div>
           </button>
@@ -76,16 +175,28 @@ export default function CryptoDashboardSection() {
           <button
             onClick={() => openInNewTab('https://coinmarketcap.com/etf/')}
             className="p-4 bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20 rounded-lg hover:border-green-400/50 transition-all duration-200 text-left group"
+            data-testid="button-etf-net-flows"
           >
             <div className="flex items-center gap-3">
               <DollarSign className="w-6 h-6 text-green-400" />
-              <div>
+              <div className="flex-1">
                 <div className="font-medium text-green-200 group-hover:text-green-100 transition-colors">
                   ETF Net Flows
                 </div>
                 <div className="text-xs text-gray-400 mt-1">
                   Institutional Flow
                 </div>
+                {/* Real-time data display */}
+                {isLoading ? (
+                  <div className="text-xs text-green-300 mt-1 animate-pulse">Loading...</div>
+                ) : overview?.etfData ? (
+                  <div className="text-xs mt-1">
+                    <div className={`font-bold ${overview.etfData.totalNetFlow >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {overview.etfData.totalNetFlow >= 0 ? '+' : ''}${overview.etfData.totalNetFlow.toFixed(1)}M
+                    </div>
+                    <div className="text-green-300">Total Net Flow</div>
+                  </div>
+                ) : null}
               </div>
             </div>
           </button>
@@ -93,16 +204,30 @@ export default function CryptoDashboardSection() {
           <button
             onClick={() => openInNewTab('https://coinmarketcap.com/charts/altcoin-season-index/')}
             className="p-4 bg-gradient-to-r from-orange-500/10 to-yellow-500/10 border border-orange-500/20 rounded-lg hover:border-orange-400/50 transition-all duration-200 text-left group"
+            data-testid="button-alt-season-index"
           >
             <div className="flex items-center gap-3">
               <TrendingUp className="w-6 h-6 text-orange-400" />
-              <div>
+              <div className="flex-1">
                 <div className="font-medium text-orange-200 group-hover:text-orange-100 transition-colors">
                   Alt Season Index
                 </div>
                 <div className="text-xs text-gray-400 mt-1">
                   Altcoin Performance
                 </div>
+                {/* Real-time data display */}
+                {isLoading ? (
+                  <div className="text-xs text-orange-300 mt-1 animate-pulse">Loading...</div>
+                ) : overview?.altSeasonIndex ? (
+                  <div className="text-xs mt-1">
+                    <div className={`font-bold ${getAltSeasonColor(overview.altSeasonIndex.value)}`}>
+                      {overview.altSeasonIndex.value}%
+                    </div>
+                    <div className="text-orange-300">
+                      {overview.altSeasonIndex.isAltSeason ? 'Alt Season' : 'Bitcoin Season'}
+                    </div>
+                  </div>
+                ) : null}
               </div>
             </div>
           </button>
