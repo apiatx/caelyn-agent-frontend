@@ -609,6 +609,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // CoinMarketCap top 20 daily gainers from top 500 endpoint
+  app.get('/api/coinmarketcap/top500-gainers', async (req, res) => {
+    try {
+      console.log('🔍 [API] Fetching top 20 daily gainers from CMC Top 500...');
+      
+      const gainers = await coinMarketCapService.getTop500DailyGainers();
+      
+      console.log(`✅ [API] Successfully retrieved ${gainers.length} daily gainers from Top 500`);
+      res.json(gainers);
+    } catch (error) {
+      console.error('❌ [API] Failed to fetch top 500 daily gainers:', error);
+      res.status(500).json({ message: 'Failed to fetch top 500 daily gainers data' });
+    }
+  });
+
   // CoinMarketCap DEX token gainers endpoint
   app.get('/api/coinmarketcap/dex-gainers', async (req, res) => {
     try {
