@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Wallet, Shield, Bot, ExternalLink, Zap, Lock, Users, ArrowUpRight } from "lucide-react";
 import { openSecureLink } from '@/utils/security';
-import onchainImage from "@assets/images_1756750962640.jpeg";
+import smartWalletsImage from "@assets/images (3)_1757198303773.jpeg";
 import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
 import paintColorsBackground from "@assets/paint-colors-background-header_1756067291555.jpg";
 import { useScrollFade } from "@/hooks/useScrollFade";
@@ -84,7 +84,7 @@ export default function OnchainSmartWalletsPage() {
           <div className="text-center mb-6">
             <div className="flex items-center justify-center gap-3 mb-3">
               <img 
-                src={onchainImage} 
+                src={smartWalletsImage} 
                 alt="Smart Wallets" 
                 className="w-12 h-12 rounded-xl object-cover"
               />
