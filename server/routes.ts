@@ -609,21 +609,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // CoinMarketCap top daily gainers from Top 500 endpoint for Onchain page
-  app.get('/api/coinmarketcap/daily-gainers-onchain', async (req, res) => {
-    try {
-      console.log('🔍 [API] Fetching top daily gainers from Top 500 cryptocurrencies...');
-      
-      const gainers = await coinMarketCapService.getTopDailyGainersFromTop500();
-      
-      console.log(`✅ [API] Successfully retrieved ${gainers.length} daily gainers from Top 500`);
-      res.json(gainers);
-    } catch (error) {
-      console.error('❌ [API] Failed to fetch daily gainers from Top 500:', error);
-      res.status(500).json({ message: 'Failed to fetch daily gainers from Top 500' });
-    }
-  });
-
   // CoinMarketCap DEX token gainers endpoint
   app.get('/api/coinmarketcap/dex-gainers', async (req, res) => {
     try {

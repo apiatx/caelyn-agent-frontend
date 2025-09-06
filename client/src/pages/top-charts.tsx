@@ -347,10 +347,7 @@ export default function TopChartsPage() {
 
             </div>
             
-            {/* Top 10 Daily Gainers */}
-            {/* <TopDailyGainers /> */}
-            
-            {/* XRP Chart */
+            {/* XRP Chart */}
             <Suspense fallback={<SectionLoadingState title="XRP Chart" />}>
               <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6 space-y-4">
                 <div className="flex items-center justify-between">
@@ -1129,7 +1126,10 @@ export default function TopChartsPage() {
               </div>
             </Suspense>
 
-            {/* Velo Chart */
+            {/* Top 10 Daily Gainers */}
+            <TopDailyGainers />
+
+            {/* Velo Chart */}
             <Suspense fallback={<SectionLoadingState title="Velo Chart" />}>
               <div className="space-y-3">
                 <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-8">
