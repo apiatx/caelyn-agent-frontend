@@ -1,4 +1,4 @@
-import { Activity, BarChart3, TrendingUp, ChartLine, Brain, Zap, DollarSign, Building2, Layers, Coins, ChevronDown } from "lucide-react";
+import { Activity, BarChart3, TrendingUp, ChartLine, Brain, Zap, DollarSign, Building2, Layers, Coins, ChevronDown, Wallet, Users, MessageSquare } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { useLocation } from "wouter";
 import {
@@ -62,16 +62,43 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
           >
             <BarChart3 className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />Majors
           </button>
-          <button
-            onClick={() => navigateTo("/app/onchain")}
-            className={`flex-1 min-w-0 py-3 px-1 xl:px-3 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
-              isActive("onchain")
-                ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
-                : "hover:bg-white/5 text-crypto-silver"
-            }`}
-          >
-            <BarChart3 className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />Onchain
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className={`flex-1 min-w-[120px] lg:min-w-[140px] xl:min-w-[160px] py-3 px-2 xl:px-3 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
+                  isActive("onchain-alpha") || isActive("onchain-smart-wallets") || isActive("onchain-social")
+                    ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
+                    : "hover:bg-white/5 text-crypto-silver"
+                }`}
+              >
+                <BarChart3 className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />Onchain
+                <ChevronDown className="w-3 h-3 xl:w-4 xl:h-4 ml-1 inline" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="bg-black/80 backdrop-blur-lg border-crypto-silver/20">
+              <DropdownMenuItem
+                onClick={() => navigateTo("/app/onchain/alpha")}
+                className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
+              >
+                <TrendingUp className="w-4 h-4 mr-2" />
+                Alpha
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => navigateTo("/app/onchain/smart-wallets")}
+                className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
+              >
+                <Wallet className="w-4 h-4 mr-2" />
+                Smart Wallets
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => navigateTo("/app/onchain/social")}
+                className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
+              >
+                <MessageSquare className="w-4 h-4 mr-2" />
+                Social
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
@@ -257,16 +284,43 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
               >
                 <BarChart3 className="w-4 h-4 mr-1 inline" />Majors
               </button>
-              <button
-                onClick={() => navigateTo("/app/onchain")}
-                className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
-                  isActive("onchain")
-                    ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
-                    : "hover:bg-white/5 text-crypto-silver"
-                }`}
-              >
-                <BarChart3 className="w-4 h-4 mr-1 inline" />Onchain
-              </button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+                      isActive("onchain-alpha") || isActive("onchain-smart-wallets") || isActive("onchain-social")
+                        ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
+                        : "hover:bg-white/5 text-crypto-silver"
+                    }`}
+                  >
+                    <BarChart3 className="w-4 h-4 mr-1 inline" />Onchain
+                    <ChevronDown className="w-4 h-4 ml-1 inline" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="bg-black/80 backdrop-blur-lg border-crypto-silver/20">
+                  <DropdownMenuItem
+                    onClick={() => navigateTo("/app/onchain/alpha")}
+                    className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
+                  >
+                    <TrendingUp className="w-4 h-4 mr-2" />
+                    Alpha
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => navigateTo("/app/onchain/smart-wallets")}
+                    className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
+                  >
+                    <Wallet className="w-4 h-4 mr-2" />
+                    Smart Wallets
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => navigateTo("/app/onchain/social")}
+                    className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
+                  >
+                    <MessageSquare className="w-4 h-4 mr-2" />
+                    Social
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
