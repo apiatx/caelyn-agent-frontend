@@ -880,6 +880,47 @@ export default function TopChartsPage() {
               </div>
             </Suspense>
 
+            {/* Ondo Finance Chart */}
+            <Suspense fallback={<SectionLoadingState title="Ondo Finance Chart" />}>
+              <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <h3 className="text-lg font-semibold text-purple-400">Ondo Finance</h3>
+                    <Badge variant="outline" className="bg-purple-500/20 text-purple-300 border-purple-500/30">
+                      ONDO
+                    </Badge>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <button
+                      onClick={() => openSecureLink('https://coinmarketcap.com/currencies/ondo-finance/')}
+                      className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm flex items-center gap-1"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                      CoinMarketCap
+                    </button>
+                    <button
+                      onClick={() => openSecureLink('https://www.tradingview.com/chart/e5l95XgZ/?symbol=BYBIT%3AONDOUSDT')}
+                      className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm"
+                    >
+                      Open Full View →
+                    </button>
+                  </div>
+                </div>
+                <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
+                  <iframe
+                    src="https://www.tradingview.com/chart/e5l95XgZ/?symbol=BYBIT%3AONDOUSDT"
+                    className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+                    title="Ondo Finance Advanced Chart"
+                    frameBorder="0"
+                    scrolling="no"
+                  />
+                </div>
+                
+                {/* Ondo Finance Real-time Data */}
+                <CryptoMarketDataBare symbol="ONDO" />
+              </div>
+            </Suspense>
+
             {/* PENGU Chart */}
             <Suspense fallback={<SectionLoadingState title="PENGU Chart" />}>
               <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6 space-y-4">
