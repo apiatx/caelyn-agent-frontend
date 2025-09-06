@@ -106,11 +106,6 @@ export default function AlphaSection() {
 
           {/* Messari.io */}
           <div className="mb-8">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-5 h-5 bg-orange-600 rounded-full flex items-center justify-center">
-                <span className="text-white font-bold text-xs">M</span>
-              </div>
-            </div>
             <button
               onClick={() => openInNewTab('https://messari.io/')}
               className="w-full p-6 text-center bg-gradient-to-b from-orange-600/10 to-orange-700/10 hover:from-orange-600/20 hover:to-orange-700/20 border border-orange-600/20 hover:border-orange-500/40 rounded-lg transition-all duration-300 group"
