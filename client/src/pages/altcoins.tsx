@@ -79,19 +79,19 @@ export default function AltcoinsPage() {
             </div>
           </div>
 
-          {/* CoinGecko Global Cryptocurrency Charts */}
+          {/* DexScreener Token Explorer */}
           <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-4 lg:p-6 transform transition-all duration-500 hover:scale-[1.01] hover:shadow-2xl hover:shadow-crypto-warning/20">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <h3 className="text-lg font-semibold text-white">📊 Alternative Crypto Markets</h3>
+                <h3 className="text-lg font-semibold text-white">📊 Token Discovery</h3>
                 <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
-                  COINGECKO
+                  DEXSCREENER
                 </Badge>
               </div>
               <button 
-                onClick={() => openSecureLink('https://www.coingecko.com/en/coins/categories')}
+                onClick={() => openSecureLink('https://dexscreener.com/')}
                 className="text-blue-400 hover:text-blue-300 transition-colors"
-                data-testid="button-open-categories"
+                data-testid="button-open-dexscreener"
               >
                 <ExternalLink className="w-4 h-4" />
               </button>
@@ -99,86 +99,28 @@ export default function AltcoinsPage() {
             <div className="rounded-lg overflow-hidden bg-black/20 border border-crypto-silver/10">
               <iframe
                 {...getSecureIframeProps(
-                  "https://www.coingecko.com/en/coins/categories?embed_pnl_coins=true",
-                  "CoinGecko Alternative Crypto Categories"
+                  "https://dexscreener.com/",
+                  "DexScreener Token Discovery"
                 )}
                 className="w-full h-[600px] rounded-lg"
-                data-testid="iframe-coingecko-categories"
+                data-testid="iframe-dexscreener"
               />
             </div>
           </div>
 
-          {/* CoinMarketCap Altcoin Season Index */}
+          {/* TradingView Crypto Screener */}
           <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-4 lg:p-6 transform transition-all duration-500 hover:scale-[1.01] hover:shadow-2xl hover:shadow-crypto-warning/20">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <h3 className="text-lg font-semibold text-white">🌊 Altcoin Season Index</h3>
+                <h3 className="text-lg font-semibold text-white">🌊 Crypto Market Screener</h3>
                 <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
-                  MARKET SENTIMENT
-                </Badge>
-              </div>
-              <button 
-                onClick={() => openSecureLink('https://coinmarketcap.com/charts/')}
-                className="text-blue-400 hover:text-blue-300 transition-colors"
-                data-testid="button-open-altcoin-season"
-              >
-                <ExternalLink className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="rounded-lg overflow-hidden bg-black/20 border border-crypto-silver/10">
-              <iframe
-                {...getSecureIframeProps(
-                  "https://coinmarketcap.com/charts/?embed=true",
-                  "CoinMarketCap Altcoin Season Charts"
-                )}
-                className="w-full h-[500px] rounded-lg"
-                data-testid="iframe-altcoin-season"
-              />
-            </div>
-          </div>
-
-          {/* DeFiPulse Alternative Crypto Categories */}
-          <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-4 lg:p-6 transform transition-all duration-500 hover:scale-[1.01] hover:shadow-2xl hover:shadow-crypto-warning/20">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <h3 className="text-lg font-semibold text-white">🏛️ DeFi Protocols</h3>
-                <Badge className="bg-indigo-500/20 text-indigo-400 border-indigo-500/30">
-                  DEFI PULSE
-                </Badge>
-              </div>
-              <button 
-                onClick={() => openSecureLink('https://defipulse.com/')}
-                className="text-blue-400 hover:text-blue-300 transition-colors"
-                data-testid="button-open-defipulse"
-              >
-                <ExternalLink className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="rounded-lg overflow-hidden bg-black/20 border border-crypto-silver/10">
-              <iframe
-                {...getSecureIframeProps(
-                  "https://defipulse.com/",
-                  "DeFiPulse Protocol Rankings"
-                )}
-                className="w-full h-[600px] rounded-lg"
-                data-testid="iframe-defipulse"
-              />
-            </div>
-          </div>
-
-          {/* Alternative Crypto Market Analysis */}
-          <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-4 lg:p-6 transform transition-all duration-500 hover:scale-[1.01] hover:shadow-2xl hover:shadow-crypto-warning/20">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <h3 className="text-lg font-semibold text-white">📈 Alternative Crypto Market Cap</h3>
-                <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30">
                   TRADINGVIEW
                 </Badge>
               </div>
               <button 
-                onClick={() => openSecureLink('https://www.tradingview.com/markets/cryptocurrencies/prices-all/')}
+                onClick={() => openSecureLink('https://www.tradingview.com/screener/')}
                 className="text-blue-400 hover:text-blue-300 transition-colors"
-                data-testid="button-open-altcoin-marketcap"
+                data-testid="button-open-tradingview"
               >
                 <ExternalLink className="w-4 h-4" />
               </button>
@@ -186,11 +128,69 @@ export default function AltcoinsPage() {
             <div className="rounded-lg overflow-hidden bg-black/20 border border-crypto-silver/10">
               <iframe
                 {...getSecureIframeProps(
-                  "https://www.tradingview.com/widget-docs/widgets/screener/",
-                  "TradingView Altcoin Screener"
+                  "https://www.tradingview.com/screener/",
+                  "TradingView Crypto Screener"
+                )}
+                className="w-full h-[500px] rounded-lg"
+                data-testid="iframe-tradingview-screener"
+              />
+            </div>
+          </div>
+
+          {/* Birdeye Portfolio Analytics */}
+          <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-4 lg:p-6 transform transition-all duration-500 hover:scale-[1.01] hover:shadow-2xl hover:shadow-crypto-warning/20">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <h3 className="text-lg font-semibold text-white">🏛️ Multi-Chain Analytics</h3>
+                <Badge className="bg-indigo-500/20 text-indigo-400 border-indigo-500/30">
+                  BIRDEYE
+                </Badge>
+              </div>
+              <button 
+                onClick={() => openSecureLink('https://birdeye.so/')}
+                className="text-blue-400 hover:text-blue-300 transition-colors"
+                data-testid="button-open-birdeye"
+              >
+                <ExternalLink className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="rounded-lg overflow-hidden bg-black/20 border border-crypto-silver/10">
+              <iframe
+                {...getSecureIframeProps(
+                  "https://birdeye.so/",
+                  "Birdeye Multi-Chain Analytics"
                 )}
                 className="w-full h-[600px] rounded-lg"
-                data-testid="iframe-altcoin-screener"
+                data-testid="iframe-birdeye"
+              />
+            </div>
+          </div>
+
+          {/* Dune Analytics Dashboard */}
+          <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-4 lg:p-6 transform transition-all duration-500 hover:scale-[1.01] hover:shadow-2xl hover:shadow-crypto-warning/20">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <h3 className="text-lg font-semibold text-white">📈 Blockchain Analytics</h3>
+                <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30">
+                  DUNE ANALYTICS
+                </Badge>
+              </div>
+              <button 
+                onClick={() => openSecureLink('https://dune.com/')}
+                className="text-blue-400 hover:text-blue-300 transition-colors"
+                data-testid="button-open-dune"
+              >
+                <ExternalLink className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="rounded-lg overflow-hidden bg-black/20 border border-crypto-silver/10">
+              <iframe
+                {...getSecureIframeProps(
+                  "https://dune.com/",
+                  "Dune Analytics Dashboard"
+                )}
+                className="w-full h-[600px] rounded-lg"
+                data-testid="iframe-dune"
               />
             </div>
           </div>
