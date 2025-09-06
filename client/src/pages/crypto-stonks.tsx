@@ -227,25 +227,13 @@ export default function CryptoStonksPage() {
 
             <div className="space-y-4">
               {/* Ondo Finance */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-lg font-semibold text-purple-400">Ondo Finance</h4>
-                  <button
-                    onClick={() => openInNewTab('https://app.ondo.finance/')}
-                    className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm"
-                  >
-                    Open Full View →
-                  </button>
-                </div>
-                <div className="w-full">
-                  <iframe
-                    src="https://app.ondo.finance/"
-                    className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
-                    title="Ondo Finance"
-                    sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-                  />
-                </div>
-              </div>
+              <button
+                onClick={() => openInNewTab('https://app.ondo.finance/')}
+                className="bg-gradient-to-br from-purple-500/10 to-blue-600/10 hover:from-purple-500/20 hover:to-blue-600/20 border border-purple-500/20 hover:border-purple-400/40 rounded-lg p-4 transition-all duration-300 text-left group w-full"
+              >
+                <div className="text-sm font-medium text-white group-hover:text-purple-300 mb-1">Ondo Finance</div>
+                <div className="text-xs text-crypto-silver">Real-world asset tokenization and yield products</div>
+              </button>
 
               {/* xStocks */}
               <div className="grid grid-cols-1 gap-3">
