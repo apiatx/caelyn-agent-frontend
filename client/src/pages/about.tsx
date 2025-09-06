@@ -1,6 +1,7 @@
 import { UniversalNavigation } from "@/components/universal-navigation";
 import { GlassCard } from "@/components/ui/glass-card";
-import { ExternalLink } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { ExternalLink, Bitcoin } from "lucide-react";
 import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
 import paintColorsBackground from "@assets/paint-colors-background-header_1756067291555.jpg";
 import hippoMouthOpen from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
@@ -292,6 +293,34 @@ export default function AboutPage() {
                   className="w-full h-full object-cover"
                 />
               </div>
+            </div>
+
+            {/* The Case for Bitcoin */}
+            <div className="mt-12 pt-8 border-t border-crypto-silver/20">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 sm:w-6 sm:h-6 bg-orange-500 rounded-full flex items-center justify-center">
+                    <Bitcoin className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                  </div>
+                  <h3 className="text-lg sm:text-xl font-semibold text-white">The Case for Bitcoin</h3>
+                  <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 text-xs">
+                    VANECK RESEARCH
+                  </Badge>
+                </div>
+              </div>
+
+              <button
+                onClick={() => window.open('https://www.vaneck.com/us/en/blogs/digital-assets/the-investment-case-for-bitcoin/', '_blank', 'noopener,noreferrer')}
+                className="bg-gradient-to-br from-orange-500/10 to-orange-600/10 hover:from-orange-500/20 hover:to-orange-600/20 border border-orange-500/20 hover:border-orange-400/40 rounded-lg p-6 transition-all duration-300 text-left group w-full mb-8"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-lg font-medium text-white group-hover:text-orange-300 mb-2">VanEck: The Investment Case for Bitcoin</div>
+                    <div className="text-sm text-crypto-silver">Comprehensive institutional research on Bitcoin as an investment asset</div>
+                  </div>
+                  <ExternalLink className="w-5 h-5 text-orange-400 group-hover:text-orange-300" />
+                </div>
+              </button>
             </div>
 
             {/* Support Section */}

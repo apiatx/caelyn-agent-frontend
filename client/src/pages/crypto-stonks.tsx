@@ -211,34 +211,6 @@ export default function CryptoStonksPage() {
             </div>
           </GlassCard>
 
-          {/* The Case for Bitcoin */}
-          <GlassCard className="p-3 sm:p-4 lg:p-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
-              <div className="flex items-center gap-2">
-                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-orange-500 rounded-full flex items-center justify-center">
-                  <Bitcoin className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-                </div>
-                <h3 className="text-lg sm:text-xl font-semibold text-white">The Case for Bitcoin</h3>
-                <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 text-xs">
-                  VANECK RESEARCH
-                </Badge>
-              </div>
-            </div>
-
-            <button
-              onClick={() => openInNewTab('https://www.vaneck.com/us/en/blogs/digital-assets/the-investment-case-for-bitcoin/')}
-              className="bg-gradient-to-br from-orange-500/10 to-orange-600/10 hover:from-orange-500/20 hover:to-orange-600/20 border border-orange-500/20 hover:border-orange-400/40 rounded-lg p-6 transition-all duration-300 text-left group w-full"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-lg font-medium text-white group-hover:text-orange-300 mb-2">VanEck: The Investment Case for Bitcoin</div>
-                  <div className="text-sm text-crypto-silver">Comprehensive institutional research on Bitcoin as an investment asset</div>
-                </div>
-                <ExternalLink className="w-5 h-5 text-orange-400 group-hover:text-orange-300" />
-              </div>
-            </button>
-          </GlassCard>
-
           {/* Tokenized Stocks */}
           <GlassCard className="p-3 sm:p-4 lg:p-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
