@@ -727,6 +727,18 @@ export function MarketOverviewSection() {
               <p className="text-gray-400 text-sm">Blockchain Analytics</p>
             </div>
           </div>
+          
+          {/* CryptoPanic News iframe */}
+          <div className="mt-6">
+            <iframe
+              src="https://cryptopanic.com/news/bitcoin/"
+              className="w-full h-[500px] rounded-lg border border-crypto-silver/20"
+              title="CryptoPanic Bitcoin News"
+              frameBorder="0"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+              referrerPolicy="no-referrer-when-downgrade"
+            />
+          </div>
         </div>
       </div>
 
