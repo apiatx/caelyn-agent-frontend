@@ -239,9 +239,6 @@ export default function AlphaSection() {
               className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg hover:bg-yellow-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm">🍪</span>
-                </div>
                 <h4 className="text-yellow-400 font-semibold">Cookie.fun</h4>
               </div>
               <p className="text-gray-400 text-sm">Interactive Trading Platform</p>
