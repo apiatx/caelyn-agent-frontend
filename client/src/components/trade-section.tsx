@@ -337,13 +337,13 @@ export default function TradeSection() {
 
             <Button
               variant="outline"
-              onClick={() => openInNewTab('https://limitless.exchange/advanced')}
+              onClick={() => openInNewTab('https://tradoor.io/trade/btc_usdt')}
               className="bg-black/20 border-crypto-silver/20 hover:bg-green-500/20 hover:border-green-500/30 text-white justify-start p-4 h-auto"
             >
               <TrendingUp className="w-4 h-4 mr-2" />
               <div className="text-left">
-                <div className="font-semibold">Limitless Exchange</div>
-                <div className="text-sm text-crypto-silver">Predict future crypto and stocks prices</div>
+                <div className="font-semibold">Tradoor</div>
+                <div className="text-sm text-crypto-silver">Crypto perps and options</div>
               </div>
             </Button>
 
