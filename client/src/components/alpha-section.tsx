@@ -125,7 +125,7 @@ export default function AlphaSection() {
 
         </GlassCard>
 
-        {/* Top 20 Daily Gainers from CMC Top 500 */}
+        {/* 24h Gainers (CMC Top 500) */}
         <TopDailyGainersTop500 />
       </div>
 

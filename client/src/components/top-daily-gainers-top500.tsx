@@ -165,10 +165,7 @@ const TopDailyGainersTop500 = () => {
       <div className="flex flex-col items-center justify-center space-y-2 mb-6">
         <div className="flex items-center space-x-2">
           <TrendingUp className="w-5 h-5 text-blue-400" />
-          <h3 className="text-lg font-semibold text-white">Top 20 Daily Gainers from CMC Top 500</h3>
-          <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
-            24H
-          </Badge>
+          <h3 className="text-lg font-semibold text-white">24h Gainers (CMC Top 500)</h3>
         </div>
       </div>
       
