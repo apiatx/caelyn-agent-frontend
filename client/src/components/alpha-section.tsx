@@ -197,9 +197,6 @@ export default function AlphaSection() {
                 <span className="text-white font-bold text-sm">S</span>
               </div>
               <h4 className="text-2xl font-bold bg-gradient-to-r from-white to-indigo-100 bg-clip-text text-transparent">Signal</h4>
-              <Badge className="bg-gradient-to-r from-indigo-500/20 to-purple-500/20 text-black border border-indigo-400/40 text-sm font-semibold px-3 py-1 shadow-md">
-                MULTI-CHAIN
-              </Badge>
             </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
@@ -337,9 +334,6 @@ export default function AlphaSection() {
               <span className="text-white font-bold text-lg">D</span>
             </div>
             <h3 className="text-2xl font-bold bg-gradient-to-r from-white to-emerald-100 bg-clip-text text-transparent">Discover Web3</h3>
-            <Badge className="bg-gradient-to-r from-emerald-500/20 to-green-500/20 text-black border border-emerald-400/40 text-sm font-semibold px-3 py-1 shadow-md">
-              ECOSYSTEM
-            </Badge>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -434,9 +428,6 @@ export default function AlphaSection() {
               <span className="text-white text-xl">🚀</span>
             </div>
             <h3 className="text-2xl font-bold bg-gradient-to-r from-white to-orange-100 bg-clip-text text-transparent">Memecoins</h3>
-            <Badge className="bg-gradient-to-r from-orange-500/20 to-red-500/20 text-black border border-orange-400/40 text-sm font-semibold px-3 py-1 shadow-md">
-              ANALYTICS
-            </Badge>
           </div>
 
           {/* Capitoday */}
