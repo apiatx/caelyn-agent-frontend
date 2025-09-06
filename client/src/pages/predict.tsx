@@ -78,13 +78,20 @@ export default function PredictPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Prediction Markets Section */}
         <GlassCard className="p-6">
-          <div className="flex items-center justify-end mb-4">
-            <button
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-yellow-500 rounded-full flex items-center justify-center">
+                <TrendingUp className="w-4 h-4 text-white" />
+              </div>
+              <h3 className="text-xl font-semibold text-white">Polymarket Crypto</h3>
+            </div>
+            <Button
               onClick={() => openInNewTab('https://polymarket.com/crypto')}
-              className="text-orange-400 hover:text-orange-300 text-sm"
+              className="bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white font-semibold px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2"
             >
-              Open Full View →
-            </button>
+              <ExternalLink className="w-4 h-4" />
+              Open Polymarket
+            </Button>
           </div>
           <iframe
             src="https://polymarket.com/crypto"
