@@ -121,6 +121,31 @@ export default function DeFiSection() {
           />
         </GlassCard>
 
+        {/* HoldStation Iframe */}
+        <GlassCard className="p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+              <Wallet className="w-4 h-4 text-white" />
+            </div>
+            <h3 className="text-xl font-semibold text-white">HoldStation</h3>
+            <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+              DEFI PROTOCOL
+            </Badge>
+            <button
+              onClick={() => openInNewTab('https://holdstation.com/')}
+              className="text-blue-400 hover:text-blue-300 text-sm ml-auto"
+            >
+              Open Full View →
+            </button>
+          </div>
+          <iframe
+            src="https://holdstation.com/"
+            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+            title="HoldStation"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+          />
+        </GlassCard>
+
         {/* DeFi Platform Links */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
           <Button
