@@ -5,9 +5,9 @@ import { openSecureLink } from '@/utils/security';
 import onchainImage from "@assets/images_1756750962640.jpeg";
 import TopDailyGainersTop500 from './top-daily-gainers-top500';
 
-// Safe Glass Card component
+// Enhanced Glass Card component
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <Card className={`backdrop-blur-sm bg-gradient-to-br from-black/90 to-black/95 border border-white/20 ${className}`}>
+  <Card className={`backdrop-blur-xl bg-gradient-to-br from-black/80 via-gray-900/60 to-black/90 border border-white/30 shadow-2xl shadow-purple-500/10 hover:shadow-purple-500/20 transition-all duration-500 ${className}`}>
     {children}
   </Card>
 );
@@ -58,16 +58,19 @@ export default function AlphaSection() {
 
   return (
     <div className="space-y-8">
-      <div className="text-center mb-6">
-        <div className="flex items-center justify-center gap-3 mb-3">
-          <img 
-            src={onchainImage} 
-            alt="Onchain" 
-            className="w-12 h-12 rounded-xl object-cover"
-          />
-          <h1 className="text-3xl font-bold text-white">Onchain</h1>
+      <div className="text-center mb-8">
+        <div className="flex items-center justify-center gap-4 mb-4">
+          <div className="relative">
+            <img 
+              src={onchainImage} 
+              alt="Analytics" 
+              className="w-16 h-16 rounded-2xl object-cover shadow-lg shadow-blue-500/30 border-2 border-blue-400/50"
+            />
+            <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-blue-400/20 to-purple-400/20"></div>
+          </div>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-blue-100 to-purple-100 bg-clip-text text-transparent drop-shadow-lg">Analytics</h1>
         </div>
-        <p className="text-crypto-silver">Comprehensive blockchain data and intelligence</p>
+        <p className="text-lg text-gray-300 font-medium tracking-wide">Comprehensive blockchain intelligence & analytics</p>
       </div>
 
       <div className="space-y-8">
@@ -129,44 +132,56 @@ export default function AlphaSection() {
       {/* Inspect Tools - Moved above Signal section and reordered */}
       <div className="space-y-8 mt-12">
         <GlassCard className="p-3 sm:p-4 lg:p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold text-xs">I</span>
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
+              <span className="text-white font-bold text-sm">I</span>
             </div>
-            <h4 className="text-white font-medium">Inspect</h4>
+            <h4 className="text-2xl font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">Inspect</h4>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <button
               onClick={() => openInNewTab('https://tokenterminal.com/explorer')}
-              className="bg-gradient-to-br from-purple-500/10 to-purple-600/10 hover:from-purple-500/20 hover:to-purple-600/20 border border-purple-500/20 hover:border-purple-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+              className="bg-gradient-to-br from-purple-500/15 to-purple-600/15 hover:from-purple-500/25 hover:to-purple-600/25 border border-purple-500/30 hover:border-purple-400/50 rounded-xl p-5 transition-all duration-300 text-left group shadow-lg hover:shadow-purple-500/20 hover:scale-105 transform"
             >
-              <div className="text-sm font-medium text-white group-hover:text-purple-300 mb-1">Token Terminal</div>
-              <div className="text-xs text-crypto-silver">Protocol metrics explorer</div>
+              <div className="text-base font-semibold text-white group-hover:text-purple-200 mb-2 flex items-center gap-2">
+                <div className="w-2 h-2 bg-purple-400 rounded-full group-hover:animate-pulse"></div>
+                Token Terminal
+              </div>
+              <div className="text-sm text-gray-300 group-hover:text-gray-200">Protocol metrics explorer</div>
             </button>
 
             <button
               onClick={() => openInNewTab('https://www.developerreport.com/')}
-              className="bg-gradient-to-br from-green-500/10 to-green-600/10 hover:from-green-500/20 hover:to-green-600/20 border border-green-500/20 hover:border-green-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+              className="bg-gradient-to-br from-green-500/15 to-green-600/15 hover:from-green-500/25 hover:to-green-600/25 border border-green-500/30 hover:border-green-400/50 rounded-xl p-5 transition-all duration-300 text-left group shadow-lg hover:shadow-green-500/20 hover:scale-105 transform"
             >
-              <div className="text-sm font-medium text-white group-hover:text-green-300 mb-1">Developer Report</div>
-              <div className="text-xs text-crypto-silver">Developer activity by blockchain</div>
+              <div className="text-base font-semibold text-white group-hover:text-green-200 mb-2 flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-400 rounded-full group-hover:animate-pulse"></div>
+                Developer Report
+              </div>
+              <div className="text-sm text-gray-300 group-hover:text-gray-200">Developer activity by blockchain</div>
             </button>
 
             <button
               onClick={() => openInNewTab('https://www.theblock.co/data/decentralized-finance/dex-non-custodial')}
-              className="bg-gradient-to-br from-orange-500/10 to-orange-600/10 hover:from-orange-500/20 hover:to-orange-600/20 border border-orange-500/20 hover:border-orange-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+              className="bg-gradient-to-br from-orange-500/15 to-orange-600/15 hover:from-orange-500/25 hover:to-orange-600/25 border border-orange-500/30 hover:border-orange-400/50 rounded-xl p-5 transition-all duration-300 text-left group shadow-lg hover:shadow-orange-500/20 hover:scale-105 transform"
             >
-              <div className="text-sm font-medium text-white group-hover:text-orange-300 mb-1">The Block: DEX Metrics</div>
-              <div className="text-xs text-crypto-silver">Comprehensive DEX analytics and metrics</div>
+              <div className="text-base font-semibold text-white group-hover:text-orange-200 mb-2 flex items-center gap-2">
+                <div className="w-2 h-2 bg-orange-400 rounded-full group-hover:animate-pulse"></div>
+                The Block: DEX Metrics
+              </div>
+              <div className="text-sm text-gray-300 group-hover:text-gray-200">Comprehensive DEX analytics and metrics</div>
             </button>
 
             <button
               onClick={() => openInNewTab('https://chainspect.app/dashboard')}
-              className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+              className="bg-gradient-to-br from-cyan-500/15 to-cyan-600/15 hover:from-cyan-500/25 hover:to-cyan-600/25 border border-cyan-500/30 hover:border-cyan-400/50 rounded-xl p-5 transition-all duration-300 text-left group shadow-lg hover:shadow-cyan-500/20 hover:scale-105 transform"
             >
-              <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">Chainspect</div>
-              <div className="text-xs text-crypto-silver">Chain scalability and decentralization analytics</div>
+              <div className="text-base font-semibold text-white group-hover:text-cyan-200 mb-2 flex items-center gap-2">
+                <div className="w-2 h-2 bg-cyan-400 rounded-full group-hover:animate-pulse"></div>
+                Chainspect
+              </div>
+              <div className="text-sm text-gray-300 group-hover:text-gray-200">Chain scalability and decentralization analytics</div>
             </button>
           </div>
         </GlassCard>
@@ -177,12 +192,12 @@ export default function AlphaSection() {
 
           {/* Signal */}
           <div className="mb-8">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-5 h-5 bg-indigo-500 rounded-full flex items-center justify-center">
-                <span className="text-white font-bold text-xs">S</span>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                <span className="text-white font-bold text-sm">S</span>
               </div>
-              <h4 className="text-white font-medium">Signal</h4>
-              <Badge className="bg-indigo-500/20 text-indigo-400 border-indigo-500/30 text-xs">
+              <h4 className="text-2xl font-bold bg-gradient-to-r from-white to-indigo-100 bg-clip-text text-transparent">Signal</h4>
+              <Badge className="bg-gradient-to-r from-indigo-500/20 to-purple-500/20 text-indigo-300 border border-indigo-400/40 text-sm font-semibold px-3 py-1 shadow-md">
                 MULTI-CHAIN
               </Badge>
             </div>
@@ -191,73 +206,94 @@ export default function AlphaSection() {
             {/* Top priority: CMC Leaderboard, OpenSea, CoinGecko Chains */}
             <SafeLink
               href='https://coinmarketcap.com/leaderboard/'
-              className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+              className="p-5 bg-gradient-to-br from-blue-500/15 to-blue-600/15 hover:from-blue-500/25 hover:to-blue-600/25 border border-blue-500/30 hover:border-blue-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-blue-500/20 transform"
             >
-              <div className="flex items-center gap-2 mb-2">
-                <h4 className="text-blue-400 font-semibold">CMC Leaderboard</h4>
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-md">
+                  <span className="text-white font-bold text-xs">C</span>
+                </div>
+                <h4 className="text-blue-300 font-bold text-lg">CMC Leaderboard</h4>
               </div>
-              <p className="text-gray-400 text-sm">Market Rankings</p>
+              <p className="text-gray-300 text-sm font-medium">Market Rankings</p>
             </SafeLink>
 
             <SafeLink
               href='https://opensea.io/stats/tokens'
-              className="p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-lg hover:bg-cyan-500/20 transition-colors"
+              className="p-5 bg-gradient-to-br from-cyan-500/15 to-cyan-600/15 hover:from-cyan-500/25 hover:to-cyan-600/25 border border-cyan-500/30 hover:border-cyan-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-cyan-500/20 transform"
             >
-              <div className="flex items-center gap-2 mb-2">
-                <h4 className="text-cyan-400 font-semibold">OpenSea</h4>
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-8 h-8 bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-lg flex items-center justify-center shadow-md">
+                  <span className="text-white font-bold text-xs">O</span>
+                </div>
+                <h4 className="text-cyan-300 font-bold text-lg">OpenSea</h4>
               </div>
-              <p className="text-gray-400 text-sm">Trending Altcoin Timeframes</p>
+              <p className="text-gray-300 text-sm font-medium">Trending Altcoin Timeframes</p>
             </SafeLink>
 
             <SafeLink
               href='https://www.coingecko.com/en/chains'
-              className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
+              className="p-5 bg-gradient-to-br from-green-500/15 to-green-600/15 hover:from-green-500/25 hover:to-green-600/25 border border-green-500/30 hover:border-green-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-green-500/20 transform"
             >
-              <div className="flex items-center gap-2 mb-2">
-                <h4 className="text-green-400 font-semibold">CoinGecko Chains</h4>
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center shadow-md">
+                  <span className="text-white font-bold text-xs">G</span>
+                </div>
+                <h4 className="text-green-300 font-bold text-lg">CoinGecko Chains</h4>
               </div>
-              <p className="text-gray-400 text-sm">Blockchain Analytics</p>
+              <p className="text-gray-300 text-sm font-medium">Blockchain Analytics</p>
             </SafeLink>
 
             {/* Rest of the analytics tools */}
             <SafeLink
               href='https://dexcheck.ai/app'
-              className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
+              className="p-5 bg-gradient-to-br from-emerald-500/15 to-emerald-600/15 hover:from-emerald-500/25 hover:to-emerald-600/25 border border-emerald-500/30 hover:border-emerald-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-emerald-500/20 transform"
             >
-              <div className="flex items-center gap-2 mb-2">
-                <h4 className="text-green-400 font-semibold">DexCheck</h4>
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center shadow-md">
+                  <span className="text-white font-bold text-xs">D</span>
+                </div>
+                <h4 className="text-emerald-300 font-bold text-lg">DexCheck</h4>
               </div>
-              <p className="text-gray-400 text-sm">Multi-chain analytics platform</p>
+              <p className="text-gray-300 text-sm font-medium">Multi-chain analytics platform</p>
             </SafeLink>
 
             <SafeLink
               href='https://app.nansen.ai/'
-              className="p-4 bg-purple-600/10 border border-purple-600/20 rounded-lg hover:bg-purple-600/20 transition-colors"
+              className="p-5 bg-gradient-to-br from-purple-600/15 to-purple-700/15 hover:from-purple-600/25 hover:to-purple-700/25 border border-purple-600/30 hover:border-purple-500/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-purple-600/20 transform"
             >
-              <div className="flex items-center gap-2 mb-2">
-                <h4 className="text-purple-400 font-semibold">Nansen.ai</h4>
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-purple-700 rounded-lg flex items-center justify-center shadow-md">
+                  <span className="text-white font-bold text-xs">N</span>
+                </div>
+                <h4 className="text-purple-300 font-bold text-lg">Nansen.ai</h4>
               </div>
-              <p className="text-gray-400 text-sm">On-chain insights and wallet tracking</p>
+              <p className="text-gray-300 text-sm font-medium">On-chain insights and wallet tracking</p>
             </SafeLink>
 
             <SafeLink
               href='https://mindshare.elfi.io/'
-              className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
+              className="p-5 bg-gradient-to-br from-violet-500/15 to-violet-600/15 hover:from-violet-500/25 hover:to-violet-600/25 border border-violet-500/30 hover:border-violet-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-violet-500/20 transform"
             >
-              <div className="flex items-center gap-2 mb-2">
-                <h4 className="text-purple-400 font-semibold">Mindshare by Elfi</h4>
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-8 h-8 bg-gradient-to-br from-violet-500 to-violet-600 rounded-lg flex items-center justify-center shadow-md">
+                  <span className="text-white font-bold text-xs">M</span>
+                </div>
+                <h4 className="text-violet-300 font-bold text-lg">Mindshare by Elfi</h4>
               </div>
-              <p className="text-gray-400 text-sm">AI Token Analytics & Social Intelligence</p>
+              <p className="text-gray-300 text-sm font-medium">AI Token Analytics & Social Intelligence</p>
             </SafeLink>
 
             <SafeLink
               href='https://cookie.fun/'
-              className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg hover:bg-yellow-500/20 transition-colors"
+              className="p-5 bg-gradient-to-br from-yellow-500/15 to-yellow-600/15 hover:from-yellow-500/25 hover:to-yellow-600/25 border border-yellow-500/30 hover:border-yellow-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-yellow-500/20 transform"
             >
-              <div className="flex items-center gap-2 mb-2">
-                <h4 className="text-yellow-400 font-semibold">Cookie.fun</h4>
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-8 h-8 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-lg flex items-center justify-center shadow-md">
+                  <span className="text-white font-bold text-xs">C</span>
+                </div>
+                <h4 className="text-yellow-300 font-bold text-lg">Cookie.fun</h4>
               </div>
-              <p className="text-gray-400 text-sm">Interactive Trading Platform</p>
+              <p className="text-gray-300 text-sm font-medium">Interactive Trading Platform</p>
             </SafeLink>
 
             <SafeLink
@@ -296,12 +332,12 @@ export default function AlphaSection() {
       {/* Discover Web3 */}
       <div className="space-y-8 mt-12">
         <GlassCard className="p-6">
-          <div className="flex items-center gap-2 mb-6">
-            <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold text-sm">D</span>
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/30">
+              <span className="text-white font-bold text-lg">D</span>
             </div>
-            <h3 className="text-xl font-semibold text-white">Discover Web3</h3>
-            <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
+            <h3 className="text-2xl font-bold bg-gradient-to-r from-white to-emerald-100 bg-clip-text text-transparent">Discover Web3</h3>
+            <Badge className="bg-gradient-to-r from-emerald-500/20 to-green-500/20 text-emerald-300 border border-emerald-400/40 text-sm font-semibold px-3 py-1 shadow-md">
               ECOSYSTEM
             </Badge>
           </div>
@@ -309,82 +345,82 @@ export default function AlphaSection() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <SafeLink
               href='https://www.ethereum-ecosystem.com/'
-              className="p-4 bg-gray-500/10 border border-gray-500/20 rounded-lg hover:bg-gray-500/20 transition-colors"
+              className="p-5 bg-gradient-to-br from-gray-600/15 to-gray-700/15 hover:from-gray-600/25 hover:to-gray-700/25 border border-gray-500/30 hover:border-gray-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-gray-500/20 transform"
             >
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-gray-500 rounded-full flex items-center justify-center">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-gray-600 to-gray-700 rounded-xl flex items-center justify-center shadow-md">
                   <span className="text-white font-bold">E</span>
                 </div>
-                <h4 className="text-gray-400 font-semibold">Ethereum Ecosystem</h4>
+                <h4 className="text-gray-200 font-bold text-lg">Ethereum Ecosystem</h4>
               </div>
-              <p className="text-gray-400 text-sm">Comprehensive ecosystem guide</p>
+              <p className="text-gray-300 text-sm font-medium">Comprehensive ecosystem guide</p>
             </SafeLink>
 
             <SafeLink
               href='https://academy.swissborg.com/en/learn/solana-ecosystem'
-              className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-lg hover:bg-indigo-500/20 transition-colors"
+              className="p-5 bg-gradient-to-br from-indigo-500/15 to-indigo-600/15 hover:from-indigo-500/25 hover:to-indigo-600/25 border border-indigo-500/30 hover:border-indigo-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-indigo-500/20 transform"
             >
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-indigo-500 rounded-full flex items-center justify-center">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-md">
                   <span className="text-white font-bold">S</span>
                 </div>
-                <h4 className="text-indigo-400 font-semibold">Solana Ecosystem</h4>
+                <h4 className="text-indigo-300 font-bold text-lg">Solana Ecosystem</h4>
               </div>
-              <p className="text-gray-400 text-sm">SwissBorg Academy ecosystem guide</p>
+              <p className="text-gray-300 text-sm font-medium">SwissBorg Academy ecosystem guide</p>
             </SafeLink>
 
             <SafeLink
               href='https://www.base.org/ecosystem'
-              className="p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-lg hover:bg-cyan-500/20 transition-colors"
+              className="p-5 bg-gradient-to-br from-cyan-500/15 to-cyan-600/15 hover:from-cyan-500/25 hover:to-cyan-600/25 border border-cyan-500/30 hover:border-cyan-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-cyan-500/20 transform"
             >
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-xl flex items-center justify-center shadow-md">
                   <span className="text-white font-bold">B</span>
                 </div>
-                <h4 className="text-cyan-400 font-semibold">Base Ecosystem</h4>
+                <h4 className="text-cyan-300 font-bold text-lg">Base Ecosystem</h4>
               </div>
-              <p className="text-gray-400 text-sm">Official Base ecosystem directory</p>
+              <p className="text-gray-300 text-sm font-medium">Official Base ecosystem directory</p>
             </SafeLink>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <SafeLink
               href='https://gravity.xyz/'
-              className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg hover:bg-emerald-500/20 transition-colors"
+              className="p-5 bg-gradient-to-br from-emerald-500/15 to-emerald-600/15 hover:from-emerald-500/25 hover:to-emerald-600/25 border border-emerald-500/30 hover:border-emerald-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-emerald-500/20 transform"
             >
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-md">
                   <span className="text-white font-bold">G</span>
                 </div>
-                <h4 className="text-emerald-400 font-semibold">Gravity Ecosystem</h4>
+                <h4 className="text-emerald-300 font-bold text-lg">Gravity Ecosystem</h4>
               </div>
-              <p className="text-gray-400 text-sm">Explore the Gravity network</p>
+              <p className="text-gray-300 text-sm font-medium">Explore the Gravity network</p>
             </SafeLink>
 
             <SafeLink
               href='https://dappradar.com/'
-              className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+              className="p-5 bg-gradient-to-br from-blue-500/15 to-blue-600/15 hover:from-blue-500/25 hover:to-blue-600/25 border border-blue-500/30 hover:border-blue-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-blue-500/20 transform"
             >
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-md">
                   <span className="text-white font-bold">D</span>
                 </div>
-                <h4 className="text-blue-400 font-semibold">DappRadar</h4>
+                <h4 className="text-blue-300 font-bold text-lg">DappRadar</h4>
               </div>
-              <p className="text-gray-400 text-sm">Discover DApps & analytics</p>
+              <p className="text-gray-300 text-sm font-medium">Discover DApps & analytics</p>
             </SafeLink>
 
             <SafeLink
               href='https://zapper.xyz/'
-              className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
+              className="p-5 bg-gradient-to-br from-purple-500/15 to-purple-600/15 hover:from-purple-500/25 hover:to-purple-600/25 border border-purple-500/30 hover:border-purple-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-purple-500/20 transform"
             >
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
                   <span className="text-white font-bold">Z</span>
                 </div>
-                <h4 className="text-purple-400 font-semibold">Zapper</h4>
+                <h4 className="text-purple-300 font-bold text-lg">Zapper</h4>
               </div>
-              <p className="text-gray-400 text-sm">DeFi portfolio management</p>
+              <p className="text-gray-300 text-sm font-medium">DeFi portfolio management</p>
             </SafeLink>
           </div>
         </GlassCard>
@@ -393,12 +429,12 @@ export default function AlphaSection() {
       {/* Memecoins */}
       <div className="space-y-8 mt-12">
         <GlassCard className="p-6">
-          <div className="flex items-center gap-2 mb-6">
-            <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
-              <span className="text-white text-sm">🚀</span>
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/30">
+              <span className="text-white text-xl">🚀</span>
             </div>
-            <h3 className="text-xl font-semibold text-white">Memecoins</h3>
-            <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30">
+            <h3 className="text-2xl font-bold bg-gradient-to-r from-white to-orange-100 bg-clip-text text-transparent">Memecoins</h3>
+            <Badge className="bg-gradient-to-r from-orange-500/20 to-red-500/20 text-orange-300 border border-orange-400/40 text-sm font-semibold px-3 py-1 shadow-md">
               ANALYTICS
             </Badge>
           </div>
