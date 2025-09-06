@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { openSecureLink } from "@/utils/security";
 import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
 import paintColorsBackground from "@assets/paint-colors-background-header_1756067291555.jpg";
+import bnbLogo from "@assets/eb2349c3-b2f8-4a93-a286-8f86a62ea9d8_1757138768380.png";
 import { useScrollFade } from "@/hooks/useScrollFade";
 
 // Glass card component
@@ -62,8 +63,12 @@ export default function BNBPage() {
         {/* BNB Header */}
         <div className="text-center mb-6">
           <div className="flex items-center justify-center gap-3 mb-3">
-            <div className="w-12 h-12 bg-yellow-600 rounded-xl flex items-center justify-center">
-              <span className="text-white font-bold text-lg">BNB</span>
+            <div className="w-12 h-12 rounded-xl overflow-hidden border-2 border-yellow-400 shadow-lg">
+              <img 
+                src={bnbLogo}
+                alt="BNB Logo"
+                className="w-full h-full object-cover"
+              />
             </div>
             <h1 className="text-3xl font-bold text-white">BNB Smart Chain</h1>
           </div>
