@@ -57,7 +57,8 @@ export default function CryptoDashboardSection() {
   });
 
   // Format currency values
-  const formatCurrency = (value: number) => {
+  const formatCurrency = (value: number | undefined | null) => {
+    if (typeof value !== 'number' || isNaN(value)) return '$0.00';
     if (value >= 1e12) {
       return `$${(value / 1e12).toFixed(2)}T`;
     } else if (value >= 1e9) {
@@ -69,18 +70,21 @@ export default function CryptoDashboardSection() {
   };
 
   // Format percentage
-  const formatPercentage = (value: number) => {
+  const formatPercentage = (value: number | undefined | null) => {
+    if (typeof value !== 'number' || isNaN(value)) return '0.00%';
     const formatted = value.toFixed(2);
     return value >= 0 ? `+${formatted}%` : `${formatted}%`;
   };
 
   // Get color for percentage change
-  const getPercentageColor = (value: number) => {
+  const getPercentageColor = (value: number | undefined | null) => {
+    if (typeof value !== 'number' || isNaN(value)) return 'text-gray-400';
     return value >= 0 ? 'text-green-400' : 'text-red-400';
   };
 
   // Get fear & greed color
-  const getFearGreedColor = (value: number) => {
+  const getFearGreedColor = (value: number | undefined | null) => {
+    if (typeof value !== 'number' || isNaN(value)) return 'text-gray-400';
     if (value >= 75) return 'text-green-400';
     if (value >= 55) return 'text-yellow-400';
     if (value >= 35) return 'text-orange-400';
@@ -88,7 +92,8 @@ export default function CryptoDashboardSection() {
   };
 
   // Get alt season color
-  const getAltSeasonColor = (value: number) => {
+  const getAltSeasonColor = (value: number | undefined | null) => {
+    if (typeof value !== 'number' || isNaN(value)) return 'text-gray-400';
     if (value > 75) return 'text-green-400';
     if (value > 25) return 'text-yellow-400';
     return 'text-red-400';
@@ -189,7 +194,7 @@ export default function CryptoDashboardSection() {
                 {/* Real-time data display */}
                 {isLoading ? (
                   <div className="text-xs text-green-300 mt-1 animate-pulse">Loading...</div>
-                ) : overview?.etfData ? (
+                ) : overview?.etfData && typeof overview.etfData.totalNetFlow === 'number' ? (
                   <div className="text-xs mt-1">
                     <div className={`font-bold ${overview.etfData.totalNetFlow >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                       {overview.etfData.totalNetFlow >= 0 ? '+' : ''}${overview.etfData.totalNetFlow.toFixed(1)}M
