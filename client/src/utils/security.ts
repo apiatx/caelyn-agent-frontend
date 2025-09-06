@@ -193,7 +193,14 @@ const TRUSTED_DOMAINS = [
   'novaex.com',
   'www.novaex.com',
   'app.extended.exchange',
-  'extended.exchange'
+  'extended.exchange',
+  'app.defi.app',
+  'defi.app',
+  'jumper.exchange',
+  'app.debridge.finance',
+  'debridge.finance',
+  'app.definitive.fi',
+  'definitive.fi'
 ];
 
 /**
