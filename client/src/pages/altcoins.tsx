@@ -80,25 +80,6 @@ export default function AltcoinsPage() {
             </div>
           </div>
 
-          {/* Major Altcoin Price Charts Section */}
-          <div className="text-center px-3 sm:px-0">
-            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-2">Major Altcoin Price Charts</h2>
-            <p className="text-sm sm:text-base text-crypto-silver">XRP, SOL, BNB and other major altcoin price analysis</p>
-            
-            {/* CoinMarketCap Button */}
-            <div className="mt-4">
-              <button
-                onClick={() => openSecureLink('https://coinmarketcap.com/')}
-                className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 hover:scale-105 flex items-center gap-2 mx-auto"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                </svg>
-                View on CoinMarketCap
-                <ExternalLink className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
           
           {/* XRP Chart */}
           <Suspense fallback={<SectionLoadingState title="XRP Chart" />}>
@@ -876,6 +857,32 @@ export default function AltcoinsPage() {
               
               {/* VIRTUAL Real-time Data */}
               <CryptoMarketDataBare symbol="VIRTUAL" />
+            </div>
+          </Suspense>
+
+          {/* Velo Chart */}
+          <Suspense fallback={<SectionLoadingState title="Velo Chart" />}>
+            <div className="space-y-3">
+              <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-8">
+                <div className="flex flex-col items-center justify-center text-center space-y-4">
+                  <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center text-lg font-bold">
+                    V
+                  </div>
+                  <h4 className="text-xl font-semibold text-white">Velo Charts</h4>
+                  <p className="text-crypto-silver max-w-md">
+                    Access comprehensive altcoin trading charts and analytics.
+                  </p>
+                  <button
+                    onClick={() => window.open('https://velo.xyz/chart', '_blank', 'noopener,noreferrer')}
+                    className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 hover:scale-105 flex items-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                    View Velo Charts
+                  </button>
+                </div>
+              </div>
             </div>
           </Suspense>
 
