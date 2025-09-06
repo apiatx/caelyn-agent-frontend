@@ -115,18 +115,7 @@ const TopDailyGainers = () => {
   if (isLoading) {
     return (
       <div className="mt-6 bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-6">
-        <div className="flex flex-col items-center justify-center space-y-2 mb-4">
-          <div className="flex items-center space-x-2">
-            <TrendingUp className="w-5 h-5 text-green-400" />
-            <h3 className="text-lg font-semibold text-white">Top 10 Daily Gainers</h3>
-          </div>
-          <button
-            onClick={() => window.open('https://coinmarketcap.com/', '_blank', 'noopener,noreferrer')}
-            className="text-sm text-yellow-400 hover:text-yellow-300 transition-colors duration-200 flex items-center gap-1"
-          >
-            CMC Top 100
-            <ExternalLink className="w-3 h-3" />
-          </button>
+        <div className="mb-4">
         </div>
         <div className="flex items-center justify-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-400"></div>
@@ -139,18 +128,7 @@ const TopDailyGainers = () => {
   if (error) {
     return (
       <div className="mt-6 bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-6">
-        <div className="flex flex-col items-center justify-center space-y-2 mb-4">
-          <div className="flex items-center space-x-2">
-            <TrendingUp className="w-5 h-5 text-green-400" />
-            <h3 className="text-lg font-semibold text-white">Top 10 Daily Gainers</h3>
-          </div>
-          <button
-            onClick={() => window.open('https://coinmarketcap.com/', '_blank', 'noopener,noreferrer')}
-            className="text-sm text-yellow-400 hover:text-yellow-300 transition-colors duration-200 flex items-center gap-1"
-          >
-            CMC Top 100
-            <ExternalLink className="w-3 h-3" />
-          </button>
+        <div className="mb-4">
         </div>
         <div className="text-center py-8">
           <TrendingDown className="w-12 h-12 text-red-400 mx-auto mb-2" />
@@ -162,21 +140,7 @@ const TopDailyGainers = () => {
 
   return (
     <div className="mt-6 bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-6" data-testid="top-daily-gainers">
-      <div className="flex flex-col items-center justify-center space-y-2 mb-6">
-        <div className="flex items-center space-x-2">
-          <TrendingUp className="w-5 h-5 text-green-400" />
-          <h3 className="text-lg font-semibold text-white">Top 10 Daily Gainers</h3>
-          <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
-            24H
-          </Badge>
-        </div>
-        <button
-          onClick={() => window.open('https://coinmarketcap.com/', '_blank', 'noopener,noreferrer')}
-          className="text-sm text-yellow-400 hover:text-yellow-300 transition-colors duration-200 flex items-center gap-1"
-        >
-          CMC Top 100
-          <ExternalLink className="w-3 h-3" />
-        </button>
+      <div className="mb-6">
       </div>
       
       <div className="space-y-2">
