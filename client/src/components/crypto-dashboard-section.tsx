@@ -111,25 +111,13 @@ export default function CryptoDashboardSection() {
       </div>
 
       <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
-        <button
-          onClick={() => openInNewTab('https://www.coinglass.com/')}
-          className="w-full bg-gradient-to-r from-blue-500/10 to-purple-600/10 hover:from-blue-500/20 hover:to-purple-600/20 border border-blue-500/20 hover:border-blue-400/30 rounded-lg p-8 transition-all duration-300 group"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                <TrendingUp className="w-8 h-8 text-white" />
-              </div>
-              <div className="text-left">
-                <h4 className="text-2xl font-semibold text-white group-hover:text-blue-300 mb-2">Coinglass Market Analytics</h4>
-                <p className="text-crypto-silver">Comprehensive cryptocurrency derivatives and market data</p>
-              </div>
-            </div>
-            <div className="text-blue-400 group-hover:text-blue-300 text-lg">
-              Click to Open →
-            </div>
-          </div>
-        </button>
+        <iframe
+          src="https://www.coinglass.com/"
+          className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+          title="CoinGlass"
+          frameBorder="0"
+          scrolling="yes"
+        />
       </div>
 
       {/* Bitcoin Charts Section */}
@@ -258,25 +246,13 @@ export default function CryptoDashboardSection() {
       </GlassCard>
 
       <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
-        <button
-          onClick={() => openInNewTab('https://www.coinglass.com/bull-market-peak-signals')}
-          className="w-full bg-gradient-to-r from-green-500/10 to-emerald-600/10 hover:from-green-500/20 hover:to-emerald-600/20 border border-green-500/20 hover:border-green-400/30 rounded-lg p-8 transition-all duration-300 group"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center">
-                <TrendingUp className="w-8 h-8 text-white" />
-              </div>
-              <div className="text-left">
-                <h4 className="text-2xl font-semibold text-white group-hover:text-green-300 mb-2">Bull Market Peak Signals</h4>
-                <p className="text-crypto-silver">Advanced indicators for market cycle analysis</p>
-              </div>
-            </div>
-            <div className="text-green-400 group-hover:text-green-300 text-lg">
-              Click to Open →
-            </div>
-          </div>
-        </button>
+        <iframe
+          src="https://www.coinglass.com/bull-market-peak-signals"
+          className="w-full h-[400px] sm:h-[500px] lg:h-[600px]"
+          title="Coinglass Bull Market Peak Signals"
+          sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+          referrerPolicy="no-referrer-when-downgrade"
+        />
       </div>
 
 
