@@ -52,16 +52,36 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
           >
             <Activity className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />Market Overview
           </button>
-          <button
-            onClick={() => navigateTo("/app/majors")}
-            className={`flex-1 min-w-0 py-3 px-1 xl:px-3 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
-              isActive("majors")
-                ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
-                : "hover:bg-white/5 text-crypto-silver"
-            }`}
-          >
-            <BarChart3 className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />Majors
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className={`flex-1 min-w-[120px] lg:min-w-[140px] xl:min-w-[160px] py-3 px-2 xl:px-3 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
+                  isActive("majors") || isActive("altcoins")
+                    ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
+                    : "hover:bg-white/5 text-crypto-silver"
+                }`}
+              >
+                <BarChart3 className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />Charts
+                <ChevronDown className="w-3 h-3 xl:w-4 xl:h-4 ml-1 inline" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="bg-black/80 backdrop-blur-lg border-crypto-silver/20">
+              <DropdownMenuItem
+                onClick={() => navigateTo("/app/charts/majors")}
+                className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
+              >
+                <BarChart3 className="w-4 h-4 mr-2" />
+                Majors
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => navigateTo("/app/charts/altcoins")}
+                className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
+              >
+                <Coins className="w-4 h-4 mr-2" />
+                Altcoins
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
@@ -274,16 +294,36 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
               >
                 <Activity className="w-4 h-4 mr-1 inline" />Market Overview
               </button>
-              <button
-                onClick={() => navigateTo("/app/majors")}
-                className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
-                  isActive("majors")
-                    ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
-                    : "hover:bg-white/5 text-crypto-silver"
-                }`}
-              >
-                <BarChart3 className="w-4 h-4 mr-1 inline" />Majors
-              </button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+                      isActive("majors") || isActive("altcoins")
+                        ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
+                        : "hover:bg-white/5 text-crypto-silver"
+                    }`}
+                  >
+                    <BarChart3 className="w-4 h-4 mr-1 inline" />Charts
+                    <ChevronDown className="w-4 h-4 ml-1 inline" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="bg-black/80 backdrop-blur-lg border-crypto-silver/20">
+                  <DropdownMenuItem
+                    onClick={() => navigateTo("/app/charts/majors")}
+                    className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
+                  >
+                    <BarChart3 className="w-4 h-4 mr-2" />
+                    Majors
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => navigateTo("/app/charts/altcoins")}
+                    className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
+                  >
+                    <Coins className="w-4 h-4 mr-2" />
+                    Altcoins
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button

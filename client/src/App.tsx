@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Dashboard from "@/pages/dashboard";
 import TopChartsPage from "@/pages/top-charts";
+import AltcoinsPage from "@/pages/altcoins";
 import EthereumPage from "@/pages/ethereum";
 import SolanaPage from "@/pages/solana";
 import DeFiPage from "@/pages/defi";
@@ -34,10 +35,12 @@ function Router() {
     <Switch>
       <Route path="/" component={Dashboard} />
       <Route path="/app" component={Dashboard} />
+      <Route path="/app/charts/majors" component={TopChartsPage} />
+      <Route path="/app/charts/altcoins" component={AltcoinsPage} />
       <Route path="/app/majors" component={TopChartsPage} />
       <Route path="/majors" component={TopChartsPage} />
       <Route path="/top-charts" component={TopChartsPage} />
-      <Route path="/alts" component={TopChartsPage} />
+      <Route path="/alts" component={AltcoinsPage} />
       <Route path="/app/onchain" component={OnchainPage} />
       <Route path="/onchain" component={OnchainPage} />
       <Route path="/app/onchain/analytics" component={OnchainAlphaPage} />
