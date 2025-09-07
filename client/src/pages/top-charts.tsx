@@ -2,6 +2,7 @@ import React, { Suspense } from 'react';
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink } from "lucide-react";
 import bitcoinLogo from "@assets/Bitcoin.svg_1755979187828.webp";
+import ethereumLogo from "@assets/Ethereum_logo_2014.svg_1755977414942.png";
 import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
 import { SectionLoadingState } from "@/components/loading-screen";
 import { openSecureLink, getSecureIframeProps } from "@/utils/security";
@@ -68,6 +69,14 @@ export default function TopChartsPage() {
                 />
               </div>
               <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white">Major Cryptocurrencies</h2>
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-black rounded-xl flex items-center justify-center">
+                <img 
+                  src={ethereumLogo}
+                  alt="Ethereum"
+                  className="w-6 h-6 sm:w-8 sm:h-8 object-contain"
+                  style={{filter: 'drop-shadow(0 0 4px rgba(70, 130, 180, 0.3))'}}
+                />
+              </div>
             </div>
             <p className="text-sm sm:text-base text-crypto-silver">Bitcoin and Ethereum price action and market dominance analysis</p>
           </div>
@@ -75,7 +84,17 @@ export default function TopChartsPage() {
           {/* Bitcoin Section */}
           <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6 space-y-6">
             <div className="text-center">
-              <h2 className="text-xl sm:text-2xl font-bold text-white">Bitcoin</h2>
+              <div className="flex items-center justify-center gap-3 mb-4">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-black rounded-xl flex items-center justify-center">
+                  <img 
+                    src={bitcoinLogo}
+                    alt="Bitcoin"
+                    className="w-6 h-6 sm:w-8 sm:h-8 object-contain"
+                    style={{filter: 'drop-shadow(0 0 4px rgba(255, 165, 0, 0.3))'}}
+                  />
+                </div>
+                <h2 className="text-xl sm:text-2xl font-bold text-white">Bitcoin</h2>
+              </div>
             </div>
             {/* Bitcoin Charts - Side by Side */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
@@ -153,7 +172,17 @@ export default function TopChartsPage() {
           {/* Ethereum Section */}
           <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6 space-y-6">
             <div className="text-center">
-              <h2 className="text-xl sm:text-2xl font-bold text-white">Ethereum</h2>
+              <div className="flex items-center justify-center gap-3 mb-4">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-black rounded-xl flex items-center justify-center">
+                  <img 
+                    src={ethereumLogo}
+                    alt="Ethereum"
+                    className="w-6 h-6 sm:w-8 sm:h-8 object-contain"
+                    style={{filter: 'drop-shadow(0 0 4px rgba(70, 130, 180, 0.3))'}}
+                  />
+                </div>
+                <h2 className="text-xl sm:text-2xl font-bold text-white">Ethereum</h2>
+              </div>
             </div>
             {/* Ethereum Charts - Side by Side */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
