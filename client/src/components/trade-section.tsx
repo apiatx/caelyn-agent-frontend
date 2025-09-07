@@ -431,7 +431,7 @@ export default function TradeSection() {
             <SafeIframe
               src="https://wach.ai/chat"
               title="WachAI Chat Interface"
-              className="h-[500px]"
+              className="w-full h-[500px] rounded-lg border border-crypto-silver/20"
             />
           </div>
 
