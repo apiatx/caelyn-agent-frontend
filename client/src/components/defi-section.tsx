@@ -76,8 +76,18 @@ export default function DeFiSection() {
       </div>
 
 
-      {/* DeFi Section with DeFiLlama */}
-      <div className="mt-8">
+      {/* Analytics Glass Card */}
+      <GlassCard className="p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
+            <BarChart3 className="text-white text-xl" />
+          </div>
+          <div>
+            <h3 className="text-2xl font-bold text-white">Analytics</h3>
+            <p className="text-crypto-silver">DeFi TVL rankings and protocol analytics</p>
+          </div>
+        </div>
+        
         <div className="flex justify-end mb-3">
           <SafeLink
             href="https://defillama.com/"
@@ -94,18 +104,27 @@ export default function DeFiSection() {
             className="w-full h-[600px] border-0"
           />
         </div>
-      </div>
+      </GlassCard>
 
-      {/* DeFi Protocols Section */}
-      <div className="space-y-6">
-        
+      {/* DeFi Protocols Glass Card */}
+      <GlassCard className="p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
+            <DollarSign className="text-white text-xl" />
+          </div>
+          <div>
+            <h3 className="text-2xl font-bold text-white">DeFi Protocols</h3>
+            <p className="text-crypto-silver">Decentralized finance platforms and protocols</p>
+          </div>
+        </div>
+
         {/* Peapods Finance Iframe */}
-        <GlassCard className="p-6">
+        <div className="mb-8">
           <div className="flex items-center gap-2 mb-4">
             <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
               <DollarSign className="w-4 h-4 text-white" />
             </div>
-            <h3 className="text-xl font-semibold text-white">Peapods Finance</h3>
+            <h4 className="text-xl font-semibold text-white">Peapods Finance</h4>
             <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
               DEFI PROTOCOL
             </Badge>
@@ -122,11 +141,10 @@ export default function DeFiSection() {
             title="Peapods Finance"
             sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
           />
-        </GlassCard>
-
+        </div>
 
         {/* DeFi Platform Links */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-8">
           <Button
             variant="outline"
             onClick={() => openInNewTab('https://defi.instadapp.io/')}
@@ -325,65 +343,65 @@ export default function DeFiSection() {
             </div>
           </Button>
         </div>
-      </div>
 
-      {/* Bitcoin DeFi Section */}
-      <div className="space-y-6 mt-8">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/30">
-            <span className="text-white font-bold text-sm">₿</span>
+        {/* Bitcoin DeFi Section */}
+        <div className="mt-8">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/30">
+              <span className="text-white font-bold text-sm">₿</span>
+            </div>
+            <div>
+              <h4 className="text-xl font-bold text-white">Bitcoin DeFi</h4>
+              <p className="text-crypto-silver">Bitcoin-based DeFi protocols and layers</p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-xl font-bold text-white">Bitcoin DeFi</h3>
-            <p className="text-crypto-silver">Bitcoin-based DeFi protocols and layers</p>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://www.stacks.co/explore/ecosystem?category=All+Teams#apps')}
+              className="bg-black/20 border-crypto-silver/20 hover:bg-orange-500/20 hover:border-orange-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
+            >
+              <div className="p-3 rounded-lg bg-gradient-to-r from-orange-500/20 to-yellow-500/20">
+                <Layers className="h-6 w-6 text-orange-400" />
+              </div>
+              <div className="text-center">
+                <div className="font-semibold text-lg">Stacks</div>
+                <div className="text-sm text-crypto-silver">Bitcoin DeFi Layer</div>
+              </div>
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://app.satlayer.xyz/vaults/restake')}
+              className="bg-black/20 border-crypto-silver/20 hover:bg-orange-500/20 hover:border-orange-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
+            >
+              <div className="p-3 rounded-lg bg-gradient-to-r from-orange-500/20 to-red-500/20">
+                <Shield className="h-6 w-6 text-orange-400" />
+              </div>
+              <div className="text-center">
+                <div className="font-semibold text-lg">SatLayer</div>
+                <div className="text-sm text-crypto-silver">Bitcoin restaking vaults</div>
+              </div>
+            </Button>
           </div>
         </div>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Button
-            variant="outline"
-            onClick={() => openInNewTab('https://www.stacks.co/explore/ecosystem?category=All+Teams#apps')}
-            className="bg-black/20 border-crypto-silver/20 hover:bg-orange-500/20 hover:border-orange-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
-          >
-            <div className="p-3 rounded-lg bg-gradient-to-r from-orange-500/20 to-yellow-500/20">
-              <Layers className="h-6 w-6 text-orange-400" />
-            </div>
-            <div className="text-center">
-              <div className="font-semibold text-lg">Stacks</div>
-              <div className="text-sm text-crypto-silver">Bitcoin DeFi Layer</div>
-            </div>
-          </Button>
+      </GlassCard>
 
-          <Button
-            variant="outline"
-            onClick={() => openInNewTab('https://app.satlayer.xyz/vaults/restake')}
-            className="bg-black/20 border-crypto-silver/20 hover:bg-orange-500/20 hover:border-orange-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
-          >
-            <div className="p-3 rounded-lg bg-gradient-to-r from-orange-500/20 to-red-500/20">
-              <Shield className="h-6 w-6 text-orange-400" />
-            </div>
-            <div className="text-center">
-              <div className="font-semibold text-lg">SatLayer</div>
-              <div className="text-sm text-crypto-silver">Bitcoin restaking vaults</div>
-            </div>
-          </Button>
-        </div>
-      </div>
-
-      {/* DeFAI Section */}
-      <div className="space-y-6">
+      {/* DeFAI Glass Card */}
+      <GlassCard className="p-6">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
             <Brain className="text-white text-xl" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-white">DeFAI</h2>
+            <h3 className="text-2xl font-bold text-white">DeFAI</h3>
             <p className="text-crypto-silver">AI-Powered DeFi Analytics & Protocols</p>
           </div>
         </div>
 
         {/* Trading & Analysis Subsection */}
-        <div className="space-y-4">
+        <div className="space-y-4 mb-8">
           <h4 className="text-lg font-medium text-cyan-400 mb-3">Trading & Analysis</h4>
           <div className="grid grid-cols-1 gap-4">
             {/* Senpi AI */}
@@ -498,20 +516,20 @@ export default function DeFiSection() {
             </Button>
           </div>
         </div>
-      </div>
+      </GlassCard>
 
 
 
 
 
-      {/* CEX Section */}
-      <div className="space-y-6">
+      {/* On Ramp Glass Card */}
+      <GlassCard className="p-6">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
             <Wallet className="text-white text-xl" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-white">On Ramp</h2>
+            <h3 className="text-2xl font-bold text-white">On Ramp</h3>
             <p className="text-crypto-silver">Fiat to crypto onboarding platforms</p>
           </div>
         </div>
@@ -573,7 +591,7 @@ export default function DeFiSection() {
             </div>
           </Button>
         </div>
-      </div>
+      </GlassCard>
 
 
     </div>
