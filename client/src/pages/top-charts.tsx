@@ -85,7 +85,7 @@ export default function TopChartsPage() {
                     </div>
                     <h3 className="text-lg sm:text-xl font-semibold text-white">Crypto Total Market Cap</h3>
                     <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-xs">
-                      TOTAL
+                      BTC + ALTS
                     </Badge>
                   </div>
                   <button
@@ -115,7 +115,7 @@ export default function TopChartsPage() {
                     </div>
                     <h3 className="text-lg sm:text-xl font-semibold text-white">Total Market Cap Excluding BTC</h3>
                     <Badge className="bg-teal-500/20 text-teal-400 border-teal-500/30 text-xs">
-                      TOTAL2
+                      ALTS
                     </Badge>
                   </div>
                   <button
