@@ -192,6 +192,21 @@ export default function TradeSection() {
               </div>
             </Button>
           </div>
+
+          {/* DODO - Full Width */}
+          <div className="w-full">
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://app.dodoex.io/swap/network/mainnet/1-ETH/56-%24BeAI')}
+              className="group w-full bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-start p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+            >
+              <ArrowLeftRight className="w-5 h-5 mr-3 group-hover:rotate-180 transition-transform duration-300" />
+              <div className="text-left">
+                <div className="font-bold text-base">DODO</div>
+                <div className="text-sm text-gray-300">Decentralized exchange protocol</div>
+              </div>
+            </Button>
+          </div>
         </div>
 
         {/* Trading Terminals Subsection */}
