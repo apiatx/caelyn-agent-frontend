@@ -14,6 +14,7 @@ import hyperliquidLogo from "@assets/hyperliquid-logo_1755977414943.png";
 import bittensorLogo from "@assets/bittensor_1755977414942.png";
 import bnbLogo from "@assets/eb2349c3-b2f8-4a93-a286-8f86a62ea9d8_1757138768380.png";
 import suiLogo from "@assets/images (2)_1757139042170.jpeg";
+import dogecoinLogo from "@assets/dogecoin-doge-cryptocurrency-golden-currency-600nw-2293972845_1757205415591.webp";
 
 export default function AltcoinsPage() {
   const headerOpacity = useScrollFade(30, 120);
@@ -63,6 +64,9 @@ export default function AltcoinsPage() {
           <div className="text-center px-3 sm:px-0">
             <div className="flex items-center justify-center gap-3 mb-2">
               <div className="flex items-center gap-2 mr-3">
+                <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-orange-400/50 shadow-lg">
+                  <img src={dogecoinLogo} alt="Dogecoin" className="w-full h-full object-cover" />
+                </div>
                 <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-purple-400/50 shadow-lg">
                   <img src={solanaLogo} alt="Solana" className="w-full h-full object-cover" />
                 </div>
