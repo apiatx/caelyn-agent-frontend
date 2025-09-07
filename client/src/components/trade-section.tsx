@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeftRight, TrendingUp, ExternalLink, Wallet } from "lucide-react";
+import { ArrowLeftRight, TrendingUp, ExternalLink, Wallet, ArrowUpDown } from "lucide-react";
 import { openSecureLink, getSecureIframeProps } from "@/utils/security";
 
 // Safe components for external links and iframes
