@@ -71,6 +71,7 @@ export default function PredictPage() {
               Prediction Markets
             </h1>
           </div>
+          <p className="text-lg text-white/80 font-medium tracking-wide mt-4">Decentralized Casino and Analytics</p>
         </div>
       </div>
 
