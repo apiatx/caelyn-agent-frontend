@@ -86,7 +86,7 @@ export default function OnchainSocialPage() {
               <img 
                 src={socialImage} 
                 alt="Social" 
-                className="w-20 h-20 rounded-xl object-cover border-2 border-yellow-400"
+                className="w-28 h-28 rounded-full object-cover border-2 border-yellow-400"
               />
               <h1 className="text-3xl font-bold text-white">Social</h1>
             </div>
