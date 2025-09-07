@@ -411,7 +411,7 @@ export default function TradeSection() {
             <h4 className="text-2xl font-bold bg-gradient-to-r from-green-400 to-emerald-300 bg-clip-text text-transparent">Options</h4>
             <div className="flex-1 h-px bg-gradient-to-r from-green-500/50 to-transparent"></div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <Button
               variant="outline"
               onClick={() => openInNewTab('https://www.hegic.co/app#/arbitrum/trade/new')}
@@ -445,6 +445,18 @@ export default function TradeSection() {
               <div className="text-left">
                 <div className="font-bold text-base">Tradoor</div>
                 <div className="text-sm text-lime-200/90">Crypto perps and options</div>
+              </div>
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://www.stryke.xyz/en/dashboard')}
+              className="group bg-gradient-to-br from-orange-600/30 via-amber-600/20 to-yellow-600/30 border-orange-400/40 hover:from-orange-500/40 hover:via-amber-500/30 hover:to-yellow-500/40 hover:border-orange-300/60 text-white justify-start p-5 h-auto shadow-xl hover:shadow-orange-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+            >
+              <TrendingUp className="w-5 h-5 mr-3 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
+              <div className="text-left">
+                <div className="font-bold text-base">Stryke</div>
+                <div className="text-sm text-orange-200/90">Decentralized options trading</div>
               </div>
             </Button>
 
