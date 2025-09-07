@@ -69,7 +69,7 @@ export default function AboutPage() {
               
               {/* First Hippo Image - Between "What is CryptoHippo" and "Why It Exists" */}
               <div className="flex justify-center my-8">
-                <div className="w-32 h-32 rounded-full overflow-hidden shadow-lg border-2 border-yellow-400">
+                <div className="w-48 h-48 rounded-full overflow-hidden shadow-lg border-2 border-yellow-400">
                   <img 
                     src={hippoDownload1} 
                     alt="DeFi Hub" 
