@@ -81,9 +81,11 @@ export default function TradeSection() {
               onClick={() => openInNewTab('https://www.relay.link/bridge')}
               className="w-full bg-gradient-to-r from-blue-500/20 to-blue-600/20 border-blue-500/30 hover:from-blue-500/30 hover:to-blue-600/30 hover:border-blue-400/50 text-white justify-center p-6 h-auto shadow-lg hover:shadow-blue-500/20"
             >
-              <ArrowLeftRight className="w-5 h-5 mr-3" />
               <div className="text-center">
-                <div className="font-bold text-lg">Relay Bridge</div>
+                <div className="font-bold text-lg flex items-center justify-center gap-2">
+                  <ArrowLeftRight className="w-5 h-5" />
+                  Relay Bridge
+                </div>
                 <div className="text-sm text-blue-200">Primary cross-chain asset bridging platform</div>
               </div>
             </Button>
@@ -141,9 +143,11 @@ export default function TradeSection() {
               rel="noopener noreferrer"
               className="w-full bg-gradient-to-r from-purple-500/20 to-purple-600/20 border border-purple-500/30 hover:from-purple-500/30 hover:to-purple-600/30 hover:border-purple-400/50 text-white justify-center p-6 h-auto rounded-md transition-colors flex items-center shadow-lg hover:shadow-purple-500/20"
             >
-              <ArrowLeftRight className="w-5 h-5 mr-3" />
               <div className="text-center">
-                <div className="font-bold text-lg">Definitive Edge</div>
+                <div className="font-bold text-lg flex items-center justify-center gap-2">
+                  <ArrowLeftRight className="w-5 h-5" />
+                  Definitive Edge
+                </div>
                 <div className="text-sm text-purple-200">Primary multi-chain trading terminal - Trade any token, on any chain</div>
               </div>
             </a>
