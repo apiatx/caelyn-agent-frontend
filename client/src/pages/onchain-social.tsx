@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MessageSquare, Users, TrendingUp, Hash, ExternalLink, Bot, Zap, Heart, Star } from "lucide-react";
 import { openSecureLink } from '@/utils/security';
-import socialImage from "@assets/images (1)_1757198651549.png";
+import socialImage from "@assets/download (4)_1757214892954.png";
 import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
 import newHeaderBackground from "@assets/photo-1504333638930-c8787321eee0_1757208194192.avif";
 import { useScrollFade } from "@/hooks/useScrollFade";
@@ -86,7 +86,7 @@ export default function OnchainSocialPage() {
               <img 
                 src={socialImage} 
                 alt="Social" 
-                className="w-16 h-16 rounded-xl object-cover border-2 border-yellow-400"
+                className="w-20 h-20 rounded-xl object-cover border-2 border-yellow-400"
               />
               <h1 className="text-3xl font-bold text-white">Social</h1>
             </div>
