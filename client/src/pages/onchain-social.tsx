@@ -535,7 +535,7 @@ export default function OnchainSocialPage() {
               </Badge>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <SafeLink
                 href='https://substack.com/'
                 className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
@@ -557,9 +557,22 @@ export default function OnchainSocialPage() {
                   <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
                     <span className="text-white font-bold">𝕏</span>
                   </div>
-                  <h4 className="text-blue-400 font-semibold">X Home</h4>
+                  <h4 className="text-blue-400 font-semibold">X</h4>
                 </div>
                 <p className="text-gray-400 text-sm">Social Media & News Feed</p>
+              </SafeLink>
+
+              <SafeLink
+                href='https://farcaster.xyz/'
+                className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                    <span className="text-white text-sm">🌐</span>
+                  </div>
+                  <h4 className="text-purple-400 font-semibold">Farcaster</h4>
+                </div>
+                <p className="text-gray-400 text-sm">Decentralized Social Network</p>
               </SafeLink>
             </div>
           </GlassCard>
