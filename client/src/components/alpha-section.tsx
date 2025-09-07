@@ -3,7 +3,7 @@ import { Card } from '@/components/ui/card';
 import { BarChart3, ExternalLink, TrendingUp, Link2, Star, Wallet, TrendingDown, Globe, Layers, Activity } from 'lucide-react';
 import { openSecureLink } from '@/utils/security';
 import onchainImage from "@assets/images_1756750962640.jpeg";
-import diamondImage from "@assets/420-4201054_sketch-logo-sketch-app-icon-png-transparent-png_1757213090711.png";
+import diamondImage from "@assets/images (4)_1757213323269.jpeg";
 import TopDailyGainersTop500 from './top-daily-gainers-top500';
 
 // Enhanced Glass Card component
