@@ -464,10 +464,10 @@ export default function OnchainSocialPage() {
 
             </div>
 
-            {/* StockX Subsection */}
+            {/* StocksX Subsection */}
             <div className="mb-12">
               <div className="flex items-center justify-center mb-6">
-                <h4 className="text-2xl font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">StockX</h4>
+                <h4 className="text-2xl font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">StocksX</h4>
               </div>
 
               {/* Stock X Accounts */}
