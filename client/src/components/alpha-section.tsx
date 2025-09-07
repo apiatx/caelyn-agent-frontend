@@ -276,15 +276,17 @@ export default function AlphaSection() {
             />
           </div>
           </div>
+        </GlassCard>
+      </div>
 
-          {/* Signal */}
-          <div className="mb-8">
-            <div className="flex items-center justify-center mb-6">
-              <h4 className="text-2xl font-bold bg-gradient-to-r from-white to-indigo-100 bg-clip-text text-transparent">Signal</h4>
-            </div>
+      {/* Signal Section - Separate GlassCard */}
+      <div className="space-y-8 mt-12">
+        <GlassCard className="p-3 sm:p-4 lg:p-6">
+          <div className="flex items-center justify-center mb-6">
+            <h4 className="text-2xl font-bold bg-gradient-to-r from-white to-indigo-100 bg-clip-text text-transparent">Signal</h4>
+          </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-            {/* Rest of the analytics tools */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
             <SafeLink
               href='https://app.nansen.ai/'
               className="p-5 bg-gradient-to-br from-purple-600/15 to-purple-700/15 hover:from-purple-600/25 hover:to-purple-700/25 border border-purple-600/30 hover:border-purple-500/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-purple-600/20 transform"
@@ -299,19 +301,6 @@ export default function AlphaSection() {
             </SafeLink>
 
             <SafeLink
-              href='https://mindshare.elfi.io/'
-              className="p-5 bg-gradient-to-br from-violet-500/15 to-violet-600/15 hover:from-violet-500/25 hover:to-violet-600/25 border border-violet-500/30 hover:border-violet-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-violet-500/20 transform"
-            >
-              <div className="flex flex-col items-center gap-2 mb-3">
-                <div className="w-8 h-8 bg-gradient-to-br from-violet-500 to-violet-600 rounded-lg flex items-center justify-center shadow-md">
-                  <span className="text-white font-bold text-xs">M</span>
-                </div>
-                <h4 className="text-violet-300 font-bold text-lg">Mindshare by Elfi</h4>
-              </div>
-              <p className="text-gray-300 text-sm font-medium text-center">AI Token Analytics & Social Intelligence</p>
-            </SafeLink>
-
-            <SafeLink
               href='https://cookie.fun/'
               className="p-5 bg-gradient-to-br from-yellow-500/15 to-yellow-600/15 hover:from-yellow-500/25 hover:to-yellow-600/25 border border-yellow-500/30 hover:border-yellow-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-yellow-500/20 transform"
             >
@@ -323,9 +312,6 @@ export default function AlphaSection() {
               </div>
               <p className="text-gray-300 text-sm font-medium text-center">Interactive Trading Platform</p>
             </SafeLink>
-          </div>
-
-
           </div>
         </GlassCard>
       </div>
