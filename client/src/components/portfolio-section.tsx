@@ -488,7 +488,7 @@ export default function PortfolioSection() {
           {/* Jupiter Portfolio */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h5 className="text-xl font-bold text-white">Jupiter Portfolio Tracker</h5>
+              <h5 className="text-xl font-bold bg-gradient-to-r from-pink-400 via-purple-400 to-violet-400 bg-clip-text text-transparent">Jupiter Portfolio Tracker</h5>
               <button
                 onClick={() => window.open('https://jup.ag/portfolio', '_blank', 'noopener,noreferrer')}
                 className="text-purple-300 hover:text-purple-200 text-sm font-medium bg-purple-500/20 px-4 py-2 rounded-lg border border-purple-400/30 hover:bg-purple-500/30 transition-all duration-300 flex items-center gap-2"
