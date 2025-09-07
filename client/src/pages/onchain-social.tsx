@@ -458,6 +458,70 @@ export default function OnchainSocialPage() {
               </div>
             </div>
 
+            {/* Abstract Ecosystem Subsection */}
+            <div className="mb-12">
+              <div className="flex items-center justify-center mb-6">
+                <h4 className="text-2xl font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">Abstract Ecosystem</h4>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <SafeLink
+                  href='https://x.com/AbstractChain'
+                  className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-blue-400 font-bold text-sm">𝕏</span>
+                    <span className="text-blue-400 font-semibold text-sm">AbstractChain</span>
+                  </div>
+                  <div className="text-xs text-crypto-silver">@AbstractChain - Official Abstract Chain updates</div>
+                </SafeLink>
+
+                <SafeLink
+                  href='https://x.com/MemesAbstract'
+                  className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-purple-400 font-bold text-sm">𝕏</span>
+                    <span className="text-purple-400 font-semibold text-sm">MemesAbstract</span>
+                  </div>
+                  <div className="text-xs text-crypto-silver">@MemesAbstract - Abstract ecosystem memes</div>
+                </SafeLink>
+
+                <SafeLink
+                  href='https://x.com/ProofOfEly'
+                  className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-green-400 font-bold text-sm">𝕏</span>
+                    <span className="text-green-400 font-semibold text-sm">ProofOfEly</span>
+                  </div>
+                  <div className="text-xs text-crypto-silver">@ProofOfEly - Abstract trading insights</div>
+                </SafeLink>
+
+                <SafeLink
+                  href='https://x.com/AbstractHubHB'
+                  className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-orange-400 font-bold text-sm">𝕏</span>
+                    <span className="text-orange-400 font-semibold text-sm">AbstractHubHB</span>
+                  </div>
+                  <div className="text-xs text-crypto-silver">@AbstractHubHB - Abstract Hub community</div>
+                </SafeLink>
+
+                <SafeLink
+                  href='https://x.com/Abstract_Eco'
+                  className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-blue-400 font-bold text-sm">𝕏</span>
+                    <span className="text-blue-400 font-semibold text-sm">Abstract_Eco</span>
+                  </div>
+                  <div className="text-xs text-crypto-silver">@Abstract_Eco - Abstract ecosystem updates</div>
+                </SafeLink>
+              </div>
+            </div>
+
             {/* Social Platforms */}
             <div className="mb-8">
               <div className="flex items-center gap-2 mb-6">
