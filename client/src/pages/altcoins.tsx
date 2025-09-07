@@ -63,7 +63,8 @@ export default function AltcoinsPage() {
         <div className="space-y-6 lg:space-y-8">
           <div className="text-center px-3 sm:px-0">
             <div className="flex items-center justify-center gap-3 mb-2">
-              <div className="flex items-center gap-2 mr-3">
+              {/* Left side - 3 images */}
+              <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-orange-400/50 shadow-lg">
                   <img src={dogecoinLogo} alt="Dogecoin" className="w-full h-full object-cover" />
                 </div>
@@ -73,6 +74,13 @@ export default function AltcoinsPage() {
                 <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-emerald-400/50 shadow-lg">
                   <img src={hyperliquidLogo} alt="Hyperliquid" className="w-full h-full object-cover" />
                 </div>
+              </div>
+              
+              {/* Center text */}
+              <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mx-4">Altcoins</h2>
+              
+              {/* Right side - 3 images */}
+              <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-red-400/50 shadow-lg">
                   <img src={bittensorLogo} alt="Bittensor" className="w-full h-full object-cover" />
                 </div>
@@ -83,7 +91,6 @@ export default function AltcoinsPage() {
                   <img src={suiLogo} alt="SUI" className="w-full h-full object-cover" />
                 </div>
               </div>
-              <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white">Altcoins</h2>
             </div>
             <p className="text-sm sm:text-base text-crypto-silver">Alternative cryptocurrencies and emerging market opportunities</p>
           </div>
