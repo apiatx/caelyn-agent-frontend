@@ -268,95 +268,87 @@ export default function PortfolioSection() {
   const hasNoData = !portfolio?.holdings?.length && parseFloat(portfolio?.totalBalance || '0') === 0;
 
   return (
-    <div className="space-y-8">
-      {/* Page Header */}
-      <div className="text-center mb-6">
-        <div className="flex items-center justify-center gap-3 mb-3">
-          <div className="w-12 h-12 bg-black rounded-xl flex items-center justify-center">
-            <span className="text-white font-bold text-2xl">💼</span>
+    <div className="space-y-12 p-6">
+      {/* PORTFOLIO Section - Enhanced Header */}
+      <div className="text-center relative">
+        <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 via-cyan-500/20 to-blue-500/20 blur-3xl -z-10"></div>
+        <div className="flex justify-center items-center gap-4 mb-6">
+          <div className="w-16 h-16 bg-gradient-to-br from-emerald-400 via-cyan-500 to-blue-500 rounded-2xl flex items-center justify-center shadow-2xl shadow-cyan-500/30 hover:scale-110 transition-transform duration-300">
+            <Wallet className="text-white w-8 h-8" />
           </div>
-          <h1 className="text-3xl font-bold text-white">Portfolio Management</h1>
+          <h2 className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-white via-cyan-200 to-emerald-200 bg-clip-text text-transparent">PORTFOLIO</h2>
         </div>
-        <p className="text-crypto-silver">Track your crypto portfolio across multiple chains and platforms</p>
+        <p className="text-lg text-white/80 font-medium tracking-wide">Advanced Cross-Chain Portfolio Management & Analytics</p>
+        <div className="w-32 h-1 bg-gradient-to-r from-emerald-500 to-cyan-500 mx-auto mt-4 rounded-full"></div>
       </div>
 
       {/* Multi-Chain Section */}
-      <div className="space-y-6">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-xl flex items-center justify-center">
-            <span className="text-white text-xl font-bold">🌐</span>
+      <GlassCard className="p-8">
+        <div className="space-y-8">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-xl flex items-center justify-center shadow-lg">
+              <Activity className="w-6 h-6 text-white" />
+            </div>
+            <h4 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-300 bg-clip-text text-transparent">Multi-Chain</h4>
+            <div className="flex-1 h-px bg-gradient-to-r from-cyan-500/50 to-transparent"></div>
           </div>
-          <div>
-            <h2 className="text-2xl font-bold text-white">Multi-Chain</h2>
-            <p className="text-crypto-silver">Cross-chain portfolio tracking and analytics</p>
-          </div>
-        </div>
 
-        {/* Cerebro */}
-        <GlassCard className="p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-sm font-bold">
-                C
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-white">Cerebro</h3>
-                <p className="text-crypto-silver text-sm">Multi-Chain Portfolio Tracker</p>
-              </div>
+          {/* Cerebro */}
+          <Button
+            variant="outline"
+            onClick={() => window.open('https://cerebro.xyz/dashboard', '_blank', 'noopener,noreferrer')}
+            className="group w-full bg-gradient-to-br from-cyan-600/30 via-blue-600/20 to-indigo-600/30 border-cyan-400/40 hover:from-cyan-500/40 hover:via-blue-500/30 hover:to-indigo-500/40 hover:border-cyan-300/60 text-white justify-start p-6 h-auto shadow-xl hover:shadow-cyan-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+          >
+            <div className="w-12 h-12 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-xl flex items-center justify-center mr-4 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300">
+              <Brain className="w-6 h-6 text-white" />
+            </div>
+            <div className="text-left flex-1">
+              <div className="font-bold text-xl">Cerebro</div>
+              <div className="text-sm text-cyan-200/90 font-medium">Advanced Multi-Chain Portfolio Analytics & Tracking</div>
             </div>
             <div className="flex items-center gap-2">
-              <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30">
+              <Badge className="bg-cyan-500/30 text-cyan-200 border-cyan-400/40 px-3 py-1 font-semibold">
                 MULTI-CHAIN
               </Badge>
-              <button
-                onClick={() => window.open('https://cerebro.xyz/dashboard', '_blank', 'noopener,noreferrer')}
-                className="text-crypto-silver hover:text-white transition-colors group"
-              >
-                <ExternalLink className="h-4 w-4 group-hover:scale-110 transition-transform" />
-              </button>
+              <ExternalLink className="h-5 w-5 group-hover:scale-110 transition-transform" />
             </div>
-          </div>
-        </GlassCard>
-      </div>
+          </Button>
+        </div>
+      </GlassCard>
 
       {/* EVM Section */}
-      <div className="space-y-6">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center">
-            <img src={ethereumLogo} alt="Ethereum" className="w-8 h-8 rounded-lg" />
+      <GlassCard className="p-8">
+        <div className="space-y-8">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-gradient-to-r from-blue-400 to-purple-500 rounded-xl flex items-center justify-center shadow-lg">
+              <img src={ethereumLogo} alt="Ethereum" className="w-6 h-6 rounded-lg" />
+            </div>
+            <h4 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-300 bg-clip-text text-transparent">EVM</h4>
+            <div className="flex-1 h-px bg-gradient-to-r from-blue-500/50 to-transparent"></div>
           </div>
-          <div>
-            <h2 className="text-2xl font-bold text-white">EVM</h2>
-            <p className="text-crypto-silver">Ethereum Virtual Machine portfolio tracking</p>
-          </div>
-        </div>
 
-        {/* DeBank */}
-        <GlassCard className="p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center text-sm font-bold">
-                DB
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-white">DeBank</h3>
-                <p className="text-crypto-silver text-sm">EVM Portfolio Tracker</p>
-              </div>
+          {/* DeBank */}
+          <Button
+            variant="outline"
+            onClick={() => window.open('https://debank.com/profile', '_blank', 'noopener,noreferrer')}
+            className="group w-full bg-gradient-to-br from-emerald-600/30 via-green-600/20 to-teal-600/30 border-emerald-400/40 hover:from-emerald-500/40 hover:via-green-500/30 hover:to-teal-500/40 hover:border-emerald-300/60 text-white justify-start p-6 h-auto shadow-xl hover:shadow-emerald-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+          >
+            <div className="w-12 h-12 bg-gradient-to-br from-emerald-400 to-green-500 rounded-xl flex items-center justify-center mr-4 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300">
+              <BarChart3 className="w-6 h-6 text-white" />
+            </div>
+            <div className="text-left flex-1">
+              <div className="font-bold text-xl">DeBank</div>
+              <div className="text-sm text-emerald-200/90 font-medium">Professional EVM Portfolio Tracking & Analytics</div>
             </div>
             <div className="flex items-center gap-2">
-              <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+              <Badge className="bg-emerald-500/30 text-emerald-200 border-emerald-400/40 px-3 py-1 font-semibold">
                 EVM CHAINS
               </Badge>
-              <button
-                onClick={() => window.open('https://debank.com/profile', '_blank', 'noopener,noreferrer')}
-                className="text-crypto-silver hover:text-white transition-colors group"
-              >
-                <ExternalLink className="h-4 w-4 group-hover:scale-110 transition-transform" />
-              </button>
+              <ExternalLink className="h-5 w-5 group-hover:scale-110 transition-transform" />
             </div>
-          </div>
-        </GlassCard>
-      </div>
+          </Button>
+        </div>
+      </GlassCard>
 
 
 
@@ -483,121 +475,113 @@ export default function PortfolioSection() {
         )}
 
       {/* Solana Section */}
-      <div className="space-y-6">
-        {/* Jupiter Portfolio */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center">
-                <img src={solanaLogo} alt="Solana" className="w-8 h-8 rounded-lg" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-white">Solana</h2>
-                <p className="text-crypto-silver">Solana ecosystem portfolio tracking</p>
-              </div>
+      <GlassCard className="p-8">
+        <div className="space-y-8">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-gradient-to-r from-purple-400 to-violet-500 rounded-xl flex items-center justify-center shadow-lg">
+              <img src={solanaLogo} alt="Solana" className="w-6 h-6 rounded-lg" />
             </div>
-            <button
-              onClick={() => window.open('https://jup.ag/portfolio', '_blank', 'noopener,noreferrer')}
-              className="text-xs text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-1"
-            >
-              Open Full View <ExternalLink className="w-3 h-3" />
-            </button>
+            <h4 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-violet-300 bg-clip-text text-transparent">Solana</h4>
+            <div className="flex-1 h-px bg-gradient-to-r from-purple-500/50 to-transparent"></div>
           </div>
-        
-        <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-          <iframe
-            src="https://jup.ag/portfolio"
-            className="w-full h-[600px] sm:h-[700px] lg:h-[800px] border-0"
-            title="Jupiter Portfolio"
-            frameBorder="0"
-            loading="lazy"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-            style={{
-              background: 'transparent',
-              colorScheme: 'dark'
-            }}
-          />
+
+          {/* Jupiter Portfolio */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h5 className="text-xl font-bold text-white">Jupiter Portfolio Tracker</h5>
+              <button
+                onClick={() => window.open('https://jup.ag/portfolio', '_blank', 'noopener,noreferrer')}
+                className="text-purple-300 hover:text-purple-200 text-sm font-medium bg-purple-500/20 px-4 py-2 rounded-lg border border-purple-400/30 hover:bg-purple-500/30 transition-all duration-300 flex items-center gap-2"
+              >
+                Open Full View <ExternalLink className="w-4 h-4" />
+              </button>
+            </div>
+            
+            <div className="bg-gradient-to-br from-slate-900/80 via-gray-900/80 to-purple-900/30 rounded-2xl border border-purple-400/20 overflow-hidden shadow-2xl">
+              <iframe
+                src="https://jup.ag/portfolio"
+                className="w-full h-[600px] sm:h-[700px] lg:h-[800px] border-0"
+                title="Jupiter Portfolio"
+                frameBorder="0"
+                loading="lazy"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+                style={{
+                  background: 'transparent',
+                  colorScheme: 'dark'
+                }}
+              />
+            </div>
+          </div>
         </div>
-      </div>
-      </div>
+      </GlassCard>
 
       {/* Bittensor Section */}
-      <div className="space-y-6">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center">
-            <img src={bittensorLogo} alt="Bittensor" className="w-8 h-8 rounded-lg" />
+      <GlassCard className="p-8">
+        <div className="space-y-8">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-gradient-to-r from-orange-400 to-red-500 rounded-xl flex items-center justify-center shadow-lg">
+              <img src={bittensorLogo} alt="Bittensor" className="w-6 h-6 rounded-lg" />
+            </div>
+            <h4 className="text-2xl font-bold bg-gradient-to-r from-orange-400 to-red-300 bg-clip-text text-transparent">Bittensor</h4>
+            <div className="flex-1 h-px bg-gradient-to-r from-orange-500/50 to-transparent"></div>
           </div>
-          <div>
-            <h2 className="text-2xl font-bold text-white">Bittensor</h2>
-            <p className="text-crypto-silver">TAO network portfolio and staking analytics</p>
-          </div>
-        </div>
 
-        {/* Bittensor */}
-        <GlassCard className="p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-sm font-bold">
-                B
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-white">TaoHub</h3>
-                <p className="text-crypto-silver text-sm">TAO Network Portfolio Tracker</p>
-              </div>
+          {/* TaoHub */}
+          <Button
+            variant="outline"
+            onClick={() => window.open('https://www.taohub.info/portfolio', '_blank', 'noopener,noreferrer')}
+            className="group w-full bg-gradient-to-br from-orange-600/30 via-red-600/20 to-pink-600/30 border-orange-400/40 hover:from-orange-500/40 hover:via-red-500/30 hover:to-pink-500/40 hover:border-orange-300/60 text-white justify-start p-6 h-auto shadow-xl hover:shadow-orange-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+          >
+            <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-red-500 rounded-xl flex items-center justify-center mr-4 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300">
+              <Brain className="w-6 h-6 text-white" />
+            </div>
+            <div className="text-left flex-1">
+              <div className="font-bold text-xl">TaoHub</div>
+              <div className="text-sm text-orange-200/90 font-medium">Advanced TAO Network Portfolio & Staking Analytics</div>
             </div>
             <div className="flex items-center gap-2">
-              <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+              <Badge className="bg-orange-500/30 text-orange-200 border-orange-400/40 px-3 py-1 font-semibold">
                 TAO NETWORK
               </Badge>
-              <button
-                onClick={() => window.open('https://www.taohub.info/portfolio', '_blank', 'noopener,noreferrer')}
-                className="text-crypto-silver hover:text-white transition-colors group"
-              >
-                <ExternalLink className="h-4 w-4 group-hover:scale-110 transition-transform" />
-              </button>
+              <ExternalLink className="h-5 w-5 group-hover:scale-110 transition-transform" />
             </div>
-          </div>
-        </GlassCard>
-      </div>
+          </Button>
+        </div>
+      </GlassCard>
 
       {/* HyperLiquid Section */}
-      <div className="space-y-6">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center">
-            <img src={hyperliquidLogo} alt="HyperLiquid" className="w-8 h-8 rounded-lg" />
+      <GlassCard className="p-8">
+        <div className="space-y-8">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-gradient-to-r from-teal-400 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg">
+              <img src={hyperliquidLogo} alt="HyperLiquid" className="w-6 h-6 rounded-lg" />
+            </div>
+            <h4 className="text-2xl font-bold bg-gradient-to-r from-teal-400 to-cyan-300 bg-clip-text text-transparent">HyperLiquid</h4>
+            <div className="flex-1 h-px bg-gradient-to-r from-teal-500/50 to-transparent"></div>
           </div>
-          <div>
-            <h2 className="text-2xl font-bold text-white">HyperLiquid</h2>
-            <p className="text-crypto-silver">Perpetuals trading and portfolio analytics</p>
-          </div>
-        </div>
 
-        {/* CoinMarketMan */}
-        <GlassCard className="p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-sm font-bold">
-                CM
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-white">CoinMarketMan</h3>
-                <p className="text-crypto-silver text-sm">HyperLiquid Perps Portfolio Analytics</p>
-              </div>
+          {/* CoinMarketMan */}
+          <Button
+            variant="outline"
+            onClick={() => window.open('https://app.coinmarketman.com/hypertracker', '_blank', 'noopener,noreferrer')}
+            className="group w-full bg-gradient-to-br from-teal-600/30 via-cyan-600/20 to-blue-600/30 border-teal-400/40 hover:from-teal-500/40 hover:via-cyan-500/30 hover:to-blue-500/40 hover:border-teal-300/60 text-white justify-start p-6 h-auto shadow-xl hover:shadow-teal-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+          >
+            <div className="w-12 h-12 bg-gradient-to-br from-teal-400 to-cyan-500 rounded-xl flex items-center justify-center mr-4 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300">
+              <TrendingUp className="w-6 h-6 text-white" />
+            </div>
+            <div className="text-left flex-1">
+              <div className="font-bold text-xl">CoinMarketMan</div>
+              <div className="text-sm text-teal-200/90 font-medium">Professional HyperLiquid Perpetuals Portfolio Analytics</div>
             </div>
             <div className="flex items-center gap-2">
-              <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
+              <Badge className="bg-teal-500/30 text-teal-200 border-teal-400/40 px-3 py-1 font-semibold">
                 PERPS
               </Badge>
-              <button
-                onClick={() => window.open('https://app.coinmarketman.com/hypertracker', '_blank', 'noopener,noreferrer')}
-                className="text-crypto-silver hover:text-white transition-colors group"
-              >
-                <ExternalLink className="h-4 w-4 group-hover:scale-110 transition-transform" />
-              </button>
+              <ExternalLink className="h-5 w-5 group-hover:scale-110 transition-transform" />
             </div>
-          </div>
-        </GlassCard>
-      </div>
+          </Button>
+        </div>
+      </GlassCard>
 
 
       {/* Holding Detail Modal */}
