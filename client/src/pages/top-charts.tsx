@@ -4,6 +4,7 @@ import { ExternalLink } from "lucide-react";
 import bitcoinLogo from "@assets/Bitcoin.svg_1755979187828.webp";
 import ethereumLogo from "@assets/Ethereum_logo_2014.svg_1755977414942.png";
 import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
+import criptomonedas from "@assets/Criptomonedas-r3pu02e09qriw0f9pyqx2rtyhwsri4es6sdgff2ebk_1757225856373.png";
 import { SectionLoadingState } from "@/components/loading-screen";
 import { openSecureLink, getSecureIframeProps } from "@/utils/security";
 import { UniversalNavigation } from "@/components/universal-navigation";
@@ -47,6 +48,14 @@ export default function TopChartsPage() {
               <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-white drop-shadow-lg">
                 CryptoHippo
               </h1>
+            </div>
+            {/* Top-right crypto image */}
+            <div className="hidden sm:flex items-center">
+              <img 
+                src={criptomonedas}
+                alt="Crypto Coins"
+                className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 object-contain drop-shadow-lg"
+              />
             </div>
           </div>
         </div>
