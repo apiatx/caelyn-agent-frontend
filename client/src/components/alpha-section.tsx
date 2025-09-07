@@ -69,7 +69,7 @@ export default function AlphaSection() {
             />
             <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-blue-400/20 to-purple-400/20"></div>
           </div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-blue-100 to-purple-100 bg-clip-text text-transparent drop-shadow-lg">Analytics</h1>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-blue-100 to-purple-100 bg-clip-text text-transparent drop-shadow-lg">Onchain</h1>
           <div className="relative">
             <img 
               src={diamondImage} 
@@ -79,14 +79,18 @@ export default function AlphaSection() {
             <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-blue-400/20 to-purple-400/20"></div>
           </div>
         </div>
-        <p className="text-lg text-gray-300 font-medium tracking-wide">Comprehensive onchain intelligence & analytics</p>
+        <p className="text-lg text-gray-300 font-medium tracking-wide">Comprehensive onchain intelligence & data</p>
       </div>
 
       <div className="space-y-8">
         <GlassCard className="p-3 sm:p-4 lg:p-6">
 
-          {/* Artemis */}
+          {/* Analytics */}
           <div className="mb-8">
+            <div className="flex items-center justify-center mb-6">
+              <h3 className="text-2xl font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">Analytics</h3>
+            </div>
+            
             <div className="flex items-center justify-end mb-4">
               <button
                 onClick={() => openInNewTab('https://app.artemisanalytics.com/')}
