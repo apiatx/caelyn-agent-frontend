@@ -184,7 +184,6 @@ export default function OnchainSocialPage() {
                     { name: 'AC Investor Blog', handle: '@ACInvestorBlog' },
                     { name: 'Cestrian Inc', handle: '@CestrianInc' },
                     { name: 'Invest In Assets', handle: '@InvestInAssets' },
-                    { name: 'PM Di Christina', handle: '@PMDiChristina' },
                     { name: 'Invest Insights', handle: '@investinsights4' },
                     { name: 'Bits and Bips', handle: '@bitsandbips' },
                     { name: 'BKnight221', handle: '@BKnight221' },
@@ -209,6 +208,92 @@ export default function OnchainSocialPage() {
                     );
                   })}
                 </div>
+              </div>
+            </div>
+
+            {/* Base Ecosystem Subsection */}
+            <div className="mb-12">
+              <div className="flex items-center justify-center mb-6">
+                <h4 className="text-2xl font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">Base Ecosystem</h4>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <SafeLink
+                  href='https://x.com/BaseDailyTK'
+                  className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-blue-400 font-bold text-sm">𝕏</span>
+                    <span className="text-blue-400 font-semibold text-sm">Base Daily TK</span>
+                  </div>
+                  <div className="text-xs text-crypto-silver">@BaseDailyTK - Daily BASE network updates and insights</div>
+                </SafeLink>
+
+                <SafeLink
+                  href='https://x.com/MemesOnBase'
+                  className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-blue-400 font-bold text-sm">𝕏</span>
+                    <span className="text-blue-400 font-semibold text-sm">Memes On Base</span>
+                  </div>
+                  <div className="text-xs text-crypto-silver">@MemesOnBase - BASE network meme culture and community</div>
+                </SafeLink>
+
+                <SafeLink
+                  href='https://x.com/MemesOnBase_'
+                  className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-blue-400 font-bold text-sm">𝕏</span>
+                    <span className="text-blue-400 font-semibold text-sm">Memes On Base</span>
+                  </div>
+                  <div className="text-xs text-crypto-silver">@MemesOnBase_ - BASE network meme culture and trends</div>
+                </SafeLink>
+
+                <SafeLink
+                  href='https://x.com/Shake51_'
+                  className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-blue-400 font-bold text-sm">𝕏</span>
+                    <span className="text-blue-400 font-semibold text-sm">Shake51</span>
+                  </div>
+                  <div className="text-xs text-crypto-silver">@Shake51_ - BASE network trading insights</div>
+                </SafeLink>
+
+                <SafeLink
+                  href='https://x.com/1CrypticPoet'
+                  className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-blue-400 font-bold text-sm">𝕏</span>
+                    <span className="text-blue-400 font-semibold text-sm">CrypticPoet</span>
+                  </div>
+                  <div className="text-xs text-crypto-silver">@1CrypticPoet - BASE network alpha and trading signals</div>
+                </SafeLink>
+
+                <SafeLink
+                  href='https://x.com/jamatto14'
+                  className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-blue-400 font-bold text-sm">𝕏</span>
+                    <span className="text-blue-400 font-semibold text-sm">Jamatto14</span>
+                  </div>
+                  <div className="text-xs text-crypto-silver">@jamatto14 - BASE network insights and updates</div>
+                </SafeLink>
+
+                <SafeLink
+                  href='https://x.com/MrGreen_18'
+                  className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-blue-400 font-bold text-sm">𝕏</span>
+                    <span className="text-blue-400 font-semibold text-sm">MrGreen_18</span>
+                  </div>
+                  <div className="text-xs text-crypto-silver">@MrGreen_18 - BASE network trading signals and alpha</div>
+                </SafeLink>
               </div>
             </div>
 
