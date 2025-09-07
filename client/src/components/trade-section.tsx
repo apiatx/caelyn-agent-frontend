@@ -421,19 +421,29 @@ export default function TradeSection() {
 
           </div>
 
-          {/* NovaEx - Full Width */}
-          <div className="w-full">
+          {/* NovaEx and MYC */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Button
               variant="outline"
               onClick={() => openInNewTab('https://www.novaex.com/trade')}
-              className="group w-full bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+              className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-start p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
             >
-              <div className="text-center">
-                <div className="font-bold text-base flex items-center justify-center">
-                  <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
-                  NovaEx
-                </div>
+              <TrendingUp className="w-5 h-5 mr-3 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
+              <div className="text-left">
+                <div className="font-bold text-base">NovaEx</div>
                 <div className="text-sm text-gray-300">Insurance-backed perpetual trading</div>
+              </div>
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://app.myx.finance/trade/BTCUSDC')}
+              className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-start p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+            >
+              <TrendingUp className="w-5 h-5 mr-3 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
+              <div className="text-left">
+                <div className="font-bold text-base">MYC</div>
+                <div className="text-sm text-gray-300">Zero-slippage perps</div>
               </div>
             </Button>
           </div>
