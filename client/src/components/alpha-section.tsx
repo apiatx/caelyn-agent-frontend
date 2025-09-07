@@ -130,12 +130,12 @@ export default function AlphaSection() {
           <div className="mb-8">
             <button
               onClick={() => openInNewTab('https://dappradar.com/')}
-              className="w-full p-6 text-center bg-gradient-to-b from-orange-600/10 to-orange-700/10 hover:from-orange-600/20 hover:to-orange-700/20 border border-orange-600/20 hover:border-orange-500/40 rounded-lg transition-all duration-300 group"
+              className="w-full p-6 text-center bg-gradient-to-b from-blue-800/10 to-blue-900/10 hover:from-blue-800/20 hover:to-blue-900/20 border border-blue-800/20 hover:border-blue-700/40 rounded-lg transition-all duration-300 group"
             >
-              <div className="w-12 h-12 bg-orange-600 rounded-full flex items-center justify-center mx-auto mb-3">
+              <div className="w-12 h-12 bg-blue-800 rounded-full flex items-center justify-center mx-auto mb-3">
                 <BarChart3 className="w-6 h-6 text-white" />
               </div>
-              <h4 className="text-lg font-bold text-white group-hover:text-orange-300 mb-2">DappRadar</h4>
+              <h4 className="text-lg font-bold text-white group-hover:text-blue-300 mb-2">DappRadar</h4>
               <p className="text-gray-400 group-hover:text-gray-300 text-sm max-w-md mx-auto">Discover DApps & analytics across all blockchains</p>
             </button>
           </div>
