@@ -404,7 +404,20 @@ export default function AlphaSection() {
             <h3 className="text-2xl font-bold bg-gradient-to-r from-white to-emerald-100 bg-clip-text text-transparent">Discover Web3</h3>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <SafeLink
+              href='https://dappradar.com/'
+              className="p-5 bg-gradient-to-br from-blue-500/15 to-blue-600/15 hover:from-blue-500/25 hover:to-blue-600/25 border border-blue-500/30 hover:border-blue-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-blue-500/20 transform"
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-md">
+                  <span className="text-white font-bold">D</span>
+                </div>
+                <h4 className="text-blue-300 font-bold text-lg">DappRadar</h4>
+              </div>
+              <p className="text-gray-300 text-sm font-medium">Discover DApps & analytics</p>
+            </SafeLink>
+
             <SafeLink
               href='https://www.ethereum-ecosystem.com/'
               className="p-5 bg-gradient-to-br from-gray-600/15 to-gray-700/15 hover:from-gray-600/25 hover:to-gray-700/25 border border-gray-500/30 hover:border-gray-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-gray-500/20 transform"
@@ -445,7 +458,7 @@ export default function AlphaSection() {
             </SafeLink>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <SafeLink
               href='https://gravity.xyz/'
               className="p-5 bg-gradient-to-br from-emerald-500/15 to-emerald-600/15 hover:from-emerald-500/25 hover:to-emerald-600/25 border border-emerald-500/30 hover:border-emerald-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-emerald-500/20 transform"
@@ -457,19 +470,6 @@ export default function AlphaSection() {
                 <h4 className="text-emerald-300 font-bold text-lg">Gravity Ecosystem</h4>
               </div>
               <p className="text-gray-300 text-sm font-medium">Explore the Gravity network</p>
-            </SafeLink>
-
-            <SafeLink
-              href='https://dappradar.com/'
-              className="p-5 bg-gradient-to-br from-blue-500/15 to-blue-600/15 hover:from-blue-500/25 hover:to-blue-600/25 border border-blue-500/30 hover:border-blue-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-blue-500/20 transform"
-            >
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-md">
-                  <span className="text-white font-bold">D</span>
-                </div>
-                <h4 className="text-blue-300 font-bold text-lg">DappRadar</h4>
-              </div>
-              <p className="text-gray-300 text-sm font-medium">Discover DApps & analytics</p>
             </SafeLink>
 
             <SafeLink
