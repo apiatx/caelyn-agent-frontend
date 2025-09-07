@@ -67,7 +67,7 @@ export default function PredictPage() {
                 className="w-full h-full object-cover"
               />
             </div>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white drop-shadow-lg">
+            <h1 className="text-2xl sm:text-2xl lg:text-3xl font-bold text-white drop-shadow-lg">
               Prediction Markets
             </h1>
           </div>

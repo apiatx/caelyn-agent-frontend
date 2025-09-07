@@ -279,7 +279,7 @@ export default function PortfolioSection() {
             alt="Portfolio" 
             className="w-16 h-16 rounded-xl object-cover border-2 border-yellow-400 shadow-2xl shadow-cyan-500/30 hover:scale-110 transition-transform duration-300"
           />
-          <h2 className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-white via-cyan-200 to-emerald-200 bg-clip-text text-transparent">PORTFOLIO</h2>
+          <h2 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-white via-cyan-200 to-emerald-200 bg-clip-text text-transparent">Portfolio</h2>
         </div>
         <p className="text-lg text-white/80 font-medium tracking-wide">Advanced Cross-Chain Portfolio Management & Analytics</p>
         <div className="w-32 h-1 bg-gradient-to-r from-emerald-500 to-cyan-500 mx-auto mt-4 rounded-full"></div>
