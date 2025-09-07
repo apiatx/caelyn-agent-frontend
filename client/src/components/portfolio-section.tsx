@@ -233,6 +233,33 @@ export default function PortfolioSection() {
               </div>
               <h4 className="text-2xl font-bold bg-gradient-to-r from-teal-400 to-cyan-300 bg-clip-text text-transparent">HyperLiquid</h4>
             </div>
+            
+            {/* HyperLiquid Portfolio Iframe */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-center">
+                <button
+                  onClick={() => window.open('https://app.hyperliquid.xyz/portfolio', '_blank', 'noopener,noreferrer')}
+                  className="text-teal-300 hover:text-teal-200 text-sm font-medium bg-teal-500/20 px-4 py-2 rounded-lg border border-teal-400/30 hover:bg-teal-500/30 transition-all duration-300 flex items-center gap-2"
+                >
+                  Open Full View <ExternalLink className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="bg-gradient-to-br from-slate-900/80 via-gray-900/80 to-teal-900/30 rounded-2xl border border-teal-400/20 overflow-hidden shadow-2xl">
+                <iframe
+                  src="https://app.hyperliquid.xyz/portfolio"
+                  className="w-full h-[600px] sm:h-[700px] lg:h-[800px] border-0"
+                  title="HyperLiquid Portfolio"
+                  frameBorder="0"
+                  loading="lazy"
+                  sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+                  style={{
+                    background: 'transparent',
+                    colorScheme: 'dark'
+                  }}
+                />
+              </div>
+            </div>
+            
             <Button
               variant="outline"
               onClick={() => window.open('https://app.coinmarketman.com/hypertracker', '_blank', 'noopener,noreferrer')}
