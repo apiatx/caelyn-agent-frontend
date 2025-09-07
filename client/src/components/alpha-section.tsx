@@ -89,7 +89,7 @@ export default function AlphaSection() {
           <div className="mb-8">
             <div className="mb-4">
               <div className="flex items-center justify-center mb-2">
-                <h3 className="text-2xl font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">Analytics</h3>
+                <h3 className="text-2xl font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">Analyze</h3>
               </div>
               <div className="flex justify-center">
                 <button
@@ -144,7 +144,7 @@ export default function AlphaSection() {
           {/* Screener */}
           <div className="mb-8">
             <div className="flex items-center justify-center mb-6">
-              <h4 className="text-2xl font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">Screener</h4>
+              <h4 className="text-2xl font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">Screen</h4>
             </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
@@ -334,7 +334,7 @@ export default function AlphaSection() {
       <div className="space-y-8 mt-12">
         <GlassCard className="p-3 sm:p-4 lg:p-6">
           <div className="flex items-center justify-center mb-6">
-            <h4 className="text-2xl font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">Inspect</h4>
+            <h4 className="text-2xl font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">Analyze</h4>
           </div>
           
           {/* Token Terminal - Full width row with centered text */}
@@ -393,7 +393,7 @@ export default function AlphaSection() {
       <div className="space-y-8 mt-12">
         <GlassCard className="p-6">
           <div className="flex items-center justify-center mb-6">
-            <h3 className="text-2xl font-bold bg-gradient-to-r from-white to-emerald-100 bg-clip-text text-transparent">Discover Web3</h3>
+            <h3 className="text-2xl font-bold bg-gradient-to-r from-white to-emerald-100 bg-clip-text text-transparent">Discover</h3>
           </div>
           
           {/* DappRadar - First row */}
