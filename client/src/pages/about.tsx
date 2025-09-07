@@ -10,6 +10,7 @@ import hippoDownload1 from "@assets/CryptoHippo_1757212757402.png";
 import hippoDownload2 from "@assets/download_1755979612950.jpeg";
 import hippoImages1 from "@assets/download (4)_1757214892954.png";
 import cuteHippo from "@assets/cute-cartoon-hippo-showing-off-butt-vector_1756060620427.jpg";
+import cryptoLogos from "@assets/ChatGPT Image Sep 7, 2025, 01_02_03 AM_1757225008661.png";
 import { useScrollFade } from "@/hooks/useScrollFade";
 
 export default function AboutPage() {
@@ -32,6 +33,14 @@ export default function AboutPage() {
             backgroundRepeat: 'no-repeat'
           }}
         />
+        {/* Crypto Logos - Top Right */}
+        <div className="absolute top-4 right-4 z-20 w-24 h-24 sm:w-32 sm:h-32 lg:w-40 lg:h-40 opacity-90">
+          <img 
+            src={cryptoLogos}
+            alt="Cryptocurrency Logos"
+            className="w-full h-full object-contain drop-shadow-lg"
+          />
+        </div>
         {/* Content Layer */}
         <div className="relative z-10 max-w-[95vw] mx-auto px-2 sm:px-3">
           <div className="flex justify-between items-center py-3 lg:py-4">
