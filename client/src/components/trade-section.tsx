@@ -92,11 +92,13 @@ export default function TradeSection() {
             <Button
               variant="outline"
               onClick={() => openInNewTab('https://app.uniswap.org')}
-              className="group bg-gradient-to-br from-pink-500/30 via-pink-600/20 to-rose-600/30 border-pink-400/40 hover:from-pink-400/40 hover:via-pink-500/30 hover:to-rose-500/40 hover:border-pink-300/60 text-white justify-start p-6 h-auto shadow-2xl hover:shadow-pink-500/30 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+              className="group bg-gradient-to-br from-pink-500/30 via-pink-600/20 to-rose-600/30 border-pink-400/40 hover:from-pink-400/40 hover:via-pink-500/30 hover:to-rose-500/40 hover:border-pink-300/60 text-white justify-center p-6 h-auto shadow-2xl hover:shadow-pink-500/30 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
             >
-              <ArrowUpDown className="w-5 h-5 mr-3 group-hover:rotate-180 transition-transform duration-300" />
-              <div className="text-left">
-                <div className="font-bold text-lg">Uniswap</div>
+              <div className="text-center">
+                <div className="font-bold text-lg flex items-center justify-center">
+                  <ArrowUpDown className="w-5 h-5 mr-2 group-hover:rotate-180 transition-transform duration-300" />
+                  Uniswap
+                </div>
                 <div className="text-sm text-pink-100/90">Leading DEX on Ethereum</div>
               </div>
             </Button>
@@ -104,11 +106,13 @@ export default function TradeSection() {
             <Button
               variant="outline"
               onClick={() => openInNewTab('https://pancakeswap.finance/swap')}
-              className="group bg-gradient-to-br from-yellow-500/30 via-amber-500/20 to-orange-500/30 border-yellow-400/40 hover:from-yellow-400/40 hover:via-amber-400/30 hover:to-orange-400/40 hover:border-yellow-300/60 text-white justify-start p-6 h-auto shadow-2xl hover:shadow-yellow-500/30 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+              className="group bg-gradient-to-br from-yellow-500/30 via-amber-500/20 to-orange-500/30 border-yellow-400/40 hover:from-yellow-400/40 hover:via-amber-400/30 hover:to-orange-400/40 hover:border-yellow-300/60 text-white justify-center p-6 h-auto shadow-2xl hover:shadow-yellow-500/30 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
             >
-              <ArrowUpDown className="w-5 h-5 mr-3 group-hover:rotate-180 transition-transform duration-300" />
-              <div className="text-left">
-                <div className="font-bold text-lg">PancakeSwap</div>
+              <div className="text-center">
+                <div className="font-bold text-lg flex items-center justify-center">
+                  <ArrowUpDown className="w-5 h-5 mr-2 group-hover:rotate-180 transition-transform duration-300" />
+                  PancakeSwap
+                </div>
                 <div className="text-sm text-yellow-100/90">Popular BSC DEX</div>
               </div>
             </Button>
@@ -116,11 +120,13 @@ export default function TradeSection() {
             <Button
               variant="outline"
               onClick={() => openInNewTab('https://jup.ag')}
-              className="group bg-gradient-to-br from-teal-500/30 via-cyan-500/20 to-blue-500/30 border-teal-400/40 hover:from-teal-400/40 hover:via-cyan-400/30 hover:to-blue-400/40 hover:border-teal-300/60 text-white justify-start p-6 h-auto shadow-2xl hover:shadow-teal-500/30 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+              className="group bg-gradient-to-br from-teal-500/30 via-cyan-500/20 to-blue-500/30 border-teal-400/40 hover:from-teal-400/40 hover:via-cyan-400/30 hover:to-blue-400/40 hover:border-teal-300/60 text-white justify-center p-6 h-auto shadow-2xl hover:shadow-teal-500/30 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
             >
-              <ArrowUpDown className="w-5 h-5 mr-3 group-hover:rotate-180 transition-transform duration-300" />
-              <div className="text-left">
-                <div className="font-bold text-lg">Jupiter</div>
+              <div className="text-center">
+                <div className="font-bold text-lg flex items-center justify-center">
+                  <ArrowUpDown className="w-5 h-5 mr-2 group-hover:rotate-180 transition-transform duration-300" />
+                  Jupiter
+                </div>
                 <div className="text-sm text-teal-100/90">Solana swap aggregator</div>
               </div>
             </Button>
@@ -159,11 +165,13 @@ export default function TradeSection() {
             <Button
               variant="outline"
               onClick={() => openInNewTab('https://jumper.exchange/')}
-              className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-start p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+              className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
             >
-              <ArrowLeftRight className="w-5 h-5 mr-3 group-hover:rotate-180 transition-transform duration-300" />
-              <div className="text-left">
-                <div className="font-bold text-base">Jumper Exchange</div>
+              <div className="text-center">
+                <div className="font-bold text-base flex items-center justify-center">
+                  <ArrowLeftRight className="w-5 h-5 mr-2 group-hover:rotate-180 transition-transform duration-300" />
+                  Jumper Exchange
+                </div>
                 <div className="text-sm text-gray-300">Multi-chain bridge aggregator</div>
               </div>
             </Button>
@@ -171,11 +179,13 @@ export default function TradeSection() {
             <Button
               variant="outline"
               onClick={() => openInNewTab('https://app.swing.xyz/swap?fromChain=base&fromToken=ETH&toChain=ethereum&toToken=SWING')}
-              className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-start p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+              className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
             >
-              <ArrowLeftRight className="w-5 h-5 mr-3 group-hover:rotate-180 transition-transform duration-300" />
-              <div className="text-left">
-                <div className="font-bold text-base">Galaxy Swing</div>
+              <div className="text-center">
+                <div className="font-bold text-base flex items-center justify-center">
+                  <ArrowLeftRight className="w-5 h-5 mr-2 group-hover:rotate-180 transition-transform duration-300" />
+                  Galaxy Swing
+                </div>
                 <div className="text-sm text-gray-300">Cross-chain swap protocol</div>
               </div>
             </Button>
@@ -183,11 +193,13 @@ export default function TradeSection() {
             <Button
               variant="outline"
               onClick={() => openInNewTab('https://app.debridge.finance/?inputChain=1&outputChain=8453&inputCurrency=&outputCurrency=&dlnMode=simple')}
-              className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-start p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+              className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
             >
-              <ArrowLeftRight className="w-5 h-5 mr-3 group-hover:rotate-180 transition-transform duration-300" />
-              <div className="text-left">
-                <div className="font-bold text-base">deBridge</div>
+              <div className="text-center">
+                <div className="font-bold text-base flex items-center justify-center">
+                  <ArrowLeftRight className="w-5 h-5 mr-2 group-hover:rotate-180 transition-transform duration-300" />
+                  deBridge
+                </div>
                 <div className="text-sm text-gray-300">Cross-chain liquidity and infrastructure</div>
               </div>
             </Button>
@@ -198,11 +210,13 @@ export default function TradeSection() {
             <Button
               variant="outline"
               onClick={() => openInNewTab('https://app.dodoex.io/swap/network/mainnet/1-ETH/56-%24BeAI')}
-              className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-start p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+              className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
             >
-              <ArrowLeftRight className="w-5 h-5 mr-3 group-hover:rotate-180 transition-transform duration-300" />
-              <div className="text-left">
-                <div className="font-bold text-base">DODO</div>
+              <div className="text-center">
+                <div className="font-bold text-base flex items-center justify-center">
+                  <ArrowLeftRight className="w-5 h-5 mr-2 group-hover:rotate-180 transition-transform duration-300" />
+                  DODO
+                </div>
                 <div className="text-sm text-gray-300">Decentralized exchange protocol</div>
               </div>
             </Button>
@@ -210,11 +224,13 @@ export default function TradeSection() {
             <Button
               variant="outline"
               onClick={() => openInNewTab('https://app.xy.finance/')}
-              className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-start p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+              className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
             >
-              <ArrowLeftRight className="w-5 h-5 mr-3 group-hover:rotate-180 transition-transform duration-300" />
-              <div className="text-left">
-                <div className="font-bold text-base">XY Finance</div>
+              <div className="text-center">
+                <div className="font-bold text-base flex items-center justify-center">
+                  <ArrowLeftRight className="w-5 h-5 mr-2 group-hover:rotate-180 transition-transform duration-300" />
+                  XY Finance
+                </div>
                 <div className="text-sm text-gray-300">Cross-chain swap aggregator</div>
               </div>
             </Button>
@@ -254,11 +270,13 @@ export default function TradeSection() {
             <Button
               variant="outline"
               onClick={() => openInNewTab('https://www.ourbit.com/')}
-              className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-start p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+              className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
             >
-              <ArrowLeftRight className="w-5 h-5 mr-3 group-hover:rotate-180 transition-transform duration-300" />
-              <div className="text-left">
-                <div className="font-bold text-base">OurBit</div>
+              <div className="text-center">
+                <div className="font-bold text-base flex items-center justify-center">
+                  <ArrowLeftRight className="w-5 h-5 mr-2 group-hover:rotate-180 transition-transform duration-300" />
+                  OurBit
+                </div>
                 <div className="text-sm text-gray-300">CEX & DEX, Spot & Futures</div>
               </div>
             </Button>
@@ -266,11 +284,13 @@ export default function TradeSection() {
             <Button
               variant="outline"
               onClick={() => openInNewTab('https://universalx.app/home')}
-              className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-start p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+              className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
             >
-              <ArrowLeftRight className="w-5 h-5 mr-3 group-hover:rotate-180 transition-transform duration-300" />
-              <div className="text-left">
-                <div className="font-bold text-base">UniversalX</div>
+              <div className="text-center">
+                <div className="font-bold text-base flex items-center justify-center">
+                  <ArrowLeftRight className="w-5 h-5 mr-2 group-hover:rotate-180 transition-transform duration-300" />
+                  UniversalX
+                </div>
                 <div className="text-sm text-gray-300">Trade any token, on any chain</div>
               </div>
             </Button>
@@ -278,11 +298,13 @@ export default function TradeSection() {
             <Button
               variant="outline"
               onClick={() => openInNewTab('https://o1.exchange/')}
-              className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-start p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+              className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
             >
-              <ArrowLeftRight className="w-5 h-5 mr-3 group-hover:rotate-180 transition-transform duration-300" />
-              <div className="text-left">
-                <div className="font-bold text-base">O1 Exchange</div>
+              <div className="text-center">
+                <div className="font-bold text-base flex items-center justify-center">
+                  <ArrowLeftRight className="w-5 h-5 mr-2 group-hover:rotate-180 transition-transform duration-300" />
+                  O1 Exchange
+                </div>
                 <div className="text-sm text-gray-300">Advanced trading on Base and Solana</div>
               </div>
             </Button>
@@ -322,11 +344,13 @@ export default function TradeSection() {
             <Button
               variant="outline"
               onClick={() => openInNewTab('https://app.hyperliquid.xyz/trade')}
-              className="group w-full bg-gradient-to-br from-teal-500/40 via-cyan-500/30 to-blue-500/40 border-teal-400/50 hover:from-teal-400/50 hover:via-cyan-400/40 hover:to-blue-400/50 hover:border-teal-300/70 text-white justify-start p-7 h-auto shadow-2xl hover:shadow-teal-500/30 transform hover:scale-[1.02] transition-all duration-500 backdrop-blur-sm"
+              className="group w-full bg-gradient-to-br from-teal-500/40 via-cyan-500/30 to-blue-500/40 border-teal-400/50 hover:from-teal-400/50 hover:via-cyan-400/40 hover:to-blue-400/50 hover:border-teal-300/70 text-white justify-center p-7 h-auto shadow-2xl hover:shadow-teal-500/30 transform hover:scale-[1.02] transition-all duration-500 backdrop-blur-sm"
             >
-              <TrendingUp className="w-6 h-6 mr-4 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-500" />
-              <div className="text-left">
-                <div className="font-bold text-xl">Hyperliquid</div>
+              <div className="text-center">
+                <div className="font-bold text-xl flex items-center justify-center">
+                  <TrendingUp className="w-6 h-6 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-500" />
+                  Hyperliquid
+                </div>
                 <div className="text-sm text-teal-100/90 font-medium">Primary onchain perpetual DEX platform</div>
               </div>
             </Button>
@@ -334,11 +358,13 @@ export default function TradeSection() {
             <Button
               variant="outline"
               onClick={() => openInNewTab('https://app.defi.app/portfolio')}
-              className="group w-full bg-gradient-to-br from-blue-500/40 via-indigo-500/30 to-purple-500/40 border-blue-400/50 hover:from-blue-400/50 hover:via-indigo-400/40 hover:to-purple-400/50 hover:border-blue-300/70 text-white justify-start p-7 h-auto shadow-2xl hover:shadow-blue-500/30 transform hover:scale-[1.02] transition-all duration-500 backdrop-blur-sm"
+              className="group w-full bg-gradient-to-br from-blue-500/40 via-indigo-500/30 to-purple-500/40 border-blue-400/50 hover:from-blue-400/50 hover:via-indigo-400/40 hover:to-purple-400/50 hover:border-blue-300/70 text-white justify-center p-7 h-auto shadow-2xl hover:shadow-blue-500/30 transform hover:scale-[1.02] transition-all duration-500 backdrop-blur-sm"
             >
-              <Wallet className="w-6 h-6 mr-4 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-500" />
-              <div className="text-left">
-                <div className="font-bold text-xl">DeFi.app</div>
+              <div className="text-center">
+                <div className="font-bold text-xl flex items-center justify-center">
+                  <Wallet className="w-6 h-6 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-500" />
+                  DeFi.app
+                </div>
                 <div className="text-sm text-blue-100/90 font-medium">Primary onchain perpetuals super app</div>
               </div>
             </Button>
@@ -350,11 +376,13 @@ export default function TradeSection() {
             <Button
               variant="outline"
               onClick={() => openInNewTab('https://quanto.trade/en/markets/BTC-USD-SWAP-LIN')}
-              className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-start p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+              className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
             >
-              <TrendingUp className="w-5 h-5 mr-3 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
-              <div className="text-left">
-                <div className="font-bold text-base">Quanto</div>
+              <div className="text-center">
+                <div className="font-bold text-base flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
+                  Quanto
+                </div>
                 <div className="text-sm text-gray-300">Perpetual futures trading</div>
               </div>
             </Button>
@@ -362,11 +390,13 @@ export default function TradeSection() {
             <Button
               variant="outline"
               onClick={() => openInNewTab('https://perps.saros.xyz/trade/PERP_SOL_USDC')}
-              className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-start p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+              className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
             >
-              <TrendingUp className="w-5 h-5 mr-3 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
-              <div className="text-left">
-                <div className="font-bold text-base">Saros</div>
+              <div className="text-center">
+                <div className="font-bold text-base flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
+                  Saros
+                </div>
                 <div className="text-sm text-gray-300">Solana perpetual futures</div>
               </div>
             </Button>
@@ -374,11 +404,13 @@ export default function TradeSection() {
             <Button
               variant="outline"
               onClick={() => openInNewTab('https://perps.raydium.io/')}
-              className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-start p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+              className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
             >
-              <TrendingUp className="w-5 h-5 mr-3 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
-              <div className="text-left">
-                <div className="font-bold text-base">Raydium</div>
+              <div className="text-center">
+                <div className="font-bold text-base flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
+                  Raydium
+                </div>
                 <div className="text-sm text-gray-300">Solana perpetual futures</div>
               </div>
             </Button>
@@ -386,11 +418,13 @@ export default function TradeSection() {
             <Button
               variant="outline"
               onClick={() => openInNewTab('https://pro.edgex.exchange/trade/BTCUSD')}
-              className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-start p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+              className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
             >
-              <TrendingUp className="w-5 h-5 mr-3 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
-              <div className="text-left">
-                <div className="font-bold text-base">EdgeX Pro</div>
+              <div className="text-center">
+                <div className="font-bold text-base flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
+                  EdgeX Pro
+                </div>
                 <div className="text-sm text-gray-300">Perpetual futures trading</div>
               </div>
             </Button>
@@ -398,11 +432,13 @@ export default function TradeSection() {
             <Button
               variant="outline"
               onClick={() => openInNewTab('https://trade.perpsdao.xyz/en/perp/PERP_BTC_USDC')}
-              className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-start p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+              className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
             >
-              <TrendingUp className="w-5 h-5 mr-3 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
-              <div className="text-left">
-                <div className="font-bold text-base">PerpsDAO</div>
+              <div className="text-center">
+                <div className="font-bold text-base flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
+                  PerpsDAO
+                </div>
                 <div className="text-sm text-gray-300">Decentralized perpetual futures</div>
               </div>
             </Button>
@@ -410,11 +446,13 @@ export default function TradeSection() {
             <Button
               variant="outline"
               onClick={() => openInNewTab('https://app.extended.exchange/perp')}
-              className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-start p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+              className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
             >
-              <TrendingUp className="w-5 h-5 mr-3 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
-              <div className="text-left">
-                <div className="font-bold text-base">Extended Exchange</div>
+              <div className="text-center">
+                <div className="font-bold text-base flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
+                  Extended Exchange
+                </div>
                 <div className="text-sm text-gray-300">Perpetual futures platform</div>
               </div>
             </Button>
@@ -426,11 +464,13 @@ export default function TradeSection() {
             <Button
               variant="outline"
               onClick={() => openInNewTab('https://www.novaex.com/trade')}
-              className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-start p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+              className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
             >
-              <TrendingUp className="w-5 h-5 mr-3 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
-              <div className="text-left">
-                <div className="font-bold text-base">NovaEx</div>
+              <div className="text-center">
+                <div className="font-bold text-base flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
+                  NovaEx
+                </div>
                 <div className="text-sm text-gray-300">Insurance-backed perpetual trading</div>
               </div>
             </Button>
@@ -438,11 +478,13 @@ export default function TradeSection() {
             <Button
               variant="outline"
               onClick={() => openInNewTab('https://app.myx.finance/trade/BTCUSDC')}
-              className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-start p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+              className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
             >
-              <TrendingUp className="w-5 h-5 mr-3 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
-              <div className="text-left">
-                <div className="font-bold text-base">MYC</div>
+              <div className="text-center">
+                <div className="font-bold text-base flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
+                  MYC
+                </div>
                 <div className="text-sm text-gray-300">Zero-slippage perps</div>
               </div>
             </Button>
@@ -462,11 +504,13 @@ export default function TradeSection() {
             <Button
               variant="outline"
               onClick={() => openInNewTab('https://www.hegic.co/app#/arbitrum/trade/new')}
-              className="group bg-gradient-to-br from-green-600/30 via-emerald-600/20 to-teal-600/30 border-green-400/40 hover:from-green-500/40 hover:via-emerald-500/30 hover:to-teal-500/40 hover:border-green-300/60 text-white justify-start p-5 h-auto shadow-xl hover:shadow-green-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+              className="group bg-gradient-to-br from-green-600/30 via-emerald-600/20 to-teal-600/30 border-green-400/40 hover:from-green-500/40 hover:via-emerald-500/30 hover:to-teal-500/40 hover:border-green-300/60 text-white justify-center p-5 h-auto shadow-xl hover:shadow-green-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
             >
-              <TrendingUp className="w-5 h-5 mr-3 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
-              <div className="text-left">
-                <div className="font-bold text-base">Hegic</div>
+              <div className="text-center">
+                <div className="font-bold text-base flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
+                  Hegic
+                </div>
                 <div className="text-sm text-green-200/90">Decentralized options protocol</div>
               </div>
             </Button>
@@ -474,11 +518,13 @@ export default function TradeSection() {
             <Button
               variant="outline"
               onClick={() => openInNewTab('https://deri.io/#/lite/trade/option/BTCUSD-50000-P')}
-              className="group bg-gradient-to-br from-teal-600/30 via-cyan-600/20 to-blue-600/30 border-teal-400/40 hover:from-teal-500/40 hover:via-cyan-500/30 hover:to-blue-500/40 hover:border-teal-300/60 text-white justify-start p-5 h-auto shadow-xl hover:shadow-teal-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+              className="group bg-gradient-to-br from-teal-600/30 via-cyan-600/20 to-blue-600/30 border-teal-400/40 hover:from-teal-500/40 hover:via-cyan-500/30 hover:to-blue-500/40 hover:border-teal-300/60 text-white justify-center p-5 h-auto shadow-xl hover:shadow-teal-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
             >
-              <TrendingUp className="w-5 h-5 mr-3 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
-              <div className="text-left">
-                <div className="font-bold text-base">Deri Protocol</div>
+              <div className="text-center">
+                <div className="font-bold text-base flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
+                  Deri Protocol
+                </div>
                 <div className="text-sm text-teal-200/90">Bitcoin options trading</div>
               </div>
             </Button>
@@ -486,11 +532,13 @@ export default function TradeSection() {
             <Button
               variant="outline"
               onClick={() => openInNewTab('https://tradoor.io/trade/btc_usdt')}
-              className="group bg-gradient-to-br from-lime-600/30 via-green-600/20 to-emerald-600/30 border-lime-400/40 hover:from-lime-500/40 hover:via-green-500/30 hover:to-emerald-500/40 hover:border-lime-300/60 text-white justify-start p-5 h-auto shadow-xl hover:shadow-lime-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+              className="group bg-gradient-to-br from-lime-600/30 via-green-600/20 to-emerald-600/30 border-lime-400/40 hover:from-lime-500/40 hover:via-green-500/30 hover:to-emerald-500/40 hover:border-lime-300/60 text-white justify-center p-5 h-auto shadow-xl hover:shadow-lime-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
             >
-              <TrendingUp className="w-5 h-5 mr-3 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
-              <div className="text-left">
-                <div className="font-bold text-base">Tradoor</div>
+              <div className="text-center">
+                <div className="font-bold text-base flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
+                  Tradoor
+                </div>
                 <div className="text-sm text-lime-200/90">Crypto perps and options</div>
               </div>
             </Button>
@@ -498,11 +546,13 @@ export default function TradeSection() {
             <Button
               variant="outline"
               onClick={() => openInNewTab('https://www.stryke.xyz/en/dashboard')}
-              className="group bg-gradient-to-br from-orange-600/30 via-amber-600/20 to-yellow-600/30 border-orange-400/40 hover:from-orange-500/40 hover:via-amber-500/30 hover:to-yellow-500/40 hover:border-orange-300/60 text-white justify-start p-5 h-auto shadow-xl hover:shadow-orange-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+              className="group bg-gradient-to-br from-orange-600/30 via-amber-600/20 to-yellow-600/30 border-orange-400/40 hover:from-orange-500/40 hover:via-amber-500/30 hover:to-yellow-500/40 hover:border-orange-300/60 text-white justify-center p-5 h-auto shadow-xl hover:shadow-orange-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
             >
-              <TrendingUp className="w-5 h-5 mr-3 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
-              <div className="text-left">
-                <div className="font-bold text-base">Stryke</div>
+              <div className="text-center">
+                <div className="font-bold text-base flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
+                  Stryke
+                </div>
                 <div className="text-sm text-orange-200/90">Decentralized options trading</div>
               </div>
             </Button>
