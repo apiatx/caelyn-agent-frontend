@@ -35,6 +35,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Dashboard} />
       <Route path="/app" component={Dashboard} />
+      <Route path="/dashboard" component={Dashboard} />
       <Route path="/app/charts/majors" component={TopChartsPage} />
       <Route path="/app/charts/altcoins" component={AltcoinsPage} />
       <Route path="/app/majors" component={TopChartsPage} />
@@ -76,6 +77,7 @@ function Router() {
       <Route path="/app/portfolio" component={PortfolioPage} />
       <Route path="/portfolio" component={PortfolioPage} />
       <Route path="/app/about" component={AboutPage} />
+      <Route path="/about" component={AboutPage} />
       <Route component={NotFound} />
     </Switch>
   );
