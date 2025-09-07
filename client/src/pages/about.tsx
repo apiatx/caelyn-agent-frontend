@@ -185,9 +185,9 @@ export default function AboutPage() {
                 <h2 className="text-2xl font-semibold text-white mb-4 text-center">Why Traders Use It</h2>
                 <div className="space-y-1 text-crypto-silver">
                   <p>• <span className="text-white font-medium">Save Time:</span> Skip the endless tab-switching.</p>
-                  <p>• <span className="text-white font-medium">Trade Smarter:</span> Market, on-chain, and sentiment data together.</p>
+                  <p>• <span className="text-white font-medium">Control the Context:</span> Market, on-chain, and sentiment data together.</p>
                   <p>• <span className="text-white font-medium">React Faster:</span> Spot setups before the crowd moves.</p>
-                  <p>• <span className="text-white font-medium">Stay Organized:</span> One hub for your entire workflow.</p>
+                  <p>• <span className="text-white font-medium">Trade Smarter:</span> One hub for your entire workflow.</p>
                 </div>
               </div>
 
