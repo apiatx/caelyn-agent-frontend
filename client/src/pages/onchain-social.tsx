@@ -159,18 +159,56 @@ export default function OnchainSocialPage() {
               <div className="flex items-center justify-center mb-6">
                 <h4 className="text-2xl font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">StockX</h4>
               </div>
-              <div className="text-center text-gray-400 py-8">
-                <p>Stock social intelligence coming soon...</p>
-              </div>
-            </div>
 
-            {/* CryptoStockX Subsection */}
-            <div className="mb-12">
-              <div className="flex items-center justify-center mb-6">
-                <h4 className="text-2xl font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">CryptoStockX</h4>
-              </div>
-              <div className="text-center text-gray-400 py-8">
-                <p>Crypto-stock social intelligence coming soon...</p>
+              {/* Stock X Accounts */}
+              <div className="mb-8">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mb-8">
+                  {[
+                    { name: 'RebellioMarket', handle: '@RebellioMarket' },
+                    { name: 'StocksToTrade', handle: '@StocksToTrade' },
+                    { name: 'Timothy Sykes', handle: '@timothysykes' },
+                    { name: 'Parangiras', handle: '@Parangiras' },
+                    { name: 'Real Sheep Wolf', handle: '@realsheepwolf' },
+                    { name: 'Eric Jackson', handle: '@ericjackson' },
+                    { name: 'The Long Invest', handle: '@TheLongInvest' },
+                    { name: 'Davy', handle: '@davyy888' },
+                    { name: 'PMDiChristina', handle: '@PMDiChristina' },
+                    { name: 'Joel Goes Digital', handle: '@JoelGoesDigital' },
+                    { name: 'Scot1andT', handle: '@Scot1andT' },
+                    { name: 'MACD Master', handle: '@MACDMaster328' },
+                    { name: 'Spartan Trading', handle: '@SpartanTrading' },
+                    { name: 'Planert41', handle: '@planert41' },
+                    { name: 'Maximus Holla', handle: '@Maximus_Holla' },
+                    { name: 'Canton Meow', handle: '@cantonmeow' },
+                    { name: 'Donald J Dean', handle: '@donaldjdean' },
+                    { name: 'AC Investor Blog', handle: '@ACInvestorBlog' },
+                    { name: 'Cestrian Inc', handle: '@CestrianInc' },
+                    { name: 'Invest In Assets', handle: '@InvestInAssets' },
+                    { name: 'PM Di Christina', handle: '@PMDiChristina' },
+                    { name: 'Invest Insights', handle: '@investinsights4' },
+                    { name: 'Bits and Bips', handle: '@bitsandbips' },
+                    { name: 'BKnight221', handle: '@BKnight221' },
+                    { name: 'NFT Lunatic', handle: '@NFTLunatic' },
+                    { name: 'AllISeeIs_W', handle: '@alliseeis_W' }
+                  ].map((account) => {
+                    const getAccountUrl = (handle: string) => {
+                      return `https://x.com/${handle.replace('@', '')}`;
+                    };
+
+                    return (
+                    <SafeLink
+                      key={account.handle}
+                      href={getAccountUrl(account.handle)}
+                      className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-green-400 font-bold text-sm">𝕏</span>
+                        <span className="text-green-400 font-semibold text-sm">{account.name}</span>
+                      </div>
+                    </SafeLink>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
