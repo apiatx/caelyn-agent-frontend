@@ -331,17 +331,17 @@ export default function PortfolioSection() {
           <Button
             variant="outline"
             onClick={() => window.open('https://debank.com/profile', '_blank', 'noopener,noreferrer')}
-            className="group w-full bg-gradient-to-br from-emerald-600/30 via-green-600/20 to-teal-600/30 border-emerald-400/40 hover:from-emerald-500/40 hover:via-green-500/30 hover:to-teal-500/40 hover:border-emerald-300/60 text-white justify-start p-6 h-auto shadow-xl hover:shadow-emerald-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+            className="group w-full bg-gray-900/80 border-gray-600/40 hover:bg-gray-800/90 hover:border-gray-500/60 text-white justify-start p-6 h-auto shadow-xl hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
           >
-            <div className="w-12 h-12 bg-gradient-to-br from-emerald-400 to-green-500 rounded-xl flex items-center justify-center mr-4 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300">
+            <div className="w-12 h-12 bg-gray-800 rounded-xl flex items-center justify-center mr-4 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300">
               <BarChart3 className="w-6 h-6 text-white" />
             </div>
             <div className="text-left flex-1">
               <div className="font-bold text-xl">DeBank</div>
-              <div className="text-sm text-emerald-200/90 font-medium">Professional EVM Portfolio Tracking & Analytics</div>
+              <div className="text-sm text-gray-300 font-medium">Professional EVM Portfolio Tracking & Analytics</div>
             </div>
             <div className="flex items-center gap-2">
-              <Badge className="bg-emerald-500/30 text-emerald-200 border-emerald-400/40 px-3 py-1 font-semibold">
+              <Badge className="bg-gray-700/50 text-gray-300 border-gray-600/40 px-3 py-1 font-semibold">
                 EVM CHAINS
               </Badge>
               <ExternalLink className="h-5 w-5 group-hover:scale-110 transition-transform" />
@@ -530,20 +530,20 @@ export default function PortfolioSection() {
           <Button
             variant="outline"
             onClick={() => window.open('https://www.taohub.info/portfolio', '_blank', 'noopener,noreferrer')}
-            className="group w-full bg-gradient-to-br from-orange-600/30 via-red-600/20 to-pink-600/30 border-orange-400/40 hover:from-orange-500/40 hover:via-red-500/30 hover:to-pink-500/40 hover:border-orange-300/60 text-white justify-start p-6 h-auto shadow-xl hover:shadow-orange-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+            className="group w-full bg-white border-gray-300 hover:bg-gray-50 hover:border-gray-400 text-black justify-start p-6 h-auto shadow-xl hover:shadow-gray-400/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
           >
-            <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-red-500 rounded-xl flex items-center justify-center mr-4 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300">
-              <Brain className="w-6 h-6 text-white" />
+            <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mr-4 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300">
+              <Brain className="w-6 h-6 text-black" />
             </div>
             <div className="text-left flex-1">
               <div className="font-bold text-xl">TaoHub</div>
-              <div className="text-sm text-orange-200/90 font-medium">Advanced TAO Network Portfolio & Staking Analytics</div>
+              <div className="text-sm text-gray-700 font-medium">Advanced TAO Network Portfolio & Staking Analytics</div>
             </div>
             <div className="flex items-center gap-2">
-              <Badge className="bg-orange-500/30 text-orange-200 border-orange-400/40 px-3 py-1 font-semibold">
+              <Badge className="bg-gray-200 text-gray-800 border-gray-300 px-3 py-1 font-semibold">
                 TAO NETWORK
               </Badge>
-              <ExternalLink className="h-5 w-5 group-hover:scale-110 transition-transform" />
+              <ExternalLink className="h-5 w-5 group-hover:scale-110 transition-transform text-black" />
             </div>
           </Button>
         </div>
