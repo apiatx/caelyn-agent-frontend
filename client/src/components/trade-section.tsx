@@ -317,23 +317,6 @@ export default function TradeSection() {
             </Button>
           </div>
 
-          {/* NovaEx - Full Width */}
-          <div className="w-full">
-            <Button
-              variant="outline"
-              onClick={() => openInNewTab('https://www.novaex.com/trade')}
-              className="group w-full bg-gradient-to-br from-orange-500/40 via-red-500/30 to-pink-500/40 border-orange-400/50 hover:from-orange-400/50 hover:via-red-400/40 hover:to-pink-400/50 hover:border-orange-300/70 text-white justify-center p-8 h-auto shadow-2xl hover:shadow-orange-500/40 transform hover:scale-[1.02] transition-all duration-500 backdrop-blur-sm"
-            >
-              <div className="text-center">
-                <div className="font-bold text-2xl flex items-center justify-center gap-3 mb-2">
-                  <TrendingUp className="w-7 h-7 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-500" />
-                  NovaEx
-                </div>
-                <div className="text-base text-orange-100/90 font-medium">Insurance-backed perpetual trading</div>
-              </div>
-            </Button>
-          </div>
-
           {/* Other Apps */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
@@ -409,6 +392,17 @@ export default function TradeSection() {
               </div>
             </Button>
 
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://www.novaex.com/trade')}
+              className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-start p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+            >
+              <TrendingUp className="w-5 h-5 mr-3 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
+              <div className="text-left">
+                <div className="font-bold text-base">NovaEx</div>
+                <div className="text-sm text-gray-300">Insurance-backed perpetual trading</div>
+              </div>
+            </Button>
 
           </div>
         </div>
