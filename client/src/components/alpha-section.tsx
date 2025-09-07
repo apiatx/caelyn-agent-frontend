@@ -143,8 +143,6 @@ export default function AlphaSection() {
 
         </GlassCard>
 
-        {/* 24h Gainers (CMC Top 500) */}
-        <TopDailyGainersTop500 />
       </div>
 
 
@@ -196,7 +194,14 @@ export default function AlphaSection() {
               </div>
               <p className="text-gray-300 text-sm font-medium">Blockchain Analytics</p>
             </SafeLink>
+          </div>
 
+          {/* 24h Gainers (CMC Top 500) */}
+          <div className="mb-6">
+            <TopDailyGainersTop500 />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
             <SafeLink
               href='https://geckoterminal.com/'
               className="p-5 bg-gradient-to-br from-emerald-500/15 to-emerald-600/15 hover:from-emerald-500/25 hover:to-emerald-600/25 border border-emerald-500/30 hover:border-emerald-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-emerald-500/20 transform"
