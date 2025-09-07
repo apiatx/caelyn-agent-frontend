@@ -206,7 +206,7 @@ export default function AlphaSection() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
             {/* Top priority: CMC Leaderboard, OpenSea, CoinGecko Chains */}
             <SafeLink
-              href='https://coinmarketcap.com/leaderboard/'
+              href='https://coinmarketcap.com/?type=coins&tableRankBy=trending_all_24h'
               className="p-5 bg-gradient-to-br from-blue-500/15 to-blue-600/15 hover:from-blue-500/25 hover:to-blue-600/25 border border-blue-500/30 hover:border-blue-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-blue-500/20 transform"
             >
               <div className="flex items-center gap-3 mb-3">
