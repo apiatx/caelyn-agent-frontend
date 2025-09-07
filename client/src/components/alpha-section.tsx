@@ -152,10 +152,7 @@ export default function AlphaSection() {
 
           {/* Screener */}
           <div className="mb-8">
-            <div className="flex items-center justify-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
-                <span className="text-white font-bold text-sm">S</span>
-              </div>
+            <div className="flex items-center justify-center mb-6">
               <h4 className="text-2xl font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">Screener</h4>
             </div>
           
@@ -242,10 +239,7 @@ export default function AlphaSection() {
 
           {/* Signal */}
           <div className="mb-8">
-            <div className="flex items-center justify-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/30">
-                <span className="text-white font-bold text-sm">S</span>
-              </div>
+            <div className="flex items-center justify-center mb-6">
               <h4 className="text-2xl font-bold bg-gradient-to-r from-white to-indigo-100 bg-clip-text text-transparent">Signal</h4>
             </div>
           
@@ -339,10 +333,7 @@ export default function AlphaSection() {
       {/* Inspect Tools - Moved above Discover Web3 section */}
       <div className="space-y-8 mt-12">
         <GlassCard className="p-3 sm:p-4 lg:p-6">
-          <div className="flex items-center justify-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
-              <span className="text-white font-bold text-sm">I</span>
-            </div>
+          <div className="flex items-center justify-center mb-6">
             <h4 className="text-2xl font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">Inspect</h4>
           </div>
           
@@ -401,10 +392,7 @@ export default function AlphaSection() {
       {/* Discover Web3 */}
       <div className="space-y-8 mt-12">
         <GlassCard className="p-6">
-          <div className="flex items-center justify-center gap-3 mb-6">
-            <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/30">
-              <span className="text-white font-bold text-lg">D</span>
-            </div>
+          <div className="flex items-center justify-center mb-6">
             <h3 className="text-2xl font-bold bg-gradient-to-r from-white to-emerald-100 bg-clip-text text-transparent">Discover Web3</h3>
           </div>
           
@@ -496,10 +484,7 @@ export default function AlphaSection() {
       {/* Memecoins */}
       <div className="space-y-8 mt-12">
         <GlassCard className="p-6">
-          <div className="flex items-center justify-center gap-3 mb-6">
-            <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/30">
-              <span className="text-white text-xl">🚀</span>
-            </div>
+          <div className="flex items-center justify-center mb-6">
             <h3 className="text-2xl font-bold bg-gradient-to-r from-white to-orange-100 bg-clip-text text-transparent">Memecoins</h3>
           </div>
 
