@@ -70,6 +70,49 @@ export default function TradeSection() {
       {/* Cross-Chain Section */}
       <div className="space-y-6">
         
+        {/* Swap Subsection */}
+        <div className="space-y-4">
+          <h4 className="text-lg font-medium text-pink-400 mb-3">Swap</h4>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://app.uniswap.org')}
+              className="bg-gradient-to-r from-pink-500/20 to-pink-600/20 border-pink-500/30 hover:from-pink-500/30 hover:to-pink-600/30 hover:border-pink-400/50 text-white justify-start p-4 h-auto shadow-lg hover:shadow-pink-500/20"
+            >
+              <ArrowUpDown className="w-4 h-4 mr-2" />
+              <div className="text-left">
+                <div className="font-semibold">Uniswap</div>
+                <div className="text-sm text-pink-200">Leading DEX on Ethereum</div>
+              </div>
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://pancakeswap.finance/swap')}
+              className="bg-gradient-to-r from-yellow-500/20 to-yellow-600/20 border-yellow-500/30 hover:from-yellow-500/30 hover:to-yellow-600/30 hover:border-yellow-400/50 text-white justify-start p-4 h-auto shadow-lg hover:shadow-yellow-500/20"
+            >
+              <ArrowUpDown className="w-4 h-4 mr-2" />
+              <div className="text-left">
+                <div className="font-semibold">PancakeSwap</div>
+                <div className="text-sm text-yellow-200">Popular BSC DEX</div>
+              </div>
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://jup.ag')}
+              className="bg-gradient-to-r from-teal-500/20 to-teal-600/20 border-teal-500/30 hover:from-teal-500/30 hover:to-teal-600/30 hover:border-teal-400/50 text-white justify-start p-4 h-auto shadow-lg hover:shadow-teal-500/20"
+            >
+              <ArrowUpDown className="w-4 h-4 mr-2" />
+              <div className="text-left">
+                <div className="font-semibold">Jupiter</div>
+                <div className="text-sm text-teal-200">Solana swap aggregator</div>
+              </div>
+            </Button>
+          </div>
+        </div>
+
         {/* Swidge Subsection */}
         <div className="space-y-4">
           <h4 className="text-lg font-medium text-blue-400 mb-3">Swidge</h4>
