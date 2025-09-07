@@ -222,23 +222,6 @@ export default function TradeSection() {
             </a>
           </div>
 
-          {/* Ave.ai - Full Width */}
-          <div className="w-full">
-            <Button
-              variant="outline"
-              onClick={() => openInNewTab('https://ave.ai/')}
-              className="group w-full bg-gradient-to-br from-gray-500/40 via-slate-500/30 to-zinc-500/40 border-gray-400/50 hover:from-gray-400/50 hover:via-slate-400/40 hover:to-zinc-400/50 hover:border-gray-300/70 text-white justify-center p-8 h-auto shadow-2xl hover:shadow-gray-500/40 transform hover:scale-[1.02] transition-all duration-500 backdrop-blur-sm"
-            >
-              <div className="text-center">
-                <div className="font-bold text-2xl flex items-center justify-center gap-3 mb-2">
-                  <ArrowLeftRight className="w-7 h-7 group-hover:rotate-180 transition-transform duration-500" />
-                  Ave.ai
-                </div>
-                <div className="text-base text-gray-100/90 font-medium">AI-powered multi-chain trading terminal</div>
-              </div>
-            </Button>
-          </div>
-
           {/* Other Apps */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <Button
@@ -277,6 +260,21 @@ export default function TradeSection() {
               </div>
             </Button>
 
+          </div>
+
+          {/* Ave.ai - Simple Black Button */}
+          <div className="w-full">
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://ave.ai/')}
+              className="group w-full bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-start p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+            >
+              <ArrowLeftRight className="w-5 h-5 mr-3 group-hover:rotate-180 transition-transform duration-300" />
+              <div className="text-left">
+                <div className="font-bold text-base">Ave.ai</div>
+                <div className="text-sm text-gray-300">AI-powered multi-chain trading terminal</div>
+              </div>
+            </Button>
           </div>
         </div>
 
