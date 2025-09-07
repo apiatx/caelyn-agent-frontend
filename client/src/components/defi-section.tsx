@@ -344,6 +344,20 @@ export default function DeFiSection() {
               <div className="text-sm text-crypto-silver">Bitcoin DeFi Layer</div>
             </div>
           </Button>
+
+          <Button
+            variant="outline"
+            onClick={() => openInNewTab('https://app.tharwa.finance/staking')}
+            className="bg-black/20 border-crypto-silver/20 hover:bg-teal-500/20 hover:border-teal-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
+          >
+            <div className="p-3 rounded-lg bg-gradient-to-r from-teal-500/20 to-emerald-500/20">
+              <DollarSign className="h-6 w-6 text-teal-400" />
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-lg">Tharwa</div>
+              <div className="text-sm text-crypto-silver">DeFi staking platform</div>
+            </div>
+          </Button>
         </div>
       </div>
 
