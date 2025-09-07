@@ -273,6 +273,68 @@ export default function AlphaSection() {
         </GlassCard>
       </div>
 
+      {/* Inspect Tools - Moved above Discover Web3 section */}
+      <div className="space-y-8 mt-12">
+        <GlassCard className="p-3 sm:p-4 lg:p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
+              <span className="text-white font-bold text-sm">I</span>
+            </div>
+            <h4 className="text-2xl font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">Inspect</h4>
+          </div>
+          
+          {/* Token Terminal - Full width row with centered text */}
+          <div className="mb-6">
+            <button
+              onClick={() => openInNewTab('https://tokenterminal.com/explorer')}
+              className="w-full bg-gradient-to-br from-purple-500/15 to-purple-600/15 hover:from-purple-500/25 hover:to-purple-600/25 border border-purple-500/30 hover:border-purple-400/50 rounded-xl p-5 transition-all duration-300 text-center group shadow-lg hover:shadow-purple-500/20 hover:scale-105 transform"
+            >
+              <div className="text-base font-semibold text-white group-hover:text-purple-200 mb-2 flex items-center justify-center gap-2">
+                <div className="w-2 h-2 bg-purple-400 rounded-full group-hover:animate-pulse"></div>
+                Token Terminal
+              </div>
+              <div className="text-sm text-gray-300 group-hover:text-gray-200">Protocol metrics explorer</div>
+            </button>
+          </div>
+
+          {/* Developer Report, The Block, and Chainspect - 3 across */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <button
+              onClick={() => openInNewTab('https://www.developerreport.com/')}
+              className="bg-gradient-to-br from-green-500/15 to-green-600/15 hover:from-green-500/25 hover:to-green-600/25 border border-green-500/30 hover:border-green-400/50 rounded-xl p-5 transition-all duration-300 text-left group shadow-lg hover:shadow-green-500/20 hover:scale-105 transform"
+            >
+              <div className="text-base font-semibold text-white group-hover:text-green-200 mb-2 flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-400 rounded-full group-hover:animate-pulse"></div>
+                Developer Report
+              </div>
+              <div className="text-sm text-gray-300 group-hover:text-gray-200">Developer activity by blockchain</div>
+            </button>
+
+            <button
+              onClick={() => openInNewTab('https://www.theblock.co/data/decentralized-finance/dex-non-custodial')}
+              className="bg-gradient-to-br from-orange-500/15 to-orange-600/15 hover:from-orange-500/25 hover:to-orange-600/25 border border-orange-500/30 hover:border-orange-400/50 rounded-xl p-5 transition-all duration-300 text-left group shadow-lg hover:shadow-orange-500/20 hover:scale-105 transform"
+            >
+              <div className="text-base font-semibold text-white group-hover:text-orange-200 mb-2 flex items-center gap-2">
+                <div className="w-2 h-2 bg-orange-400 rounded-full group-hover:animate-pulse"></div>
+                The Block: DEX Metrics
+              </div>
+              <div className="text-sm text-gray-300 group-hover:text-gray-200">Comprehensive DEX analytics and metrics</div>
+            </button>
+
+            <button
+              onClick={() => openInNewTab('https://chainspect.app/dashboard')}
+              className="bg-gradient-to-br from-cyan-500/15 to-cyan-600/15 hover:from-cyan-500/25 hover:to-cyan-600/25 border border-cyan-500/30 hover:border-cyan-400/50 rounded-xl p-5 transition-all duration-300 text-left group shadow-lg hover:shadow-cyan-500/20 hover:scale-105 transform"
+            >
+              <div className="text-base font-semibold text-white group-hover:text-cyan-200 mb-2 flex items-center gap-2">
+                <div className="w-2 h-2 bg-cyan-400 rounded-full group-hover:animate-pulse"></div>
+                Chainspect
+              </div>
+              <div className="text-sm text-gray-300 group-hover:text-gray-200">Chain scalability and decentralization analytics</div>
+            </button>
+          </div>
+        </GlassCard>
+      </div>
+
       {/* Discover Web3 */}
       <div className="space-y-8 mt-12">
         <GlassCard className="p-6">
@@ -367,67 +429,6 @@ export default function AlphaSection() {
         </GlassCard>
       </div>
 
-      {/* Inspect Tools - Moved below Signal section and restructured */}
-      <div className="space-y-8 mt-12">
-        <GlassCard className="p-3 sm:p-4 lg:p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
-              <span className="text-white font-bold text-sm">I</span>
-            </div>
-            <h4 className="text-2xl font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">Inspect</h4>
-          </div>
-          
-          {/* Token Terminal - Full width row */}
-          <div className="mb-6">
-            <button
-              onClick={() => openInNewTab('https://tokenterminal.com/explorer')}
-              className="w-full bg-gradient-to-br from-purple-500/15 to-purple-600/15 hover:from-purple-500/25 hover:to-purple-600/25 border border-purple-500/30 hover:border-purple-400/50 rounded-xl p-5 transition-all duration-300 text-left group shadow-lg hover:shadow-purple-500/20 hover:scale-105 transform"
-            >
-              <div className="text-base font-semibold text-white group-hover:text-purple-200 mb-2 flex items-center gap-2">
-                <div className="w-2 h-2 bg-purple-400 rounded-full group-hover:animate-pulse"></div>
-                Token Terminal
-              </div>
-              <div className="text-sm text-gray-300 group-hover:text-gray-200">Protocol metrics explorer</div>
-            </button>
-          </div>
-
-          {/* Developer Report, The Block, and Chainspect - 3 across */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <button
-              onClick={() => openInNewTab('https://www.developerreport.com/')}
-              className="bg-gradient-to-br from-green-500/15 to-green-600/15 hover:from-green-500/25 hover:to-green-600/25 border border-green-500/30 hover:border-green-400/50 rounded-xl p-5 transition-all duration-300 text-left group shadow-lg hover:shadow-green-500/20 hover:scale-105 transform"
-            >
-              <div className="text-base font-semibold text-white group-hover:text-green-200 mb-2 flex items-center gap-2">
-                <div className="w-2 h-2 bg-green-400 rounded-full group-hover:animate-pulse"></div>
-                Developer Report
-              </div>
-              <div className="text-sm text-gray-300 group-hover:text-gray-200">Developer activity by blockchain</div>
-            </button>
-
-            <button
-              onClick={() => openInNewTab('https://www.theblock.co/data/decentralized-finance/dex-non-custodial')}
-              className="bg-gradient-to-br from-orange-500/15 to-orange-600/15 hover:from-orange-500/25 hover:to-orange-600/25 border border-orange-500/30 hover:border-orange-400/50 rounded-xl p-5 transition-all duration-300 text-left group shadow-lg hover:shadow-orange-500/20 hover:scale-105 transform"
-            >
-              <div className="text-base font-semibold text-white group-hover:text-orange-200 mb-2 flex items-center gap-2">
-                <div className="w-2 h-2 bg-orange-400 rounded-full group-hover:animate-pulse"></div>
-                The Block: DEX Metrics
-              </div>
-              <div className="text-sm text-gray-300 group-hover:text-gray-200">Comprehensive DEX analytics and metrics</div>
-            </button>
-
-            <button
-              onClick={() => openInNewTab('https://chainspect.app/dashboard')}
-              className="bg-gradient-to-br from-cyan-500/15 to-cyan-600/15 hover:from-cyan-500/25 hover:to-cyan-600/25 border border-cyan-500/30 hover:border-cyan-400/50 rounded-xl p-5 transition-all duration-300 text-left group shadow-lg hover:shadow-cyan-500/20 hover:scale-105 transform"
-            >
-              <div className="text-base font-semibold text-white group-hover:text-cyan-200 mb-2 flex items-center gap-2">
-                <div className="w-2 h-2 bg-cyan-400 rounded-full group-hover:animate-pulse"></div>
-                Chainspect
-              </div>
-              <div className="text-sm text-gray-300 group-hover:text-gray-200">Chain scalability and decentralization analytics</div>
-            </button>
-          </div>
-        </GlassCard>
-      </div>
 
       {/* Memecoins */}
       <div className="space-y-8 mt-12">
