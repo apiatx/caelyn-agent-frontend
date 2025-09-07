@@ -268,6 +268,15 @@ export default function AlphaSection() {
               <p className="text-gray-400 text-sm">Crypto AI Agent Analytics</p>
             </SafeLink>
           </div>
+
+          {/* Alphanomics */}
+          <div className="mb-6">
+            <SafeIframe
+              src="https://platform.alphanomics.io/"
+              title="Alphanomics Analytics Platform"
+              className="h-[600px]"
+            />
+          </div>
           </div>
 
           {/* Signal */}
@@ -318,13 +327,6 @@ export default function AlphaSection() {
             </SafeLink>
           </div>
 
-            <div className="mb-6">
-              <SafeIframe
-                src="https://platform.alphanomics.io/"
-                title="Alphanomics Analytics Platform"
-                className="h-[600px]"
-              />
-            </div>
 
           </div>
         </GlassCard>
