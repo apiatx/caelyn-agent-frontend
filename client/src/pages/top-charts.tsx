@@ -72,8 +72,11 @@ export default function TopChartsPage() {
             <p className="text-sm sm:text-base text-crypto-silver">Bitcoin and Ethereum price action and market dominance analysis</p>
           </div>
 
-          {/* Market Cap Charts - Combined Glass Card */}
+          {/* Crypto Total Market Cap Section */}
           <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6">
+            <div className="text-center mb-6">
+              <h2 className="text-xl sm:text-2xl font-bold text-white">Crypto Total Market Cap</h2>
+            </div>
             {/* Top Row - Market Cap Charts Side by Side */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 mb-6">
               {/* Crypto Total Market Cap Chart */}
@@ -83,7 +86,7 @@ export default function TopChartsPage() {
                     <div className="w-5 h-5 sm:w-6 sm:h-6 bg-yellow-500 rounded-full flex items-center justify-center">
                       <span className="text-white font-bold text-xs">$</span>
                     </div>
-                    <h3 className="text-lg sm:text-xl font-semibold text-white">Crypto Total Market Cap</h3>
+                    <h3 className="text-lg sm:text-xl font-semibold text-white">BTC + ALTS</h3>
                     <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-xs">
                       BTC + ALTS
                     </Badge>
@@ -113,7 +116,7 @@ export default function TopChartsPage() {
                     <div className="w-5 h-5 sm:w-6 sm:h-6 bg-teal-500 rounded-full flex items-center justify-center">
                       <span className="text-white font-bold text-xs">$</span>
                     </div>
-                    <h3 className="text-lg sm:text-xl font-semibold text-white">Total Market Cap Excluding BTC</h3>
+                    <h3 className="text-lg sm:text-xl font-semibold text-white">ALTS</h3>
                     <Badge className="bg-teal-500/20 text-teal-400 border-teal-500/30 text-xs">
                       ALTS
                     </Badge>
@@ -168,8 +171,11 @@ export default function TopChartsPage() {
             </div>
           </div>
 
-          {/* Bitcoin Section - Unified */}
+          {/* Bitcoin Section */}
           <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6 space-y-6">
+            <div className="text-center">
+              <h2 className="text-xl sm:text-2xl font-bold text-white">Bitcoin</h2>
+            </div>
             {/* Bitcoin Charts - Side by Side */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
               {/* Bitcoin Price Chart */}
@@ -246,8 +252,11 @@ export default function TopChartsPage() {
             <CryptoMarketDataBare symbol="BTC" />
           </div>
 
-          {/* Ethereum Section - Unified */}
+          {/* Ethereum Section */}
           <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6 space-y-6">
+            <div className="text-center">
+              <h2 className="text-xl sm:text-2xl font-bold text-white">Ethereum</h2>
+            </div>
             {/* Ethereum Charts - Side by Side */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
               {/* Ethereum Price Chart */}
