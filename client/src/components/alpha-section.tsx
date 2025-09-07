@@ -254,7 +254,7 @@ export default function AlphaSection() {
               className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-2">
-                <h4 className="text-blue-400 font-semibold">Velvet Capital</h4>
+                <h4 className="text-blue-400 font-semibold text-lg">Velvet Capital</h4>
               </div>
               <p className="text-gray-400 text-sm">DeFi Portfolio Management</p>
             </SafeLink>
@@ -264,7 +264,7 @@ export default function AlphaSection() {
               className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-lg hover:bg-indigo-500/20 transition-colors"
             >
               <div className="flex items-center gap-2 mb-2">
-                <h4 className="text-indigo-400 font-semibold">Aya AI</h4>
+                <h4 className="text-indigo-400 font-semibold text-lg">Aya AI</h4>
               </div>
               <p className="text-gray-400 text-sm">Crypto AI Agent Analytics</p>
             </SafeLink>
