@@ -86,7 +86,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
             <DropdownMenuTrigger asChild>
               <button
                 className={`flex-1 min-w-[120px] lg:min-w-[140px] xl:min-w-[160px] py-3 px-2 xl:px-3 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
-                  isActive("onchain-analytics") || isActive("onchain-smart-wallets") || isActive("onchain-social")
+                  isActive("onchain-analytics") || isActive("onchain-smart-wallets")
                     ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                     : "hover:bg-white/5 text-crypto-silver"
                 }`}
@@ -109,13 +109,6 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
               >
                 <Wallet className="w-4 h-4 mr-2" />
                 Smart Wallets
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => navigateTo("/app/onchain/social")}
-                className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
-              >
-                <MessageSquare className="w-4 h-4 mr-2" />
-                Social
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -259,16 +252,6 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
             </DropdownMenuContent>
           </DropdownMenu>
           <button
-            onClick={() => navigateTo("/app/predict")}
-            className={`flex-1 min-w-0 py-3 px-1 xl:px-3 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
-              isActive("predict")
-                ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
-                : "hover:bg-white/5 text-crypto-silver"
-            }`}
-          >
-            <TrendingUp className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />Predict
-          </button>
-          <button
             onClick={() => navigateTo("/app/about")}
             className={`flex-1 min-w-0 py-3 px-1 xl:px-3 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
               isActive("about")
@@ -277,6 +260,26 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
             }`}
           >
             <Activity className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />About
+          </button>
+          <button
+            onClick={() => navigateTo("/app/onchain/social")}
+            className={`flex-1 min-w-0 py-3 px-1 xl:px-3 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
+              isActive("onchain-social")
+                ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
+                : "hover:bg-white/5 text-crypto-silver"
+            }`}
+          >
+            <MessageSquare className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />Social
+          </button>
+          <button
+            onClick={() => navigateTo("/app/predict")}
+            className={`flex-1 min-w-0 py-3 px-1 xl:px-3 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
+              isActive("predict")
+                ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
+                : "hover:bg-white/5 text-crypto-silver"
+            }`}
+          >
+            <TrendingUp className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />Predict
           </button>
         </div>
 
@@ -328,7 +331,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
                 <DropdownMenuTrigger asChild>
                   <button
                     className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
-                      isActive("onchain-alpha") || isActive("onchain-smart-wallets") || isActive("onchain-social")
+                      isActive("onchain-alpha") || isActive("onchain-smart-wallets")
                         ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                         : "hover:bg-white/5 text-crypto-silver"
                     }`}
@@ -351,13 +354,6 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
                   >
                     <Wallet className="w-4 h-4 mr-2" />
                     Smart Wallets
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => navigateTo("/app/onchain/social")}
-                    className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
-                  >
-                    <MessageSquare className="w-4 h-4 mr-2" />
-                    Social
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -491,16 +487,6 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
                 </DropdownMenuContent>
               </DropdownMenu>
               <button
-                onClick={() => navigateTo("/app/predict")}
-                className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
-                  isActive("predict")
-                    ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
-                    : "hover:bg-white/5 text-crypto-silver"
-                }`}
-              >
-                <TrendingUp className="w-4 h-4 mr-1 inline" />Predict
-              </button>
-              <button
                 onClick={() => navigateTo("/app/about")}
                 className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                   isActive("about")
@@ -509,6 +495,26 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
                 }`}
               >
                 <Activity className="w-4 h-4 mr-1 inline" />About
+              </button>
+              <button
+                onClick={() => navigateTo("/app/onchain/social")}
+                className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+                  isActive("onchain-social")
+                    ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
+                    : "hover:bg-white/5 text-crypto-silver"
+                }`}
+              >
+                <MessageSquare className="w-4 h-4 mr-1 inline" />Social
+              </button>
+              <button
+                onClick={() => navigateTo("/app/predict")}
+                className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+                  isActive("predict")
+                    ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
+                    : "hover:bg-white/5 text-crypto-silver"
+                }`}
+              >
+                <TrendingUp className="w-4 h-4 mr-1 inline" />Predict
               </button>
             </div>
           </div>
