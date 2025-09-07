@@ -631,23 +631,21 @@ export default function OnchainSocialPage() {
             </div>
           </GlassCard>
 
-          {/* Social Indexy Section */}
+          {/* Social Indexes on Base Section */}
           <GlassCard className="p-6">
             <div className="flex items-center justify-center mb-6">
-              <h4 className="text-2xl font-bold bg-gradient-to-r from-white to-green-100 bg-clip-text text-transparent">Social Indexy</h4>
+              <h4 className="text-2xl font-bold bg-gradient-to-r from-white to-green-100 bg-clip-text text-transparent">Social Indexes on Base</h4>
             </div>
             
-            <div className="flex justify-center">
-              <SafeLink
-                href='https://indexy.xyz/home'
-                className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
-              >
-                <div className="flex items-center justify-center mb-2">
-                  <h4 className="text-green-400 font-semibold">Indexy</h4>
-                </div>
-                <p className="text-gray-400 text-sm text-center">Crypto market indexing platform</p>
-              </SafeLink>
-            </div>
+            <SafeLink
+              href='https://indexy.xyz/home'
+              className="w-full p-4 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors block"
+            >
+              <div className="flex items-center justify-center mb-2">
+                <h4 className="text-green-400 font-semibold">Indexy</h4>
+              </div>
+              <p className="text-gray-400 text-sm text-center">Crypto market indexing platform</p>
+            </SafeLink>
           </GlassCard>
         </div>
       </main>
