@@ -297,6 +297,70 @@ export default function OnchainSocialPage() {
               </div>
             </div>
 
+            {/* Solana Ecosystem Subsection */}
+            <div className="mb-12">
+              <div className="flex items-center justify-center mb-6">
+                <h4 className="text-2xl font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">Solana Ecosystem</h4>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <SafeLink
+                  href='https://x.com/Dior100x'
+                  className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-purple-400 font-bold text-sm">𝕏</span>
+                    <span className="text-purple-400 font-semibold text-sm">Dior100x</span>
+                  </div>
+                  <div className="text-xs text-crypto-silver">@Dior100x - Solana trading insights</div>
+                </SafeLink>
+
+                <SafeLink
+                  href='https://x.com/_Shadow36'
+                  className="p-3 bg-gray-500/10 border border-gray-500/20 rounded-lg hover:bg-gray-500/20 transition-colors"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-gray-400 font-bold text-sm">𝕏</span>
+                    <span className="text-gray-400 font-semibold text-sm">_Shadow36</span>
+                  </div>
+                  <div className="text-xs text-crypto-silver">@_Shadow36 - Solana market analysis</div>
+                </SafeLink>
+
+                <SafeLink
+                  href='https://x.com/WolverCrypto'
+                  className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg hover:bg-yellow-500/20 transition-colors"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-yellow-400 font-bold text-sm">𝕏</span>
+                    <span className="text-yellow-400 font-semibold text-sm">WolverCrypto</span>
+                  </div>
+                  <div className="text-xs text-crypto-silver">@WolverCrypto - Crypto trading insights</div>
+                </SafeLink>
+
+                <SafeLink
+                  href='https://x.com/watchingmarkets'
+                  className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-blue-400 font-bold text-sm">𝕏</span>
+                    <span className="text-blue-400 font-semibold text-sm">watchingmarkets</span>
+                  </div>
+                  <div className="text-xs text-crypto-silver">@watchingmarkets - Market watching insights</div>
+                </SafeLink>
+
+                <SafeLink
+                  href='https://x.com/Crypto_Alch'
+                  className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-green-400 font-bold text-sm">𝕏</span>
+                    <span className="text-green-400 font-semibold text-sm">Crypto_Alch</span>
+                  </div>
+                  <div className="text-xs text-crypto-silver">@Crypto_Alch - Crypto alchemy insights</div>
+                </SafeLink>
+              </div>
+            </div>
+
             {/* Social Platforms */}
             <div className="mb-8">
               <div className="flex items-center gap-2 mb-6">
