@@ -198,7 +198,7 @@ export default function AlphaSection() {
             </SafeLink>
 
             <SafeLink
-              href='https://www.geckoterminal.com/'
+              href='https://geckoterminal.com/'
               className="p-5 bg-gradient-to-br from-emerald-500/15 to-emerald-600/15 hover:from-emerald-500/25 hover:to-emerald-600/25 border border-emerald-500/30 hover:border-emerald-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-emerald-500/20 transform"
             >
               <div className="flex items-center gap-3 mb-3">
