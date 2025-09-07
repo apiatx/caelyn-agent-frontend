@@ -206,34 +206,35 @@ export default function TradeSection() {
         <div className="space-y-4">
           <h4 className="text-lg font-medium text-orange-400 mb-3">Perps</h4>
           
-          {/* Primary Apps Row - Hyperliquid (Will add second app when clarified) */}
-          <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
+          {/* Primary Apps Row - Hyperliquid & DeFi.app */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Button
               variant="outline"
               onClick={() => openInNewTab('https://app.hyperliquid.xyz/trade')}
-              className="w-full bg-gradient-to-r from-indigo-500/20 to-indigo-600/20 border-indigo-500/30 hover:from-indigo-500/30 hover:to-indigo-600/30 hover:border-indigo-400/50 text-white justify-start p-6 h-auto shadow-lg hover:shadow-indigo-500/20"
+              className="w-full bg-gradient-to-r from-teal-500/20 to-teal-600/20 border-teal-500/30 hover:from-teal-500/30 hover:to-teal-600/30 hover:border-teal-400/50 text-white justify-start p-6 h-auto shadow-lg hover:shadow-teal-500/20"
             >
               <TrendingUp className="w-5 h-5 mr-3" />
               <div className="text-left">
                 <div className="font-bold text-lg">Hyperliquid</div>
-                <div className="text-sm text-indigo-200">Primary onchain perpetual DEX platform</div>
+                <div className="text-sm text-teal-200">Primary onchain perpetual DEX platform</div>
+              </div>
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://app.defi.app/portfolio')}
+              className="w-full bg-gradient-to-r from-blue-500/20 to-blue-600/20 border-blue-500/30 hover:from-blue-500/30 hover:to-blue-600/30 hover:border-blue-400/50 text-white justify-start p-6 h-auto shadow-lg hover:shadow-blue-500/20"
+            >
+              <Wallet className="w-5 h-5 mr-3" />
+              <div className="text-left">
+                <div className="font-bold text-lg">DeFi.app</div>
+                <div className="text-sm text-blue-200">Primary onchain perpetuals super app</div>
               </div>
             </Button>
           </div>
 
           {/* Other Apps */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <Button
-              variant="outline"
-              onClick={() => openInNewTab('https://app.defi.app/portfolio')}
-              className="bg-black/20 border-crypto-silver/20 hover:bg-blue-500/20 hover:border-blue-500/30 text-white justify-start p-4 h-auto"
-            >
-              <Wallet className="w-4 h-4 mr-2" />
-              <div className="text-left">
-                <div className="font-semibold">DeFi.app</div>
-                <div className="text-sm text-crypto-silver">Onchain Perpetuals Super App</div>
-              </div>
-            </Button>
 
             <Button
               variant="outline"
