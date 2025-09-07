@@ -25,12 +25,11 @@ export default function CryptoDashboardSection() {
       <div className="space-y-4">
         <div className="text-center px-3 sm:px-0">
           <div className="flex justify-center mb-4">
-            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden shadow-xl border-2 border-yellow-400">
+            <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-2xl overflow-hidden shadow-xl">
               <img 
                 src={cryptoHippoWithBitcoin} 
                 alt="Crypto Hippo with Bitcoin Goggles" 
                 className="w-full h-full object-contain"
-                style={{filter: 'drop-shadow(0 0 8px rgba(255, 165, 0, 0.3))'}}
               />
             </div>
           </div>
