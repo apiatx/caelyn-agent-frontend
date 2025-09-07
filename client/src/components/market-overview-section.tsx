@@ -13,7 +13,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { openCoinMarketCapLink } from '@/utils/mobile-links';
-import cryptoHippoWithBitcoin from "@assets/download (3)_1757211588661.png";
+import cryptoHippoWithBitcoin from "@assets/download (3)_1757211707979.png";
 
 // Function to open external links
 const openInNewTab = (url: string) => {
