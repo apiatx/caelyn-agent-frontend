@@ -69,7 +69,7 @@ export default function AlphaSection() {
             />
             <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-blue-400/20 to-purple-400/20"></div>
           </div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-blue-100 to-purple-100 bg-clip-text text-transparent drop-shadow-lg">Analytics & Signal</h1>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-blue-100 to-purple-100 bg-clip-text text-transparent drop-shadow-lg">Analytics</h1>
           <div className="relative">
             <img 
               src={diamondImage} 
