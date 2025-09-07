@@ -105,7 +105,7 @@ export default function PortfolioSection() {
         {/* Multi-Chain Section */}
         <div className="bg-black/90 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-8 shadow-2xl">
           <div className="space-y-8">
-            <div className="flex items-center gap-4 mb-6">
+            <div className="flex items-center justify-center gap-4 mb-6">
               <div className="w-10 h-10 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-xl flex items-center justify-center shadow-lg">
                 <Activity className="w-6 h-6 text-white" />
               </div>
@@ -136,7 +136,7 @@ export default function PortfolioSection() {
         {/* EVM Section */}
         <div className="bg-black/90 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-8 shadow-2xl">
           <div className="space-y-8">
-            <div className="flex items-center gap-4 mb-6">
+            <div className="flex items-center justify-center gap-4 mb-6">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center">
                 <img src={ethereumLogo} alt="Ethereum" className="w-8 h-8 rounded-lg" />
               </div>
@@ -167,7 +167,7 @@ export default function PortfolioSection() {
         {/* Solana Section */}
         <div className="bg-black/90 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-8 shadow-2xl">
           <div className="space-y-8">
-            <div className="flex items-center gap-4 mb-6">
+            <div className="flex items-center justify-center gap-4 mb-6">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center">
                 <img src={solanaLogo} alt="Solana" className="w-8 h-8 rounded-lg" />
               </div>
@@ -204,7 +204,7 @@ export default function PortfolioSection() {
         {/* HyperLiquid Section */}
         <div className="bg-black/90 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-8 shadow-2xl">
           <div className="space-y-8">
-            <div className="flex items-center gap-4 mb-6">
+            <div className="flex items-center justify-center gap-4 mb-6">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center">
                 <img src={hyperliquidLogo} alt="HyperLiquid" className="w-8 h-8 rounded-lg" />
               </div>
@@ -262,7 +262,7 @@ export default function PortfolioSection() {
         {/* Bittensor Section */}
         <div className="bg-black/90 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-8 shadow-2xl">
           <div className="space-y-8">
-            <div className="flex items-center gap-4 mb-6">
+            <div className="flex items-center justify-center gap-4 mb-6">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center">
                 <img src={bittensorLogo} alt="Bittensor" className="w-8 h-8 rounded-lg" />
               </div>
