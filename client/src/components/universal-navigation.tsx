@@ -101,7 +101,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
                 className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
               >
                 <TrendingUp className="w-4 h-4 mr-2" />
-                Analytics
+                Screening
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => navigateTo("/app/onchain/smart-wallets")}
