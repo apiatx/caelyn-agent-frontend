@@ -9,7 +9,6 @@ import AbstractSection from "@/components/abstract-section";
 import DeFiSection from "@/components/defi-section";
 import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
 import newHeaderBackground from "@assets/photo-1504333638930-c8787321eee0_1757208194192.avif";
-import cryptoLogos from "@assets/ChatGPT Image Sep 7, 2025, 01_02_03 AM_1757225008661.png";
 import { UniversalNavigation } from "@/components/universal-navigation";
 import { SectionLoadingState } from "@/components/loading-screen";
 import { useScrollFade } from "@/hooks/useScrollFade";
