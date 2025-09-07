@@ -310,16 +310,16 @@ export default function AboutPage() {
                   <ExternalLink className="w-5 h-5 text-orange-400 group-hover:text-orange-300" />
                 </div>
               </button>
-              
-              {/* Hippo Image - Within Bitcoin Section */}
-              <div className="flex justify-center my-8">
-                <div className="w-44 h-44 rounded-full overflow-hidden shadow-2xl border-2 border-yellow-400">
-                  <img 
-                    src={hippoMouthOpen} 
-                    alt="Hippo" 
-                    className="w-full h-full object-cover"
-                  />
-                </div>
+            </div>
+
+            {/* Centered Hippo Image - Between VanEck and Support */}
+            <div className="flex justify-center my-12">
+              <div className="w-44 h-44 rounded-full overflow-hidden shadow-2xl border-2 border-yellow-400">
+                <img 
+                  src={hippoMouthOpen} 
+                  alt="Hippo" 
+                  className="w-full h-full object-cover"
+                />
               </div>
             </div>
 
