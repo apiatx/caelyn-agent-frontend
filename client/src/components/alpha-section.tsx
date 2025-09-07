@@ -200,6 +200,19 @@ export default function AlphaSection() {
               <p className="text-gray-300 text-sm font-medium">Blockchain Analytics</p>
             </SafeLink>
 
+            <SafeLink
+              href='https://www.geckoterminal.com/'
+              className="p-5 bg-gradient-to-br from-emerald-500/15 to-emerald-600/15 hover:from-emerald-500/25 hover:to-emerald-600/25 border border-emerald-500/30 hover:border-emerald-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-emerald-500/20 transform"
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center shadow-md">
+                  <span className="text-white font-bold text-xs">GT</span>
+                </div>
+                <h4 className="text-emerald-300 font-bold text-lg">GeckoTerminal</h4>
+              </div>
+              <p className="text-gray-300 text-sm font-medium">Real-time DEX analytics</p>
+            </SafeLink>
+
             {/* Rest of the analytics tools */}
             <SafeLink
               href='https://dexcheck.ai/app'
