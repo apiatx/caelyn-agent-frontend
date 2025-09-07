@@ -74,7 +74,7 @@ export default function AlphaSection() {
             <img 
               src={diamondImage} 
               alt="Analytics Diamond" 
-              className="w-16 h-16 rounded-2xl object-cover shadow-lg shadow-blue-500/30 border-2 border-blue-400/50"
+              className="w-16 h-16 rounded-2xl object-cover shadow-lg shadow-blue-500/30 border-2 border-blue-400/50 bg-black"
             />
             <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-blue-400/20 to-purple-400/20"></div>
           </div>
