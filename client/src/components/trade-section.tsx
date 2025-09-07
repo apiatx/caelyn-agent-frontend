@@ -412,10 +412,10 @@ export default function TradeSection() {
             <Button
               variant="outline"
               onClick={() => openInNewTab('https://www.novaex.com/trade')}
-              className="group w-full bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-start p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+              className="group w-full bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
             >
               <TrendingUp className="w-5 h-5 mr-3 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
-              <div className="text-left">
+              <div className="text-center">
                 <div className="font-bold text-base">NovaEx</div>
                 <div className="text-sm text-gray-300">Insurance-backed perpetual trading</div>
               </div>
