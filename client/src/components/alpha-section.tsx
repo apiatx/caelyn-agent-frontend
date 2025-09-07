@@ -87,11 +87,8 @@ export default function AlphaSection() {
 
           {/* Analytics */}
           <div className="mb-8">
-            <div className="flex items-center justify-center mb-6">
+            <div className="flex items-center justify-between mb-4">
               <h3 className="text-2xl font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">Analytics</h3>
-            </div>
-            
-            <div className="flex items-center justify-end mb-4">
               <button
                 onClick={() => openInNewTab('https://app.artemisanalytics.com/')}
                 className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm flex items-center gap-1"
