@@ -66,7 +66,7 @@ export default function DeFiSection() {
             <img 
               src={cryptoHippoDefi} 
               alt="Crypto Hippo DeFi" 
-              className="w-16 h-16 object-contain"
+              className="w-20 h-20 object-cover"
             />
           </div>
           <h2 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-white via-green-200 to-emerald-200 bg-clip-text text-transparent">DeFi Hub</h2>
