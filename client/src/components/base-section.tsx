@@ -391,6 +391,20 @@ export default function BaseSection() {
             </div>
             <p className="text-gray-400 text-sm">View trending AI agent tokens and artificial intelligence category</p>
           </button>
+          
+          {/* Indexy Button */}
+          <button
+            onClick={() => openInNewTab('https://indexy.xyz/home')}
+            className="w-full p-4 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors text-left"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                <ExternalLink className="w-4 h-4 text-white" />
+              </div>
+              <h4 className="text-green-400 font-semibold">Indexy</h4>
+            </div>
+            <p className="text-gray-400 text-sm">Crypto market indexing platform</p>
+          </button>
         </div>
       </GlassCard>
 
