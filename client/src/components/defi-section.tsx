@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DollarSign, TrendingUp, BarChart3, Brain, ArrowLeftRight, Wallet, ExternalLink, Layers, Shield } from "lucide-react";
 import { openSecureLink, getSecureIframeProps } from "@/utils/security";
-import hippoLaserEyes from "@assets/image_1755979639049.png";
+import cryptoHippoDefi from "@assets/CryptoHippo_1757212757402.png";
 
 // Safe components for external links and iframes
 const SafeLink = ({ href, children, className = "", ...props }: { 
@@ -58,18 +58,21 @@ const openInNewTab = (url: string) => {
 export default function DeFiSection() {
   return (
     <div className="space-y-8">
-      <div className="text-center px-3 sm:px-0">
-        <div className="flex justify-center mb-4">
-          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden shadow-xl border-2 border-yellow-400">
+      {/* DeFi Hub - Enhanced Header */}
+      <div className="text-center relative">
+        <div className="absolute inset-0 bg-gradient-to-r from-green-500/20 via-emerald-500/20 to-teal-500/20 blur-3xl -z-10"></div>
+        <div className="flex justify-center items-center gap-4 mb-6">
+          <div className="w-20 h-20 rounded-full flex items-center justify-center border-2 border-yellow-400 shadow-2xl hover:scale-110 transition-transform duration-300 overflow-hidden">
             <img 
-              src={hippoLaserEyes} 
-              alt="DeFi Hippo" 
-              className="w-full h-full object-cover"
+              src={cryptoHippoDefi} 
+              alt="Crypto Hippo DeFi" 
+              className="w-16 h-16 object-contain"
             />
           </div>
+          <h2 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-white via-green-200 to-emerald-200 bg-clip-text text-transparent">DeFi Hub</h2>
         </div>
-        <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-2">DeFi Hub</h2>
-        <p className="text-sm sm:text-base text-crypto-silver">Comprehensive Decentralized Finance access and analytics</p>
+        <p className="text-lg text-white/80 font-medium tracking-wide">Comprehensive Decentralized Finance access and analytics</p>
+        <div className="w-32 h-1 bg-gradient-to-r from-green-500 to-emerald-500 mx-auto mt-4 rounded-full"></div>
       </div>
 
 
