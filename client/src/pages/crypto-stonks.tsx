@@ -118,7 +118,7 @@ export default function CryptoStonksPage() {
                     <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
                       <TrendingUp className="w-2.5 h-2.5 text-white" />
                     </div>
-                    <h4 className="text-lg font-semibold text-blue-400">Strategic Ethereum Reserve</h4>
+                    <h4 className="text-lg font-semibold text-blue-400">Ethereum Treasuries</h4>
                     <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
                       ETH
                     </Badge>
@@ -134,7 +134,7 @@ export default function CryptoStonksPage() {
                   <iframe
                     src="https://strategicethreserve.xyz/"
                     className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
-                    title="Strategic Ethereum Reserve"
+                    title="Ethereum Treasuries"
                     sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
                   />
                 </div>
@@ -147,7 +147,7 @@ export default function CryptoStonksPage() {
                     <div className="w-4 h-4 bg-purple-500 rounded-full flex items-center justify-center">
                       <span className="text-white font-bold text-xs">SOL</span>
                     </div>
-                    <h4 className="text-lg font-semibold text-purple-400">SOL Treasuries</h4>
+                    <h4 className="text-lg font-semibold text-purple-400">Solana Treasuries</h4>
                     <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-xs">
                       SOL
                     </Badge>
@@ -170,7 +170,7 @@ export default function CryptoStonksPage() {
                           <span className="text-white font-bold text-lg">SOL</span>
                         </div>
                         <div className="text-left">
-                          <h4 className="font-semibold text-purple-400 group-hover:text-purple-300">SOL Treasuries</h4>
+                          <h4 className="font-semibold text-purple-400 group-hover:text-purple-300">Solana Treasuries</h4>
                           <p className="text-crypto-silver text-sm">Track Solana institutional adoption</p>
                         </div>
                       </div>
@@ -187,7 +187,7 @@ export default function CryptoStonksPage() {
                     <div className="w-4 h-4 bg-gradient-to-r from-gray-400 to-gray-500 rounded-full flex items-center justify-center">
                       <Brain className="w-2.5 h-2.5 text-white" />
                     </div>
-                    <h4 className="text-lg font-semibold text-gray-300 bg-gradient-to-r from-gray-200 to-gray-400 bg-clip-text text-transparent">TAO Treasuries</h4>
+                    <h4 className="text-lg font-semibold text-gray-300 bg-gradient-to-r from-gray-200 to-gray-400 bg-clip-text text-transparent">Bittensor Treasuries</h4>
                     <Badge className="bg-gray-500/20 text-gray-300 border-gray-500/30 text-xs">
                       TAO
                     </Badge>
@@ -203,7 +203,7 @@ export default function CryptoStonksPage() {
                   <iframe
                     src="https://taotreasuries.app/"
                     className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
-                    title="TAO Treasuries"
+                    title="Bittensor Treasuries"
                     sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
                   />
                 </div>
