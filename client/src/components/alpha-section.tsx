@@ -207,7 +207,7 @@ export default function AlphaSection() {
                 </div>
                 <h4 className="text-emerald-300 font-bold text-lg">GeckoTerminal</h4>
               </div>
-              <p className="text-gray-300 text-sm font-medium">Real-time DEX analytics</p>
+              <p className="text-gray-300 text-sm font-medium">DEX Trending (Utility)</p>
             </SafeLink>
 
             <SafeLink
@@ -220,7 +220,7 @@ export default function AlphaSection() {
                 </div>
                 <h4 className="text-purple-300 font-bold text-lg">DexScreener</h4>
               </div>
-              <p className="text-gray-300 text-sm font-medium">Token price charts & analytics</p>
+              <p className="text-gray-300 text-sm font-medium">DEX Trending (Memes)</p>
             </SafeLink>
 
             <SafeLink
@@ -231,9 +231,9 @@ export default function AlphaSection() {
                 <div className="w-8 h-8 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-lg flex items-center justify-center shadow-md">
                   <span className="text-white font-bold text-xs">CMC</span>
                 </div>
-                <h4 className="text-yellow-300 font-bold text-lg">CMC DEX</h4>
+                <h4 className="text-yellow-300 font-bold text-lg">CoinMarketCap</h4>
               </div>
-              <p className="text-gray-300 text-sm font-medium">DEX trading signals</p>
+              <p className="text-gray-300 text-sm font-medium">DEX Trending (Utility)</p>
             </SafeLink>
 
             <SafeLink
