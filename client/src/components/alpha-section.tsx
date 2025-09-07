@@ -224,16 +224,16 @@ export default function AlphaSection() {
             </SafeLink>
 
             <SafeLink
-              href='https://dex.coinmarketcap.com/signals/ethereum/'
+              href='https://dex.coinmarketcap.com/signals/all/'
               className="p-5 bg-gradient-to-br from-yellow-500/15 to-yellow-600/15 hover:from-yellow-500/25 hover:to-yellow-600/25 border border-yellow-500/30 hover:border-yellow-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-yellow-500/20 transform"
             >
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-8 h-8 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-lg flex items-center justify-center shadow-md">
                   <span className="text-white font-bold text-xs">CMC</span>
                 </div>
-                <h4 className="text-yellow-300 font-bold text-lg">CMC DEX Signals</h4>
+                <h4 className="text-yellow-300 font-bold text-lg">CMC DEX</h4>
               </div>
-              <p className="text-gray-300 text-sm font-medium">Ethereum DEX trading signals</p>
+              <p className="text-gray-300 text-sm font-medium">DEX trading signals</p>
             </SafeLink>
 
             <SafeLink
