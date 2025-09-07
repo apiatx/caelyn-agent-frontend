@@ -361,6 +361,103 @@ export default function OnchainSocialPage() {
               </div>
             </div>
 
+            {/* Bittensor Ecosystem Subsection */}
+            <div className="mb-12">
+              <div className="flex items-center justify-center mb-6">
+                <h4 className="text-2xl font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">Bittensor Ecosystem</h4>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <SafeLink
+                  href='https://x.com/tao_agent'
+                  className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-purple-400 font-bold text-sm">𝕏</span>
+                    <span className="text-purple-400 font-semibold text-sm">TAO Agent</span>
+                  </div>
+                  <div className="text-xs text-crypto-silver">@tao_agent - Bittensor Signal Intelligence</div>
+                </SafeLink>
+
+                <SafeLink
+                  href='https://x.com/Bitcast_network'
+                  className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-purple-400 font-bold text-sm">𝕏</span>
+                    <span className="text-purple-400 font-semibold text-sm">Bitcast Network</span>
+                  </div>
+                  <div className="text-xs text-crypto-silver">@Bitcast_network - TAO Network Analytics</div>
+                </SafeLink>
+
+                <SafeLink
+                  href='https://x.com/TaoStacker'
+                  className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-purple-400 font-bold text-sm">𝕏</span>
+                    <span className="text-purple-400 font-semibold text-sm">TaoStacker</span>
+                  </div>
+                  <div className="text-xs text-crypto-silver">@TaoStacker - TAO Staking Insights</div>
+                </SafeLink>
+
+                <SafeLink
+                  href='https://x.com/TaoIsTheKey'
+                  className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-purple-400 font-bold text-sm">𝕏</span>
+                    <span className="text-purple-400 font-semibold text-sm">TaoIsTheKey</span>
+                  </div>
+                  <div className="text-xs text-crypto-silver">@TaoIsTheKey - TAO Market Analysis</div>
+                </SafeLink>
+
+                <SafeLink
+                  href='https://x.com/varimotrades'
+                  className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-purple-400 font-bold text-sm">𝕏</span>
+                    <span className="text-purple-400 font-semibold text-sm">VARiMOtrading</span>
+                  </div>
+                  <div className="text-xs text-crypto-silver">@varimotrades - TAO Trading Signals</div>
+                </SafeLink>
+
+                <SafeLink
+                  href='https://x.com/_g_x_g'
+                  className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-purple-400 font-bold text-sm">𝕏</span>
+                    <span className="text-purple-400 font-semibold text-sm">GXG</span>
+                  </div>
+                  <div className="text-xs text-crypto-silver">@_g_x_g - Bittensor Intelligence</div>
+                </SafeLink>
+
+                <SafeLink
+                  href='https://x.com/Shogun__base'
+                  className="p-3 bg-gray-500/10 border border-gray-500/20 rounded-lg hover:bg-gray-500/20 transition-colors"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-gray-400 font-bold text-sm">𝕏</span>
+                    <span className="text-gray-400 font-semibold text-sm">Shogun Base</span>
+                  </div>
+                  <div className="text-xs text-crypto-silver">@Shogun__base - Base Network Trading</div>
+                </SafeLink>
+
+                <SafeLink
+                  href='https://x.com/Victor_crypto_2'
+                  className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-green-400 font-bold text-sm">𝕏</span>
+                    <span className="text-green-400 font-semibold text-sm">Victor Crypto</span>
+                  </div>
+                  <div className="text-xs text-crypto-silver">@Victor_crypto_2 - Crypto Market Analysis</div>
+                </SafeLink>
+              </div>
+            </div>
+
             {/* Social Platforms */}
             <div className="mb-8">
               <div className="flex items-center gap-2 mb-6">
