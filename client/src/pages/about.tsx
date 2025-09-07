@@ -71,8 +71,8 @@ export default function AboutPage() {
               <div className="flex justify-center my-8">
                 <div className="w-32 h-32 rounded-full overflow-hidden shadow-lg border-2 border-yellow-400">
                   <img 
-                    src={hippoDownload2} 
-                    alt="Hippo" 
+                    src={hippoDownload1} 
+                    alt="DeFi Hub" 
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -164,8 +164,8 @@ export default function AboutPage() {
               <div className="flex justify-center my-10">
                 <div className="w-40 h-40 rounded-xl overflow-hidden shadow-xl border-2 border-yellow-400">
                   <img 
-                    src={hippoLaserEyes} 
-                    alt="Market Overview" 
+                    src={cuteHippo} 
+                    alt="Cute Hippo" 
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -195,8 +195,8 @@ export default function AboutPage() {
               <div className="flex justify-center my-10">
                 <div className="w-36 h-36 rounded-lg overflow-hidden shadow-lg border-2 border-yellow-400">
                   <img 
-                    src={hippoDownload1} 
-                    alt="DeFi Hub" 
+                    src={hippoDownload2} 
+                    alt="Hippo" 
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -241,8 +241,8 @@ export default function AboutPage() {
               <div className="flex justify-center my-10">
                 <div className="w-48 h-48 rounded-2xl overflow-hidden shadow-xl border-2 border-yellow-400">
                   <img 
-                    src={cuteHippo} 
-                    alt="Cute Hippo" 
+                    src={hippoLaserEyes} 
+                    alt="Market Overview" 
                     className="w-full h-full object-cover"
                   />
                 </div>
