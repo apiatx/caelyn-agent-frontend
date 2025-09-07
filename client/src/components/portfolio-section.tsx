@@ -24,6 +24,7 @@ import ethereumLogo from "@assets/Ethereum_logo_2014.svg_1755977414942.png";
 import solanaLogo from "@assets/solana_1755977414939.png";
 import bittensorLogo from "@assets/bittensor_1755977414942.png";
 import hyperliquidLogo from "@assets/hyperliquid-logo_1755977414943.png";
+import smartWalletsImage from "@assets/download (1)_1757198511747.png";
 
 
 export default function PortfolioSection() {
@@ -273,9 +274,11 @@ export default function PortfolioSection() {
       <div className="text-center relative">
         <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 via-cyan-500/20 to-blue-500/20 blur-3xl -z-10"></div>
         <div className="flex justify-center items-center gap-4 mb-6">
-          <div className="w-16 h-16 bg-gradient-to-br from-emerald-400 via-cyan-500 to-blue-500 rounded-2xl flex items-center justify-center shadow-2xl shadow-cyan-500/30 hover:scale-110 transition-transform duration-300">
-            <Wallet className="text-white w-8 h-8" />
-          </div>
+          <img 
+            src={smartWalletsImage} 
+            alt="Portfolio" 
+            className="w-16 h-16 rounded-xl object-cover border-2 border-yellow-400 shadow-2xl shadow-cyan-500/30 hover:scale-110 transition-transform duration-300"
+          />
           <h2 className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-white via-cyan-200 to-emerald-200 bg-clip-text text-transparent">PORTFOLIO</h2>
         </div>
         <p className="text-lg text-white/80 font-medium tracking-wide">Advanced Cross-Chain Portfolio Management & Analytics</p>
