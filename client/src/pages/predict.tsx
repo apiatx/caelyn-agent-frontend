@@ -56,22 +56,22 @@ export default function PredictPage() {
       {/* Navigation */}
       <UniversalNavigation activePage="predict" />
 
-      {/* Page Header */}
+      {/* Prediction Markets Section - Enhanced Header */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center">
-          <div className="flex justify-center items-center space-x-4 mb-4">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-2 border-orange-400 shadow-lg">
+        <div className="text-center relative">
+          <div className="absolute inset-0 bg-gradient-to-r from-orange-500/20 via-red-500/20 to-yellow-500/20 blur-3xl -z-10"></div>
+          <div className="flex justify-center items-center gap-4 mb-6">
+            <div className="w-28 h-28 rounded-full flex items-center justify-center border-2 border-yellow-400 shadow-2xl hover:scale-110 transition-transform duration-300 overflow-hidden">
               <img 
                 src={diceImage}
                 alt="Prediction Markets"
-                className="w-full h-full object-cover"
+                className="w-28 h-28 object-cover"
               />
             </div>
-            <h1 className="text-2xl sm:text-2xl lg:text-3xl font-bold text-white drop-shadow-lg">
-              Prediction Markets
-            </h1>
+            <h2 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-white via-orange-200 to-yellow-200 bg-clip-text text-transparent">Prediction Markets</h2>
           </div>
-          <p className="text-lg text-white/80 font-medium tracking-wide mt-4">Decentralized Casino and Analytics</p>
+          <p className="text-lg text-white/80 font-medium tracking-wide">Decentralized Casino and Analytics</p>
+          <div className="w-32 h-1 bg-gradient-to-r from-orange-500 to-yellow-500 mx-auto mt-4 rounded-full"></div>
         </div>
       </div>
 
