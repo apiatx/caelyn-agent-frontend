@@ -340,6 +340,35 @@ export default function DeFiSection() {
         </div>
       </div>
 
+      {/* SatLayer Vaults Iframe */}
+      <div className="space-y-6 mt-8">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/30">
+            <Shield className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold text-white">SatLayer Vaults</h3>
+            <p className="text-crypto-silver">Bitcoin restaking vaults and yields</p>
+          </div>
+        </div>
+        
+        <div className="w-full">
+          <iframe
+            src="https://app.satlayer.xyz/vaults/restake"
+            title="SatLayer Vaults"
+            className="w-full h-[600px] rounded-lg border border-crypto-silver/20 bg-black"
+            frameBorder="0"
+            loading="lazy"
+            sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation-by-user-activation"
+            referrerPolicy="strict-origin-when-cross-origin"
+            style={{
+              background: '#000000',
+              colorScheme: 'dark'
+            }}
+          />
+        </div>
+      </div>
+
       {/* DeFAI Section */}
       <div className="space-y-6">
         <div className="flex items-center gap-3 mb-6">
