@@ -41,10 +41,10 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
     <nav className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4">
       <GlassCard className="p-4 overflow-hidden">
         {/* Desktop Navigation */}
-        <div className="hidden lg:flex lg:flex-wrap xl:flex-nowrap gap-3">
+        <div className="hidden lg:flex lg:flex-wrap xl:flex-nowrap gap-2 justify-center items-center w-full">
           <button
             onClick={() => navigateTo("/app")}
-            className={`flex-1 min-w-[100px] py-3 px-2 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
+            className={`flex-1 min-w-[90px] max-w-[120px] py-3 px-1 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
               isActive("dashboard")
                 ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                 : "hover:bg-white/5 text-crypto-silver"
@@ -55,7 +55,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                className={`flex-1 min-w-[100px] py-3 px-2 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
+                className={`flex-1 min-w-[90px] max-w-[120px] py-3 px-1 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
                   isActive("majors") || isActive("altcoins")
                     ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                     : "hover:bg-white/5 text-crypto-silver"
@@ -85,7 +85,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                className={`flex-1 min-w-[100px] py-3 px-2 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
+                className={`flex-1 min-w-[90px] max-w-[120px] py-3 px-1 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
                   isActive("onchain-analytics") || isActive("onchain-smart-wallets")
                     ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                     : "hover:bg-white/5 text-crypto-silver"
@@ -115,7 +115,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                className={`flex-1 min-w-[100px] py-3 px-2 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
+                className={`flex-1 min-w-[90px] max-w-[120px] py-3 px-1 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
                   isActive("ethereum") || isActive("base") || isActive("solana") || isActive("hype") || isActive("bittensor") || isActive("abstract") || isActive("bnb") || isActive("sui")
                     ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                     : "hover:bg-white/5 text-crypto-silver"
@@ -186,7 +186,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
           </DropdownMenu>
           <button
             onClick={() => navigateTo("/app/trade")}
-            className={`flex-1 min-w-[100px] py-3 px-2 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
+            className={`flex-1 min-w-[90px] max-w-[120px] py-3 px-1 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
               isActive("trade")
                 ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                 : "hover:bg-white/5 text-crypto-silver"
@@ -196,7 +196,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
           </button>
           <button
             onClick={() => navigateTo("/app/defi")}
-            className={`flex-1 min-w-[100px] py-3 px-2 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
+            className={`flex-1 min-w-[90px] max-w-[120px] py-3 px-1 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
               isActive("defi")
                 ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                 : "hover:bg-white/5 text-crypto-silver"
@@ -206,7 +206,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
           </button>
           <button
             onClick={() => navigateTo("/app/portfolio")}
-            className={`flex-1 min-w-[100px] py-3 px-2 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
+            className={`flex-1 min-w-[90px] max-w-[120px] py-3 px-1 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
               isActive("portfolio")
                 ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                 : "hover:bg-white/5 text-crypto-silver"
@@ -217,7 +217,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                className={`flex-1 min-w-[100px] py-3 px-2 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
+                className={`flex-1 min-w-[90px] max-w-[120px] py-3 px-1 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
                   isActive("crypto-stocks") || isActive("crypto-stonks") || isActive("commodities")
                     ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                     : "hover:bg-white/5 text-crypto-silver"
@@ -253,7 +253,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
           </DropdownMenu>
           <button
             onClick={() => navigateTo("/app/predict")}
-            className={`flex-1 min-w-[100px] py-3 px-2 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
+            className={`flex-1 min-w-[90px] max-w-[120px] py-3 px-1 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
               isActive("predict")
                 ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                 : "hover:bg-white/5 text-crypto-silver"
@@ -263,7 +263,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
           </button>
           <button
             onClick={() => navigateTo("/app/onchain/social")}
-            className={`flex-1 min-w-[100px] py-3 px-2 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
+            className={`flex-1 min-w-[90px] max-w-[120px] py-3 px-1 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
               isActive("onchain-social")
                 ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                 : "hover:bg-white/5 text-crypto-silver"
@@ -273,7 +273,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
           </button>
           <button
             onClick={() => navigateTo("/app/about")}
-            className={`flex-1 min-w-[100px] py-3 px-2 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
+            className={`flex-1 min-w-[90px] max-w-[120px] py-3 px-1 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
               isActive("about")
                 ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                 : "hover:bg-white/5 text-crypto-silver"
