@@ -320,8 +320,8 @@ export default function PortfolioSection() {
       <GlassCard className="p-8">
         <div className="space-y-8">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-400 to-purple-500 rounded-xl flex items-center justify-center shadow-lg">
-              <img src={ethereumLogo} alt="Ethereum" className="w-6 h-6 rounded-lg" />
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center">
+              <img src={ethereumLogo} alt="Ethereum" className="w-8 h-8 rounded-lg" />
             </div>
             <h4 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-300 bg-clip-text text-transparent">EVM</h4>
             <div className="flex-1 h-px bg-gradient-to-r from-blue-500/50 to-transparent"></div>
@@ -478,8 +478,8 @@ export default function PortfolioSection() {
       <GlassCard className="p-8">
         <div className="space-y-8">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-gradient-to-r from-purple-400 to-violet-500 rounded-xl flex items-center justify-center shadow-lg">
-              <img src={solanaLogo} alt="Solana" className="w-6 h-6 rounded-lg" />
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center">
+              <img src={solanaLogo} alt="Solana" className="w-8 h-8 rounded-lg" />
             </div>
             <h4 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-violet-300 bg-clip-text text-transparent">Solana</h4>
             <div className="flex-1 h-px bg-gradient-to-r from-purple-500/50 to-transparent"></div>
@@ -519,8 +519,8 @@ export default function PortfolioSection() {
       <GlassCard className="p-8">
         <div className="space-y-8">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-gradient-to-r from-orange-400 to-red-500 rounded-xl flex items-center justify-center shadow-lg">
-              <img src={bittensorLogo} alt="Bittensor" className="w-6 h-6 rounded-lg" />
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center">
+              <img src={bittensorLogo} alt="Bittensor" className="w-8 h-8 rounded-lg" />
             </div>
             <h4 className="text-2xl font-bold bg-gradient-to-r from-orange-400 to-red-300 bg-clip-text text-transparent">Bittensor</h4>
             <div className="flex-1 h-px bg-gradient-to-r from-orange-500/50 to-transparent"></div>
@@ -553,8 +553,8 @@ export default function PortfolioSection() {
       <GlassCard className="p-8">
         <div className="space-y-8">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-gradient-to-r from-teal-400 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg">
-              <img src={hyperliquidLogo} alt="HyperLiquid" className="w-6 h-6 rounded-lg" />
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center">
+              <img src={hyperliquidLogo} alt="HyperLiquid" className="w-8 h-8 rounded-lg" />
             </div>
             <h4 className="text-2xl font-bold bg-gradient-to-r from-teal-400 to-cyan-300 bg-clip-text text-transparent">HyperLiquid</h4>
             <div className="flex-1 h-px bg-gradient-to-r from-teal-500/50 to-transparent"></div>
