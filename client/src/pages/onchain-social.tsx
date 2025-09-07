@@ -152,85 +152,6 @@ export default function OnchainSocialPage() {
                 </div>
               </div>
 
-              {/* Social Platforms */}
-              <div className="mb-8">
-                <div className="flex items-center gap-2 mb-6">
-                  <h4 className="text-lg font-semibold text-white">Platforms</h4>
-                  <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-                    SOCIAL MEDIA
-                  </Badge>
-                </div>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <SafeLink
-                    href='https://substack.com/'
-                    className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
-                        <span className="text-white text-sm">📰</span>
-                      </div>
-                      <h4 className="text-orange-400 font-semibold">Substack</h4>
-                    </div>
-                    <p className="text-gray-400 text-sm">Newsletter Publishing Platform</p>
-                  </SafeLink>
-
-                  <SafeLink
-                    href='https://x.com/home'
-                    className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                        <span className="text-white font-bold">𝕏</span>
-                      </div>
-                      <h4 className="text-blue-400 font-semibold">X Home</h4>
-                    </div>
-                    <p className="text-gray-400 text-sm">Social Media & News Feed</p>
-                  </SafeLink>
-                </div>
-              </div>
-
-              {/* Social Analytics */}
-              <div>
-                <div className="flex items-center gap-2 mb-6">
-                  <h4 className="text-lg font-semibold text-white">Analytics</h4>
-                  <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
-                    AI POWERED
-                  </Badge>
-                </div>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <SafeLink
-                    href='https://yaps.kaito.ai/'
-                    className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 mb-2">
-                      <h4 className="text-orange-400 font-semibold">Kaito</h4>
-                    </div>
-                    <p className="text-gray-400 text-sm">AI-Powered Social Intelligence</p>
-                  </SafeLink>
-
-                  <SafeLink
-                    href='https://app.kolytics.pro/leaderboard'
-                    className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg hover:bg-red-500/20 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 mb-2">
-                      <h4 className="text-red-400 font-semibold">Kolytics</h4>
-                    </div>
-                    <p className="text-gray-400 text-sm">Social Signal Analytics</p>
-                  </SafeLink>
-
-                  <SafeLink
-                    href='https://www.alphabot.app/pulse'
-                    className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 mb-2">
-                      <h4 className="text-blue-400 font-semibold">Alphabot</h4>
-                    </div>
-                    <p className="text-gray-400 text-sm">Social Sentiment Bot</p>
-                  </SafeLink>
-                </div>
-              </div>
             </div>
 
             {/* StockX Subsection */}
@@ -250,6 +171,86 @@ export default function OnchainSocialPage() {
               </div>
               <div className="text-center text-gray-400 py-8">
                 <p>Crypto-stock social intelligence coming soon...</p>
+              </div>
+            </div>
+
+            {/* Social Platforms */}
+            <div className="mb-8">
+              <div className="flex items-center gap-2 mb-6">
+                <h4 className="text-lg font-semibold text-white">Platforms</h4>
+                <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                  SOCIAL MEDIA
+                </Badge>
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <SafeLink
+                  href='https://substack.com/'
+                  className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
+                      <span className="text-white text-sm">📰</span>
+                    </div>
+                    <h4 className="text-orange-400 font-semibold">Substack</h4>
+                  </div>
+                  <p className="text-gray-400 text-sm">Newsletter Publishing Platform</p>
+                </SafeLink>
+
+                <SafeLink
+                  href='https://x.com/home'
+                  className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                      <span className="text-white font-bold">𝕏</span>
+                    </div>
+                    <h4 className="text-blue-400 font-semibold">X Home</h4>
+                  </div>
+                  <p className="text-gray-400 text-sm">Social Media & News Feed</p>
+                </SafeLink>
+              </div>
+            </div>
+
+            {/* Social Analytics */}
+            <div>
+              <div className="flex items-center gap-2 mb-6">
+                <h4 className="text-lg font-semibold text-white">Analytics</h4>
+                <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
+                  AI POWERED
+                </Badge>
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <SafeLink
+                  href='https://yaps.kaito.ai/'
+                  className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <h4 className="text-orange-400 font-semibold">Kaito</h4>
+                  </div>
+                  <p className="text-gray-400 text-sm">AI-Powered Social Intelligence</p>
+                </SafeLink>
+
+                <SafeLink
+                  href='https://app.kolytics.pro/leaderboard'
+                  className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg hover:bg-red-500/20 transition-colors"
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <h4 className="text-red-400 font-semibold">Kolytics</h4>
+                  </div>
+                  <p className="text-gray-400 text-sm">Social Signal Analytics</p>
+                </SafeLink>
+
+                <SafeLink
+                  href='https://www.alphabot.app/pulse'
+                  className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <h4 className="text-blue-400 font-semibold">Alphabot</h4>
+                  </div>
+                  <p className="text-gray-400 text-sm">Social Sentiment Bot</p>
+                </SafeLink>
               </div>
             </div>
           </GlassCard>
