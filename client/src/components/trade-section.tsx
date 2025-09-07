@@ -41,9 +41,9 @@ const SafeIframe = ({ src, title, className = "", ...props }: {
   />
 );
 
-// Glass card component for Trade section
+// Enhanced glass card component for Trade section
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <Card className={`bg-black/40 backdrop-blur-lg border-crypto-silver/20 ${className}`}>
+  <Card className={`bg-gradient-to-br from-black/60 via-black/40 to-transparent backdrop-blur-xl border border-white/20 shadow-2xl hover:shadow-purple-500/10 transition-all duration-300 ${className}`}>
     {children}
   </Card>
 );
@@ -55,108 +55,123 @@ const openInNewTab = (url: string) => {
 
 export default function TradeSection() {
   return (
-    <div className="space-y-8">
-      {/* TRADE Section - Moved to top center */}
-      <div className="text-center px-3 sm:px-0">
-        <div className="flex justify-center items-center gap-3 mb-4">
-          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
-            <ArrowLeftRight className="text-white text-xl" />
+    <div className="space-y-12 p-6">
+      {/* TRADE Section - Enhanced Header */}
+      <div className="text-center relative">
+        <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 via-blue-500/20 to-cyan-500/20 blur-3xl -z-10"></div>
+        <div className="flex justify-center items-center gap-4 mb-6">
+          <div className="w-16 h-16 bg-gradient-to-br from-blue-400 via-purple-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-2xl shadow-purple-500/30 hover:scale-110 transition-transform duration-300">
+            <ArrowLeftRight className="text-white w-8 h-8" />
           </div>
-          <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white">TRADE</h2>
+          <h2 className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-white via-blue-200 to-purple-200 bg-clip-text text-transparent">TRADE</h2>
         </div>
-        <p className="text-sm sm:text-base text-crypto-silver">Cross-chain trading and exchange platforms</p>
+        <p className="text-lg text-white/80 font-medium tracking-wide">Premium Cross-Chain Trading & Exchange Platforms</p>
+        <div className="w-32 h-1 bg-gradient-to-r from-blue-500 to-purple-500 mx-auto mt-4 rounded-full"></div>
       </div>
 
       {/* Cross-Chain Section */}
-      <div className="space-y-6">
+      <GlassCard className="p-8">
+        <div className="space-y-10">
         
         {/* Swap Subsection */}
-        <div className="space-y-4">
-          <h4 className="text-lg font-medium text-pink-400 mb-3">Swap</h4>
+        <div className="space-y-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-8 h-8 bg-gradient-to-r from-pink-400 to-rose-500 rounded-lg flex items-center justify-center">
+              <ArrowUpDown className="w-4 h-4 text-white" />
+            </div>
+            <h4 className="text-2xl font-bold bg-gradient-to-r from-pink-400 to-rose-300 bg-clip-text text-transparent">Swap</h4>
+            <div className="flex-1 h-px bg-gradient-to-r from-pink-500/50 to-transparent"></div>
+          </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Button
               variant="outline"
               onClick={() => openInNewTab('https://app.uniswap.org')}
-              className="bg-gradient-to-r from-pink-500/20 to-pink-600/20 border-pink-500/30 hover:from-pink-500/30 hover:to-pink-600/30 hover:border-pink-400/50 text-white justify-start p-4 h-auto shadow-lg hover:shadow-pink-500/20"
+              className="group bg-gradient-to-br from-pink-500/30 via-pink-600/20 to-rose-600/30 border-pink-400/40 hover:from-pink-400/40 hover:via-pink-500/30 hover:to-rose-500/40 hover:border-pink-300/60 text-white justify-start p-6 h-auto shadow-2xl hover:shadow-pink-500/30 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
             >
-              <ArrowUpDown className="w-4 h-4 mr-2" />
+              <ArrowUpDown className="w-5 h-5 mr-3 group-hover:rotate-180 transition-transform duration-300" />
               <div className="text-left">
-                <div className="font-semibold">Uniswap</div>
-                <div className="text-sm text-pink-200">Leading DEX on Ethereum</div>
+                <div className="font-bold text-lg">Uniswap</div>
+                <div className="text-sm text-pink-100/90">Leading DEX on Ethereum</div>
               </div>
             </Button>
 
             <Button
               variant="outline"
               onClick={() => openInNewTab('https://pancakeswap.finance/swap')}
-              className="bg-gradient-to-r from-yellow-500/20 to-yellow-600/20 border-yellow-500/30 hover:from-yellow-500/30 hover:to-yellow-600/30 hover:border-yellow-400/50 text-white justify-start p-4 h-auto shadow-lg hover:shadow-yellow-500/20"
+              className="group bg-gradient-to-br from-yellow-500/30 via-amber-500/20 to-orange-500/30 border-yellow-400/40 hover:from-yellow-400/40 hover:via-amber-400/30 hover:to-orange-400/40 hover:border-yellow-300/60 text-white justify-start p-6 h-auto shadow-2xl hover:shadow-yellow-500/30 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
             >
-              <ArrowUpDown className="w-4 h-4 mr-2" />
+              <ArrowUpDown className="w-5 h-5 mr-3 group-hover:rotate-180 transition-transform duration-300" />
               <div className="text-left">
-                <div className="font-semibold">PancakeSwap</div>
-                <div className="text-sm text-yellow-200">Popular BSC DEX</div>
+                <div className="font-bold text-lg">PancakeSwap</div>
+                <div className="text-sm text-yellow-100/90">Popular BSC DEX</div>
               </div>
             </Button>
 
             <Button
               variant="outline"
               onClick={() => openInNewTab('https://jup.ag')}
-              className="bg-gradient-to-r from-teal-500/20 to-teal-600/20 border-teal-500/30 hover:from-teal-500/30 hover:to-teal-600/30 hover:border-teal-400/50 text-white justify-start p-4 h-auto shadow-lg hover:shadow-teal-500/20"
+              className="group bg-gradient-to-br from-teal-500/30 via-cyan-500/20 to-blue-500/30 border-teal-400/40 hover:from-teal-400/40 hover:via-cyan-400/30 hover:to-blue-400/40 hover:border-teal-300/60 text-white justify-start p-6 h-auto shadow-2xl hover:shadow-teal-500/30 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
             >
-              <ArrowUpDown className="w-4 h-4 mr-2" />
+              <ArrowUpDown className="w-5 h-5 mr-3 group-hover:rotate-180 transition-transform duration-300" />
               <div className="text-left">
-                <div className="font-semibold">Jupiter</div>
-                <div className="text-sm text-teal-200">Solana swap aggregator</div>
+                <div className="font-bold text-lg">Jupiter</div>
+                <div className="text-sm text-teal-100/90">Solana swap aggregator</div>
               </div>
             </Button>
           </div>
         </div>
 
         {/* Swidge Subsection */}
-        <div className="space-y-4">
-          <h4 className="text-lg font-medium text-blue-400 mb-3">Swidge</h4>
+        <div className="space-y-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-8 h-8 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-lg flex items-center justify-center">
+              <ArrowLeftRight className="w-4 h-4 text-white" />
+            </div>
+            <h4 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-300 bg-clip-text text-transparent">Swidge</h4>
+            <div className="flex-1 h-px bg-gradient-to-r from-blue-500/50 to-transparent"></div>
+          </div>
           
           {/* Primary App - Relay Bridge (Full Width) */}
           <div className="w-full">
             <Button
               variant="outline"
               onClick={() => openInNewTab('https://www.relay.link/bridge')}
-              className="w-full bg-gradient-to-r from-blue-500/20 to-blue-600/20 border-blue-500/30 hover:from-blue-500/30 hover:to-blue-600/30 hover:border-blue-400/50 text-white justify-center p-6 h-auto shadow-lg hover:shadow-blue-500/20"
+              className="group w-full bg-gradient-to-br from-blue-500/40 via-indigo-500/30 to-purple-500/40 border-blue-400/50 hover:from-blue-400/50 hover:via-indigo-400/40 hover:to-purple-400/50 hover:border-blue-300/70 text-white justify-center p-8 h-auto shadow-2xl hover:shadow-blue-500/40 transform hover:scale-[1.02] transition-all duration-500 backdrop-blur-sm"
             >
               <div className="text-center">
-                <div className="font-bold text-lg flex items-center justify-center gap-2">
-                  <ArrowLeftRight className="w-5 h-5" />
+                <div className="font-bold text-2xl flex items-center justify-center gap-3 mb-2">
+                  <ArrowLeftRight className="w-7 h-7 group-hover:rotate-180 transition-transform duration-500" />
                   Relay Bridge
                 </div>
-                <div className="text-sm text-blue-200">Primary cross-chain asset bridging platform</div>
+                <div className="text-base text-blue-100/90 font-medium">Primary cross-chain asset bridging platform</div>
               </div>
             </Button>
           </div>
 
           {/* Other Apps */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <Button
               variant="outline"
               onClick={() => openInNewTab('https://jumper.exchange/')}
-              className="bg-black/20 border-crypto-silver/20 hover:bg-purple-500/20 hover:border-purple-500/30 text-white justify-start p-4 h-auto"
+              className="group bg-gradient-to-br from-purple-600/30 via-violet-600/20 to-fuchsia-600/30 border-purple-400/40 hover:from-purple-500/40 hover:via-violet-500/30 hover:to-fuchsia-500/40 hover:border-purple-300/60 text-white justify-start p-5 h-auto shadow-xl hover:shadow-purple-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
             >
-              <ArrowLeftRight className="w-4 h-4 mr-2" />
+              <ArrowLeftRight className="w-5 h-5 mr-3 group-hover:rotate-180 transition-transform duration-300" />
               <div className="text-left">
-                <div className="font-semibold">Jumper Exchange</div>
-                <div className="text-sm text-crypto-silver">Multi-chain bridge aggregator</div>
+                <div className="font-bold text-base">Jumper Exchange</div>
+                <div className="text-sm text-purple-200/90">Multi-chain bridge aggregator</div>
               </div>
             </Button>
 
             <Button
               variant="outline"
               onClick={() => openInNewTab('https://app.swing.xyz/swap?fromChain=base&fromToken=ETH&toChain=ethereum&toToken=SWING')}
-              className="bg-black/20 border-crypto-silver/20 hover:bg-orange-500/20 hover:border-orange-500/30 text-white justify-start p-4 h-auto"
+              className="group bg-gradient-to-br from-orange-600/30 via-amber-600/20 to-yellow-600/30 border-orange-400/40 hover:from-orange-500/40 hover:via-amber-500/30 hover:to-yellow-500/40 hover:border-orange-300/60 text-white justify-start p-5 h-auto shadow-xl hover:shadow-orange-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
             >
-              <ArrowLeftRight className="w-4 h-4 mr-2" />
+              <ArrowLeftRight className="w-5 h-5 mr-3 group-hover:rotate-180 transition-transform duration-300" />
               <div className="text-left">
-                <div className="font-semibold">Galaxy Swing</div>
-                <div className="text-sm text-crypto-silver">Cross-chain swap protocol</div>
+                <div className="font-bold text-base">Galaxy Swing</div>
+                <div className="text-sm text-orange-200/90">Cross-chain swap protocol</div>
               </div>
             </Button>
 
@@ -175,8 +190,14 @@ export default function TradeSection() {
         </div>
 
         {/* Trading Terminals Subsection */}
-        <div className="space-y-4">
-          <h4 className="text-lg font-medium text-purple-400 mb-3">Trading Terminals</h4>
+        <div className="space-y-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-8 h-8 bg-gradient-to-r from-purple-400 to-fuchsia-500 rounded-lg flex items-center justify-center">
+              <TrendingUp className="w-4 h-4 text-white" />
+            </div>
+            <h4 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-fuchsia-300 bg-clip-text text-transparent">Trading Terminals</h4>
+            <div className="flex-1 h-px bg-gradient-to-r from-purple-500/50 to-transparent"></div>
+          </div>
           
           {/* Primary App - Definitive Edge (Full Width) */}
           <div className="w-full">
@@ -184,14 +205,14 @@ export default function TradeSection() {
               href="https://app.definitive.fi/0x9FDBdA0A5e284c32744D2f17Ee5c74B284993463/hyperevm"
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full bg-gradient-to-r from-purple-500/20 to-purple-600/20 border border-purple-500/30 hover:from-purple-500/30 hover:to-purple-600/30 hover:border-purple-400/50 text-white justify-center p-6 h-auto rounded-md transition-colors flex items-center shadow-lg hover:shadow-purple-500/20"
+              className="group w-full bg-gradient-to-br from-purple-500/40 via-fuchsia-500/30 to-pink-500/40 border border-purple-400/50 hover:from-purple-400/50 hover:via-fuchsia-400/40 hover:to-pink-400/50 hover:border-purple-300/70 text-white justify-center p-8 h-auto rounded-lg transition-all duration-500 flex items-center shadow-2xl hover:shadow-purple-500/40 transform hover:scale-[1.02] backdrop-blur-sm"
             >
               <div className="text-center">
-                <div className="font-bold text-lg flex items-center justify-center gap-2">
-                  <ArrowLeftRight className="w-5 h-5" />
+                <div className="font-bold text-2xl flex items-center justify-center gap-3 mb-2">
+                  <ArrowLeftRight className="w-7 h-7 group-hover:rotate-180 transition-transform duration-500" />
                   Definitive Edge
                 </div>
-                <div className="text-sm text-purple-200">Primary multi-chain trading terminal - Trade any token, on any chain</div>
+                <div className="text-base text-purple-100/90 font-medium">Primary multi-chain trading terminal - Trade any token, on any chain</div>
               </div>
             </a>
           </div>
@@ -250,32 +271,38 @@ export default function TradeSection() {
         </div>
 
         {/* Perps Subsection */}
-        <div className="space-y-4">
-          <h4 className="text-lg font-medium text-orange-400 mb-3">Perps</h4>
+        <div className="space-y-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-8 h-8 bg-gradient-to-r from-orange-400 to-red-500 rounded-lg flex items-center justify-center">
+              <TrendingUp className="w-4 h-4 text-white" />
+            </div>
+            <h4 className="text-2xl font-bold bg-gradient-to-r from-orange-400 to-red-300 bg-clip-text text-transparent">Perps</h4>
+            <div className="flex-1 h-px bg-gradient-to-r from-orange-500/50 to-transparent"></div>
+          </div>
           
           {/* Primary Apps Row - Hyperliquid & DeFi.app */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Button
               variant="outline"
               onClick={() => openInNewTab('https://app.hyperliquid.xyz/trade')}
-              className="w-full bg-gradient-to-r from-teal-500/20 to-teal-600/20 border-teal-500/30 hover:from-teal-500/30 hover:to-teal-600/30 hover:border-teal-400/50 text-white justify-start p-6 h-auto shadow-lg hover:shadow-teal-500/20"
+              className="group w-full bg-gradient-to-br from-teal-500/40 via-cyan-500/30 to-blue-500/40 border-teal-400/50 hover:from-teal-400/50 hover:via-cyan-400/40 hover:to-blue-400/50 hover:border-teal-300/70 text-white justify-start p-7 h-auto shadow-2xl hover:shadow-teal-500/30 transform hover:scale-[1.02] transition-all duration-500 backdrop-blur-sm"
             >
-              <TrendingUp className="w-5 h-5 mr-3" />
+              <TrendingUp className="w-6 h-6 mr-4 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-500" />
               <div className="text-left">
-                <div className="font-bold text-lg">Hyperliquid</div>
-                <div className="text-sm text-teal-200">Primary onchain perpetual DEX platform</div>
+                <div className="font-bold text-xl">Hyperliquid</div>
+                <div className="text-sm text-teal-100/90 font-medium">Primary onchain perpetual DEX platform</div>
               </div>
             </Button>
 
             <Button
               variant="outline"
               onClick={() => openInNewTab('https://app.defi.app/portfolio')}
-              className="w-full bg-gradient-to-r from-blue-500/20 to-blue-600/20 border-blue-500/30 hover:from-blue-500/30 hover:to-blue-600/30 hover:border-blue-400/50 text-white justify-start p-6 h-auto shadow-lg hover:shadow-blue-500/20"
+              className="group w-full bg-gradient-to-br from-blue-500/40 via-indigo-500/30 to-purple-500/40 border-blue-400/50 hover:from-blue-400/50 hover:via-indigo-400/40 hover:to-purple-400/50 hover:border-blue-300/70 text-white justify-start p-7 h-auto shadow-2xl hover:shadow-blue-500/30 transform hover:scale-[1.02] transition-all duration-500 backdrop-blur-sm"
             >
-              <Wallet className="w-5 h-5 mr-3" />
+              <Wallet className="w-6 h-6 mr-4 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-500" />
               <div className="text-left">
-                <div className="font-bold text-lg">DeFi.app</div>
-                <div className="text-sm text-blue-200">Primary onchain perpetuals super app</div>
+                <div className="font-bold text-xl">DeFi.app</div>
+                <div className="text-sm text-blue-100/90 font-medium">Primary onchain perpetuals super app</div>
               </div>
             </Button>
           </div>
@@ -412,7 +439,8 @@ export default function TradeSection() {
 
           </div>
         </div>
-      </div>
+        </div>
+      </GlassCard>
 
       {/* Multi-Charts Section */}
       <div className="mt-6">
