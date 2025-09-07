@@ -34,7 +34,7 @@ export default function AboutPage() {
           }}
         />
         {/* Crypto Logos - Top Right */}
-        <div className="absolute top-4 right-4 z-20 w-24 h-24 sm:w-32 sm:h-32 lg:w-40 lg:h-40 opacity-90">
+        <div className="absolute top-2 right-2 z-20 w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 opacity-90">
           <img 
             src={cryptoLogos}
             alt="Cryptocurrency Logos"
