@@ -13,6 +13,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { openCoinMarketCapLink } from '@/utils/mobile-links';
+import cryptoHippoWithBitcoin from "@assets/download (3)_1757211588661.png";
 
 // Function to open external links
 const openInNewTab = (url: string) => {
@@ -309,6 +310,16 @@ export function MarketOverviewSection() {
 
   return (
     <div className="bg-black/20 border border-crypto-silver/20 rounded-lg p-4 sm:p-6">
+      {/* Crypto Hippo Header */}
+      <div className="text-center mb-4">
+        <img 
+          src={cryptoHippoWithBitcoin}
+          alt="Crypto Hippo with Bitcoin"
+          className="w-20 h-20 sm:w-24 sm:h-24 mx-auto object-contain"
+          style={{filter: 'drop-shadow(0 0 8px rgba(255, 165, 0, 0.3))'}}
+        />
+      </div>
+      
       <div className="flex items-center gap-2 mb-6">
         <Globe className="w-5 h-5 text-blue-400" />
         <h2 className="text-xl font-bold text-white">Crypto Market Overview</h2>
