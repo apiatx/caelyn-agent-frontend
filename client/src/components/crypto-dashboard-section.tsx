@@ -242,6 +242,17 @@ export default function CryptoDashboardSection() {
               <p className="text-gray-400 text-xs sm:text-sm">Crypto Research</p>
             </button>
           </div>
+
+          {/* Row 3: DappRadar */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <button
+              onClick={() => openInNewTab('https://dappradar.com/')}
+              className="p-3 sm:p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-lg hover:bg-indigo-500/20 transition-colors"
+            >
+              <h5 className="text-indigo-400 font-semibold mb-1 text-sm sm:text-base">DappRadar</h5>
+              <p className="text-gray-400 text-xs sm:text-sm">Dapp Analytics</p>
+            </button>
+          </div>
         </div>
       </GlassCard>
 
