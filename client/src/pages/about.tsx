@@ -5,10 +5,10 @@ import { ExternalLink, Bitcoin } from "lucide-react";
 import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
 import newHeaderBackground from "@assets/photo-1504333638930-c8787321eee0_1757208194192.avif";
 import hippoMouthOpen from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
-import hippoLaserEyes from "@assets/image_1755979639049.png";
-import hippoDownload1 from "@assets/download (1)_1755979612947.jpeg";
+import hippoLaserEyes from "@assets/download (3)_1757211707979.png";
+import hippoDownload1 from "@assets/CryptoHippo_1757212757402.png";
 import hippoDownload2 from "@assets/download_1755979612950.jpeg";
-import hippoImages1 from "@assets/images (1)_1755979629737.jpeg";
+import hippoImages1 from "@assets/download (4)_1757214892954.png";
 import cuteHippo from "@assets/cute-cartoon-hippo-showing-off-butt-vector_1756060620427.jpg";
 import { useScrollFade } from "@/hooks/useScrollFade";
 
@@ -165,7 +165,7 @@ export default function AboutPage() {
                 <div className="w-40 h-40 rounded-xl overflow-hidden shadow-xl border-2 border-yellow-400">
                   <img 
                     src={hippoLaserEyes} 
-                    alt="Hippo with Laser Eyes" 
+                    alt="Market Overview" 
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -196,7 +196,7 @@ export default function AboutPage() {
                 <div className="w-36 h-36 rounded-lg overflow-hidden shadow-lg border-2 border-yellow-400">
                   <img 
                     src={hippoDownload1} 
-                    alt="Hippo" 
+                    alt="DeFi Hub" 
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -219,7 +219,7 @@ export default function AboutPage() {
                 <div className="w-40 h-40 rounded-2xl overflow-hidden shadow-xl border-2 border-yellow-400">
                   <img 
                     src={hippoImages1} 
-                    alt="Hippo" 
+                    alt="Social Intelligence" 
                     className="w-full h-full object-cover"
                   />
                 </div>
