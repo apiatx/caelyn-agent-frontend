@@ -7,6 +7,7 @@ import { openSecureLink, getSecureIframeProps } from "@/utils/security";
 import { UniversalNavigation } from "@/components/universal-navigation";
 import { useScrollFade } from "@/hooks/useScrollFade";
 import newHeaderBackground from "@assets/photo-1504333638930-c8787321eee0_1757208194192.avif";
+import criptomonedas from "@assets/Criptomonedas-r3pu02e09qriw0f9pyqx2rtyhwsri4es6sdgff2ebk_1757225856373.png";
 import TopDailyGainers from "@/components/top-daily-gainers";
 import CryptoMarketDataBare from "@/components/crypto-market-data-bare";
 import solanaLogo from "@assets/solana_1755977414939.png";
@@ -50,6 +51,14 @@ export default function AltcoinsPage() {
               <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-white drop-shadow-lg">
                 CryptoHippo
               </h1>
+            </div>
+            {/* Top-right crypto image */}
+            <div className="hidden sm:flex items-center">
+              <img 
+                src={criptomonedas}
+                alt="Crypto Coins"
+                className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 object-contain drop-shadow-lg"
+              />
             </div>
           </div>
         </div>
