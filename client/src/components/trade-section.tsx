@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeftRight, TrendingUp, ExternalLink, Wallet, ArrowUpDown } from "lucide-react";
 import { openSecureLink, getSecureIframeProps } from "@/utils/security";
+import tradeIcon from "@assets/3676668_1757212085729.png";
 
 // Safe components for external links and iframes
 const SafeLink = ({ href, children, className = "", ...props }: { 
@@ -61,7 +62,11 @@ export default function TradeSection() {
         <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 via-blue-500/20 to-cyan-500/20 blur-3xl -z-10"></div>
         <div className="flex justify-center items-center gap-4 mb-6">
           <div className="w-16 h-16 bg-gradient-to-br from-blue-400 via-purple-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-2xl shadow-purple-500/30 hover:scale-110 transition-transform duration-300">
-            <ArrowLeftRight className="text-white w-8 h-8" />
+            <img 
+              src={tradeIcon} 
+              alt="Trade Icon" 
+              className="w-8 h-8 object-contain filter invert"
+            />
           </div>
           <h2 className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-white via-blue-200 to-purple-200 bg-clip-text text-transparent">TRADE</h2>
         </div>
