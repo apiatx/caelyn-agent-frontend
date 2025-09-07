@@ -3,6 +3,7 @@ import { Card } from '@/components/ui/card';
 import { BarChart3, ExternalLink, TrendingUp, Link2, Star, Wallet, TrendingDown, Globe, Layers, Activity } from 'lucide-react';
 import { openSecureLink } from '@/utils/security';
 import onchainImage from "@assets/images_1756750962640.jpeg";
+import diamondImage from "@assets/image_1757212933646.png";
 import TopDailyGainersTop500 from './top-daily-gainers-top500';
 
 // Enhanced Glass Card component
@@ -69,6 +70,14 @@ export default function AlphaSection() {
             <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-blue-400/20 to-purple-400/20"></div>
           </div>
           <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-blue-100 to-purple-100 bg-clip-text text-transparent drop-shadow-lg">Analytics</h1>
+          <div className="relative">
+            <img 
+              src={diamondImage} 
+              alt="Analytics Diamond" 
+              className="w-16 h-16 rounded-2xl object-cover shadow-lg shadow-blue-500/30 border-2 border-blue-400/50"
+            />
+            <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-blue-400/20 to-purple-400/20"></div>
+          </div>
         </div>
         <p className="text-lg text-gray-300 font-medium tracking-wide">Comprehensive blockchain intelligence & analytics</p>
       </div>
