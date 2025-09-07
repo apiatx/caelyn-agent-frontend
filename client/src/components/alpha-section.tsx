@@ -234,17 +234,7 @@ export default function AlphaSection() {
               </div>
               <p className="text-gray-300 text-sm font-medium">Ethereum DEX trading signals</p>
             </SafeLink>
-          </div>
-          </div>
 
-          {/* Signal */}
-          <div className="mb-8">
-            <div className="flex items-center justify-center mb-6">
-              <h4 className="text-2xl font-bold bg-gradient-to-r from-white to-indigo-100 bg-clip-text text-transparent">Signal</h4>
-            </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-            {/* Rest of the analytics tools */}
             <SafeLink
               href='https://dexcheck.ai/app'
               className="p-5 bg-gradient-to-br from-emerald-500/15 to-emerald-600/15 hover:from-emerald-500/25 hover:to-emerald-600/25 border border-emerald-500/30 hover:border-emerald-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-emerald-500/20 transform"
@@ -258,6 +248,36 @@ export default function AlphaSection() {
               <p className="text-gray-300 text-sm font-medium">Multi-chain analytics platform</p>
             </SafeLink>
 
+            <SafeLink
+              href='https://dapp.velvet.capital/'
+              className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <h4 className="text-blue-400 font-semibold">Velvet Capital</h4>
+              </div>
+              <p className="text-gray-400 text-sm">DeFi Portfolio Management</p>
+            </SafeLink>
+
+            <SafeLink
+              href='https://ayaoracle.xyz/#agents_data'
+              className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-lg hover:bg-indigo-500/20 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <h4 className="text-indigo-400 font-semibold">Aya AI</h4>
+              </div>
+              <p className="text-gray-400 text-sm">Crypto AI Agent Analytics</p>
+            </SafeLink>
+          </div>
+          </div>
+
+          {/* Signal */}
+          <div className="mb-8">
+            <div className="flex items-center justify-center mb-6">
+              <h4 className="text-2xl font-bold bg-gradient-to-r from-white to-indigo-100 bg-clip-text text-transparent">Signal</h4>
+            </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+            {/* Rest of the analytics tools */}
             <SafeLink
               href='https://app.nansen.ai/'
               className="p-5 bg-gradient-to-br from-purple-600/15 to-purple-700/15 hover:from-purple-600/25 hover:to-purple-700/25 border border-purple-600/30 hover:border-purple-500/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-purple-600/20 transform"
@@ -295,26 +315,6 @@ export default function AlphaSection() {
                 <h4 className="text-yellow-300 font-bold text-lg">Cookie.fun</h4>
               </div>
               <p className="text-gray-300 text-sm font-medium">Interactive Trading Platform</p>
-            </SafeLink>
-
-            <SafeLink
-              href='https://dapp.velvet.capital/'
-              className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <h4 className="text-blue-400 font-semibold">Velvet Capital</h4>
-              </div>
-              <p className="text-gray-400 text-sm">DeFi Portfolio Management</p>
-            </SafeLink>
-
-            <SafeLink
-              href='https://ayaoracle.xyz/#agents_data'
-              className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-lg hover:bg-indigo-500/20 transition-colors"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <h4 className="text-indigo-400 font-semibold">Aya AI</h4>
-              </div>
-              <p className="text-gray-400 text-sm">Crypto AI Agent Analytics</p>
             </SafeLink>
           </div>
 
