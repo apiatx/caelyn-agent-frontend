@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { openSecureLink } from "@/utils/security";
 import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
-import paintColorsBackground from "@assets/paint-colors-background-header_1756067291555.jpg";
+import newHeaderBackground from "@assets/photo-1504333638930-c8787321eee0_1757208194192.avif";
 import bnbLogo from "@assets/eb2349c3-b2f8-4a93-a286-8f86a62ea9d8_1757138768380.png";
 import { useScrollFade } from "@/hooks/useScrollFade";
 
@@ -30,7 +30,7 @@ export default function BNBPage() {
         <div 
           className="absolute inset-0 opacity-75"
           style={{
-            backgroundImage: `url(${paintColorsBackground})`,
+            backgroundImage: `url(${newHeaderBackground})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat'

@@ -5,7 +5,7 @@ import { Loader2, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { openSecureLink } from "@/utils/security";
 import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
-import paintColorsBackground from "@assets/paint-colors-background-header_1756067291555.jpg";
+import newHeaderBackground from "@assets/photo-1504333638930-c8787321eee0_1757208194192.avif";
 import abstractLogo from "@assets/abstract chain_1755977414942.jpg";
 import { useScrollFade } from "@/hooks/useScrollFade";
 
@@ -23,7 +23,7 @@ export default function AbstractPage() {
         <div 
           className="absolute inset-0 opacity-75"
           style={{
-            backgroundImage: `url(${paintColorsBackground})`,
+            backgroundImage: `url(${newHeaderBackground})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat'

@@ -6,7 +6,7 @@ import { SectionLoadingState } from "@/components/loading-screen";
 import { openSecureLink, getSecureIframeProps } from "@/utils/security";
 import { UniversalNavigation } from "@/components/universal-navigation";
 import { useScrollFade } from "@/hooks/useScrollFade";
-import paintColorsBackground from "@assets/paint-colors-background-header_1756067291555.jpg";
+import newHeaderBackground from "@assets/photo-1504333638930-c8787321eee0_1757208194192.avif";
 import TopDailyGainers from "@/components/top-daily-gainers";
 import CryptoMarketDataBare from "@/components/crypto-market-data-bare";
 import solanaLogo from "@assets/solana_1755977414939.png";
@@ -30,7 +30,7 @@ export default function AltcoinsPage() {
         <div 
           className="absolute inset-0 opacity-75"
           style={{
-            backgroundImage: `url(${paintColorsBackground})`,
+            backgroundImage: `url(${newHeaderBackground})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat'

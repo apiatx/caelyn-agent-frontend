@@ -7,7 +7,7 @@ import { openSecureLink } from "@/utils/security";
 import { useScrollFade } from "@/hooks/useScrollFade";
 import diceImage from "@assets/istockphoto-1252690598-612x612_1756665072306.jpg";
 import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
-import paintColorsBackground from "@assets/paint-colors-background-header_1756067291555.jpg";
+import newHeaderBackground from "@assets/photo-1504333638930-c8787321eee0_1757208194192.avif";
 
 // Safe components for external links
 const openInNewTab = (url: string) => {
@@ -28,7 +28,7 @@ export default function PredictPage() {
         <div 
           className="absolute inset-0 opacity-75"
           style={{
-            backgroundImage: `url(${paintColorsBackground})`,
+            backgroundImage: `url(${newHeaderBackground})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat'

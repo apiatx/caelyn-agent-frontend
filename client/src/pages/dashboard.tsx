@@ -8,7 +8,7 @@ import SolanaSection from "@/components/solana-section";
 import AbstractSection from "@/components/abstract-section";
 import DeFiSection from "@/components/defi-section";
 import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
-import galaxyStarryBackground from "@assets/pngtree-atmosphere-real-galaxy-starry-banner-background-image_520258_1757207447390.jpg";
+import newHeaderBackground from "@assets/photo-1504333638930-c8787321eee0_1757208194192.avif";
 import { UniversalNavigation } from "@/components/universal-navigation";
 import { SectionLoadingState } from "@/components/loading-screen";
 import { useScrollFade } from "@/hooks/useScrollFade";
@@ -53,7 +53,7 @@ export default function Dashboard() {
         <div 
           className="absolute inset-0 opacity-75"
           style={{
-            backgroundImage: `url(${galaxyStarryBackground})`,
+            backgroundImage: `url(${newHeaderBackground})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat'

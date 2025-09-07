@@ -2,7 +2,7 @@ import React from 'react';
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, BarChart3, Globe, Activity, Brain, Wallet, Zap, DollarSign, Layers, ChartLine, Settings } from "lucide-react";
 import hippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
-import paintColorsBackground from "@assets/paint-colors-background-header_1756067291555.jpg";
+import newHeaderBackground from "@assets/photo-1504333638930-c8787321eee0_1757208194192.avif";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 
@@ -19,7 +19,7 @@ export default function AltsPage() {
         <div 
           className="absolute inset-0 opacity-75"
           style={{
-            backgroundImage: `url(${paintColorsBackground})`,
+            backgroundImage: `url(${newHeaderBackground})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat'

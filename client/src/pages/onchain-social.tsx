@@ -5,7 +5,7 @@ import { MessageSquare, Users, TrendingUp, Hash, ExternalLink, Bot, Zap, Heart, 
 import { openSecureLink } from '@/utils/security';
 import socialImage from "@assets/images (1)_1757198651549.png";
 import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
-import paintColorsBackground from "@assets/paint-colors-background-header_1756067291555.jpg";
+import newHeaderBackground from "@assets/photo-1504333638930-c8787321eee0_1757208194192.avif";
 import { useScrollFade } from "@/hooks/useScrollFade";
 
 // Safe Glass Card component
@@ -50,7 +50,7 @@ export default function OnchainSocialPage() {
         <div 
           className="absolute inset-0 opacity-75"
           style={{
-            backgroundImage: `url(${paintColorsBackground})`,
+            backgroundImage: `url(${newHeaderBackground})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat'

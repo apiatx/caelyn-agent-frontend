@@ -1,7 +1,7 @@
 import { useState, Suspense } from "react";
 import { useLocation } from "wouter";
 import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
-import paintColorsBackground from "@assets/paint-colors-background-header_1756067291555.jpg";
+import newHeaderBackground from "@assets/photo-1504333638930-c8787321eee0_1757208194192.avif";
 import { HypeSection } from "@/components/hype-section";
 import { UniversalNavigation } from "@/components/universal-navigation";
 import { SectionLoadingState } from "@/components/loading-screen";
@@ -21,7 +21,7 @@ export default function HypePage() {
         <div 
           className="absolute inset-0 opacity-75"
           style={{
-            backgroundImage: `url(${paintColorsBackground})`,
+            backgroundImage: `url(${newHeaderBackground})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat'

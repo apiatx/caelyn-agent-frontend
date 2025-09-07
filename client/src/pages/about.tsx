@@ -3,7 +3,7 @@ import { GlassCard } from "@/components/ui/glass-card";
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink, Bitcoin } from "lucide-react";
 import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
-import paintColorsBackground from "@assets/paint-colors-background-header_1756067291555.jpg";
+import newHeaderBackground from "@assets/photo-1504333638930-c8787321eee0_1757208194192.avif";
 import hippoMouthOpen from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
 import hippoLaserEyes from "@assets/image_1755979639049.png";
 import hippoDownload1 from "@assets/download (1)_1755979612947.jpeg";
@@ -26,7 +26,7 @@ export default function AboutPage() {
         <div 
           className="absolute inset-0 opacity-75"
           style={{
-            backgroundImage: `url(${paintColorsBackground})`,
+            backgroundImage: `url(${newHeaderBackground})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat'
