@@ -73,19 +73,24 @@ export default function TradeSection() {
         {/* Swidge Subsection */}
         <div className="space-y-4">
           <h4 className="text-lg font-medium text-blue-400 mb-3">Swidge</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          
+          {/* Primary App - Relay Bridge (Full Width) */}
+          <div className="w-full">
             <Button
               variant="outline"
               onClick={() => openInNewTab('https://www.relay.link/bridge')}
-              className="bg-black/20 border-crypto-silver/20 hover:bg-blue-500/20 hover:border-blue-500/30 text-white justify-start p-4 h-auto"
+              className="w-full bg-gradient-to-r from-blue-500/20 to-blue-600/20 border-blue-500/30 hover:from-blue-500/30 hover:to-blue-600/30 hover:border-blue-400/50 text-white justify-start p-6 h-auto shadow-lg hover:shadow-blue-500/20"
             >
-              <ArrowLeftRight className="w-4 h-4 mr-2" />
+              <ArrowLeftRight className="w-5 h-5 mr-3" />
               <div className="text-left">
-                <div className="font-semibold">Relay Bridge</div>
-                <div className="text-sm text-crypto-silver">Cross-chain asset bridging</div>
+                <div className="font-bold text-lg">Relay Bridge</div>
+                <div className="text-sm text-blue-200">Primary cross-chain asset bridging platform</div>
               </div>
             </Button>
+          </div>
 
+          {/* Other Apps */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <Button
               variant="outline"
               onClick={() => openInNewTab('https://jumper.exchange/')}
@@ -127,20 +132,25 @@ export default function TradeSection() {
         {/* Trading Terminals Subsection */}
         <div className="space-y-4">
           <h4 className="text-lg font-medium text-purple-400 mb-3">Trading Terminals</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          
+          {/* Primary App - Definitive Edge (Full Width) */}
+          <div className="w-full">
             <a
               href="https://app.definitive.fi/0x9FDBdA0A5e284c32744D2f17Ee5c74B284993463/hyperevm"
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-black/20 border border-crypto-silver/20 hover:bg-blue-500/20 hover:border-blue-500/30 text-white justify-start p-4 h-auto rounded-md transition-colors flex items-center"
+              className="w-full bg-gradient-to-r from-purple-500/20 to-purple-600/20 border border-purple-500/30 hover:from-purple-500/30 hover:to-purple-600/30 hover:border-purple-400/50 text-white justify-start p-6 h-auto rounded-md transition-colors flex items-center shadow-lg hover:shadow-purple-500/20"
             >
-              <ArrowLeftRight className="w-4 h-4 mr-2" />
+              <ArrowLeftRight className="w-5 h-5 mr-3" />
               <div className="text-left">
-                <div className="font-semibold">Definitive Edge</div>
-                <div className="text-sm text-crypto-silver">Trade any token, on any chain</div>
+                <div className="font-bold text-lg">Definitive Edge</div>
+                <div className="text-sm text-purple-200">Primary multi-chain trading terminal - Trade any token, on any chain</div>
               </div>
             </a>
+          </div>
 
+          {/* Other Apps */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <Button
               variant="outline"
               onClick={() => openInNewTab('https://ave.ai/')}
@@ -195,19 +205,24 @@ export default function TradeSection() {
         {/* Perps Subsection */}
         <div className="space-y-4">
           <h4 className="text-lg font-medium text-orange-400 mb-3">Perps</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          
+          {/* Primary Apps Row - Hyperliquid (Will add second app when clarified) */}
+          <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
             <Button
               variant="outline"
               onClick={() => openInNewTab('https://app.hyperliquid.xyz/trade')}
-              className="bg-black/20 border-crypto-silver/20 hover:bg-indigo-500/20 hover:border-indigo-500/30 text-white justify-start p-4 h-auto"
+              className="w-full bg-gradient-to-r from-indigo-500/20 to-indigo-600/20 border-indigo-500/30 hover:from-indigo-500/30 hover:to-indigo-600/30 hover:border-indigo-400/50 text-white justify-start p-6 h-auto shadow-lg hover:shadow-indigo-500/20"
             >
-              <TrendingUp className="w-4 h-4 mr-2" />
+              <TrendingUp className="w-5 h-5 mr-3" />
               <div className="text-left">
-                <div className="font-semibold">Hyperliquid</div>
-                <div className="text-sm text-crypto-silver">Onchain perpetual DEX</div>
+                <div className="font-bold text-lg">Hyperliquid</div>
+                <div className="text-sm text-indigo-200">Primary onchain perpetual DEX platform</div>
               </div>
             </Button>
+          </div>
 
+          {/* Other Apps */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <Button
               variant="outline"
               onClick={() => openInNewTab('https://app.defi.app/portfolio')}
