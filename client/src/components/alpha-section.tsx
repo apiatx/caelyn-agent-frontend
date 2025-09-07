@@ -87,15 +87,19 @@ export default function AlphaSection() {
 
           {/* Analytics */}
           <div className="mb-8">
-            <div className="flex items-center justify-center mb-4">
-              <h3 className="text-2xl font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">Analytics</h3>
-              <button
-                onClick={() => openInNewTab('https://app.artemisanalytics.com/')}
-                className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm flex items-center gap-1"
-              >
-                <ExternalLink className="w-3 h-3" />
-                Open Full View
-              </button>
+            <div className="mb-4">
+              <div className="flex items-center justify-center mb-2">
+                <h3 className="text-2xl font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">Analytics</h3>
+              </div>
+              <div className="flex justify-center">
+                <button
+                  onClick={() => openInNewTab('https://app.artemisanalytics.com/')}
+                  className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm flex items-center gap-1"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                  Open Full View
+                </button>
+              </div>
             </div>
             <div className="w-full">
               <iframe
