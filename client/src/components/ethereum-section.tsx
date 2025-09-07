@@ -5,7 +5,7 @@ import { openSecureLink } from "@/utils/security";
 import ethereumLogo from "@assets/Ethereum_logo_2014.svg_1755977414942.png";
 
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <Card className={`backdrop-blur-sm bg-gradient-to-br from-white/10 to-white/5 border border-white/20 ${className}`}>
+  <Card className={`bg-black/40 backdrop-blur-lg border-crypto-silver/20 ${className}`}>
     {children}
   </Card>
 );
