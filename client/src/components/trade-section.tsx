@@ -193,19 +193,29 @@ export default function TradeSection() {
             </Button>
           </div>
 
-          {/* DODO - Full Width */}
-          <div className="w-full">
+          {/* DODO and XY Finance */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Button
               variant="outline"
               onClick={() => openInNewTab('https://app.dodoex.io/swap/network/mainnet/1-ETH/56-%24BeAI')}
-              className="group w-full bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+              className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-start p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
             >
-              <div className="text-center">
-                <div className="font-bold text-base flex items-center justify-center">
-                  <ArrowLeftRight className="w-5 h-5 mr-2 group-hover:rotate-180 transition-transform duration-300" />
-                  DODO
-                </div>
+              <ArrowLeftRight className="w-5 h-5 mr-3 group-hover:rotate-180 transition-transform duration-300" />
+              <div className="text-left">
+                <div className="font-bold text-base">DODO</div>
                 <div className="text-sm text-gray-300">Decentralized exchange protocol</div>
+              </div>
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://app.xy.finance/')}
+              className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-start p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+            >
+              <ArrowLeftRight className="w-5 h-5 mr-3 group-hover:rotate-180 transition-transform duration-300" />
+              <div className="text-left">
+                <div className="font-bold text-base">XY Finance</div>
+                <div className="text-sm text-gray-300">Cross-chain swap aggregator</div>
               </div>
             </Button>
           </div>
