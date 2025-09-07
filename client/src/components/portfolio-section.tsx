@@ -201,37 +201,6 @@ export default function PortfolioSection() {
           </div>
         </div>
 
-        {/* Bittensor Section */}
-        <div className="bg-black/90 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-8 shadow-2xl">
-          <div className="space-y-8">
-            <div className="flex flex-col items-center gap-3 mb-6 text-center">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center">
-                <img src={bittensorLogo} alt="Bittensor" className="w-8 h-8 rounded-lg" />
-              </div>
-              <h4 className="text-2xl font-bold bg-gradient-to-r from-orange-400 to-red-300 bg-clip-text text-transparent">Bittensor</h4>
-            </div>
-            <Button
-              variant="outline"
-              onClick={() => window.open('https://www.taohub.info/portfolio', '_blank', 'noopener,noreferrer')}
-              className="group w-full bg-white border-gray-300 hover:bg-gray-50 hover:border-gray-400 text-black justify-start p-6 h-auto shadow-xl hover:shadow-gray-400/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
-            >
-              <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mr-4 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300">
-                <Brain className="w-6 h-6 text-black" />
-              </div>
-              <div className="text-left flex-1">
-                <div className="font-bold text-xl">TaoHub</div>
-                <div className="text-sm text-gray-700 font-medium">Advanced TAO Network Portfolio & Staking Analytics</div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge className="bg-gray-200 text-gray-800 border-gray-300 px-3 py-1 font-semibold">
-                  TAO NETWORK
-                </Badge>
-                <ExternalLink className="h-5 w-5 group-hover:scale-110 transition-transform text-black" />
-              </div>
-            </Button>
-          </div>
-        </div>
-
         {/* HyperLiquid Section */}
         <div className="bg-black/90 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-8 shadow-2xl">
           <div className="space-y-8">
@@ -287,6 +256,44 @@ export default function PortfolioSection() {
                 <ExternalLink className="h-5 w-5 group-hover:scale-110 transition-transform" />
               </div>
             </Button>
+          </div>
+        </div>
+
+        {/* Bittensor Section */}
+        <div className="bg-black/90 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-8 shadow-2xl">
+          <div className="space-y-8">
+            <div className="flex flex-col items-center gap-3 mb-6 text-center">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center">
+                <img src={bittensorLogo} alt="Bittensor" className="w-8 h-8 rounded-lg" />
+              </div>
+              <h4 className="text-2xl font-bold bg-gradient-to-r from-orange-400 to-red-300 bg-clip-text text-transparent">Bittensor</h4>
+            </div>
+            
+            {/* TaoHub Portfolio Iframe */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-center">
+                <button
+                  onClick={() => window.open('https://www.taohub.info/portfolio', '_blank', 'noopener,noreferrer')}
+                  className="text-orange-300 hover:text-orange-200 text-sm font-medium bg-orange-500/20 px-4 py-2 rounded-lg border border-orange-400/30 hover:bg-orange-500/30 transition-all duration-300 flex items-center gap-2"
+                >
+                  Open Full View <ExternalLink className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="bg-gradient-to-br from-slate-900/80 via-gray-900/80 to-orange-900/30 rounded-2xl border border-orange-400/20 overflow-hidden shadow-2xl">
+                <iframe
+                  src="https://www.taohub.info/portfolio"
+                  className="w-full h-[600px] sm:h-[700px] lg:h-[800px] border-0"
+                  title="TaoHub Portfolio"
+                  frameBorder="0"
+                  loading="lazy"
+                  sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+                  style={{
+                    background: 'transparent',
+                    colorScheme: 'dark'
+                  }}
+                />
+              </div>
+            </div>
           </div>
         </div>
 
