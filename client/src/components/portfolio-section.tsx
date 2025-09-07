@@ -99,11 +99,11 @@ export default function PortfolioSection() {
         <div className="w-32 h-1 bg-gradient-to-r from-emerald-500 to-cyan-500 mx-auto mt-4 rounded-full"></div>
       </div>
 
-      {/* Combined Portfolio Management - Sleek Black Glass Card */}
-      <div className="bg-black/90 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-8 shadow-2xl">
-        <div className="space-y-12">
-          
-          {/* Multi-Chain Section */}
+      {/* Portfolio Sections - Individual Glass Cards */}
+      <div className="space-y-8">
+        
+        {/* Multi-Chain Section */}
+        <div className="bg-black/90 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-8 shadow-2xl">
           <div className="space-y-8">
             <div className="flex flex-col items-center gap-3 mb-6 text-center">
               <div className="w-10 h-10 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-xl flex items-center justify-center shadow-lg">
@@ -131,8 +131,10 @@ export default function PortfolioSection() {
               </div>
             </Button>
           </div>
+        </div>
 
-          {/* EVM Section */}
+        {/* EVM Section */}
+        <div className="bg-black/90 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-8 shadow-2xl">
           <div className="space-y-8">
             <div className="flex flex-col items-center gap-3 mb-6 text-center">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center">
@@ -160,8 +162,10 @@ export default function PortfolioSection() {
               </div>
             </Button>
           </div>
+        </div>
 
-          {/* Solana Section */}
+        {/* Solana Section */}
+        <div className="bg-black/90 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-8 shadow-2xl">
           <div className="space-y-8">
             <div className="flex flex-col items-center gap-3 mb-6 text-center">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center">
@@ -195,8 +199,10 @@ export default function PortfolioSection() {
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Bittensor Section */}
+        {/* Bittensor Section */}
+        <div className="bg-black/90 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-8 shadow-2xl">
           <div className="space-y-8">
             <div className="flex flex-col items-center gap-3 mb-6 text-center">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center">
@@ -224,8 +230,10 @@ export default function PortfolioSection() {
               </div>
             </Button>
           </div>
+        </div>
 
-          {/* HyperLiquid Section */}
+        {/* HyperLiquid Section */}
+        <div className="bg-black/90 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-8 shadow-2xl">
           <div className="space-y-8">
             <div className="flex flex-col items-center gap-3 mb-6 text-center">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center">
@@ -280,8 +288,8 @@ export default function PortfolioSection() {
               </div>
             </Button>
           </div>
-
         </div>
+
       </div>
 
       {/* Holding Detail Modal */}
