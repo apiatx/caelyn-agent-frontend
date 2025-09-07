@@ -9,6 +9,11 @@ import { useScrollFade } from "@/hooks/useScrollFade";
 import paintColorsBackground from "@assets/paint-colors-background-header_1756067291555.jpg";
 import TopDailyGainers from "@/components/top-daily-gainers";
 import CryptoMarketDataBare from "@/components/crypto-market-data-bare";
+import solanaLogo from "@assets/solana_1755977414939.png";
+import hyperliquidLogo from "@assets/hyperliquid-logo_1755977414943.png";
+import bittensorLogo from "@assets/bittensor_1755977414942.png";
+import bnbLogo from "@assets/eb2349c3-b2f8-4a93-a286-8f86a62ea9d8_1757138768380.png";
+import suiLogo from "@assets/images (2)_1757139042170.jpeg";
 
 export default function AltcoinsPage() {
   const headerOpacity = useScrollFade(30, 120);
@@ -57,8 +62,22 @@ export default function AltcoinsPage() {
         <div className="space-y-6 lg:space-y-8">
           <div className="text-center px-3 sm:px-0">
             <div className="flex items-center justify-center gap-3 mb-2">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-black rounded-xl flex items-center justify-center border-2 border-yellow-400">
-                <span className="text-yellow-400 font-bold text-lg">🪙</span>
+              <div className="flex items-center gap-2 mr-3">
+                <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-purple-400/50 shadow-lg">
+                  <img src={solanaLogo} alt="Solana" className="w-full h-full object-cover" />
+                </div>
+                <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-emerald-400/50 shadow-lg">
+                  <img src={hyperliquidLogo} alt="Hyperliquid" className="w-full h-full object-cover" />
+                </div>
+                <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-red-400/50 shadow-lg">
+                  <img src={bittensorLogo} alt="Bittensor" className="w-full h-full object-cover" />
+                </div>
+                <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-yellow-400/50 shadow-lg">
+                  <img src={bnbLogo} alt="BNB" className="w-full h-full object-cover" />
+                </div>
+                <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-blue-400/50 shadow-lg">
+                  <img src={suiLogo} alt="SUI" className="w-full h-full object-cover" />
+                </div>
               </div>
               <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white">Altcoins</h2>
             </div>
