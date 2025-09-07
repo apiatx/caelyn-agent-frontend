@@ -150,17 +150,16 @@ export default function AlphaSection() {
       <div className="space-y-8 mt-12">
         <GlassCard className="p-3 sm:p-4 lg:p-6">
 
-          {/* Signal */}
+          {/* Screener */}
           <div className="mb-8">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/30">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
                 <span className="text-white font-bold text-sm">S</span>
               </div>
-              <h4 className="text-2xl font-bold bg-gradient-to-r from-white to-indigo-100 bg-clip-text text-transparent">Signal</h4>
+              <h4 className="text-2xl font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">Screener</h4>
             </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-            {/* Top priority: CMC Leaderboard, OpenSea, CoinGecko Chains */}
             <SafeLink
               href='https://coinmarketcap.com/?type=coins&tableRankBy=trending_all_24h'
               className="p-5 bg-gradient-to-br from-blue-500/15 to-blue-600/15 hover:from-blue-500/25 hover:to-blue-600/25 border border-blue-500/30 hover:border-blue-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-blue-500/20 transform"
@@ -213,6 +212,31 @@ export default function AlphaSection() {
               <p className="text-gray-300 text-sm font-medium">Real-time DEX analytics</p>
             </SafeLink>
 
+            <SafeLink
+              href='https://dexscreener.com/'
+              className="p-5 bg-gradient-to-br from-purple-500/15 to-purple-600/15 hover:from-purple-500/25 hover:to-purple-600/25 border border-purple-500/30 hover:border-purple-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-purple-500/20 transform"
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center shadow-md">
+                  <span className="text-white font-bold text-xs">DS</span>
+                </div>
+                <h4 className="text-purple-300 font-bold text-lg">DexScreener</h4>
+              </div>
+              <p className="text-gray-300 text-sm font-medium">Token price charts & analytics</p>
+            </SafeLink>
+          </div>
+          </div>
+
+          {/* Signal */}
+          <div className="mb-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                <span className="text-white font-bold text-sm">S</span>
+              </div>
+              <h4 className="text-2xl font-bold bg-gradient-to-r from-white to-indigo-100 bg-clip-text text-transparent">Signal</h4>
+            </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
             {/* Rest of the analytics tools */}
             <SafeLink
               href='https://dexcheck.ai/app'
