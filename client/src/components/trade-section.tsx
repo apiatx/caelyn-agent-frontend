@@ -521,12 +521,15 @@ export default function TradeSection() {
           <div className="mb-6">
             <SafeLink
               href='https://bubblemaps.io/'
-              className="w-full p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors block"
+              className="group w-full p-6 bg-gradient-to-br from-purple-600/30 via-fuchsia-600/20 to-pink-600/30 border-purple-400/40 hover:from-purple-500/40 hover:via-fuchsia-500/30 hover:to-pink-500/40 hover:border-purple-300/60 rounded-xl transition-all duration-300 block shadow-xl hover:shadow-purple-500/20 transform hover:scale-105 backdrop-blur-sm"
             >
-              <div className="flex items-center gap-2 mb-2">
-                <h4 className="text-purple-400 font-semibold">Bubblemaps</h4>
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-purple-400 to-pink-500 rounded-lg flex items-center justify-center shadow-lg group-hover:rotate-12 transition-transform duration-300">
+                  <span className="text-white font-bold">B</span>
+                </div>
+                <h4 className="text-xl font-bold text-purple-200 group-hover:text-white transition-colors duration-300">Bubblemaps</h4>
               </div>
-              <p className="text-gray-400 text-sm">Token Analytics & Visualization</p>
+              <p className="text-purple-200/80 text-base font-medium">Token Analytics & Visualization Platform</p>
             </SafeLink>
           </div>
         </GlassCard>
