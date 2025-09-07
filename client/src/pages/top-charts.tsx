@@ -185,10 +185,7 @@ export default function TopChartsPage() {
                     <div className="w-5 h-5 sm:w-6 sm:h-6 bg-orange-500 rounded-full flex items-center justify-center">
                       <span className="text-white font-bold text-xs">₿</span>
                     </div>
-                    <h3 className="text-lg sm:text-xl font-semibold text-white">Bitcoin Price Chart</h3>
-                    <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 text-xs">
-                      BITCOIN
-                    </Badge>
+                    <h3 className="text-lg sm:text-xl font-semibold text-white">BTC Price Chart</h3>
                   </div>
                   <div className="flex items-center gap-2 sm:ml-auto">
                     <button
@@ -266,7 +263,7 @@ export default function TopChartsPage() {
                     <div className="w-5 h-5 sm:w-6 sm:h-6 bg-blue-500 rounded-full flex items-center justify-center">
                       <span className="text-white font-bold text-xs">Ξ</span>
                     </div>
-                    <h3 className="text-lg sm:text-xl font-semibold text-white">Ethereum Price Chart</h3>
+                    <h3 className="text-lg sm:text-xl font-semibold text-white">ETH Price Chart</h3>
                     <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
                       ETHEREUM
                     </Badge>
