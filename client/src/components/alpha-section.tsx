@@ -357,33 +357,33 @@ export default function AlphaSection() {
               onClick={() => openInNewTab('https://www.developerreport.com/')}
               className="bg-gradient-to-br from-green-500/15 to-green-600/15 hover:from-green-500/25 hover:to-green-600/25 border border-green-500/30 hover:border-green-400/50 rounded-xl p-5 transition-all duration-300 text-center group shadow-lg hover:shadow-green-500/20 hover:scale-105 transform"
             >
-              <div className="text-base font-semibold text-white group-hover:text-green-200 mb-2 flex items-center gap-2">
+              <div className="text-base font-semibold text-white group-hover:text-green-200 mb-2 flex flex-col items-center gap-2">
                 <div className="w-2 h-2 bg-green-400 rounded-full group-hover:animate-pulse"></div>
                 Developer Report
               </div>
-              <div className="text-sm text-gray-300 group-hover:text-gray-200">Developer activity by blockchain</div>
+              <div className="text-sm text-gray-300 group-hover:text-gray-200 text-center">Developer activity by blockchain</div>
             </button>
 
             <button
               onClick={() => openInNewTab('https://www.theblock.co/data/decentralized-finance/dex-non-custodial')}
               className="bg-gradient-to-br from-orange-500/15 to-orange-600/15 hover:from-orange-500/25 hover:to-orange-600/25 border border-orange-500/30 hover:border-orange-400/50 rounded-xl p-5 transition-all duration-300 text-center group shadow-lg hover:shadow-orange-500/20 hover:scale-105 transform"
             >
-              <div className="text-base font-semibold text-white group-hover:text-orange-200 mb-2 flex items-center gap-2">
+              <div className="text-base font-semibold text-white group-hover:text-orange-200 mb-2 flex flex-col items-center gap-2">
                 <div className="w-2 h-2 bg-orange-400 rounded-full group-hover:animate-pulse"></div>
                 The Block: DEX Metrics
               </div>
-              <div className="text-sm text-gray-300 group-hover:text-gray-200">Comprehensive DEX analytics and metrics</div>
+              <div className="text-sm text-gray-300 group-hover:text-gray-200 text-center">Comprehensive DEX analytics and metrics</div>
             </button>
 
             <button
               onClick={() => openInNewTab('https://chainspect.app/dashboard')}
               className="bg-gradient-to-br from-cyan-500/15 to-cyan-600/15 hover:from-cyan-500/25 hover:to-cyan-600/25 border border-cyan-500/30 hover:border-cyan-400/50 rounded-xl p-5 transition-all duration-300 text-center group shadow-lg hover:shadow-cyan-500/20 hover:scale-105 transform"
             >
-              <div className="text-base font-semibold text-white group-hover:text-cyan-200 mb-2 flex items-center gap-2">
+              <div className="text-base font-semibold text-white group-hover:text-cyan-200 mb-2 flex flex-col items-center gap-2">
                 <div className="w-2 h-2 bg-cyan-400 rounded-full group-hover:animate-pulse"></div>
                 Chainspect
               </div>
-              <div className="text-sm text-gray-300 group-hover:text-gray-200">Chain scalability and decentralization analytics</div>
+              <div className="text-sm text-gray-300 group-hover:text-gray-200 text-center">Chain scalability and decentralization analytics</div>
             </button>
           </div>
         </GlassCard>
