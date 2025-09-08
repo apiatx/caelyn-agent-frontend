@@ -110,6 +110,34 @@ export default function PredictPage() {
             sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
           />
 
+          {/* PredictBase */}
+          <div className="mt-6">
+            <div className="p-6 bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/20 rounded-lg">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
+                    <TrendingUp className="w-4 h-4 text-white" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-white">PredictBase</h3>
+                </div>
+                <Button
+                  onClick={() => openInNewTab("https://predictbase.app/")}
+                  className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white font-semibold px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  Open PredictBase
+                </Button>
+              </div>
+              <iframe
+                src="https://predictbase.app/"
+                className="w-full h-[600px] rounded-lg border border-purple-500/20"
+                title="PredictBase"
+                frameBorder="0"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
+          </div>
 
           {/* Moby Screener Predictions */}
           <div className="mt-6">
