@@ -572,18 +572,6 @@ export default function BaseSection() {
 
       {/* Indexy Base Analytics */}
       <GlassCard className="p-8">
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-gradient-to-r from-green-400 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg">
-              <TrendingUp className="w-6 h-6 text-white" />
-            </div>
-            <h4 className="text-3xl font-bold bg-gradient-to-r from-green-400 to-emerald-300 bg-clip-text text-transparent">Indexy</h4>
-            <Badge className="bg-green-500/30 text-green-200 border-green-400/40 px-3 py-1 font-semibold">
-              PREMIUM PLATFORM
-            </Badge>
-          </div>
-          <p className="text-green-200/80 text-lg font-medium">Professional-grade crypto market indexing platform for Base ecosystem</p>
-        </div>
         
         <SafeLink
           href='https://indexy.xyz/home'
