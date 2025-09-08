@@ -124,7 +124,7 @@ export default function OnchainSocialPage() {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {[
-                    'TechDev_52', 'Voice of the Gods', 'CoinGurruu', 'stacy_muur', 
+                    'TechDev_52', 'ofvoice25355', 'CoinGurruu', 'stacy_muur', 
                     'martypartymusic', 'Defi0xJeff', 'altcoinvector', 'DeFi_Paanda', 
                     'cryptorinweb3', 'jkrdoc', 'Agent_rsch', 'OverkillTrading', 
                     'dontbuytops', 'MetaverseRanger'
@@ -153,7 +153,7 @@ export default function OnchainSocialPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {[
                     'TheEuroSniper', 'EricCryptoman', 'Whale_AI_net', 'CryptoThannos', 
-                    'HolderScan', 'Ethimedes'
+                    'HolderScan', 'Ethimedes', 'MisterSpread', 'CBATrades', 'DigimonCBA'
                   ].map((account) => {
                     return (
                     <SafeLink
@@ -345,6 +345,28 @@ export default function OnchainSocialPage() {
                       <span className="text-blue-400 font-semibold text-sm">0x_tesseract</span>
                     </div>
                     <div className="text-xs text-crypto-silver">@0x_tesseract - BASE network trading</div>
+                  </SafeLink>
+
+                  <SafeLink
+                    href='https://x.com/Prometheus_The1'
+                    className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-blue-400 font-bold text-sm">𝕏</span>
+                      <span className="text-blue-400 font-semibold text-sm">Prometheus_The1</span>
+                    </div>
+                    <div className="text-xs text-crypto-silver">@Prometheus_The1 - BASE network insights</div>
+                  </SafeLink>
+
+                  <SafeLink
+                    href='https://x.com/lil_louieT'
+                    className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-blue-400 font-bold text-sm">𝕏</span>
+                      <span className="text-blue-400 font-semibold text-sm">lil_louieT</span>
+                    </div>
+                    <div className="text-xs text-crypto-silver">@lil_louieT - BASE network trading</div>
                   </SafeLink>
                 </div>
               </GlassCard>
