@@ -82,188 +82,58 @@ export default function OnchainLaunchpadPage() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         
-        {/* ETH Section */}
-        <GlassCard className="p-8">
-          <div className="flex items-center justify-between mb-6">
+        {/* CoinLaunch Launchpads */}
+        <GlassCard className="p-6">
+          <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center">
-                <Coins className="w-5 h-5 text-white" />
+              <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
+                <Rocket className="w-4 h-4 text-white" />
               </div>
-              <h3 className="text-2xl font-bold text-white">ETH</h3>
-              <Badge className="bg-blue-500/20 text-blue-300 border-blue-500/30">ETHEREUM ECOSYSTEM</Badge>
+              <h3 className="text-xl font-semibold text-white">CoinLaunch Launchpads</h3>
             </div>
+            <Button
+              onClick={() => openInNewTab('https://coinlaunch.space/launchpads/')}
+              className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white font-semibold px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2"
+            >
+              <ExternalLink className="w-4 h-4" />
+              Open Full View
+            </Button>
           </div>
-          
-          {/* ETH Launchpad Platforms */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div className="p-6 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border border-blue-500/20 rounded-lg">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center">
-                    <Rocket className="w-4 h-4 text-white" />
-                  </div>
-                  <h4 className="text-lg font-semibold text-white">Ethereum Launchpads</h4>
-                </div>
-              </div>
-              <p className="text-sm text-gray-300 mb-4">
-                Access premier Ethereum-based token launches, IDOs, and early investment opportunities.
-              </p>
-              <div className="space-y-2">
-                <Button
-                  variant="outline"
-                  onClick={() => openInNewTab('https://dao.maker/')}
-                  className="w-full bg-blue-500/20 border-blue-500/30 hover:bg-blue-500/30 text-white text-sm"
-                >
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  DAO Maker
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => openInNewTab('https://launchpad.ethereum.org/')}
-                  className="w-full bg-blue-500/20 border-blue-500/30 hover:bg-blue-500/30 text-white text-sm"
-                >
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  Ethereum Launchpad
-                </Button>
-              </div>
-            </div>
-            
-            <div className="p-6 bg-gradient-to-br from-purple-500/10 to-blue-500/10 border border-purple-500/20 rounded-lg">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
-                    <Rocket className="w-4 h-4 text-white" />
-                  </div>
-                  <h4 className="text-lg font-semibold text-white">Pinksale</h4>
-                </div>
-              </div>
-              <p className="text-sm text-gray-300 mb-4">
-                Decentralized launchpad for fair token launches and presales on Ethereum.
-              </p>
-              <Button
-                variant="outline"
-                onClick={() => openInNewTab('https://www.pinksale.finance/')}
-                className="w-full bg-purple-500/20 border-purple-500/30 hover:bg-purple-500/30 text-white text-sm"
-              >
-                <ExternalLink className="w-4 h-4 mr-2" />
-                Open Pinksale
-              </Button>
-            </div>
-
-            <div className="p-6 bg-gradient-to-br from-indigo-500/10 to-cyan-500/10 border border-indigo-500/20 rounded-lg">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-cyan-500 rounded-full flex items-center justify-center">
-                    <Rocket className="w-4 h-4 text-white" />
-                  </div>
-                  <h4 className="text-lg font-semibold text-white">Seedify</h4>
-                </div>
-              </div>
-              <p className="text-sm text-gray-300 mb-4">
-                Premium gaming and NFT launchpad with tier-based access system.
-              </p>
-              <Button
-                variant="outline"
-                onClick={() => openInNewTab('https://launchpad.seedify.fund/')}
-                className="w-full bg-indigo-500/20 border-indigo-500/30 hover:bg-indigo-500/30 text-white text-sm"
-              >
-                <ExternalLink className="w-4 h-4 mr-2" />
-                Open Seedify
-              </Button>
-            </div>
-          </div>
+          <iframe
+            src="https://coinlaunch.space/launchpads/"
+            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+            title="CoinLaunch Launchpads"
+            frameBorder="0"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+            referrerPolicy="no-referrer-when-downgrade"
+          />
         </GlassCard>
 
-        {/* SOL Section */}
-        <GlassCard className="p-8">
-          <div className="flex items-center justify-between mb-6">
+        {/* CryptoRank Fundraising Platforms */}
+        <GlassCard className="p-6">
+          <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                <Zap className="w-5 h-5 text-white" />
+              <div className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-cyan-500 rounded-full flex items-center justify-center">
+                <Rocket className="w-4 h-4 text-white" />
               </div>
-              <h3 className="text-2xl font-bold text-white">SOL</h3>
-              <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/30">SOLANA ECOSYSTEM</Badge>
+              <h3 className="text-xl font-semibold text-white">CryptoRank Fundraising Platforms</h3>
             </div>
+            <Button
+              onClick={() => openInNewTab('https://cryptorank.io/fundraising-platforms')}
+              className="bg-gradient-to-r from-indigo-500 to-cyan-500 hover:from-indigo-600 hover:to-cyan-600 text-white font-semibold px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2"
+            >
+              <ExternalLink className="w-4 h-4" />
+              Open Full View
+            </Button>
           </div>
-          
-          {/* SOL Launchpad Platforms */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div className="p-6 bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-lg">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                    <Rocket className="w-4 h-4 text-white" />
-                  </div>
-                  <h4 className="text-lg font-semibold text-white">Solana Launchpads</h4>
-                </div>
-              </div>
-              <p className="text-sm text-gray-300 mb-4">
-                High-speed, low-cost token launches on the Solana blockchain ecosystem.
-              </p>
-              <div className="space-y-2">
-                <Button
-                  variant="outline"
-                  onClick={() => openInNewTab('https://solanium.io/')}
-                  className="w-full bg-purple-500/20 border-purple-500/30 hover:bg-purple-500/30 text-white text-sm"
-                >
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  Solanium
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => openInNewTab('https://www.apexit.io/')}
-                  className="w-full bg-purple-500/20 border-purple-500/30 hover:bg-purple-500/30 text-white text-sm"
-                >
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  Apexit
-                </Button>
-              </div>
-            </div>
-            
-            <div className="p-6 bg-gradient-to-br from-pink-500/10 to-red-500/10 border border-pink-500/20 rounded-lg">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-gradient-to-r from-pink-500 to-red-500 rounded-full flex items-center justify-center">
-                    <Rocket className="w-4 h-4 text-white" />
-                  </div>
-                  <h4 className="text-lg font-semibold text-white">AcceleRaytor</h4>
-                </div>
-              </div>
-              <p className="text-sm text-gray-300 mb-4">
-                Raydium's launchpad for Solana-based projects and token launches.
-              </p>
-              <Button
-                variant="outline"
-                onClick={() => openInNewTab('https://raydium.io/acceleraytor/')}
-                className="w-full bg-pink-500/20 border-pink-500/30 hover:bg-pink-500/30 text-white text-sm"
-              >
-                <ExternalLink className="w-4 h-4 mr-2" />
-                Open AcceleRaytor
-              </Button>
-            </div>
-
-            <div className="p-6 bg-gradient-to-br from-orange-500/10 to-yellow-500/10 border border-orange-500/20 rounded-lg">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-yellow-500 rounded-full flex items-center justify-center">
-                    <Rocket className="w-4 h-4 text-white" />
-                  </div>
-                  <h4 className="text-lg font-semibold text-white">Magic Eden</h4>
-                </div>
-              </div>
-              <p className="text-sm text-gray-300 mb-4">
-                Leading Solana NFT marketplace with integrated launchpad features.
-              </p>
-              <Button
-                variant="outline"
-                onClick={() => openInNewTab('https://magiceden.io/launchpad')}
-                className="w-full bg-orange-500/20 border-orange-500/30 hover:bg-orange-500/30 text-white text-sm"
-              >
-                <ExternalLink className="w-4 h-4 mr-2" />
-                Open Magic Eden
-              </Button>
-            </div>
-          </div>
+          <iframe
+            src="https://cryptorank.io/fundraising-platforms"
+            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+            title="CryptoRank Fundraising Platforms"
+            frameBorder="0"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+            referrerPolicy="no-referrer-when-downgrade"
+          />
         </GlassCard>
 
       </main>
