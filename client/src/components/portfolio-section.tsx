@@ -111,6 +111,24 @@ export default function PortfolioSection() {
               </div>
               <h4 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-300 bg-clip-text text-transparent">Multi-Chain</h4>
             </div>
+            
+            {/* BBTerminal Portfolio Iframe */}
+            <div className="w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg">
+              <iframe
+                src="https://app.bbterminal.com/portfolio"
+                title="BBTerminal Portfolio"
+                className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+                frameBorder="0"
+                loading="lazy"
+                sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation-by-user-activation"
+                referrerPolicy="strict-origin-when-cross-origin"
+                style={{
+                  background: '#000000',
+                  colorScheme: 'dark'
+                }}
+              />
+            </div>
+            
             <Button
               variant="outline"
               onClick={() => window.open('https://cerebro.xyz/dashboard', '_blank', 'noopener,noreferrer')}
