@@ -247,6 +247,17 @@ export default function TradeSection() {
             <div className="flex-1 h-px bg-gradient-to-r from-purple-500/50 to-transparent"></div>
           </div>
           
+          {/* BBTerminal Iframe */}
+          <div className="w-full">
+            <div className="bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg">
+              <SafeIframe
+                src="https://app.bbterminal.com/degen"
+                title="BBTerminal Degen Trading Terminal"
+                className="w-full h-96 rounded-lg"
+              />
+            </div>
+          </div>
+
           {/* Primary App - Definitive Edge (Full Width) */}
           <div className="w-full">
             <a
@@ -328,20 +339,6 @@ export default function TradeSection() {
             </Button>
           </div>
 
-          {/* BBTerminal Iframe */}
-          <div className="w-full">
-            <div className="bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg">
-              <div className="text-center mb-4">
-                <h5 className="font-bold text-lg text-white">BBTerminal Degen</h5>
-                <p className="text-sm text-gray-300">Advanced trading terminal</p>
-              </div>
-              <SafeIframe
-                src="https://app.bbterminal.com/degen"
-                title="BBTerminal Degen Trading Terminal"
-                className="w-full h-96 rounded-lg"
-              />
-            </div>
-          </div>
         </div>
 
         {/* Perps Subsection */}
