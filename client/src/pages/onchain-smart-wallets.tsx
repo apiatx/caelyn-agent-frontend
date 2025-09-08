@@ -116,16 +116,6 @@ export default function OnchainSmartWalletsPage() {
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
               <SafeLink
-                href='https://indexy.xyz/home'
-                className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <h4 className="text-green-400 font-semibold">Indexy</h4>
-                </div>
-                <p className="text-gray-400 text-sm">Crypto market indexing platform</p>
-              </SafeLink>
-
-              <SafeLink
                 href='https://hyperdash.info/trader/0x15b325660a1c4a9582a7d834c31119c0cb9e3a42'
                 className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
               >
@@ -190,6 +180,25 @@ export default function OnchainSmartWalletsPage() {
                   colorScheme: 'dark'
                 }}
               />
+            </div>
+
+            {/* Indexy - Full Width Button */}
+            <div className="mt-6">
+              <SafeLink
+                href='https://indexy.xyz/home'
+                className="w-full p-6 bg-gradient-to-r from-green-500/15 to-green-600/15 hover:from-green-500/25 hover:to-green-600/25 border border-green-500/30 hover:border-green-400/50 rounded-xl transition-all duration-300 shadow-lg hover:shadow-green-500/20 transform hover:scale-[1.02] flex items-center justify-center gap-3"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center shadow-md">
+                    <span className="text-white font-bold text-lg">I</span>
+                  </div>
+                  <div className="text-center">
+                    <h4 className="text-green-300 font-bold text-xl">Indexy</h4>
+                    <p className="text-gray-300 text-sm">Crypto market indexing platform</p>
+                  </div>
+                  <ExternalLink className="w-5 h-5 text-green-400" />
+                </div>
+              </SafeLink>
             </div>
           </GlassCard>
         </div>
