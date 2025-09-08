@@ -74,10 +74,8 @@ export default function TradeSection() {
         <div className="w-32 h-1 bg-gradient-to-r from-blue-500 to-purple-500 mx-auto mt-4 rounded-full"></div>
       </div>
 
-      {/* Cross-Chain Section */}
+      {/* Swap Section */}
       <GlassCard className="p-8">
-        <div className="space-y-10">
-        
         {/* Swap Subsection */}
         <div className="space-y-6">
           <div className="text-center mb-6">
@@ -133,7 +131,10 @@ export default function TradeSection() {
             </Button>
           </div>
         </div>
+      </GlassCard>
 
+      {/* Swidge Section */}
+      <GlassCard className="p-8">
         {/* Swidge Subsection */}
         <div className="space-y-6">
           <div className="text-center mb-6">
@@ -238,7 +239,10 @@ export default function TradeSection() {
             </Button>
           </div>
         </div>
+      </GlassCard>
 
+      {/* Multi-Chain Trading Terminals Section */}
+      <GlassCard className="p-8">
         {/* Trading Terminals Subsection */}
         <div className="space-y-6">
           <div className="text-center mb-6">
@@ -343,7 +347,10 @@ export default function TradeSection() {
           </div>
 
         </div>
+      </GlassCard>
 
+      {/* Perps Section */}
+      <GlassCard className="p-8">
         {/* Perps Subsection */}
         <div className="space-y-6">
           <div className="text-center mb-6">
@@ -506,7 +513,10 @@ export default function TradeSection() {
             </Button>
           </div>
         </div>
+      </GlassCard>
 
+      {/* Options Section */}
+      <GlassCard className="p-8">
         {/* Options Subsection */}
         <div className="space-y-6">
           <div className="text-center mb-6">
@@ -575,7 +585,6 @@ export default function TradeSection() {
             </Button>
 
           </div>
-        </div>
         </div>
       </GlassCard>
 
