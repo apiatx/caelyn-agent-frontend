@@ -246,25 +246,54 @@ export default function AlphaSection() {
               <p className="text-gray-300 text-sm font-medium text-center">Multi-chain analytics platform</p>
             </SafeLink>
 
-            <SafeLink
-              href='https://dapp.velvet.capital/'
-              className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
-            >
-              <div className="flex items-center justify-center mb-2">
-                <h4 className="text-blue-400 font-semibold text-lg">Velvet Capital</h4>
-              </div>
-              <p className="text-gray-400 text-sm text-center">DeFi Portfolio Management</p>
-            </SafeLink>
+          </div>
 
-            <SafeLink
-              href='https://ayaoracle.xyz/#agents_data'
-              className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-lg hover:bg-indigo-500/20 transition-colors"
-            >
-              <div className="flex items-center justify-center mb-2">
-                <h4 className="text-indigo-400 font-semibold text-lg">Aya AI</h4>
-              </div>
-              <p className="text-gray-400 text-sm text-center">Crypto AI Agent Analytics</p>
-            </SafeLink>
+          {/* AI Agents Subsection */}
+          <div className="mb-8">
+            <div className="flex items-center justify-center mb-6">
+              <h4 className="text-xl font-bold bg-gradient-to-r from-white to-cyan-100 bg-clip-text text-transparent">AI Agents</h4>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <SafeLink
+                href='https://dapp.velvet.capital/'
+                className="p-5 bg-gradient-to-br from-blue-500/15 to-blue-600/15 hover:from-blue-500/25 hover:to-blue-600/25 border border-blue-500/30 hover:border-blue-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-blue-500/20 transform"
+              >
+                <div className="flex flex-col items-center gap-2 mb-3">
+                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-md">
+                    <span className="text-white font-bold text-xs">V</span>
+                  </div>
+                  <h4 className="text-blue-300 font-bold text-lg">Velvet Capital</h4>
+                </div>
+                <p className="text-gray-300 text-sm font-medium text-center">DeFi Portfolio Management</p>
+              </SafeLink>
+
+              <SafeLink
+                href='https://ayaoracle.xyz/#agents_data'
+                className="p-5 bg-gradient-to-br from-indigo-500/15 to-indigo-600/15 hover:from-indigo-500/25 hover:to-indigo-600/25 border border-indigo-500/30 hover:border-indigo-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-indigo-500/20 transform"
+              >
+                <div className="flex flex-col items-center gap-2 mb-3">
+                  <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-md">
+                    <span className="text-white font-bold text-xs">A</span>
+                  </div>
+                  <h4 className="text-indigo-300 font-bold text-lg">Aya AI</h4>
+                </div>
+                <p className="text-gray-300 text-sm font-medium text-center">Crypto AI Agent Analytics</p>
+              </SafeLink>
+
+              <SafeLink
+                href='https://agents.cookie.fun/'
+                className="p-5 bg-gradient-to-br from-green-500/15 to-green-600/15 hover:from-green-500/25 hover:to-green-600/25 border border-green-500/30 hover:border-green-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-green-500/20 transform"
+              >
+                <div className="flex flex-col items-center gap-2 mb-3">
+                  <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center shadow-md">
+                    <span className="text-white font-bold text-xs">C</span>
+                  </div>
+                  <h4 className="text-green-300 font-bold text-lg">Cookie Agents</h4>
+                </div>
+                <p className="text-gray-300 text-sm font-medium text-center">AI Agent Discovery Platform</p>
+              </SafeLink>
+            </div>
           </div>
 
           {/* Alphanomics */}
