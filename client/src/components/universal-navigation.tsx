@@ -1,4 +1,4 @@
-import { Activity, BarChart3, TrendingUp, ChartLine, Brain, Zap, DollarSign, Building2, Layers, Coins, ChevronDown, Wallet, Users, MessageSquare } from "lucide-react";
+import { Activity, BarChart3, TrendingUp, ChartLine, Brain, Zap, DollarSign, Building2, Layers, Coins, ChevronDown, Wallet, Users, MessageSquare, Rocket } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { useLocation } from "wouter";
 import {
@@ -86,7 +86,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
             <DropdownMenuTrigger asChild>
               <button
                 className={`flex-1 min-w-[90px] max-w-[120px] py-3 px-1 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
-                  isActive("onchain-analytics") || isActive("onchain-smart-wallets")
+                  isActive("onchain-analytics") || isActive("onchain-smart-wallets") || isActive("onchain-launchpad")
                     ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                     : "hover:bg-white/5 text-crypto-silver"
                 }`}
@@ -109,6 +109,13 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
               >
                 <Wallet className="w-4 h-4 mr-2" />
                 Smart Wallets
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => navigateTo("/app/onchain/launchpad")}
+                className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
+              >
+                <Rocket className="w-4 h-4 mr-2" />
+                Launchpad
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
