@@ -243,7 +243,7 @@ export default function TradeSection() {
             <div className="w-8 h-8 bg-gradient-to-r from-purple-400 to-fuchsia-500 rounded-lg flex items-center justify-center">
               <TrendingUp className="w-4 h-4 text-white" />
             </div>
-            <h4 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-fuchsia-300 bg-clip-text text-transparent">Trading Terminals</h4>
+            <h4 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-fuchsia-300 bg-clip-text text-transparent">Multi-Chain Trading Terminals</h4>
             <div className="flex-1 h-px bg-gradient-to-r from-purple-500/50 to-transparent"></div>
           </div>
           
@@ -326,6 +326,21 @@ export default function TradeSection() {
                 <div className="text-sm text-gray-300">AI-powered multi-chain trading terminal</div>
               </div>
             </Button>
+          </div>
+
+          {/* BBTerminal Iframe */}
+          <div className="w-full">
+            <div className="bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg">
+              <div className="text-center mb-4">
+                <h5 className="font-bold text-lg text-white">BBTerminal Degen</h5>
+                <p className="text-sm text-gray-300">Advanced trading terminal</p>
+              </div>
+              <SafeIframe
+                src="https://app.bbterminal.com/degen"
+                title="BBTerminal Degen Trading Terminal"
+                className="w-full h-96 rounded-lg"
+              />
+            </div>
           </div>
         </div>
 
