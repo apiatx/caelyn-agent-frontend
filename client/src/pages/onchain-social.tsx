@@ -120,13 +120,7 @@ export default function OnchainSocialPage() {
               <div className="mb-8">
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mb-8">
                   {[
-                    'Market Watcher', 'WolverCrypto', 'AltcoinMarksman',
-                    'CryptoZer0_', 'DeFi_Paanda', 'aicryptopattern',
-                    'bittybitbit86', 'Ethimedes', 'Whale_AI_net', 'EricCryptoman',
-                    'cryptorinweb3', 'OverkillTrading', 'jkrdoc', 'chironchain', 'goodvimonly',
-                    'Agent_rsch', 'dontbuytops', 'bruhbearr', 'MetaverseRanger', 'Shake51_',
-                    '0x_tesseract', 'TheEuroSniper', 'CryptoThannos',
-                    'HolderScan'
+                    'Market Watcher'
                   ].map((account) => {
                     // Special mapping for accounts with different URLs
                     const getAccountUrl = (accountName: string) => {
@@ -160,7 +154,9 @@ export default function OnchainSocialPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {[
                     'TechDev_52', 'Voice of the Gods', 'CoinGurruu', 'stacy_muur', 
-                    'martypartymusic', 'Defi0xJeff', 'altcoinvector'
+                    'martypartymusic', 'Defi0xJeff', 'altcoinvector', 'DeFi_Paanda', 
+                    'cryptorinweb3', 'jkrdoc', 'Agent_rsch', 'OverkillTrading', 
+                    'dontbuytops', 'MetaverseRanger'
                   ].map((account) => {
                     return (
                     <SafeLink
@@ -184,7 +180,73 @@ export default function OnchainSocialPage() {
                   <h4 className="text-xl font-bold bg-gradient-to-r from-white to-yellow-100 bg-clip-text text-transparent">Traders</h4>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {/* Placeholder for future traders content */}
+                  {[
+                    'TheEuroSniper', 'EricCryptoman', 'Whale_AI_net', 'CryptoThannos', 
+                    'HolderScan', 'Ethimedes'
+                  ].map((account) => {
+                    return (
+                    <SafeLink
+                      key={account}
+                      href={`https://x.com/${account}`}
+                      className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg hover:bg-yellow-500/20 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-yellow-400 font-bold text-sm">𝕏</span>
+                        <span className="text-yellow-400 font-semibold text-sm">{account}</span>
+                      </div>
+                    </SafeLink>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Thoughts & Opinions Subsection */}
+              <div className="mb-8">
+                <div className="flex items-center justify-center mb-6">
+                  <h4 className="text-xl font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">Thoughts & Opinions</h4>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {[
+                    'CryptoZer0_'
+                  ].map((account) => {
+                    return (
+                    <SafeLink
+                      key={account}
+                      href={`https://x.com/${account}`}
+                      className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-blue-400 font-bold text-sm">𝕏</span>
+                        <span className="text-blue-400 font-semibold text-sm">{account}</span>
+                      </div>
+                    </SafeLink>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Market Today Subsection */}
+              <div className="mb-8">
+                <div className="flex items-center justify-center mb-6">
+                  <h4 className="text-xl font-bold bg-gradient-to-r from-white to-orange-100 bg-clip-text text-transparent">Market Today</h4>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {[
+                    'aicryptopattern'
+                  ].map((account) => {
+                    return (
+                    <SafeLink
+                      key={account}
+                      href={`https://x.com/${account}`}
+                      className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-orange-400 font-bold text-sm">𝕏</span>
+                        <span className="text-orange-400 font-semibold text-sm">{account}</span>
+                      </div>
+                    </SafeLink>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -286,6 +348,39 @@ export default function OnchainSocialPage() {
                   </div>
                   <div className="text-xs text-crypto-silver">@MrGreen_18 - BASE network trading signals and alpha</div>
                 </SafeLink>
+
+                <SafeLink
+                  href='https://x.com/chironchain'
+                  className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-blue-400 font-bold text-sm">𝕏</span>
+                    <span className="text-blue-400 font-semibold text-sm">chironchain</span>
+                  </div>
+                  <div className="text-xs text-crypto-silver">@chironchain - BASE network insights</div>
+                </SafeLink>
+
+                <SafeLink
+                  href='https://x.com/goodvimonly'
+                  className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-blue-400 font-bold text-sm">𝕏</span>
+                    <span className="text-blue-400 font-semibold text-sm">goodvimonly</span>
+                  </div>
+                  <div className="text-xs text-crypto-silver">@goodvimonly - BASE network analysis</div>
+                </SafeLink>
+
+                <SafeLink
+                  href='https://x.com/0x_tesseract'
+                  className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-blue-400 font-bold text-sm">𝕏</span>
+                    <span className="text-blue-400 font-semibold text-sm">0x_tesseract</span>
+                  </div>
+                  <div className="text-xs text-crypto-silver">@0x_tesseract - BASE network trading</div>
+                </SafeLink>
               </div>
             </div>
 
@@ -349,6 +444,28 @@ export default function OnchainSocialPage() {
                     <span className="text-green-400 font-semibold text-sm">Crypto_Alch</span>
                   </div>
                   <div className="text-xs text-crypto-silver">@Crypto_Alch - Crypto alchemy insights</div>
+                </SafeLink>
+
+                <SafeLink
+                  href='https://x.com/bruhbearr'
+                  className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-purple-400 font-bold text-sm">𝕏</span>
+                    <span className="text-purple-400 font-semibold text-sm">bruhbearr</span>
+                  </div>
+                  <div className="text-xs text-crypto-silver">@bruhbearr - Solana trading insights</div>
+                </SafeLink>
+
+                <SafeLink
+                  href='https://x.com/AltcoinMarksman'
+                  className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-purple-400 font-bold text-sm">𝕏</span>
+                    <span className="text-purple-400 font-semibold text-sm">AltcoinMarksman</span>
+                  </div>
+                  <div className="text-xs text-crypto-silver">@AltcoinMarksman - Solana market analysis</div>
                 </SafeLink>
               </div>
             </div>
