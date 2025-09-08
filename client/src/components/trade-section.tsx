@@ -372,7 +372,7 @@ export default function TradeSection() {
             <SafeIframe
               src="https://app.hyperliquid.xyz/trade"
               title="Hyperliquid Trading Terminal"
-              className="w-full h-[600px] rounded-lg"
+              className="w-full h-[800px] rounded-lg"
             />
           </div>
 
