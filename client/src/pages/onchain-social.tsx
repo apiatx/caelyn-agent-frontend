@@ -127,7 +127,7 @@ export default function OnchainSocialPage() {
                     'TechDev_52', 'ofvoice25355', 'CoinGurruu', 'stacy_muur', 
                     'martypartymusic', 'Defi0xJeff', 'altcoinvector', 'DeFi_Paanda', 
                     'cryptorinweb3', 'jkrdoc', 'Agent_rsch', 'OverkillTrading', 
-                    'dontbuytops', 'MetaverseRanger'
+                    'dontbuytops', 'MetaverseRanger', 'aixCB_Vc'
                   ].map((account) => {
                     return (
                     <SafeLink
