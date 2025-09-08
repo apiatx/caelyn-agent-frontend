@@ -86,35 +86,35 @@ export default function AlphaSection() {
         <GlassCard className="p-3 sm:p-4 lg:p-6">
 
           {/* Analytics */}
-          <div className="mb-8">
+          <div className="mb-8 relative">
             <div className="mb-4">
               <div className="flex items-center justify-center mb-2">
                 <h3 className="text-2xl font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">Analyze</h3>
               </div>
-              <div className="flex justify-center">
-                <button
-                  onClick={() => openInNewTab('https://app.artemisanalytics.com/')}
-                  className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm flex items-center gap-1"
-                >
-                  <ExternalLink className="w-3 h-3" />
-                  Open Full View
-                </button>
-              </div>
             </div>
-            <div className="w-full">
-              <iframe
-                src="https://app.artemisanalytics.com/"
-                title="Artemis Analytics Dashboard"
-                className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
-                frameBorder="0"
-                loading="lazy"
-                sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation-by-user-activation"
-                referrerPolicy="strict-origin-when-cross-origin"
-                style={{
-                  background: '#000000',
-                  colorScheme: 'dark'
-                }}
-              />
+            <div className="relative">
+              <div className="w-full">
+                <iframe
+                  src="https://app.artemisanalytics.com/"
+                  title="Artemis Analytics Dashboard"
+                  className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+                  frameBorder="0"
+                  loading="lazy"
+                  sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation-by-user-activation"
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  style={{
+                    background: '#000000',
+                    colorScheme: 'dark'
+                  }}
+                />
+              </div>
+              <button
+                onClick={() => openInNewTab('https://app.artemisanalytics.com/')}
+                className="absolute top-4 right-4 text-blue-400 hover:text-blue-300 text-xs sm:text-sm flex items-center gap-1 bg-black/60 backdrop-blur-sm px-3 py-2 rounded-lg border border-blue-400/30 hover:bg-blue-500/20 transition-all duration-300"
+              >
+                <ExternalLink className="w-3 h-3" />
+                Open Full View
+              </button>
             </div>
           </div>
 
@@ -194,30 +194,21 @@ export default function AlphaSection() {
           </div>
 
           {/* BBTerminal Trading Terminal */}
-          <div className="mb-8">
-            <div className="text-center mb-6">
-              <div className="flex items-center justify-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-gradient-to-r from-purple-400 to-fuchsia-500 rounded-xl flex items-center justify-center shadow-lg">
-                  <TrendingUp className="w-6 h-6 text-white" />
-                </div>
-                <h4 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-fuchsia-300 bg-clip-text text-transparent">BBTerminal Trading</h4>
-                <Badge className="bg-purple-500/30 text-purple-200 border-purple-400/40 px-3 py-1 font-semibold">
-                  LIVE
-                </Badge>
+          <div className="mb-8 relative">
+            <div className="relative">
+              <div className="w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg">
+                <SafeIframe
+                  src="https://app.bbterminal.com/degen"
+                  title="BBTerminal Degen Trading Terminal"
+                  className="w-full h-[600px] rounded-lg"
+                />
               </div>
               <button
                 onClick={() => openInNewTab('https://app.bbterminal.com/degen')}
-                className="text-purple-300 hover:text-purple-200 text-sm font-medium bg-purple-500/20 px-4 py-2 rounded-lg border border-purple-400/30 hover:bg-purple-500/30 transition-all duration-300 mx-auto"
+                className="absolute top-4 right-4 text-purple-300 hover:text-purple-200 text-sm font-medium bg-black/60 backdrop-blur-sm px-4 py-2 rounded-lg border border-purple-400/30 hover:bg-purple-500/30 transition-all duration-300"
               >
                 Open Full Terminal →
               </button>
-            </div>
-            <div className="w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg">
-              <SafeIframe
-                src="https://app.bbterminal.com/degen"
-                title="BBTerminal Degen Trading Terminal"
-                className="w-full h-[600px] rounded-lg"
-              />
             </div>
           </div>
 
