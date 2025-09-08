@@ -226,392 +226,395 @@ export default function OnchainSocialPage() {
                 <div className="flex items-center justify-center mb-6">
                   <h4 className="text-xl font-bold bg-gradient-to-r from-white to-purple-100 bg-clip-text text-transparent">Chains</h4>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {/* Placeholder for future chains content */}
+                
+                {/* Base and Solana Ecosystems - Side by Side */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                  {/* Base Ecosystem */}
+                  <GlassCard className="p-4">
+                    <div className="flex items-center justify-center mb-6">
+                      <h4 className="text-lg font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">Base Ecosystem</h4>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <SafeLink
+                        href='https://x.com/BaseDailyTK'
+                        className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-blue-400 font-bold text-sm">𝕏</span>
+                          <span className="text-blue-400 font-semibold text-sm">Base Daily TK</span>
+                        </div>
+                        <div className="text-xs text-crypto-silver">@BaseDailyTK - Daily BASE network updates and insights</div>
+                      </SafeLink>
+
+                      <SafeLink
+                        href='https://x.com/MemesOnBase'
+                        className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-blue-400 font-bold text-sm">𝕏</span>
+                          <span className="text-blue-400 font-semibold text-sm">Memes On Base</span>
+                        </div>
+                        <div className="text-xs text-crypto-silver">@MemesOnBase - BASE network meme culture and community</div>
+                      </SafeLink>
+
+                      <SafeLink
+                        href='https://x.com/MemesOnBase_'
+                        className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-blue-400 font-bold text-sm">𝕏</span>
+                          <span className="text-blue-400 font-semibold text-sm">Memes On Base</span>
+                        </div>
+                        <div className="text-xs text-crypto-silver">@MemesOnBase_ - BASE network meme culture and trends</div>
+                      </SafeLink>
+
+                      <SafeLink
+                        href='https://x.com/Shake51_'
+                        className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-blue-400 font-bold text-sm">𝕏</span>
+                          <span className="text-blue-400 font-semibold text-sm">Shake51</span>
+                        </div>
+                        <div className="text-xs text-crypto-silver">@Shake51_ - BASE network trading insights</div>
+                      </SafeLink>
+
+                      <SafeLink
+                        href='https://x.com/1CrypticPoet'
+                        className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-blue-400 font-bold text-sm">𝕏</span>
+                          <span className="text-blue-400 font-semibold text-sm">CrypticPoet</span>
+                        </div>
+                        <div className="text-xs text-crypto-silver">@1CrypticPoet - BASE network alpha and trading signals</div>
+                      </SafeLink>
+
+                      <SafeLink
+                        href='https://x.com/jamatto14'
+                        className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-blue-400 font-bold text-sm">𝕏</span>
+                          <span className="text-blue-400 font-semibold text-sm">Jamatto14</span>
+                        </div>
+                        <div className="text-xs text-crypto-silver">@jamatto14 - BASE network insights and updates</div>
+                      </SafeLink>
+
+                      <SafeLink
+                        href='https://x.com/MrGreen_18'
+                        className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-blue-400 font-bold text-sm">𝕏</span>
+                          <span className="text-blue-400 font-semibold text-sm">MrGreen_18</span>
+                        </div>
+                        <div className="text-xs text-crypto-silver">@MrGreen_18 - BASE network trading signals and alpha</div>
+                      </SafeLink>
+
+                      <SafeLink
+                        href='https://x.com/chironchain'
+                        className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-blue-400 font-bold text-sm">𝕏</span>
+                          <span className="text-blue-400 font-semibold text-sm">chironchain</span>
+                        </div>
+                        <div className="text-xs text-crypto-silver">@chironchain - BASE network insights</div>
+                      </SafeLink>
+
+                      <SafeLink
+                        href='https://x.com/goodvimonly'
+                        className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-blue-400 font-bold text-sm">𝕏</span>
+                          <span className="text-blue-400 font-semibold text-sm">goodvimonly</span>
+                        </div>
+                        <div className="text-xs text-crypto-silver">@goodvimonly - BASE network analysis</div>
+                      </SafeLink>
+
+                      <SafeLink
+                        href='https://x.com/0x_tesseract'
+                        className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-blue-400 font-bold text-sm">𝕏</span>
+                          <span className="text-blue-400 font-semibold text-sm">0x_tesseract</span>
+                        </div>
+                        <div className="text-xs text-crypto-silver">@0x_tesseract - BASE network trading</div>
+                      </SafeLink>
+
+                      <SafeLink
+                        href='https://x.com/Prometheus_The1'
+                        className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-blue-400 font-bold text-sm">𝕏</span>
+                          <span className="text-blue-400 font-semibold text-sm">Prometheus_The1</span>
+                        </div>
+                        <div className="text-xs text-crypto-silver">@Prometheus_The1 - BASE network insights</div>
+                      </SafeLink>
+
+                      <SafeLink
+                        href='https://x.com/lil_louieT'
+                        className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-blue-400 font-bold text-sm">𝕏</span>
+                          <span className="text-blue-400 font-semibold text-sm">lil_louieT</span>
+                        </div>
+                        <div className="text-xs text-crypto-silver">@lil_louieT - BASE network trading</div>
+                      </SafeLink>
+                    </div>
+                  </GlassCard>
+
+                  {/* Solana Ecosystem */}
+                  <GlassCard className="p-4">
+                    <div className="flex items-center justify-center mb-6">
+                      <h4 className="text-lg font-bold bg-gradient-to-r from-white to-purple-100 bg-clip-text text-transparent">Solana Ecosystem</h4>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <SafeLink
+                        href='https://x.com/Dior100x'
+                        className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-purple-400 font-bold text-sm">𝕏</span>
+                          <span className="text-purple-400 font-semibold text-sm">Dior100x</span>
+                        </div>
+                        <div className="text-xs text-crypto-silver">@Dior100x - Solana trading insights</div>
+                      </SafeLink>
+
+                      <SafeLink
+                        href='https://x.com/_Shadow36'
+                        className="p-3 bg-gray-500/10 border border-gray-500/20 rounded-lg hover:bg-gray-500/20 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-gray-400 font-bold text-sm">𝕏</span>
+                          <span className="text-gray-400 font-semibold text-sm">_Shadow36</span>
+                        </div>
+                        <div className="text-xs text-crypto-silver">@_Shadow36 - Solana market analysis</div>
+                      </SafeLink>
+
+                      <SafeLink
+                        href='https://x.com/WolverCrypto'
+                        className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg hover:bg-yellow-500/20 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-yellow-400 font-bold text-sm">𝕏</span>
+                          <span className="text-yellow-400 font-semibold text-sm">WolverCrypto</span>
+                        </div>
+                        <div className="text-xs text-crypto-silver">@WolverCrypto - Crypto trading insights</div>
+                      </SafeLink>
+
+                      <SafeLink
+                        href='https://x.com/watchingmarkets'
+                        className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-blue-400 font-bold text-sm">𝕏</span>
+                          <span className="text-blue-400 font-semibold text-sm">watchingmarkets</span>
+                        </div>
+                        <div className="text-xs text-crypto-silver">@watchingmarkets - Market watching insights</div>
+                      </SafeLink>
+
+                      <SafeLink
+                        href='https://x.com/Crypto_Alch'
+                        className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-green-400 font-bold text-sm">𝕏</span>
+                          <span className="text-green-400 font-semibold text-sm">Crypto_Alch</span>
+                        </div>
+                        <div className="text-xs text-crypto-silver">@Crypto_Alch - Crypto alchemy insights</div>
+                      </SafeLink>
+
+                      <SafeLink
+                        href='https://x.com/bruhbearr'
+                        className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-purple-400 font-bold text-sm">𝕏</span>
+                          <span className="text-purple-400 font-semibold text-sm">bruhbearr</span>
+                        </div>
+                        <div className="text-xs text-crypto-silver">@bruhbearr - Solana trading insights</div>
+                      </SafeLink>
+
+                      <SafeLink
+                        href='https://x.com/AltcoinMarksman'
+                        className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-purple-400 font-bold text-sm">𝕏</span>
+                          <span className="text-purple-400 font-semibold text-sm">AltcoinMarksman</span>
+                        </div>
+                        <div className="text-xs text-crypto-silver">@AltcoinMarksman - Solana market analysis</div>
+                      </SafeLink>
+                    </div>
+                  </GlassCard>
                 </div>
-              </GlassCard>
 
-              {/* Base Ecosystem */}
-              <GlassCard className="mb-6 p-4">
-                <div className="flex items-center justify-center mb-6">
-                  <h4 className="text-xl font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">Base Ecosystem</h4>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  <SafeLink
-                    href='https://x.com/BaseDailyTK'
-                    className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-blue-400 font-bold text-sm">𝕏</span>
-                      <span className="text-blue-400 font-semibold text-sm">Base Daily TK</span>
+                {/* Bittensor and Abstract Ecosystems - Side by Side */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Bittensor Ecosystem */}
+                  <GlassCard className="p-4">
+                    <div className="flex items-center justify-center mb-6">
+                      <h4 className="text-lg font-bold bg-gradient-to-r from-white to-orange-100 bg-clip-text text-transparent">Bittensor Ecosystem</h4>
                     </div>
-                    <div className="text-xs text-crypto-silver">@BaseDailyTK - Daily BASE network updates and insights</div>
-                  </SafeLink>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <SafeLink
+                        href='https://x.com/tao_agent'
+                        className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-purple-400 font-bold text-sm">𝕏</span>
+                          <span className="text-purple-400 font-semibold text-sm">TAO Agent</span>
+                        </div>
+                        <div className="text-xs text-crypto-silver">@tao_agent - Bittensor Signal Intelligence</div>
+                      </SafeLink>
 
-                  <SafeLink
-                    href='https://x.com/MemesOnBase'
-                    className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-blue-400 font-bold text-sm">𝕏</span>
-                      <span className="text-blue-400 font-semibold text-sm">Memes On Base</span>
-                    </div>
-                    <div className="text-xs text-crypto-silver">@MemesOnBase - BASE network meme culture and community</div>
-                  </SafeLink>
+                      <SafeLink
+                        href='https://x.com/Bitcast_network'
+                        className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-purple-400 font-bold text-sm">𝕏</span>
+                          <span className="text-purple-400 font-semibold text-sm">Bitcast Network</span>
+                        </div>
+                        <div className="text-xs text-crypto-silver">@Bitcast_network - TAO Network Analytics</div>
+                      </SafeLink>
 
-                  <SafeLink
-                    href='https://x.com/MemesOnBase_'
-                    className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-blue-400 font-bold text-sm">𝕏</span>
-                      <span className="text-blue-400 font-semibold text-sm">Memes On Base</span>
-                    </div>
-                    <div className="text-xs text-crypto-silver">@MemesOnBase_ - BASE network meme culture and trends</div>
-                  </SafeLink>
+                      <SafeLink
+                        href='https://x.com/TaoStacker'
+                        className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-purple-400 font-bold text-sm">𝕏</span>
+                          <span className="text-purple-400 font-semibold text-sm">TaoStacker</span>
+                        </div>
+                        <div className="text-xs text-crypto-silver">@TaoStacker - TAO Staking Insights</div>
+                      </SafeLink>
 
-                  <SafeLink
-                    href='https://x.com/Shake51_'
-                    className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-blue-400 font-bold text-sm">𝕏</span>
-                      <span className="text-blue-400 font-semibold text-sm">Shake51</span>
-                    </div>
-                    <div className="text-xs text-crypto-silver">@Shake51_ - BASE network trading insights</div>
-                  </SafeLink>
+                      <SafeLink
+                        href='https://x.com/TaoIsTheKey'
+                        className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-purple-400 font-bold text-sm">𝕏</span>
+                          <span className="text-purple-400 font-semibold text-sm">TaoIsTheKey</span>
+                        </div>
+                        <div className="text-xs text-crypto-silver">@TaoIsTheKey - TAO Market Analysis</div>
+                      </SafeLink>
 
-                  <SafeLink
-                    href='https://x.com/1CrypticPoet'
-                    className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-blue-400 font-bold text-sm">𝕏</span>
-                      <span className="text-blue-400 font-semibold text-sm">CrypticPoet</span>
-                    </div>
-                    <div className="text-xs text-crypto-silver">@1CrypticPoet - BASE network alpha and trading signals</div>
-                  </SafeLink>
+                      <SafeLink
+                        href='https://x.com/varimotrades'
+                        className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-purple-400 font-bold text-sm">𝕏</span>
+                          <span className="text-purple-400 font-semibold text-sm">VARiMOtrading</span>
+                        </div>
+                        <div className="text-xs text-crypto-silver">@varimotrades - TAO Trading Signals</div>
+                      </SafeLink>
 
-                  <SafeLink
-                    href='https://x.com/jamatto14'
-                    className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-blue-400 font-bold text-sm">𝕏</span>
-                      <span className="text-blue-400 font-semibold text-sm">Jamatto14</span>
-                    </div>
-                    <div className="text-xs text-crypto-silver">@jamatto14 - BASE network insights and updates</div>
-                  </SafeLink>
+                      <SafeLink
+                        href='https://x.com/_g_x_g'
+                        className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-purple-400 font-bold text-sm">𝕏</span>
+                          <span className="text-purple-400 font-semibold text-sm">GXG</span>
+                        </div>
+                        <div className="text-xs text-crypto-silver">@_g_x_g - Bittensor Intelligence</div>
+                      </SafeLink>
 
-                  <SafeLink
-                    href='https://x.com/MrGreen_18'
-                    className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-blue-400 font-bold text-sm">𝕏</span>
-                      <span className="text-blue-400 font-semibold text-sm">MrGreen_18</span>
-                    </div>
-                    <div className="text-xs text-crypto-silver">@MrGreen_18 - BASE network trading signals and alpha</div>
-                  </SafeLink>
+                      <SafeLink
+                        href='https://x.com/Shogun__base'
+                        className="p-3 bg-gray-500/10 border border-gray-500/20 rounded-lg hover:bg-gray-500/20 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-gray-400 font-bold text-sm">𝕏</span>
+                          <span className="text-gray-400 font-semibold text-sm">Shogun Base</span>
+                        </div>
+                        <div className="text-xs text-crypto-silver">@Shogun__base - Base Network Trading</div>
+                      </SafeLink>
 
-                  <SafeLink
-                    href='https://x.com/chironchain'
-                    className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-blue-400 font-bold text-sm">𝕏</span>
-                      <span className="text-blue-400 font-semibold text-sm">chironchain</span>
+                      <SafeLink
+                        href='https://x.com/Victor_crypto_2'
+                        className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-green-400 font-bold text-sm">𝕏</span>
+                          <span className="text-green-400 font-semibold text-sm">Victor Crypto</span>
+                        </div>
+                        <div className="text-xs text-crypto-silver">@Victor_crypto_2 - Crypto Market Analysis</div>
+                      </SafeLink>
                     </div>
-                    <div className="text-xs text-crypto-silver">@chironchain - BASE network insights</div>
-                  </SafeLink>
+                  </GlassCard>
 
-                  <SafeLink
-                    href='https://x.com/goodvimonly'
-                    className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-blue-400 font-bold text-sm">𝕏</span>
-                      <span className="text-blue-400 font-semibold text-sm">goodvimonly</span>
+                  {/* Abstract Ecosystem */}
+                  <GlassCard className="p-4">
+                    <div className="flex items-center justify-center mb-6">
+                      <h4 className="text-lg font-bold bg-gradient-to-r from-white to-indigo-100 bg-clip-text text-transparent">Abstract Ecosystem</h4>
                     </div>
-                    <div className="text-xs text-crypto-silver">@goodvimonly - BASE network analysis</div>
-                  </SafeLink>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <SafeLink
+                        href='https://x.com/AbstractChain'
+                        className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-blue-400 font-bold text-sm">𝕏</span>
+                          <span className="text-blue-400 font-semibold text-sm">AbstractChain</span>
+                        </div>
+                        <div className="text-xs text-crypto-silver">@AbstractChain - Official Abstract Chain updates</div>
+                      </SafeLink>
 
-                  <SafeLink
-                    href='https://x.com/0x_tesseract'
-                    className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-blue-400 font-bold text-sm">𝕏</span>
-                      <span className="text-blue-400 font-semibold text-sm">0x_tesseract</span>
-                    </div>
-                    <div className="text-xs text-crypto-silver">@0x_tesseract - BASE network trading</div>
-                  </SafeLink>
+                      <SafeLink
+                        href='https://x.com/MemesAbstract'
+                        className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-purple-400 font-bold text-sm">𝕏</span>
+                          <span className="text-purple-400 font-semibold text-sm">MemesAbstract</span>
+                        </div>
+                        <div className="text-xs text-crypto-silver">@MemesAbstract - Abstract ecosystem memes</div>
+                      </SafeLink>
 
-                  <SafeLink
-                    href='https://x.com/Prometheus_The1'
-                    className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-blue-400 font-bold text-sm">𝕏</span>
-                      <span className="text-blue-400 font-semibold text-sm">Prometheus_The1</span>
-                    </div>
-                    <div className="text-xs text-crypto-silver">@Prometheus_The1 - BASE network insights</div>
-                  </SafeLink>
+                      <SafeLink
+                        href='https://x.com/ProofOfEly'
+                        className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-green-400 font-bold text-sm">𝕏</span>
+                          <span className="text-green-400 font-semibold text-sm">ProofOfEly</span>
+                        </div>
+                        <div className="text-xs text-crypto-silver">@ProofOfEly - Abstract trading insights</div>
+                      </SafeLink>
 
-                  <SafeLink
-                    href='https://x.com/lil_louieT'
-                    className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-blue-400 font-bold text-sm">𝕏</span>
-                      <span className="text-blue-400 font-semibold text-sm">lil_louieT</span>
-                    </div>
-                    <div className="text-xs text-crypto-silver">@lil_louieT - BASE network trading</div>
-                  </SafeLink>
-                </div>
-              </GlassCard>
+                      <SafeLink
+                        href='https://x.com/AbstractHubHB'
+                        className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-orange-400 font-bold text-sm">𝕏</span>
+                          <span className="text-orange-400 font-semibold text-sm">AbstractHubHB</span>
+                        </div>
+                        <div className="text-xs text-crypto-silver">@AbstractHubHB - Abstract Hub community</div>
+                      </SafeLink>
 
-              {/* Solana Ecosystem */}
-              <GlassCard className="mb-6 p-4">
-                <div className="flex items-center justify-center mb-6">
-                  <h4 className="text-xl font-bold bg-gradient-to-r from-white to-purple-100 bg-clip-text text-transparent">Solana Ecosystem</h4>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  <SafeLink
-                    href='https://x.com/Dior100x'
-                    className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-purple-400 font-bold text-sm">𝕏</span>
-                      <span className="text-purple-400 font-semibold text-sm">Dior100x</span>
+                      <SafeLink
+                        href='https://x.com/Abstract_Eco'
+                        className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-blue-400 font-bold text-sm">𝕏</span>
+                          <span className="text-blue-400 font-semibold text-sm">Abstract_Eco</span>
+                        </div>
+                        <div className="text-xs text-crypto-silver">@Abstract_Eco - Abstract ecosystem updates</div>
+                      </SafeLink>
                     </div>
-                    <div className="text-xs text-crypto-silver">@Dior100x - Solana trading insights</div>
-                  </SafeLink>
-
-                  <SafeLink
-                    href='https://x.com/_Shadow36'
-                    className="p-3 bg-gray-500/10 border border-gray-500/20 rounded-lg hover:bg-gray-500/20 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-gray-400 font-bold text-sm">𝕏</span>
-                      <span className="text-gray-400 font-semibold text-sm">_Shadow36</span>
-                    </div>
-                    <div className="text-xs text-crypto-silver">@_Shadow36 - Solana market analysis</div>
-                  </SafeLink>
-
-                  <SafeLink
-                    href='https://x.com/WolverCrypto'
-                    className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg hover:bg-yellow-500/20 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-yellow-400 font-bold text-sm">𝕏</span>
-                      <span className="text-yellow-400 font-semibold text-sm">WolverCrypto</span>
-                    </div>
-                    <div className="text-xs text-crypto-silver">@WolverCrypto - Crypto trading insights</div>
-                  </SafeLink>
-
-                  <SafeLink
-                    href='https://x.com/watchingmarkets'
-                    className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-blue-400 font-bold text-sm">𝕏</span>
-                      <span className="text-blue-400 font-semibold text-sm">watchingmarkets</span>
-                    </div>
-                    <div className="text-xs text-crypto-silver">@watchingmarkets - Market watching insights</div>
-                  </SafeLink>
-
-                  <SafeLink
-                    href='https://x.com/Crypto_Alch'
-                    className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-green-400 font-bold text-sm">𝕏</span>
-                      <span className="text-green-400 font-semibold text-sm">Crypto_Alch</span>
-                    </div>
-                    <div className="text-xs text-crypto-silver">@Crypto_Alch - Crypto alchemy insights</div>
-                  </SafeLink>
-
-                  <SafeLink
-                    href='https://x.com/bruhbearr'
-                    className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-purple-400 font-bold text-sm">𝕏</span>
-                      <span className="text-purple-400 font-semibold text-sm">bruhbearr</span>
-                    </div>
-                    <div className="text-xs text-crypto-silver">@bruhbearr - Solana trading insights</div>
-                  </SafeLink>
-
-                  <SafeLink
-                    href='https://x.com/AltcoinMarksman'
-                    className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-purple-400 font-bold text-sm">𝕏</span>
-                      <span className="text-purple-400 font-semibold text-sm">AltcoinMarksman</span>
-                    </div>
-                    <div className="text-xs text-crypto-silver">@AltcoinMarksman - Solana market analysis</div>
-                  </SafeLink>
-                </div>
-              </GlassCard>
-
-              {/* Bittensor Ecosystem */}
-              <GlassCard className="mb-6 p-4">
-                <div className="flex items-center justify-center mb-6">
-                  <h4 className="text-xl font-bold bg-gradient-to-r from-white to-orange-100 bg-clip-text text-transparent">Bittensor Ecosystem</h4>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  <SafeLink
-                    href='https://x.com/tao_agent'
-                    className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-purple-400 font-bold text-sm">𝕏</span>
-                      <span className="text-purple-400 font-semibold text-sm">TAO Agent</span>
-                    </div>
-                    <div className="text-xs text-crypto-silver">@tao_agent - Bittensor Signal Intelligence</div>
-                  </SafeLink>
-
-                  <SafeLink
-                    href='https://x.com/Bitcast_network'
-                    className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-purple-400 font-bold text-sm">𝕏</span>
-                      <span className="text-purple-400 font-semibold text-sm">Bitcast Network</span>
-                    </div>
-                    <div className="text-xs text-crypto-silver">@Bitcast_network - TAO Network Analytics</div>
-                  </SafeLink>
-
-                  <SafeLink
-                    href='https://x.com/TaoStacker'
-                    className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-purple-400 font-bold text-sm">𝕏</span>
-                      <span className="text-purple-400 font-semibold text-sm">TaoStacker</span>
-                    </div>
-                    <div className="text-xs text-crypto-silver">@TaoStacker - TAO Staking Insights</div>
-                  </SafeLink>
-
-                  <SafeLink
-                    href='https://x.com/TaoIsTheKey'
-                    className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-purple-400 font-bold text-sm">𝕏</span>
-                      <span className="text-purple-400 font-semibold text-sm">TaoIsTheKey</span>
-                    </div>
-                    <div className="text-xs text-crypto-silver">@TaoIsTheKey - TAO Market Analysis</div>
-                  </SafeLink>
-
-                  <SafeLink
-                    href='https://x.com/varimotrades'
-                    className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-purple-400 font-bold text-sm">𝕏</span>
-                      <span className="text-purple-400 font-semibold text-sm">VARiMOtrading</span>
-                    </div>
-                    <div className="text-xs text-crypto-silver">@varimotrades - TAO Trading Signals</div>
-                  </SafeLink>
-
-                  <SafeLink
-                    href='https://x.com/_g_x_g'
-                    className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-purple-400 font-bold text-sm">𝕏</span>
-                      <span className="text-purple-400 font-semibold text-sm">GXG</span>
-                    </div>
-                    <div className="text-xs text-crypto-silver">@_g_x_g - Bittensor Intelligence</div>
-                  </SafeLink>
-
-                  <SafeLink
-                    href='https://x.com/Shogun__base'
-                    className="p-3 bg-gray-500/10 border border-gray-500/20 rounded-lg hover:bg-gray-500/20 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-gray-400 font-bold text-sm">𝕏</span>
-                      <span className="text-gray-400 font-semibold text-sm">Shogun Base</span>
-                    </div>
-                    <div className="text-xs text-crypto-silver">@Shogun__base - Base Network Trading</div>
-                  </SafeLink>
-
-                  <SafeLink
-                    href='https://x.com/Victor_crypto_2'
-                    className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-green-400 font-bold text-sm">𝕏</span>
-                      <span className="text-green-400 font-semibold text-sm">Victor Crypto</span>
-                    </div>
-                    <div className="text-xs text-crypto-silver">@Victor_crypto_2 - Crypto Market Analysis</div>
-                  </SafeLink>
-                </div>
-              </GlassCard>
-
-              {/* Abstract Ecosystem */}
-              <GlassCard className="mb-6 p-4">
-                <div className="flex items-center justify-center mb-6">
-                  <h4 className="text-xl font-bold bg-gradient-to-r from-white to-indigo-100 bg-clip-text text-transparent">Abstract Ecosystem</h4>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  <SafeLink
-                    href='https://x.com/AbstractChain'
-                    className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-blue-400 font-bold text-sm">𝕏</span>
-                      <span className="text-blue-400 font-semibold text-sm">AbstractChain</span>
-                    </div>
-                    <div className="text-xs text-crypto-silver">@AbstractChain - Official Abstract Chain updates</div>
-                  </SafeLink>
-
-                  <SafeLink
-                    href='https://x.com/MemesAbstract'
-                    className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-purple-400 font-bold text-sm">𝕏</span>
-                      <span className="text-purple-400 font-semibold text-sm">MemesAbstract</span>
-                    </div>
-                    <div className="text-xs text-crypto-silver">@MemesAbstract - Abstract ecosystem memes</div>
-                  </SafeLink>
-
-                  <SafeLink
-                    href='https://x.com/ProofOfEly'
-                    className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-green-400 font-bold text-sm">𝕏</span>
-                      <span className="text-green-400 font-semibold text-sm">ProofOfEly</span>
-                    </div>
-                    <div className="text-xs text-crypto-silver">@ProofOfEly - Abstract trading insights</div>
-                  </SafeLink>
-
-                  <SafeLink
-                    href='https://x.com/AbstractHubHB'
-                    className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-orange-400 font-bold text-sm">𝕏</span>
-                      <span className="text-orange-400 font-semibold text-sm">AbstractHubHB</span>
-                    </div>
-                    <div className="text-xs text-crypto-silver">@AbstractHubHB - Abstract Hub community</div>
-                  </SafeLink>
-
-                  <SafeLink
-                    href='https://x.com/Abstract_Eco'
-                    className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-blue-400 font-bold text-sm">𝕏</span>
-                      <span className="text-blue-400 font-semibold text-sm">Abstract_Eco</span>
-                    </div>
-                    <div className="text-xs text-crypto-silver">@Abstract_Eco - Abstract ecosystem updates</div>
-                  </SafeLink>
+                  </GlassCard>
                 </div>
               </GlassCard>
 
