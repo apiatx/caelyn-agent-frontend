@@ -234,11 +234,11 @@ export default function AlphaSection() {
             </SafeLink>
           </div>
 
-          {/* DexCheck - Full Width */}
-          <div className="mb-6">
+          {/* DexCheck and Velvet Capital - Two Across */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
             <SafeLink
               href='https://dexcheck.ai/app'
-              className="w-full p-5 bg-gradient-to-br from-yellow-500/15 to-yellow-600/15 hover:from-yellow-500/25 hover:to-yellow-600/25 border border-yellow-500/30 hover:border-yellow-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-yellow-500/20 transform flex flex-col items-center"
+              className="p-5 bg-gradient-to-br from-yellow-500/15 to-yellow-600/15 hover:from-yellow-500/25 hover:to-yellow-600/25 border border-yellow-500/30 hover:border-yellow-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-yellow-500/20 transform"
             >
               <div className="flex flex-col items-center gap-2 mb-3">
                 <div className="w-8 h-8 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-lg flex items-center justify-center shadow-md">
@@ -248,6 +248,19 @@ export default function AlphaSection() {
               </div>
               <p className="text-gray-300 text-sm font-medium text-center">Multi-chain analytics platform</p>
             </SafeLink>
+
+            <SafeLink
+              href='https://dapp.velvet.capital/'
+              className="p-5 bg-gradient-to-br from-pink-500/15 to-pink-600/15 hover:from-pink-500/25 hover:to-pink-600/25 border border-pink-500/30 hover:border-pink-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-pink-500/20 transform"
+            >
+              <div className="flex flex-col items-center gap-2 mb-3">
+                <div className="w-8 h-8 bg-gradient-to-br from-pink-500 to-pink-600 rounded-lg flex items-center justify-center shadow-md">
+                  <span className="text-white font-bold text-xs">V</span>
+                </div>
+                <h4 className="text-pink-300 font-bold text-lg">Velvet Capital</h4>
+              </div>
+              <p className="text-gray-300 text-sm font-medium text-center">DeFi Portfolio Management</p>
+            </SafeLink>
           </div>
 
           {/* AI Agents Subsection */}
@@ -256,18 +269,18 @@ export default function AlphaSection() {
               <h4 className="text-xl font-bold bg-gradient-to-r from-white to-cyan-100 bg-clip-text text-transparent">AI Agents</h4>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <SafeLink
-                href='https://dapp.velvet.capital/'
-                className="p-5 bg-gradient-to-br from-pink-500/15 to-pink-600/15 hover:from-pink-500/25 hover:to-pink-600/25 border border-pink-500/30 hover:border-pink-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-pink-500/20 transform"
+                href='https://agents.cookie.fun/'
+                className="p-5 bg-gradient-to-br from-green-500/15 to-green-600/15 hover:from-green-500/25 hover:to-green-600/25 border border-green-500/30 hover:border-green-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-green-500/20 transform"
               >
                 <div className="flex flex-col items-center gap-2 mb-3">
-                  <div className="w-8 h-8 bg-gradient-to-br from-pink-500 to-pink-600 rounded-lg flex items-center justify-center shadow-md">
-                    <span className="text-white font-bold text-xs">V</span>
+                  <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center shadow-md">
+                    <span className="text-white font-bold text-xs">C</span>
                   </div>
-                  <h4 className="text-pink-300 font-bold text-lg">Velvet Capital</h4>
+                  <h4 className="text-green-300 font-bold text-lg">Cookie Agents</h4>
                 </div>
-                <p className="text-gray-300 text-sm font-medium text-center">DeFi Portfolio Management</p>
+                <p className="text-gray-300 text-sm font-medium text-center">AI Agent Discovery Platform</p>
               </SafeLink>
 
               <SafeLink
@@ -281,19 +294,6 @@ export default function AlphaSection() {
                   <h4 className="text-indigo-300 font-bold text-lg">Aya AI</h4>
                 </div>
                 <p className="text-gray-300 text-sm font-medium text-center">Crypto AI Agent Analytics</p>
-              </SafeLink>
-
-              <SafeLink
-                href='https://agents.cookie.fun/'
-                className="p-5 bg-gradient-to-br from-green-500/15 to-green-600/15 hover:from-green-500/25 hover:to-green-600/25 border border-green-500/30 hover:border-green-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-green-500/20 transform"
-              >
-                <div className="flex flex-col items-center gap-2 mb-3">
-                  <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center shadow-md">
-                    <span className="text-white font-bold text-xs">C</span>
-                  </div>
-                  <h4 className="text-green-300 font-bold text-lg">Cookie Agents</h4>
-                </div>
-                <p className="text-gray-300 text-sm font-medium text-center">AI Agent Discovery Platform</p>
               </SafeLink>
             </div>
           </div>
