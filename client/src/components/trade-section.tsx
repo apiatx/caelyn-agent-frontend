@@ -254,16 +254,6 @@ export default function TradeSection() {
             </div>
           </div>
           
-          {/* BBTerminal Iframe */}
-          <div className="w-full">
-            <div className="bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg">
-              <SafeIframe
-                src="https://app.bbterminal.com/degen"
-                title="BBTerminal Degen Trading Terminal"
-                className="w-full h-[600px] rounded-lg"
-              />
-            </div>
-          </div>
 
           {/* Primary App - Definitive Edge (Full Width) */}
           <div className="w-full">

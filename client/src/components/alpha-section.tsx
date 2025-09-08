@@ -193,6 +193,34 @@ export default function AlphaSection() {
             <TopDailyGainersTop500 />
           </div>
 
+          {/* BBTerminal Trading Terminal */}
+          <div className="mb-8">
+            <div className="text-center mb-6">
+              <div className="flex items-center justify-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-gradient-to-r from-purple-400 to-fuchsia-500 rounded-xl flex items-center justify-center shadow-lg">
+                  <TrendingUp className="w-6 h-6 text-white" />
+                </div>
+                <h4 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-fuchsia-300 bg-clip-text text-transparent">BBTerminal Trading</h4>
+                <Badge className="bg-purple-500/30 text-purple-200 border-purple-400/40 px-3 py-1 font-semibold">
+                  LIVE
+                </Badge>
+              </div>
+              <button
+                onClick={() => openInNewTab('https://app.bbterminal.com/degen')}
+                className="text-purple-300 hover:text-purple-200 text-sm font-medium bg-purple-500/20 px-4 py-2 rounded-lg border border-purple-400/30 hover:bg-purple-500/30 transition-all duration-300 mx-auto"
+              >
+                Open Full Terminal →
+              </button>
+            </div>
+            <div className="w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg">
+              <SafeIframe
+                src="https://app.bbterminal.com/degen"
+                title="BBTerminal Degen Trading Terminal"
+                className="w-full h-[600px] rounded-lg"
+              />
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
             <SafeLink
               href='https://geckoterminal.com/'
