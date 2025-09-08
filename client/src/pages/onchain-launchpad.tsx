@@ -136,6 +136,60 @@ export default function OnchainLaunchpadPage() {
           />
         </GlassCard>
 
+        {/* CoinGecko Launchpad */}
+        <GlassCard className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-teal-500 rounded-full flex items-center justify-center">
+                <Rocket className="w-4 h-4 text-white" />
+              </div>
+              <h3 className="text-xl font-semibold text-white">CoinGecko Launchpad</h3>
+            </div>
+            <Button
+              onClick={() => openInNewTab('https://www.coingecko.com/en/categories/launchpad')}
+              className="bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white font-semibold px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2"
+            >
+              <ExternalLink className="w-4 h-4" />
+              Open Full View
+            </Button>
+          </div>
+          <iframe
+            src="https://www.coingecko.com/en/categories/launchpad"
+            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+            title="CoinGecko Launchpad"
+            frameBorder="0"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+            referrerPolicy="no-referrer-when-downgrade"
+          />
+        </GlassCard>
+
+        {/* ChainBroker Platforms */}
+        <GlassCard className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
+                <Rocket className="w-4 h-4 text-white" />
+              </div>
+              <h3 className="text-xl font-semibold text-white">ChainBroker Platforms</h3>
+            </div>
+            <Button
+              onClick={() => openInNewTab('https://chainbroker.io/platforms/')}
+              className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2"
+            >
+              <ExternalLink className="w-4 h-4" />
+              Open Full View
+            </Button>
+          </div>
+          <iframe
+            src="https://chainbroker.io/platforms/"
+            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+            title="ChainBroker Platforms"
+            frameBorder="0"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+            referrerPolicy="no-referrer-when-downgrade"
+          />
+        </GlassCard>
+
       </main>
     </div>
   );
