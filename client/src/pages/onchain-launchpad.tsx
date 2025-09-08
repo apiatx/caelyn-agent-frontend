@@ -82,34 +82,7 @@ export default function OnchainLaunchpadPage() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         
-        {/* CoinLaunch Launchpads */}
-        <GlassCard className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
-                <Rocket className="w-4 h-4 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold text-white">CoinLaunch Launchpads</h3>
-            </div>
-            <Button
-              onClick={() => openInNewTab('https://coinlaunch.space/launchpads/')}
-              className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white font-semibold px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2"
-            >
-              <ExternalLink className="w-4 h-4" />
-              Open Full View
-            </Button>
-          </div>
-          <iframe
-            src="https://coinlaunch.space/launchpads/"
-            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            title="CoinLaunch Launchpads"
-            frameBorder="0"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
-            referrerPolicy="no-referrer-when-downgrade"
-          />
-        </GlassCard>
-
-        {/* CryptoRank Fundraising Platforms */}
+        {/* 1. CryptoRank Fundraising Platforms */}
         <GlassCard className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
@@ -136,34 +109,34 @@ export default function OnchainLaunchpadPage() {
           />
         </GlassCard>
 
-        {/* CoinGecko Launchpad */}
+        {/* 2. CoinLaunch Launchpads */}
         <GlassCard className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-teal-500 rounded-full flex items-center justify-center">
+              <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
                 <Rocket className="w-4 h-4 text-white" />
               </div>
-              <h3 className="text-xl font-semibold text-white">CoinGecko Launchpad</h3>
+              <h3 className="text-xl font-semibold text-white">CoinLaunch Launchpads</h3>
             </div>
             <Button
-              onClick={() => openInNewTab('https://www.coingecko.com/en/categories/launchpad')}
-              className="bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white font-semibold px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2"
+              onClick={() => openInNewTab('https://coinlaunch.space/launchpads/')}
+              className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white font-semibold px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2"
             >
               <ExternalLink className="w-4 h-4" />
               Open Full View
             </Button>
           </div>
           <iframe
-            src="https://www.coingecko.com/en/categories/launchpad"
+            src="https://coinlaunch.space/launchpads/"
             className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            title="CoinGecko Launchpad"
+            title="CoinLaunch Launchpads"
             frameBorder="0"
             sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
             referrerPolicy="no-referrer-when-downgrade"
           />
         </GlassCard>
 
-        {/* ChainBroker Platforms */}
+        {/* 3. ChainBroker Platforms */}
         <GlassCard className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
@@ -184,6 +157,52 @@ export default function OnchainLaunchpadPage() {
             src="https://chainbroker.io/platforms/"
             className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
             title="ChainBroker Platforms"
+            frameBorder="0"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+            referrerPolicy="no-referrer-when-downgrade"
+          />
+        </GlassCard>
+
+        {/* 4. CoinGecko Launchpad - Button Only */}
+        <GlassCard className="p-6">
+          <div className="text-center">
+            <div className="flex justify-center items-center gap-3 mb-4">
+              <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-teal-500 rounded-full flex items-center justify-center">
+                <Rocket className="w-4 h-4 text-white" />
+              </div>
+              <h3 className="text-xl font-semibold text-white">CoinGecko Launchpad</h3>
+            </div>
+            <Button
+              onClick={() => openInNewTab('https://www.coingecko.com/en/categories/launchpad')}
+              className="bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white font-semibold px-6 py-3 rounded-lg transition-all duration-200 flex items-center gap-2 mx-auto"
+            >
+              <ExternalLink className="w-5 h-5" />
+              Open CoinGecko Launchpad
+            </Button>
+          </div>
+        </GlassCard>
+
+        {/* 5. Utility Section */}
+        <GlassCard className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-gray-500 to-slate-500 rounded-full flex items-center justify-center">
+                <Rocket className="w-4 h-4 text-white" />
+              </div>
+              <h3 className="text-xl font-semibold text-white">Utility</h3>
+            </div>
+            <Button
+              onClick={() => openInNewTab('https://proofplatform.io/projects')}
+              className="bg-gradient-to-r from-gray-500 to-slate-500 hover:from-gray-600 hover:to-slate-600 text-white font-semibold px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2"
+            >
+              <ExternalLink className="w-4 h-4" />
+              Open Full View
+            </Button>
+          </div>
+          <iframe
+            src="https://proofplatform.io/projects"
+            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+            title="ProofPlatform Projects"
             frameBorder="0"
             sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
             referrerPolicy="no-referrer-when-downgrade"
