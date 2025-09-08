@@ -120,12 +120,12 @@ export default function OnchainSocialPage() {
               <div className="mb-8">
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mb-8">
                   {[
-                    'TechDev_52', 'Market Watcher', 'WolverCrypto', 'altcoinvector', 'AltcoinMarksman',
-                    'Voice of the Gods', 'CoinGurruu', 'CryptoZer0_', 'DeFi_Paanda', 'aicryptopattern',
-                    'bittybitbit86', 'Ethimedes', 'Whale_AI_net', 'Defi0xJeff', 'EricCryptoman',
+                    'Market Watcher', 'WolverCrypto', 'AltcoinMarksman',
+                    'CryptoZer0_', 'DeFi_Paanda', 'aicryptopattern',
+                    'bittybitbit86', 'Ethimedes', 'Whale_AI_net', 'EricCryptoman',
                     'cryptorinweb3', 'OverkillTrading', 'jkrdoc', 'chironchain', 'goodvimonly',
                     'Agent_rsch', 'dontbuytops', 'bruhbearr', 'MetaverseRanger', 'Shake51_',
-                    '0x_tesseract', 'TheEuroSniper', 'CryptoThannos', 'stacy_muur', 'martypartymusic',
+                    '0x_tesseract', 'TheEuroSniper', 'CryptoThannos',
                     'HolderScan'
                   ].map((account) => {
                     // Special mapping for accounts with different URLs
@@ -152,13 +152,29 @@ export default function OnchainSocialPage() {
                 </div>
               </div>
 
-              {/* Macro Subsection */}
+              {/* Investors Subsection */}
               <div className="mb-8">
                 <div className="flex items-center justify-center mb-6">
-                  <h4 className="text-xl font-bold bg-gradient-to-r from-white to-green-100 bg-clip-text text-transparent">Macro</h4>
+                  <h4 className="text-xl font-bold bg-gradient-to-r from-white to-green-100 bg-clip-text text-transparent">Investors</h4>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {/* Placeholder for future macro content */}
+                  {[
+                    'TechDev_52', 'Voice of the Gods', 'CoinGurruu', 'stacy_muur', 
+                    'martypartymusic', 'Defi0xJeff', 'altcoinvector'
+                  ].map((account) => {
+                    return (
+                    <SafeLink
+                      key={account}
+                      href={`https://x.com/${account}`}
+                      className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-green-400 font-bold text-sm">𝕏</span>
+                        <span className="text-green-400 font-semibold text-sm">{account}</span>
+                      </div>
+                    </SafeLink>
+                    );
+                  })}
                 </div>
               </div>
 
