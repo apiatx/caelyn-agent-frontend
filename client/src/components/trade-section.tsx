@@ -260,7 +260,7 @@ export default function TradeSection() {
               <SafeIframe
                 src="https://app.bbterminal.com/degen"
                 title="BBTerminal Degen Trading Terminal"
-                className="w-full h-96 rounded-lg"
+                className="w-full h-[600px] rounded-lg"
               />
             </div>
           </div>
