@@ -545,6 +545,58 @@ export default function AlphaSection() {
         </GlassCard>
       </div>
 
+      {/* Social Indexes on Base Section */}
+      <div className="mt-12">
+        <GlassCard className="p-8">
+          <div className="text-center mb-8">
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-gradient-to-r from-green-400 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg">
+                <TrendingUp className="w-6 h-6 text-white" />
+              </div>
+              <h4 className="text-3xl font-bold bg-gradient-to-r from-green-400 to-emerald-300 bg-clip-text text-transparent">Social Indexes on Base</h4>
+              <Badge className="bg-green-500/30 text-green-200 border-green-400/40 px-3 py-1 font-semibold">
+                FEATURED
+              </Badge>
+            </div>
+            <p className="text-green-200/80 text-lg font-medium">Advanced social intelligence and market indexing for Base ecosystem</p>
+          </div>
+          
+          <SafeLink
+            href='https://indexy.xyz/home'
+            className="group w-full bg-gradient-to-br from-green-500/40 via-emerald-500/30 to-teal-500/40 border border-green-400/50 hover:from-green-400/50 hover:via-emerald-400/40 hover:to-teal-400/50 hover:border-green-300/70 text-white justify-center p-8 h-auto rounded-xl transition-all duration-500 flex items-center shadow-2xl hover:shadow-green-500/40 transform hover:scale-105 backdrop-blur-sm block"
+          >
+            <div className="text-center">
+              <div className="flex items-center justify-center mb-4">
+                <div>
+                  <h4 className="text-3xl font-bold text-green-100 group-hover:text-white transition-colors duration-300 mb-2">Indexy</h4>
+                  <Badge className="bg-green-400/30 text-green-100 border-green-300/40 px-4 py-2 font-bold text-sm">
+                    PREMIUM PLATFORM
+                  </Badge>
+                </div>
+              </div>
+              <p className="text-green-100/90 text-lg font-medium mb-4 max-w-2xl mx-auto leading-relaxed">
+                Professional-grade crypto market indexing platform with advanced social intelligence, 
+                real-time sentiment analysis, and comprehensive Base ecosystem tracking
+              </p>
+              <div className="flex items-center justify-center gap-6 text-sm text-green-200/80">
+                <div className="flex items-center gap-2">
+                  <Star className="w-4 h-4" />
+                  <span>Social Analytics</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4" />
+                  <span>Market Indexes</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <ExternalLink className="w-4 h-4" />
+                  <span>Base Ecosystem</span>
+                </div>
+              </div>
+            </div>
+          </SafeLink>
+        </GlassCard>
+      </div>
+
       {/* Indexy Analytics Graphic */}
       <div className="mt-12 flex justify-center">
         <GlassCard className="p-8">
