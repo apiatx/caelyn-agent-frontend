@@ -207,6 +207,47 @@ export default function OnchainLaunchpadPage() {
             sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
             referrerPolicy="no-referrer-when-downgrade"
           />
+          
+          {/* Believe.app Button */}
+          <div className="text-center mt-6">
+            <Button
+              onClick={() => openInNewTab('https://believe.app/auth')}
+              className="bg-gradient-to-r from-gray-500 to-slate-500 hover:from-gray-600 hover:to-slate-600 text-white font-semibold px-6 py-3 rounded-lg transition-all duration-200 flex items-center gap-2 mx-auto"
+            >
+              <ExternalLink className="w-5 h-5" />
+              Open Believe.app
+            </Button>
+          </div>
+        </GlassCard>
+
+        {/* 6. Trenches Section */}
+        <GlassCard className="p-6">
+          <div className="text-center">
+            <div className="flex justify-center items-center gap-3 mb-6">
+              <div className="w-8 h-8 bg-gradient-to-r from-red-500 to-pink-500 rounded-full flex items-center justify-center">
+                <Rocket className="w-4 h-4 text-white" />
+              </div>
+              <h3 className="text-xl font-semibold text-white">Trenches</h3>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <Button
+                onClick={() => openInNewTab('https://pump.fun')}
+                className="bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white font-semibold px-6 py-3 rounded-lg transition-all duration-200 flex items-center gap-2"
+              >
+                <ExternalLink className="w-5 h-5" />
+                Open Pump.fun
+              </Button>
+              
+              <Button
+                onClick={() => openInNewTab('https://bonk.fun')}
+                className="bg-gradient-to-r from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 text-white font-semibold px-6 py-3 rounded-lg transition-all duration-200 flex items-center gap-2"
+              >
+                <ExternalLink className="w-5 h-5" />
+                Open Bonk.fun
+              </Button>
+            </div>
+          </div>
         </GlassCard>
 
       </main>
