@@ -93,7 +93,7 @@ export default function PredictPage() {
               <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-yellow-500 rounded-full flex items-center justify-center">
                 <TrendingUp className="w-4 h-4 text-white" />
               </div>
-              <h3 className="text-xl font-semibold text-white">Polymarket Crypto</h3>
+              <h3 className="text-xl font-semibold text-white">Polymarket</h3>
             </div>
             <Button
               onClick={() => openInNewTab('https://polymarket.com/crypto')}
@@ -106,7 +106,7 @@ export default function PredictPage() {
           <iframe
             src="https://polymarket.com/crypto"
             className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            title="Polymarket Crypto"
+            title="Polymarket"
             sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
           />
 
