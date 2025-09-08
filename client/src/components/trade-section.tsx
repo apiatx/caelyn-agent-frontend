@@ -80,12 +80,13 @@ export default function TradeSection() {
         
         {/* Swap Subsection */}
         <div className="space-y-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-8 h-8 bg-gradient-to-r from-pink-400 to-rose-500 rounded-lg flex items-center justify-center">
-              <ArrowUpDown className="w-4 h-4 text-white" />
+          <div className="text-center mb-6">
+            <div className="flex items-center justify-center gap-3 mb-2">
+              <div className="w-8 h-8 bg-gradient-to-r from-pink-400 to-rose-500 rounded-lg flex items-center justify-center">
+                <ArrowUpDown className="w-4 h-4 text-white" />
+              </div>
+              <h4 className="text-2xl font-bold bg-gradient-to-r from-pink-400 to-rose-300 bg-clip-text text-transparent">Swap</h4>
             </div>
-            <h4 className="text-2xl font-bold bg-gradient-to-r from-pink-400 to-rose-300 bg-clip-text text-transparent">Swap</h4>
-            <div className="flex-1 h-px bg-gradient-to-r from-pink-500/50 to-transparent"></div>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -135,12 +136,13 @@ export default function TradeSection() {
 
         {/* Swidge Subsection */}
         <div className="space-y-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-8 h-8 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-lg flex items-center justify-center">
-              <ArrowLeftRight className="w-4 h-4 text-white" />
+          <div className="text-center mb-6">
+            <div className="flex items-center justify-center gap-3 mb-2">
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-lg flex items-center justify-center">
+                <ArrowLeftRight className="w-4 h-4 text-white" />
+              </div>
+              <h4 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-300 bg-clip-text text-transparent">Swidge</h4>
             </div>
-            <h4 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-300 bg-clip-text text-transparent">Swidge</h4>
-            <div className="flex-1 h-px bg-gradient-to-r from-blue-500/50 to-transparent"></div>
           </div>
           
           {/* Primary App - Relay Bridge (Full Width) */}
@@ -239,12 +241,13 @@ export default function TradeSection() {
 
         {/* Trading Terminals Subsection */}
         <div className="space-y-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-8 h-8 bg-gradient-to-r from-purple-400 to-fuchsia-500 rounded-lg flex items-center justify-center">
-              <TrendingUp className="w-4 h-4 text-white" />
+          <div className="text-center mb-6">
+            <div className="flex items-center justify-center gap-3 mb-2">
+              <div className="w-8 h-8 bg-gradient-to-r from-purple-400 to-fuchsia-500 rounded-lg flex items-center justify-center">
+                <TrendingUp className="w-4 h-4 text-white" />
+              </div>
+              <h4 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-fuchsia-300 bg-clip-text text-transparent">Multi-Chain Trading Terminals</h4>
             </div>
-            <h4 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-fuchsia-300 bg-clip-text text-transparent">Multi-Chain Trading Terminals</h4>
-            <div className="flex-1 h-px bg-gradient-to-r from-purple-500/50 to-transparent"></div>
           </div>
           
           {/* BBTerminal Iframe */}
@@ -343,12 +346,13 @@ export default function TradeSection() {
 
         {/* Perps Subsection */}
         <div className="space-y-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-8 h-8 bg-gradient-to-r from-orange-400 to-red-500 rounded-lg flex items-center justify-center">
-              <TrendingUp className="w-4 h-4 text-white" />
+          <div className="text-center mb-6">
+            <div className="flex items-center justify-center gap-3 mb-2">
+              <div className="w-8 h-8 bg-gradient-to-r from-orange-400 to-red-500 rounded-lg flex items-center justify-center">
+                <TrendingUp className="w-4 h-4 text-white" />
+              </div>
+              <h4 className="text-2xl font-bold bg-gradient-to-r from-orange-400 to-red-300 bg-clip-text text-transparent">Perps</h4>
             </div>
-            <h4 className="text-2xl font-bold bg-gradient-to-r from-orange-400 to-red-300 bg-clip-text text-transparent">Perps</h4>
-            <div className="flex-1 h-px bg-gradient-to-r from-orange-500/50 to-transparent"></div>
           </div>
           
           {/* Primary Apps Row - Hyperliquid & DeFi.app */}
@@ -505,12 +509,13 @@ export default function TradeSection() {
 
         {/* Options Subsection */}
         <div className="space-y-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-8 h-8 bg-gradient-to-r from-green-400 to-emerald-500 rounded-lg flex items-center justify-center">
-              <TrendingUp className="w-4 h-4 text-white" />
+          <div className="text-center mb-6">
+            <div className="flex items-center justify-center gap-3 mb-2">
+              <div className="w-8 h-8 bg-gradient-to-r from-green-400 to-emerald-500 rounded-lg flex items-center justify-center">
+                <TrendingUp className="w-4 h-4 text-white" />
+              </div>
+              <h4 className="text-2xl font-bold bg-gradient-to-r from-green-400 to-emerald-300 bg-clip-text text-transparent">Options</h4>
             </div>
-            <h4 className="text-2xl font-bold bg-gradient-to-r from-green-400 to-emerald-300 bg-clip-text text-transparent">Options</h4>
-            <div className="flex-1 h-px bg-gradient-to-r from-green-500/50 to-transparent"></div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <Button
@@ -576,8 +581,8 @@ export default function TradeSection() {
 
       {/* Multi-Charts Section */}
       <GlassCard className="p-8">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-6">
-          <div className="flex items-center gap-3">
+        <div className="text-center mb-6">
+          <div className="flex items-center justify-center gap-3 mb-2">
             <div className="w-10 h-10 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-xl flex items-center justify-center shadow-lg">
               <TrendingUp className="w-6 h-6 text-white" />
             </div>
@@ -588,7 +593,7 @@ export default function TradeSection() {
           </div>
           <button
             onClick={() => openInNewTab('https://dexscreener.com/multicharts?theme=dark')}
-            className="text-cyan-300 hover:text-cyan-200 text-sm font-medium ml-auto bg-cyan-500/20 px-4 py-2 rounded-lg border border-cyan-400/30 hover:bg-cyan-500/30 transition-all duration-300"
+            className="text-cyan-300 hover:text-cyan-200 text-sm font-medium bg-cyan-500/20 px-4 py-2 rounded-lg border border-cyan-400/30 hover:bg-cyan-500/30 transition-all duration-300 mx-auto"
           >
             Open Full View →
           </button>
@@ -618,8 +623,8 @@ export default function TradeSection() {
       {/* Token Sniffer */}
       <div className="space-y-12">
         <GlassCard className="p-8">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
+          <div className="text-center mb-6">
+            <div className="flex items-center justify-center gap-3 mb-2">
               <div className="w-10 h-10 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-xl flex items-center justify-center shadow-lg">
                 <span className="text-white font-bold text-lg">T</span>
               </div>
@@ -630,7 +635,7 @@ export default function TradeSection() {
             </div>
             <button
               onClick={() => openInNewTab('https://wach.ai/chat')}
-              className="text-yellow-300 hover:text-yellow-200 text-sm font-medium bg-yellow-500/20 px-4 py-2 rounded-lg border border-yellow-400/30 hover:bg-yellow-500/30 transition-all duration-300"
+              className="text-yellow-300 hover:text-yellow-200 text-sm font-medium bg-yellow-500/20 px-4 py-2 rounded-lg border border-yellow-400/30 hover:bg-yellow-500/30 transition-all duration-300 mx-auto"
             >
               Open in New Tab →
             </button>
@@ -649,13 +654,15 @@ export default function TradeSection() {
               href='https://bubblemaps.io/'
               className="group w-full p-6 bg-gradient-to-br from-purple-600/30 via-fuchsia-600/20 to-pink-600/30 border-purple-400/40 hover:from-purple-500/40 hover:via-fuchsia-500/30 hover:to-pink-500/40 hover:border-purple-300/60 rounded-xl transition-all duration-300 block shadow-xl hover:shadow-purple-500/20 transform hover:scale-105 backdrop-blur-sm"
             >
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-purple-400 to-pink-500 rounded-lg flex items-center justify-center shadow-lg group-hover:rotate-12 transition-transform duration-300">
-                  <span className="text-white font-bold">B</span>
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-3 mb-3">
+                  <div className="w-8 h-8 bg-gradient-to-r from-purple-400 to-pink-500 rounded-lg flex items-center justify-center shadow-lg group-hover:rotate-12 transition-transform duration-300">
+                    <span className="text-white font-bold">B</span>
+                  </div>
+                  <h4 className="text-xl font-bold text-purple-200 group-hover:text-white transition-colors duration-300">Bubblemaps</h4>
                 </div>
-                <h4 className="text-xl font-bold text-purple-200 group-hover:text-white transition-colors duration-300">Bubblemaps</h4>
+                <p className="text-purple-200/80 text-base font-medium">Token Analytics & Visualization Platform</p>
               </div>
-              <p className="text-purple-200/80 text-base font-medium">Token Analytics & Visualization Platform</p>
             </SafeLink>
           </div>
         </GlassCard>
