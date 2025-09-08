@@ -152,6 +152,36 @@ export default function OnchainSocialPage() {
                 </div>
               </div>
 
+              {/* Macro Subsection */}
+              <div className="mb-8">
+                <div className="flex items-center justify-center mb-6">
+                  <h4 className="text-xl font-bold bg-gradient-to-r from-white to-green-100 bg-clip-text text-transparent">Macro</h4>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {/* Placeholder for future macro content */}
+                </div>
+              </div>
+
+              {/* Traders Subsection */}
+              <div className="mb-8">
+                <div className="flex items-center justify-center mb-6">
+                  <h4 className="text-xl font-bold bg-gradient-to-r from-white to-yellow-100 bg-clip-text text-transparent">Traders</h4>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {/* Placeholder for future traders content */}
+                </div>
+              </div>
+
+              {/* Chains Subsection */}
+              <div className="mb-8">
+                <div className="flex items-center justify-center mb-6">
+                  <h4 className="text-xl font-bold bg-gradient-to-r from-white to-purple-100 bg-clip-text text-transparent">Chains</h4>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {/* Placeholder for future chains content */}
+                </div>
+              </div>
+
             </div>
 
             {/* Ecosystem Sections - Side by Side Layout */}
