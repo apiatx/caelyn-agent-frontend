@@ -597,16 +597,6 @@ export default function AlphaSection() {
         </GlassCard>
       </div>
 
-      {/* Indexy Analytics Graphic */}
-      <div className="mt-12 flex justify-center">
-        <GlassCard className="p-8">
-          <div className="flex justify-center">
-            <div className="w-16 h-16 bg-gradient-to-br from-green-400 via-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center shadow-2xl shadow-green-500/30 hover:scale-110 transition-transform duration-300">
-              <TrendingUp className="w-8 h-8 text-white hover:rotate-12 transition-transform duration-300" />
-            </div>
-          </div>
-        </GlassCard>
-      </div>
 
     </div>
   );
