@@ -352,35 +352,28 @@ export default function TradeSection() {
             </div>
           </div>
           
-          {/* Primary Apps Row - Hyperliquid & DeFi.app */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Button
-              variant="outline"
-              onClick={() => openInNewTab('https://app.hyperliquid.xyz/trade')}
-              className="group w-full bg-gradient-to-br from-teal-500/40 via-cyan-500/30 to-blue-500/40 border-teal-400/50 hover:from-teal-400/50 hover:via-cyan-400/40 hover:to-blue-400/50 hover:border-teal-300/70 text-white justify-center p-7 h-auto shadow-2xl hover:shadow-teal-500/30 transform hover:scale-[1.02] transition-all duration-500 backdrop-blur-sm"
-            >
-              <div className="text-center">
-                <div className="font-bold text-xl flex items-center justify-center">
-                  <TrendingUp className="w-6 h-6 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-500" />
-                  Hyperliquid
-                </div>
-                <div className="text-sm text-teal-100/90 font-medium">Primary onchain perpetual DEX platform</div>
+          {/* DeFi.app - Full Width Primary Button */}
+          <Button
+            variant="outline"
+            onClick={() => openInNewTab('https://app.defi.app/portfolio')}
+            className="group w-full bg-gradient-to-br from-blue-500/40 via-indigo-500/30 to-purple-500/40 border-blue-400/50 hover:from-blue-400/50 hover:via-indigo-400/40 hover:to-purple-400/50 hover:border-blue-300/70 text-white justify-center p-7 h-auto shadow-2xl hover:shadow-blue-500/30 transform hover:scale-[1.02] transition-all duration-500 backdrop-blur-sm mb-8"
+          >
+            <div className="text-center">
+              <div className="font-bold text-xl flex items-center justify-center">
+                <Wallet className="w-6 h-6 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-500" />
+                DeFi.app
               </div>
-            </Button>
+              <div className="text-sm text-blue-100/90 font-medium">Primary onchain perpetuals super app</div>
+            </div>
+          </Button>
 
-            <Button
-              variant="outline"
-              onClick={() => openInNewTab('https://app.defi.app/portfolio')}
-              className="group w-full bg-gradient-to-br from-blue-500/40 via-indigo-500/30 to-purple-500/40 border-blue-400/50 hover:from-blue-400/50 hover:via-indigo-400/40 hover:to-purple-400/50 hover:border-blue-300/70 text-white justify-center p-7 h-auto shadow-2xl hover:shadow-blue-500/30 transform hover:scale-[1.02] transition-all duration-500 backdrop-blur-sm"
-            >
-              <div className="text-center">
-                <div className="font-bold text-xl flex items-center justify-center">
-                  <Wallet className="w-6 h-6 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-500" />
-                  DeFi.app
-                </div>
-                <div className="text-sm text-blue-100/90 font-medium">Primary onchain perpetuals super app</div>
-              </div>
-            </Button>
+          {/* Hyperliquid Iframe */}
+          <div className="w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg mb-8">
+            <SafeIframe
+              src="https://app.hyperliquid.xyz/trade"
+              title="Hyperliquid Trading Terminal"
+              className="w-full h-[600px] rounded-lg"
+            />
           </div>
 
           {/* Other Apps */}
