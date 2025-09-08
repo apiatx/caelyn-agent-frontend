@@ -88,8 +88,15 @@ export default function AlphaSection() {
           {/* Analytics */}
           <div className="mb-8 relative">
             <div className="mb-4">
-              <div className="flex items-center justify-center mb-2">
+              <div className="flex items-center justify-between mb-2">
                 <h3 className="text-2xl font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">Analyze</h3>
+                <button
+                  onClick={() => openInNewTab('https://app.artemisanalytics.com/')}
+                  className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm flex items-center gap-1 bg-black/60 backdrop-blur-sm px-3 py-2 rounded-lg border border-blue-400/30 hover:bg-blue-500/20 transition-all duration-300"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                  Open Full View
+                </button>
               </div>
             </div>
             <div className="relative">
@@ -108,13 +115,6 @@ export default function AlphaSection() {
                   }}
                 />
               </div>
-              <button
-                onClick={() => openInNewTab('https://app.artemisanalytics.com/')}
-                className="absolute top-4 right-4 text-blue-400 hover:text-blue-300 text-xs sm:text-sm flex items-center gap-1 bg-black/60 backdrop-blur-sm px-3 py-2 rounded-lg border border-blue-400/30 hover:bg-blue-500/20 transition-all duration-300"
-              >
-                <ExternalLink className="w-3 h-3" />
-                Open Full View
-              </button>
             </div>
           </div>
 
