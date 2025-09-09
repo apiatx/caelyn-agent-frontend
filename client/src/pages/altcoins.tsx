@@ -107,8 +107,8 @@ export default function AltcoinsPage() {
           {/* Daily Gainers */}
           <div className="space-y-4">
             <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-4 lg:p-6 transform transition-all duration-500 hover:scale-[1.01] hover:shadow-2xl hover:shadow-crypto-warning/20">
-              <div className="flex items-center gap-2 mb-4">
-                <h3 className="text-lg font-semibold text-white">📈 24h Gainers</h3>
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <h3 className="text-lg font-semibold text-white text-center">📈 24h Gainers (CMC Top 100)</h3>
                 <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
                   LIVE
                 </Badge>
