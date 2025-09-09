@@ -119,38 +119,6 @@ export default function AltcoinsPage() {
             </div>
           </div>
 
-          {/* CoinGlass BTC Analytics */}
-          <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <h3 className="text-lg font-semibold text-orange-400">CoinGlass SuperCharts</h3>
-                <Badge variant="outline" className="bg-orange-500/20 text-orange-300 border-orange-500/30">
-                  SUPERCHARTS
-                </Badge>
-              </div>
-              <div className="flex items-center space-x-3">
-                <button
-                  onClick={() => openSecureLink('https://www.coinglass.com/tv/Binance_BTCUSDT')}
-                  className="text-orange-400 hover:text-orange-300 text-xs sm:text-sm flex items-center gap-1"
-                >
-                  <ExternalLink className="w-3 h-3" />
-                  Open Full View →
-                </button>
-              </div>
-            </div>
-            <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
-              <iframe
-                src="https://www.coinglass.com/tv/Binance_BTCUSDT"
-                className="w-full h-[500px] sm:h-[700px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
-                title="CoinGlass BTC Analytics"
-                frameBorder="0"
-                scrolling="no"
-                loading="lazy"
-                sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
-              />
-            </div>
-          </div>
-          
           {/* XRP Chart */}
           <Suspense fallback={<SectionLoadingState title="XRP Chart" />}>
             <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6 space-y-4">
@@ -933,24 +901,59 @@ export default function AltcoinsPage() {
           {/* Velo Chart */}
           <Suspense fallback={<SectionLoadingState title="Velo Chart" />}>
             <div className="space-y-3">
-              <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-8">
-                <div className="flex flex-col items-center justify-center text-center space-y-4">
-                  <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center text-lg font-bold">
-                    V
+              <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <h3 className="text-lg font-semibold text-white">More Charts</h3>
+                    <Badge variant="outline" className="bg-purple-500/20 text-purple-300 border-purple-500/30">
+                      ANALYTICS
+                    </Badge>
                   </div>
-                  <h4 className="text-xl font-semibold text-white">Velo Charts</h4>
-                  <p className="text-crypto-silver max-w-md">
-                    Access comprehensive altcoin trading charts and analytics.
-                  </p>
-                  <button
-                    onClick={() => window.open('https://velo.xyz/chart', '_blank', 'noopener,noreferrer')}
-                    className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 hover:scale-105 flex items-center gap-2"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                    </svg>
-                    View Velo Charts
-                  </button>
+                </div>
+                
+                {/* CoinGlass SuperCharts */}
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <h4 className="text-md font-medium text-orange-400">CoinGlass SuperCharts</h4>
+                    <Badge variant="outline" className="bg-orange-500/20 text-orange-300 border-orange-500/30 text-xs">
+                      SUPERCHARTS
+                    </Badge>
+                  </div>
+                  <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
+                    <iframe
+                      src="https://www.coinglass.com/tv/Binance_BTCUSDT"
+                      className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
+                      title="CoinGlass SuperCharts"
+                      frameBorder="0"
+                      scrolling="no"
+                      loading="lazy"
+                      sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+                    />
+                  </div>
+                </div>
+                
+                {/* Velo Charts Button */}
+                <div className="pt-4 border-t border-crypto-silver/10">
+                  <div className="flex flex-col items-center justify-center text-center space-y-3">
+                    <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center text-sm font-bold">
+                      V
+                    </div>
+                    <div>
+                      <h5 className="text-md font-medium text-white mb-1">Velo Charts</h5>
+                      <p className="text-crypto-silver text-sm max-w-sm">
+                        Access comprehensive altcoin trading charts and analytics.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => window.open('https://velo.xyz/chart', '_blank', 'noopener,noreferrer')}
+                      className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white px-6 py-2.5 rounded-lg font-medium transition-all duration-200 hover:scale-105 flex items-center gap-2 text-sm"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                      View Velo Charts
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
