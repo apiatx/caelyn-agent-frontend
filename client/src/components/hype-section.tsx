@@ -78,6 +78,19 @@ export function HypeSection() {
         </div>
       </div>
 
+      {/* CoinGlass HL Analytics */}
+      <div className="mt-6">
+        <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
+          <iframe
+            src="https://www.coinglass.com/hl"
+            className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+            title="CoinGlass HL Analytics"
+            frameBorder="0"
+            scrolling="yes"
+          />
+        </div>
+      </div>
+
       {/* Copy Trade / Top Wallets Section */}
       <div className="space-y-6">
         <GlassCard className="p-6">
