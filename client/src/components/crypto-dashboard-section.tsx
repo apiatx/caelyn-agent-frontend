@@ -110,6 +110,27 @@ export default function CryptoDashboardSection() {
         
       </div>
 
+      {/* CoinGlass Analytics */}
+      <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
+        <iframe
+          src="https://www.coinglass.com/"
+          className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+          title="CoinGlass"
+          frameBorder="0"
+          scrolling="yes"
+        />
+      </div>
+
+      {/* CoinGlass Hyperliquid */}
+      <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
+        <iframe
+          src="https://www.coinglass.com/hyperliquid"
+          className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+          title="CoinGlass Hyperliquid"
+          frameBorder="0"
+          scrolling="yes"
+        />
+      </div>
 
       {/* Bitcoin Charts Section */}
       <GlassCard className="p-3 sm:p-4 lg:p-6">
