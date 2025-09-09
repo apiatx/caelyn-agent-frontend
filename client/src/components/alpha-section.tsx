@@ -65,19 +65,11 @@ export default function AlphaSection() {
             <img 
               src={onchainImage} 
               alt="Analytics" 
-              className="w-16 h-16 rounded-full object-cover shadow-lg shadow-blue-500/30 border-2 border-blue-400/50"
+              className="w-20 h-20 rounded-full object-cover shadow-lg shadow-blue-500/30 border-2 border-blue-400/50"
             />
             <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-blue-400/20 to-purple-400/20"></div>
           </div>
           <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-blue-100 to-purple-100 bg-clip-text text-transparent drop-shadow-lg">Onchain</h1>
-          <div className="relative">
-            <img 
-              src={diamondImage} 
-              alt="Analytics Diamond" 
-              className="w-16 h-16 rounded-full object-cover shadow-lg shadow-blue-500/30 border-2 border-blue-400/50 bg-black"
-            />
-            <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-blue-400/20 to-purple-400/20"></div>
-          </div>
         </div>
         <p className="text-lg text-gray-300 font-medium tracking-wide">Comprehensive onchain intelligence & data</p>
       </div>
