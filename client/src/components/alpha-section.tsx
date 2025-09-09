@@ -141,7 +141,7 @@ export default function AlphaSection() {
 
           {/* BBTerminal Trading Terminal */}
           <div className="mb-8">
-            <div className="mb-3 text-right">
+            <div className="mb-3 flex justify-end">
               <SafeLink
                 href="https://app.bbterminal.com/degen"
                 className="text-purple-300 hover:text-purple-200 text-sm font-medium hover:underline transition-colors duration-300"
