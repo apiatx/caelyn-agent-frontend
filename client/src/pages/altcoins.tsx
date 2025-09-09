@@ -119,6 +119,33 @@ export default function AltcoinsPage() {
             </div>
           </div>
 
+          {/* CoinGlass BTC Analytics */}
+          <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <h3 className="text-lg font-semibold text-orange-400">CoinGlass BTC Analytics</h3>
+                <Badge variant="outline" className="bg-orange-500/20 text-orange-300 border-orange-500/30">
+                  BTC/USDT
+                </Badge>
+              </div>
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={() => openSecureLink('https://www.coinglass.com/tv/Binance_BTCUSDT')}
+                  className="text-orange-400 hover:text-orange-300 text-xs sm:text-sm flex items-center gap-1"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                  Open Full View →
+                </button>
+              </div>
+            </div>
+            <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
+              <iframe
+                {...getSecureIframeProps('https://www.coinglass.com/tv/Binance_BTCUSDT')}
+                className="w-full h-[500px] sm:h-[700px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+                title="CoinGlass BTC Analytics"
+              />
+            </div>
+          </div>
           
           {/* XRP Chart */}
           <Suspense fallback={<SectionLoadingState title="XRP Chart" />}>
