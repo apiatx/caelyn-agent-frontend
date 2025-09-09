@@ -159,7 +159,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
                 className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
               >
                 <Brain className="w-4 h-4 mr-2" />
-                HL Core
+                Hyperliquid
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => navigateTo("/app/bittensor")}
@@ -167,13 +167,6 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
               >
                 <Brain className="w-4 h-4 mr-2" />
                 Bittensor
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => navigateTo("/app/abstract")}
-                className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
-              >
-                <Layers className="w-4 h-4 mr-2" />
-                Abstract
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => navigateTo("/app/bnb")}
@@ -188,6 +181,13 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
               >
                 <Zap className="w-4 h-4 mr-2" />
                 SUI
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => navigateTo("/app/abstract")}
+                className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
+              >
+                <Layers className="w-4 h-4 mr-2" />
+                Abstract
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -404,7 +404,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
                     className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
                   >
                     <Brain className="w-4 h-4 mr-2" />
-                    HL Core
+                    Hyperliquid
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => navigateTo("/app/bittensor")}
