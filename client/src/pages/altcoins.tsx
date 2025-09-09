@@ -123,9 +123,9 @@ export default function AltcoinsPage() {
           <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6 space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <h3 className="text-lg font-semibold text-orange-400">CoinGlass BTC Analytics</h3>
+                <h3 className="text-lg font-semibold text-orange-400">CoinGlass SuperCharts</h3>
                 <Badge variant="outline" className="bg-orange-500/20 text-orange-300 border-orange-500/30">
-                  BTC/USDT
+                  SUPERCHARTS
                 </Badge>
               </div>
               <div className="flex items-center space-x-3">
