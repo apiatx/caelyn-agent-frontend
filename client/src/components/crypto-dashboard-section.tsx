@@ -132,6 +132,114 @@ export default function CryptoDashboardSection() {
         />
       </div>
 
+
+      <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
+        <iframe
+          src="https://www.coinglass.com/bull-market-peak-signals"
+          className="w-full h-[400px] sm:h-[500px] lg:h-[600px]"
+          title="Coinglass Bull Market Peak Signals"
+          sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+          referrerPolicy="no-referrer-when-downgrade"
+        />
+      </div>
+
+
+
+
+
+
+      {/* News Section */}
+      <GlassCard className="p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-3">
+            <h2 className="text-xl font-semibold text-white">News</h2>
+            <span className="px-2 py-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs rounded-lg font-medium">
+              COINTELEGRAPH
+            </span>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => openInNewTab('https://cointelegraph.com/category/latest-news')}
+            className="text-crypto-silver hover:text-white"
+          >
+            <ExternalLink className="h-4 w-4 mr-2" />
+            Open Full View
+          </Button>
+        </div>
+        
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://cointelegraph.com/category/latest-news')}
+              className="bg-black/20 border-crypto-silver/20 hover:bg-blue-500/20 hover:border-blue-500/30 text-white justify-start p-4 h-auto"
+            >
+              <ExternalLink className="w-4 h-4 mr-2" />
+              <div className="text-left">
+                <div className="font-semibold">Cointelegraph</div>
+                <div className="text-sm text-crypto-silver">Latest crypto news & analysis</div>
+              </div>
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://www.coindesk.com/')}
+              className="bg-black/20 border-crypto-silver/20 hover:bg-orange-500/20 hover:border-orange-500/30 text-white justify-start p-4 h-auto"
+            >
+              <ExternalLink className="w-4 h-4 mr-2" />
+              <div className="text-left">
+                <div className="font-semibold">CoinDesk</div>
+                <div className="text-sm text-crypto-silver">Digital asset news & insights</div>
+              </div>
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://www.bankless.com/')}
+              className="bg-black/20 border-crypto-silver/20 hover:bg-purple-500/20 hover:border-purple-500/30 text-white justify-start p-4 h-auto"
+            >
+              <ExternalLink className="w-4 h-4 mr-2" />
+              <div className="text-left">
+                <div className="font-semibold">Bankless</div>
+                <div className="text-sm text-crypto-silver">DeFi & Web3 content</div>
+              </div>
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://coingape.com/category/news/')}
+              className="bg-black/20 border-crypto-silver/20 hover:bg-green-500/20 hover:border-green-500/30 text-white justify-start p-4 h-auto"
+            >
+              <ExternalLink className="w-4 h-4 mr-2" />
+              <div className="text-left">
+                <div className="font-semibold">CoinGape</div>
+                <div className="text-sm text-crypto-silver">Crypto news & market updates</div>
+              </div>
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://u.today/')}
+              className="bg-black/20 border-crypto-silver/20 hover:bg-red-500/20 hover:border-red-500/30 text-white justify-start p-4 h-auto"
+            >
+              <ExternalLink className="w-4 h-4 mr-2" />
+              <div className="text-left">
+                <div className="font-semibold">U.Today</div>
+                <div className="text-sm text-crypto-silver">Cryptocurrency & blockchain news</div>
+              </div>
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://thedefiant.io/')}
+              className="bg-black/20 border-crypto-silver/20 hover:bg-indigo-500/20 hover:border-indigo-500/30 text-white justify-start p-4 h-auto"
+            >
+              <ExternalLink className="w-4 h-4 mr-2" />
+              <div className="text-left">
+                <div className="font-semibold">The Defiant</div>
+                <div className="text-sm text-crypto-silver">DeFi & open finance news</div>
+              </div>
+            </Button>
+          </div>
+        </div>
+      </GlassCard>
+
       {/* Bitcoin Charts Section */}
       <GlassCard className="p-3 sm:p-4 lg:p-6">
         <div className="space-y-3 sm:space-y-4">
@@ -253,113 +361,6 @@ export default function CryptoDashboardSection() {
               <h5 className="text-indigo-400 font-semibold mb-1 text-sm sm:text-base">Messari</h5>
               <p className="text-gray-400 text-xs sm:text-sm">Crypto Research</p>
             </button>
-          </div>
-        </div>
-      </GlassCard>
-
-      <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
-        <iframe
-          src="https://www.coinglass.com/bull-market-peak-signals"
-          className="w-full h-[400px] sm:h-[500px] lg:h-[600px]"
-          title="Coinglass Bull Market Peak Signals"
-          sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
-          referrerPolicy="no-referrer-when-downgrade"
-        />
-      </div>
-
-
-
-
-
-
-      {/* News Section */}
-      <GlassCard className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-3">
-            <h2 className="text-xl font-semibold text-white">News</h2>
-            <span className="px-2 py-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs rounded-lg font-medium">
-              COINTELEGRAPH
-            </span>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => openInNewTab('https://cointelegraph.com/category/latest-news')}
-            className="text-crypto-silver hover:text-white"
-          >
-            <ExternalLink className="h-4 w-4 mr-2" />
-            Open Full View
-          </Button>
-        </div>
-        
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <Button
-              variant="outline"
-              onClick={() => openInNewTab('https://cointelegraph.com/category/latest-news')}
-              className="bg-black/20 border-crypto-silver/20 hover:bg-blue-500/20 hover:border-blue-500/30 text-white justify-start p-4 h-auto"
-            >
-              <ExternalLink className="w-4 h-4 mr-2" />
-              <div className="text-left">
-                <div className="font-semibold">Cointelegraph</div>
-                <div className="text-sm text-crypto-silver">Latest crypto news & analysis</div>
-              </div>
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => openInNewTab('https://www.coindesk.com/')}
-              className="bg-black/20 border-crypto-silver/20 hover:bg-orange-500/20 hover:border-orange-500/30 text-white justify-start p-4 h-auto"
-            >
-              <ExternalLink className="w-4 h-4 mr-2" />
-              <div className="text-left">
-                <div className="font-semibold">CoinDesk</div>
-                <div className="text-sm text-crypto-silver">Digital asset news & insights</div>
-              </div>
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => openInNewTab('https://www.bankless.com/')}
-              className="bg-black/20 border-crypto-silver/20 hover:bg-purple-500/20 hover:border-purple-500/30 text-white justify-start p-4 h-auto"
-            >
-              <ExternalLink className="w-4 h-4 mr-2" />
-              <div className="text-left">
-                <div className="font-semibold">Bankless</div>
-                <div className="text-sm text-crypto-silver">DeFi & Web3 content</div>
-              </div>
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => openInNewTab('https://coingape.com/category/news/')}
-              className="bg-black/20 border-crypto-silver/20 hover:bg-green-500/20 hover:border-green-500/30 text-white justify-start p-4 h-auto"
-            >
-              <ExternalLink className="w-4 h-4 mr-2" />
-              <div className="text-left">
-                <div className="font-semibold">CoinGape</div>
-                <div className="text-sm text-crypto-silver">Crypto news & market updates</div>
-              </div>
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => openInNewTab('https://u.today/')}
-              className="bg-black/20 border-crypto-silver/20 hover:bg-red-500/20 hover:border-red-500/30 text-white justify-start p-4 h-auto"
-            >
-              <ExternalLink className="w-4 h-4 mr-2" />
-              <div className="text-left">
-                <div className="font-semibold">U.Today</div>
-                <div className="text-sm text-crypto-silver">Cryptocurrency & blockchain news</div>
-              </div>
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => openInNewTab('https://thedefiant.io/')}
-              className="bg-black/20 border-crypto-silver/20 hover:bg-indigo-500/20 hover:border-indigo-500/30 text-white justify-start p-4 h-auto"
-            >
-              <ExternalLink className="w-4 h-4 mr-2" />
-              <div className="text-left">
-                <div className="font-semibold">The Defiant</div>
-                <div className="text-sm text-crypto-silver">DeFi & open finance news</div>
-              </div>
-            </Button>
           </div>
         </div>
       </GlassCard>
