@@ -490,10 +490,10 @@ export default function TopChartsPage() {
             <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
               <iframe
                 src="https://www.coinglass.com/today"
-                className="w-full h-[500px] sm:h-[700px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+                className="w-full h-[600px] sm:h-[800px] lg:h-[900px] rounded-lg border border-crypto-silver/20"
                 title="CoinGlass Monthly Returns"
                 frameBorder="0"
-                scrolling="no"
+                scrolling="yes"
                 loading="lazy"
                 sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
               />
