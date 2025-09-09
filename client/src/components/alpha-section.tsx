@@ -145,6 +145,19 @@ export default function AlphaSection() {
             </button>
           </div>
 
+          {/* CoinGlass iframe */}
+          <div className="mb-8">
+            <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
+              <iframe
+                src="https://www.coinglass.com/"
+                className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+                title="CoinGlass"
+                frameBorder="0"
+                scrolling="yes"
+              />
+            </div>
+          </div>
+
           {/* BBTerminal Trading Terminal */}
           <div className="mb-8">
             <div className="mb-3 flex justify-end">
