@@ -140,21 +140,21 @@ export default function AlphaSection() {
           </div>
 
           {/* BBTerminal Trading Terminal */}
-          <div className="mb-8 relative">
-            <div className="relative">
-              <div className="w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg">
-                <SafeIframe
-                  src="https://app.bbterminal.com/degen"
-                  title="BBTerminal Degen Trading Terminal"
-                  className="w-full h-[600px] rounded-lg"
-                />
-              </div>
-              <button
-                onClick={() => openInNewTab('https://app.bbterminal.com/degen')}
-                className="absolute top-4 right-4 text-purple-300 hover:text-purple-200 text-sm font-medium bg-black/60 backdrop-blur-sm px-4 py-2 rounded-lg border border-purple-400/30 hover:bg-purple-500/30 transition-all duration-300"
+          <div className="mb-8">
+            <div className="mb-3 text-right">
+              <SafeLink
+                href="https://app.bbterminal.com/degen"
+                className="text-purple-300 hover:text-purple-200 text-sm font-medium hover:underline transition-colors duration-300"
               >
                 Open Full Terminal →
-              </button>
+              </SafeLink>
+            </div>
+            <div className="w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg">
+              <SafeIframe
+                src="https://app.bbterminal.com/degen"
+                title="BBTerminal Degen Trading Terminal"
+                className="w-full h-[600px] rounded-lg"
+              />
             </div>
           </div>
 
