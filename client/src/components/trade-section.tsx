@@ -352,6 +352,24 @@ export default function TradeSection() {
             </div>
           </div>
           
+          {/* Hyperliquid Iframe */}
+          <div className="w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg mb-8">
+            <SafeIframe
+              src="https://app.hyperliquid.xyz/trade"
+              title="Hyperliquid Trading Terminal"
+              className="w-full h-[800px] rounded-lg"
+            />
+          </div>
+
+          {/* Avantisfi Iframe */}
+          <div className="w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg mb-8">
+            <SafeIframe
+              src="https://www.avantisfi.com/trade?asset=BTC-USD"
+              title="Avantisfi Trading Terminal"
+              className="w-full h-[800px] rounded-lg"
+            />
+          </div>
+
           {/* DeFi.app - Full Width Primary Button */}
           <Button
             variant="outline"
@@ -366,15 +384,6 @@ export default function TradeSection() {
               <div className="text-sm text-blue-100/90 font-medium">Primary onchain perpetuals super app</div>
             </div>
           </Button>
-
-          {/* Hyperliquid Iframe */}
-          <div className="w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg mb-8">
-            <SafeIframe
-              src="https://app.hyperliquid.xyz/trade"
-              title="Hyperliquid Trading Terminal"
-              className="w-full h-[800px] rounded-lg"
-            />
-          </div>
 
           {/* Other Apps */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
