@@ -245,6 +245,17 @@ export default function CryptoDashboardSection() {
         </div>
       </GlassCard>
 
+      {/* CryptoQuant BTC Summary iframe */}
+      <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
+        <iframe
+          src="https://cryptoquant.com/asset/btc/summary"
+          className="w-full h-[400px] sm:h-[500px] lg:h-[600px]"
+          title="CryptoQuant BTC Summary"
+          sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+          referrerPolicy="no-referrer-when-downgrade"
+        />
+      </div>
+
       <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
         <iframe
           src="https://www.coinglass.com/bull-market-peak-signals"
