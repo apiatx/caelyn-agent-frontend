@@ -93,6 +93,11 @@ export default function AlphaSection() {
               <h4 className="text-2xl font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">Screen</h4>
             </div>
           
+          {/* 24h Gainers (CMC Top 500) */}
+          <div className="mb-6">
+            <TopDailyGainersTop500 />
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
             <SafeLink
               href='https://coinmarketcap.com/?type=coins&tableRankBy=trending_all_24h'
@@ -132,11 +137,6 @@ export default function AlphaSection() {
               </div>
               <p className="text-gray-300 text-sm font-medium text-center">Blockchain Analytics</p>
             </SafeLink>
-          </div>
-
-          {/* 24h Gainers (CMC Top 500) */}
-          <div className="mb-6">
-            <TopDailyGainersTop500 />
           </div>
 
           {/* BBTerminal Trading Terminal */}
