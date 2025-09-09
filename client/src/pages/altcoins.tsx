@@ -140,9 +140,13 @@ export default function AltcoinsPage() {
             </div>
             <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
               <iframe
-                {...getSecureIframeProps('https://www.coinglass.com/tv/Binance_BTCUSDT')}
+                src="https://www.coinglass.com/tv/Binance_BTCUSDT"
                 className="w-full h-[500px] sm:h-[700px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
                 title="CoinGlass BTC Analytics"
+                frameBorder="0"
+                scrolling="no"
+                loading="lazy"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
               />
             </div>
           </div>
