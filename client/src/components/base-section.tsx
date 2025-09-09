@@ -400,6 +400,15 @@ export default function BaseSection() {
           </SafeLink>
         </div>
         <div className="space-y-4">
+          {/* Higher.bot iframe */}
+          <div className="w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg mb-4">
+            <SafeIframe
+              src="https://app.higher.bot/en/trenches?ref=Raretype"
+              title="Higher.bot Trading Terminal"
+              className="w-full h-[600px] rounded-lg"
+            />
+          </div>
+          
           {/* DexScreener Button */}
           <button
             onClick={() => openInNewTab('https://dexscreener.com/base?theme=dark')}
@@ -455,31 +464,33 @@ export default function BaseSection() {
             </div>
             <p className="text-gray-400 text-sm">Crypto market indexing platform</p>
           </button>
+          
+          {/* Farterminal iframe moved here */}
+          <div className="w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg mt-4">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-6 h-6 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center">
+                <span className="text-white text-xs font-bold">FT</span>
+              </div>
+              <h3 className="text-lg font-semibold text-white">Farterminal</h3>
+              <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-full font-medium">
+                TERMINAL
+              </span>
+              <SafeLink 
+                href="https://www.terminal.co/?tab=base"
+                className="ml-auto text-green-400 hover:text-green-300 text-xs"
+              >
+                Open in New Tab →
+              </SafeLink>
+            </div>
+            <SafeIframe 
+              src="https://www.terminal.co/?tab=base"
+              title="Farterminal"
+              className="w-full h-[600px] rounded-lg"
+            />
+          </div>
         </div>
       </GlassCard>
 
-      {/* Farterminal */}
-      <GlassCard className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-6 h-6 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center">
-            <span className="text-white text-xs font-bold">FT</span>
-          </div>
-          <h3 className="text-xl font-semibold text-white">Farterminal</h3>
-          <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-full font-medium">
-            TERMINAL
-          </span>
-          <SafeLink 
-            href="https://www.terminal.co/?tab=base"
-            className="ml-auto text-green-400 hover:text-green-300 text-xs"
-          >
-            Open in New Tab →
-          </SafeLink>
-        </div>
-        <SafeIframe 
-          src="https://www.terminal.co/?tab=base"
-          title="Farterminal"
-        />
-      </GlassCard>
 
 
 
