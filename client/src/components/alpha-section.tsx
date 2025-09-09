@@ -179,6 +179,19 @@ export default function AlphaSection() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
             <SafeLink
+              href='https://dex.coinmarketcap.com/token/all/'
+              className="p-5 bg-gradient-to-br from-blue-500/15 to-blue-600/15 hover:from-blue-500/25 hover:to-blue-600/25 border border-blue-500/30 hover:border-blue-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-blue-500/20 transform"
+            >
+              <div className="flex flex-col items-center gap-2 mb-3">
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-md">
+                  <span className="text-white font-bold text-xs">CMC</span>
+                </div>
+                <h4 className="text-blue-300 font-bold text-lg">CoinMarketCap</h4>
+              </div>
+              <p className="text-gray-300 text-sm font-medium text-center">DEX Trending (Utility)</p>
+            </SafeLink>
+
+            <SafeLink
               href='https://geckoterminal.com/'
               className="p-5 bg-gradient-to-br from-emerald-500/15 to-emerald-600/15 hover:from-emerald-500/25 hover:to-emerald-600/25 border border-emerald-500/30 hover:border-emerald-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-emerald-500/20 transform"
             >
@@ -202,19 +215,6 @@ export default function AlphaSection() {
                 <h4 className="text-purple-300 font-bold text-lg">DexScreener</h4>
               </div>
               <p className="text-gray-300 text-sm font-medium text-center">DEX Trending (Memes)</p>
-            </SafeLink>
-
-            <SafeLink
-              href='https://dex.coinmarketcap.com/signals/all/'
-              className="p-5 bg-gradient-to-br from-blue-500/15 to-blue-600/15 hover:from-blue-500/25 hover:to-blue-600/25 border border-blue-500/30 hover:border-blue-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-blue-500/20 transform"
-            >
-              <div className="flex flex-col items-center gap-2 mb-3">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-md">
-                  <span className="text-white font-bold text-xs">CMC</span>
-                </div>
-                <h4 className="text-blue-300 font-bold text-lg">CoinMarketCap</h4>
-              </div>
-              <p className="text-gray-300 text-sm font-medium text-center">DEX Trending (Utility)</p>
             </SafeLink>
           </div>
 
