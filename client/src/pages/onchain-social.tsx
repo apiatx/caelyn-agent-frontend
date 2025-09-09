@@ -153,7 +153,8 @@ export default function OnchainSocialPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {[
                     'TheEuroSniper', 'EricCryptoman', 'Whale_AI_net', 'CryptoThannos', 
-                    'HolderScan', 'Ethimedes', 'MisterSpread', 'CBATrades', 'DigimonCBA'
+                    'HolderScan', 'Ethimedes', 'MisterSpread', 'CBATrades', 'DigimonCBA',
+                    'istudycharts'
                   ].map((account) => {
                     return (
                     <SafeLink
