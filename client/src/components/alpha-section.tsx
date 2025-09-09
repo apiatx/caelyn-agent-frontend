@@ -322,7 +322,7 @@ export default function AlphaSection() {
           {/* Artemis Analytics */}
           <div className="mb-8 relative">
             <div className="mb-4">
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-end mb-2">
                 <button
                   onClick={() => openInNewTab('https://app.artemisanalytics.com/')}
                   className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm flex items-center gap-1 bg-black/60 backdrop-blur-sm px-3 py-2 rounded-lg border border-blue-400/30 hover:bg-blue-500/20 transition-all duration-300"
