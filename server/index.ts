@@ -143,11 +143,7 @@ app.use((req, res, next) => {
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || '5000', 10);
   
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, (error?: Error) => {
+  server.listen(port, "0.0.0.0", (error?: Error) => {
     if (error) {
       console.error('Failed to start server:', error);
       process.exit(1);
