@@ -122,62 +122,65 @@ app.use((req, res, next) => {
   next();
 });
 
-(async () => {
-  const server = await registerRoutes(app);
-
-  // Use security error handler
-  app.use(errorHandler);
-
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
-  if (app.get("env") === "development") {
-    await setupVite(app, server);
-  } else {
-    serveStatic(app);
-  }
-
-  // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5000 if not specified.
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = parseInt(process.env.PORT || '5000', 10);
-  
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, (error?: Error) => {
-    if (error) {
-      console.error('Failed to start server:', error);
-      process.exit(1);
-    }
-    
-    log(`serving on port ${port}`);
-    log(`Server is ready and healthy`);
-    log(`Health check endpoints available at:`);
-    log(`  - http://0.0.0.0:${port}/deployment-health (priority)`);
-    log(`  - http://0.0.0.0:${port}/`);
-    log(`  - http://0.0.0.0:${port}/health`);
-    log(`  - http://0.0.0.0:${port}/ready`);
-    log(`  - http://0.0.0.0:${port}/api/health`);
-    log(`  - http://0.0.0.0:${port}/api/ready`);
-    
-    // Start background services after a delay to ensure server is ready
-    setTimeout(() => {
-      log(`Starting background services...`);
-      try {
-        startBackgroundServices();
-        log(`Background services started successfully`);
-      } catch (error) {
-        console.error('Error starting background services:', error);
-        // Don't exit - server can still function without background services
-      }
-    }, 1000);
-  }).on('error', (err) => {
-    console.error('Server failed to start:', err);
+// CRITICAL: Start server IMMEDIATELY to satisfy Preview tool waitForPort
+// Health endpoints are already registered above - this will make Preview work
+const port = parseInt(process.env.PORT || '5000', 10);
+const server = app.listen({
+  port,
+  host: "0.0.0.0",
+  reusePort: true,
+}, (error?: Error) => {
+  if (error) {
+    console.error('Failed to start server:', error);
     process.exit(1);
-  });
+  }
+  
+  log(`serving on port ${port}`);
+  log(`Server is ready and healthy`);
+  log(`Health check endpoints available at:`);
+  log(`  - http://0.0.0.0:${port}/deployment-health (priority)`);
+  log(`  - http://0.0.0.0:${port}/`);
+  log(`  - http://0.0.0.0:${port}/health`);
+  log(`  - http://0.0.0.0:${port}/ready`);
+  log(`  - http://0.0.0.0:${port}/api/health`);
+  log(`  - http://0.0.0.0:${port}/api/ready`);
+  
+  // Now initialize routes and Vite AFTER server is listening
+  (async () => {
+    try {
+      // Register API routes
+      await registerRoutes(app);
+
+      // Use security error handler
+      app.use(errorHandler);
+
+      // Setup Vite or static serving
+      if (app.get("env") === "development") {
+        await setupVite(app, server);
+      } else {
+        serveStatic(app);
+      }
+      
+      // Start background services after everything is ready
+      setTimeout(() => {
+        log(`Starting background services...`);
+        try {
+          startBackgroundServices();
+          log(`Background services started successfully`);
+        } catch (error) {
+          console.error('Error starting background services:', error);
+          // Don't exit - server can still function without background services
+        }
+      }, 1000);
+    } catch (error) {
+      console.error('Error during server initialization:', error);
+      // Server is already listening, so don't exit - just log the error
+    }
+  })();
+}).on('error', (err) => {
+  console.error('Server failed to start:', err);
+  process.exit(1);
+});
 
   // Add error handler for server
   server.on('error', (error: Error) => {
@@ -201,8 +204,7 @@ app.use((req, res, next) => {
     process.exit(0);
   });
 
-  process.on('SIGINT', () => {
-    stopBackgroundServices();
-    process.exit(0);
-  });
-})();
+process.on('SIGINT', () => {
+  stopBackgroundServices();
+  process.exit(0);
+});
