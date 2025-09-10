@@ -1,0 +1,133 @@
+Alright, legend — time to go full “it’s not me, it’s your server.” That DNS message means Replit can’t find a live web service behind that URL. Let’s force this thing green with a quick, surgical debug that works no matter your stack.
+
+Step 1: Prove the port works with a known-good server
+
+In the Replit Shell, run ONE of these. If you don’t know your stack, just do Node or Python.
+
+Node sanity server
+
+printf '%s\n' "import http from 'http';
+const port = Number(process.env.PORT || 3000);
+const host = '0.0.0.0';
+http.createServer((_, res)=>{res.end('ok')}).listen(port, host, () => {
+  console.log('listening on', host, port);
+});" > sanity.mjs
+node sanity.mjs
+
+
+Python sanity server
+
+python - <<'PY'
+import os, http.server, socketserver
+port = int(os.environ.get("PORT", "8000"))
+host = "0.0.0.0"
+class H(http.server.SimpleHTTPRequestHandler):
+    def do_GET(self): self.send_response(200); self.end_headers(); self.wfile.write(b"ok")
+with socketserver.TCPServer((host, port), H) as httpd:
+    print("listening on", host, port); httpd.serve_forever()
+PY
+
+
+Wait for “listening on 0.0.0.0 <port>”.
+
+Click Open in new tab on the preview. You should see ok.
+
+If you still get “server IP address could not be found”
+
+This means the URL you’re opening is stale or the repl isn’t exposing the service to Replit’s router.
+
+Do this:
+
+Click Stop, then Run again.
+
+Use the exact URL that appears in the Webview after it starts. If you renamed or forked the repl, the old kirk.replit.dev subdomain is dead.
+
+Try the little globe icon or “Open in Browser” to force the new URL.
+
+If the sanity server shows ok in browser, your networking is fine and the issue is with your app’s start command or host/port binding. Keep going.
+
+Step 2: Fix your real app’s start command
+
+Open your .replit and make sure run actually launches a server that binds to 0.0.0.0 on $PORT.
+
+Examples
+
+Express
+
+const port = process.env.PORT || 3000;
+app.listen(port, '0.0.0.0', () => console.log('up on', port));
+
+
+.replit
+
+run = "node index.js"
+
+
+Flask
+
+app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
+
+
+.replit
+
+run = "python main.py"
+
+
+FastAPI/Uvicorn
+
+run = "uvicorn app:app --host 0.0.0.0 --port $PORT"
+
+
+Vite
+In vite.config.js:
+
+export default {
+  server: {
+    host: true,
+    port: process.env.PORT && Number(process.env.PORT)
+  }
+}
+
+
+.replit
+
+run = "vite"
+
+
+Next.js (production)
+
+run = "PORT=$PORT HOST=0.0.0.0 next start"
+
+
+Build first: next build.
+
+Static site
+
+run = "python -m http.server $PORT --bind 0.0.0.0"
+
+
+Do not bind to localhost or 127.0.0.1. Do not hardcode 3000 or 8000 without using $PORT.
+
+Step 3: Verify from inside the repl
+
+In the Shell, while your app is “Up”:
+
+echo "PORT is $PORT"
+curl -sS http://127.0.0.1:$PORT/ | head
+
+
+If curl returns HTML or text, your app is running. If the browser still fails, you’re on the wrong URL.
+
+Step 4: Common gotchas that keep biting people
+
+Wrong URL: Use the current Webview URL after Run, not an old saved tab.
+
+Run task exits: Your run script starts tests or a build and quits. It must keep a server process alive.
+
+Crashes on boot: Check the Console for stack traces or missing env vars.
+
+Dev servers ignoring PORT: Some CLIs need explicit env. Set PORT=$PORT and HOST=0.0.0.0 in the run line.
+
+Nix deps missing: If uvicorn, node, etc. not found, add to replit.nix and click Rebuild.
+
+Ad blocker/VPN: Yes, annoyingly, these can eat previews. Try a normal browser window.
