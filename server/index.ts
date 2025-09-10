@@ -1,8 +1,10 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
+import { log } from "./vite";
 import { startBackgroundServices, stopBackgroundServices } from "./background-services";
 import { realTimePriceService } from "./real-time-price-service";
+import path from "path";
+import fs from "fs";
 
 // Security imports
 import { 
@@ -20,6 +22,32 @@ const app = express();
 
 // Configure trust proxy for rate limiting accuracy
 app.set('trust proxy', true);
+
+// Helper function to serve prebuilt static assets
+function servePrebuiltStatic(app: express.Express) {
+  // Try static-build first, then dist/public
+  const staticBuildPath = path.resolve(import.meta.dirname, '..', 'static-build');
+  const distPublicPath = path.resolve(import.meta.dirname, '..', 'dist', 'public');
+  
+  let staticPath: string;
+  
+  if (fs.existsSync(staticBuildPath)) {
+    staticPath = staticBuildPath;
+    log("Using prebuilt static frontend from static-build/");
+  } else if (fs.existsSync(distPublicPath)) {
+    staticPath = distPublicPath;
+    log("Using prebuilt static frontend from dist/public/");
+  } else {
+    throw new Error("No prebuilt static assets found. Please run 'npm run build' first.");
+  }
+  
+  app.use(express.static(staticPath));
+  
+  // Fall through to index.html if the file doesn't exist
+  app.use('*', (_req, res) => {
+    res.sendFile(path.join(staticPath, 'index.html'));
+  });
+}
 
 // CRITICAL: Deployment health check endpoint - MUST respond with 200 immediately
 // Also serves as user redirect to the frontend
@@ -154,11 +182,21 @@ const server = app.listen({
       // Use security error handler
       app.use(errorHandler);
 
-      // Setup Vite or static serving
-      if (app.get("env") === "development") {
+      // Setup frontend serving
+      const useVite = process.env.ENABLE_VITE === '1' && app.get("env") === "development";
+      
+      if (useVite) {
+        log("Starting Vite dev server...");
+        const { setupVite } = await import('./vite');
         await setupVite(app, server);
-      } else {
+        log("Vite dev server started successfully");
+      } else if (app.get("env") === "production") {
+        log("Using production static assets");
+        const { serveStatic } = await import('./vite');
         serveStatic(app);
+      } else {
+        // Development mode without Vite - use prebuilt static assets
+        servePrebuiltStatic(app);
       }
       
       // Start background services after everything is ready
