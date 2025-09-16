@@ -362,8 +362,13 @@ export const strictRateLimit = rateLimit({
  */
 export const corsConfig = cors({
   origin: function(origin, callback) {
-    // Allow requests with no origin (mobile apps, curl, etc.)
+    // Always allow requests with no origin (mobile apps, curl, etc.)
     if (!origin) return callback(null, true);
+    
+    // In development, be more permissive for static assets
+    if (process.env.NODE_ENV === 'development') {
+      return callback(null, true);
+    }
     
     // Allow localhost for development
     if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
@@ -380,13 +385,25 @@ export const corsConfig = cors({
       return callback(null, true);
     }
     
-    // Block all other origins in production
-    callback(new Error('Not allowed by CORS'));
+    // Allow other common development origins
+    if (origin.includes('vite') || origin === 'null') {
+      return callback(null, true);
+    }
+    
+    // Block all other origins in production only
+    if (process.env.NODE_ENV === 'production') {
+      callback(new Error('Not allowed by CORS'));
+    } else {
+      callback(null, true);
+    }
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
-  maxAge: 86400 // 24 hours
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'Cache-Control'],
+  exposedHeaders: ['Content-Length', 'Content-Type'],
+  maxAge: 86400, // 24 hours
+  preflightContinue: false,
+  optionsSuccessStatus: 200
 });
 
 /**

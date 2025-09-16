@@ -66,10 +66,10 @@ app.get("/ready", (req, res) => {
 logSecurityConfig();
 
 // Apply security middleware FIRST (CSP disabled for investing.com)
+app.use(corsConfig); // Move CORS before other middleware
 app.use(securityHeaders);
 app.use(helmetConfig);
 // app.use(cspConfig); // Disabled to allow investing.com iframe
-app.use(corsConfig);
 
 // Force HTTPS in production
 if (isProduction && env.FORCE_HTTPS) {
