@@ -127,192 +127,75 @@ export default function TradeOptionsPage() {
             <div className="w-32 h-1 bg-gradient-to-r from-yellow-500 to-orange-500 mx-auto mt-4 rounded-full"></div>
           </div>
 
-          {/* Options Trading Platforms */}
+          {/* Options Section */}
           <GlassCard className="p-8">
+            {/* Options Subsection */}
             <div className="space-y-6">
               <div className="text-center mb-6">
                 <div className="flex items-center justify-center gap-3 mb-2">
-                  <div className="w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-lg flex items-center justify-center">
-                    <Zap className="w-4 h-4 text-black" />
+                  <div className="w-8 h-8 bg-gradient-to-r from-green-400 to-emerald-500 rounded-lg flex items-center justify-center">
+                    <TrendingUp className="w-4 h-4 text-white" />
                   </div>
-                  <h4 className="text-2xl font-bold bg-gradient-to-r from-yellow-400 to-orange-300 bg-clip-text text-transparent">Options Platforms</h4>
+                  <h4 className="text-2xl font-bold bg-gradient-to-r from-green-400 to-emerald-300 bg-clip-text text-transparent">Options</h4>
                 </div>
               </div>
-
-              {/* Primary Options Platforms */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <Button
                   variant="outline"
-                  onClick={() => openInNewTab('https://www.lyra.finance/')}
-                  className="group w-full bg-gradient-to-br from-purple-500/40 via-indigo-500/30 to-blue-500/40 border-purple-400/50 hover:from-purple-400/50 hover:via-indigo-400/40 hover:to-blue-400/50 hover:border-purple-300/70 text-white justify-center p-7 h-auto shadow-2xl hover:shadow-purple-500/30 transform hover:scale-[1.02] transition-all duration-500 backdrop-blur-sm"
-                >
-                  <div className="text-center">
-                    <div className="font-bold text-xl flex items-center justify-center">
-                      <Zap className="w-6 h-6 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-500" />
-                      Lyra Finance
-                    </div>
-                    <div className="text-sm text-purple-100/90 font-medium">Advanced options trading protocol</div>
-                  </div>
-                </Button>
-
-                <Button
-                  variant="outline"
-                  onClick={() => openInNewTab('https://app.dopex.io/')}
-                  className="group w-full bg-gradient-to-br from-green-500/40 via-emerald-500/30 to-teal-500/40 border-green-400/50 hover:from-green-400/50 hover:via-emerald-400/40 hover:to-teal-400/50 hover:border-green-300/70 text-white justify-center p-7 h-auto shadow-2xl hover:shadow-green-500/30 transform hover:scale-[1.02] transition-all duration-500 backdrop-blur-sm"
-                >
-                  <div className="text-center">
-                    <div className="font-bold text-xl flex items-center justify-center">
-                      <TrendingUp className="w-6 h-6 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-500" />
-                      Dopex
-                    </div>
-                    <div className="text-sm text-green-100/90 font-medium">Decentralized options protocol</div>
-                  </div>
-                </Button>
-              </div>
-
-              {/* Additional Options Platforms */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <Button
-                  variant="outline"
-                  onClick={() => openInNewTab('https://aevo.xyz/')}
-                  className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+                  onClick={() => openInNewTab('https://www.hegic.co/app#/arbitrum/trade/new')}
+                  className="group bg-gradient-to-br from-green-600/30 via-emerald-600/20 to-teal-600/30 border-green-400/40 hover:from-green-500/40 hover:via-emerald-500/30 hover:to-teal-500/40 hover:border-green-300/60 text-white justify-center p-5 h-auto shadow-xl hover:shadow-green-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
                 >
                   <div className="text-center">
                     <div className="font-bold text-base flex items-center justify-center">
-                      <Zap className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
-                      Aevo
-                    </div>
-                    <div className="text-sm text-gray-300">High-performance options DEX</div>
-                  </div>
-                </Button>
-
-                <Button
-                  variant="outline"
-                  onClick={() => openInNewTab('https://app.hegic.co/')}
-                  className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
-                >
-                  <div className="text-center">
-                    <div className="font-bold text-base flex items-center justify-center">
-                      <Activity className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
+                      <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
                       Hegic
                     </div>
-                    <div className="text-sm text-gray-300">On-chain options trading</div>
+                    <div className="text-sm text-green-200/90">Decentralized options protocol</div>
                   </div>
                 </Button>
 
                 <Button
                   variant="outline"
-                  onClick={() => openInNewTab('https://www.binance.com/en/options')}
-                  className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+                  onClick={() => openInNewTab('https://deri.io/#/lite/trade/option/BTCUSD-50000-P')}
+                  className="group bg-gradient-to-br from-teal-600/30 via-cyan-600/20 to-blue-600/30 border-teal-400/40 hover:from-teal-500/40 hover:via-cyan-500/30 hover:to-blue-500/40 hover:border-teal-300/60 text-white justify-center p-5 h-auto shadow-xl hover:shadow-teal-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
                 >
                   <div className="text-center">
                     <div className="font-bold text-base flex items-center justify-center">
                       <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
-                      Binance Options
+                      Deri Protocol
                     </div>
-                    <div className="text-sm text-gray-300">Centralized options trading</div>
+                    <div className="text-sm text-teal-200/90">Bitcoin options trading</div>
                   </div>
                 </Button>
 
                 <Button
                   variant="outline"
-                  onClick={() => openInNewTab('https://www.okx.com/trade-derivatives')}
-                  className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
-                >
-                  <div className="text-center">
-                    <div className="font-bold text-base flex items-center justify-center">
-                      <Zap className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
-                      OKX Options
-                    </div>
-                    <div className="text-sm text-gray-300">Professional options platform</div>
-                  </div>
-                </Button>
-
-                <Button
-                  variant="outline"
-                  onClick={() => openInNewTab('https://deribit.com/')}
-                  className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
-                >
-                  <div className="text-center">
-                    <div className="font-bold text-base flex items-center justify-center">
-                      <Activity className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
-                      Deribit
-                    </div>
-                    <div className="text-sm text-gray-300">Bitcoin & Ethereum options</div>
-                  </div>
-                </Button>
-
-                <Button
-                  variant="outline"
-                  onClick={() => openInNewTab('https://www.paradigm.co/')}
-                  className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+                  onClick={() => openInNewTab('https://tradoor.io/trade/btc_usdt')}
+                  className="group bg-gradient-to-br from-lime-600/30 via-green-600/20 to-emerald-600/30 border-lime-400/40 hover:from-lime-500/40 hover:via-green-500/30 hover:to-emerald-500/40 hover:border-lime-300/60 text-white justify-center p-5 h-auto shadow-xl hover:shadow-lime-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
                 >
                   <div className="text-center">
                     <div className="font-bold text-base flex items-center justify-center">
                       <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
-                      Paradigm
+                      Tradoor
                     </div>
-                    <div className="text-sm text-gray-300">Institutional options platform</div>
+                    <div className="text-sm text-lime-200/90">Crypto perps and options</div>
                   </div>
                 </Button>
-              </div>
-            </div>
-          </GlassCard>
 
-          {/* Options Analytics & Tools */}
-          <GlassCard className="p-8">
-            <div className="space-y-6">
-              <div className="text-center mb-6">
-                <div className="flex items-center justify-center gap-3 mb-2">
-                  <div className="w-8 h-8 bg-gradient-to-r from-blue-400 to-cyan-500 rounded-lg flex items-center justify-center">
-                    <Activity className="w-4 h-4 text-white" />
-                  </div>
-                  <h4 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">Analytics & Tools</h4>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <Button
                   variant="outline"
-                  onClick={() => openInNewTab('https://www.volatility.com/')}
-                  className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+                  onClick={() => openInNewTab('https://www.stryke.xyz/en/dashboard')}
+                  className="group bg-gradient-to-br from-orange-600/30 via-amber-600/20 to-yellow-600/30 border-orange-400/40 hover:from-orange-500/40 hover:via-amber-500/30 hover:to-yellow-500/40 hover:border-orange-300/60 text-white justify-center p-5 h-auto shadow-xl hover:shadow-orange-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
                 >
                   <div className="text-center">
                     <div className="font-bold text-base flex items-center justify-center">
                       <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
-                      Volatility.com
+                      Stryke
                     </div>
-                    <div className="text-sm text-gray-300">Volatility analysis tools</div>
+                    <div className="text-sm text-orange-200/90">Decentralized options trading</div>
                   </div>
                 </Button>
 
-                <Button
-                  variant="outline"
-                  onClick={() => openInNewTab('https://laevitas.ch/')}
-                  className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
-                >
-                  <div className="text-center">
-                    <div className="font-bold text-base flex items-center justify-center">
-                      <Activity className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
-                      Laevitas
-                    </div>
-                    <div className="text-sm text-gray-300">Derivatives analytics</div>
-                  </div>
-                </Button>
-
-                <Button
-                  variant="outline"
-                  onClick={() => openInNewTab('https://www.skew.com/')}
-                  className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
-                >
-                  <div className="text-center">
-                    <div className="font-bold text-base flex items-center justify-center">
-                      <Zap className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
-                      Skew
-                    </div>
-                    <div className="text-sm text-gray-300">Options flow analytics</div>
-                  </div>
-                </Button>
               </div>
             </div>
           </GlassCard>
