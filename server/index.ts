@@ -12,6 +12,7 @@ import {
   cspConfig, 
   apiRateLimit, 
   corsConfig, 
+  staticAssetsCorsConfig,
   sanitizeInput, 
   securityHeaders,
   errorHandler 
@@ -41,10 +42,27 @@ function servePrebuiltStatic(app: express.Express) {
     throw new Error("No prebuilt static assets found. Please run 'npm run build' first.");
   }
   
-  app.use(express.static(staticPath));
+  // Static assets with CORS headers for proper frontend loading
+  app.use(express.static(staticPath, {
+    setHeaders: (res, path, stat) => {
+      // Set CORS headers for all static assets
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+      
+      // Cache static assets for better performance
+      if (path.includes('/assets/')) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000'); // 1 year
+      }
+    }
+  }));
   
   // Fall through to index.html if the file doesn't exist
   app.use('*', (_req, res) => {
+    // Set CORS headers for the HTML file too
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
     res.sendFile(path.join(staticPath, 'index.html'));
   });
 }
@@ -97,6 +115,11 @@ logSecurityConfig();
 app.use(securityHeaders);
 app.use(helmetConfig);
 // app.use(cspConfig); // Disabled to allow investing.com iframe
+
+// Special CORS handling for static assets (/assets/* routes)
+app.use('/assets/*', staticAssetsCorsConfig);
+
+// Main CORS configuration for API and other routes
 app.use(corsConfig);
 
 // Force HTTPS in production

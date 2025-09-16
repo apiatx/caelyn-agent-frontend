@@ -362,7 +362,7 @@ export const strictRateLimit = rateLimit({
  */
 export const corsConfig = cors({
   origin: function(origin, callback) {
-    // Allow requests with no origin (mobile apps, curl, etc.)
+    // Allow requests with no origin (mobile apps, curl, static assets, etc.)
     if (!origin) return callback(null, true);
     
     // Allow localhost for development
@@ -380,12 +380,26 @@ export const corsConfig = cors({
       return callback(null, true);
     }
     
-    // Block all other origins in production
+    // In development mode, be more permissive to fix CORS issues
+    if (process.env.NODE_ENV === 'development') {
+      return callback(null, true);
+    }
+    
+    // Block all other origins in production only
     callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  maxAge: 86400 // 24 hours
+});
+
+// Special CORS middleware for static assets that bypasses origin checks
+export const staticAssetsCorsConfig = cors({
+  origin: '*', // Allow all origins for static assets (CSS, JS, etc.)
+  credentials: false,
+  methods: ['GET', 'HEAD', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Accept', 'Cache-Control'],
   maxAge: 86400 // 24 hours
 });
 
