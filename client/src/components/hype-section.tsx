@@ -78,6 +78,19 @@ export function HypeSection() {
         </div>
       </div>
 
+      {/* Bull Market Peak Signals */}
+      <div className="mt-6">
+        <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
+          <iframe
+            src="https://www.coinglass.com/bull-market-peak-signals"
+            className="w-full h-[400px] sm:h-[500px] lg:h-[600px]"
+            title="Coinglass Bull Market Peak Signals"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+            referrerPolicy="no-referrer-when-downgrade"
+          />
+        </div>
+      </div>
+
       {/* CoinGlass HL Analytics */}
       <div className="mt-6">
         <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
