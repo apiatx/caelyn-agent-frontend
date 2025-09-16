@@ -34,21 +34,6 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
     
     // Fallback to URL-based detection for other pages
     const currentPath = location.replace(/^\/+/, '').replace(/\/+$/, '');
-    
-    // Handle nested routes properly
-    if (page === 'majors' || page === 'altcoins') {
-      return currentPath.startsWith('app/charts/');
-    }
-    if (page === 'onchain-analytics' || page === 'onchain-smart-wallets' || page === 'onchain-launchpad') {
-      return currentPath.startsWith('app/onchain/');
-    }
-    if (['ethereum', 'base', 'solana', 'hype', 'bittensor', 'abstract', 'bnb', 'sui'].includes(page)) {
-      return currentPath === `app/${page}`;
-    }
-    if (['crypto-stocks', 'crypto-stonks', 'commodities'].includes(page)) {
-      return currentPath.startsWith('app/crypto-') || currentPath === 'app/commodities';
-    }
-    
     return currentPath === `app/${page}` || (page === 'dashboard' && (currentPath === '' || currentPath === 'app'));
   };
 
@@ -353,7 +338,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
                 <DropdownMenuTrigger asChild>
                   <button
                     className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
-                      isActive("onchain-analytics") || isActive("onchain-smart-wallets") || isActive("onchain-launchpad")
+                      isActive("onchain-alpha") || isActive("onchain-smart-wallets")
                         ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                         : "hover:bg-white/5 text-crypto-silver"
                     }`}
@@ -364,11 +349,11 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="bg-black/80 backdrop-blur-lg border-crypto-silver/20">
                   <DropdownMenuItem
-                    onClick={() => navigateTo("/app/onchain/analytics")}
+                    onClick={() => navigateTo("/app/onchain/alpha")}
                     className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
                   >
                     <TrendingUp className="w-4 h-4 mr-2" />
-                    Screening
+                    Alpha
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => navigateTo("/app/onchain/smart-wallets")}
@@ -376,13 +361,6 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
                   >
                     <Wallet className="w-4 h-4 mr-2" />
                     Smart Wallets
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => navigateTo("/app/onchain/launchpad")}
-                    className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
-                  >
-                    <Rocket className="w-4 h-4 mr-2" />
-                    Launchpad
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -458,16 +436,6 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              <button
-                onClick={() => navigateTo("/app/trade")}
-                className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
-                  isActive("trade")
-                    ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
-                    : "hover:bg-white/5 text-crypto-silver"
-                }`}
-              >
-                <TrendingUp className="w-4 h-4 mr-1 inline" />Trade
-              </button>
               <button
                 onClick={() => navigateTo("/app/defi")}
                 className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${

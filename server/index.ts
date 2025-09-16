@@ -1,10 +1,8 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
-import { log } from "./vite";
+import { setupVite, serveStatic, log } from "./vite";
 import { startBackgroundServices, stopBackgroundServices } from "./background-services";
 import { realTimePriceService } from "./real-time-price-service";
-import path from "path";
-import fs from "fs";
 
 // Security imports
 import { 
@@ -12,7 +10,6 @@ import {
   cspConfig, 
   apiRateLimit, 
   corsConfig, 
-  staticAssetsCorsConfig,
   sanitizeInput, 
   securityHeaders,
   errorHandler 
@@ -23,49 +20,6 @@ const app = express();
 
 // Configure trust proxy for rate limiting accuracy
 app.set('trust proxy', true);
-
-// Helper function to serve prebuilt static assets
-function servePrebuiltStatic(app: express.Express) {
-  // Try static-build first, then dist/public
-  const staticBuildPath = path.resolve(import.meta.dirname, '..', 'static-build');
-  const distPublicPath = path.resolve(import.meta.dirname, '..', 'dist', 'public');
-  
-  let staticPath: string;
-  
-  if (fs.existsSync(staticBuildPath)) {
-    staticPath = staticBuildPath;
-    log("Using prebuilt static frontend from static-build/");
-  } else if (fs.existsSync(distPublicPath)) {
-    staticPath = distPublicPath;
-    log("Using prebuilt static frontend from dist/public/");
-  } else {
-    throw new Error("No prebuilt static assets found. Please run 'npm run build' first.");
-  }
-  
-  // Static assets with CORS headers for proper frontend loading
-  app.use(express.static(staticPath, {
-    setHeaders: (res, path, stat) => {
-      // Set CORS headers for all static assets
-      res.setHeader('Access-Control-Allow-Origin', '*');
-      res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
-      res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-      
-      // Cache static assets for better performance
-      if (path.includes('/assets/')) {
-        res.setHeader('Cache-Control', 'public, max-age=31536000'); // 1 year
-      }
-    }
-  }));
-  
-  // Fall through to index.html if the file doesn't exist
-  app.use('*', (_req, res) => {
-    // Set CORS headers for the HTML file too
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-    res.sendFile(path.join(staticPath, 'index.html'));
-  });
-}
 
 // CRITICAL: Deployment health check endpoint - MUST respond with 200 immediately
 // Also serves as user redirect to the frontend
@@ -115,11 +69,6 @@ logSecurityConfig();
 app.use(securityHeaders);
 app.use(helmetConfig);
 // app.use(cspConfig); // Disabled to allow investing.com iframe
-
-// Special CORS handling for static assets (/assets/* routes)
-app.use('/assets/*', staticAssetsCorsConfig);
-
-// Main CORS configuration for API and other routes
 app.use(corsConfig);
 
 // Force HTTPS in production
@@ -173,75 +122,62 @@ app.use((req, res, next) => {
   next();
 });
 
-// CRITICAL: Start server IMMEDIATELY to satisfy Preview tool waitForPort
-// Health endpoints are already registered above - this will make Preview work
-const port = parseInt(process.env.PORT || '5000', 10);
-const server = app.listen({
-  port,
-  host: "0.0.0.0",
-  reusePort: true,
-}, (error?: Error) => {
-  if (error) {
-    console.error('Failed to start server:', error);
-    process.exit(1);
+(async () => {
+  const server = await registerRoutes(app);
+
+  // Use security error handler
+  app.use(errorHandler);
+
+  // importantly only setup vite in development and after
+  // setting up all the other routes so the catch-all route
+  // doesn't interfere with the other routes
+  if (app.get("env") === "development") {
+    await setupVite(app, server);
+  } else {
+    serveStatic(app);
   }
-  
-  log(`serving on port ${port}`);
-  log(`Server is ready and healthy`);
-  log(`Health check endpoints available at:`);
-  log(`  - http://0.0.0.0:${port}/deployment-health (priority)`);
-  log(`  - http://0.0.0.0:${port}/`);
-  log(`  - http://0.0.0.0:${port}/health`);
-  log(`  - http://0.0.0.0:${port}/ready`);
-  log(`  - http://0.0.0.0:${port}/api/health`);
-  log(`  - http://0.0.0.0:${port}/api/ready`);
-  
-  // Now initialize routes and Vite AFTER server is listening
-  (async () => {
-    try {
-      // Register API routes
-      await registerRoutes(app);
 
-      // Use security error handler
-      app.use(errorHandler);
-
-      // Setup frontend serving
-      const useVite = process.env.ENABLE_VITE === '1' && app.get("env") === "development";
-      
-      if (useVite) {
-        log("Starting Vite dev server...");
-        const { setupVite } = await import('./vite');
-        await setupVite(app, server);
-        log("Vite dev server started successfully");
-      } else if (app.get("env") === "production") {
-        log("Using production static assets");
-        const { serveStatic } = await import('./vite');
-        serveStatic(app);
-      } else {
-        // Development mode without Vite - use prebuilt static assets
-        servePrebuiltStatic(app);
-      }
-      
-      // Start background services after everything is ready
-      setTimeout(() => {
-        log(`Starting background services...`);
-        try {
-          startBackgroundServices();
-          log(`Background services started successfully`);
-        } catch (error) {
-          console.error('Error starting background services:', error);
-          // Don't exit - server can still function without background services
-        }
-      }, 1000);
-    } catch (error) {
-      console.error('Error during server initialization:', error);
-      // Server is already listening, so don't exit - just log the error
+  // ALWAYS serve the app on the port specified in the environment variable PORT
+  // Other ports are firewalled. Default to 5000 if not specified.
+  // this serves both the API and the client.
+  // It is the only port that is not firewalled.
+  const port = parseInt(process.env.PORT || '5000', 10);
+  
+  server.listen({
+    port,
+    host: "0.0.0.0",
+    reusePort: true,
+  }, (error?: Error) => {
+    if (error) {
+      console.error('Failed to start server:', error);
+      process.exit(1);
     }
-  })();
-}).on('error', (err) => {
-  console.error('Server failed to start:', err);
-  process.exit(1);
-});
+    
+    log(`serving on port ${port}`);
+    log(`Server is ready and healthy`);
+    log(`Health check endpoints available at:`);
+    log(`  - http://0.0.0.0:${port}/deployment-health (priority)`);
+    log(`  - http://0.0.0.0:${port}/`);
+    log(`  - http://0.0.0.0:${port}/health`);
+    log(`  - http://0.0.0.0:${port}/ready`);
+    log(`  - http://0.0.0.0:${port}/api/health`);
+    log(`  - http://0.0.0.0:${port}/api/ready`);
+    
+    // Start background services after a delay to ensure server is ready
+    setTimeout(() => {
+      log(`Starting background services...`);
+      try {
+        startBackgroundServices();
+        log(`Background services started successfully`);
+      } catch (error) {
+        console.error('Error starting background services:', error);
+        // Don't exit - server can still function without background services
+      }
+    }, 1000);
+  }).on('error', (err) => {
+    console.error('Server failed to start:', err);
+    process.exit(1);
+  });
 
   // Add error handler for server
   server.on('error', (error: Error) => {
@@ -265,7 +201,8 @@ const server = app.listen({
     process.exit(0);
   });
 
-process.on('SIGINT', () => {
-  stopBackgroundServices();
-  process.exit(0);
-});
+  process.on('SIGINT', () => {
+    stopBackgroundServices();
+    process.exit(0);
+  });
+})();
