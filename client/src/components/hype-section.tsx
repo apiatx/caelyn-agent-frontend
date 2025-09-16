@@ -37,7 +37,7 @@ export function HypeSection() {
         <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
           <iframe
             {...getSecureIframeProps('https://app.hyperliquid.xyz/trade/HYPE', 'Hyperliquid HYPE Trading')}
-            className="w-full h-[600px] border-0"
+            className="w-full h-[800px] border-0"
           />
         </div>
         
