@@ -484,6 +484,43 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+                      isActive("trade") || isActive("trade-perps") || isActive("trade-options")
+                        ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
+                        : "hover:bg-white/5 text-crypto-silver"
+                    }`}
+                  >
+                    <TrendingUp className="w-4 h-4 mr-1 inline" />Trade
+                    <ChevronDown className="w-4 h-4 ml-1 inline" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="bg-black/80 backdrop-blur-lg border-crypto-silver/20">
+                  <DropdownMenuItem
+                    onClick={() => navigateTo("/app/trade")}
+                    className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
+                  >
+                    <ArrowLeftRight className="w-4 h-4 mr-2" />
+                    Swidge
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => navigateTo("/app/trade/perps")}
+                    className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
+                  >
+                    <TrendingUp className="w-4 h-4 mr-2" />
+                    Perps
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => navigateTo("/app/trade/options")}
+                    className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
+                  >
+                    <Zap className="w-4 h-4 mr-2" />
+                    Options
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <button
                 onClick={() => navigateTo("/app/defi")}
                 className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
