@@ -40,6 +40,7 @@ function Router() {
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/app/charts/majors" component={TopChartsPage} />
       <Route path="/app/charts/altcoins" component={AltcoinsPage} />
+      <Route path="/app/altcoins" component={AltcoinsPage} />
       <Route path="/app/majors" component={TopChartsPage} />
       <Route path="/majors" component={TopChartsPage} />
       <Route path="/top-charts" component={TopChartsPage} />

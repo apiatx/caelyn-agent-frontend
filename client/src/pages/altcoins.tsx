@@ -904,21 +904,12 @@ export default function AltcoinsPage() {
               <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <h3 className="text-lg font-semibold text-white">More Charts</h3>
-                    <Badge variant="outline" className="bg-purple-500/20 text-purple-300 border-purple-500/30">
-                      ANALYTICS
-                    </Badge>
+                    <h3 className="text-lg font-semibold text-white">SUPERCHARTS</h3>
                   </div>
                 </div>
                 
                 {/* CoinGlass SuperCharts */}
                 <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <h4 className="text-md font-medium text-orange-400">CoinGlass SuperCharts</h4>
-                    <Badge variant="outline" className="bg-orange-500/20 text-orange-300 border-orange-500/30 text-xs">
-                      SUPERCHARTS
-                    </Badge>
-                  </div>
                   <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
                     <iframe
                       src="https://www.coinglass.com/tv/Binance_BTCUSDT"
