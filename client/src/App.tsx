@@ -24,6 +24,7 @@ import OnchainAlphaPage from "@/pages/onchain-alpha";
 import OnchainSmartWalletsPage from "@/pages/onchain-smart-wallets";
 import OnchainSocialPage from "@/pages/onchain-social";
 import OnchainLaunchpadPage from "@/pages/onchain-launchpad";
+import OnchainMemesPage from "@/pages/onchain-memes";
 import BasePage from "@/pages/base";
 import PortfolioPage from "@/pages/portfolio";
 import PredictPage from "@/pages/predict";
@@ -49,6 +50,7 @@ function Router() {
       <Route path="/app/onchain/smart-wallets" component={OnchainSmartWalletsPage} />
       <Route path="/app/onchain/social" component={OnchainSocialPage} />
       <Route path="/app/onchain/launchpad" component={OnchainLaunchpadPage} />
+      <Route path="/app/onchain/memes" component={OnchainMemesPage} />
       <Route path="/app/base" component={BasePage} />
       <Route path="/base" component={BasePage} />
       <Route path="/app/ethereum" component={EthereumPage} />

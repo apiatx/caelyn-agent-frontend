@@ -515,32 +515,6 @@ export default function AlphaSection() {
       </div>
 
 
-      {/* Memecoins */}
-      <div className="space-y-8 mt-12">
-        <GlassCard className="p-6">
-          <div className="flex items-center justify-center mb-6">
-            <h3 className="text-2xl font-bold bg-gradient-to-r from-white to-orange-100 bg-clip-text text-transparent">Memecoins</h3>
-          </div>
-
-          {/* Capitoday */}
-          <div className="mb-8">
-            <SafeIframe
-              src="https://capitoday.com/"
-              title="Capitoday Memecoins Platform"
-              className="h-[600px]"
-            />
-          </div>
-
-          {/* HolderScan */}
-          <div className="mb-8">
-            <SafeIframe
-              src="https://holderscan.com/"
-              title="HolderScan Memecoins Analytics"
-              className="h-[600px]"
-            />
-          </div>
-        </GlassCard>
-      </div>
 
       {/* Social Indexes on Base Section */}
       <div className="mt-12">
