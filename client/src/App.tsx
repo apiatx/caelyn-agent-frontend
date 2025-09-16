@@ -9,7 +9,6 @@ import AltcoinsPage from "@/pages/altcoins";
 import EthereumPage from "@/pages/ethereum";
 import SolanaPage from "@/pages/solana";
 import DeFiPage from "@/pages/defi";
-import HypePage from "@/pages/hype";
 import AbstractPage from "@/pages/abstract";
 import BNBPage from "@/pages/bnb";
 import SUIPage from "@/pages/sui";
@@ -62,8 +61,6 @@ function Router() {
       <Route path="/ethereum" component={EthereumPage} />
       <Route path="/app/solana" component={SolanaPage} />
       <Route path="/solana" component={SolanaPage} />
-      <Route path="/app/hype" component={HypePage} />
-      <Route path="/hype" component={HypePage} />
       <Route path="/app/bittensor" component={BittensorPage} />
       <Route path="/bittensor" component={BittensorPage} />
       <Route path="/app/abstract" component={AbstractPage} />
