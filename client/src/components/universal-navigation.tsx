@@ -1,4 +1,4 @@
-import { Activity, BarChart3, TrendingUp, ChartLine, Brain, Zap, DollarSign, Building2, Layers, Coins, ChevronDown, Wallet, Users, MessageSquare, Rocket, Globe } from "lucide-react";
+import { Activity, BarChart3, TrendingUp, ChartLine, Brain, Zap, DollarSign, Building2, Layers, Coins, ChevronDown, Wallet, Users, MessageSquare, Rocket, Globe, ArrowLeftRight } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { useLocation } from "wouter";
 import {
@@ -205,16 +205,36 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <button
-            onClick={() => navigateTo("/app/trade")}
-            className={`flex-1 min-w-[90px] max-w-[120px] py-3 px-1 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
-              isActive("trade")
-                ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
-                : "hover:bg-white/5 text-crypto-silver"
-            }`}
-          >
-            <TrendingUp className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />Trade
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className={`flex-1 min-w-[90px] max-w-[120px] py-3 px-1 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
+                  isActive("trade") || isActive("trade-perps")
+                    ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
+                    : "hover:bg-white/5 text-crypto-silver"
+                }`}
+              >
+                <TrendingUp className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />Trade
+                <ChevronDown className="w-3 h-3 xl:w-4 xl:h-4 ml-1 inline" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="bg-black/80 backdrop-blur-lg border-crypto-silver/20">
+              <DropdownMenuItem
+                onClick={() => navigateTo("/app/trade")}
+                className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
+              >
+                <ArrowLeftRight className="w-4 h-4 mr-2" />
+                Swap
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => navigateTo("/app/trade/perps")}
+                className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
+              >
+                <TrendingUp className="w-4 h-4 mr-2" />
+                Perps
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <button
             onClick={() => navigateTo("/app/defi")}
             className={`flex-1 min-w-[90px] max-w-[120px] py-3 px-1 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${

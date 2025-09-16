@@ -18,6 +18,7 @@ import CryptoStonks from "@/pages/crypto-stonks";
 import CommoditiesPage from "@/pages/commodities";
 import BittensorPage from "@/pages/bittensor";
 import TradePage from "@/pages/trade";
+import TradePerpsPage from "@/pages/trade-perps";
 
 import OnchainPage from "@/pages/onchain";
 import OnchainAlphaPage from "@/pages/onchain-alpha";
@@ -72,6 +73,7 @@ function Router() {
       <Route path="/sui" component={SUIPage} />
       <Route path="/app/trade" component={TradePage} />
       <Route path="/trade" component={TradePage} />
+      <Route path="/app/trade/perps" component={TradePerpsPage} />
       <Route path="/app/defi" component={DeFiPage} />
       <Route path="/defi" component={DeFiPage} />
       <Route path="/app/crypto-stocks" component={CryptoStocks} />
