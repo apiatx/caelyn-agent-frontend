@@ -78,6 +78,25 @@ export function HypeSection() {
         </div>
       </div>
 
+      {/* CoinGlass Hyperliquid Whale Tracker */}
+      <div className="mt-6">
+        <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
+          <iframe
+            src="https://www.coinglass.com/hyperliquid"
+            className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+            title="CoinGlass Hyperliquid"
+            frameBorder="0"
+            scrolling="yes"
+          />
+        </div>
+        
+        <div className="mt-4 text-center">
+          <p className="text-xs text-gray-400">
+            Hyperliquid whale tracker • CoinGlass analytics and insights
+          </p>
+        </div>
+      </div>
+
       {/* CoinGlass HL Analytics */}
       <div className="mt-6">
         <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
