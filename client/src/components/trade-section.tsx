@@ -370,15 +370,6 @@ export default function TradeSection() {
             />
           </div>
 
-          {/* Paradex Iframe */}
-          <div className="w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg mb-8">
-            <SafeIframe
-              src="https://app.paradex.trade/trade/BTC-USD-PERP"
-              title="Paradex Trading Terminal"
-              className="w-full h-[800px] rounded-lg"
-            />
-          </div>
-
           {/* DeFi.app - Full Width Primary Button */}
           <Button
             variant="outline"
@@ -391,6 +382,21 @@ export default function TradeSection() {
                 DeFi.app
               </div>
               <div className="text-sm text-blue-100/90 font-medium">Primary onchain perpetuals super app</div>
+            </div>
+          </Button>
+
+          {/* Paradex - Full Width Button */}
+          <Button
+            variant="outline"
+            onClick={() => openInNewTab('https://app.paradex.trade/trade/BTC-USD-PERP')}
+            className="group w-full bg-gradient-to-br from-white/40 via-gray-100/30 to-white/40 border-white/50 hover:from-white/50 hover:via-gray-100/40 hover:to-white/50 hover:border-white/70 text-black justify-center p-7 h-auto shadow-2xl hover:shadow-white/30 transform hover:scale-[1.02] transition-all duration-500 backdrop-blur-sm mb-8"
+          >
+            <div className="text-center">
+              <div className="font-bold text-xl flex items-center justify-center">
+                <TrendingUp className="w-6 h-6 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-500" />
+                Paradex
+              </div>
+              <div className="text-sm text-gray-800 font-medium">Advanced perpetual futures trading</div>
             </div>
           </Button>
 
