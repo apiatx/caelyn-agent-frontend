@@ -79,12 +79,6 @@ export default function AlphaSection() {
       <div className="space-y-8 mt-12">
         <GlassCard className="p-3 sm:p-4 lg:p-6">
 
-          {/* Screener */}
-          <div className="mb-8">
-            <div className="flex items-center justify-center mb-6">
-              <h4 className="text-2xl font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">Screen</h4>
-            </div>
-          
           {/* 24h Gainers (CMC Top 500) */}
           <div className="mb-6">
             <TopDailyGainersTop500 />
@@ -289,7 +283,6 @@ export default function AlphaSection() {
                 <p className="text-gray-300 text-sm font-medium text-center">Crypto AI Agent Analytics</p>
               </SafeLink>
             </div>
-          </div>
           </div>
         </GlassCard>
       </div>

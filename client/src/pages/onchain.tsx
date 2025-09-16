@@ -5,8 +5,8 @@ export default function OnchainPage() {
   const [, setLocation] = useLocation();
 
   useEffect(() => {
-    // Redirect to alpha subpage as default
-    setLocation('/app/onchain/alpha');
+    // Redirect to analytics subpage as default
+    setLocation('/app/onchain/analytics');
   }, [setLocation]);
 
   return (
