@@ -130,6 +130,22 @@ export default function TradePerpsPage() {
                 />
               </div>
 
+              {/* CoinGlass Hyperliquid Whale Tracker - Moved here */}
+              <div className="w-full bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden mb-8">
+                <iframe
+                  src="https://www.coinglass.com/hyperliquid"
+                  className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+                  title="CoinGlass Hyperliquid"
+                  frameBorder="0"
+                  scrolling="yes"
+                />
+                <div className="p-4 text-center">
+                  <p className="text-xs text-gray-400">
+                    Hyperliquid whale tracker • CoinGlass analytics and insights
+                  </p>
+                </div>
+              </div>
+
               {/* DeFi.app - Full Width Primary Button */}
               <Button
                 variant="outline"
@@ -304,6 +320,15 @@ export default function TradePerpsPage() {
                   </div>
                 </Button>
               </div>
+
+              {/* Hyperbot Network Iframe - Moved here */}
+              <div className="mt-6 w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg">
+                <SafeIframe
+                  src="https://hyperbot.network/discover"
+                  title="Hyperbot Network Discover"
+                  className="w-full h-[800px] rounded-lg"
+                />
+              </div>
             </div>
           </GlassCard>
 
@@ -372,25 +397,6 @@ export default function TradePerpsPage() {
                 <div className="mt-4 text-center">
                   <p className="text-xs text-gray-400">
                     Hyperliquid ecosystem analytics • Volume, TVL, and performance metrics
-                  </p>
-                </div>
-              </div>
-
-              {/* CoinGlass Hyperliquid Whale Tracker */}
-              <div className="mt-6">
-                <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
-                  <iframe
-                    src="https://www.coinglass.com/hyperliquid"
-                    className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
-                    title="CoinGlass Hyperliquid"
-                    frameBorder="0"
-                    scrolling="yes"
-                  />
-                </div>
-                
-                <div className="mt-4 text-center">
-                  <p className="text-xs text-gray-400">
-                    Hyperliquid whale tracker • CoinGlass analytics and insights
                   </p>
                 </div>
               </div>
@@ -555,15 +561,6 @@ export default function TradePerpsPage() {
               </div>
             </div>
           </GlassCard>
-
-          {/* Hyperbot Network Iframe */}
-          <div className="w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg mb-8">
-            <SafeIframe
-              src="https://hyperbot.network/discover"
-              title="Hyperbot Network Discover"
-              className="w-full h-[800px] rounded-lg"
-            />
-          </div>
         </div>
       </main>
     </div>
