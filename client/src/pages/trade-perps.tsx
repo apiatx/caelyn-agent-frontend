@@ -130,6 +130,15 @@ export default function TradePerpsPage() {
                 />
               </div>
 
+              {/* AsterDex Iframe */}
+              <div className="w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg mb-8">
+                <SafeIframe
+                  src="https://www.asterdex.com/en/futures/v1/BTCUSDT"
+                  title="AsterDex Trading Terminal"
+                  className="w-full h-[800px] rounded-lg"
+                />
+              </div>
+
               {/* DeFi.app - Full Width Primary Button */}
               <Button
                 variant="outline"
