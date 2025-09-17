@@ -130,14 +130,21 @@ export default function TradePerpsPage() {
                 />
               </div>
 
-              {/* AsterDex Iframe */}
-              <div className="w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg mb-8">
-                <SafeIframe
-                  src="https://www.asterdex.com/en/futures/v1/BTCUSDT"
-                  title="AsterDex Trading Terminal"
-                  className="w-full h-[800px] rounded-lg"
-                />
-              </div>
+              {/* AsterDex - Full Width Button */}
+              <Button
+                variant="outline"
+                onClick={() => openInNewTab('https://www.asterdex.com/en/futures/v1/BTCUSDT')}
+                className="group w-full bg-gradient-to-br from-purple-500/40 via-pink-500/30 to-purple-500/40 border-purple-400/50 hover:from-purple-400/50 hover:via-pink-400/40 hover:to-purple-400/50 hover:border-purple-300/70 text-white justify-center p-7 h-auto shadow-2xl hover:shadow-purple-500/30 transform hover:scale-[1.02] transition-all duration-500 backdrop-blur-sm mb-8"
+                data-testid="button-asterdex"
+              >
+                <div className="text-center">
+                  <div className="font-bold text-xl flex items-center justify-center">
+                    <TrendingUp className="w-6 h-6 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-500" />
+                    AsterDex
+                  </div>
+                  <div className="text-sm text-purple-100/90 font-medium">Advanced perpetual futures trading platform</div>
+                </div>
+              </Button>
 
               {/* DeFi.app - Full Width Primary Button */}
               <Button
