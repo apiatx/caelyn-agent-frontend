@@ -167,16 +167,16 @@ export default function TradePerpsPage() {
 
                 <Button
                   variant="outline"
-                  onClick={() => openInNewTab('https://quanto.trade/en/markets/BTC-USD-SWAP-LIN')}
+                  onClick={() => openInNewTab('https://tradoor.io/trade/btc_usdt')}
                   className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
-                  data-testid="button-quanto"
+                  data-testid="button-tradoor"
                 >
                   <div className="text-center">
                     <div className="font-bold text-base flex items-center justify-center">
                       <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
-                      Quanto
+                      Tradoor
                     </div>
-                    <div className="text-sm text-gray-300">Perpetual futures trading</div>
+                    <div className="text-sm text-gray-300">Advanced perpetual futures trading</div>
                   </div>
                 </Button>
 
@@ -301,6 +301,24 @@ export default function TradePerpsPage() {
                       MYC
                     </div>
                     <div className="text-sm text-gray-300">Zero-slippage perps</div>
+                  </div>
+                </Button>
+              </div>
+
+              {/* Quanto - Full Width Row */}
+              <div className="mt-6">
+                <Button
+                  variant="outline"
+                  onClick={() => openInNewTab('https://quanto.trade/en/markets/BTC-USD-SWAP-LIN')}
+                  className="group w-full bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+                  data-testid="button-quanto"
+                >
+                  <div className="text-center">
+                    <div className="font-bold text-base flex items-center justify-center">
+                      <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
+                      Quatro
+                    </div>
+                    <div className="text-sm text-gray-300">Perpetual futures trading (previously ox.fun)</div>
                   </div>
                 </Button>
               </div>
