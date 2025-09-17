@@ -168,6 +168,17 @@ export default function OnchainSocialPage() {
                     </SafeLink>
                     );
                   })}
+                  
+                  {/* Sonder Crypto Tweet */}
+                  <SafeLink
+                    href="https://x.com/sonder_crypto/status/1968059158491767121"
+                    className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg hover:bg-yellow-500/20 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-yellow-400 font-bold text-sm">𝕏</span>
+                      <span className="text-yellow-400 font-semibold text-sm">sonder_crypto</span>
+                    </div>
+                  </SafeLink>
                 </div>
               </GlassCard>
 
