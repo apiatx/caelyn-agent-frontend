@@ -165,7 +165,7 @@ export default function TradePerpsPage() {
               {/* Paradex - Full Width Button */}
               <Button
                 variant="outline"
-                onClick={() => openInNewTab('https://app.paradex.trade/trade/BTC-USD-PERP')}
+                onClick={() => openInNewTab('https://www.paradex.trade/')}
                 className="group w-full bg-gradient-to-br from-white/40 via-gray-100/30 to-white/40 border-white/50 hover:from-white/50 hover:via-gray-100/40 hover:to-white/50 hover:border-white/70 text-black justify-center p-7 h-auto shadow-2xl hover:shadow-white/30 transform hover:scale-[1.02] transition-all duration-500 backdrop-blur-sm mb-8"
                 data-testid="button-paradex"
               >
@@ -183,7 +183,7 @@ export default function TradePerpsPage() {
 
                 <Button
                   variant="outline"
-                  onClick={() => openInNewTab('https://tradoor.io/trade/btc_usdt')}
+                  onClick={() => openInNewTab('https://www.binance.com/en/futures/BTC_USDT')}
                   className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
                   data-testid="button-tradoor"
                 >
@@ -289,7 +289,7 @@ export default function TradePerpsPage() {
 
                 <Button
                   variant="outline"
-                  onClick={() => openInNewTab('https://www.mexc.com/futures/MYX_USDT')}
+                  onClick={() => openInNewTab('https://mexc.com/futures/MYX_USDT')}
                   className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
                   data-testid="button-myx"
                 >
@@ -304,7 +304,7 @@ export default function TradePerpsPage() {
 
                 <Button
                   variant="outline"
-                  onClick={() => openInNewTab('https://www.gate.com/futures/USDT/MYX_USDT')}
+                  onClick={() => openInNewTab('https://gate.io/futures_trade/USDT/MYX_USDT')}
                   className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
                   data-testid="button-myc"
                 >
@@ -366,7 +366,7 @@ export default function TradePerpsPage() {
               <div className="w-full mt-6">
                 <Button
                   variant="outline"
-                  onClick={() => openInNewTab('https://blofin.com/futures/BTC-USDT')}
+                  onClick={() => openInNewTab('https://blofin.com/en/market/derivatives')}
                   className="group w-full bg-gradient-to-br from-blue-500/40 via-purple-500/30 to-indigo-500/40 border border-blue-400/50 hover:from-blue-400/50 hover:via-purple-400/40 hover:to-indigo-400/50 hover:border-blue-300/70 text-white justify-center p-8 h-auto rounded-lg transition-all duration-500 flex items-center shadow-2xl hover:shadow-blue-500/40 transform hover:scale-[1.02] backdrop-blur-sm"
                   data-testid="button-blofin"
                 >

@@ -170,7 +170,7 @@ export default function TradeOptionsPage() {
 
                 <Button
                   variant="outline"
-                  onClick={() => openInNewTab('https://tradoor.io/trade/btc_usdt')}
+                  onClick={() => openInNewTab('https://www.binance.com/en/futures/BTC_USDT')}
                   className="group bg-gradient-to-br from-lime-600/30 via-green-600/20 to-emerald-600/30 border-lime-400/40 hover:from-lime-500/40 hover:via-green-500/30 hover:to-emerald-500/40 hover:border-lime-300/60 text-white justify-center p-5 h-auto shadow-xl hover:shadow-lime-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
                 >
                   <div className="text-center">
