@@ -147,11 +147,11 @@ export default function TradePerpsPage() {
                 />
               </div>
 
-              {/* Meme SuperP Iframe */}
+              {/* SuperP No Liquidation Iframe */}
               <div className="w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg mb-8">
                 <SafeIframe
-                  src="https://meme.superp.xyz/"
-                  title="SuperP Meme Trading Platform"
+                  src="https://noliquidation.superp.xyz/en"
+                  title="SuperP No Liquidation Trading Platform"
                   className="w-full h-[800px] rounded-lg"
                 />
               </div>
