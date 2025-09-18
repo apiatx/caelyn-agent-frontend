@@ -380,7 +380,39 @@ export default function TradeSection() {
         </div>
       </GlassCard>
 
-
+      {/* Rubic Exchange */}
+      <GlassCard className="p-8">
+        <div className="text-center mb-6">
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <div className="w-10 h-10 bg-gradient-to-r from-green-400 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg">
+              <ArrowLeftRight className="w-6 h-6 text-white" />
+            </div>
+            <h4 className="text-2xl font-bold bg-gradient-to-r from-green-400 to-emerald-300 bg-clip-text text-transparent">Rubic Exchange</h4>
+            <Badge className="bg-green-500/30 text-green-200 border-green-400/40 px-3 py-1 font-semibold">
+              CROSS-CHAIN DEX
+            </Badge>
+          </div>
+          <button
+            onClick={() => openInNewTab('https://app.rubic.exchange/?fromChain=ETH&toChain=ETH')}
+            className="text-green-300 hover:text-green-200 text-sm font-medium bg-green-500/20 px-4 py-2 rounded-lg border border-green-400/30 hover:bg-green-500/30 transition-all duration-300 mx-auto"
+            data-testid="button-rubic-external"
+          >
+            Open Full View →
+          </button>
+        </div>
+        <div className="w-full">
+          <iframe
+            src="https://app.rubic.exchange/?fromChain=ETH&toChain=ETH"
+            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+            title="Rubic Exchange"
+            frameBorder="0"
+            loading="lazy"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+            referrerPolicy="no-referrer-when-downgrade"
+            data-testid="iframe-rubic"
+          />
+        </div>
+      </GlassCard>
 
     </div>
   );
