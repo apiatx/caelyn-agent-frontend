@@ -321,12 +321,12 @@ export default function TradePerpsPage() {
                 </Button>
               </div>
 
-              {/* BloFin - Full Width Button */}
-              <div className="mt-6">
+              {/* BloFin, Ranger Finance, and Quatro - Three Across */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
                 <Button
                   variant="outline"
                   onClick={() => openInNewTab('https://blofin.com/futures/BTC-USDT')}
-                  className="group w-full bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+                  className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
                   data-testid="button-blofin"
                 >
                   <div className="text-center">
@@ -337,14 +337,11 @@ export default function TradePerpsPage() {
                     <div className="text-sm text-gray-300">Futures trading platform</div>
                   </div>
                 </Button>
-              </div>
 
-              {/* Ranger Finance - Full Width Button */}
-              <div className="mt-6">
                 <Button
                   variant="outline"
                   onClick={() => openInNewTab('https://www.app.ranger.finance/perps')}
-                  className="group w-full bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+                  className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
                   data-testid="button-ranger"
                 >
                   <div className="text-center">
@@ -355,14 +352,11 @@ export default function TradePerpsPage() {
                     <div className="text-sm text-gray-300">Perpetual futures trading</div>
                   </div>
                 </Button>
-              </div>
 
-              {/* Quanto - Full Width Row */}
-              <div className="mt-6">
                 <Button
                   variant="outline"
                   onClick={() => openInNewTab('https://quanto.trade/en/markets/BTC-USD-SWAP-LIN')}
-                  className="group w-full bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+                  className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
                   data-testid="button-quanto"
                 >
                   <div className="text-center">
