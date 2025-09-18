@@ -292,7 +292,7 @@ export default function TradePerpsPage() {
 
                 <Button
                   variant="outline"
-                  onClick={() => openInNewTab('https://app.myx.finance/trade/BTCUSDC')}
+                  onClick={() => openInNewTab('https://www.mexc.com/futures/MYX_USDT')}
                   className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
                   data-testid="button-myx"
                 >
@@ -307,7 +307,7 @@ export default function TradePerpsPage() {
 
                 <Button
                   variant="outline"
-                  onClick={() => openInNewTab('https://app.myx.finance/trade/BTCUSDC')}
+                  onClick={() => openInNewTab('https://www.gate.com/futures/USDT/MYX_USDT')}
                   className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
                   data-testid="button-myc"
                 >
