@@ -204,7 +204,14 @@ const TRUSTED_DOMAINS = [
   'holdstation.com',
   'www.holdstation.com',
   'developerreport.com',
-  'www.developerreport.com'
+  'www.developerreport.com',
+  'avantisfi.com',
+  'www.avantisfi.com',
+  'drift.trade',
+  'app.drift.trade',
+  'superp.xyz',
+  'noliquidation.superp.xyz',
+  'meme.superp.xyz'
 ];
 
 /**

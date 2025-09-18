@@ -139,30 +139,81 @@ export default function TradePerpsPage() {
               </div>
 
               {/* Avantisfi Iframe */}
-              <div className="w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg mb-8">
-                <SafeIframe
-                  src="https://www.avantisfi.com/trade?asset=BTC-USD"
-                  title="Avantisfi Trading Terminal"
-                  className="w-full h-[800px] rounded-lg"
-                />
+              <div className="mb-6">
+                <div className="flex justify-end mb-3">
+                  <a
+                    {...getSecureLinkProps('https://www.avantisfi.com/trade?asset=BTC-USD')}
+                    className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1"
+                  >
+                    Open Full View <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+                
+                <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+                  <SafeIframe
+                    src="https://www.avantisfi.com/trade?asset=BTC-USD"
+                    title="Avantisfi Trading Terminal"
+                    className="w-full h-[800px] border-0"
+                  />
+                </div>
+                
+                <div className="mt-4 text-center">
+                  <p className="text-xs text-gray-400">
+                    BTC-USD perpetual trading on Avantisfi • Advanced derivatives platform
+                  </p>
+                </div>
               </div>
 
               {/* SuperP No Liquidation Iframe */}
-              <div className="w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg mb-8">
-                <SafeIframe
-                  src="https://noliquidation.superp.xyz/en"
-                  title="SuperP No Liquidation Trading Platform"
-                  className="w-full h-[800px] rounded-lg"
-                />
+              <div className="mb-6">
+                <div className="flex justify-end mb-3">
+                  <a
+                    {...getSecureLinkProps('https://noliquidation.superp.xyz/en')}
+                    className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1"
+                  >
+                    Open Full View <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+                
+                <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+                  <SafeIframe
+                    src="https://noliquidation.superp.xyz/en"
+                    title="SuperP No Liquidation Trading Platform"
+                    className="w-full h-[800px] border-0"
+                  />
+                </div>
+                
+                <div className="mt-4 text-center">
+                  <p className="text-xs text-gray-400">
+                    No liquidation trading on SuperP • Risk-free perpetual futures
+                  </p>
+                </div>
               </div>
 
               {/* Drift Trade Iframe */}
-              <div className="w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg mb-8">
-                <SafeIframe
-                  src="https://app.drift.trade/BTC-PERP"
-                  title="Drift Trade BTC Perpetual Trading"
-                  className="w-full h-[800px] rounded-lg"
-                />
+              <div className="mb-6">
+                <div className="flex justify-end mb-3">
+                  <a
+                    {...getSecureLinkProps('https://app.drift.trade/BTC-PERP')}
+                    className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1"
+                  >
+                    Open Full View <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+                
+                <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+                  <SafeIframe
+                    src="https://app.drift.trade/BTC-PERP"
+                    title="Drift Trade BTC Perpetual Trading"
+                    className="w-full h-[800px] border-0"
+                  />
+                </div>
+                
+                <div className="mt-4 text-center">
+                  <p className="text-xs text-gray-400">
+                    BTC perpetual trading on Drift • Decentralized derivatives exchange
+                  </p>
+                </div>
               </div>
 
               {/* AsterDex - Full Width Button */}
