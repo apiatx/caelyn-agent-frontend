@@ -192,7 +192,6 @@ export default function TradePerpsPage() {
                       <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
                       Tradoor
                     </div>
-                    <div className="text-sm text-gray-300">Advanced perpetual futures trading</div>
                   </div>
                 </Button>
 
@@ -207,7 +206,7 @@ export default function TradePerpsPage() {
                       <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
                       Saros
                     </div>
-                    <div className="text-sm text-gray-300">Solana perpetual futures</div>
+
                   </div>
                 </Button>
 
@@ -222,7 +221,7 @@ export default function TradePerpsPage() {
                       <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
                       Raydium
                     </div>
-                    <div className="text-sm text-gray-300">Solana perpetual futures</div>
+
                   </div>
                 </Button>
 
@@ -237,7 +236,7 @@ export default function TradePerpsPage() {
                       <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
                       EdgeX Pro
                     </div>
-                    <div className="text-sm text-gray-300">Perpetual futures trading</div>
+
                   </div>
                 </Button>
 
@@ -252,7 +251,6 @@ export default function TradePerpsPage() {
                       <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
                       PerpsDAO
                     </div>
-                    <div className="text-sm text-gray-300">Decentralized perpetual futures</div>
                   </div>
                 </Button>
 
@@ -267,7 +265,7 @@ export default function TradePerpsPage() {
                       <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
                       Extended Exchange
                     </div>
-                    <div className="text-sm text-gray-300">Perpetual futures platform</div>
+
                   </div>
                 </Button>
 
@@ -286,7 +284,6 @@ export default function TradePerpsPage() {
                       <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
                       NovaEx
                     </div>
-                    <div className="text-sm text-gray-300">Insurance-backed perpetual trading</div>
                   </div>
                 </Button>
 
@@ -301,7 +298,7 @@ export default function TradePerpsPage() {
                       <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
                       MYX
                     </div>
-                    <div className="text-sm text-gray-300">Perpetual futures platform</div>
+
                   </div>
                 </Button>
 
@@ -316,7 +313,6 @@ export default function TradePerpsPage() {
                       <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
                       MYC
                     </div>
-                    <div className="text-sm text-gray-300">Zero-slippage perps</div>
                   </div>
                 </Button>
               </div>
@@ -334,7 +330,6 @@ export default function TradePerpsPage() {
                       <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
                       BloFin
                     </div>
-                    <div className="text-sm text-gray-300">Futures trading platform</div>
                   </div>
                 </Button>
 
@@ -349,7 +344,7 @@ export default function TradePerpsPage() {
                       <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
                       Ranger Finance
                     </div>
-                    <div className="text-sm text-gray-300">Perpetual futures trading</div>
+
                   </div>
                 </Button>
 
@@ -364,7 +359,6 @@ export default function TradePerpsPage() {
                       <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
                       Quatro
                     </div>
-                    <div className="text-sm text-gray-300">Perpetual futures trading (previously ox.fun)</div>
                   </div>
                 </Button>
               </div>
