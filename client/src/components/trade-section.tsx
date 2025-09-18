@@ -361,15 +361,13 @@ export default function TradeSection() {
 
       {/* DEX Aggregator */}
       <GlassCard className="p-8">
-        <div className="text-center mb-6">
-          <div className="flex items-center justify-center gap-3 mb-2">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-gradient-to-r from-green-400 to-emerald-500 rounded-lg flex items-center justify-center">
               <ArrowLeftRight className="w-4 h-4 text-white" />
             </div>
             <h4 className="text-2xl font-bold bg-gradient-to-r from-green-400 to-emerald-300 bg-clip-text text-transparent">DEX Aggregator</h4>
           </div>
-        </div>
-        <div className="flex justify-end mb-4">
           <button
             onClick={() => openInNewTab('https://app.rubic.exchange/?fromChain=ETH&toChain=ETH')}
             className="text-green-300 hover:text-green-200 text-sm font-medium bg-green-500/20 px-4 py-2 rounded-lg border border-green-400/30 hover:bg-green-500/30 transition-all duration-300"
