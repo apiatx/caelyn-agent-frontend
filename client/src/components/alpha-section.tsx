@@ -226,24 +226,6 @@ export default function AlphaSection() {
             </div>
           </div>
 
-          {/* Binance Alpha */}
-          <div className="mb-8">
-            <div className="mb-3 flex justify-end">
-              <SafeLink
-                href="https://www.binance.com/en/markets/alpha-all"
-                className="text-yellow-300 hover:text-yellow-200 text-sm font-medium hover:underline transition-colors duration-300"
-              >
-                Open Full Binance Alpha →
-              </SafeLink>
-            </div>
-            <div className="w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg">
-              <SafeIframe
-                src="https://www.binance.com/en/markets/alpha-all"
-                title="Binance Alpha Markets"
-                className="w-full h-[600px] rounded-lg"
-              />
-            </div>
-          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
             <SafeLink
@@ -398,11 +380,29 @@ export default function AlphaSection() {
         </GlassCard>
       </div>
 
-
-
-
-
-
+      {/* Alpha Section - Separate GlassCard */}
+      <div className="space-y-8 mt-12">
+        <GlassCard className="p-3 sm:p-4 lg:p-6">
+          <div className="flex items-center justify-center mb-6">
+            <h4 className="text-2xl font-bold bg-gradient-to-r from-white to-yellow-100 bg-clip-text text-transparent">Alpha</h4>
+          </div>
+          
+          <div className="flex justify-center">
+            <SafeLink
+              href='https://www.binance.com/en/markets/alpha-all'
+              className="p-5 bg-gradient-to-br from-yellow-500/15 to-yellow-600/15 hover:from-yellow-500/25 hover:to-yellow-600/25 border border-yellow-500/30 hover:border-yellow-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-yellow-500/20 transform"
+            >
+              <div className="flex flex-col items-center gap-2 mb-3">
+                <div className="w-8 h-8 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-lg flex items-center justify-center shadow-md">
+                  <span className="text-white font-bold text-xs">B</span>
+                </div>
+                <h4 className="text-yellow-300 font-bold text-lg">Binance Alpha</h4>
+              </div>
+              <p className="text-gray-300 text-sm font-medium text-center">Alpha project listings and market data</p>
+            </SafeLink>
+          </div>
+        </GlassCard>
+      </div>
 
     </div>
   );
