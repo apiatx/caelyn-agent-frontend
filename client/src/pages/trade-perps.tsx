@@ -321,31 +321,40 @@ export default function TradePerpsPage() {
                 </Button>
               </div>
 
-              {/* BloFin - Full Width Iframe */}
-              <div className="mt-6 w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg">
-                <div className="text-center mb-4">
-                  <div className="flex items-center justify-center gap-3 mb-2">
-                    <div className="w-8 h-8 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-lg flex items-center justify-center">
-                      <TrendingUp className="w-4 h-4 text-white" />
+              {/* BloFin - Full Width Button */}
+              <div className="mt-6">
+                <Button
+                  variant="outline"
+                  onClick={() => openInNewTab('https://blofin.com/futures/BTC-USDT')}
+                  className="group w-full bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+                  data-testid="button-blofin"
+                >
+                  <div className="text-center">
+                    <div className="font-bold text-base flex items-center justify-center">
+                      <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
+                      BloFin
                     </div>
-                    <h4 className="text-xl font-bold bg-gradient-to-r from-blue-400 to-indigo-300 bg-clip-text text-transparent">BloFin</h4>
-                    <Badge className="bg-blue-500/30 text-blue-200 border-blue-400/40 px-3 py-1 font-semibold">
-                      FUTURES TRADING
-                    </Badge>
+                    <div className="text-sm text-gray-300">Futures trading platform</div>
                   </div>
-                  <button
-                    onClick={() => openInNewTab('https://blofin.com/futures/BTC-USDT')}
-                    className="text-blue-300 hover:text-blue-200 text-sm font-medium bg-blue-500/20 px-4 py-2 rounded-lg border border-blue-400/30 hover:bg-blue-500/30 transition-all duration-300 mx-auto"
-                    data-testid="button-blofin-external"
-                  >
-                    Open Full View →
-                  </button>
-                </div>
-                <SafeIframe
-                  src="https://blofin.com/futures/BTC-USDT"
-                  title="BloFin Futures Trading"
-                  className="w-full h-[800px] rounded-lg"
-                />
+                </Button>
+              </div>
+
+              {/* Ranger Finance - Full Width Button */}
+              <div className="mt-6">
+                <Button
+                  variant="outline"
+                  onClick={() => openInNewTab('https://www.app.ranger.finance/perps')}
+                  className="group w-full bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+                  data-testid="button-ranger"
+                >
+                  <div className="text-center">
+                    <div className="font-bold text-base flex items-center justify-center">
+                      <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
+                      Ranger Finance
+                    </div>
+                    <div className="text-sm text-gray-300">Perpetual futures trading</div>
+                  </div>
+                </Button>
               </div>
 
               {/* Quanto - Full Width Row */}
