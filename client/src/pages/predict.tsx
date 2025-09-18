@@ -88,6 +88,19 @@ export default function PredictPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Prediction Markets Section */}
         <GlassCard className="p-6">
+          {/* PredictBase */}
+          <div className="mb-8">
+            <h3 className="text-xl font-semibold text-white mb-4">PredictBase</h3>
+            <iframe
+              src="https://predictbase.app/"
+              className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+              title="PredictBase"
+              frameBorder="0"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+              referrerPolicy="no-referrer-when-downgrade"
+            />
+          </div>
+
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-yellow-500 rounded-full flex items-center justify-center">
@@ -109,19 +122,6 @@ export default function PredictPage() {
             title="Polymarket"
             sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
           />
-
-          {/* PredictBase */}
-          <div className="mt-8">
-            <h3 className="text-xl font-semibold text-white mb-4">PredictBase</h3>
-            <iframe
-              src="https://predictbase.app/"
-              className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-              title="PredictBase"
-              frameBorder="0"
-              sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
-              referrerPolicy="no-referrer-when-downgrade"
-            />
-          </div>
 
           {/* Moby Screener Predictions */}
           <div className="mt-8">
