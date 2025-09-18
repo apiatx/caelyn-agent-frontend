@@ -92,56 +92,9 @@ export default function OnchainAnalyzePage() {
 
           {/* Main Analysis Tools */}
           <GlassCard className="p-6">
-            {/* SAG3.ai Analysis */}
-            <div className="mb-8">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center">
-                  <Brain className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-                </div>
-                <h3 className="text-lg font-semibold text-white">SAG3.ai</h3>
-                <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 text-xs">
-                  AI ANALYSIS
-                </Badge>
-                <button
-                  onClick={() => openInNewTab('https://sag3.ai/analyze')}
-                  className="ml-auto text-cyan-400 hover:text-cyan-300 text-xs sm:text-sm flex items-center gap-1"
-                  data-testid="button-sag3-external"
-                >
-                  <ExternalLink className="w-3 h-3" />
-                  Open Full View
-                </button>
-              </div>
-              <iframe
-                src="https://sag3.ai/analyze"
-                className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-                title="SAG3.ai Analysis"
-                frameBorder="0"
-                loading="lazy"
-                sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
-                referrerPolicy="no-referrer-when-downgrade"
-                data-testid="iframe-sag3"
-              />
-            </div>
             
             {/* Artemis Analytics */}
             <div className="mb-8 relative">
-              <div className="mb-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-lg font-semibold text-white">Artemis Analytics</h3>
-                    <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
-                      PROTOCOL METRICS
-                    </Badge>
-                  </div>
-                  <button
-                    onClick={() => openInNewTab('https://app.artemisanalytics.com/')}
-                    className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm flex items-center gap-1 bg-black/60 backdrop-blur-sm px-3 py-2 rounded-lg border border-blue-400/30 hover:bg-blue-500/20 transition-all duration-300"
-                  >
-                    <ExternalLink className="w-3 h-3" />
-                    Open Full View
-                  </button>
-                </div>
-              </div>
               <div className="relative">
                 <div className="w-full">
                   <iframe
