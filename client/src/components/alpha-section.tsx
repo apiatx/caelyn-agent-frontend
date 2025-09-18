@@ -153,6 +153,15 @@ export default function AlphaSection() {
             </div>
           </div>
 
+          {/* Alphanomics */}
+          <div className="mb-8">
+            <SafeIframe
+              src="https://platform.alphanomics.io/"
+              title="Alphanomics Analytics Platform"
+              className="h-[600px]"
+            />
+          </div>
+
           {/* BBTerminal Trading Terminal */}
           <div className="mb-8">
             <div className="mb-3 flex justify-end">
@@ -170,15 +179,6 @@ export default function AlphaSection() {
                 className="w-full h-[600px] rounded-lg"
               />
             </div>
-          </div>
-
-          {/* Alphanomics */}
-          <div className="mb-8">
-            <SafeIframe
-              src="https://platform.alphanomics.io/"
-              title="Alphanomics Analytics Platform"
-              className="h-[600px]"
-            />
           </div>
 
 
