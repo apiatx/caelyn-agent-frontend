@@ -1,4 +1,4 @@
-import { Activity, BarChart3, TrendingUp, ChartLine, Brain, Zap, DollarSign, Building2, Layers, Coins, ChevronDown, Wallet, Users, MessageSquare, Rocket, Globe, ArrowLeftRight } from "lucide-react";
+import { Activity, BarChart3, TrendingUp, ChartLine, Brain, Zap, DollarSign, Building2, Layers, Coins, ChevronDown, Wallet, Users, MessageSquare, Rocket, Globe, ArrowLeftRight, Search } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { useLocation } from "wouter";
 import {
@@ -86,7 +86,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
             <DropdownMenuTrigger asChild>
               <button
                 className={`flex-1 min-w-[90px] max-w-[120px] py-3 px-1 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
-                  isActive("onchain-analytics") || isActive("onchain-smart-wallets") || isActive("onchain-launchpad") || isActive("onchain-memes") || isActive("onchain-discover") || isActive("onchain-analyze")
+                  isActive("onchain-analytics") || isActive("onchain-smart-wallets") || isActive("onchain-launchpad") || isActive("onchain-memes") || isActive("onchain-discover") || isActive("onchain-analyze") || isActive("onchain-inspect")
                     ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                     : "hover:bg-white/5 text-crypto-silver"
                 }`}
@@ -102,6 +102,13 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
               >
                 <TrendingUp className="w-4 h-4 mr-2" />
                 Screening
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => navigateTo("/app/onchain/inspect")}
+                className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
+              >
+                <Search className="w-4 h-4 mr-2" />
+                Inspect
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => navigateTo("/app/onchain/analyze")}
