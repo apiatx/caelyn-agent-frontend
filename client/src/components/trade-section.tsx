@@ -359,31 +359,16 @@ export default function TradeSection() {
       </GlassCard>
 
 
-      {/* Multi-Charts Section */}
+      {/* DEX Aggregator */}
       <GlassCard className="p-8">
-        <div className="w-full bg-gradient-to-br from-slate-900/80 via-gray-900/80 to-cyan-900/30 rounded-2xl border border-cyan-400/20 p-12 text-center shadow-2xl">
-          <div className="flex flex-col items-center gap-6">
-            <div className="w-24 h-24 bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-500 rounded-3xl flex items-center justify-center shadow-2xl shadow-cyan-500/30 hover:scale-110 transition-transform duration-300">
-              <TrendingUp className="w-12 h-12 text-white" />
+        <div className="text-center mb-6">
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <div className="w-8 h-8 bg-gradient-to-r from-green-400 to-emerald-500 rounded-lg flex items-center justify-center">
+              <ArrowLeftRight className="w-4 h-4 text-white" />
             </div>
-            <div>
-              <h5 className="text-3xl font-bold text-white mb-3">Multi-Charts Dashboard</h5>
-              <p className="text-cyan-200/80 text-lg mb-6 max-w-md mx-auto">
-                Advanced Multi-Chart Tracking for Watchlist and Active Trades
-              </p>
-              <button
-                onClick={() => openInNewTab('https://dexscreener.com/multicharts?theme=dark')}
-                className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white px-8 py-4 rounded-xl transition-all duration-300 text-lg font-semibold shadow-2xl hover:shadow-cyan-500/30 transform hover:scale-105"
-              >
-                Open Multi-Charts Dashboard
-              </button>
-            </div>
+            <h4 className="text-2xl font-bold bg-gradient-to-r from-green-400 to-emerald-300 bg-clip-text text-transparent">DEX Aggregator</h4>
           </div>
         </div>
-      </GlassCard>
-
-      {/* Rubic Exchange */}
-      <GlassCard className="p-8">
         <div className="flex justify-end mb-4">
           <button
             onClick={() => openInNewTab('https://app.rubic.exchange/?fromChain=ETH&toChain=ETH')}
@@ -404,6 +389,29 @@ export default function TradeSection() {
             referrerPolicy="no-referrer-when-downgrade"
             data-testid="iframe-rubic"
           />
+        </div>
+      </GlassCard>
+
+      {/* Multi-Charts Section */}
+      <GlassCard className="p-8">
+        <div className="w-full bg-gradient-to-br from-slate-900/80 via-gray-900/80 to-cyan-900/30 rounded-2xl border border-cyan-400/20 p-12 text-center shadow-2xl">
+          <div className="flex flex-col items-center gap-6">
+            <div className="w-24 h-24 bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-500 rounded-3xl flex items-center justify-center shadow-2xl shadow-cyan-500/30 hover:scale-110 transition-transform duration-300">
+              <TrendingUp className="w-12 h-12 text-white" />
+            </div>
+            <div>
+              <h5 className="text-3xl font-bold text-white mb-3">Multi-Charts Dashboard</h5>
+              <p className="text-cyan-200/80 text-lg mb-6 max-w-md mx-auto">
+                Advanced Multi-Chart Tracking for Watchlist and Active Trades
+              </p>
+              <button
+                onClick={() => openInNewTab('https://dexscreener.com/multicharts?theme=dark')}
+                className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white px-8 py-4 rounded-xl transition-all duration-300 text-lg font-semibold shadow-2xl hover:shadow-cyan-500/30 transform hover:scale-105"
+              >
+                Open Multi-Charts Dashboard
+              </button>
+            </div>
+          </div>
         </div>
       </GlassCard>
 
