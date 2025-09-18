@@ -254,6 +254,36 @@ export default function TradeSection() {
             </div>
           </div>
           
+          {/* TabTrader Terminal */}
+          <div className="w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg mb-6">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center">
+                <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+              </div>
+              <h4 className="text-lg font-semibold text-white">TabTrader</h4>
+              <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
+                TRADING TERMINAL
+              </Badge>
+              <button
+                onClick={() => openInNewTab('https://app.tabtrader.com/trading?list=Spot&market=BINANCE&pair=BTCUSDT')}
+                className="ml-auto text-blue-400 hover:text-blue-300 text-xs sm:text-sm flex items-center gap-1"
+                data-testid="button-tabtrader-external"
+              >
+                <ExternalLink className="w-3 h-3" />
+                Open Full View
+              </button>
+            </div>
+            <iframe
+              src="https://app.tabtrader.com/trading?list=Spot&market=BINANCE&pair=BTCUSDT"
+              className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+              title="TabTrader Terminal"
+              frameBorder="0"
+              loading="lazy"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+              referrerPolicy="no-referrer-when-downgrade"
+              data-testid="iframe-tabtrader"
+            />
+          </div>
 
           {/* Primary App - Definitive Edge (Full Width) */}
           <div className="w-full">
