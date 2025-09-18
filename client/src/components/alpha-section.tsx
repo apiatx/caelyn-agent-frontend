@@ -139,6 +139,40 @@ export default function AlphaSection() {
             />
           </div>
 
+
+          {/* CoinGlass iframe */}
+          <div className="mb-8">
+            <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
+              <iframe
+                src="https://www.coinglass.com/"
+                className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+                title="CoinGlass"
+                frameBorder="0"
+                scrolling="yes"
+              />
+            </div>
+          </div>
+
+          {/* BBTerminal Trading Terminal */}
+          <div className="mb-8">
+            <div className="mb-3 flex justify-end">
+              <SafeLink
+                href="https://app.bbterminal.com/degen"
+                className="text-purple-300 hover:text-purple-200 text-sm font-medium hover:underline transition-colors duration-300"
+              >
+                Open Full Terminal →
+              </SafeLink>
+            </div>
+            <div className="w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg">
+              <SafeIframe
+                src="https://app.bbterminal.com/degen"
+                title="BBTerminal Degen Trading Terminal"
+                className="w-full h-[600px] rounded-lg"
+              />
+            </div>
+          </div>
+
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
             <SafeLink
               href='https://coinmarketcap.com/?type=coins&tableRankBy=trending_all_24h'
@@ -193,39 +227,6 @@ export default function AlphaSection() {
               <p className="text-gray-400 group-hover:text-gray-300 text-sm max-w-md mx-auto">Research reports, market data, and institutional-grade analysis</p>
             </button>
           </div>
-
-          {/* CoinGlass iframe */}
-          <div className="mb-8">
-            <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
-              <iframe
-                src="https://www.coinglass.com/"
-                className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
-                title="CoinGlass"
-                frameBorder="0"
-                scrolling="yes"
-              />
-            </div>
-          </div>
-
-          {/* BBTerminal Trading Terminal */}
-          <div className="mb-8">
-            <div className="mb-3 flex justify-end">
-              <SafeLink
-                href="https://app.bbterminal.com/degen"
-                className="text-purple-300 hover:text-purple-200 text-sm font-medium hover:underline transition-colors duration-300"
-              >
-                Open Full Terminal →
-              </SafeLink>
-            </div>
-            <div className="w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg">
-              <SafeIframe
-                src="https://app.bbterminal.com/degen"
-                title="BBTerminal Degen Trading Terminal"
-                className="w-full h-[600px] rounded-lg"
-              />
-            </div>
-          </div>
-
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
             <SafeLink
@@ -297,14 +298,6 @@ export default function AlphaSection() {
             </SafeLink>
           </div>
 
-          {/* Alphanomics */}
-          <div className="mb-6">
-            <SafeIframe
-              src="https://platform.alphanomics.io/"
-              title="Alphanomics Analytics Platform"
-              className="h-[600px]"
-            />
-          </div>
 
           {/* AI Agents Subsection */}
           <div className="mb-8">
@@ -400,6 +393,15 @@ export default function AlphaSection() {
               </div>
               <p className="text-gray-300 text-sm font-medium text-center">Alpha project listings and market data</p>
             </SafeLink>
+          </div>
+          
+          {/* Alphanomics */}
+          <div className="mt-6">
+            <SafeIframe
+              src="https://platform.alphanomics.io/"
+              title="Alphanomics Analytics Platform"
+              className="h-[600px]"
+            />
           </div>
         </GlassCard>
       </div>
