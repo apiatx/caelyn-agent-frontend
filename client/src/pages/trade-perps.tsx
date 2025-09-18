@@ -155,6 +155,15 @@ export default function TradePerpsPage() {
                 />
               </div>
 
+              {/* Drift Trade Iframe */}
+              <div className="w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg mb-8">
+                <SafeIframe
+                  src="https://app.drift.trade/BTC-PERP"
+                  title="Drift Trade BTC Perpetual Trading"
+                  className="w-full h-[800px] rounded-lg"
+                />
+              </div>
+
               {/* AsterDex - Full Width Button */}
               <Button
                 variant="outline"
