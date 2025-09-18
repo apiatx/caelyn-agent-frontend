@@ -121,6 +121,31 @@ export default function TradePerpsPage() {
                 </div>
               </div>
               
+              {/* Hyperliquid Trading - Moved above Avantis */}
+              <div className="mb-6">
+                <div className="flex justify-end mb-3">
+                  <a
+                    {...getSecureLinkProps('https://app.hyperliquid.xyz/trade/HYPE')}
+                    className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1"
+                  >
+                    Open Full View <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+                
+                <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+                  <iframe
+                    {...getSecureIframeProps('https://app.hyperliquid.xyz/trade/HYPE', 'Hyperliquid HYPE Trading')}
+                    className="w-full h-[800px] border-0"
+                  />
+                </div>
+                
+                <div className="mt-4 text-center">
+                  <p className="text-xs text-gray-400">
+                    Live HYPE trading on Hyperliquid • Real-time orderbook and charts
+                  </p>
+                </div>
+              </div>
+
               {/* Avantisfi Iframe */}
               <div className="w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg mb-8">
                 <SafeIframe
@@ -354,43 +379,18 @@ export default function TradePerpsPage() {
             </div>
           </GlassCard>
 
-          {/* Hyperliquid Section - Moved from Hyperliquid Page */}
+          {/* Analyze Section */}
           <GlassCard className="p-8">
             <div className="space-y-6">
-              {/* Hyperliquid Page Header */}
+              {/* Analyze Section Header */}
               <div className="text-center mb-6">
                 <div className="flex items-center justify-center gap-3 mb-3">
                   <div className="w-12 h-12 bg-black rounded-xl flex items-center justify-center">
                     <img src={hyperliquidLogo} alt="HyperLiquid" className="w-8 h-8 rounded-lg" />
                   </div>
-                  <h1 className="text-3xl font-bold text-white">Hyperliquid</h1>
+                  <h1 className="text-3xl font-bold text-white">Analyze</h1>
                 </div>
-                <p className="text-crypto-silver">Live HYPE trading, analytics, and core launchpad ecosystem</p>
-              </div>
-
-              {/* Hyperliquid Trading */}
-              <div>
-                <div className="flex justify-end mb-3">
-                  <a
-                    {...getSecureLinkProps('https://app.hyperliquid.xyz/trade/HYPE')}
-                    className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1"
-                  >
-                    Open Full View <ExternalLink className="w-3 h-3" />
-                  </a>
-                </div>
-                
-                <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-                  <iframe
-                    {...getSecureIframeProps('https://app.hyperliquid.xyz/trade/HYPE', 'Hyperliquid HYPE Trading')}
-                    className="w-full h-[800px] border-0"
-                  />
-                </div>
-                
-                <div className="mt-4 text-center">
-                  <p className="text-xs text-gray-400">
-                    Live HYPE trading on Hyperliquid • Real-time orderbook and charts
-                  </p>
-                </div>
+                <p className="text-crypto-silver">Advanced market analytics and trading insights</p>
               </div>
 
               {/* HyperDash */}
