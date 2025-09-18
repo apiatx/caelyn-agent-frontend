@@ -104,6 +104,13 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
                 Screening
               </DropdownMenuItem>
               <DropdownMenuItem
+                onClick={() => navigateTo("/app/onchain/analyze")}
+                className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
+              >
+                <Brain className="w-4 h-4 mr-2" />
+                Analyze
+              </DropdownMenuItem>
+              <DropdownMenuItem
                 onClick={() => navigateTo("/app/onchain/smart-wallets")}
                 className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
               >
@@ -130,13 +137,6 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
               >
                 <Globe className="w-4 h-4 mr-2" />
                 Discover Web3
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => navigateTo("/app/onchain/analyze")}
-                className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
-              >
-                <Brain className="w-4 h-4 mr-2" />
-                Analyze
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
