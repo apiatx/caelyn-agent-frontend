@@ -104,18 +104,18 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
                 Screening
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => navigateTo("/app/onchain/inspect")}
-                className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
-              >
-                <Search className="w-4 h-4 mr-2" />
-                Inspect
-              </DropdownMenuItem>
-              <DropdownMenuItem
                 onClick={() => navigateTo("/app/onchain/analyze")}
                 className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
               >
                 <Brain className="w-4 h-4 mr-2" />
                 Analyze
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => navigateTo("/app/onchain/inspect")}
+                className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
+              >
+                <Search className="w-4 h-4 mr-2" />
+                Inspect
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => navigateTo("/app/onchain/smart-wallets")}
