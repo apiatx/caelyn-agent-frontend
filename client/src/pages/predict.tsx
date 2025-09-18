@@ -137,16 +137,36 @@ export default function PredictPage() {
           </div>
 
           {/* TrueMarkets */}
-          <div className="mt-8">
-            <h3 className="text-xl font-semibold text-white mb-4">TrueMarkets</h3>
-            <iframe
-              src="https://app.truemarkets.org/en/markets"
-              className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-              title="TrueMarkets"
-              frameBorder="0"
-              sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
-              referrerPolicy="no-referrer-when-downgrade"
-            />
+          <div className="mt-6">
+            <div className="p-6 bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20 rounded-lg">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
+                    <TrendingUp className="w-4 h-4 text-white" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-white">TrueMarkets</h3>
+                </div>
+                <Button
+                  onClick={() => openInNewTab("https://app.truemarkets.org/en/markets")}
+                  className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-semibold px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  Open TrueMarkets
+                </Button>
+              </div>
+              <p className="text-crypto-silver mb-4">
+                Decentralized prediction markets built on blockchain technology for transparent and fair betting.
+              </p>
+              <div className="bg-black/20 rounded-lg p-4 border border-green-500/20">
+                <p className="text-sm text-crypto-silver">
+                  🔗 Blockchain-based prediction markets
+                  <br />
+                  📊 Transparent and verifiable outcomes
+                  <br />
+                  💎 Decentralized liquidity pools
+                </p>
+              </div>
+            </div>
           </div>
           
           {/* Cloudbet Sports Betting */}
