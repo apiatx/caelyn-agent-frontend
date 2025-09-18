@@ -112,14 +112,6 @@ export default function TradePerpsPage() {
           {/* Perps Section */}
           <GlassCard className="p-8">
             <div className="space-y-6">
-              <div className="text-center mb-6">
-                <div className="flex items-center justify-center gap-3 mb-2">
-                  <div className="w-8 h-8 bg-gradient-to-r from-orange-400 to-red-500 rounded-lg flex items-center justify-center">
-                    <TrendingUp className="w-4 h-4 text-white" />
-                  </div>
-                  <h4 className="text-2xl font-bold bg-gradient-to-r from-orange-400 to-red-300 bg-clip-text text-transparent">Perps</h4>
-                </div>
-              </div>
               
               {/* Hyperliquid Trading - Moved above Avantis */}
               <div className="mb-6">
@@ -151,6 +143,15 @@ export default function TradePerpsPage() {
                 <SafeIframe
                   src="https://www.avantisfi.com/trade?asset=BTC-USD"
                   title="Avantisfi Trading Terminal"
+                  className="w-full h-[800px] rounded-lg"
+                />
+              </div>
+
+              {/* Meme SuperP Iframe */}
+              <div className="w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg mb-8">
+                <SafeIframe
+                  src="https://meme.superp.xyz/"
+                  title="SuperP Meme Trading Platform"
                   className="w-full h-[800px] rounded-lg"
                 />
               </div>
