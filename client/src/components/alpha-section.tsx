@@ -172,44 +172,16 @@ export default function AlphaSection() {
             </div>
           </div>
 
-
-        </GlassCard>
-      </div>
-
-      {/* Signal Section - Separate GlassCard */}
-      <div className="space-y-8 mt-12">
-        <GlassCard className="p-3 sm:p-4 lg:p-6">
-          <div className="flex items-center justify-center mb-6">
-            <h4 className="text-2xl font-bold bg-gradient-to-r from-white to-indigo-100 bg-clip-text text-transparent">Signal</h4>
+          {/* Alphanomics */}
+          <div className="mb-8">
+            <SafeIframe
+              src="https://platform.alphanomics.io/"
+              title="Alphanomics Analytics Platform"
+              className="h-[600px]"
+            />
           </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-            <SafeLink
-              href='https://app.nansen.ai/'
-              className="p-5 bg-gradient-to-br from-purple-600/15 to-purple-700/15 hover:from-purple-600/25 hover:to-purple-700/25 border border-purple-600/30 hover:border-purple-500/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-purple-600/20 transform"
-            >
-              <div className="flex flex-col items-center gap-2 mb-3">
-                <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-purple-700 rounded-lg flex items-center justify-center shadow-md">
-                  <span className="text-white font-bold text-xs">N</span>
-                </div>
-                <h4 className="text-purple-300 font-bold text-lg">Nansen.ai</h4>
-              </div>
-              <p className="text-gray-300 text-sm font-medium text-center">On-chain insights and wallet tracking</p>
-            </SafeLink>
 
-            <SafeLink
-              href='https://cookie.fun/'
-              className="p-5 bg-gradient-to-br from-yellow-500/15 to-yellow-600/15 hover:from-yellow-500/25 hover:to-yellow-600/25 border border-yellow-500/30 hover:border-yellow-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-yellow-500/20 transform"
-            >
-              <div className="flex flex-col items-center gap-2 mb-3">
-                <div className="w-8 h-8 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-lg flex items-center justify-center shadow-md">
-                  <span className="text-white font-bold text-xs">C</span>
-                </div>
-                <h4 className="text-yellow-300 font-bold text-lg">Cookie.fun</h4>
-              </div>
-              <p className="text-gray-300 text-sm font-medium text-center">Interactive Trading Platform</p>
-            </SafeLink>
-          </div>
+
         </GlassCard>
       </div>
 
@@ -347,6 +319,43 @@ export default function AlphaSection() {
         </GlassCard>
       </div>
 
+      {/* Signal Section - Separate GlassCard */}
+      <div className="space-y-8 mt-12">
+        <GlassCard className="p-3 sm:p-4 lg:p-6">
+          <div className="flex items-center justify-center mb-6">
+            <h4 className="text-2xl font-bold bg-gradient-to-r from-white to-indigo-100 bg-clip-text text-transparent">Signal</h4>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+            <SafeLink
+              href='https://app.nansen.ai/'
+              className="p-5 bg-gradient-to-br from-purple-600/15 to-purple-700/15 hover:from-purple-600/25 hover:to-purple-700/25 border border-purple-600/30 hover:border-purple-500/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-purple-600/20 transform"
+            >
+              <div className="flex flex-col items-center gap-2 mb-3">
+                <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-purple-700 rounded-lg flex items-center justify-center shadow-md">
+                  <span className="text-white font-bold text-xs">N</span>
+                </div>
+                <h4 className="text-purple-300 font-bold text-lg">Nansen.ai</h4>
+              </div>
+              <p className="text-gray-300 text-sm font-medium text-center">On-chain insights and wallet tracking</p>
+            </SafeLink>
+
+            <SafeLink
+              href='https://cookie.fun/'
+              className="p-5 bg-gradient-to-br from-yellow-500/15 to-yellow-600/15 hover:from-yellow-500/25 hover:to-yellow-600/25 border border-yellow-500/30 hover:border-yellow-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-yellow-500/20 transform"
+            >
+              <div className="flex flex-col items-center gap-2 mb-3">
+                <div className="w-8 h-8 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-lg flex items-center justify-center shadow-md">
+                  <span className="text-white font-bold text-xs">C</span>
+                </div>
+                <h4 className="text-yellow-300 font-bold text-lg">Cookie.fun</h4>
+              </div>
+              <p className="text-gray-300 text-sm font-medium text-center">Interactive Trading Platform</p>
+            </SafeLink>
+          </div>
+        </GlassCard>
+      </div>
+
       {/* AI Agents Section - Separate GlassCard */}
       <div className="space-y-8 mt-12">
         <GlassCard className="p-3 sm:p-4 lg:p-6">
@@ -406,14 +415,6 @@ export default function AlphaSection() {
             </SafeLink>
           </div>
           
-          {/* Alphanomics */}
-          <div className="mt-6">
-            <SafeIframe
-              src="https://platform.alphanomics.io/"
-              title="Alphanomics Analytics Platform"
-              className="h-[600px]"
-            />
-          </div>
         </GlassCard>
       </div>
 
