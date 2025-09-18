@@ -317,22 +317,8 @@ export default function TradePerpsPage() {
                 </Button>
               </div>
 
-              {/* BloFin, Ranger Finance, and Quatro - Three Across */}
+              {/* Ranger Finance, Quatro, and BounceBit - Three Across */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-                <Button
-                  variant="outline"
-                  onClick={() => openInNewTab('https://blofin.com/futures/BTC-USDT')}
-                  className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
-                  data-testid="button-blofin"
-                >
-                  <div className="text-center">
-                    <div className="font-bold text-base flex items-center justify-center">
-                      <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
-                      BloFin
-                    </div>
-                  </div>
-                </Button>
-
                 <Button
                   variant="outline"
                   onClick={() => openInNewTab('https://www.app.ranger.finance/perps')}
@@ -344,7 +330,6 @@ export default function TradePerpsPage() {
                       <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
                       Ranger Finance
                     </div>
-
                   </div>
                 </Button>
 
@@ -359,6 +344,38 @@ export default function TradePerpsPage() {
                       <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
                       Quatro
                     </div>
+                  </div>
+                </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={() => openInNewTab('https://portal.bouncebit.io/trade')}
+                  className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+                  data-testid="button-bouncebit"
+                >
+                  <div className="text-center">
+                    <div className="font-bold text-base flex items-center justify-center">
+                      <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
+                      BounceBit
+                    </div>
+                  </div>
+                </Button>
+              </div>
+
+              {/* BloFin - Full Width Colored Button */}
+              <div className="w-full mt-6">
+                <Button
+                  variant="outline"
+                  onClick={() => openInNewTab('https://blofin.com/futures/BTC-USDT')}
+                  className="group w-full bg-gradient-to-br from-blue-500/40 via-purple-500/30 to-indigo-500/40 border border-blue-400/50 hover:from-blue-400/50 hover:via-purple-400/40 hover:to-indigo-400/50 hover:border-blue-300/70 text-white justify-center p-8 h-auto rounded-lg transition-all duration-500 flex items-center shadow-2xl hover:shadow-blue-500/40 transform hover:scale-[1.02] backdrop-blur-sm"
+                  data-testid="button-blofin"
+                >
+                  <div className="text-center">
+                    <div className="font-bold text-2xl flex items-center justify-center gap-3 mb-2">
+                      <TrendingUp className="w-7 h-7 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-500" />
+                      BloFin
+                    </div>
+                    <div className="text-base text-blue-100/90 font-medium">Advanced perpetual futures trading platform</div>
                   </div>
                 </Button>
               </div>
