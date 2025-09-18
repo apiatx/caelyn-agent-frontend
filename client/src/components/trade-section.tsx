@@ -245,17 +245,13 @@ export default function TradeSection() {
       <GlassCard className="p-8">
         {/* Trading Terminals Subsection */}
         <div className="space-y-6">
-          <div className="text-center mb-6">
-            <div className="flex items-center justify-center gap-3 mb-2">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-gradient-to-r from-purple-400 to-fuchsia-500 rounded-lg flex items-center justify-center">
                 <TrendingUp className="w-4 h-4 text-white" />
               </div>
               <h4 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-fuchsia-300 bg-clip-text text-transparent">Multi-Chain Trading Terminals</h4>
             </div>
-          </div>
-          
-          {/* TabTrader Open Full View Button */}
-          <div className="flex justify-center mb-4">
             <button
               onClick={() => openInNewTab('https://app.tabtrader.com/trading?list=Spot&market=BINANCE&pair=BTCUSDT')}
               className="text-blue-400 hover:text-blue-300 text-sm flex items-center gap-2 bg-black/20 border border-blue-500/30 px-4 py-2 rounded-lg hover:bg-blue-500/20 transition-all duration-300"
