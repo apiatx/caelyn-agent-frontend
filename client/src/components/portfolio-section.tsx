@@ -105,28 +105,37 @@ export default function PortfolioSection() {
         {/* Multi-Chain Section */}
         <div className="bg-black/90 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-8 shadow-2xl">
           <div className="space-y-8">
-            <div className="flex items-center justify-center gap-4 mb-6">
-              <div className="w-10 h-10 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-xl flex items-center justify-center shadow-lg">
-                <Activity className="w-6 h-6 text-white" />
-              </div>
-              <h4 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-300 bg-clip-text text-transparent">Multi-Chain</h4>
-            </div>
-            
             {/* BBTerminal Portfolio Iframe */}
-            <div className="w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg">
-              <iframe
-                src="https://app.bbterminal.com/portfolio"
-                title="BBTerminal Portfolio"
-                className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-                frameBorder="0"
-                loading="lazy"
-                sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation-by-user-activation"
-                referrerPolicy="strict-origin-when-cross-origin"
-                style={{
-                  background: '#000000',
-                  colorScheme: 'dark'
-                }}
-              />
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-xl flex items-center justify-center shadow-lg">
+                    <Activity className="w-6 h-6 text-white" />
+                  </div>
+                  <h4 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-300 bg-clip-text text-transparent">Multi-Chain</h4>
+                </div>
+                <button
+                  onClick={() => window.open('https://app.bbterminal.com/portfolio', '_blank', 'noopener,noreferrer')}
+                  className="text-cyan-300 hover:text-cyan-200 text-sm font-medium bg-cyan-500/20 px-4 py-2 rounded-lg border border-cyan-400/30 hover:bg-cyan-500/30 transition-all duration-300 flex items-center gap-2"
+                >
+                  Open Full View <ExternalLink className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg">
+                <iframe
+                  src="https://app.bbterminal.com/portfolio"
+                  title="BBTerminal Portfolio"
+                  className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+                  frameBorder="0"
+                  loading="lazy"
+                  sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation-by-user-activation"
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  style={{
+                    background: '#000000',
+                    colorScheme: 'dark'
+                  }}
+                />
+              </div>
             </div>
             
             <Button
@@ -154,7 +163,7 @@ export default function PortfolioSection() {
         {/* EVM Section */}
         <div className="bg-black/90 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-8 shadow-2xl">
           <div className="space-y-8">
-            <div className="flex items-center justify-center gap-4 mb-6">
+            <div className="flex items-center gap-4 mb-6">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center">
                 <img src={ethereumLogo} alt="Ethereum" className="w-8 h-8 rounded-lg" />
               </div>
@@ -185,15 +194,14 @@ export default function PortfolioSection() {
         {/* Solana Section */}
         <div className="bg-black/90 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-8 shadow-2xl">
           <div className="space-y-8">
-            <div className="flex items-center justify-center gap-4 mb-6">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center">
-                <img src={solanaLogo} alt="Solana" className="w-8 h-8 rounded-lg" />
-              </div>
-              <h4 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-violet-300 bg-clip-text text-transparent">Solana</h4>
-            </div>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h5 className="text-xl font-bold bg-gradient-to-r from-pink-400 via-purple-400 to-violet-400 bg-clip-text text-transparent">Jupiter Portfolio Tracker</h5>
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center">
+                    <img src={solanaLogo} alt="Solana" className="w-8 h-8 rounded-lg" />
+                  </div>
+                  <h4 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-violet-300 bg-clip-text text-transparent">Solana</h4>
+                </div>
                 <button
                   onClick={() => window.open('https://jup.ag/portfolio', '_blank', 'noopener,noreferrer')}
                   className="text-purple-300 hover:text-purple-200 text-sm font-medium bg-purple-500/20 px-4 py-2 rounded-lg border border-purple-400/30 hover:bg-purple-500/30 transition-all duration-300 flex items-center gap-2"
