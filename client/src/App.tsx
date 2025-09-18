@@ -52,6 +52,7 @@ function Router() {
       <Route path="/app/onchain" component={OnchainPage} />
       <Route path="/onchain" component={OnchainPage} />
       <Route path="/app/onchain/analytics" component={OnchainAlphaPage} />
+      <Route path="/app/onchain/alpha" component={OnchainAlphaPage} />
       <Route path="/app/onchain/smart-wallets" component={OnchainSmartWalletsPage} />
       <Route path="/app/onchain/social" component={OnchainSocialPage} />
       <Route path="/app/onchain/launchpad" component={OnchainLaunchpadPage} />

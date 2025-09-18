@@ -226,6 +226,25 @@ export default function AlphaSection() {
             </div>
           </div>
 
+          {/* Binance Alpha */}
+          <div className="mb-8">
+            <div className="mb-3 flex justify-end">
+              <SafeLink
+                href="https://www.binance.com/en/markets/alpha-all"
+                className="text-yellow-300 hover:text-yellow-200 text-sm font-medium hover:underline transition-colors duration-300"
+              >
+                Open Full Binance Alpha →
+              </SafeLink>
+            </div>
+            <div className="w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg">
+              <SafeIframe
+                src="https://www.binance.com/en/markets/alpha-all"
+                title="Binance Alpha Markets"
+                className="w-full h-[600px] rounded-lg"
+              />
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
             <SafeLink
               href='https://dex.coinmarketcap.com/token/all/'
