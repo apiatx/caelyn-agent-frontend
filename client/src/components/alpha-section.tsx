@@ -173,6 +173,53 @@ export default function AlphaSection() {
           </div>
 
 
+        </GlassCard>
+      </div>
+
+      {/* Signal Section - Separate GlassCard */}
+      <div className="space-y-8 mt-12">
+        <GlassCard className="p-3 sm:p-4 lg:p-6">
+          <div className="flex items-center justify-center mb-6">
+            <h4 className="text-2xl font-bold bg-gradient-to-r from-white to-indigo-100 bg-clip-text text-transparent">Signal</h4>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+            <SafeLink
+              href='https://app.nansen.ai/'
+              className="p-5 bg-gradient-to-br from-purple-600/15 to-purple-700/15 hover:from-purple-600/25 hover:to-purple-700/25 border border-purple-600/30 hover:border-purple-500/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-purple-600/20 transform"
+            >
+              <div className="flex flex-col items-center gap-2 mb-3">
+                <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-purple-700 rounded-lg flex items-center justify-center shadow-md">
+                  <span className="text-white font-bold text-xs">N</span>
+                </div>
+                <h4 className="text-purple-300 font-bold text-lg">Nansen.ai</h4>
+              </div>
+              <p className="text-gray-300 text-sm font-medium text-center">On-chain insights and wallet tracking</p>
+            </SafeLink>
+
+            <SafeLink
+              href='https://cookie.fun/'
+              className="p-5 bg-gradient-to-br from-yellow-500/15 to-yellow-600/15 hover:from-yellow-500/25 hover:to-yellow-600/25 border border-yellow-500/30 hover:border-yellow-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-yellow-500/20 transform"
+            >
+              <div className="flex flex-col items-center gap-2 mb-3">
+                <div className="w-8 h-8 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-lg flex items-center justify-center shadow-md">
+                  <span className="text-white font-bold text-xs">C</span>
+                </div>
+                <h4 className="text-yellow-300 font-bold text-lg">Cookie.fun</h4>
+              </div>
+              <p className="text-gray-300 text-sm font-medium text-center">Interactive Trading Platform</p>
+            </SafeLink>
+          </div>
+        </GlassCard>
+      </div>
+
+      {/* Screeners Section - Separate GlassCard */}
+      <div className="space-y-8 mt-12">
+        <GlassCard className="p-3 sm:p-4 lg:p-6">
+          <div className="flex items-center justify-center mb-6">
+            <h4 className="text-2xl font-bold bg-gradient-to-r from-white to-purple-100 bg-clip-text text-transparent">Screeners</h4>
+          </div>
+          
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
             <SafeLink
               href='https://coinmarketcap.com/?type=coins&tableRankBy=trending_all_24h'
@@ -270,7 +317,7 @@ export default function AlphaSection() {
           </div>
 
           {/* DexCheck and Velvet Capital - Two Across */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <SafeLink
               href='https://dexcheck.ai/app'
               className="p-5 bg-gradient-to-br from-yellow-500/15 to-yellow-600/15 hover:from-yellow-500/25 hover:to-yellow-600/25 border border-yellow-500/30 hover:border-yellow-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-yellow-500/20 transform"
@@ -297,77 +344,41 @@ export default function AlphaSection() {
               <p className="text-gray-300 text-sm font-medium text-center">DeFi Portfolio Management</p>
             </SafeLink>
           </div>
-
-
-          {/* AI Agents Subsection */}
-          <div className="mb-8">
-            <div className="flex items-center justify-center mb-6">
-              <h4 className="text-xl font-bold bg-gradient-to-r from-white to-cyan-100 bg-clip-text text-transparent">AI Agents</h4>
-            </div>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <SafeLink
-                href='https://agents.cookie.fun/'
-                className="p-5 bg-gradient-to-br from-green-500/15 to-green-600/15 hover:from-green-500/25 hover:to-green-600/25 border border-green-500/30 hover:border-green-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-green-500/20 transform"
-              >
-                <div className="flex flex-col items-center gap-2 mb-3">
-                  <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center shadow-md">
-                    <span className="text-white font-bold text-xs">C</span>
-                  </div>
-                  <h4 className="text-green-300 font-bold text-lg">Cookie Agents</h4>
-                </div>
-                <p className="text-gray-300 text-sm font-medium text-center">AI Agent Discovery Platform</p>
-              </SafeLink>
-
-              <SafeLink
-                href='https://ayaoracle.xyz/#agents_data'
-                className="p-5 bg-gradient-to-br from-indigo-500/15 to-indigo-600/15 hover:from-indigo-500/25 hover:to-indigo-600/25 border border-indigo-500/30 hover:border-indigo-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-indigo-500/20 transform"
-              >
-                <div className="flex flex-col items-center gap-2 mb-3">
-                  <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-md">
-                    <span className="text-white font-bold text-xs">A</span>
-                  </div>
-                  <h4 className="text-indigo-300 font-bold text-lg">Aya AI</h4>
-                </div>
-                <p className="text-gray-300 text-sm font-medium text-center">Crypto AI Agent Analytics</p>
-              </SafeLink>
-            </div>
-          </div>
         </GlassCard>
       </div>
 
-      {/* Signal Section - Separate GlassCard */}
+      {/* AI Agents Section - Separate GlassCard */}
       <div className="space-y-8 mt-12">
         <GlassCard className="p-3 sm:p-4 lg:p-6">
           <div className="flex items-center justify-center mb-6">
-            <h4 className="text-2xl font-bold bg-gradient-to-r from-white to-indigo-100 bg-clip-text text-transparent">Signal</h4>
+            <h4 className="text-2xl font-bold bg-gradient-to-r from-white to-cyan-100 bg-clip-text text-transparent">AI Agents</h4>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <SafeLink
-              href='https://app.nansen.ai/'
-              className="p-5 bg-gradient-to-br from-purple-600/15 to-purple-700/15 hover:from-purple-600/25 hover:to-purple-700/25 border border-purple-600/30 hover:border-purple-500/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-purple-600/20 transform"
+              href='https://agents.cookie.fun/'
+              className="p-5 bg-gradient-to-br from-green-500/15 to-green-600/15 hover:from-green-500/25 hover:to-green-600/25 border border-green-500/30 hover:border-green-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-green-500/20 transform"
             >
               <div className="flex flex-col items-center gap-2 mb-3">
-                <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-purple-700 rounded-lg flex items-center justify-center shadow-md">
-                  <span className="text-white font-bold text-xs">N</span>
+                <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center shadow-md">
+                  <span className="text-white font-bold text-xs">C</span>
                 </div>
-                <h4 className="text-purple-300 font-bold text-lg">Nansen.ai</h4>
+                <h4 className="text-green-300 font-bold text-lg">Cookie Agents</h4>
               </div>
-              <p className="text-gray-300 text-sm font-medium text-center">On-chain insights and wallet tracking</p>
+              <p className="text-gray-300 text-sm font-medium text-center">AI Agent Discovery Platform</p>
             </SafeLink>
 
             <SafeLink
-              href='https://cookie.fun/'
-              className="p-5 bg-gradient-to-br from-yellow-500/15 to-yellow-600/15 hover:from-yellow-500/25 hover:to-yellow-600/25 border border-yellow-500/30 hover:border-yellow-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-yellow-500/20 transform"
+              href='https://ayaoracle.xyz/#agents_data'
+              className="p-5 bg-gradient-to-br from-indigo-500/15 to-indigo-600/15 hover:from-indigo-500/25 hover:to-indigo-600/25 border border-indigo-500/30 hover:border-indigo-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-indigo-500/20 transform"
             >
               <div className="flex flex-col items-center gap-2 mb-3">
-                <div className="w-8 h-8 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-lg flex items-center justify-center shadow-md">
-                  <span className="text-white font-bold text-xs">C</span>
+                <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-md">
+                  <span className="text-white font-bold text-xs">A</span>
                 </div>
-                <h4 className="text-yellow-300 font-bold text-lg">Cookie.fun</h4>
+                <h4 className="text-indigo-300 font-bold text-lg">Aya AI</h4>
               </div>
-              <p className="text-gray-300 text-sm font-medium text-center">Interactive Trading Platform</p>
+              <p className="text-gray-300 text-sm font-medium text-center">Crypto AI Agent Analytics</p>
             </SafeLink>
           </div>
         </GlassCard>
