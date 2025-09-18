@@ -342,23 +342,6 @@ export default function TradeSection() {
 
       {/* Multi-Charts Section */}
       <GlassCard className="p-8">
-        <div className="text-center mb-6">
-          <div className="flex items-center justify-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-xl flex items-center justify-center shadow-lg">
-              <TrendingUp className="w-6 h-6 text-white" />
-            </div>
-            <h4 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-300 bg-clip-text text-transparent">Multi-Charts</h4>
-            <Badge className="bg-cyan-500/30 text-cyan-200 border-cyan-400/40 px-3 py-1 font-semibold">
-              CHARTING
-            </Badge>
-          </div>
-          <button
-            onClick={() => openInNewTab('https://dexscreener.com/multicharts?theme=dark')}
-            className="text-cyan-300 hover:text-cyan-200 text-sm font-medium bg-cyan-500/20 px-4 py-2 rounded-lg border border-cyan-400/30 hover:bg-cyan-500/30 transition-all duration-300 mx-auto"
-          >
-            Open Full View →
-          </button>
-        </div>
         <div className="w-full bg-gradient-to-br from-slate-900/80 via-gray-900/80 to-cyan-900/30 rounded-2xl border border-cyan-400/20 p-12 text-center shadow-2xl">
           <div className="flex flex-col items-center gap-6">
             <div className="w-24 h-24 bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-500 rounded-3xl flex items-center justify-center shadow-2xl shadow-cyan-500/30 hover:scale-110 transition-transform duration-300">
@@ -381,26 +364,16 @@ export default function TradeSection() {
       </GlassCard>
 
       {/* Rubic Exchange */}
-      <GlassCard className="p-8">
-        <div className="text-center mb-6">
-          <div className="flex items-center justify-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-gradient-to-r from-green-400 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg">
-              <ArrowLeftRight className="w-6 h-6 text-white" />
-            </div>
-            <h4 className="text-2xl font-bold bg-gradient-to-r from-green-400 to-emerald-300 bg-clip-text text-transparent">Rubic Exchange</h4>
-            <Badge className="bg-green-500/30 text-green-200 border-green-400/40 px-3 py-1 font-semibold">
-              CROSS-CHAIN DEX
-            </Badge>
-          </div>
-          <button
-            onClick={() => openInNewTab('https://app.rubic.exchange/?fromChain=ETH&toChain=ETH')}
-            className="text-green-300 hover:text-green-200 text-sm font-medium bg-green-500/20 px-4 py-2 rounded-lg border border-green-400/30 hover:bg-green-500/30 transition-all duration-300 mx-auto"
-            data-testid="button-rubic-external"
-          >
-            Open Full View →
-          </button>
-        </div>
-        <div className="w-full">
+      <div className="relative">
+        <button
+          onClick={() => openInNewTab('https://app.rubic.exchange/?fromChain=ETH&toChain=ETH')}
+          className="absolute top-4 right-4 z-10 text-green-300 hover:text-green-200 text-sm font-medium bg-green-500/20 px-4 py-2 rounded-lg border border-green-400/30 hover:bg-green-500/30 transition-all duration-300"
+          data-testid="button-rubic-external"
+        >
+          Open Full View →
+        </button>
+        <GlassCard className="p-8">
+          <div className="w-full">
           <iframe
             src="https://app.rubic.exchange/?fromChain=ETH&toChain=ETH"
             className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
@@ -411,8 +384,9 @@ export default function TradeSection() {
             referrerPolicy="no-referrer-when-downgrade"
             data-testid="iframe-rubic"
           />
-        </div>
-      </GlassCard>
+          </div>
+        </GlassCard>
+      </div>
 
     </div>
   );
