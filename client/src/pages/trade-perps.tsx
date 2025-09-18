@@ -351,14 +351,6 @@ export default function TradePerpsPage() {
                 </Button>
               </div>
 
-              {/* Hyperbot Network Iframe - Moved here */}
-              <div className="mt-6 w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg">
-                <SafeIframe
-                  src="https://hyperbot.network/discover"
-                  title="Hyperbot Network Discover"
-                  className="w-full h-[800px] rounded-lg"
-                />
-              </div>
             </div>
           </GlassCard>
 
@@ -474,6 +466,15 @@ export default function TradePerpsPage() {
                     <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-xs">
                       VAULT STRATEGY
                     </Badge>
+                  </div>
+                  
+                  {/* Hyperbot Network Iframe - Moved to Copy Trade Section */}
+                  <div className="mb-6 w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg">
+                    <SafeIframe
+                      src="https://hyperbot.network/discover"
+                      title="Hyperbot Network Discover"
+                      className="w-full h-[800px] rounded-lg"
+                    />
                   </div>
                   
                   <div className="grid grid-cols-1 gap-4">
