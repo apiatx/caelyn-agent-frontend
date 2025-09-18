@@ -364,16 +364,17 @@ export default function TradeSection() {
       </GlassCard>
 
       {/* Rubic Exchange */}
-      <div className="relative">
-        <button
-          onClick={() => openInNewTab('https://app.rubic.exchange/?fromChain=ETH&toChain=ETH')}
-          className="absolute top-4 right-4 z-10 text-green-300 hover:text-green-200 text-sm font-medium bg-green-500/20 px-4 py-2 rounded-lg border border-green-400/30 hover:bg-green-500/30 transition-all duration-300"
-          data-testid="button-rubic-external"
-        >
-          Open Full View →
-        </button>
-        <GlassCard className="p-8">
-          <div className="w-full">
+      <GlassCard className="p-8">
+        <div className="flex justify-end mb-4">
+          <button
+            onClick={() => openInNewTab('https://app.rubic.exchange/?fromChain=ETH&toChain=ETH')}
+            className="text-green-300 hover:text-green-200 text-sm font-medium bg-green-500/20 px-4 py-2 rounded-lg border border-green-400/30 hover:bg-green-500/30 transition-all duration-300"
+            data-testid="button-rubic-external"
+          >
+            Open Full View →
+          </button>
+        </div>
+        <div className="w-full">
           <iframe
             src="https://app.rubic.exchange/?fromChain=ETH&toChain=ETH"
             className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
@@ -384,9 +385,8 @@ export default function TradeSection() {
             referrerPolicy="no-referrer-when-downgrade"
             data-testid="iframe-rubic"
           />
-          </div>
-        </GlassCard>
-      </div>
+        </div>
+      </GlassCard>
 
     </div>
   );
