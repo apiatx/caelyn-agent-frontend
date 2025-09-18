@@ -246,6 +246,14 @@ export default function OnchainLaunchpadPage() {
                 <ExternalLink className="w-5 h-5" />
                 Open Bonk.fun
               </Button>
+              
+              <Button
+                onClick={() => openInNewTab('https://www.hyperliquid.magpiexyz.io/meme')}
+                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold px-6 py-3 rounded-lg transition-all duration-200 flex items-center gap-2"
+              >
+                <ExternalLink className="w-5 h-5" />
+                Open Hyperpie
+              </Button>
             </div>
           </div>
         </GlassCard>
