@@ -456,18 +456,18 @@ export default function TradePerpsPage() {
               </div>
 
               {/* Copy Trade / Top Wallets Section */}
-              <div className="space-y-6">
-                <div className="p-6 bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl">
-                  <div className="flex items-center gap-2 mb-6">
-                    <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">CT</span>
-                    </div>
-                    <h3 className="text-xl font-semibold text-white">Copy Trade / Top Wallets</h3>
-                    <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-xs">
-                      VAULT STRATEGY
-                    </Badge>
+              <div className="mt-6">
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                  <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full flex items-center justify-center">
+                    <span className="text-white text-xs font-bold">CT</span>
                   </div>
-                  
+                  Copy Trade / Top Wallets
+                  <span className="text-xs bg-purple-500/20 text-purple-400 px-2 py-1 rounded-full border border-purple-500/30">
+                    VAULT STRATEGY
+                  </span>
+                </h3>
+                
+                <div className="bg-black/20 border border-crypto-silver/20 rounded-lg p-6">
                   {/* Hyperbot Network Iframe - Moved to Copy Trade Section */}
                   <div className="mb-6 w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg">
                     <SafeIframe
