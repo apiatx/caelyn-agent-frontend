@@ -235,6 +235,15 @@ export default function CryptoStonksPage() {
             </div>
 
             <div className="space-y-4">
+              {/* Allo Finance */}
+              <button
+                onClick={() => openInNewTab('https://app.allo.xyz/trade/RWA')}
+                className="bg-gradient-to-br from-purple-500/10 to-blue-600/10 hover:from-purple-500/20 hover:to-blue-600/20 border border-purple-500/20 hover:border-purple-400/40 rounded-lg p-4 transition-all duration-300 text-left group w-full"
+              >
+                <div className="text-sm font-medium text-white group-hover:text-purple-300 mb-1">Allo Finance</div>
+                <div className="text-xs text-crypto-silver">Real World Asset (RWA) tokenization and trading</div>
+              </button>
+
               {/* Ondo Finance */}
               <button
                 onClick={() => openInNewTab('https://app.ondo.finance/')}
