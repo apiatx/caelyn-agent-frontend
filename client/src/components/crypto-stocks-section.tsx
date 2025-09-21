@@ -318,7 +318,7 @@ export default function CryptoStocksSection() {
             </Badge>
           </div>
           <button
-            onClick={() => openInNewTab('https://banterbubbles.com/?utm_source=cbanter&utm_medium=cbanter&utm_campaign=cbanter&source=cbanter')}
+            onClick={() => openInNewTab('https://banterbubbles.com/?utm_source=cbanter&utm_medium=cbanter&utm_campaign=cbanter&source=cbanter#stocks')}
             className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm flex items-center gap-1"
           >
             <ExternalLink className="w-3 h-3" />
@@ -328,7 +328,7 @@ export default function CryptoStocksSection() {
 
         <div className="w-full">
           <iframe
-            src="https://banterbubbles.com/?utm_source=cbanter&utm_medium=cbanter&utm_campaign=cbanter&source=cbanter"
+            src="https://banterbubbles.com/?utm_source=cbanter&utm_medium=cbanter&utm_campaign=cbanter&source=cbanter#stocks"
             className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
             title="Banterbubbles Stock Analysis"
             frameBorder="0"
