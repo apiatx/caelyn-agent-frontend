@@ -225,7 +225,9 @@ const TRUSTED_DOMAINS = [
   'bouncebit.io',
   'portal.bouncebit.io',
   'blofin.com',
-  'www.blofin.com'
+  'www.blofin.com',
+  'dydx.trade',
+  'www.dydx.trade'
 ];
 
 /**
