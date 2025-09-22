@@ -378,7 +378,7 @@ export default function CryptoDashboardSection() {
               <Calendar className="w-4 h-4 text-crypto-warning" />
             </div>
             <div className="text-center">
-              <div className="text-sm font-medium text-white group-hover:text-crypto-warning mb-1">Crypto Events Calendar</div>
+              <div className="text-lg font-medium text-white group-hover:text-crypto-warning mb-1">Crypto Events Calendar</div>
               <div className="text-xs text-crypto-silver">Track upcoming crypto events and announcements</div>
             </div>
             <ExternalLink className="w-4 h-4 text-crypto-warning" />
