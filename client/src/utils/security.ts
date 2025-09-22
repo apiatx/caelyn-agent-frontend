@@ -211,7 +211,8 @@ const TRUSTED_DOMAINS = [
   'app.drift.trade',
   'superp.xyz',
   'noliquidation.superp.xyz',
-  'meme.superp.xyz'
+  'meme.superp.xyz',
+  'coinmarketcal.com'
 ];
 
 /**

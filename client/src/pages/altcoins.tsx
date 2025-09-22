@@ -950,6 +950,37 @@ export default function AltcoinsPage() {
             </div>
           </Suspense>
 
+          {/* CoinMarketCal Calendar */}
+          <Suspense fallback={<SectionLoadingState title="Crypto Calendar" />}>
+            <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <h3 className="text-lg font-semibold text-crypto-warning">Crypto Events Calendar</h3>
+                  <Badge variant="outline" className="bg-crypto-warning/20 text-crypto-warning border-crypto-warning/30">
+                    EVENTS
+                  </Badge>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <button
+                    onClick={() => openSecureLink('https://coinmarketcal.com/en/')}
+                    className="text-crypto-warning hover:text-yellow-300 text-xs sm:text-sm"
+                  >
+                    Open Full View →
+                  </button>
+                </div>
+              </div>
+              <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
+                <iframe
+                  src="https://coinmarketcal.com/en/"
+                  className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+                  title="CoinMarketCal Events Calendar"
+                  frameBorder="0"
+                  scrolling="no"
+                />
+              </div>
+            </div>
+          </Suspense>
+
 
         </div>
       </main>
