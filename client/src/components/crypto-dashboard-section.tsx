@@ -368,24 +368,22 @@ export default function CryptoDashboardSection() {
 
       {/* Crypto Events Calendar Button */}
       <GlassCard className="p-3 sm:p-4 lg:p-6">
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <button
-            onClick={() => openSecureLink('https://coinmarketcal.com/en/')}
-            className="bg-gradient-to-br from-crypto-warning/10 to-yellow-600/10 hover:from-crypto-warning/20 hover:to-yellow-600/20 border border-crypto-warning/20 hover:border-crypto-warning/40 rounded-lg p-4 transition-all duration-300 text-left group w-full max-w-md"
-            data-testid="button-crypto-calendar"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-crypto-warning/20 rounded-full flex items-center justify-center">
-                <Calendar className="w-4 h-4 text-crypto-warning" />
-              </div>
-              <div>
-                <div className="text-sm font-medium text-white group-hover:text-crypto-warning mb-1">Crypto Events Calendar</div>
-                <div className="text-xs text-crypto-silver">Track upcoming crypto events and announcements</div>
-              </div>
-              <ExternalLink className="w-4 h-4 text-crypto-warning ml-auto" />
+        <button
+          onClick={() => openSecureLink('https://coinmarketcal.com/en/')}
+          className="bg-gradient-to-br from-crypto-warning/10 to-yellow-600/10 hover:from-crypto-warning/20 hover:to-yellow-600/20 border border-crypto-warning/20 hover:border-crypto-warning/40 rounded-lg p-4 transition-all duration-300 group w-full"
+          data-testid="button-crypto-calendar"
+        >
+          <div className="flex items-center justify-center gap-3">
+            <div className="w-8 h-8 bg-crypto-warning/20 rounded-full flex items-center justify-center">
+              <Calendar className="w-4 h-4 text-crypto-warning" />
             </div>
-          </button>
-        </div>
+            <div className="text-center">
+              <div className="text-sm font-medium text-white group-hover:text-crypto-warning mb-1">Crypto Events Calendar</div>
+              <div className="text-xs text-crypto-silver">Track upcoming crypto events and announcements</div>
+            </div>
+            <ExternalLink className="w-4 h-4 text-crypto-warning" />
+          </div>
+        </button>
       </GlassCard>
     </div>
   );
