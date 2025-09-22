@@ -212,7 +212,20 @@ const TRUSTED_DOMAINS = [
   'superp.xyz',
   'noliquidation.superp.xyz',
   'meme.superp.xyz',
-  'coinmarketcal.com'
+  'coinmarketcal.com',
+  'asterdex.com',
+  'www.asterdex.com',
+  'paradex.trade',
+  'www.paradex.trade',
+  'myx.finance',
+  'app.myx.finance',
+  'ranger.finance',
+  'app.ranger.finance',
+  'www.app.ranger.finance',
+  'bouncebit.io',
+  'portal.bouncebit.io',
+  'blofin.com',
+  'www.blofin.com'
 ];
 
 /**
