@@ -164,31 +164,6 @@ export default function TradePerpsPage() {
                 </div>
               </div>
 
-              {/* SuperP No Liquidation Iframe */}
-              <div className="mb-6">
-                <div className="flex justify-end mb-3">
-                  <a
-                    {...getSecureLinkProps('https://noliquidation.superp.xyz/en')}
-                    className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1"
-                  >
-                    Open Full View <ExternalLink className="w-3 h-3" />
-                  </a>
-                </div>
-                
-                <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-                  <SafeIframe
-                    src="https://noliquidation.superp.xyz/en"
-                    title="SuperP No Liquidation Trading Platform"
-                    className="w-full h-[800px] border-0"
-                  />
-                </div>
-                
-                <div className="mt-4 text-center">
-                  <p className="text-xs text-gray-400">
-                    No liquidation trading on SuperP • Risk-free perpetual futures
-                  </p>
-                </div>
-              </div>
 
               {/* Drift Trade Iframe */}
               <div className="mb-6">
@@ -392,14 +367,14 @@ export default function TradePerpsPage() {
 
                 <Button
                   variant="outline"
-                  onClick={() => openInNewTab('https://quanto.trade/en/markets/BTC-USD-SWAP-LIN')}
+                  onClick={() => openInNewTab('https://noliquidation.superp.xyz/en')}
                   className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
-                  data-testid="button-quanto"
+                  data-testid="button-superp"
                 >
                   <div className="text-center">
                     <div className="font-bold text-base flex items-center justify-center">
                       <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
-                      Quanto
+                      SuperP
                     </div>
                   </div>
                 </Button>
@@ -415,6 +390,24 @@ export default function TradePerpsPage() {
                       <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
                       BounceBit
                     </div>
+                  </div>
+                </Button>
+              </div>
+
+              {/* Quanto - Full Width Enhanced Colored Button */}
+              <div className="w-full mt-6">
+                <Button
+                  variant="outline"
+                  onClick={() => openInNewTab('https://quanto.trade/en/markets/BTC-USD-SWAP-LIN')}
+                  className="group w-full bg-gradient-to-br from-orange-500/40 via-red-500/30 to-pink-500/40 border border-orange-400/50 hover:from-orange-400/50 hover:via-red-400/40 hover:to-pink-400/50 hover:border-orange-300/70 text-white justify-center p-8 h-auto rounded-lg transition-all duration-500 flex items-center shadow-2xl hover:shadow-orange-500/40 transform hover:scale-[1.02] backdrop-blur-sm"
+                  data-testid="button-quanto"
+                >
+                  <div className="text-center">
+                    <div className="font-bold text-2xl flex items-center justify-center gap-3 mb-2">
+                      <TrendingUp className="w-7 h-7 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-500" />
+                      Quanto
+                    </div>
+                    <div className="text-base text-orange-100/90 font-medium">Next-generation perpetual futures trading</div>
                   </div>
                 </Button>
               </div>
