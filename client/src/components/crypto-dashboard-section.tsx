@@ -373,15 +373,17 @@ export default function CryptoDashboardSection() {
           className="bg-gradient-to-br from-crypto-warning/10 to-yellow-600/10 hover:from-crypto-warning/20 hover:to-yellow-600/20 border border-crypto-warning/20 hover:border-crypto-warning/40 rounded-lg p-4 transition-all duration-300 group w-full"
           data-testid="button-crypto-calendar"
         >
-          <div className="flex items-center justify-center gap-3">
-            <div className="w-8 h-8 bg-crypto-warning/20 rounded-full flex items-center justify-center">
-              <Calendar className="w-4 h-4 text-crypto-warning" />
+          <div className="flex items-center justify-between">
+            <div className="w-12 h-12 bg-crypto-warning/20 rounded-full flex items-center justify-center mr-4">
+              <Calendar className="w-6 h-6 text-crypto-warning" />
             </div>
-            <div className="text-center">
-              <div className="text-lg font-medium text-white group-hover:text-crypto-warning mb-1">Crypto Events Calendar</div>
+            <div className="text-center flex-1">
+              <div className="text-lg font-medium text-white group-hover:text-crypto-warning mb-1">CoinMarketCal</div>
               <div className="text-xs text-crypto-silver">Track upcoming crypto events and announcements</div>
             </div>
-            <ExternalLink className="w-4 h-4 text-crypto-warning" />
+            <div className="ml-4">
+              <ExternalLink className="w-4 h-4 text-crypto-warning" />
+            </div>
           </div>
         </button>
       </GlassCard>
