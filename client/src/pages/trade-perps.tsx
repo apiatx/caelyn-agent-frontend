@@ -399,7 +399,7 @@ export default function TradePerpsPage() {
                   <div className="text-center">
                     <div className="font-bold text-base flex items-center justify-center">
                       <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
-                      Quatro
+                      Quanto
                     </div>
                   </div>
                 </Button>
