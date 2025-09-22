@@ -164,31 +164,6 @@ export default function TradePerpsPage() {
                 </div>
               </div>
 
-              {/* dYdX Trade Iframe */}
-              <div className="mb-6">
-                <div className="flex justify-end mb-3">
-                  <a
-                    {...getSecureLinkProps('https://dydx.trade/trade/BTC-USD')}
-                    className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1"
-                  >
-                    Open Full View <ExternalLink className="w-3 h-3" />
-                  </a>
-                </div>
-                
-                <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-                  <SafeIframe
-                    src="https://dydx.trade/trade/BTC-USD"
-                    title="dYdX Trading Terminal"
-                    className="w-full h-[800px] border-0"
-                  />
-                </div>
-                
-                <div className="mt-4 text-center">
-                  <p className="text-xs text-gray-400">
-                    BTC-USD perpetual trading on dYdX • Advanced decentralized trading platform
-                  </p>
-                </div>
-              </div>
 
               {/* Drift Trade Iframe */}
               <div className="mb-6">
@@ -264,21 +239,6 @@ export default function TradePerpsPage() {
                 </div>
               </Button>
 
-              {/* NovaEx - Full Width Button */}
-              <Button
-                variant="outline"
-                onClick={() => openInNewTab('https://www.novaex.com/trade')}
-                className="group w-full bg-gradient-to-br from-green-500/40 via-emerald-500/30 to-teal-500/40 border-green-400/50 hover:from-green-400/50 hover:via-emerald-400/40 hover:to-teal-400/50 hover:border-green-300/70 text-white justify-center p-7 h-auto shadow-2xl hover:shadow-green-500/30 transform hover:scale-[1.02] transition-all duration-500 backdrop-blur-sm mb-8"
-                data-testid="button-novaex"
-              >
-                <div className="text-center">
-                  <div className="font-bold text-xl flex items-center justify-center">
-                    <TrendingUp className="w-6 h-6 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-500" />
-                    NovaEx
-                  </div>
-                  <div className="text-sm text-green-100/90 font-medium">Insurance-backed perpetual trading</div>
-                </div>
-              </Button>
 
               {/* Other Apps */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -374,7 +334,7 @@ export default function TradePerpsPage() {
               </div>
 
 
-              {/* Ranger Finance, Quatro, and BounceBit - Three Across */}
+              {/* Ranger Finance, SuperP, and BounceBit - Three Across */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
                 <Button
                   variant="outline"
@@ -414,6 +374,51 @@ export default function TradePerpsPage() {
                     <div className="font-bold text-base flex items-center justify-center">
                       <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
                       BounceBit
+                    </div>
+                  </div>
+                </Button>
+              </div>
+
+              {/* dYdX, NovaEx, and GMX - Three Across */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+                <Button
+                  variant="outline"
+                  onClick={() => openInNewTab('https://dydx.trade/trade/BTC-USD')}
+                  className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+                  data-testid="button-dydx"
+                >
+                  <div className="text-center">
+                    <div className="font-bold text-base flex items-center justify-center">
+                      <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
+                      dYdX
+                    </div>
+                  </div>
+                </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={() => openInNewTab('https://www.novaex.com/trade')}
+                  className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+                  data-testid="button-novaex"
+                >
+                  <div className="text-center">
+                    <div className="font-bold text-base flex items-center justify-center">
+                      <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
+                      NovaEx
+                    </div>
+                  </div>
+                </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={() => openInNewTab('https://app.gmx.io/#/trade')}
+                  className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+                  data-testid="button-gmx"
+                >
+                  <div className="text-center">
+                    <div className="font-bold text-base flex items-center justify-center">
+                      <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
+                      GMX
                     </div>
                   </div>
                 </Button>

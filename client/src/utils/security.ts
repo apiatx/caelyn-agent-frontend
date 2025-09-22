@@ -227,7 +227,9 @@ const TRUSTED_DOMAINS = [
   'blofin.com',
   'www.blofin.com',
   'dydx.trade',
-  'www.dydx.trade'
+  'www.dydx.trade',
+  'app.gmx.io',
+  'gmx.io'
 ];
 
 /**
