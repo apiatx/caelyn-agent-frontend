@@ -130,6 +130,30 @@ export default function TradeSection() {
               </div>
             </Button>
           </div>
+
+          {/* Matcha.xyz iframe */}
+          <div className="mt-8">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-green-500 to-teal-500 rounded-full flex items-center justify-center">
+                <ArrowUpDown className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+              </div>
+              <h5 className="text-lg font-semibold text-white">Matcha</h5>
+              <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
+                DEX AGGREGATOR
+              </Badge>
+            </div>
+            <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
+              <iframe
+                src="https://matcha.xyz/tokens/ethereum/0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+                className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+                title="Matcha DEX Aggregator"
+                frameBorder="0"
+                loading="lazy"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
+          </div>
         </div>
       </GlassCard>
 
