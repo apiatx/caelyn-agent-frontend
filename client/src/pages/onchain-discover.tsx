@@ -102,9 +102,6 @@ export default function OnchainDiscoverPage() {
           {/* Discover Web3 Content */}
           <div className="space-y-8 mt-12">
             <GlassCard className="p-6">
-              <div className="flex items-center justify-center mb-6">
-                <h3 className="text-2xl font-bold bg-gradient-to-r from-white to-emerald-100 bg-clip-text text-transparent">Discover</h3>
-              </div>
               
               {/* DappRadar - First row */}
               <div className="mb-6">

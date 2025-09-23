@@ -102,9 +102,6 @@ export default function OnchainMemesPage() {
           {/* Memecoins */}
           <div className="space-y-8">
             <GlassCard className="p-6">
-              <div className="flex items-center justify-center mb-6">
-                <h3 className="text-2xl font-bold bg-gradient-to-r from-white to-orange-100 bg-clip-text text-transparent">Memecoins</h3>
-              </div>
 
               {/* Capitoday */}
               <div className="mb-8">
