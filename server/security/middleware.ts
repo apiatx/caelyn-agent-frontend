@@ -374,14 +374,27 @@ export const strictRateLimit = rateLimit({
 });
 
 /**
- * CORS configuration
+ * CORS configuration for static assets (more permissive)
+ */
+export const staticAssetCorsConfig = cors({
+  origin: '*', // Allow all origins for static assets
+  methods: ['GET', 'HEAD', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Accept', 'Origin', 'Cache-Control', 'If-Modified-Since', 'If-None-Match'],
+  exposedHeaders: ['Content-Length', 'Content-Type', 'Last-Modified', 'ETag'],
+  maxAge: 86400, // 24 hours
+  preflightContinue: false,
+  optionsSuccessStatus: 200
+});
+
+/**
+ * CORS configuration for API routes (more restrictive)
  */
 export const corsConfig = cors({
   origin: function(origin, callback) {
     // Always allow requests with no origin (mobile apps, curl, etc.)
     if (!origin) return callback(null, true);
     
-    // In development, be more permissive for static assets
+    // In development, be more permissive
     if (process.env.NODE_ENV === 'development') {
       return callback(null, true);
     }

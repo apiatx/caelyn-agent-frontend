@@ -9,7 +9,8 @@ import {
   helmetConfig, 
   cspConfig, 
   apiRateLimit, 
-  corsConfig, 
+  corsConfig,
+  staticAssetCorsConfig, 
   sanitizeInput, 
   securityHeaders,
   errorHandler 
@@ -65,8 +66,23 @@ app.get("/ready", (req, res) => {
 // Log security configuration
 logSecurityConfig();
 
+// Apply static asset CORS for JS, CSS, images, fonts, etc.
+app.use((req, res, next) => {
+  const staticAssetExtensions = ['.js', '.css', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.woff', '.woff2', '.ttf', '.eot', '.map'];
+  const isStaticAsset = staticAssetExtensions.some(ext => req.path.toLowerCase().endsWith(ext)) || 
+                       req.path.startsWith('/assets/') || 
+                       req.path.startsWith('/static/') ||
+                       req.path.startsWith('/@vite/') ||
+                       req.path.includes('.vite');
+  
+  if (isStaticAsset) {
+    return staticAssetCorsConfig(req, res, next);
+  } else {
+    return corsConfig(req, res, next);
+  }
+});
+
 // Apply security middleware FIRST (CSP disabled for investing.com)
-app.use(corsConfig); // Move CORS before other middleware
 app.use(securityHeaders);
 app.use(helmetConfig);
 // app.use(cspConfig); // Disabled to allow investing.com iframe
