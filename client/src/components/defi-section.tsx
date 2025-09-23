@@ -579,7 +579,7 @@ export default function DeFiSection() {
 
           <Button
             variant="outline"
-            onClick={() => openInNewTab('https://www.moonpay.com/buy?af_xp=qr&isMoonkit=true&source_caller=ui&pid=moonpay.com&af_js_web=true&shortlink=41j0y9vo&af_adset=moonpay.com&af_ad=moonpay.com&deep_link_value=buy&af_ss_ui=true&c=moonpay.com&af_ss_ver=2_7_3')}
+            onClick={() => openInNewTab('https://www.moonpay.com/buy')}
             className="bg-black/20 border-crypto-silver/20 hover:bg-green-500/20 hover:border-green-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
           >
             <div className="p-3 rounded-lg bg-gradient-to-r from-green-500/20 to-green-600/20">
