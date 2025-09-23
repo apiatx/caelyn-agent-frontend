@@ -104,14 +104,20 @@ export default function OnchainSmartWalletsPage() {
 
           {/* Smart Wallets */}
           <GlassCard className="p-6">
-            <div className="flex items-center gap-2 mb-6">
-              <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                <span className="text-white font-bold text-sm">W</span>
-              </div>
-              <h3 className="text-xl font-semibold text-white">Smart Wallets</h3>
-              <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-                ANALYTICS
-              </Badge>
+            <div className="mb-8">
+              <iframe
+                src="https://app.chainlyze.ai/smart-wallet"
+                title="Chainlyze Smart Wallet Tracker"
+                className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+                frameBorder="0"
+                loading="lazy"
+                sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation-by-user-activation"
+                referrerPolicy="strict-origin-when-cross-origin"
+                style={{
+                  background: '#000000',
+                  colorScheme: 'dark'
+                }}
+              />
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
@@ -164,22 +170,6 @@ export default function OnchainSmartWalletsPage() {
                 </div>
                 <p className="text-gray-400 text-sm">AI-powered perpetual trading bot</p>
               </SafeLink>
-            </div>
-
-            <div className="mb-8">
-              <iframe
-                src="https://app.chainlyze.ai/smart-wallet"
-                title="Chainlyze Smart Wallet Tracker"
-                className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-                frameBorder="0"
-                loading="lazy"
-                sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation-by-user-activation"
-                referrerPolicy="strict-origin-when-cross-origin"
-                style={{
-                  background: '#000000',
-                  colorScheme: 'dark'
-                }}
-              />
             </div>
 
             {/* Indexy - Full Width Button */}
