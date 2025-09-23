@@ -90,7 +90,20 @@ export const cspConfig = helmet.contentSecurityPolicy({
       "https://www.blockcreeper.com",
       "https://taofi.com",
       "https://*.taofi.com",
-      "https://www.taofi.com"
+      "https://www.taofi.com",
+      // DeFi Platforms
+      "https://tharwa.xyz",
+      "https://*.tharwa.xyz",
+      "https://harvest.finance",
+      "https://*.harvest.finance",
+      "https://stacks.co",
+      "https://*.stacks.co",
+      "https://stacks.org",
+      "https://*.stacks.org",
+      "https://satlayer.xyz",
+      "https://*.satlayer.xyz",
+      "https://satlayer.io",
+      "https://*.satlayer.io"
     ],
     imgSrc: [
       "'self'",
@@ -139,7 +152,20 @@ export const cspConfig = helmet.contentSecurityPolicy({
       "https://www.investing.com",
       "https://taofi.com",
       "https://*.taofi.com",
-      "https://www.taofi.com"
+      "https://www.taofi.com",
+      // DeFi Platforms
+      "https://tharwa.xyz",
+      "https://*.tharwa.xyz",
+      "https://harvest.finance",
+      "https://*.harvest.finance",
+      "https://stacks.co",
+      "https://*.stacks.co",
+      "https://stacks.org",
+      "https://*.stacks.org",
+      "https://satlayer.xyz",
+      "https://*.satlayer.xyz",
+      "https://satlayer.io",
+      "https://*.satlayer.io"
     ],
     frameSrc: [
       "'self'",
@@ -280,7 +306,20 @@ export const cspConfig = helmet.contentSecurityPolicy({
       "https://*.bitbo.io",
       "https://tao.bot",
       "https://*.tao.bot",
-      "https://www.tao.bot"
+      "https://www.tao.bot",
+      // DeFi Platforms
+      "https://tharwa.xyz",
+      "https://*.tharwa.xyz",
+      "https://harvest.finance",
+      "https://*.harvest.finance",
+      "https://stacks.co",
+      "https://*.stacks.co",
+      "https://stacks.org",
+      "https://*.stacks.org",
+      "https://satlayer.xyz",
+      "https://*.satlayer.xyz",
+      "https://satlayer.io",
+      "https://*.satlayer.io"
     ],
     objectSrc: ["'none'"],
     mediaSrc: ["'self'", "https:", "data:"],
