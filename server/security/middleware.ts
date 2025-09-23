@@ -315,10 +315,26 @@ export const cspConfig = helmet.contentSecurityPolicy({
  * Helmet configuration with comprehensive security headers
  */
 export const helmetConfig = helmet({
-  contentSecurityPolicy: false, // Completely disable CSP to allow investing.com
+  frameguard: false, // Disable X-Frame-Options to allow Replit Preview embedding
   crossOriginEmbedderPolicy: false, // Allow iframe embedding
   crossOriginResourcePolicy: false, // Allow cross-origin resources
-  frameguard: false, // Disable frameguard to allow legitimate iframes
+  contentSecurityPolicy: {
+    useDefaults: true,
+    directives: {
+      ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+      // Allow embedding by Replit preview + your prod domain
+      'frame-ancestors': ["'self'", "*.replit.dev", "*.repl.co", "*.replit.app"],
+      // Keep other necessary directives for functionality
+      'script-src': ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https:"],
+      'style-src': ["'self'", "'unsafe-inline'", "https:"],
+      'img-src': ["'self'", "data:", "blob:", "https:", "http:"],
+      'connect-src': ["'self'", "https:", "wss:", "ws:"],
+      'frame-src': ["'self'", "https:"],
+      'object-src': ["'none'"],
+      'media-src': ["'self'", "https:", "data:"],
+      'font-src': ["'self'", "https:", "data:"]
+    }
+  },
   referrerPolicy: {
     policy: ['strict-origin-when-cross-origin']
   }
