@@ -164,8 +164,24 @@ export default function TradeSection() {
             </Button>
           </div>
 
+          {/* Rubic Exchange iframe */}
+          <div className="mt-8">
+            <div className="w-full">
+              <iframe
+                src="https://app.rubic.exchange/?fromChain=ETH&toChain=ETH"
+                className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+                title="Rubic Exchange"
+                frameBorder="0"
+                loading="lazy"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+                referrerPolicy="no-referrer-when-downgrade"
+                data-testid="iframe-rubic"
+              />
+            </div>
+          </div>
+
           {/* Matcha Button - Same style as Definitive Edge but green */}
-          <div className="w-full">
+          <div className="w-full mt-6">
             <Button
               variant="outline"
               onClick={() => openInNewTab('https://matcha.xyz/tokens/ethereum/0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee')}
@@ -179,37 +195,6 @@ export default function TradeSection() {
                 <div className="text-base text-green-100/90 font-medium">DEX aggregator for Ethereum tokens</div>
               </div>
             </Button>
-          </div>
-
-          {/* Rubic Exchange iframe */}
-          <div className="mt-8">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-green-400 to-emerald-500 rounded-lg flex items-center justify-center">
-                  <ArrowLeftRight className="w-4 h-4 text-white" />
-                </div>
-                <h4 className="text-2xl font-bold bg-gradient-to-r from-green-400 to-emerald-300 bg-clip-text text-transparent">Rubic Exchange</h4>
-              </div>
-              <button
-                onClick={() => openInNewTab('https://app.rubic.exchange/?fromChain=ETH&toChain=ETH')}
-                className="text-green-300 hover:text-green-200 text-sm font-medium bg-green-500/20 px-4 py-2 rounded-lg border border-green-400/30 hover:bg-green-500/30 transition-all duration-300"
-                data-testid="button-rubic-external"
-              >
-                Open Full View →
-              </button>
-            </div>
-            <div className="w-full">
-              <iframe
-                src="https://app.rubic.exchange/?fromChain=ETH&toChain=ETH"
-                className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-                title="Rubic Exchange"
-                frameBorder="0"
-                loading="lazy"
-                sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
-                referrerPolicy="no-referrer-when-downgrade"
-                data-testid="iframe-rubic"
-              />
-            </div>
           </div>
 
           {/* Other Apps */}
@@ -323,37 +308,36 @@ export default function TradeSection() {
             data-testid="iframe-tabtrader"
           />
 
-          {/* Primary App - Definitive Edge (Full Width) */}
+          {/* Primary App - OurBit (Full Width) */}
           <div className="w-full">
-            <a
-              href="https://app.definitive.fi/0x9FDBdA0A5e284c32744D2f17Ee5c74B284993463/hyperevm"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group w-full bg-gradient-to-br from-purple-500/40 via-fuchsia-500/30 to-pink-500/40 border border-purple-400/50 hover:from-purple-400/50 hover:via-fuchsia-400/40 hover:to-pink-400/50 hover:border-purple-300/70 text-white justify-center p-8 h-auto rounded-lg transition-all duration-500 flex items-center shadow-2xl hover:shadow-purple-500/40 transform hover:scale-[1.02] backdrop-blur-sm"
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://www.ourbit.com/')}
+              className="group w-full bg-gradient-to-br from-purple-500/40 via-fuchsia-500/30 to-pink-500/40 border-purple-400/50 hover:from-purple-400/50 hover:via-fuchsia-400/40 hover:to-pink-400/50 hover:border-purple-300/70 text-white justify-center p-8 h-auto shadow-2xl hover:shadow-purple-500/40 transform hover:scale-[1.02] transition-all duration-500 backdrop-blur-sm"
             >
               <div className="text-center">
                 <div className="font-bold text-2xl flex items-center justify-center gap-3 mb-2">
                   <ArrowLeftRight className="w-7 h-7 group-hover:rotate-180 transition-transform duration-500" />
-                  Definitive Edge
+                  OurBit
                 </div>
-                <div className="text-base text-purple-100/90 font-medium">Primary multi-chain trading terminal - Trade any token, on any chain</div>
+                <div className="text-base text-purple-100/90 font-medium">Primary multi-chain trading terminal - CEX & DEX, Spot & Futures</div>
               </div>
-            </a>
+            </Button>
           </div>
 
           {/* Other Apps */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <Button
               variant="outline"
-              onClick={() => openInNewTab('https://www.ourbit.com/')}
+              onClick={() => openInNewTab('https://app.definitive.fi/0x9FDBdA0A5e284c32744D2f17Ee5c74B284993463/hyperevm')}
               className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
             >
               <div className="text-center">
                 <div className="font-bold text-base flex items-center justify-center">
                   <ArrowLeftRight className="w-5 h-5 mr-2 group-hover:rotate-180 transition-transform duration-300" />
-                  OurBit
+                  Definitive Edge
                 </div>
-                <div className="text-sm text-gray-300">CEX & DEX, Spot & Futures</div>
+                <div className="text-sm text-gray-300">Trade any token, on any chain</div>
               </div>
             </Button>
 

@@ -248,7 +248,21 @@ const TRUSTED_DOMAINS = [
   'dydx.trade',
   'www.dydx.trade',
   'app.gmx.io',
-  'gmx.io'
+  'gmx.io',
+  'matcha.xyz',
+  'www.matcha.xyz',
+  'app.dodoex.io',
+  'dodoex.io',
+  'www.dodoex.io',
+  'app.xy.finance',
+  'xy.finance',
+  'www.xy.finance',
+  'app.tabtrader.com',
+  'tabtrader.com',
+  'www.tabtrader.com',
+  'app.rubic.exchange',
+  'rubic.exchange',
+  'www.rubic.exchange'
 ];
 
 /**
