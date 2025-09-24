@@ -69,13 +69,11 @@ export default function Dashboard() {
             
             {/* Center - Crypto Hippo with Bitcoin Goggles and Text */}
             <div className="flex flex-col items-center text-center space-y-4">
-              <div className="w-32 h-32 sm:w-40 sm:h-40 lg:w-48 lg:h-48 rounded-2xl overflow-hidden shadow-xl">
-                <img 
-                  src={cryptoHippoWithBitcoin}
-                  alt="Crypto Hippo with Bitcoin Goggles"
-                  className="w-full h-full object-contain"
-                />
-              </div>
+              <img 
+                src={cryptoHippoWithBitcoin}
+                alt="Crypto Hippo with Bitcoin Goggles"
+                className="w-32 h-32 sm:w-40 sm:h-40 lg:w-48 lg:h-48 object-contain drop-shadow-lg"
+              />
               <div>
                 <h1 className="text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold text-white drop-shadow-lg mb-2">
                   Crypto Market Overview
