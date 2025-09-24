@@ -334,7 +334,7 @@ export function SidebarNavigation({ className = "", isCollapsed, onToggle }: Sid
           {!isCollapsed && (
             <div className="flex flex-col">
               <span className="text-white font-bold text-lg">CryptoHippo</span>
-              <span className="text-gray-400 text-xs">Portfolio Dashboard</span>
+              <span className="text-gray-400 text-xs">Trading Dashboard</span>
             </div>
           )}
         </div>
