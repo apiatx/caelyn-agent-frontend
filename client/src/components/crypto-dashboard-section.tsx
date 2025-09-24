@@ -108,17 +108,6 @@ export default function CryptoDashboardSection() {
         />
       </div>
 
-      {/* CoinGlass Hyperliquid */}
-      <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
-        <iframe
-          src="https://www.coinglass.com/hyperliquid"
-          className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
-          title="CoinGlass Hyperliquid"
-          frameBorder="0"
-          scrolling="yes"
-        />
-      </div>
-
 
       <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
         <iframe
@@ -371,6 +360,17 @@ export default function CryptoDashboardSection() {
           </div>
         </button>
       </GlassCard>
+
+      {/* CoinGlass Hyperliquid Whale Tracker */}
+      <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
+        <iframe
+          src="https://www.coinglass.com/hyperliquid"
+          className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+          title="CoinGlass Hyperliquid"
+          frameBorder="0"
+          scrolling="yes"
+        />
+      </div>
     </div>
   );
 }
