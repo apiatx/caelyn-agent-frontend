@@ -8,6 +8,7 @@ import SolanaSection from "@/components/solana-section";
 import AbstractSection from "@/components/abstract-section";
 import DeFiSection from "@/components/defi-section";
 import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
+import cryptoHippoWithBitcoin from "@assets/download (3)_1757211833568.png";
 import newHeaderBackground from "@assets/photo-1504333638930-c8787321eee0_1757208194192.avif";
 import criptomonedas from "@assets/Criptomonedas-r3pu02e09qriw0f9pyqx2rtyhwsri4es6sdgff2ebk_1757225856373.png";
 import { SectionLoadingState } from "@/components/loading-screen";
@@ -63,13 +64,16 @@ export default function Dashboard() {
         {/* Content Layer */}
         <div className="relative z-10 max-w-[95vw] mx-auto px-2 sm:px-3 py-8 lg:py-12">
           <div className="flex justify-between items-center">
-            {/* Left side - Crypto Hippo with Bitcoin Goggles and Text */}
+            {/* Left side - spacer */}
+            <div className="flex-1"></div>
+            
+            {/* Center - Crypto Hippo with Bitcoin Goggles and Text */}
             <div className="flex flex-col items-center text-center space-y-4">
-              <div className="w-32 h-32 sm:w-40 sm:h-40 lg:w-48 lg:h-48 rounded-2xl overflow-hidden shadow-xl border-2 border-yellow-400">
+              <div className="w-32 h-32 sm:w-40 sm:h-40 lg:w-48 lg:h-48 rounded-2xl overflow-hidden shadow-xl">
                 <img 
-                  src={cryptoHippoImage}
+                  src={cryptoHippoWithBitcoin}
                   alt="Crypto Hippo with Bitcoin Goggles"
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain"
                 />
               </div>
               <div>
@@ -81,8 +85,9 @@ export default function Dashboard() {
                 </p>
               </div>
             </div>
+            
             {/* Right side - Crypto coins image */}
-            <div className="hidden sm:flex items-center">
+            <div className="flex-1 hidden sm:flex justify-end items-center">
               <img 
                 src={criptomonedas}
                 alt="Crypto Coins"
