@@ -189,6 +189,27 @@ export default function SolanaSection() {
             />
           </div>
         </GlassCard>
+
+        {/* Uranus */}
+        <GlassCard className="p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
+              <Activity className="w-4 h-4 text-white" />
+            </div>
+            <h3 className="text-xl font-semibold text-white">Uranus</h3>
+            <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
+              DEX TRADING
+            </Badge>
+          </div>
+          <div className="w-full">
+            <iframe
+              src="https://uranus.ag/trade/?token=BFgdzMkTPdKKJeTipv2njtDEwhKxkgFueJQfJGt1jups"
+              className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+              title="Uranus DEX"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+            />
+          </div>
+        </GlassCard>
       </div>
 
       {/* Trenches - Moved from Trench section and renamed */}
