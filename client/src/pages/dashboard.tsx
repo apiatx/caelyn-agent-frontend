@@ -62,23 +62,23 @@ export default function Dashboard() {
           }}
         />
         {/* Content Layer */}
-        <div className="relative z-10 max-w-[95vw] mx-auto px-2 sm:px-3 py-8 lg:py-12">
+        <div className="relative z-10 max-w-[95vw] mx-auto px-2 sm:px-3 py-4 lg:py-6">
           <div className="flex justify-between items-center">
             {/* Left side - spacer */}
             <div className="flex-1"></div>
             
             {/* Center - Crypto Hippo with Bitcoin Goggles and Text */}
-            <div className="flex flex-col items-center text-center space-y-4">
+            <div className="flex flex-col items-center text-center space-y-2">
               <img 
                 src={cryptoHippoWithBitcoin}
                 alt="Crypto Hippo with Bitcoin Goggles"
-                className="w-32 h-32 sm:w-40 sm:h-40 lg:w-48 lg:h-48 object-contain drop-shadow-lg"
+                className="w-24 h-24 sm:w-28 sm:h-28 lg:w-32 lg:h-32 object-contain drop-shadow-lg"
               />
               <div>
-                <h1 className="text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold text-white drop-shadow-lg mb-2">
+                <h1 className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-bold text-white drop-shadow-lg mb-1">
                   Crypto Market Overview
                 </h1>
-                <p className="text-sm sm:text-base lg:text-lg text-crypto-silver drop-shadow-md">
+                <p className="text-xs sm:text-sm lg:text-base text-crypto-silver drop-shadow-md">
                   Global market metrics and key indicators
                 </p>
               </div>
