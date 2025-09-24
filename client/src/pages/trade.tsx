@@ -1,7 +1,6 @@
 import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
 import newHeaderBackground from "@assets/photo-1504333638930-c8787321eee0_1757208194192.avif";
 import criptomonedas from "@assets/Criptomonedas-r3pu02e09qriw0f9pyqx2rtyhwsri4es6sdgff2ebk_1757225856373.png";
-import { UniversalNavigation } from "@/components/universal-navigation";
 import { useScrollFade } from "@/hooks/useScrollFade";
 import TradeSection from "@/components/trade-section";
 
@@ -51,9 +50,6 @@ export default function TradePage() {
           </div>
         </div>
       </header>
-
-      {/* Navigation */}
-      <UniversalNavigation activePage="trade" />
 
       {/* Main Content */}
       <main className="max-w-[95vw] mx-auto px-2 sm:px-3 py-4">

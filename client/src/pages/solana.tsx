@@ -1,5 +1,4 @@
 import SolanaSection from "@/components/solana-section";
-import { UniversalNavigation } from "@/components/universal-navigation";
 import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
 import newHeaderBackground from "@assets/photo-1504333638930-c8787321eee0_1757208194192.avif";
 import criptomonedas from "@assets/Criptomonedas-r3pu02e09qriw0f9pyqx2rtyhwsri4es6sdgff2ebk_1757225856373.png";
@@ -51,8 +50,7 @@ export default function SolanaPage() {
           </div>
         </div>
       </header>
-      {/* Navigation */}
-      <UniversalNavigation activePage="solana" />
+      {/* Content */}
       {/* Content */}
       <div className="max-w-[95vw] mx-auto px-2 sm:px-3 mt-4 pb-8">
         <SolanaSection />
