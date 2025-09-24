@@ -244,7 +244,7 @@ export default function AboutPage() {
 
               {/* Fifth Hippo Image - Above "Recommended Reading" */}
               <div className="flex justify-center my-10">
-                <div className="w-48 h-48 rounded-2xl overflow-hidden shadow-xl border-2 border-yellow-400">
+                <div className="w-44 h-44 rounded-full overflow-hidden shadow-2xl border-2 border-yellow-400">
                   <img 
                     src={hippoMouthOpen} 
                     alt="Hippo" 
@@ -319,7 +319,7 @@ export default function AboutPage() {
 
             {/* Centered Hippo Image - Between VanEck and Support */}
             <div className="flex justify-center my-12">
-              <div className="w-44 h-44 rounded-full overflow-hidden shadow-2xl border-2 border-yellow-400">
+              <div className="w-48 h-48 rounded-2xl overflow-hidden shadow-xl border-2 border-yellow-400">
                 <img 
                   src={hippoLaserEyes} 
                   alt="Market Overview" 
