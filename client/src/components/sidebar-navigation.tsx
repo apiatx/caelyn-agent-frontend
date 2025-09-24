@@ -1,10 +1,12 @@
 import { useState } from "react";
-import { Activity, BarChart3, TrendingUp, ChartLine, Brain, Zap, DollarSign, Building2, Layers, Coins, ChevronRight, ChevronDown, Wallet, Users, MessageSquare, Rocket, Globe, ArrowLeftRight, Search } from "lucide-react";
+import { Activity, BarChart3, TrendingUp, ChartLine, Brain, Zap, DollarSign, Building2, Layers, Coins, ChevronRight, ChevronDown, ChevronLeft, Wallet, Users, MessageSquare, Rocket, Globe, ArrowLeftRight, Search, Menu, X } from "lucide-react";
 import { useLocation } from "wouter";
 import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
 
 interface SidebarNavigationProps {
   className?: string;
+  isCollapsed: boolean;
+  onToggle: () => void;
 }
 
 interface NavItem {
@@ -15,9 +17,9 @@ interface NavItem {
   children?: NavItem[];
 }
 
-export function SidebarNavigation({ className = "" }: SidebarNavigationProps) {
+export function SidebarNavigation({ className = "", isCollapsed, onToggle }: SidebarNavigationProps) {
   const [location, setLocation] = useLocation();
-  const [expandedItems, setExpandedItems] = useState<string[]>(['charts', 'onchain', 'ecosystems', 'trade', 'tradfi']);
+  const [expandedItems, setExpandedItems] = useState<string[]>(isCollapsed ? [] : ['charts', 'onchain', 'ecosystems', 'trade', 'tradfi']);
 
   const navigateTo = (url: string) => {
     setLocation(url);
@@ -247,7 +249,7 @@ export function SidebarNavigation({ className = "" }: SidebarNavigationProps) {
 
   const renderNavItem = (item: NavItem, level: number = 0) => {
     const hasChildren = item.children && item.children.length > 0;
-    const isExpanded = expandedItems.includes(item.id);
+    const isExpanded = !isCollapsed && expandedItems.includes(item.id);
     const itemIsActive = item.path ? isActive(item.path) : false;
     const hasActiveChild = item.children?.some(child => child.path ? isActive(child.path) : false);
 
@@ -255,40 +257,44 @@ export function SidebarNavigation({ className = "" }: SidebarNavigationProps) {
       <div key={item.id} className="w-full">
         {hasChildren ? (
           <button
-            onClick={() => toggleExpanded(item.id)}
-            className={`w-full flex items-center justify-between px-3 py-2 text-left text-sm font-medium transition-all duration-200 rounded-lg group ${
+            onClick={() => !isCollapsed && toggleExpanded(item.id)}
+            title={isCollapsed ? item.label : undefined}
+            className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} px-3 py-2 text-left text-sm font-medium transition-all duration-200 rounded-lg group ${
               hasActiveChild
                 ? "bg-gradient-to-r from-crypto-warning/20 to-yellow-400/10 border-l-2 border-crypto-warning text-white"
                 : "text-gray-300 hover:bg-white/5 hover:text-white"
-            } ${level > 0 ? 'ml-4' : ''}`}
+            } ${level > 0 && !isCollapsed ? 'ml-4' : ''}`}
             data-testid={`nav-${item.id}`}
           >
-            <div className="flex items-center gap-3">
+            <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
               {item.icon}
-              <span>{item.label}</span>
+              {!isCollapsed && <span>{item.label}</span>}
             </div>
-            {isExpanded ? (
-              <ChevronDown className="w-4 h-4 transition-transform duration-200" />
-            ) : (
-              <ChevronRight className="w-4 h-4 transition-transform duration-200" />
+            {!isCollapsed && (
+              isExpanded ? (
+                <ChevronDown className="w-4 h-4 transition-transform duration-200" />
+              ) : (
+                <ChevronRight className="w-4 h-4 transition-transform duration-200" />
+              )
             )}
           </button>
         ) : (
           <button
             onClick={() => item.path && navigateTo(item.path)}
-            className={`w-full flex items-center gap-3 px-3 py-2 text-left text-sm font-medium transition-all duration-200 rounded-lg group ${
+            title={isCollapsed ? item.label : undefined}
+            className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} px-3 py-2 text-left text-sm font-medium transition-all duration-200 rounded-lg group ${
               itemIsActive
                 ? "bg-gradient-to-r from-crypto-warning/20 to-yellow-400/10 border-l-2 border-crypto-warning text-white shadow-md"
                 : "text-gray-300 hover:bg-white/5 hover:text-white"
-            } ${level > 0 ? 'ml-4' : ''}`}
+            } ${level > 0 && !isCollapsed ? 'ml-4' : ''}`}
             data-testid={`nav-${item.id}`}
           >
             {item.icon}
-            <span>{item.label}</span>
+            {!isCollapsed && <span>{item.label}</span>}
           </button>
         )}
 
-        {hasChildren && isExpanded && (
+        {hasChildren && isExpanded && !isCollapsed && (
           <div className="mt-1 space-y-1">
             {item.children!.map(child => renderNavItem(child, level + 1))}
           </div>
@@ -298,10 +304,25 @@ export function SidebarNavigation({ className = "" }: SidebarNavigationProps) {
   };
 
   return (
-    <div className={`fixed left-0 top-0 h-full w-64 bg-black/90 backdrop-blur-lg border-r border-crypto-silver/20 z-40 overflow-hidden ${className}`}>
+    <div className={`fixed left-0 top-0 h-full ${isCollapsed ? 'w-16' : 'w-64'} bg-black/90 backdrop-blur-lg border-r border-crypto-silver/20 z-40 overflow-hidden transition-all duration-300 ease-in-out ${className}`}>
+      {/* Toggle Button */}
+      <div className="absolute -right-3 top-6 z-50">
+        <button
+          onClick={onToggle}
+          className="bg-black/90 backdrop-blur-lg border border-crypto-silver/20 rounded-full p-1.5 text-gray-300 hover:text-white hover:bg-white/5 transition-all duration-200 shadow-lg"
+          data-testid="toggle-sidebar"
+        >
+          {isCollapsed ? (
+            <ChevronRight className="w-4 h-4" />
+          ) : (
+            <ChevronLeft className="w-4 h-4" />
+          )}
+        </button>
+      </div>
+
       {/* Header with Logo */}
       <div className="p-4 border-b border-crypto-silver/20">
-        <div className="flex items-center gap-3">
+        <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
           <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-yellow-400 shadow-lg">
             <img 
               src={cryptoHippoImage}
@@ -310,10 +331,12 @@ export function SidebarNavigation({ className = "" }: SidebarNavigationProps) {
               data-testid="logo-cryptohippo"
             />
           </div>
-          <div className="flex flex-col">
-            <span className="text-white font-bold text-lg">CryptoHippo</span>
-            <span className="text-gray-400 text-xs">Portfolio Dashboard</span>
-          </div>
+          {!isCollapsed && (
+            <div className="flex flex-col">
+              <span className="text-white font-bold text-lg">CryptoHippo</span>
+              <span className="text-gray-400 text-xs">Portfolio Dashboard</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -323,11 +346,13 @@ export function SidebarNavigation({ className = "" }: SidebarNavigationProps) {
       </div>
 
       {/* Footer */}
-      <div className="p-4 border-t border-crypto-silver/20">
-        <div className="text-xs text-gray-400 text-center">
-          © 2024 CryptoHippo
+      {!isCollapsed && (
+        <div className="p-4 border-t border-crypto-silver/20">
+          <div className="text-xs text-gray-400 text-center">
+            © 2024 CryptoHippo
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
