@@ -192,7 +192,7 @@ export default function TradeSection() {
                   <ArrowLeftRight className="w-7 h-7 group-hover:rotate-180 transition-transform duration-500" />
                   Matcha
                 </div>
-                <div className="text-base text-green-100/90 font-medium">DEX aggregator for Ethereum tokens</div>
+                <div className="text-base text-green-100/90 font-medium">DEX aggregator</div>
               </div>
             </Button>
           </div>
