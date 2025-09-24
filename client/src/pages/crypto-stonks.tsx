@@ -1,4 +1,3 @@
-import { UniversalNavigation } from "@/components/universal-navigation";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Bitcoin, TrendingUp, Brain, ExternalLink } from "lucide-react";
@@ -65,9 +64,6 @@ export default function CryptoStonksPage() {
           </div>
         </div>
       </header>
-
-      {/* Navigation */}
-      <UniversalNavigation activePage="crypto-stonks" />
 
       {/* Main Content */}
       <main className="max-w-[95vw] mx-auto px-2 sm:px-3 py-4">

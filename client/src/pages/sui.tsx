@@ -1,5 +1,4 @@
 import { Suspense } from "react";
-import { UniversalNavigation } from "@/components/universal-navigation";
 import { Loader2, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -63,9 +62,6 @@ export default function SUIPage() {
           </div>
         </div>
       </header>
-
-      {/* Navigation */}
-      <UniversalNavigation activePage="sui" />
 
       {/* Content */}
       <div className="max-w-[95vw] mx-auto px-2 sm:px-3 mt-4 pb-8">

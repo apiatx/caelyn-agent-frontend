@@ -1,4 +1,3 @@
-import { UniversalNavigation } from "@/components/universal-navigation";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -61,8 +60,6 @@ export default function OnchainLaunchpadPage() {
         </div>
       </header>
 
-      {/* Navigation */}
-      <UniversalNavigation activePage="onchain-launchpad" />
 
       {/* Launchpad Section - Enhanced Header */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

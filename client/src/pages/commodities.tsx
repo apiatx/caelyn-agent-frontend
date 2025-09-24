@@ -1,4 +1,3 @@
-import { UniversalNavigation } from "@/components/universal-navigation";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { TrendingUp, Coins, Diamond, Droplets, Flame, Zap, Gem, Mountain, Hammer, Wheat, Box } from "lucide-react";
@@ -61,9 +60,6 @@ export default function CommoditiesPage() {
           </div>
         </div>
       </header>
-
-      {/* Navigation */}
-      <UniversalNavigation activePage="commodities" />
 
       {/* Main Content */}
       <main className="max-w-[95vw] mx-auto px-2 sm:px-3 py-4">

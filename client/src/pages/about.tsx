@@ -1,4 +1,3 @@
-import { UniversalNavigation } from "@/components/universal-navigation";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink, Bitcoin } from "lucide-react";
@@ -60,9 +59,6 @@ export default function AboutPage() {
         </div>
       </header>
 
-      {/* Navigation */}
-      <UniversalNavigation activePage="about" />
-      
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <GlassCard className="p-8">

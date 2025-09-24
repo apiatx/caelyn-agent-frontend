@@ -1,5 +1,4 @@
 import { Suspense } from "react";
-import { UniversalNavigation } from "@/components/universal-navigation";
 import AbstractSection from "@/components/abstract-section";
 import { Loader2, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -56,9 +55,6 @@ export default function AbstractPage() {
           </div>
         </div>
       </header>
-
-      {/* Navigation */}
-      <UniversalNavigation activePage="abstract" />
 
       {/* Content */}
       <div className="max-w-[95vw] mx-auto px-2 sm:px-3 mt-4 pb-8">

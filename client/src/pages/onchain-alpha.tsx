@@ -1,4 +1,3 @@
-import { UniversalNavigation } from "@/components/universal-navigation";
 import AlphaSection from "@/components/alpha-section";
 import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
 import newHeaderBackground from "@assets/photo-1504333638930-c8787321eee0_1757208194192.avif";
@@ -51,9 +50,6 @@ export default function OnchainAlphaPage() {
           </div>
         </div>
       </header>
-
-      {/* Navigation */}
-      <UniversalNavigation activePage="onchain-analytics" />
 
       {/* Main Content */}
       <main className="max-w-[95vw] mx-auto px-2 sm:px-3 py-4">

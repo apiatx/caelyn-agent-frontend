@@ -8,7 +8,6 @@ import newHeaderBackground from "@assets/photo-1504333638930-c8787321eee0_175720
 import criptomonedas from "@assets/Criptomonedas-r3pu02e09qriw0f9pyqx2rtyhwsri4es6sdgff2ebk_1757225856373.png";
 import tradeIcon from "@assets/3676668_1757212085729.png";
 import hyperliquidLogo from "@assets/hyperliquid-logo_1755977414943.png";
-import { UniversalNavigation } from "@/components/universal-navigation";
 import { useScrollFade } from "@/hooks/useScrollFade";
 
 // Safe iframe component
@@ -85,9 +84,6 @@ export default function TradePerpsPage() {
           </div>
         </div>
       </header>
-
-      {/* Navigation */}
-      <UniversalNavigation activePage="trade-perps" />
 
       {/* Main Content */}
       <main className="max-w-[95vw] mx-auto px-2 sm:px-3 py-4">

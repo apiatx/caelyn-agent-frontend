@@ -1,4 +1,3 @@
-import { UniversalNavigation } from "@/components/universal-navigation";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Wallet, Shield, Bot, ExternalLink, Zap, Lock, Users, ArrowUpRight } from "lucide-react";
@@ -83,9 +82,6 @@ export default function OnchainSmartWalletsPage() {
           </div>
         </div>
       </header>
-
-      {/* Navigation */}
-      <UniversalNavigation activePage="onchain-smart-wallets" />
 
       {/* Main Content */}
       <main className="max-w-[95vw] mx-auto px-2 sm:px-3 py-4">
