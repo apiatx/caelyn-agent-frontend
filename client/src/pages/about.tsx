@@ -246,8 +246,8 @@ export default function AboutPage() {
               <div className="flex justify-center my-10">
                 <div className="w-48 h-48 rounded-2xl overflow-hidden shadow-xl border-2 border-yellow-400">
                   <img 
-                    src={hippoLaserEyes} 
-                    alt="Market Overview" 
+                    src={hippoMouthOpen} 
+                    alt="Hippo" 
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -321,8 +321,8 @@ export default function AboutPage() {
             <div className="flex justify-center my-12">
               <div className="w-44 h-44 rounded-full overflow-hidden shadow-2xl border-2 border-yellow-400">
                 <img 
-                  src={hippoMouthOpen} 
-                  alt="Hippo" 
+                  src={hippoLaserEyes} 
+                  alt="Market Overview" 
                   className="w-full h-full object-cover"
                 />
               </div>
