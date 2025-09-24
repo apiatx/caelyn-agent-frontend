@@ -400,6 +400,30 @@ export default function BaseSection() {
           </SafeLink>
         </div>
         <div className="space-y-4">
+          {/* Farterminal iframe moved to top */}
+          <div className="w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg mb-4">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-6 h-6 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center">
+                <span className="text-white text-xs font-bold">FT</span>
+              </div>
+              <h3 className="text-lg font-semibold text-white">Farterminal</h3>
+              <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-full font-medium">
+                TERMINAL
+              </span>
+              <SafeLink 
+                href="https://www.terminal.co/?tab=base"
+                className="ml-auto text-green-400 hover:text-green-300 text-xs"
+              >
+                Open in New Tab →
+              </SafeLink>
+            </div>
+            <SafeIframe 
+              src="https://www.terminal.co/?tab=base"
+              title="Farterminal"
+              className="w-full h-[600px] rounded-lg"
+            />
+          </div>
+          
           {/* Higher.bot iframe */}
           <div className="w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg mb-4">
             <SafeIframe
@@ -451,43 +475,6 @@ export default function BaseSection() {
             <p className="text-gray-400 text-sm">View trending AI agent tokens and artificial intelligence category</p>
           </button>
           
-          {/* Indexy Button */}
-          <button
-            onClick={() => openInNewTab('https://indexy.xyz/home')}
-            className="w-full p-4 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors text-left"
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                <ExternalLink className="w-4 h-4 text-white" />
-              </div>
-              <h4 className="text-green-400 font-semibold">Indexy</h4>
-            </div>
-            <p className="text-gray-400 text-sm">Crypto market indexing platform</p>
-          </button>
-          
-          {/* Farterminal iframe moved here */}
-          <div className="w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg mt-4">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-6 h-6 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center">
-                <span className="text-white text-xs font-bold">FT</span>
-              </div>
-              <h3 className="text-lg font-semibold text-white">Farterminal</h3>
-              <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-full font-medium">
-                TERMINAL
-              </span>
-              <SafeLink 
-                href="https://www.terminal.co/?tab=base"
-                className="ml-auto text-green-400 hover:text-green-300 text-xs"
-              >
-                Open in New Tab →
-              </SafeLink>
-            </div>
-            <SafeIframe 
-              src="https://www.terminal.co/?tab=base"
-              title="Farterminal"
-              className="w-full h-[600px] rounded-lg"
-            />
-          </div>
         </div>
       </GlassCard>
 
@@ -535,51 +522,6 @@ export default function BaseSection() {
 
       </div>
 
-      {/* Base App Section */}
-      <GlassCard className="p-6">
-        <div className="flex items-center gap-2 mb-6">
-          <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
-            <span className="text-white text-xs font-bold">B</span>
-          </div>
-          <h3 className="text-xl font-semibold text-white">Base App</h3>
-          <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
-            OFFICIAL
-          </Badge>
-          <button
-            onClick={() => openInNewTab('https://wallet.coinbase.com/home')}
-            className="text-blue-400 hover:text-blue-300 text-sm ml-auto"
-          >
-            Open Full View →
-          </button>
-        </div>
-        
-        <div className="p-6 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/20 rounded-lg">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-bold">CB</span>
-              </div>
-              <div>
-                <h4 className="text-lg font-semibold text-white">Coinbase Wallet</h4>
-                <p className="text-sm text-crypto-silver">Official Base network wallet app</p>
-              </div>
-            </div>
-            <Badge className="bg-gradient-to-r from-blue-500/20 to-cyan-500/20 text-blue-400 border-blue-500/30">
-              OFFICIAL
-            </Badge>
-          </div>
-          <p className="text-crypto-silver mb-4 text-sm">
-            Access your Base network assets, interact with DeFi protocols, and manage your crypto portfolio with Coinbase's official wallet app.
-          </p>
-          <button
-            onClick={() => openInNewTab('https://wallet.coinbase.com/home')}
-            className="w-full bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border border-blue-500/30 hover:bg-blue-500/30 text-white py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
-          >
-            <ExternalLink className="w-4 h-4" />
-            Open Coinbase Wallet
-          </button>
-        </div>
-      </GlassCard>
 
       {/* Indexy Base Analytics */}
       <GlassCard className="p-8">
@@ -598,8 +540,7 @@ export default function BaseSection() {
               </div>
             </div>
             <p className="text-green-100/90 text-lg font-medium mb-4 max-w-2xl mx-auto leading-relaxed">
-              Professional-grade crypto market indexing platform with advanced social intelligence, 
-              real-time sentiment analysis, and comprehensive Base ecosystem tracking
+              Track crypto markets with smart indices
             </p>
             <div className="flex items-center justify-center gap-6 text-sm text-green-200/80">
               <div className="flex items-center gap-2">
@@ -862,26 +803,66 @@ export default function BaseSection() {
         />
       </GlassCard>
 
-      {/* Ecosystem */}
-      <GlassCard className="p-6">
-        <h4 className="text-md font-semibold text-white mb-3">Ecosystem</h4>
-        <div className="p-4 bg-gray-500/10 border border-gray-500/20 rounded-lg">
-          <SafeLink
-            href="https://www.base.org/ecosystem"
-            className="block text-gray-400 hover:text-gray-300 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                <span className="text-white font-bold text-xs">B</span>
-              </div>
-              <div>
-                <p className="text-white font-medium">Base Ecosystem</p>
-                <p className="text-sm text-gray-400">Comprehensive ecosystem guide</p>
-              </div>
-            </div>
-          </SafeLink>
+      {/* Enhanced Ecosystem Section */}
+      <div className="space-y-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-xl flex items-center justify-center">
+            <Globe className="text-white text-xl" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-white">Base Ecosystem</h2>
+            <p className="text-crypto-silver">Official Base network resources and applications</p>
+          </div>
         </div>
-      </GlassCard>
+
+        <GlassCard className="p-6">
+          <div className="space-y-4">
+            <SafeLink
+              href="https://www.base.org/ecosystem"
+              className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 hover:border-blue-400/40 transition-all duration-200 group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
+                  <Globe className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h4 className="text-white font-semibold text-lg">Base Ecosystem Directory</h4>
+                  <p className="text-blue-200 text-sm">Comprehensive ecosystem guide and official dApps</p>
+                </div>
+              </div>
+              <ExternalLink className="w-5 h-5 text-blue-400 group-hover:text-blue-300 transition-colors" />
+            </SafeLink>
+            
+            {/* Base App moved here */}
+            <div className="p-6 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/20 rounded-lg">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
+                    <span className="text-white text-sm font-bold">CB</span>
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-semibold text-white">Coinbase Wallet</h4>
+                    <p className="text-sm text-crypto-silver">Official Base network wallet app</p>
+                  </div>
+                </div>
+                <Badge className="bg-gradient-to-r from-blue-500/20 to-cyan-500/20 text-blue-400 border-blue-500/30">
+                  OFFICIAL
+                </Badge>
+              </div>
+              <p className="text-crypto-silver mb-4 text-sm">
+                Access your Base network assets, interact with DeFi protocols, and manage your crypto portfolio with Coinbase's official wallet app.
+              </p>
+              <button
+                onClick={() => openInNewTab('https://wallet.coinbase.com/home')}
+                className="w-full bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border border-blue-500/30 hover:bg-blue-500/30 text-white py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Open Coinbase Wallet
+              </button>
+            </div>
+          </div>
+        </GlassCard>
+      </div>
     </div>
   );
 }
