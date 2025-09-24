@@ -113,17 +113,17 @@ export default function OnchainSocialPage() {
               </div>
 
 
-              {/* Investors Subsection */}
+              {/* Fundamentalists Subsection */}
               <GlassCard className="mb-6 p-4">
                 <div className="flex items-center justify-center mb-6">
-                  <h4 className="text-xl font-bold bg-gradient-to-r from-white to-green-100 bg-clip-text text-transparent">Investors</h4>
+                  <h4 className="text-xl font-bold bg-gradient-to-r from-white to-green-100 bg-clip-text text-transparent">Fundamentalists</h4>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {[
                     'TechDev_52', 'ofvoice25355', 'CoinGurruu', 'stacy_muur', 
                     'martypartymusic', 'Defi0xJeff', 'altcoinvector', 'DeFi_Paanda', 
                     'cryptorinweb3', 'jkrdoc', 'Agent_rsch', 'OverkillTrading', 
-                    'dontbuytops', 'MetaverseRanger', 'aixCB_Vc'
+                    'dontbuytops', 'MetaverseRanger', 'aixCB_Vc', 'aixbt_agent'
                   ].map((account) => {
                     return (
                     <SafeLink
