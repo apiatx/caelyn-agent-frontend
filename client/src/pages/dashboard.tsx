@@ -49,37 +49,44 @@ export default function Dashboard() {
         className="glass-card-dark border-b border-crypto-silver/20 sticky top-0 z-50 transition-opacity duration-300 relative overflow-hidden" 
         style={{ opacity: headerOpacity }}
       >
-        {/* Background Image */}
+        {/* Background Image - Expanded */}
         <div 
           className="absolute inset-0 opacity-75"
           style={{
             backgroundImage: `url(${newHeaderBackground})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat'
+            backgroundRepeat: 'no-repeat',
+            transform: 'scale(1.1)'
           }}
         />
         {/* Content Layer */}
-        <div className="relative z-10 max-w-[95vw] mx-auto px-2 sm:px-3">
-          <div className="flex justify-between items-center py-3 lg:py-4">
-            <div className="flex items-center space-x-3 sm:space-x-4">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-full overflow-hidden border-2 border-yellow-400 shadow-lg">
+        <div className="relative z-10 max-w-[95vw] mx-auto px-2 sm:px-3 py-8 lg:py-12">
+          <div className="flex justify-between items-center">
+            {/* Left side - Crypto Hippo with Bitcoin Goggles and Text */}
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="w-32 h-32 sm:w-40 sm:h-40 lg:w-48 lg:h-48 rounded-2xl overflow-hidden shadow-xl border-2 border-yellow-400">
                 <img 
                   src={cryptoHippoImage}
-                  alt="CryptoHippo"
+                  alt="Crypto Hippo with Bitcoin Goggles"
                   className="w-full h-full object-cover"
                 />
               </div>
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-white drop-shadow-lg">
-                CryptoHippo
-              </h1>
+              <div>
+                <h1 className="text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold text-white drop-shadow-lg mb-2">
+                  Crypto Market Overview
+                </h1>
+                <p className="text-sm sm:text-base lg:text-lg text-crypto-silver drop-shadow-md">
+                  Global market metrics and key indicators
+                </p>
+              </div>
             </div>
-            {/* Top-right crypto image */}
+            {/* Right side - Crypto coins image */}
             <div className="hidden sm:flex items-center">
               <img 
                 src={criptomonedas}
                 alt="Crypto Coins"
-                className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 object-contain drop-shadow-lg"
+                className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 xl:w-32 xl:h-32 object-contain drop-shadow-lg"
               />
             </div>
           </div>

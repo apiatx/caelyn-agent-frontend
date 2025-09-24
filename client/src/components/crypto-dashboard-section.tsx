@@ -22,22 +22,8 @@ export default function CryptoDashboardSection() {
 
   return (
     <div className="space-y-4 lg:space-y-8">
-      {/* Crypto Market Overview */}
+      {/* Market Overview Links */}
       <div className="space-y-4">
-        <div className="text-center px-3 sm:px-0">
-          <div className="flex justify-center mb-4">
-            <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-2xl overflow-hidden shadow-xl">
-              <img 
-                src={cryptoHippoWithBitcoin} 
-                alt="Crypto Hippo with Bitcoin Goggles" 
-                className="w-full h-full object-contain"
-              />
-            </div>
-          </div>
-          <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-2">Crypto Market Overview</h2>
-          <p className="text-sm sm:text-base text-crypto-silver">Global market metrics and key indicators</p>
-        </div>
-
         {/* Market Overview Links - Above MacroEdge */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <button
