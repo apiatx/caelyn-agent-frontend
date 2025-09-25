@@ -126,7 +126,7 @@ export default function DeFiSection() {
             </div>
             <h4 className="text-xl font-semibold text-white">Peapods Finance</h4>
             <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-              DEFI PROTOCOL
+              VOLATILITY FARMING
             </Badge>
             <button
               onClick={() => openInNewTab('https://peapods.finance/')}
@@ -151,7 +151,7 @@ export default function DeFiSection() {
             </div>
             <h4 className="text-xl font-semibold text-white">Reservoir</h4>
             <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
-              NFT PROTOCOL
+              STABLECOIN YIELD
             </Badge>
             <button
               onClick={() => openInNewTab('https://app.reservoir.xyz/')}
@@ -587,76 +587,6 @@ export default function DeFiSection() {
 
 
 
-      {/* On Ramp Glass Card */}
-      <GlassCard className="p-6">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
-            <Wallet className="text-white text-xl" />
-          </div>
-          <div>
-            <h3 className="text-2xl font-bold text-white">On Ramp</h3>
-            <p className="text-crypto-silver">Fiat to crypto onboarding platforms</p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Button
-            variant="outline"
-            onClick={() => openInNewTab('https://www.coinbase.com/home')}
-            className="bg-black/20 border-crypto-silver/20 hover:bg-blue-500/20 hover:border-blue-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
-          >
-            <div className="p-3 rounded-lg bg-gradient-to-r from-blue-500/20 to-blue-600/20">
-              <Wallet className="h-6 w-6 text-blue-400" />
-            </div>
-            <div className="text-center">
-              <div className="font-semibold text-lg">Coinbase</div>
-              <div className="text-sm text-crypto-silver">Leading crypto exchange</div>
-            </div>
-          </Button>
-
-          <Button
-            variant="outline"
-            onClick={() => openInNewTab('https://www.kraken.com/')}
-            className="bg-black/20 border-crypto-silver/20 hover:bg-purple-500/20 hover:border-purple-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
-          >
-            <div className="p-3 rounded-lg bg-gradient-to-r from-purple-500/20 to-purple-600/20">
-              <Wallet className="h-6 w-6 text-purple-400" />
-            </div>
-            <div className="text-center">
-              <div className="font-semibold text-lg">Kraken</div>
-              <div className="text-sm text-crypto-silver">Professional trading platform</div>
-            </div>
-          </Button>
-
-          <Button
-            variant="outline"
-            onClick={() => openInNewTab('https://www.moonpay.com/buy')}
-            className="bg-black/20 border-crypto-silver/20 hover:bg-green-500/20 hover:border-green-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
-          >
-            <div className="p-3 rounded-lg bg-gradient-to-r from-green-500/20 to-green-600/20">
-              <Wallet className="h-6 w-6 text-green-400" />
-            </div>
-            <div className="text-center">
-              <div className="font-semibold text-lg">MoonPay</div>
-              <div className="text-sm text-crypto-silver">Crypto payment gateway</div>
-            </div>
-          </Button>
-
-          <Button
-            variant="outline"
-            onClick={() => openInNewTab('https://strike.me/en/')}
-            className="bg-black/20 border-crypto-silver/20 hover:bg-orange-500/20 hover:border-orange-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
-          >
-            <div className="p-3 rounded-lg bg-gradient-to-r from-orange-500/20 to-yellow-500/20">
-              <Wallet className="h-6 w-6 text-orange-400" />
-            </div>
-            <div className="text-center">
-              <div className="font-semibold text-lg">Strike</div>
-              <div className="text-sm text-crypto-silver">Bitcoin payment app</div>
-            </div>
-          </Button>
-        </div>
-      </GlassCard>
 
 
     </div>

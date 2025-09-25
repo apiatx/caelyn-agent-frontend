@@ -20,6 +20,7 @@ import BittensorPage from "@/pages/bittensor";
 import TradePage from "@/pages/trade";
 import TradePerpsPage from "@/pages/trade-perps";
 import TradeOptionsPage from "@/pages/trade-options";
+import TradeOnRampPage from "@/pages/trade-onramp";
 
 import OnchainPage from "@/pages/onchain";
 import OnchainAlphaPage from "@/pages/onchain-alpha";
@@ -81,6 +82,8 @@ function Router() {
       <Route path="/app/trade/perps" component={TradePerpsPage} />
       <Route path="/trade-perps" component={TradePerpsPage} />
       <Route path="/app/trade/options" component={TradeOptionsPage} />
+      <Route path="/app/trade/onramp" component={TradeOnRampPage} />
+      <Route path="/trade-onramp" component={TradeOnRampPage} />
       <Route path="/app/defi" component={DeFiPage} />
       <Route path="/defi" component={DeFiPage} />
       <Route path="/app/crypto-stocks" component={CryptoStocks} />
