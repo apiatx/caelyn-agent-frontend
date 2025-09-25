@@ -168,6 +168,31 @@ export default function DeFiSection() {
           />
         </div>
 
+        {/* Euler Finance Iframe */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
+              <DollarSign className="w-4 h-4 text-white" />
+            </div>
+            <h4 className="text-xl font-semibold text-white">Euler Finance</h4>
+            <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
+              EARN PROTOCOL
+            </Badge>
+            <button
+              onClick={() => openInNewTab('https://app.euler.finance/earn?network=ethereum')}
+              className="text-purple-400 hover:text-purple-300 text-sm ml-auto"
+            >
+              Open Full View →
+            </button>
+          </div>
+          <iframe
+            src="https://app.euler.finance/earn?network=ethereum"
+            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+            title="Euler Finance Earn Protocol"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+          />
+        </div>
+
         {/* DeFi Platform Links */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-8">
           <Button
