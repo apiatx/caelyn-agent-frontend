@@ -118,31 +118,6 @@ export default function DeFiSection() {
           </div>
         </div>
 
-        {/* Peapods Finance Iframe */}
-        <div className="mb-8">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-              <DollarSign className="w-4 h-4 text-white" />
-            </div>
-            <h4 className="text-xl font-semibold text-white">Peapods Finance</h4>
-            <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-              VOLATILITY FARMING
-            </Badge>
-            <button
-              onClick={() => openInNewTab('https://peapods.finance/')}
-              className="text-green-400 hover:text-green-300 text-sm ml-auto"
-            >
-              Open Full View →
-            </button>
-          </div>
-          <iframe
-            src="https://peapods.finance/"
-            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            title="Peapods Finance"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-          />
-        </div>
-
         {/* Reservoir Iframe */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-4">
@@ -168,6 +143,31 @@ export default function DeFiSection() {
           />
         </div>
 
+        {/* Peapods Finance Iframe */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+              <DollarSign className="w-4 h-4 text-white" />
+            </div>
+            <h4 className="text-xl font-semibold text-white">Peapods Finance</h4>
+            <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+              VOLATILITY FARMING
+            </Badge>
+            <button
+              onClick={() => openInNewTab('https://peapods.finance/')}
+              className="text-green-400 hover:text-green-300 text-sm ml-auto"
+            >
+              Open Full View →
+            </button>
+          </div>
+          <iframe
+            src="https://peapods.finance/"
+            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+            title="Peapods Finance"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+          />
+        </div>
+
         {/* Enhanced DeFi Platform Buttons */}
         <div className="space-y-4 mb-8">
           {/* Fluid Finance Enhanced Button */}
@@ -181,7 +181,7 @@ export default function DeFiSection() {
               <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
                 <Wallet className="h-6 w-6 text-white" />
               </div>
-              <div className="text-left">
+              <div className="text-center">
                 <div className="font-bold text-xl">Fluid</div>
                 <div className="text-sm text-blue-200">Advanced DeFi Protocol Platform</div>
               </div>
@@ -202,7 +202,7 @@ export default function DeFiSection() {
               <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/30">
                 <Database className="h-6 w-6 text-white" />
               </div>
-              <div className="text-left">
+              <div className="text-center">
                 <div className="font-bold text-xl">Kernel DAO</div>
                 <div className="text-sm text-purple-200">Web3 Builder Community & Education</div>
               </div>
@@ -497,28 +497,27 @@ export default function DeFiSection() {
             </Button>
           </div>
           
-          {/* Avalon Finance USDA Markets - Full Width Iframe */}
+          {/* Avalon Finance USDA Markets - Full Width Button */}
           <div className="mt-6">
-            <div className="flex justify-end mb-3">
-              <SafeLink
-                href="https://usda.avalonfinance.xyz/markets/"
-                className="text-xs text-orange-400 hover:text-orange-300 transition-colors flex items-center gap-1"
-              >
-                Open Full View <ExternalLink className="w-3 h-3" />
-              </SafeLink>
-            </div>
-            
-            <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-              <SafeIframe
-                src="https://usda.avalonfinance.xyz/markets/"
-                title="Avalon Finance USDA Markets"
-                className="w-full h-[600px] border-0"
-                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-              />
-              <p className="text-xs text-crypto-silver px-4 py-2 bg-black/10 border-t border-crypto-silver/10">
-                Avalon Finance USDA markets • Bitcoin DeFi lending protocol
-              </p>
-            </div>
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://usda.avalonfinance.xyz/markets/')}
+              className="w-full h-20 text-white border-orange-500/40 bg-gradient-to-r from-orange-500/20 via-red-600/15 to-yellow-500/20 hover:from-orange-500/30 hover:via-red-600/25 hover:to-yellow-500/30 hover:border-orange-400/60 shadow-lg hover:shadow-orange-500/25 transition-all duration-300"
+              data-testid="button-avalon"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/30">
+                  <DollarSign className="h-6 w-6 text-white" />
+                </div>
+                <div className="text-center flex-1">
+                  <div className="font-bold text-xl">Avalon Finance</div>
+                  <div className="text-sm text-orange-200">Bitcoin DeFi USDA Markets</div>
+                </div>
+                <div className="ml-auto text-orange-300/60">
+                  →
+                </div>
+              </div>
+            </Button>
           </div>
         </div>
       </GlassCard>
