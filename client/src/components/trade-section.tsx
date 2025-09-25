@@ -197,6 +197,31 @@ export default function TradeSection() {
             </Button>
           </div>
 
+          {/* Mayan Finance iframe */}
+          <div className="mt-8">
+            <div className="flex justify-end mb-3">
+              <button
+                onClick={() => openInNewTab('https://swap.mayan.finance/')}
+                className="text-xs text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-1"
+                data-testid="button-mayan-fullview"
+              >
+                Open Full View <ExternalLink className="w-3 h-3" />
+              </button>
+            </div>
+            <div className="w-full">
+              <iframe
+                src="https://swap.mayan.finance/"
+                className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+                title="Mayan Finance Cross-chain Swap"
+                frameBorder="0"
+                loading="lazy"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+                referrerPolicy="no-referrer-when-downgrade"
+                data-testid="iframe-mayan"
+              />
+            </div>
+          </div>
+
           {/* Other Apps */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <Button

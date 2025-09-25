@@ -265,7 +265,11 @@ const TRUSTED_DOMAINS = [
   'www.rubic.exchange',
   // DeFi Analytics
   'defillama.com',
-  'www.defillama.com'
+  'www.defillama.com',
+  // Cross-chain Swap Platforms
+  'swap.mayan.finance',
+  'mayan.finance',
+  'www.mayan.finance'
 ];
 
 /**
