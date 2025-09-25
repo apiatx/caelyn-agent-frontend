@@ -471,6 +471,30 @@ export default function DeFiSection() {
               </div>
             </Button>
           </div>
+          
+          {/* Avalon Finance USDA Markets - Full Width Iframe */}
+          <div className="mt-6">
+            <div className="flex justify-end mb-3">
+              <SafeLink
+                href="https://usda.avalonfinance.xyz/markets/"
+                className="text-xs text-orange-400 hover:text-orange-300 transition-colors flex items-center gap-1"
+              >
+                Open Full View <ExternalLink className="w-3 h-3" />
+              </SafeLink>
+            </div>
+            
+            <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+              <SafeIframe
+                src="https://usda.avalonfinance.xyz/markets/"
+                title="Avalon Finance USDA Markets"
+                className="w-full h-[600px] border-0"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+              />
+              <p className="text-xs text-crypto-silver px-4 py-2 bg-black/10 border-t border-crypto-silver/10">
+                Avalon Finance USDA markets • Bitcoin DeFi lending protocol
+              </p>
+            </div>
+          </div>
         </div>
       </GlassCard>
 
