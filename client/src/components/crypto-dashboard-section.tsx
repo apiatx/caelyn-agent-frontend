@@ -338,24 +338,8 @@ export default function CryptoDashboardSection() {
             </Badge>
           </div>
 
-          {/* Row 1: CMC + CoinGecko + Open Interest */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-            <button
-              onClick={() => openInNewTab('https://coinmarketcap.com/leaderboard/')}
-              className="p-3 sm:p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
-            >
-              <h5 className="text-blue-400 font-semibold mb-1 text-sm sm:text-base">CMC Leaderboard</h5>
-              <p className="text-gray-400 text-xs sm:text-sm">Market Rankings</p>
-            </button>
-
-            <button
-              onClick={() => openInNewTab('https://www.coingecko.com/en/chains')}
-              className="p-3 sm:p-4 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
-            >
-              <h5 className="text-green-400 font-semibold mb-1 text-sm sm:text-base">CoinGecko Chains</h5>
-              <p className="text-gray-400 text-xs sm:text-sm">Blockchain Analytics</p>
-            </button>
-
+          {/* Row 1: Open Interest - Full Width */}
+          <div className="grid grid-cols-1 gap-3 sm:gap-4">
             <button
               onClick={() => openInNewTab('https://coinalyze.net/futures-data/global-charts/')}
               className="p-3 sm:p-4 bg-red-500/10 border border-red-500/20 rounded-lg hover:bg-red-500/20 transition-colors"
