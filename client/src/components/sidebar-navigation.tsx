@@ -187,6 +187,12 @@ export function SidebarNavigation({ className = "", isCollapsed, onToggle }: Sid
           label: 'Options',
           icon: <Zap className="w-4 h-4" />,
           path: '/app/trade/options'
+        },
+        {
+          id: 'trade-onramp',
+          label: 'On Ramp',
+          icon: <Wallet className="w-4 h-4" />,
+          path: '/app/trade/onramp'
         }
       ]
     },
