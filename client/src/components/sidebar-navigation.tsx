@@ -209,6 +209,18 @@ export function SidebarNavigation({ className = "", isCollapsed, onToggle }: Sid
       path: '/app/portfolio'
     },
     {
+      id: 'predict',
+      label: 'Predict',
+      icon: <TrendingUp className="w-4 h-4" />,
+      path: '/app/predict'
+    },
+    {
+      id: 'onchain-social',
+      label: 'Social',
+      icon: <MessageSquare className="w-4 h-4" />,
+      path: '/app/onchain/social'
+    },
+    {
       id: 'tradfi',
       label: 'TradFi',
       icon: <Building2 className="w-4 h-4" />,
@@ -232,18 +244,6 @@ export function SidebarNavigation({ className = "", isCollapsed, onToggle }: Sid
           path: '/app/commodities'
         }
       ]
-    },
-    {
-      id: 'predict',
-      label: 'Predict',
-      icon: <TrendingUp className="w-4 h-4" />,
-      path: '/app/predict'
-    },
-    {
-      id: 'onchain-social',
-      label: 'Social',
-      icon: <MessageSquare className="w-4 h-4" />,
-      path: '/app/onchain/social'
     },
     {
       id: 'about',
