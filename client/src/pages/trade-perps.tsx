@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, Wallet, ExternalLink } from "lucide-react";
+import { TrendingUp, Wallet, ExternalLink, Activity } from "lucide-react";
 import { openSecureLink, getSecureIframeProps, getSecureLinkProps } from "@/utils/security";
 import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
 import newHeaderBackground from "@assets/photo-1504333638930-c8787321eee0_1757208194192.avif";
@@ -420,23 +420,6 @@ export default function TradePerpsPage() {
                 </Button>
               </div>
 
-              {/* Quanto - Full Width Enhanced Colored Button */}
-              <div className="w-full mt-6">
-                <Button
-                  variant="outline"
-                  onClick={() => openInNewTab('https://quanto.trade/en/markets/BTC-USD-SWAP-LIN')}
-                  className="group w-full bg-gradient-to-br from-orange-500/40 via-red-500/30 to-pink-500/40 border border-orange-400/50 hover:from-orange-400/50 hover:via-red-400/40 hover:to-pink-400/50 hover:border-orange-300/70 text-white justify-center p-8 h-auto rounded-lg transition-all duration-500 flex items-center shadow-2xl hover:shadow-orange-500/40 transform hover:scale-[1.02] backdrop-blur-sm"
-                  data-testid="button-quanto"
-                >
-                  <div className="text-center">
-                    <div className="font-bold text-2xl flex items-center justify-center gap-3 mb-2">
-                      <TrendingUp className="w-7 h-7 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-500" />
-                      Quanto
-                    </div>
-                    <div className="text-base text-orange-100/90 font-medium">Next-generation perpetual futures trading</div>
-                  </div>
-                </Button>
-              </div>
 
               {/* BloFin - Full Width Colored Button */}
               <div className="w-full mt-6">
@@ -456,6 +439,68 @@ export default function TradePerpsPage() {
                 </Button>
               </div>
 
+            </div>
+          </GlassCard>
+
+          {/* Memes Section */}
+          <GlassCard className="p-8">
+            <div className="space-y-6">
+              {/* Memes Section Header */}
+              <div className="text-center mb-6">
+                <div className="flex items-center justify-center gap-3 mb-3">
+                  <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+                    <Activity className="w-6 h-6 text-white" />
+                  </div>
+                  <h1 className="text-3xl font-bold text-white">Memes</h1>
+                </div>
+                <p className="text-crypto-silver">Meme token trading and perpetual futures</p>
+              </div>
+
+              {/* Uranus */}
+              <div className="mb-6">
+                <div className="flex justify-end mb-3">
+                  <a
+                    href="https://uranus.ag/trade/?token=BFgdzMkTPdKKJeTipv2njtDEwhKxkgFueJQfJGt1jups"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1"
+                  >
+                    Open Full View <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+                
+                <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+                  <SafeIframe
+                    src="https://uranus.ag/trade/?token=BFgdzMkTPdKKJeTipv2njtDEwhKxkgFueJQfJGt1jups"
+                    title="Uranus DEX"
+                    className="w-full h-[600px] border-0"
+                  />
+                </div>
+                
+                <div className="mt-4 text-center">
+                  <p className="text-xs text-gray-400">
+                    Uranus DEX trading platform • Decentralized exchange for meme tokens
+                  </p>
+                </div>
+              </div>
+
+              {/* Quanto - Full Width Enhanced Colored Button */}
+              <div className="w-full mt-6">
+                <Button
+                  variant="outline"
+                  onClick={() => openInNewTab('https://quanto.trade/en/markets/BTC-USD-SWAP-LIN')}
+                  className="group w-full bg-gradient-to-br from-orange-500/40 via-red-500/30 to-pink-500/40 border border-orange-400/50 hover:from-orange-400/50 hover:via-red-400/40 hover:to-pink-400/50 hover:border-orange-300/70 text-white justify-center p-8 h-auto rounded-lg transition-all duration-500 flex items-center shadow-2xl hover:shadow-orange-500/40 transform hover:scale-[1.02] backdrop-blur-sm"
+                  data-testid="button-quanto"
+                >
+                  <div className="text-center">
+                    <div className="font-bold text-2xl flex items-center justify-center gap-3 mb-2">
+                      <TrendingUp className="w-7 h-7 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-500" />
+                      Quanto
+                    </div>
+                    <div className="text-base text-orange-100/90 font-medium">Next-generation perpetual futures trading</div>
+                  </div>
+                </Button>
+              </div>
             </div>
           </GlassCard>
 
