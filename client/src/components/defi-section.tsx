@@ -429,6 +429,31 @@ export default function DeFiSection() {
           </Button>
         </div>
 
+        {/* Kinetiq Earn iframe */}
+        <div className="mt-6 mb-6">
+          <div className="flex justify-end mb-3">
+            <button
+              onClick={() => openInNewTab('https://kinetiq.xyz/earn')}
+              className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
+              data-testid="button-kinetiq-earn-fullview"
+            >
+              Open Full View <ExternalLink className="w-3 h-3" />
+            </button>
+          </div>
+          <div className="w-full">
+            <iframe
+              src="https://kinetiq.xyz/earn"
+              className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+              title="Kinetiq Earn"
+              frameBorder="0"
+              loading="lazy"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+              referrerPolicy="no-referrer-when-downgrade"
+              data-testid="iframe-kinetiq-earn"
+            />
+          </div>
+        </div>
+
         {/* Bitcoin DeFi Section */}
         <div className="mt-8">
           <div className="flex flex-col items-center text-center gap-3 mb-6">
