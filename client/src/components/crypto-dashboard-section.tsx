@@ -169,6 +169,56 @@ export default function CryptoDashboardSection() {
           </div>
         </div>
 
+        {/* DL News Main iframe */}
+        <div className="mb-6">
+          <div className="flex justify-end mb-3">
+            <button
+              onClick={() => openInNewTab('https://www.dlnews.com/')}
+              className="text-xs text-green-400 hover:text-green-300 transition-colors flex items-center gap-1"
+              data-testid="button-dlnews-fullview"
+            >
+              Open Full View <ExternalLink className="w-3 h-3" />
+            </button>
+          </div>
+          <div className="w-full">
+            <iframe
+              src="https://www.dlnews.com/"
+              className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+              title="DL News"
+              frameBorder="0"
+              loading="lazy"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+              referrerPolicy="no-referrer-when-downgrade"
+              data-testid="iframe-dlnews"
+            />
+          </div>
+        </div>
+
+        {/* DL News Research iframe */}
+        <div className="mb-6">
+          <div className="flex justify-end mb-3">
+            <button
+              onClick={() => openInNewTab('https://www.dlnews.com/research/')}
+              className="text-xs text-green-400 hover:text-green-300 transition-colors flex items-center gap-1"
+              data-testid="button-dlnews-research-fullview"
+            >
+              Open Full View <ExternalLink className="w-3 h-3" />
+            </button>
+          </div>
+          <div className="w-full">
+            <iframe
+              src="https://www.dlnews.com/research/"
+              className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+              title="DL News Research"
+              frameBorder="0"
+              loading="lazy"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+              referrerPolicy="no-referrer-when-downgrade"
+              data-testid="iframe-dlnews-research"
+            />
+          </div>
+        </div>
+
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <Button
