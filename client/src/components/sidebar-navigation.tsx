@@ -6,7 +6,10 @@ import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
 interface SidebarNavigationProps {
   className?: string;
   isCollapsed: boolean;
+  isMobile?: boolean;
+  isMobileMenuOpen?: boolean;
   onToggle: () => void;
+  onCloseMobile?: () => void;
 }
 
 interface NavItem {
@@ -17,12 +20,16 @@ interface NavItem {
   children?: NavItem[];
 }
 
-export function SidebarNavigation({ className = "", isCollapsed, onToggle }: SidebarNavigationProps) {
+export function SidebarNavigation({ className = "", isCollapsed, isMobile = false, isMobileMenuOpen = false, onToggle, onCloseMobile }: SidebarNavigationProps) {
   const [location, setLocation] = useLocation();
   const [expandedItems, setExpandedItems] = useState<string[]>(isCollapsed ? [] : ['charts', 'onchain', 'ecosystems', 'trade', 'tradfi']);
 
   const navigateTo = (url: string) => {
     setLocation(url);
+    // Close mobile menu when navigating
+    if (isMobile && onCloseMobile) {
+      onCloseMobile();
+    }
   };
 
   const isActive = (path: string) => {
@@ -310,25 +317,64 @@ export function SidebarNavigation({ className = "", isCollapsed, onToggle }: Sid
   };
 
   return (
-    <div className={`fixed left-0 top-0 h-full ${isCollapsed ? 'w-16' : 'w-64'} bg-black/90 backdrop-blur-lg border-r border-crypto-silver/20 z-40 transition-all duration-300 ease-in-out flex flex-col ${className}`}>
-      {/* Toggle Button */}
-      <div className="absolute -right-3 top-6 z-50">
-        <button
-          onClick={onToggle}
-          className="bg-black/90 backdrop-blur-lg border border-crypto-silver/20 rounded-full p-1.5 text-gray-300 hover:text-white hover:bg-white/5 transition-all duration-200 shadow-lg"
-          data-testid="toggle-sidebar"
-        >
-          {isCollapsed ? (
-            <ChevronRight className="w-4 h-4" />
-          ) : (
-            <ChevronLeft className="w-4 h-4" />
-          )}
-        </button>
-      </div>
+    <>
+      {/* Mobile Hamburger Menu Button */}
+      {isMobile && (
+        <div className="fixed top-4 left-4 z-50 lg:hidden">
+          <button
+            onClick={onToggle}
+            className="bg-black/90 backdrop-blur-lg border border-crypto-silver/20 rounded-lg p-2 text-gray-300 hover:text-white hover:bg-white/5 transition-all duration-200 shadow-lg"
+            data-testid="mobile-menu-toggle"
+            aria-label={isMobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+            aria-expanded={isMobileMenuOpen}
+            aria-controls="mobile-navigation-menu"
+          >
+            {isMobileMenuOpen ? (
+              <X className="w-5 h-5" />
+            ) : (
+              <Menu className="w-5 h-5" />
+            )}
+          </button>
+        </div>
+      )}
+      
+      <div 
+        id="mobile-navigation-menu"
+        className={`fixed left-0 top-0 h-full ${
+          isMobile 
+            ? `w-80 transform transition-transform duration-300 ease-in-out ${
+                isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+              }` 
+            : isCollapsed 
+              ? 'w-16' 
+              : 'w-64'
+        } bg-black/95 backdrop-blur-lg border-r border-crypto-silver/20 ${
+          isMobile ? 'z-50' : 'z-40'
+        } ${!isMobile ? 'transition-all duration-300 ease-in-out' : ''} flex flex-col ${className}`}
+        aria-hidden={isMobile && !isMobileMenuOpen}
+        inert={isMobile && !isMobileMenuOpen ? true : undefined}
+      >
+        
+        {/* Desktop Toggle Button */}
+        {!isMobile && (
+          <div className="absolute -right-3 top-6 z-50">
+            <button
+              onClick={onToggle}
+              className="bg-black/90 backdrop-blur-lg border border-crypto-silver/20 rounded-full p-1.5 text-gray-300 hover:text-white hover:bg-white/5 transition-all duration-200 shadow-lg"
+              data-testid="toggle-sidebar"
+            >
+              {isCollapsed ? (
+                <ChevronRight className="w-4 h-4" />
+              ) : (
+                <ChevronLeft className="w-4 h-4" />
+              )}
+            </button>
+          </div>
+        )}
 
       {/* Header with Logo */}
       <div className="flex-shrink-0 p-4 border-b border-crypto-silver/20">
-        <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
+        <div className={`flex items-center ${isCollapsed && !isMobile ? 'justify-center' : 'gap-3'}`}>
           <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-yellow-400 shadow-lg">
             <img 
               src={cryptoHippoImage}
@@ -337,7 +383,7 @@ export function SidebarNavigation({ className = "", isCollapsed, onToggle }: Sid
               data-testid="logo-cryptohippo"
             />
           </div>
-          {!isCollapsed && (
+          {(!isCollapsed || isMobile) && (
             <div className="flex flex-col">
               <span className="text-white font-bold text-lg">CryptoHippo</span>
               <span className="text-gray-400 text-xs">Trading Dashboard</span>
@@ -352,7 +398,7 @@ export function SidebarNavigation({ className = "", isCollapsed, onToggle }: Sid
       </div>
 
       {/* Footer */}
-      {!isCollapsed && (
+      {(!isCollapsed || isMobile) && (
         <div className="flex-shrink-0 p-4 border-t border-crypto-silver/20">
           <div className="text-xs text-gray-400 text-center">
             © 2024 CryptoHippo
@@ -360,5 +406,6 @@ export function SidebarNavigation({ className = "", isCollapsed, onToggle }: Sid
         </div>
       )}
     </div>
+    </>
   );
 }
