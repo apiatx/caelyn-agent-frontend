@@ -2,7 +2,7 @@ import React from 'react';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { DollarSign, TrendingUp, BarChart3, Brain, ArrowLeftRight, Wallet, ExternalLink, Layers, Shield } from "lucide-react";
+import { DollarSign, TrendingUp, BarChart3, Brain, ArrowLeftRight, Wallet, ExternalLink, Layers, Shield, Database } from "lucide-react";
 import { openSecureLink, getSecureIframeProps } from "@/utils/security";
 import cryptoHippoDefi from "@assets/CryptoHippo_1757212757402.png";
 
@@ -168,21 +168,46 @@ export default function DeFiSection() {
           />
         </div>
 
-        {/* Fluid Finance Full-Width Button */}
-        <div className="mb-8">
+        {/* Enhanced DeFi Platform Buttons */}
+        <div className="space-y-4 mb-8">
+          {/* Fluid Finance Enhanced Button */}
           <Button
             variant="outline"
             onClick={() => openInNewTab('https://fluid.instadapp.io/')}
-            className="w-full h-16 text-white border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 hover:border-blue-500/50"
+            className="w-full h-20 text-white border-blue-500/40 bg-gradient-to-r from-blue-500/20 via-blue-600/15 to-cyan-500/20 hover:from-blue-500/30 hover:via-blue-600/25 hover:to-cyan-500/30 hover:border-blue-400/60 shadow-lg hover:shadow-blue-500/25 transition-all duration-300"
             data-testid="button-fluid"
           >
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
-                <Wallet className="h-5 w-5 text-white" />
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
+                <Wallet className="h-6 w-6 text-white" />
               </div>
               <div className="text-left">
-                <div className="font-semibold text-lg">Fluid</div>
-                <div className="text-sm text-crypto-silver">DeFi protocol platform</div>
+                <div className="font-bold text-xl">Fluid</div>
+                <div className="text-sm text-blue-200">Advanced DeFi Protocol Platform</div>
+              </div>
+              <div className="ml-auto text-blue-300/60">
+                →
+              </div>
+            </div>
+          </Button>
+
+          {/* Kernel DAO Enhanced Button */}
+          <Button
+            variant="outline"
+            onClick={() => openInNewTab('https://kerneldao.com/')}
+            className="w-full h-20 text-white border-purple-500/40 bg-gradient-to-r from-purple-500/20 via-violet-600/15 to-indigo-500/20 hover:from-purple-500/30 hover:via-violet-600/25 hover:to-indigo-500/30 hover:border-purple-400/60 shadow-lg hover:shadow-purple-500/25 transition-all duration-300"
+            data-testid="button-kernel"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/30">
+                <Database className="h-6 w-6 text-white" />
+              </div>
+              <div className="text-left">
+                <div className="font-bold text-xl">Kernel DAO</div>
+                <div className="text-sm text-purple-200">Web3 Builder Community & Education</div>
+              </div>
+              <div className="ml-auto text-purple-300/60">
+                →
               </div>
             </div>
           </Button>
