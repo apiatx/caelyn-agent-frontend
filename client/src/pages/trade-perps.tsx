@@ -161,31 +161,6 @@ export default function TradePerpsPage() {
               </div>
 
 
-              {/* Drift Trade Iframe */}
-              <div className="mb-6">
-                <div className="flex justify-end mb-3">
-                  <a
-                    {...getSecureLinkProps('https://app.drift.trade/BTC-PERP')}
-                    className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1"
-                  >
-                    Open Full View <ExternalLink className="w-3 h-3" />
-                  </a>
-                </div>
-                
-                <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-                  <SafeIframe
-                    src="https://app.drift.trade/BTC-PERP"
-                    title="Drift Trade BTC Perpetual Trading"
-                    className="w-full h-[800px] border-0"
-                  />
-                </div>
-                
-                <div className="mt-4 text-center">
-                  <p className="text-xs text-gray-400">
-                    BTC perpetual trading on Drift • Decentralized derivatives exchange
-                  </p>
-                </div>
-              </div>
 
               {/* AsterDex - Full Width Button */}
               <Button
@@ -415,6 +390,37 @@ export default function TradePerpsPage() {
                     <div className="font-bold text-base flex items-center justify-center">
                       <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
                       GMX
+                    </div>
+                  </div>
+                </Button>
+              </div>
+
+              {/* Drift and Apex Exchange - Two Across */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                <Button
+                  variant="outline"
+                  onClick={() => openInNewTab('https://app.drift.trade/BTC-PERP')}
+                  className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+                  data-testid="button-drift"
+                >
+                  <div className="text-center">
+                    <div className="font-bold text-base flex items-center justify-center">
+                      <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
+                      Drift
+                    </div>
+                  </div>
+                </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={() => openInNewTab('https://omni.apex.exchange/trade/BTCUSDT?lang=en-US')}
+                  className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+                  data-testid="button-apex-exchange"
+                >
+                  <div className="text-center">
+                    <div className="font-bold text-base flex items-center justify-center">
+                      <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
+                      Apex Exchange
                     </div>
                   </div>
                 </Button>
