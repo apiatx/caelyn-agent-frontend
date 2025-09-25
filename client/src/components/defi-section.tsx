@@ -78,7 +78,7 @@ export default function DeFiSection() {
 
       {/* Analytics Glass Card */}
       <GlassCard className="p-6">
-        <div className="flex items-center gap-3 mb-6">
+        <div className="flex flex-col items-center text-center gap-3 mb-6">
           <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
             <BarChart3 className="text-white text-xl" />
           </div>
@@ -108,7 +108,7 @@ export default function DeFiSection() {
 
       {/* DeFi Protocols Glass Card */}
       <GlassCard className="p-6">
-        <div className="flex items-center gap-3 mb-6">
+        <div className="flex flex-col items-center text-center gap-3 mb-6">
           <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
             <DollarSign className="text-white text-xl" />
           </div>
@@ -385,7 +385,7 @@ export default function DeFiSection() {
 
         {/* Bitcoin DeFi Section */}
         <div className="mt-8">
-          <div className="flex items-center gap-3 mb-6">
+          <div className="flex flex-col items-center text-center gap-3 mb-6">
             <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/30">
               <span className="text-white font-bold text-sm">₿</span>
             </div>
@@ -455,7 +455,7 @@ export default function DeFiSection() {
 
       {/* DeFAI Glass Card */}
       <GlassCard className="p-6">
-        <div className="flex items-center gap-3 mb-6">
+        <div className="flex flex-col items-center text-center gap-3 mb-6">
           <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
             <Brain className="text-white text-xl" />
           </div>
