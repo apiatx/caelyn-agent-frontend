@@ -164,12 +164,6 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
           icon: <Zap className="w-4 h-4" />,
           path: '/app/sui'
         },
-        {
-          id: 'abstract',
-          label: 'Abstract',
-          icon: <Layers className="w-4 h-4" />,
-          path: '/app/abstract'
-        }
       ]
     },
     {

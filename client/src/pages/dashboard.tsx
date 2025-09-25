@@ -5,7 +5,6 @@ import AlphaSection from "@/components/alpha-section";
 import BittensorDashboardSection from "@/components/bittensor-dashboard-section";
 import BaseSection from "@/components/base-section";
 import SolanaSection from "@/components/solana-section";
-import AbstractSection from "@/components/abstract-section";
 import DeFiSection from "@/components/defi-section";
 import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
 import cryptoHippoWithBitcoin from "@assets/image_1758740882958.png";
@@ -14,7 +13,7 @@ import criptomonedas from "@assets/Criptomonedas-r3pu02e09qriw0f9pyqx2rtyhwsri4e
 import { SectionLoadingState } from "@/components/loading-screen";
 import { useScrollFade } from "@/hooks/useScrollFade";
 
-type TabType = "dashboard" | "alpha" | "base" | "bittensor" | "abstract" | "solana" | "defi" | "portfolio";
+type TabType = "dashboard" | "alpha" | "base" | "bittensor" | "solana" | "defi" | "portfolio";
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<TabType>("dashboard");
@@ -24,7 +23,7 @@ export default function Dashboard() {
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.slice(1); // Remove the #
-      if (hash && ["alpha", "base", "bittensor", "abstract", "solana", "defi", "portfolio"].includes(hash)) {
+      if (hash && ["alpha", "base", "bittensor", "solana", "defi", "portfolio"].includes(hash)) {
         setActiveTab(hash as TabType);
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } else {
@@ -115,9 +114,6 @@ export default function Dashboard() {
         </Suspense>
         <Suspense fallback={<SectionLoadingState title="Bittensor" />}>
           {activeTab === "bittensor" && <BittensorDashboardSection />}
-        </Suspense>
-        <Suspense fallback={<SectionLoadingState title="Abstract Network" />}>
-          {activeTab === "abstract" && <AbstractSection />}
         </Suspense>
         <Suspense fallback={<SectionLoadingState title="DeFi Platforms" />}>
           {activeTab === "defi" && <DeFiSection />}
