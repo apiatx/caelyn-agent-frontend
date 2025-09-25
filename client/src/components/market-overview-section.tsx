@@ -697,6 +697,31 @@ export function MarketOverviewSection() {
             News
           </h3>
           
+          {/* DefiLlama Feed iframe */}
+          <div className="mb-6">
+            <div className="flex justify-end mb-3">
+              <button
+                onClick={() => openInNewTab('https://feed.defillama.com/')}
+                className="text-xs text-green-400 hover:text-green-300 transition-colors flex items-center gap-1"
+                data-testid="button-defillama-feed-fullview"
+              >
+                Open Full View <ExternalLink className="w-3 h-3" />
+              </button>
+            </div>
+            <div className="w-full">
+              <iframe
+                src="https://feed.defillama.com/"
+                className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+                title="DefiLlama News Feed"
+                frameBorder="0"
+                loading="lazy"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+                referrerPolicy="no-referrer-when-downgrade"
+                data-testid="iframe-defillama-feed"
+              />
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div 
               onClick={() => openInNewTab('https://www.binance.com/en/square')}
@@ -752,6 +777,27 @@ export function MarketOverviewSection() {
               referrerPolicy="no-referrer-when-downgrade"
             />
           </div>
+
+          {/* Crypto Events Calendar Button */}
+          <div className="mt-6">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <button
+                onClick={() => openSecureLink('https://coinmarketcal.com/en/')}
+                className="bg-gradient-to-br from-crypto-warning/10 to-yellow-600/10 hover:from-crypto-warning/20 hover:to-yellow-600/20 border border-crypto-warning/20 hover:border-crypto-warning/40 rounded-lg p-4 transition-all duration-300 text-left group w-full max-w-md"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-crypto-warning/20 rounded-full flex items-center justify-center">
+                    <Calendar className="w-4 h-4 text-crypto-warning" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-white group-hover:text-crypto-warning mb-1">Crypto Events Calendar</div>
+                    <div className="text-xs text-crypto-silver">Track upcoming crypto events and announcements</div>
+                  </div>
+                  <ExternalLink className="w-4 h-4 text-crypto-warning ml-auto" />
+                </div>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -795,26 +841,6 @@ export function MarketOverviewSection() {
         </div>
       </div>
 
-      {/* Crypto Events Calendar Button */}
-      <div className="bg-black/20 border border-crypto-silver/20 rounded-lg p-3 sm:p-4 lg:p-6 mt-6">
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <button
-            onClick={() => openSecureLink('https://coinmarketcal.com/en/')}
-            className="bg-gradient-to-br from-crypto-warning/10 to-yellow-600/10 hover:from-crypto-warning/20 hover:to-yellow-600/20 border border-crypto-warning/20 hover:border-crypto-warning/40 rounded-lg p-4 transition-all duration-300 text-left group w-full max-w-md"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-crypto-warning/20 rounded-full flex items-center justify-center">
-                <Calendar className="w-4 h-4 text-crypto-warning" />
-              </div>
-              <div>
-                <div className="text-sm font-medium text-white group-hover:text-crypto-warning mb-1">Crypto Events Calendar</div>
-                <div className="text-xs text-crypto-silver">Track upcoming crypto events and announcements</div>
-              </div>
-              <ExternalLink className="w-4 h-4 text-crypto-warning ml-auto" />
-            </div>
-          </button>
-        </div>
-      </div>
     </div>
   );
 }

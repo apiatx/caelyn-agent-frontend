@@ -267,6 +267,7 @@ const TRUSTED_DOMAINS = [
   'defillama.com',
   'www.defillama.com',
   'swap.defillama.com',
+  'feed.defillama.com',
   // Cross-chain Swap Platforms
   'swap.mayan.finance',
   'mayan.finance',
