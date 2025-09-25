@@ -262,7 +262,10 @@ const TRUSTED_DOMAINS = [
   'www.tabtrader.com',
   'app.rubic.exchange',
   'rubic.exchange',
-  'www.rubic.exchange'
+  'www.rubic.exchange',
+  // DeFi Analytics
+  'defillama.com',
+  'www.defillama.com'
 ];
 
 /**
