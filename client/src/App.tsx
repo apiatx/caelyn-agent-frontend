@@ -79,6 +79,7 @@ function Router() {
       <Route path="/trade" component={TradePage} />
       <Route path="/app/trade/swidge" component={TradePage} />
       <Route path="/app/trade/perps" component={TradePerpsPage} />
+      <Route path="/trade-perps" component={TradePerpsPage} />
       <Route path="/app/trade/options" component={TradeOptionsPage} />
       <Route path="/app/defi" component={DeFiPage} />
       <Route path="/defi" component={DeFiPage} />
