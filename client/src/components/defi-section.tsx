@@ -429,29 +429,22 @@ export default function DeFiSection() {
           </Button>
         </div>
 
-        {/* Kinetiq Earn iframe */}
+        {/* Kinetiq Earn Button */}
         <div className="mt-6 mb-6">
-          <div className="flex justify-end mb-3">
-            <button
-              onClick={() => openInNewTab('https://kinetiq.xyz/earn')}
-              className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
-              data-testid="button-kinetiq-earn-fullview"
-            >
-              Open Full View <ExternalLink className="w-3 h-3" />
-            </button>
-          </div>
-          <div className="w-full">
-            <iframe
-              src="https://kinetiq.xyz/earn"
-              className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-              title="Kinetiq Earn"
-              frameBorder="0"
-              loading="lazy"
-              sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
-              referrerPolicy="no-referrer-when-downgrade"
-              data-testid="iframe-kinetiq-earn"
-            />
-          </div>
+          <Button
+            variant="outline"
+            onClick={() => openInNewTab('https://kinetiq.xyz/earn')}
+            className="bg-black/20 border-crypto-silver/20 hover:bg-blue-500/20 hover:border-blue-500/30 text-white justify-start p-6 h-auto flex-col space-y-2 w-full"
+            data-testid="button-kinetiq-earn"
+          >
+            <div className="p-3 rounded-lg bg-gradient-to-r from-blue-500/20 to-cyan-500/20">
+              <TrendingUp className="h-6 w-6 text-blue-400" />
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-lg">Kinetiq</div>
+              <div className="text-sm text-crypto-silver">Put your HYPE to work across leading DeFi protocols</div>
+            </div>
+          </Button>
         </div>
 
         {/* Bitcoin DeFi Section */}
