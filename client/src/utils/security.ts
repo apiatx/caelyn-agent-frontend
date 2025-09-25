@@ -272,6 +272,8 @@ const TRUSTED_DOMAINS = [
   // News Sources
   'dlnews.com',
   'www.dlnews.com',
+  // Social Platforms
+  'x.com',
   // Cross-chain Swap Platforms
   'swap.mayan.finance',
   'mayan.finance',

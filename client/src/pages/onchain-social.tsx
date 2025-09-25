@@ -124,7 +124,7 @@ export default function OnchainSocialPage() {
                     'martypartymusic', 'Defi0xJeff', 'altcoinvector', 'DeFi_Paanda', 
                     'cryptorinweb3', 'jkrdoc', 'Agent_rsch', 'OverkillTrading', 
                     'dontbuytops', 'MetaverseRanger', 'aixCB_Vc', 'aixbt_agent',
-                    'nansen_ai'
+                    'nansen_ai', 'rogue_says'
                   ].map((account) => {
                     return (
                     <SafeLink
