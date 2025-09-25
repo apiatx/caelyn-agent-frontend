@@ -168,44 +168,40 @@ export default function DeFiSection() {
           />
         </div>
 
-        {/* Euler Finance Iframe */}
+        {/* Fluid Finance Full-Width Button */}
         <div className="mb-8">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
-              <DollarSign className="w-4 h-4 text-white" />
+          <Button
+            variant="outline"
+            onClick={() => openInNewTab('https://fluid.instadapp.io/')}
+            className="w-full h-16 text-white border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 hover:border-blue-500/50"
+            data-testid="button-fluid"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                <Wallet className="h-5 w-5 text-white" />
+              </div>
+              <div className="text-left">
+                <div className="font-semibold text-lg">Fluid</div>
+                <div className="text-sm text-crypto-silver">DeFi protocol platform</div>
+              </div>
             </div>
-            <h4 className="text-xl font-semibold text-white">Euler Finance</h4>
-            <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
-              EARN PROTOCOL
-            </Badge>
-            <button
-              onClick={() => openInNewTab('https://app.euler.finance/earn?network=ethereum')}
-              className="text-purple-400 hover:text-purple-300 text-sm ml-auto"
-            >
-              Open Full View →
-            </button>
-          </div>
-          <iframe
-            src="https://app.euler.finance/earn?network=ethereum"
-            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            title="Euler Finance Earn Protocol"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-          />
+          </Button>
         </div>
 
         {/* DeFi Platform Links */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-8">
           <Button
             variant="outline"
-            onClick={() => openInNewTab('https://defi.instadapp.io/')}
-            className="bg-black/20 border-crypto-silver/20 hover:bg-green-500/20 hover:border-green-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
+            onClick={() => openInNewTab('https://app.euler.finance/earn?network=ethereum')}
+            className="bg-black/20 border-crypto-silver/20 hover:bg-purple-500/20 hover:border-purple-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
+            data-testid="button-euler"
           >
-            <div className="p-3 rounded-lg bg-gradient-to-r from-green-500/20 to-blue-500/20">
-              <Wallet className="h-6 w-6 text-green-400" />
+            <div className="p-3 rounded-lg bg-gradient-to-r from-purple-500/20 to-violet-500/20">
+              <DollarSign className="h-6 w-6 text-purple-400" />
             </div>
             <div className="text-center">
-              <div className="font-semibold text-lg">Fluid</div>
-              <div className="text-sm text-crypto-silver">DeFi protocol platform</div>
+              <div className="font-semibold text-lg">Euler</div>
+              <div className="text-sm text-crypto-silver">Earn Protocol</div>
             </div>
           </Button>
 
