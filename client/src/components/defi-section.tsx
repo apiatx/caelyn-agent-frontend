@@ -143,6 +143,31 @@ export default function DeFiSection() {
           />
         </div>
 
+        {/* Reservoir Iframe */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+              <DollarSign className="w-4 h-4 text-white" />
+            </div>
+            <h4 className="text-xl font-semibold text-white">Reservoir</h4>
+            <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+              NFT PROTOCOL
+            </Badge>
+            <button
+              onClick={() => openInNewTab('https://app.reservoir.xyz/')}
+              className="text-blue-400 hover:text-blue-300 text-sm ml-auto"
+            >
+              Open Full View →
+            </button>
+          </div>
+          <iframe
+            src="https://app.reservoir.xyz/"
+            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+            title="Reservoir NFT Protocol"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+          />
+        </div>
+
         {/* DeFi Platform Links */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-8">
           <Button
