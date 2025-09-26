@@ -312,6 +312,31 @@ export default function TradeSection() {
             </Button>
           </div>
 
+          {/* Oku Trade iframe */}
+          <div className="mt-8">
+            <div className="flex justify-end mb-3">
+              <button
+                onClick={() => openInNewTab('https://oku.trade/?isExactOut=false&inputChain=plasma&inToken=0x6100E367285b01F48D07953803A2d8dCA5D19873&outToken=0xB8CE59FC3717ada4C02eaDF9682A9e934F625ebb')}
+                className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
+                data-testid="button-oku-fullview"
+              >
+                Open Full View <ExternalLink className="w-3 h-3" />
+              </button>
+            </div>
+            <div className="w-full">
+              <iframe
+                src="https://oku.trade/?isExactOut=false&inputChain=plasma&inToken=0x6100E367285b01F48D07953803A2d8dCA5D19873&outToken=0xB8CE59FC3717ada4C02eaDF9682A9e934F625ebb"
+                className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+                title="Oku Trade Plasma Chain Swap"
+                frameBorder="0"
+                loading="lazy"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+                referrerPolicy="no-referrer-when-downgrade"
+                data-testid="iframe-oku"
+              />
+            </div>
+          </div>
+
           {/* Mayan Finance iframe */}
           <div className="mt-8">
             <div className="flex justify-end mb-3">

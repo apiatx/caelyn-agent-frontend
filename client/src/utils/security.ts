@@ -310,7 +310,8 @@ const TRUSTED_DOMAINS = [
   // Cross-chain Swap Platforms
   'swap.mayan.finance',
   'mayan.finance',
-  'www.mayan.finance'
+  'www.mayan.finance',
+  'oku.trade'
 ];
 
 /**
