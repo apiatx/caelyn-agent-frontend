@@ -222,31 +222,6 @@ export default function TradeSection() {
             </Button>
           </div>
 
-          {/* Stargate Finance Bridge iframe */}
-          <div className="mt-8">
-            <div className="flex justify-end mb-3">
-              <button
-                onClick={() => openInNewTab('https://stargate.finance/bridge')}
-                className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
-                data-testid="button-stargate-fullview"
-              >
-                Open Full View <ExternalLink className="w-3 h-3" />
-              </button>
-            </div>
-            <div className="w-full">
-              <iframe
-                src="https://stargate.finance/bridge"
-                className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-                title="Stargate Finance Bridge"
-                frameBorder="0"
-                loading="lazy"
-                sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
-                referrerPolicy="no-referrer-when-downgrade"
-                data-testid="iframe-stargate"
-              />
-            </div>
-          </div>
-
           {/* Mayan Finance iframe */}
           <div className="mt-8">
             <div className="flex justify-end mb-3">
@@ -317,8 +292,8 @@ export default function TradeSection() {
             </Button>
           </div>
 
-          {/* DODO and XY Finance */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* DODO, XY Finance, and Stargate Finance */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Button
               variant="outline"
               onClick={() => openInNewTab('https://app.dodoex.io/swap/network/mainnet/1-ETH/56-%24BeAI')}
@@ -344,6 +319,20 @@ export default function TradeSection() {
                   XY Finance
                 </div>
                 <div className="text-sm text-gray-300">Cross-chain swap aggregator</div>
+              </div>
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://stargate.finance/bridge')}
+              className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+            >
+              <div className="text-center">
+                <div className="font-bold text-base flex items-center justify-center">
+                  <ArrowLeftRight className="w-5 h-5 mr-2 group-hover:rotate-180 transition-transform duration-300" />
+                  Stargate Finance
+                </div>
+                <div className="text-sm text-gray-300">Omnichain bridge protocol</div>
               </div>
             </Button>
           </div>
