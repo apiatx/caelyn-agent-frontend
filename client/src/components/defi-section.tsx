@@ -168,33 +168,7 @@ export default function DeFiSection() {
           </div>
         </div>
 
-        {/* Plasma.to Iframe */}
-        <div className="mb-8">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
-              <DollarSign className="w-4 h-4 text-white" />
-            </div>
-            <h4 className="text-xl font-semibold text-white">Plasma.to</h4>
-            <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
-              DEFI PLATFORM
-            </Badge>
-            <button
-              onClick={() => openInNewTab('https://app.plasma.to/')}
-              className="text-purple-400 hover:text-purple-300 text-sm ml-auto"
-            >
-              Open Full View →
-            </button>
-          </div>
-          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-            <SafeIframe
-              src="https://app.plasma.to/"
-              title="Plasma.to DeFi Platform"
-              className="w-full h-[600px] border-0"
-            />
-          </div>
-        </div>
-
-        {/* Peapods Finance Iframe */}
+{/* Peapods Finance Iframe */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-4">
             <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
@@ -237,6 +211,27 @@ export default function DeFiSection() {
                 <div className="text-sm text-blue-200">Advanced DeFi Protocol Platform</div>
               </div>
               <div className="ml-auto text-blue-300/60">
+                →
+              </div>
+            </div>
+          </Button>
+
+          {/* Plasma.to Enhanced Button */}
+          <Button
+            variant="outline"
+            onClick={() => openInNewTab('https://app.plasma.to/')}
+            className="w-full h-20 text-white border-purple-500/40 bg-gradient-to-r from-purple-500/20 via-violet-600/15 to-indigo-500/20 hover:from-purple-500/30 hover:via-violet-600/25 hover:to-indigo-500/30 hover:border-purple-400/60 shadow-lg hover:shadow-purple-500/25 transition-all duration-300"
+            data-testid="button-plasma"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/30">
+                <Wallet className="h-6 w-6 text-white" />
+              </div>
+              <div className="text-center">
+                <div className="font-bold text-xl">Plasma.to</div>
+                <div className="text-sm text-purple-200">Advanced DeFi Platform</div>
+              </div>
+              <div className="ml-auto text-purple-300/60">
                 →
               </div>
             </div>
