@@ -402,21 +402,6 @@ export default function BaseSection() {
         <div className="space-y-4">
           {/* Alphanomics iframe */}
           <div className="w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg mb-4">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
-                <span className="text-white text-xs font-bold">A</span>
-              </div>
-              <h3 className="text-lg font-semibold text-white">Alphanomics</h3>
-              <span className="px-2 py-1 bg-purple-500/20 text-purple-400 text-xs rounded-full font-medium">
-                ANALYTICS
-              </span>
-              <SafeLink 
-                href="https://platform.alphanomics.io/"
-                className="ml-auto text-purple-400 hover:text-purple-300 text-xs"
-              >
-                Open in New Tab →
-              </SafeLink>
-            </div>
             <SafeIframe 
               src="https://platform.alphanomics.io/"
               title="Alphanomics Analytics Platform"
@@ -426,21 +411,6 @@ export default function BaseSection() {
           
           {/* Farterminal iframe moved to top */}
           <div className="w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg mb-4">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-6 h-6 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center">
-                <span className="text-white text-xs font-bold">FT</span>
-              </div>
-              <h3 className="text-lg font-semibold text-white">Farterminal</h3>
-              <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-full font-medium">
-                TERMINAL
-              </span>
-              <SafeLink 
-                href="https://www.terminal.co/?tab=base"
-                className="ml-auto text-green-400 hover:text-green-300 text-xs"
-              >
-                Open in New Tab →
-              </SafeLink>
-            </div>
             <SafeIframe 
               src="https://www.terminal.co/?tab=base"
               title="Farterminal"
@@ -499,6 +469,20 @@ export default function BaseSection() {
             <p className="text-gray-400 text-sm">View trending AI agent tokens and artificial intelligence category</p>
           </button>
           
+          {/* BlockCreeper button moved here */}
+          <button
+            onClick={() => openInNewTab('https://www.blockcreeper.com/')}
+            className="w-full p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors text-left"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
+                <ExternalLink className="w-4 h-4 text-white" />
+              </div>
+              <h4 className="text-orange-400 font-semibold">BlockCreeper Explorer</h4>
+            </div>
+            <p className="text-gray-400 text-sm">Blockchain explorer and analytics platform</p>
+          </button>
+          
         </div>
       </GlassCard>
 
@@ -509,80 +493,8 @@ export default function BaseSection() {
 
 
 
-      {/* Social Section */}
-      <div className="space-y-6">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
-            <TrendingUp className="text-white text-xl" />
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold text-white">Social</h2>
-            <p className="text-crypto-silver">Social intelligence and community insights</p>
-          </div>
-        </div>
-
-        {/* Checkr.social */}
-        <GlassCard className="p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-cyan-600 rounded-full flex items-center justify-center">
-              <span className="text-white text-xs font-bold">CS</span>
-            </div>
-            <h3 className="text-xl font-semibold text-white">Checkr.social</h3>
-            <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs rounded-full font-medium">
-              SOCIAL ANALYTICS
-            </span>
-            <SafeLink 
-              href="https://checkr.social/"
-              className="ml-auto text-blue-400 hover:text-blue-300 text-xs"
-            >
-              Open in New Tab →
-            </SafeLink>
-          </div>
-          <SafeIframe 
-            src="https://checkr.social/"
-            title="Checkr.social"
-          />
-        </GlassCard>
-
-      </div>
 
 
-      {/* Indexy Base Analytics */}
-      <GlassCard className="p-8">
-        
-        <SafeLink
-          href='https://indexy.xyz/home'
-          className="group w-full bg-gradient-to-br from-green-500/40 via-emerald-500/30 to-teal-500/40 border border-green-400/50 hover:from-green-400/50 hover:via-emerald-400/40 hover:to-teal-400/50 hover:border-green-300/70 text-white justify-center p-8 h-auto rounded-xl transition-all duration-500 flex items-center shadow-2xl hover:shadow-green-500/40 transform hover:scale-105 backdrop-blur-sm block"
-        >
-          <div className="text-center">
-            <div className="flex items-center justify-center mb-4">
-              <div>
-                <h4 className="text-3xl font-bold text-green-100 group-hover:text-white transition-colors duration-300 mb-2">Indexy</h4>
-                <Badge className="bg-green-400/30 text-green-100 border-green-300/40 px-4 py-2 font-bold text-sm">
-                  PREMIUM PLATFORM
-                </Badge>
-              </div>
-            </div>
-            <p className="text-green-100/90 text-lg font-medium mb-4 max-w-2xl mx-auto leading-relaxed">
-              Track crypto markets with smart indices
-            </p>
-            <div className="flex items-center justify-center gap-6 text-sm text-green-200/80">
-              <div className="flex items-center gap-2">
-                <Star className="w-4 h-4" />
-                <span>Social Analytics</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <TrendingUp className="w-4 h-4" />
-                <span>Market Indexes</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <ExternalLink className="w-4 h-4" />
-                <span>Base Ecosystem</span>
-              </div>
-            </div>
-          </div>
-        </SafeLink>
-      </GlassCard>
 
       {/* Ecosystems Section */}
       <div className="space-y-6">
@@ -627,21 +539,6 @@ export default function BaseSection() {
 
             {/* Whale Intel iframe for Virtuals */}
             <div className="border-t border-crypto-silver/20 pt-4">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center">
-                  <span className="text-white text-xs font-bold">WI</span>
-                </div>
-                <h4 className="text-lg font-semibold text-white">Whale Intel</h4>
-                <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
-                  VIRTUALS TRACKING
-                </Badge>
-                <SafeLink 
-                  href="https://whaleintel.ai/virtuals"
-                  className="ml-auto text-blue-400 hover:text-blue-300 text-xs"
-                >
-                  Open in New Tab →
-                </SafeLink>
-              </div>
               <SafeIframe 
                 src="https://whaleintel.ai/virtuals"
                 title="Whale Intel Virtuals"
@@ -650,21 +547,6 @@ export default function BaseSection() {
 
             {/* Loky AI Terminal iframe */}
             <div className="border-t border-crypto-silver/20 pt-4">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-6 h-6 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
-                  <span className="text-white text-xs font-bold">LA</span>
-                </div>
-                <h4 className="text-lg font-semibold text-white">Loky AI Terminal</h4>
-                <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
-                  GENESIS TERMINAL
-                </Badge>
-                <SafeLink 
-                  href="https://lokyai.com/terminal/genesis"
-                  className="ml-auto text-green-400 hover:text-green-300 text-xs"
-                >
-                  Open in New Tab →
-                </SafeLink>
-              </div>
               <SafeIframe 
                 src="https://lokyai.com/terminal/genesis"
                 title="Loky AI Terminal Genesis"
@@ -731,21 +613,20 @@ export default function BaseSection() {
               <div className="w-4 h-4 text-gray-400 group-hover:text-blue-400 transition-colors">→</div>
             </SafeLink>
 
-            <SafeLink
-              href="https://bankr.bot/terminal"
-              className="w-full flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-purple-500/30 transition-all duration-200 group"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">B</span>
-                </div>
-                <div>
-                  <h4 className="text-white font-medium text-sm">Bankr.bot</h4>
-                  <p className="text-gray-400 text-xs">Trading terminal</p>
-                </div>
-              </div>
-              <div className="w-4 h-4 text-gray-400 group-hover:text-purple-400 transition-colors">→</div>
-            </SafeLink>
+            <div className="border-t border-crypto-silver/20 pt-4">
+              <SafeIframe 
+                src="https://bankr.bot/terminal"
+                title="Bankr.bot Trading Terminal"
+              />
+            </div>
+
+            {/* Checkr iframe moved here under Clanker */}
+            <div className="border-t border-crypto-silver/20 pt-4">
+              <SafeIframe 
+                src="https://checkr.social/"
+                title="Checkr.social"
+              />
+            </div>
           </div>
         </GlassCard>
 
@@ -780,21 +661,6 @@ export default function BaseSection() {
 
             {/* Zoracle iframe for Zora */}
             <div className="border-t border-crypto-silver/20 pt-4">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full flex items-center justify-center">
-                  <span className="text-white text-xs font-bold">ZO</span>
-                </div>
-                <h4 className="text-lg font-semibold text-white">Zoracle</h4>
-                <span className="px-2 py-1 bg-purple-500/20 text-purple-400 text-xs rounded-full font-medium">
-                  ORACLE
-                </span>
-                <SafeLink 
-                  href="https://www.zoracle.xyz/"
-                  className="ml-auto text-purple-400 hover:text-purple-300 text-xs"
-                >
-                  Open in New Tab →
-                </SafeLink>
-              </div>
               <SafeIframe 
                 src="https://www.zoracle.xyz/"
                 title="Zoracle"
@@ -804,27 +670,40 @@ export default function BaseSection() {
         </GlassCard>
       </div>
 
-      {/* BlockCreeper Explorer */}
-      <GlassCard className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-6 h-6 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
-            <span className="text-white text-xs font-bold">BC</span>
+      {/* Indexy Base Analytics moved here */}
+      <GlassCard className="p-8">
+        <SafeLink
+          href='https://indexy.xyz/home'
+          className="group w-full bg-gradient-to-br from-green-500/40 via-emerald-500/30 to-teal-500/40 border border-green-400/50 hover:from-green-400/50 hover:via-emerald-400/40 hover:to-teal-400/50 hover:border-green-300/70 text-white justify-center p-8 h-auto rounded-xl transition-all duration-500 flex items-center shadow-2xl hover:shadow-green-500/40 transform hover:scale-105 backdrop-blur-sm block"
+        >
+          <div className="text-center">
+            <div className="flex items-center justify-center mb-4">
+              <div>
+                <h4 className="text-3xl font-bold text-green-100 group-hover:text-white transition-colors duration-300 mb-2">Indexy</h4>
+                <Badge className="bg-green-400/30 text-green-100 border-green-300/40 px-4 py-2 font-bold text-sm">
+                  PREMIUM PLATFORM
+                </Badge>
+              </div>
+            </div>
+            <p className="text-green-100/90 text-lg font-medium mb-4 max-w-2xl mx-auto leading-relaxed">
+              Track crypto markets with smart indices
+            </p>
+            <div className="flex items-center justify-center gap-6 text-sm text-green-200/80">
+              <div className="flex items-center gap-2">
+                <Star className="w-4 h-4" />
+                <span>Social Analytics</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-4 h-4" />
+                <span>Market Indexes</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <ExternalLink className="w-4 h-4" />
+                <span>Base Ecosystem</span>
+              </div>
+            </div>
           </div>
-          <h3 className="text-xl font-semibold text-white">BlockCreeper Explorer</h3>
-          <span className="px-2 py-1 bg-orange-500/20 text-orange-400 text-xs rounded-full font-medium">
-            BLOCKCHAIN EXPLORER
-          </span>
-          <SafeLink 
-            href="https://www.blockcreeper.com/"
-            className="ml-auto text-orange-400 hover:text-orange-300 text-xs"
-          >
-            Open in New Tab →
-          </SafeLink>
-        </div>
-        <SafeIframe 
-          src="https://www.blockcreeper.com/"
-          title="BlockCreeper Explorer"
-        />
+        </SafeLink>
       </GlassCard>
 
       {/* Enhanced Ecosystem Section */}
