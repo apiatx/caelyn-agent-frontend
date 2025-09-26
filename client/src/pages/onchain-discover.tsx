@@ -182,6 +182,21 @@ export default function OnchainDiscoverPage() {
                   <p className="text-gray-300 text-sm font-medium text-center">DeFi portfolio management</p>
                 </SafeLink>
               </div>
+
+              {/* Alchemy Button - Full width underneath Gravity and Zapper */}
+              <div className="mt-6">
+                <button
+                  onClick={() => openInNewTab('https://www.alchemy.com/dapps/')}
+                  className="w-full p-6 text-center bg-gradient-to-b from-blue-600/10 to-indigo-700/10 hover:from-blue-600/20 hover:to-indigo-700/20 border border-blue-600/20 hover:border-blue-500/40 rounded-lg transition-all duration-300 group"
+                  data-testid="button-alchemy"
+                >
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <span className="text-white font-bold text-xl">A</span>
+                  </div>
+                  <h4 className="text-lg font-bold text-white group-hover:text-blue-300 mb-2">Alchemy</h4>
+                  <p className="text-gray-400 group-hover:text-gray-300 text-sm max-w-md mx-auto">Discover top DApps and Web3 applications</p>
+                </button>
+              </div>
             </GlassCard>
           </div>
         </div>

@@ -313,7 +313,9 @@ const TRUSTED_DOMAINS = [
   'www.mayan.finance',
   'oku.trade',
   'app.plasma.to',
-  'plasma.to'
+  'plasma.to',
+  'alchemy.com',
+  'www.alchemy.com'
 ];
 
 /**
