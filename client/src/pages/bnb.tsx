@@ -178,6 +178,36 @@ export default function BNBPage() {
           </GlassCard>
         </div>
 
+        {/* Thena Finance Iframe */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center">
+              <ExternalLink className="w-4 h-4 text-white" />
+            </div>
+            <h4 className="text-xl font-semibold text-white">Thena Finance</h4>
+            <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">
+              BNB CHAIN DEX
+            </Badge>
+            <button
+              onClick={() => openSecureLink('https://thena.fi/')}
+              className="text-yellow-400 hover:text-yellow-300 text-sm ml-auto"
+            >
+              Open Full View →
+            </button>
+          </div>
+          <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-lg overflow-hidden">
+            <iframe
+              src="https://thena.fi/"
+              className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+              title="Thena Finance DEX on BNB Chain"
+              frameBorder="0"
+              loading="lazy"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+              referrerPolicy="no-referrer-when-downgrade"
+            />
+          </div>
+        </div>
+
         {/* Alpha Section - Copied from Screening page */}
         <div className="space-y-8 mt-12">
           <GlassCard className="p-3 sm:p-4 lg:p-6">

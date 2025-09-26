@@ -319,7 +319,9 @@ const TRUSTED_DOMAINS = [
   'yield.fi',
   'www.yield.fi',
   'zkp2p.xyz',
-  'www.zkp2p.xyz'
+  'www.zkp2p.xyz',
+  'thena.fi',
+  'www.thena.fi'
 ];
 
 /**
