@@ -155,6 +155,22 @@ export default function TradeOnRampPage() {
                 </div>
               </Button>
             </div>
+
+            {/* ZKP2P Big Button - Full width */}
+            <div className="mt-6">
+              <Button
+                variant="outline"
+                onClick={() => openInNewTab('https://www.zkp2p.xyz/swap?tab=buy')}
+                className="w-full p-6 text-center bg-gradient-to-b from-cyan-600/10 to-teal-700/10 hover:from-cyan-600/20 hover:to-teal-700/20 border border-cyan-600/20 hover:border-cyan-500/40 rounded-lg transition-all duration-300 group"
+                data-testid="button-zkp2p"
+              >
+                <div className="w-12 h-12 bg-gradient-to-br from-cyan-600 to-teal-700 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Wallet className="w-6 h-6 text-white" />
+                </div>
+                <h4 className="text-lg font-bold text-white group-hover:text-cyan-300 mb-2">ZKP2P</h4>
+                <p className="text-gray-400 group-hover:text-gray-300 text-sm max-w-md mx-auto">Zero-knowledge peer-to-peer fiat onramp</p>
+              </Button>
+            </div>
           </GlassCard>
         </div>
       </main>

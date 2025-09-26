@@ -317,7 +317,9 @@ const TRUSTED_DOMAINS = [
   'alchemy.com',
   'www.alchemy.com',
   'yield.fi',
-  'www.yield.fi'
+  'www.yield.fi',
+  'zkp2p.xyz',
+  'www.zkp2p.xyz'
 ];
 
 /**
