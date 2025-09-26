@@ -222,6 +222,31 @@ export default function TradeSection() {
             </Button>
           </div>
 
+          {/* Stargate Finance Bridge iframe */}
+          <div className="mt-8">
+            <div className="flex justify-end mb-3">
+              <button
+                onClick={() => openInNewTab('https://stargate.finance/bridge')}
+                className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
+                data-testid="button-stargate-fullview"
+              >
+                Open Full View <ExternalLink className="w-3 h-3" />
+              </button>
+            </div>
+            <div className="w-full">
+              <iframe
+                src="https://stargate.finance/bridge"
+                className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+                title="Stargate Finance Bridge"
+                frameBorder="0"
+                loading="lazy"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+                referrerPolicy="no-referrer-when-downgrade"
+                data-testid="iframe-stargate"
+              />
+            </div>
+          </div>
+
           {/* Mayan Finance iframe */}
           <div className="mt-8">
             <div className="flex justify-end mb-3">

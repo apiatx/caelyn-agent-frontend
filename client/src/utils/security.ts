@@ -291,6 +291,8 @@ const TRUSTED_DOMAINS = [
   'platform.alphanomics.io',
   'alphanomics.io',
   'www.alphanomics.io',
+  'stargate.finance',
+  'www.stargate.finance',
   // DeFi Analytics
   'defillama.com',
   'www.defillama.com',
