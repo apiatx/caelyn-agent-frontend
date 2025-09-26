@@ -315,7 +315,9 @@ const TRUSTED_DOMAINS = [
   'app.plasma.to',
   'plasma.to',
   'alchemy.com',
-  'www.alchemy.com'
+  'www.alchemy.com',
+  'yield.fi',
+  'www.yield.fi'
 ];
 
 /**
