@@ -285,6 +285,9 @@ const TRUSTED_DOMAINS = [
   'lombard.finance',
   'www.lombard.finance',
   'app.lombard.finance',
+  'apex.exchange',
+  'app.apex.exchange',
+  'www.apex.exchange',
   // DeFi Analytics
   'defillama.com',
   'www.defillama.com',
