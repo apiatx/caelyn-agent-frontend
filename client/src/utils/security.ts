@@ -263,6 +263,12 @@ const TRUSTED_DOMAINS = [
   'app.rubic.exchange',
   'rubic.exchange',
   'www.rubic.exchange',
+  'app.reservoir.xyz',
+  'reservoir.xyz',
+  'www.reservoir.xyz',
+  'app.spark.fi',
+  'spark.fi',
+  'www.spark.fi',
   // DeFi Analytics
   'defillama.com',
   'www.defillama.com',
