@@ -311,7 +311,9 @@ const TRUSTED_DOMAINS = [
   'swap.mayan.finance',
   'mayan.finance',
   'www.mayan.finance',
-  'oku.trade'
+  'oku.trade',
+  'app.plasma.to',
+  'plasma.to'
 ];
 
 /**
