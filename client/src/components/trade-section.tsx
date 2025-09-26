@@ -205,6 +205,23 @@ export default function TradeSection() {
             </div>
           </div>
 
+          {/* Jumper Exchange Button - Big purple button like Matcha */}
+          <div className="w-full mt-6">
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://jumper.exchange/')}
+              className="group w-full bg-gradient-to-br from-purple-500/40 via-violet-500/30 to-purple-500/40 border-purple-400/50 hover:from-purple-400/50 hover:via-violet-400/40 hover:to-purple-400/50 hover:border-purple-300/70 text-white justify-center p-8 h-auto shadow-2xl hover:shadow-purple-500/40 transform hover:scale-[1.02] transition-all duration-500 backdrop-blur-sm"
+            >
+              <div className="text-center">
+                <div className="font-bold text-2xl flex items-center justify-center gap-3 mb-2">
+                  <ArrowLeftRight className="w-7 h-7 group-hover:rotate-180 transition-transform duration-500" />
+                  Jumper Exchange
+                </div>
+                <div className="text-base text-purple-100/90 font-medium">Multi-chain bridge aggregator</div>
+              </div>
+            </Button>
+          </div>
+
           {/* Matcha Button - Same style as Definitive Edge but green */}
           <div className="w-full mt-6">
             <Button
@@ -226,15 +243,15 @@ export default function TradeSection() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <Button
               variant="outline"
-              onClick={() => openInNewTab('https://jumper.exchange/')}
+              onClick={() => openInNewTab('https://oku.trade/?isExactOut=false&inputChain=plasma&inToken=0x6100E367285b01F48D07953803A2d8dCA5D19873&outToken=0xB8CE59FC3717ada4C02eaDF9682A9e934F625ebb')}
               className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
             >
               <div className="text-center">
                 <div className="font-bold text-base flex items-center justify-center">
                   <ArrowLeftRight className="w-5 h-5 mr-2 group-hover:rotate-180 transition-transform duration-300" />
-                  Jumper Exchange
+                  Oku Trade
                 </div>
-                <div className="text-sm text-gray-300">Multi-chain bridge aggregator</div>
+                <div className="text-sm text-gray-300">Plasma chain DEX</div>
               </div>
             </Button>
 
@@ -312,32 +329,7 @@ export default function TradeSection() {
             </Button>
           </div>
 
-          {/* Oku Trade iframe */}
-          <div className="mt-8">
-            <div className="flex justify-end mb-3">
-              <button
-                onClick={() => openInNewTab('https://oku.trade/?isExactOut=false&inputChain=plasma&inToken=0x6100E367285b01F48D07953803A2d8dCA5D19873&outToken=0xB8CE59FC3717ada4C02eaDF9682A9e934F625ebb')}
-                className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
-                data-testid="button-oku-fullview"
-              >
-                Open Full View <ExternalLink className="w-3 h-3" />
-              </button>
-            </div>
-            <div className="w-full">
-              <iframe
-                src="https://oku.trade/?isExactOut=false&inputChain=plasma&inToken=0x6100E367285b01F48D07953803A2d8dCA5D19873&outToken=0xB8CE59FC3717ada4C02eaDF9682A9e934F625ebb"
-                className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-                title="Oku Trade Plasma Chain Swap"
-                frameBorder="0"
-                loading="lazy"
-                sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
-                referrerPolicy="no-referrer-when-downgrade"
-                data-testid="iframe-oku"
-              />
-            </div>
-          </div>
-
-          {/* Mayan Finance iframe */}
+{/* Mayan Finance iframe */}
           <div className="mt-8">
             <div className="flex justify-end mb-3">
               <button
