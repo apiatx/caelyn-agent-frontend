@@ -537,6 +537,29 @@ export default function DeFiSection() {
               </div>
             </Button>
           </div>
+
+          {/* Lombard Finance - Full Width Button */}
+          <div className="mt-6">
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://www.lombard.finance/app/')}
+              className="w-full h-20 text-white border-green-500/40 bg-gradient-to-r from-green-500/20 via-emerald-600/15 to-teal-500/20 hover:from-green-500/30 hover:via-emerald-600/25 hover:to-teal-500/30 hover:border-green-400/60 shadow-lg hover:shadow-green-500/25 transition-all duration-300"
+              data-testid="button-lombard"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg shadow-green-500/30">
+                  <DollarSign className="h-6 w-6 text-white" />
+                </div>
+                <div className="text-center flex-1">
+                  <div className="font-bold text-xl">Lombard Finance</div>
+                  <div className="text-sm text-green-200">Bitcoin DeFi Protocol</div>
+                </div>
+                <div className="ml-auto text-green-300/60">
+                  →
+                </div>
+              </div>
+            </Button>
+          </div>
         </div>
       </GlassCard>
 
