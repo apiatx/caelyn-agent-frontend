@@ -210,6 +210,22 @@ export default function TradePerpsPage() {
                 </div>
               </Button>
 
+              {/* Thena Perps - Full Width Yellow Button */}
+              <Button
+                variant="outline"
+                onClick={() => openInNewTab('https://perps.thena.fi/trade/BTCUSDT')}
+                className="group w-full bg-gradient-to-br from-yellow-500/40 via-orange-500/30 to-yellow-500/40 border-yellow-400/50 hover:from-yellow-400/50 hover:via-orange-400/40 hover:to-yellow-400/50 hover:border-yellow-300/70 text-white justify-center p-7 h-auto shadow-2xl hover:shadow-yellow-500/30 transform hover:scale-[1.02] transition-all duration-500 backdrop-blur-sm mb-8"
+                data-testid="button-thena-perps"
+              >
+                <div className="text-center">
+                  <div className="font-bold text-xl flex items-center justify-center">
+                    <TrendingUp className="w-6 h-6 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-500" />
+                    Thena Perps
+                  </div>
+                  <div className="text-sm text-yellow-100/90 font-medium">BTC-USDT perpetual futures trading</div>
+                </div>
+              </Button>
+
 
               {/* Other Apps */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

@@ -321,7 +321,8 @@ const TRUSTED_DOMAINS = [
   'zkp2p.xyz',
   'www.zkp2p.xyz',
   'thena.fi',
-  'www.thena.fi'
+  'www.thena.fi',
+  'perps.thena.fi'
 ];
 
 /**
