@@ -236,6 +236,27 @@ export default function DeFiSection() {
               </div>
             </div>
           </Button>
+
+          {/* Kinetiq Enhanced Button */}
+          <Button
+            variant="outline"
+            onClick={() => openInNewTab('https://kinetiq.xyz/earn')}
+            className="w-full h-20 text-white border-cyan-500/40 bg-gradient-to-r from-cyan-500/20 via-blue-600/15 to-teal-500/20 hover:from-cyan-500/30 hover:via-blue-600/25 hover:to-teal-500/30 hover:border-cyan-400/60 shadow-lg hover:shadow-cyan-500/25 transition-all duration-300"
+            data-testid="button-kinetiq-earn"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-teal-500 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-500/30">
+                <TrendingUp className="h-6 w-6 text-white" />
+              </div>
+              <div className="text-center">
+                <div className="font-bold text-xl">Kinetiq</div>
+                <div className="text-sm text-cyan-200">Put your HYPE to work across leading DeFi protocols</div>
+              </div>
+              <div className="ml-auto text-cyan-300/60">
+                →
+              </div>
+            </div>
+          </Button>
         </div>
 
         {/* DeFi Platform Links */}
@@ -454,23 +475,6 @@ export default function DeFiSection() {
           </Button>
         </div>
 
-        {/* Kinetiq Earn Button */}
-        <div className="mt-6 mb-6">
-          <Button
-            variant="outline"
-            onClick={() => openInNewTab('https://kinetiq.xyz/earn')}
-            className="bg-black/20 border-crypto-silver/20 hover:bg-blue-500/20 hover:border-blue-500/30 text-white justify-start p-6 h-auto flex-col space-y-2 w-full"
-            data-testid="button-kinetiq-earn"
-          >
-            <div className="p-3 rounded-lg bg-gradient-to-r from-blue-500/20 to-cyan-500/20">
-              <TrendingUp className="h-6 w-6 text-blue-400" />
-            </div>
-            <div className="text-center">
-              <div className="font-semibold text-lg">Kinetiq</div>
-              <div className="text-sm text-crypto-silver">Put your HYPE to work across leading DeFi protocols</div>
-            </div>
-          </Button>
-        </div>
 
         {/* Bitcoin DeFi Section */}
         <div className="mt-8">
