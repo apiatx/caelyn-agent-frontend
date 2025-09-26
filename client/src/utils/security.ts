@@ -279,6 +279,12 @@ const TRUSTED_DOMAINS = [
   'app.tharwa.finance',
   'tharwa.finance',
   'www.tharwa.finance',
+  'usda.avalonfinance.xyz',
+  'avalonfinance.xyz',
+  'www.avalonfinance.xyz',
+  'lombard.finance',
+  'www.lombard.finance',
+  'app.lombard.finance',
   // DeFi Analytics
   'defillama.com',
   'www.defillama.com',
