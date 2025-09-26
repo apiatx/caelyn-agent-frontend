@@ -153,14 +153,6 @@ export default function AlphaSection() {
             </div>
           </div>
 
-          {/* Alphanomics */}
-          <div className="mb-8">
-            <SafeIframe
-              src="https://platform.alphanomics.io/bubblescanner"
-              title="Alphanomics Analytics Platform"
-              className="h-[600px]"
-            />
-          </div>
 
           {/* BBTerminal Trading Terminal */}
           <div className="mb-8">
@@ -427,6 +419,36 @@ export default function AlphaSection() {
               <p className="text-gray-300 text-sm font-medium text-center">Web3 alpha projects on BSC</p>
             </SafeLink>
           </div>
+          
+        </GlassCard>
+      </div>
+
+      {/* Alphanomics Bubble Scanner - Separate GlassCard */}
+      <div className="space-y-8 mt-12">
+        <GlassCard className="p-3 sm:p-4 lg:p-6">
+          <div className="flex items-center justify-center mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-xs font-bold">A</span>
+              </div>
+              <h4 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-blue-300 bg-clip-text text-transparent">Alphanomics Bubble Scanner</h4>
+            </div>
+          </div>
+          
+          <div className="flex justify-end mb-4">
+            <SafeLink
+              href="https://platform.alphanomics.io/bubblescanner"
+              className="text-purple-300 hover:text-purple-200 text-sm font-medium hover:underline transition-colors duration-300"
+            >
+              Open Full Platform →
+            </SafeLink>
+          </div>
+          
+          <SafeIframe
+            src="https://platform.alphanomics.io/bubblescanner"
+            title="Alphanomics Bubble Scanner"
+            className="h-[700px]"
+          />
           
         </GlassCard>
       </div>
