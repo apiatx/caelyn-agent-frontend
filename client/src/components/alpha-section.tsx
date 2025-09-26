@@ -156,7 +156,7 @@ export default function AlphaSection() {
           {/* Alphanomics */}
           <div className="mb-8">
             <SafeIframe
-              src="https://platform.alphanomics.io/"
+              src="https://platform.alphanomics.io/bubblescanner"
               title="Alphanomics Analytics Platform"
               className="h-[600px]"
             />

@@ -288,6 +288,9 @@ const TRUSTED_DOMAINS = [
   'apex.exchange',
   'app.apex.exchange',
   'www.apex.exchange',
+  'platform.alphanomics.io',
+  'alphanomics.io',
+  'www.alphanomics.io',
   // DeFi Analytics
   'defillama.com',
   'www.defillama.com',

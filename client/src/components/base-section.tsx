@@ -400,6 +400,30 @@ export default function BaseSection() {
           </SafeLink>
         </div>
         <div className="space-y-4">
+          {/* Alphanomics iframe */}
+          <div className="w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg mb-4">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-xs font-bold">A</span>
+              </div>
+              <h3 className="text-lg font-semibold text-white">Alphanomics</h3>
+              <span className="px-2 py-1 bg-purple-500/20 text-purple-400 text-xs rounded-full font-medium">
+                ANALYTICS
+              </span>
+              <SafeLink 
+                href="https://platform.alphanomics.io/"
+                className="ml-auto text-purple-400 hover:text-purple-300 text-xs"
+              >
+                Open in New Tab →
+              </SafeLink>
+            </div>
+            <SafeIframe 
+              src="https://platform.alphanomics.io/"
+              title="Alphanomics Analytics Platform"
+              className="w-full h-[600px] rounded-lg"
+            />
+          </div>
+          
           {/* Farterminal iframe moved to top */}
           <div className="w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg mb-4">
             <div className="flex items-center gap-2 mb-4">
