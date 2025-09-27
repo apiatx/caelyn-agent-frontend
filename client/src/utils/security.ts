@@ -329,6 +329,7 @@ const TRUSTED_DOMAINS = [
   'app.gammaswap.com',
   'app.gearbox.fi',
   'app.pendle.finance',
+  'boros.pendle.finance',
   'app.maple.finance',
   'betbase.xyz'
 ];

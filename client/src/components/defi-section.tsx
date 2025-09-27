@@ -354,6 +354,21 @@ export default function DeFiSection() {
 
           <Button
             variant="outline"
+            onClick={() => openInNewTab('https://boros.pendle.finance/markets')}
+            className="bg-black/20 border-crypto-silver/20 hover:bg-purple-500/20 hover:border-purple-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
+            data-testid="button-borosfi"
+          >
+            <div className="p-3 rounded-lg bg-gradient-to-r from-green-500/20 to-teal-500/20">
+              <TrendingUp className="h-6 w-6 text-green-400" />
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-lg">BorosFi</div>
+              <div className="text-sm text-crypto-silver">Yield markets</div>
+            </div>
+          </Button>
+
+          <Button
+            variant="outline"
             onClick={() => openInNewTab('https://app.maple.finance/earn?_gl=1*8470fi*_ga*MTA1NDM1NDE0OS4xNzU4OTg4ODUw*_ga_7GW90C7X77*czE3NTg5ODg4NDkkbzEkZzAkdDE3NTg5ODg4NDkkajYwJGwwJGgw')}
             className="bg-black/20 border-crypto-silver/20 hover:bg-purple-500/20 hover:border-purple-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
             data-testid="button-maple"
