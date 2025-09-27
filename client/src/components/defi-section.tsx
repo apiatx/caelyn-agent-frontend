@@ -194,58 +194,6 @@ export default function DeFiSection() {
           </div>
         </div>
 
-        {/* Resolv Iframe */}
-        <div className="mb-8">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-6 h-6 bg-cyan-500 rounded-full flex items-center justify-center">
-              <TrendingUp className="w-4 h-4 text-white" />
-            </div>
-            <h4 className="text-xl font-semibold text-white">Resolv</h4>
-            <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30">
-              DEFI PLATFORM
-            </Badge>
-            <button
-              onClick={() => openInNewTab('https://app.resolv.xyz/overview')}
-              className="text-cyan-400 hover:text-cyan-300 text-sm ml-auto"
-            >
-              Open Full View →
-            </button>
-          </div>
-          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-            <SafeIframe
-              src="https://app.resolv.xyz/overview"
-              title="Resolv DeFi Platform"
-              className="w-full h-[600px] border-0"
-            />
-          </div>
-        </div>
-
-        {/* Initia Iframe */}
-        <div className="mb-8">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center">
-              <Layers className="w-4 h-4 text-white" />
-            </div>
-            <h4 className="text-xl font-semibold text-white">Initia</h4>
-            <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
-              LIQUIDITY PLATFORM
-            </Badge>
-            <button
-              onClick={() => openInNewTab('https://app.initia.xyz/liquidity')}
-              className="text-emerald-400 hover:text-emerald-300 text-sm ml-auto"
-            >
-              Open Full View →
-            </button>
-          </div>
-          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-            <SafeIframe
-              src="https://app.initia.xyz/liquidity"
-              title="Initia Liquidity Platform"
-              className="w-full h-[600px] border-0"
-            />
-          </div>
-        </div>
-
         {/* Spark Fi Iframe */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-4">
@@ -452,6 +400,7 @@ export default function DeFiSection() {
             variant="outline"
             onClick={() => openInNewTab('https://app.aave.com/?ampDeviceId=c6075ac5-445d-4e03-b727-5c01b59e4b95')}
             className="bg-black/20 border-crypto-silver/20 hover:bg-purple-500/20 hover:border-purple-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
+            data-testid="button-aave"
           >
             <div className="p-3 rounded-lg bg-gradient-to-r from-purple-500/20 to-pink-500/20">
               <DollarSign className="h-6 w-6 text-purple-400" />
@@ -464,15 +413,31 @@ export default function DeFiSection() {
 
           <Button
             variant="outline"
-            onClick={() => openInNewTab('https://lido.fi/lido-multichain')}
-            className="bg-black/20 border-crypto-silver/20 hover:bg-blue-500/20 hover:border-blue-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
+            onClick={() => openInNewTab('https://app.resolv.xyz/overview')}
+            className="bg-black/20 border-crypto-silver/20 hover:bg-purple-500/20 hover:border-purple-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
+            data-testid="button-resolv"
           >
-            <div className="p-3 rounded-lg bg-gradient-to-r from-blue-500/20 to-cyan-500/20">
-              <Layers className="h-6 w-6 text-blue-400" />
+            <div className="p-3 rounded-lg bg-gradient-to-r from-cyan-500/20 to-teal-500/20">
+              <TrendingUp className="h-6 w-6 text-cyan-400" />
             </div>
             <div className="text-center">
-              <div className="font-semibold text-lg">Lido</div>
-              <div className="text-sm text-crypto-silver">Liquid staking</div>
+              <div className="font-semibold text-lg">Resolv</div>
+              <div className="text-sm text-crypto-silver">DeFi platform</div>
+            </div>
+          </Button>
+
+          <Button
+            variant="outline"
+            onClick={() => openInNewTab('https://app.initia.xyz/liquidity')}
+            className="bg-black/20 border-crypto-silver/20 hover:bg-purple-500/20 hover:border-purple-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
+            data-testid="button-initia"
+          >
+            <div className="p-3 rounded-lg bg-gradient-to-r from-emerald-500/20 to-green-500/20">
+              <Layers className="h-6 w-6 text-emerald-400" />
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-lg">Initia</div>
+              <div className="text-sm text-crypto-silver">Liquidity platform</div>
             </div>
           </Button>
 
