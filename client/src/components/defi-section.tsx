@@ -441,6 +441,21 @@ export default function DeFiSection() {
             </div>
           </Button>
 
+          <Button
+            variant="outline"
+            onClick={() => openInNewTab('https://lido.fi/lido-multichain')}
+            className="bg-black/20 border-crypto-silver/20 hover:bg-blue-500/20 hover:border-blue-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
+            data-testid="button-lido"
+          >
+            <div className="p-3 rounded-lg bg-gradient-to-r from-blue-500/20 to-cyan-500/20">
+              <Layers className="h-6 w-6 text-blue-400" />
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-lg">Lido</div>
+              <div className="text-sm text-crypto-silver">Liquid staking</div>
+            </div>
+          </Button>
+
           <a
             href="https://app.eigenlayer.xyz/"
             target="_blank"
