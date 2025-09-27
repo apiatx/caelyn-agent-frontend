@@ -118,31 +118,6 @@ export default function DeFiSection() {
           </div>
         </div>
 
-        {/* OKX Earn Iframe */}
-        <div className="mb-8">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
-              <DollarSign className="w-4 h-4 text-white" />
-            </div>
-            <h4 className="text-xl font-semibold text-white">OKX Earn</h4>
-            <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30">
-              YIELD FARMING
-            </Badge>
-            <button
-              onClick={() => openInNewTab('https://web3.okx.com/earn')}
-              className="text-orange-400 hover:text-orange-300 text-sm ml-auto"
-            >
-              Open Full View →
-            </button>
-          </div>
-          <iframe
-            src="https://web3.okx.com/earn"
-            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            title="OKX Earn"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-          />
-        </div>
-
         {/* Reservoir Iframe */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-4">
@@ -664,6 +639,21 @@ export default function DeFiSection() {
             <div className="text-center">
               <div className="font-semibold text-lg">Mux Network</div>
               <div className="text-sm text-crypto-silver">Liquidity protocol</div>
+            </div>
+          </Button>
+
+          <Button
+            variant="outline"
+            onClick={() => openInNewTab('https://web3.okx.com/earn')}
+            className="bg-black/20 border-crypto-silver/20 hover:bg-orange-500/20 hover:border-orange-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
+            data-testid="button-okx-earn"
+          >
+            <div className="p-3 rounded-lg bg-gradient-to-r from-orange-500/20 to-amber-500/20">
+              <TrendingUp className="h-6 w-6 text-orange-400" />
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-lg">OKX Earn</div>
+              <div className="text-sm text-crypto-silver">Yield farming</div>
             </div>
           </Button>
         </div>
