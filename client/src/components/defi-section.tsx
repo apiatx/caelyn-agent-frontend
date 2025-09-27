@@ -168,32 +168,6 @@ export default function DeFiSection() {
           </div>
         </div>
 
-        {/* Kamino Finance Iframe */}
-        <div className="mb-8">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
-              <DollarSign className="w-4 h-4 text-white" />
-            </div>
-            <h4 className="text-xl font-semibold text-white">Kamino Finance</h4>
-            <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
-              EARN PLATFORM
-            </Badge>
-            <button
-              onClick={() => openInNewTab('https://kamino.com/earn')}
-              className="text-purple-400 hover:text-purple-300 text-sm ml-auto"
-            >
-              Open Full View →
-            </button>
-          </div>
-          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-            <SafeIframe
-              src="https://kamino.com/earn"
-              title="Kamino Finance Earn Platform"
-              className="w-full h-[600px] border-0"
-            />
-          </div>
-        </div>
-
         {/* Spark Fi Iframe */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-4">
@@ -245,95 +219,82 @@ export default function DeFiSection() {
           />
         </div>
 
-        {/* Enhanced DeFi Platform Buttons */}
-        <div className="space-y-4 mb-8">
-          {/* Fluid Finance Enhanced Button */}
+        {/* DeFi Platform Links */}
+        <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-8">
           <Button
             variant="outline"
             onClick={() => openInNewTab('https://fluid.instadapp.io/')}
-            className="w-full h-20 text-white border-blue-500/40 bg-gradient-to-r from-blue-500/20 via-blue-600/15 to-cyan-500/20 hover:from-blue-500/30 hover:via-blue-600/25 hover:to-cyan-500/30 hover:border-blue-400/60 shadow-lg hover:shadow-blue-500/25 transition-all duration-300"
+            className="bg-black/20 border-crypto-silver/20 hover:bg-purple-500/20 hover:border-purple-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
             data-testid="button-fluid"
           >
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
-                <Wallet className="h-6 w-6 text-white" />
-              </div>
-              <div className="text-center">
-                <div className="font-bold text-xl">Fluid</div>
-                <div className="text-sm text-blue-200">Advanced DeFi Protocol Platform</div>
-              </div>
-              <div className="ml-auto text-blue-300/60">
-                →
-              </div>
+            <div className="p-3 rounded-lg bg-gradient-to-r from-blue-500/20 to-cyan-500/20">
+              <Wallet className="h-6 w-6 text-blue-400" />
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-lg">Fluid</div>
+              <div className="text-sm text-crypto-silver">DeFi Protocol Platform</div>
             </div>
           </Button>
 
-          {/* Plasma.to Enhanced Button */}
           <Button
             variant="outline"
             onClick={() => openInNewTab('https://app.plasma.to/')}
-            className="w-full h-20 text-white border-purple-500/40 bg-gradient-to-r from-purple-500/20 via-violet-600/15 to-indigo-500/20 hover:from-purple-500/30 hover:via-violet-600/25 hover:to-indigo-500/30 hover:border-purple-400/60 shadow-lg hover:shadow-purple-500/25 transition-all duration-300"
+            className="bg-black/20 border-crypto-silver/20 hover:bg-purple-500/20 hover:border-purple-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
             data-testid="button-plasma"
           >
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/30">
-                <Wallet className="h-6 w-6 text-white" />
-              </div>
-              <div className="text-center">
-                <div className="font-bold text-xl">Plasma.to</div>
-                <div className="text-sm text-purple-200">Advanced DeFi Platform</div>
-              </div>
-              <div className="ml-auto text-purple-300/60">
-                →
-              </div>
+            <div className="p-3 rounded-lg bg-gradient-to-r from-purple-500/20 to-indigo-500/20">
+              <Wallet className="h-6 w-6 text-purple-400" />
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-lg">Plasma.to</div>
+              <div className="text-sm text-crypto-silver">DeFi Platform</div>
             </div>
           </Button>
 
-          {/* Kernel DAO Enhanced Button */}
           <Button
             variant="outline"
             onClick={() => openInNewTab('https://kerneldao.com/')}
-            className="w-full h-20 text-white border-purple-500/40 bg-gradient-to-r from-purple-500/20 via-violet-600/15 to-indigo-500/20 hover:from-purple-500/30 hover:via-violet-600/25 hover:to-indigo-500/30 hover:border-purple-400/60 shadow-lg hover:shadow-purple-500/25 transition-all duration-300"
+            className="bg-black/20 border-crypto-silver/20 hover:bg-purple-500/20 hover:border-purple-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
             data-testid="button-kernel"
           >
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/30">
-                <Database className="h-6 w-6 text-white" />
-              </div>
-              <div className="text-center">
-                <div className="font-bold text-xl">Kernel DAO</div>
-                <div className="text-sm text-purple-200">Web3 Builder Community & Education</div>
-              </div>
-              <div className="ml-auto text-purple-300/60">
-                →
-              </div>
+            <div className="p-3 rounded-lg bg-gradient-to-r from-purple-500/20 to-indigo-500/20">
+              <Database className="h-6 w-6 text-purple-400" />
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-lg">Kernel DAO</div>
+              <div className="text-sm text-crypto-silver">Web3 Builder Community</div>
             </div>
           </Button>
 
-          {/* Kinetiq Enhanced Button */}
           <Button
             variant="outline"
             onClick={() => openInNewTab('https://kinetiq.xyz/earn')}
-            className="w-full h-20 text-white border-cyan-500/40 bg-gradient-to-r from-cyan-500/20 via-blue-600/15 to-teal-500/20 hover:from-cyan-500/30 hover:via-blue-600/25 hover:to-teal-500/30 hover:border-cyan-400/60 shadow-lg hover:shadow-cyan-500/25 transition-all duration-300"
+            className="bg-black/20 border-crypto-silver/20 hover:bg-purple-500/20 hover:border-purple-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
             data-testid="button-kinetiq-earn"
           >
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-teal-500 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-500/30">
-                <TrendingUp className="h-6 w-6 text-white" />
-              </div>
-              <div className="text-center">
-                <div className="font-bold text-xl">Kinetiq</div>
-                <div className="text-sm text-cyan-200">Put your HYPE to work across leading DeFi protocols</div>
-              </div>
-              <div className="ml-auto text-cyan-300/60">
-                →
-              </div>
+            <div className="p-3 rounded-lg bg-gradient-to-r from-cyan-500/20 to-teal-500/20">
+              <TrendingUp className="h-6 w-6 text-cyan-400" />
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-lg">Kinetiq</div>
+              <div className="text-sm text-crypto-silver">HYPE DeFi protocols</div>
             </div>
           </Button>
-        </div>
 
-        {/* DeFi Platform Links */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-8">
+          <Button
+            variant="outline"
+            onClick={() => openInNewTab('https://kamino.com/earn')}
+            className="bg-black/20 border-crypto-silver/20 hover:bg-purple-500/20 hover:border-purple-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
+            data-testid="button-kamino"
+          >
+            <div className="p-3 rounded-lg bg-gradient-to-r from-purple-500/20 to-pink-500/20">
+              <DollarSign className="h-6 w-6 text-purple-400" />
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-lg">Kamino</div>
+              <div className="text-sm text-crypto-silver">Earn Platform</div>
+            </div>
+          </Button>
           <Button
             variant="outline"
             onClick={() => openInNewTab('https://app.euler.finance/earn?network=ethereum')}
