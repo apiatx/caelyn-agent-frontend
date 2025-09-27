@@ -168,6 +168,32 @@ export default function DeFiSection() {
           </div>
         </div>
 
+        {/* Aarna AI Engine Iframe */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-6 h-6 bg-indigo-500 rounded-full flex items-center justify-center">
+              <Brain className="w-4 h-4 text-white" />
+            </div>
+            <h4 className="text-xl font-semibold text-white">Aarna AI Engine</h4>
+            <Badge className="bg-indigo-500/20 text-indigo-400 border-indigo-500/30">
+              AI PLATFORM
+            </Badge>
+            <button
+              onClick={() => openInNewTab('https://engine.aarna.ai/?_branch_match_id=1349040087720564161&_branch_referrer=H4sIAAAAAAAAA8soKSkottLXTywo0EtMLMpL1EvM1HfLN7Lw98oxzAxPsq8rSk1LLSrKzEuPTyrKLy9OLbJ1zijKz00FAD%2FYufM6AAAA')}
+              className="text-indigo-400 hover:text-indigo-300 text-sm ml-auto"
+            >
+              Open Full View →
+            </button>
+          </div>
+          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+            <SafeIframe
+              src="https://engine.aarna.ai/?_branch_match_id=1349040087720564161&_branch_referrer=H4sIAAAAAAAAA8soKSkottLXTywo0EtMLMpL1EvM1HfLN7Lw98oxzAxPsq8rSk1LLSrKzEuPTyrKLy9OLbJ1zijKz00FAD%2FYufM6AAAA"
+              title="Aarna AI Engine Platform"
+              className="w-full h-[600px] border-0"
+            />
+          </div>
+        </div>
+
         {/* Spark Fi Iframe */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-4">
