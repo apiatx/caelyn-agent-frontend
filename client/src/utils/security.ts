@@ -331,7 +331,9 @@ const TRUSTED_DOMAINS = [
   'app.pendle.finance',
   'boros.pendle.finance',
   'app.maple.finance',
-  'betbase.xyz'
+  'betbase.xyz',
+  'app.resolv.xyz',
+  'app.initia.xyz'
 ];
 
 /**
