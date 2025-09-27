@@ -326,7 +326,8 @@ const TRUSTED_DOMAINS = [
   'kamino.com',
   'www.kamino.com',
   'engine.aarna.ai',
-  'app.gammaswap.com'
+  'app.gammaswap.com',
+  'app.gearbox.fi'
 ];
 
 /**
