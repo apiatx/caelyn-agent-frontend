@@ -333,7 +333,9 @@ const TRUSTED_DOMAINS = [
   'app.maple.finance',
   'betbase.xyz',
   'app.resolv.xyz',
-  'app.initia.xyz'
+  'app.initia.xyz',
+  'mux.network',
+  'app.mux.network'
 ];
 
 /**

@@ -220,6 +220,31 @@ export default function DeFiSection() {
           </div>
         </div>
 
+        {/* Mux Network Iframe */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
+              <DollarSign className="w-4 h-4 text-white" />
+            </div>
+            <h4 className="text-xl font-semibold text-white">Mux Network</h4>
+            <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
+              LIQUIDITY
+            </Badge>
+            <button
+              onClick={() => openInNewTab('https://app.mux.network/#/liquidity/mux-v3/overview?chainId=42161')}
+              className="text-purple-400 hover:text-purple-300 text-sm ml-auto"
+            >
+              Open Full View →
+            </button>
+          </div>
+          <iframe
+            src="https://app.mux.network/#/liquidity/mux-v3/overview?chainId=42161"
+            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+            title="Mux Network"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+          />
+        </div>
+
 {/* Peapods Finance Iframe */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-4">
