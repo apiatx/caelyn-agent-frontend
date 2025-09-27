@@ -184,32 +184,20 @@ export default function TradeOptionsPage() {
                   </div>
                 </Button>
 
-              </div>
-
-              {/* GammaSwap Iframe */}
-              <div className="mt-8">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
-                    <Activity className="w-4 h-4 text-white" />
+                <Button
+                  variant="outline"
+                  onClick={() => openInNewTab('https://app.gammaswap.com/trade/mainnet/0xccaab6d7bee6d60bceeec0924f2ea188efa3d39f')}
+                  className="group bg-gradient-to-br from-purple-600/30 via-violet-600/20 to-indigo-600/30 border-purple-400/40 hover:from-purple-500/40 hover:via-violet-500/30 hover:to-indigo-500/40 hover:border-purple-300/60 text-white justify-center p-5 h-auto shadow-xl hover:shadow-purple-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+                >
+                  <div className="text-center">
+                    <div className="font-bold text-base flex items-center justify-center">
+                      <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
+                      GammaSwap
+                    </div>
+                    <div className="text-sm text-purple-200/90">Gamma trading platform</div>
                   </div>
-                  <h4 className="text-xl font-semibold text-white">GammaSwap</h4>
-                  <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
-                    GAMMA TRADING
-                  </Badge>
-                  <button
-                    onClick={() => openInNewTab('https://app.gammaswap.com/trade/mainnet/0xccaab6d7bee6d60bceeec0924f2ea188efa3d39f')}
-                    className="text-purple-400 hover:text-purple-300 text-sm ml-auto"
-                  >
-                    Open Full View →
-                  </button>
-                </div>
-                <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-                  <SafeIframe
-                    src="https://app.gammaswap.com/trade/mainnet/0xccaab6d7bee6d60bceeec0924f2ea188efa3d39f"
-                    title="GammaSwap Trading Platform"
-                    className="w-full h-[600px] border-0"
-                  />
-                </div>
+                </Button>
+
               </div>
             </div>
           </GlassCard>
