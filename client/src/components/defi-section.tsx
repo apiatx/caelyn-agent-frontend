@@ -118,6 +118,58 @@ export default function DeFiSection() {
           </div>
         </div>
 
+        {/* Pendle Finance Iframe */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+              <TrendingUp className="w-4 h-4 text-white" />
+            </div>
+            <h4 className="text-xl font-semibold text-white">Pendle Finance</h4>
+            <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+              YIELD TRADING
+            </Badge>
+            <button
+              onClick={() => openInNewTab('https://app.pendle.finance/trade/markets')}
+              className="text-green-400 hover:text-green-300 text-sm ml-auto"
+            >
+              Open Full View →
+            </button>
+          </div>
+          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+            <SafeIframe
+              src="https://app.pendle.finance/trade/markets"
+              title="Pendle Finance Yield Trading Markets"
+              className="w-full h-[600px] border-0"
+            />
+          </div>
+        </div>
+
+        {/* Maple Finance Iframe */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center">
+              <DollarSign className="w-4 h-4 text-white" />
+            </div>
+            <h4 className="text-xl font-semibold text-white">Maple Finance</h4>
+            <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">
+              LENDING PROTOCOL
+            </Badge>
+            <button
+              onClick={() => openInNewTab('https://app.maple.finance/earn?_gl=1*8470fi*_ga*MTA1NDM1NDE0OS4xNzU4OTg4ODUw*_ga_7GW90C7X77*czE3NTg5ODg4NDkkbzEkZzAkdDE3NTg5ODg4NDkkajYwJGwwJGgw')}
+              className="text-amber-400 hover:text-amber-300 text-sm ml-auto"
+            >
+              Open Full View →
+            </button>
+          </div>
+          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+            <SafeIframe
+              src="https://app.maple.finance/earn?_gl=1*8470fi*_ga*MTA1NDM1NDE0OS4xNzU4OTg4ODUw*_ga_7GW90C7X77*czE3NTg5ODg4NDkkbzEkZzAkdDE3NTg5ODg4NDkkajYwJGwwJGgw"
+              title="Maple Finance Lending Platform"
+              className="w-full h-[600px] border-0"
+            />
+          </div>
+        </div>
+
         {/* Reservoir Iframe */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-4">
