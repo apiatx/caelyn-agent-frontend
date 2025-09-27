@@ -127,14 +127,6 @@ export default function TradeOptionsPage() {
           <GlassCard className="p-8">
             {/* Options Subsection */}
             <div className="space-y-6">
-              <div className="text-center mb-6">
-                <div className="flex items-center justify-center gap-3 mb-2">
-                  <div className="w-8 h-8 bg-gradient-to-r from-green-400 to-emerald-500 rounded-lg flex items-center justify-center">
-                    <TrendingUp className="w-4 h-4 text-white" />
-                  </div>
-                  <h4 className="text-2xl font-bold bg-gradient-to-r from-green-400 to-emerald-300 bg-clip-text text-transparent">Options</h4>
-                </div>
-              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <Button
                   variant="outline"
@@ -192,6 +184,32 @@ export default function TradeOptionsPage() {
                   </div>
                 </Button>
 
+              </div>
+
+              {/* GammaSwap Iframe */}
+              <div className="mt-8">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
+                    <Activity className="w-4 h-4 text-white" />
+                  </div>
+                  <h4 className="text-xl font-semibold text-white">GammaSwap</h4>
+                  <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
+                    GAMMA TRADING
+                  </Badge>
+                  <button
+                    onClick={() => openInNewTab('https://app.gammaswap.com/trade/mainnet/0xccaab6d7bee6d60bceeec0924f2ea188efa3d39f')}
+                    className="text-purple-400 hover:text-purple-300 text-sm ml-auto"
+                  >
+                    Open Full View →
+                  </button>
+                </div>
+                <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+                  <SafeIframe
+                    src="https://app.gammaswap.com/trade/mainnet/0xccaab6d7bee6d60bceeec0924f2ea188efa3d39f"
+                    title="GammaSwap Trading Platform"
+                    className="w-full h-[600px] border-0"
+                  />
+                </div>
               </div>
             </div>
           </GlassCard>

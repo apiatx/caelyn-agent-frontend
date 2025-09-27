@@ -325,7 +325,8 @@ const TRUSTED_DOMAINS = [
   'perps.thena.fi',
   'kamino.com',
   'www.kamino.com',
-  'engine.aarna.ai'
+  'engine.aarna.ai',
+  'app.gammaswap.com'
 ];
 
 /**
