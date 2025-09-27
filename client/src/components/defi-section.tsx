@@ -118,6 +118,31 @@ export default function DeFiSection() {
           </div>
         </div>
 
+        {/* OKX Earn Iframe */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
+              <DollarSign className="w-4 h-4 text-white" />
+            </div>
+            <h4 className="text-xl font-semibold text-white">OKX Earn</h4>
+            <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30">
+              YIELD FARMING
+            </Badge>
+            <button
+              onClick={() => openInNewTab('https://web3.okx.com/earn')}
+              className="text-orange-400 hover:text-orange-300 text-sm ml-auto"
+            >
+              Open Full View →
+            </button>
+          </div>
+          <iframe
+            src="https://web3.okx.com/earn"
+            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+            title="OKX Earn"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+          />
+        </div>
+
         {/* Reservoir Iframe */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-4">
@@ -220,30 +245,6 @@ export default function DeFiSection() {
           </div>
         </div>
 
-        {/* Mux Network Iframe */}
-        <div className="mb-8">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
-              <DollarSign className="w-4 h-4 text-white" />
-            </div>
-            <h4 className="text-xl font-semibold text-white">Mux Network</h4>
-            <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
-              LIQUIDITY
-            </Badge>
-            <button
-              onClick={() => openInNewTab('https://app.mux.network/#/liquidity/mux-v3/overview?chainId=42161')}
-              className="text-purple-400 hover:text-purple-300 text-sm ml-auto"
-            >
-              Open Full View →
-            </button>
-          </div>
-          <iframe
-            src="https://app.mux.network/#/liquidity/mux-v3/overview?chainId=42161"
-            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            title="Mux Network"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-          />
-        </div>
 
 {/* Peapods Finance Iframe */}
         <div className="mb-8">
@@ -648,6 +649,21 @@ export default function DeFiSection() {
             <div className="text-center">
               <div className="font-semibold text-lg">Harvest Finance</div>
               <div className="text-sm text-crypto-silver">Yield farming protocol</div>
+            </div>
+          </Button>
+
+          <Button
+            variant="outline"
+            onClick={() => openInNewTab('https://app.mux.network/#/liquidity/mux-v3/overview?chainId=42161')}
+            className="bg-black/20 border-crypto-silver/20 hover:bg-purple-500/20 hover:border-purple-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
+            data-testid="button-mux"
+          >
+            <div className="p-3 rounded-lg bg-gradient-to-r from-purple-500/20 to-indigo-500/20">
+              <ArrowLeftRight className="h-6 w-6 text-purple-400" />
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-lg">Mux Network</div>
+              <div className="text-sm text-crypto-silver">Liquidity protocol</div>
             </div>
           </Button>
         </div>
