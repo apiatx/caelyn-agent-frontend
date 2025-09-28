@@ -291,6 +291,39 @@ export default function PredictPage() {
               </div>
             </div>
           </div>
+          
+          {/* Overtime Markets */}
+          <div className="mt-6">
+            <div className="p-6 bg-gradient-to-r from-green-500/10 to-blue-500/10 border border-green-500/20 rounded-lg">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center">
+                    <TrendingUp className="w-4 h-4 text-white" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-white">Overtime Markets</h3>
+                </div>
+                <Button
+                  onClick={() => openInNewTab("https://www.overtimemarkets.xyz/markets?status=OpenMarkets&sport=Live")}
+                  className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white font-semibold px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  Open Overtime
+                </Button>
+              </div>
+              <p className="text-crypto-silver mb-4">
+                Decentralized sports prediction markets with live betting on major sports events.
+              </p>
+              <div className="bg-black/20 rounded-lg p-4 border border-green-500/20">
+                <p className="text-sm text-crypto-silver">
+                  ⚽ Live sports prediction markets
+                  <br />
+                  🏀 Decentralized betting on NBA, NFL, Soccer, and more
+                  <br />
+                  📊 Real-time odds and transparent market mechanics
+                </p>
+              </div>
+            </div>
+          </div>
         </GlassCard>
       </main>
     </div>

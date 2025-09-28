@@ -350,7 +350,9 @@ const TRUSTED_DOMAINS = [
   'xstocks.com',
   'yield.goat.network',
   'goat.network',
-  'speedmarkets.xyz'
+  'speedmarkets.xyz',
+  'overtimemarkets.xyz',
+  'www.overtimemarkets.xyz'
 ];
 
 /**
