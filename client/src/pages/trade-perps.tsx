@@ -204,7 +204,7 @@ export default function TradePerpsPage() {
                     <TrendingUp className="w-6 h-6 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-500" />
                     Paradex
                   </div>
-                  <div className="text-sm text-gray-800 font-medium">Advanced perpetual futures trading</div>
+                  <div className="text-sm text-white font-medium">Advanced perpetual futures trading</div>
                 </div>
               </Button>
 
@@ -224,19 +224,19 @@ export default function TradePerpsPage() {
                 </div>
               </Button>
 
-              {/* Aevo - White and Gray Button */}
+              {/* Aevo - Full Width White Button */}
               <Button
                 variant="outline"
                 onClick={() => openInNewTab('https://app.aevo.xyz/perpetual/eth')}
-                className="group bg-white/10 border-gray-400/30 hover:bg-gray-500/20 hover:border-gray-300/50 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm mb-6"
+                className="group w-full bg-white hover:bg-white/90 border-white/50 hover:border-white/70 text-black justify-center p-7 h-auto shadow-2xl hover:shadow-white/30 transform hover:scale-[1.02] transition-all duration-500 backdrop-blur-sm mb-8"
                 data-testid="button-aevo"
               >
                 <div className="text-center">
-                  <div className="font-bold text-base flex items-center justify-center">
-                    <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
+                  <div className="font-bold text-xl flex items-center justify-center">
+                    <TrendingUp className="w-6 h-6 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-500" />
                     Aevo
                   </div>
-                  <div className="text-sm text-gray-300/90 font-medium">ETH perpetual futures trading</div>
+                  <div className="text-sm text-black/80 font-medium">ETH perpetual futures trading</div>
                 </div>
               </Button>
 
