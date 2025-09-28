@@ -502,6 +502,21 @@ export default function DeFiSection() {
 
           <Button
             variant="outline"
+            onClick={() => openInNewTab('https://app.ethena.fi/')}
+            className="bg-black/20 border-crypto-silver/20 hover:bg-indigo-500/20 hover:border-indigo-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
+            data-testid="button-ethena"
+          >
+            <div className="p-3 rounded-lg bg-gradient-to-r from-indigo-500/20 to-violet-500/20">
+              <DollarSign className="h-6 w-6 text-indigo-400" />
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-lg">Ethena</div>
+              <div className="text-sm text-crypto-silver">Synthetic stablecoin</div>
+            </div>
+          </Button>
+
+          <Button
+            variant="outline"
             onClick={() => openInNewTab('https://aerodrome.finance/liquidity')}
             className="bg-black/20 border-crypto-silver/20 hover:bg-green-500/20 hover:border-green-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
           >
