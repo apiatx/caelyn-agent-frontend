@@ -448,16 +448,21 @@ export default function RWAPage() {
 
           {/* Tokenized Stocks */}
           <GlassCard className="p-3 sm:p-4 lg:p-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
-              <div className="flex items-center gap-2">
-                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
-                  <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+            <div className="text-center relative mb-8">
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 via-blue-500/20 to-indigo-500/20 blur-3xl -z-10"></div>
+              <div className="flex justify-center items-center gap-4 mb-6">
+                <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center border-2 border-purple-400/50 shadow-2xl hover:scale-110 transition-transform duration-300">
+                  <TrendingUp className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
                 </div>
-                <h3 className="text-lg sm:text-xl font-semibold text-white">Tokenized Stocks</h3>
-                <Badge className="bg-gradient-to-r from-purple-500/20 to-blue-500/20 text-white border-crypto-silver/30 text-xs">
-                  BLOCKCHAIN STOCKS
-                </Badge>
+                <div className="text-left">
+                  <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-white via-purple-200 to-blue-200 bg-clip-text text-transparent">Tokenized Stocks</h3>
+                  <Badge className="bg-gradient-to-r from-purple-500/30 to-blue-500/30 text-white border-purple-400/50 text-sm mt-2 px-3 py-1">
+                    BLOCKCHAIN STOCKS
+                  </Badge>
+                </div>
               </div>
+              <p className="text-lg text-white/80 font-medium tracking-wide">Real-world assets & tokenized equity trading</p>
+              <div className="w-32 h-1 bg-gradient-to-r from-purple-500 to-blue-500 mx-auto mt-4 rounded-full"></div>
             </div>
 
             <div className="space-y-4">
