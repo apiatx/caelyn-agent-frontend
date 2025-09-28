@@ -118,31 +118,6 @@ export default function DeFiSection() {
           </div>
         </div>
 
-        {/* Ethena Iframe */}
-        <div className="mb-8">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-6 h-6 bg-indigo-500 rounded-full flex items-center justify-center">
-              <DollarSign className="w-4 h-4 text-white" />
-            </div>
-            <h4 className="text-xl font-semibold text-white">Ethena</h4>
-            <Badge className="bg-indigo-500/20 text-indigo-400 border-indigo-500/30">
-              SYNTHETIC STABLECOIN
-            </Badge>
-            <button
-              onClick={() => openInNewTab('https://app.ethena.fi/')}
-              className="text-indigo-400 hover:text-indigo-300 text-sm ml-auto"
-            >
-              Open Full View →
-            </button>
-          </div>
-          <iframe
-            src="https://app.ethena.fi/"
-            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            title="Ethena Protocol"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-          />
-        </div>
-
         {/* Reservoir Iframe */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-4">
@@ -522,6 +497,21 @@ export default function DeFiSection() {
             <div className="text-center">
               <div className="font-semibold text-lg">Ether.fi</div>
               <div className="text-sm text-crypto-silver">Liquid restaking protocol</div>
+            </div>
+          </Button>
+
+          <Button
+            variant="outline"
+            onClick={() => openInNewTab('https://app.ethena.fi/')}
+            className="bg-black/20 border-crypto-silver/20 hover:bg-indigo-500/20 hover:border-indigo-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
+            data-testid="button-ethena"
+          >
+            <div className="p-3 rounded-lg bg-gradient-to-r from-indigo-500/20 to-violet-500/20">
+              <DollarSign className="h-6 w-6 text-indigo-400" />
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-lg">Ethena</div>
+              <div className="text-sm text-crypto-silver">Synthetic stablecoin</div>
             </div>
           </Button>
 
