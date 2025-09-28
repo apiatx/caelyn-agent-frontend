@@ -338,7 +338,9 @@ const TRUSTED_DOMAINS = [
   'app.mux.network',
   'web3.okx.com',
   'app.ethena.fi',
-  'ethena.fi'
+  'ethena.fi',
+  'app.aevo.xyz',
+  'aevo.xyz'
 ];
 
 /**
