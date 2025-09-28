@@ -204,24 +204,6 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
       path: '/app/defi'
     },
     {
-      id: 'portfolio',
-      label: 'Portfolio',
-      icon: <Activity className="w-4 h-4" />,
-      path: '/app/portfolio'
-    },
-    {
-      id: 'predict',
-      label: 'Predict',
-      icon: <TrendingUp className="w-4 h-4" />,
-      path: '/app/predict'
-    },
-    {
-      id: 'onchain-social',
-      label: 'Social',
-      icon: <MessageSquare className="w-4 h-4" />,
-      path: '/app/onchain/social'
-    },
-    {
       id: 'tradfi',
       label: 'TradFi',
       icon: <Building2 className="w-4 h-4" />,
@@ -251,6 +233,24 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
           path: '/app/commodities'
         }
       ]
+    },
+    {
+      id: 'portfolio',
+      label: 'Portfolio',
+      icon: <Activity className="w-4 h-4" />,
+      path: '/app/portfolio'
+    },
+    {
+      id: 'predict',
+      label: 'Predict',
+      icon: <TrendingUp className="w-4 h-4" />,
+      path: '/app/predict'
+    },
+    {
+      id: 'onchain-social',
+      label: 'Social',
+      icon: <MessageSquare className="w-4 h-4" />,
+      path: '/app/onchain/social'
     },
     {
       id: 'about',
