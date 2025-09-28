@@ -141,8 +141,7 @@ export default function RWAPage() {
 
             {/* Jupiter Pro - Stocks Iframe */}
             <div className="mb-6">
-              <div className="flex justify-between items-center mb-3">
-                <h4 className="text-lg font-semibold text-white">Jupiter Pro - Stocks</h4>
+              <div className="flex justify-end items-center mb-3">
                 <a
                   href="https://jup.ag/pro?tab=stocks"
                   target="_blank"
@@ -164,6 +163,27 @@ export default function RWAPage() {
                   Tokenized stock trading on Solana via Jupiter Pro
                 </p>
               </div>
+            </div>
+
+            {/* Allo Finance and Ondo Finance Buttons */}
+            <div className="space-y-6 mb-6">
+              {/* Allo Finance - Full Width Button */}
+              <button
+                onClick={() => openInNewTab('https://app.allo.xyz/trade/RWA')}
+                className="w-full bg-gradient-to-br from-purple-500/20 to-blue-600/20 hover:from-purple-500/30 hover:to-blue-600/30 border-2 border-purple-500/30 hover:border-purple-400/50 rounded-xl p-6 transition-all duration-300 text-left group shadow-lg hover:shadow-purple-500/20"
+              >
+                <div className="text-xl font-bold text-white group-hover:text-purple-300 mb-2">Allo Finance</div>
+                <div className="text-sm text-crypto-silver group-hover:text-gray-300">Real World Asset (RWA) tokenization and trading platform</div>
+              </button>
+
+              {/* Ondo Finance - Full Width Button */}
+              <button
+                onClick={() => openInNewTab('https://app.ondo.finance/')}
+                className="w-full bg-gradient-to-br from-purple-500/20 to-blue-600/20 hover:from-purple-500/30 hover:to-blue-600/30 border-2 border-purple-500/30 hover:border-purple-400/50 rounded-xl p-6 transition-all duration-300 text-left group shadow-lg hover:shadow-purple-500/20"
+              >
+                <div className="text-xl font-bold text-white group-hover:text-purple-300 mb-2">Ondo Finance</div>
+                <div className="text-sm text-crypto-silver group-hover:text-gray-300">Real-world asset tokenization and institutional yield products</div>
+              </button>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -455,25 +475,6 @@ export default function RWAPage() {
                   </a>
                 </div>
               </div>
-            <div className="space-y-6 mt-6">
-              {/* Allo Finance - Full Width Button */}
-              <button
-                onClick={() => openInNewTab('https://app.allo.xyz/trade/RWA')}
-                className="w-full bg-gradient-to-br from-purple-500/20 to-blue-600/20 hover:from-purple-500/30 hover:to-blue-600/30 border-2 border-purple-500/30 hover:border-purple-400/50 rounded-xl p-6 transition-all duration-300 text-left group shadow-lg hover:shadow-purple-500/20"
-              >
-                <div className="text-xl font-bold text-white group-hover:text-purple-300 mb-2">Allo Finance</div>
-                <div className="text-sm text-crypto-silver group-hover:text-gray-300">Real World Asset (RWA) tokenization and trading platform</div>
-              </button>
-
-              {/* Ondo Finance - Full Width Button */}
-              <button
-                onClick={() => openInNewTab('https://app.ondo.finance/')}
-                className="w-full bg-gradient-to-br from-purple-500/20 to-blue-600/20 hover:from-purple-500/30 hover:to-blue-600/30 border-2 border-purple-500/30 hover:border-purple-400/50 rounded-xl p-6 transition-all duration-300 text-left group shadow-lg hover:shadow-purple-500/20"
-              >
-                <div className="text-xl font-bold text-white group-hover:text-purple-300 mb-2">Ondo Finance</div>
-                <div className="text-sm text-crypto-silver group-hover:text-gray-300">Real-world asset tokenization and institutional yield products</div>
-              </button>
-            </div>
             </div>
           </GlassCard>
         </div>
