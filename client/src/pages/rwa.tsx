@@ -84,13 +84,29 @@ export default function RWAPage() {
       {/* Main Content */}
       <main className="max-w-[95vw] mx-auto px-2 sm:px-3 py-4">
         <div className="space-y-6">
-          {/* RWA Section */}
+          {/* Tokenized Stocks Section */}
           <GlassCard className="p-6">
+            <div className="text-center relative mb-8">
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 via-blue-500/20 to-indigo-500/20 blur-3xl -z-10"></div>
+              <div className="flex justify-center items-center gap-4 mb-6">
+                <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center border-2 border-purple-400/50 shadow-2xl hover:scale-110 transition-transform duration-300">
+                  <TrendingUp className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
+                </div>
+                <div className="text-left">
+                  <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-white via-purple-200 to-blue-200 bg-clip-text text-transparent">Tokenized Stocks</h3>
+                  <Badge className="bg-gradient-to-r from-purple-500/30 to-blue-500/30 text-white border-purple-400/50 text-sm mt-2 px-3 py-1">
+                    BLOCKCHAIN STOCKS
+                  </Badge>
+                </div>
+              </div>
+              <p className="text-lg text-white/80 font-medium tracking-wide">Real-world assets & tokenized equity trading</p>
+              <div className="w-32 h-1 bg-gradient-to-r from-purple-500 to-blue-500 mx-auto mt-4 rounded-full"></div>
+            </div>
+
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-3xl font-bold text-white">Real World Assets (RWA)</h2>
               <a
                 {...getSecureLinkProps('https://app.rwa.xyz/')}
-                className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
+                className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1 ml-auto"
               >
                 Open Full View <ExternalLink className="w-3 h-3" />
               </a>
@@ -106,7 +122,7 @@ export default function RWAPage() {
             
             <div className="mt-4 text-center">
               <p className="text-xs text-gray-400">
-                Real World Assets platform • Tokenized assets and investment opportunities
+                RWA.xyz platform • Comprehensive real world asset trading
               </p>
             </div>
           </GlassCard>
@@ -443,64 +459,43 @@ export default function RWAPage() {
                   </a>
                 </div>
               </div>
-            </div>
-          </GlassCard>
-
-          {/* Tokenized Stocks */}
-          <GlassCard className="p-3 sm:p-4 lg:p-6">
-            <div className="text-center relative mb-8">
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 via-blue-500/20 to-indigo-500/20 blur-3xl -z-10"></div>
-              <div className="flex justify-center items-center gap-4 mb-6">
-                <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center border-2 border-purple-400/50 shadow-2xl hover:scale-110 transition-transform duration-300">
-                  <TrendingUp className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
-                </div>
-                <div className="text-left">
-                  <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-white via-purple-200 to-blue-200 bg-clip-text text-transparent">Tokenized Stocks</h3>
-                  <Badge className="bg-gradient-to-r from-purple-500/30 to-blue-500/30 text-white border-purple-400/50 text-sm mt-2 px-3 py-1">
-                    BLOCKCHAIN STOCKS
-                  </Badge>
-                </div>
-              </div>
-              <p className="text-lg text-white/80 font-medium tracking-wide">Real-world assets & tokenized equity trading</p>
-              <div className="w-32 h-1 bg-gradient-to-r from-purple-500 to-blue-500 mx-auto mt-4 rounded-full"></div>
-            </div>
-
-            <div className="space-y-4">
-              {/* Allo Finance */}
-              <button
-                onClick={() => openInNewTab('https://app.allo.xyz/trade/RWA')}
-                className="bg-gradient-to-br from-purple-500/10 to-blue-600/10 hover:from-purple-500/20 hover:to-blue-600/20 border border-purple-500/20 hover:border-purple-400/40 rounded-lg p-4 transition-all duration-300 text-left group w-full"
-              >
-                <div className="text-sm font-medium text-white group-hover:text-purple-300 mb-1">Allo Finance</div>
-                <div className="text-xs text-crypto-silver">Real World Asset (RWA) tokenization and trading</div>
-              </button>
-
-              {/* Ondo Finance */}
-              <button
-                onClick={() => openInNewTab('https://app.ondo.finance/')}
-                className="bg-gradient-to-br from-purple-500/10 to-blue-600/10 hover:from-purple-500/20 hover:to-blue-600/20 border border-purple-500/20 hover:border-purple-400/40 rounded-lg p-4 transition-all duration-300 text-left group w-full"
-              >
-                <div className="text-sm font-medium text-white group-hover:text-purple-300 mb-1">Ondo Finance</div>
-                <div className="text-xs text-crypto-silver">Real-world asset tokenization and yield products</div>
-              </button>
-
-              {/* Jupiter Pro & xStocks */}
-              <div className="grid grid-cols-1 gap-3">
+              <div className="space-y-4 mt-6">
+                {/* Allo Finance */}
                 <button
-                  onClick={() => openInNewTab('https://jup.ag/pro?tab=stocks')}
-                  className="bg-gradient-to-br from-purple-500/10 to-blue-600/10 hover:from-purple-500/20 hover:to-blue-600/20 border border-purple-500/20 hover:border-purple-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+                  onClick={() => openInNewTab('https://app.allo.xyz/trade/RWA')}
+                  className="bg-gradient-to-br from-purple-500/10 to-blue-600/10 hover:from-purple-500/20 hover:to-blue-600/20 border border-purple-500/20 hover:border-purple-400/40 rounded-lg p-4 transition-all duration-300 text-left group w-full"
                 >
-                  <div className="text-sm font-medium text-white group-hover:text-purple-300 mb-1">Jupiter Pro - Stocks</div>
-                  <div className="text-xs text-crypto-silver">Tokenized stock trading on Solana</div>
+                  <div className="text-sm font-medium text-white group-hover:text-purple-300 mb-1">Allo Finance</div>
+                  <div className="text-xs text-crypto-silver">Real World Asset (RWA) tokenization and trading</div>
                 </button>
-                
+
+                {/* Ondo Finance */}
                 <button
-                  onClick={() => openInNewTab('https://xstocks.com/us/products')}
-                  className="bg-gradient-to-br from-purple-500/10 to-blue-600/10 hover:from-purple-500/20 hover:to-blue-600/20 border border-purple-500/20 hover:border-purple-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+                  onClick={() => openInNewTab('https://app.ondo.finance/')}
+                  className="bg-gradient-to-br from-purple-500/10 to-blue-600/10 hover:from-purple-500/20 hover:to-blue-600/20 border border-purple-500/20 hover:border-purple-400/40 rounded-lg p-4 transition-all duration-300 text-left group w-full"
                 >
-                  <div className="text-sm font-medium text-white group-hover:text-purple-300 mb-1">xStocks - Tokenized US Stocks</div>
-                  <div className="text-xs text-crypto-silver">Trade tokenized versions of US stocks on blockchain</div>
+                  <div className="text-sm font-medium text-white group-hover:text-purple-300 mb-1">Ondo Finance</div>
+                  <div className="text-xs text-crypto-silver">Real-world asset tokenization and yield products</div>
                 </button>
+
+                {/* Jupiter Pro & xStocks */}
+                <div className="grid grid-cols-1 gap-3">
+                  <button
+                    onClick={() => openInNewTab('https://jup.ag/pro?tab=stocks')}
+                    className="bg-gradient-to-br from-purple-500/10 to-blue-600/10 hover:from-purple-500/20 hover:to-blue-600/20 border border-purple-500/20 hover:border-purple-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+                  >
+                    <div className="text-sm font-medium text-white group-hover:text-purple-300 mb-1">Jupiter Pro - Stocks</div>
+                    <div className="text-xs text-crypto-silver">Tokenized stock trading on Solana</div>
+                  </button>
+                  
+                  <button
+                    onClick={() => openInNewTab('https://xstocks.com/us/products')}
+                    className="bg-gradient-to-br from-purple-500/10 to-blue-600/10 hover:from-purple-500/20 hover:to-blue-600/20 border border-purple-500/20 hover:border-purple-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+                  >
+                    <div className="text-sm font-medium text-white group-hover:text-purple-300 mb-1">xStocks - Tokenized US Stocks</div>
+                    <div className="text-xs text-crypto-silver">Trade tokenized versions of US stocks on blockchain</div>
+                  </button>
+                </div>
               </div>
             </div>
           </GlassCard>
