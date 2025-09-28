@@ -139,6 +139,33 @@ export default function RWAPage() {
               </Badge>
             </div>
 
+            {/* Jupiter Pro - Stocks Iframe */}
+            <div className="mb-6">
+              <div className="flex justify-between items-center mb-3">
+                <h4 className="text-lg font-semibold text-white">Jupiter Pro - Stocks</h4>
+                <a
+                  href="https://jup.ag/pro?tab=stocks"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
+                >
+                  Open Full View <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+              <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+                <SafeIframe
+                  src="https://jup.ag/pro?tab=stocks"
+                  title="Jupiter Pro Stocks Trading"
+                  className="w-full h-[600px] border-0"
+                />
+              </div>
+              <div className="mt-2 text-center">
+                <p className="text-xs text-gray-400">
+                  Tokenized stock trading on Solana via Jupiter Pro
+                </p>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="p-4 bg-black/20 border border-crypto-silver/20 rounded-lg">
                 <div className="flex items-center gap-3 mb-3">
@@ -396,37 +423,6 @@ export default function RWAPage() {
                 </div>
               </div>
 
-              <div className="p-4 bg-black/20 border border-crypto-silver/20 rounded-lg">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full flex items-center justify-center">
-                    <span className="text-white font-bold text-sm">💱</span>
-                  </div>
-                  <div>
-                    <h3 className="text-white font-medium text-sm">Circle</h3>
-                    <p className="text-gray-400 text-xs">Trade forex</p>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <a
-                    href="https://x.com/circle"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-500/20 border border-blue-500/30 rounded text-blue-400 hover:bg-blue-500/30 text-xs transition-colors"
-                  >
-                    <span className="font-bold">𝕏</span>
-                    <span>Twitter</span>
-                  </a>
-                  <a
-                    href="https://www.circle.com/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-emerald-500/20 border border-emerald-500/30 rounded text-emerald-400 hover:bg-emerald-500/30 text-xs transition-colors"
-                  >
-                    <ExternalLink className="w-3 h-3" />
-                    <span>Website</span>
-                  </a>
-                </div>
-              </div>
 
               <div className="p-4 bg-black/20 border border-crypto-silver/20 rounded-lg">
                 <div className="flex items-center gap-3 mb-3">
@@ -459,43 +455,33 @@ export default function RWAPage() {
                   </a>
                 </div>
               </div>
-              <div className="space-y-4 mt-6">
-                {/* Allo Finance */}
+              <div className="space-y-6 mt-6">
+                {/* Allo Finance - Bigger Button */}
                 <button
                   onClick={() => openInNewTab('https://app.allo.xyz/trade/RWA')}
-                  className="bg-gradient-to-br from-purple-500/10 to-blue-600/10 hover:from-purple-500/20 hover:to-blue-600/20 border border-purple-500/20 hover:border-purple-400/40 rounded-lg p-4 transition-all duration-300 text-left group w-full"
+                  className="w-full bg-gradient-to-br from-purple-500/20 to-blue-600/20 hover:from-purple-500/30 hover:to-blue-600/30 border-2 border-purple-500/30 hover:border-purple-400/50 rounded-xl p-6 transition-all duration-300 text-left group shadow-lg hover:shadow-purple-500/20"
                 >
-                  <div className="text-sm font-medium text-white group-hover:text-purple-300 mb-1">Allo Finance</div>
-                  <div className="text-xs text-crypto-silver">Real World Asset (RWA) tokenization and trading</div>
+                  <div className="text-xl font-bold text-white group-hover:text-purple-300 mb-2">Allo Finance</div>
+                  <div className="text-sm text-crypto-silver group-hover:text-gray-300">Real World Asset (RWA) tokenization and trading platform</div>
                 </button>
 
-                {/* Ondo Finance */}
+                {/* Ondo Finance - Bigger Button */}
                 <button
                   onClick={() => openInNewTab('https://app.ondo.finance/')}
-                  className="bg-gradient-to-br from-purple-500/10 to-blue-600/10 hover:from-purple-500/20 hover:to-blue-600/20 border border-purple-500/20 hover:border-purple-400/40 rounded-lg p-4 transition-all duration-300 text-left group w-full"
+                  className="w-full bg-gradient-to-br from-purple-500/20 to-blue-600/20 hover:from-purple-500/30 hover:to-blue-600/30 border-2 border-purple-500/30 hover:border-purple-400/50 rounded-xl p-6 transition-all duration-300 text-left group shadow-lg hover:shadow-purple-500/20"
                 >
-                  <div className="text-sm font-medium text-white group-hover:text-purple-300 mb-1">Ondo Finance</div>
-                  <div className="text-xs text-crypto-silver">Real-world asset tokenization and yield products</div>
+                  <div className="text-xl font-bold text-white group-hover:text-purple-300 mb-2">Ondo Finance</div>
+                  <div className="text-sm text-crypto-silver group-hover:text-gray-300">Real-world asset tokenization and institutional yield products</div>
                 </button>
 
-                {/* Jupiter Pro & xStocks */}
-                <div className="grid grid-cols-1 gap-3">
-                  <button
-                    onClick={() => openInNewTab('https://jup.ag/pro?tab=stocks')}
-                    className="bg-gradient-to-br from-purple-500/10 to-blue-600/10 hover:from-purple-500/20 hover:to-blue-600/20 border border-purple-500/20 hover:border-purple-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
-                  >
-                    <div className="text-sm font-medium text-white group-hover:text-purple-300 mb-1">Jupiter Pro - Stocks</div>
-                    <div className="text-xs text-crypto-silver">Tokenized stock trading on Solana</div>
-                  </button>
-                  
-                  <button
-                    onClick={() => openInNewTab('https://xstocks.com/us/products')}
-                    className="bg-gradient-to-br from-purple-500/10 to-blue-600/10 hover:from-purple-500/20 hover:to-blue-600/20 border border-purple-500/20 hover:border-purple-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
-                  >
-                    <div className="text-sm font-medium text-white group-hover:text-purple-300 mb-1">xStocks - Tokenized US Stocks</div>
-                    <div className="text-xs text-crypto-silver">Trade tokenized versions of US stocks on blockchain</div>
-                  </button>
-                </div>
+                {/* xStocks */}
+                <button
+                  onClick={() => openInNewTab('https://xstocks.com/us/products')}
+                  className="w-full bg-gradient-to-br from-purple-500/10 to-blue-600/10 hover:from-purple-500/20 hover:to-blue-600/20 border border-purple-500/20 hover:border-purple-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+                >
+                  <div className="text-sm font-medium text-white group-hover:text-purple-300 mb-1">xStocks - Tokenized US Stocks</div>
+                  <div className="text-xs text-crypto-silver">Trade tokenized versions of US stocks on blockchain</div>
+                </button>
               </div>
             </div>
           </GlassCard>

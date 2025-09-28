@@ -342,7 +342,12 @@ const TRUSTED_DOMAINS = [
   'app.aevo.xyz',
   'aevo.xyz',
   'app.rwa.xyz',
-  'rwa.xyz'
+  'rwa.xyz',
+  'app.allo.xyz',
+  'allo.xyz',
+  'app.ondo.finance',
+  'ondo.finance',
+  'xstocks.com'
 ];
 
 /**
