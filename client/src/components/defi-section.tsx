@@ -2,7 +2,7 @@ import React from 'react';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { DollarSign, TrendingUp, BarChart3, Brain, ArrowLeftRight, Wallet, ExternalLink, Layers, Shield, Database } from "lucide-react";
+import { DollarSign, TrendingUp, BarChart3, Brain, ArrowLeftRight, Wallet, ExternalLink, Layers, Shield, Database, Zap } from "lucide-react";
 import { openSecureLink, getSecureIframeProps } from "@/utils/security";
 import cryptoHippoDefi from "@assets/CryptoHippo_1757212757402.png";
 
@@ -992,6 +992,45 @@ export default function DeFiSection() {
 
 
 
+
+      {/* DePIN Section */}
+      <GlassCard className="p-6">
+        <div className="flex flex-col items-center text-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/30">
+            <Zap className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h4 className="text-xl font-bold text-white">DePIN</h4>
+            <p className="text-crypto-silver">Decentralized Physical Infrastructure Networks</p>
+          </div>
+        </div>
+
+        {/* Pinlink Marketplace Iframe */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-6 h-6 bg-indigo-500 rounded-full flex items-center justify-center">
+              <Zap className="w-4 h-4 text-white" />
+            </div>
+            <h4 className="text-xl font-semibold text-white">Pinlink Marketplace</h4>
+            <Badge className="bg-indigo-500/20 text-indigo-400 border-indigo-500/30">
+              DEPIN MARKETPLACE
+            </Badge>
+            <button
+              onClick={() => openInNewTab('https://pinlink.ai/marketplace')}
+              className="text-indigo-400 hover:text-indigo-300 text-sm ml-auto"
+            >
+              Open Full View →
+            </button>
+          </div>
+          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+            <SafeIframe
+              src="https://pinlink.ai/marketplace"
+              title="Pinlink DePIN Marketplace"
+              className="w-full h-[600px] border-0"
+            />
+          </div>
+        </div>
+      </GlassCard>
 
     </div>
   );

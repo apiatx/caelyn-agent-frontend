@@ -357,7 +357,8 @@ const TRUSTED_DOMAINS = [
   'bluefin.io',
   'app.gearbox.fi',
   'gearbox.fi',
-  'balancer.fi'
+  'balancer.fi',
+  'pinlink.ai'
 ];
 
 /**
