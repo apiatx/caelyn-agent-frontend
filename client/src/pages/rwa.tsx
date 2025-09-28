@@ -166,23 +166,23 @@ export default function RWAPage() {
             </div>
 
             {/* Allo Finance and Ondo Finance Buttons */}
-            <div className="space-y-6 mb-6">
-              {/* Allo Finance - Full Width Button */}
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              {/* Allo Finance - Orange Button */}
               <button
                 onClick={() => openInNewTab('https://app.allo.xyz/trade/RWA')}
-                className="w-full bg-gradient-to-br from-purple-500/20 to-blue-600/20 hover:from-purple-500/30 hover:to-blue-600/30 border-2 border-purple-500/30 hover:border-purple-400/50 rounded-xl p-6 transition-all duration-300 text-left group shadow-lg hover:shadow-purple-500/20"
+                className="bg-gradient-to-br from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 border-2 border-orange-400 hover:border-orange-300 rounded-xl p-6 transition-all duration-300 text-left group shadow-lg hover:shadow-orange-500/20"
               >
-                <div className="text-xl font-bold text-white group-hover:text-purple-300 mb-2">Allo Finance</div>
-                <div className="text-sm text-crypto-silver group-hover:text-gray-300">Real World Asset (RWA) tokenization and trading platform</div>
+                <div className="text-xl font-bold text-white group-hover:text-orange-50 mb-2">Allo Finance</div>
+                <div className="text-sm text-white/90 group-hover:text-white">Real World Asset (RWA) tokenization and trading platform</div>
               </button>
 
-              {/* Ondo Finance - Full Width Button */}
+              {/* Ondo Finance - White Button */}
               <button
                 onClick={() => openInNewTab('https://app.ondo.finance/')}
-                className="w-full bg-gradient-to-br from-purple-500/20 to-blue-600/20 hover:from-purple-500/30 hover:to-blue-600/30 border-2 border-purple-500/30 hover:border-purple-400/50 rounded-xl p-6 transition-all duration-300 text-left group shadow-lg hover:shadow-purple-500/20"
+                className="bg-white hover:bg-gray-100 border-2 border-gray-300 hover:border-gray-400 rounded-xl p-6 transition-all duration-300 text-left group shadow-lg hover:shadow-gray-300/20"
               >
-                <div className="text-xl font-bold text-white group-hover:text-purple-300 mb-2">Ondo Finance</div>
-                <div className="text-sm text-crypto-silver group-hover:text-gray-300">Real-world asset tokenization and institutional yield products</div>
+                <div className="text-xl font-bold text-black group-hover:text-gray-800 mb-2">Ondo Finance</div>
+                <div className="text-sm text-black/80 group-hover:text-black">Real-world asset tokenization and institutional yield products</div>
               </button>
             </div>
 
