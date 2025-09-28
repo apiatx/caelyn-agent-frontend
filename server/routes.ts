@@ -53,6 +53,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(200).send("OK");
   });
 
+  // Preview URL endpoint - shows the current working URL
+  app.get("/api/preview", (req, res) => {
+    const replicDevDomain = process.env.REPLIT_DEV_DOMAIN;
+    const replSlug = process.env.REPL_SLUG;
+    const replOwner = process.env.REPL_OWNER;
+    
+    let currentUrl = "";
+    if (replicDevDomain) {
+      currentUrl = `https://${replicDevDomain}`;
+    } else if (replSlug && replOwner) {
+      currentUrl = `https://${replSlug}.${replOwner}.repl.co`;
+    }
+    
+    res.json({ 
+      status: "ready",
+      currentUrl,
+      message: "Use this URL to access your CryptoHippo dashboard",
+      timestamp: new Date().toISOString()
+    });
+  });
+
   // Portfolio endpoints with security validation
   app.get("/api/portfolio/:userId", 
     optionalAuth,

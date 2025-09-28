@@ -171,6 +171,18 @@ app.use((req, res, next) => {
     
     log(`serving on port ${port}`);
     log(`Server is ready and healthy`);
+    
+    // Show the user the actual working URL
+    const replicDevDomain = process.env.REPLIT_DEV_DOMAIN;
+    const replSlug = process.env.REPL_SLUG;
+    const replOwner = process.env.REPL_OWNER;
+    
+    if (replicDevDomain) {
+      log(`🌍 ACCESS YOUR APP HERE: https://${replicDevDomain}`);
+    } else if (replSlug && replOwner) {
+      log(`🌍 ACCESS YOUR APP HERE: https://${replSlug}.${replOwner}.repl.co`);
+    }
+    
     log(`Health check endpoints available at:`);
     log(`  - http://0.0.0.0:${port}/deployment-health (priority)`);
     log(`  - http://0.0.0.0:${port}/`);
