@@ -354,7 +354,10 @@ const TRUSTED_DOMAINS = [
   'overtimemarkets.xyz',
   'www.overtimemarkets.xyz',
   'trade.bluefin.io',
-  'bluefin.io'
+  'bluefin.io',
+  'app.gearbox.fi',
+  'gearbox.fi',
+  'balancer.fi'
 ];
 
 /**

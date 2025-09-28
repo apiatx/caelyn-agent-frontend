@@ -220,6 +220,57 @@ export default function DeFiSection() {
           </div>
         </div>
 
+        {/* Gearbox Dashboard Iframe */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+              <DollarSign className="w-4 h-4 text-white" />
+            </div>
+            <h4 className="text-xl font-semibold text-white">Gearbox Protocol</h4>
+            <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+              LEVERAGE PROTOCOL
+            </Badge>
+            <button
+              onClick={() => openInNewTab('https://app.gearbox.fi/dashboard')}
+              className="text-blue-400 hover:text-blue-300 text-sm ml-auto"
+            >
+              Open Full View →
+            </button>
+          </div>
+          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+            <SafeIframe
+              src="https://app.gearbox.fi/dashboard"
+              title="Gearbox Protocol Dashboard"
+              className="w-full h-[600px] border-0"
+            />
+          </div>
+        </div>
+
+        {/* Balancer Pools Iframe */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
+              <DollarSign className="w-4 h-4 text-white" />
+            </div>
+            <h4 className="text-xl font-semibold text-white">Balancer Pools</h4>
+            <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
+              LIQUIDITY POOLS
+            </Badge>
+            <button
+              onClick={() => openInNewTab('https://balancer.fi/pools')}
+              className="text-purple-400 hover:text-purple-300 text-sm ml-auto"
+            >
+              Open Full View →
+            </button>
+          </div>
+          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+            <SafeIframe
+              src="https://balancer.fi/pools"
+              title="Balancer Liquidity Pools"
+              className="w-full h-[600px] border-0"
+            />
+          </div>
+        </div>
 
 {/* Peapods Finance Iframe */}
         <div className="mb-8">
