@@ -352,7 +352,9 @@ const TRUSTED_DOMAINS = [
   'goat.network',
   'speedmarkets.xyz',
   'overtimemarkets.xyz',
-  'www.overtimemarkets.xyz'
+  'www.overtimemarkets.xyz',
+  'trade.bluefin.io',
+  'bluefin.io'
 ];
 
 /**

@@ -158,6 +158,43 @@ export default function SUIPage() {
             </button>
           </GlassCard>
         </div>
+
+        {/* Bluefin Trading */}
+        <GlassCard className="p-6 mb-6">
+          <div className="flex items-center gap-2 mb-6">
+            <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
+              <ExternalLink className="w-4 h-4 text-white" />
+            </div>
+            <h3 className="text-xl font-semibold text-white">Bluefin Trading</h3>
+            <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
+              DEX
+            </Badge>
+          </div>
+
+          <div className="flex justify-end mb-3">
+            <button
+              onClick={() => openSecureLink('https://trade.bluefin.io/swap/USDC-SUI')}
+              className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
+            >
+              Open Full View <ExternalLink className="w-3 h-3" />
+            </button>
+          </div>
+          
+          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+            <iframe
+              src="https://trade.bluefin.io/swap/USDC-SUI"
+              title="Bluefin USDC-SUI Trading"
+              className="w-full h-[600px] border-0"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+            />
+          </div>
+          
+          <div className="mt-2 text-center">
+            <p className="text-xs text-gray-400">
+              Bluefin DEX • USDC-SUI trading on Sui Network
+            </p>
+          </div>
+        </GlassCard>
       </div>
     </div>
   );
