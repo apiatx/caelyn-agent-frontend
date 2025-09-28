@@ -160,32 +160,6 @@ export default function TradePerpsPage() {
                 </div>
               </div>
 
-              {/* Aevo Iframe */}
-              <div className="mb-6">
-                <div className="flex justify-end mb-3">
-                  <a
-                    {...getSecureLinkProps('https://app.aevo.xyz/perpetual/eth')}
-                    className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
-                  >
-                    Open Full View <ExternalLink className="w-3 h-3" />
-                  </a>
-                </div>
-                
-                <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-                  <SafeIframe
-                    src="https://app.aevo.xyz/perpetual/eth"
-                    title="Aevo ETH Perpetuals"
-                    className="w-full h-[800px] border-0"
-                  />
-                </div>
-                
-                <div className="mt-4 text-center">
-                  <p className="text-xs text-gray-400">
-                    ETH perpetual trading on Aevo • Decentralized derivatives exchange
-                  </p>
-                </div>
-              </div>
-
               {/* AsterDex - Full Width Button */}
               <Button
                 variant="outline"
@@ -250,6 +224,21 @@ export default function TradePerpsPage() {
                 </div>
               </Button>
 
+              {/* Aevo - White and Gray Button */}
+              <Button
+                variant="outline"
+                onClick={() => openInNewTab('https://app.aevo.xyz/perpetual/eth')}
+                className="group bg-white/10 border-gray-400/30 hover:bg-gray-500/20 hover:border-gray-300/50 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm mb-6"
+                data-testid="button-aevo"
+              >
+                <div className="text-center">
+                  <div className="font-bold text-base flex items-center justify-center">
+                    <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
+                    Aevo
+                  </div>
+                  <div className="text-sm text-gray-300/90 font-medium">ETH perpetual futures trading</div>
+                </div>
+              </Button>
 
               {/* Other Apps */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
