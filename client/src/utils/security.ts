@@ -347,7 +347,9 @@ const TRUSTED_DOMAINS = [
   'allo.xyz',
   'app.ondo.finance',
   'ondo.finance',
-  'xstocks.com'
+  'xstocks.com',
+  'yield.goat.network',
+  'goat.network'
 ];
 
 /**

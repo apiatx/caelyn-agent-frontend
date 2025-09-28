@@ -711,6 +711,32 @@ export default function DeFiSection() {
               </p>
             </div>
           </div>
+
+          {/* Goat Network Yield - Full Width Iframe */}
+          <div className="mb-6">
+            <div className="flex justify-end mb-3">
+              <SafeLink
+                href="https://yield.goat.network/"
+                className="text-xs text-green-400 hover:text-green-300 transition-colors flex items-center gap-1"
+              >
+                Open Full View <ExternalLink className="w-3 h-3" />
+              </SafeLink>
+            </div>
+            
+            <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+              <SafeIframe
+                src="https://yield.goat.network/"
+                title="Goat Network Yield Protocol"
+                className="w-full h-[600px] border-0"
+              />
+            </div>
+            
+            <div className="mt-4 text-center">
+              <p className="text-xs text-gray-400">
+                Goat Network Yield • DeFi yield optimization protocol
+              </p>
+            </div>
+          </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Button
