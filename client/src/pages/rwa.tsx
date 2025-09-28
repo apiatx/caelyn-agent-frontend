@@ -455,34 +455,25 @@ export default function RWAPage() {
                   </a>
                 </div>
               </div>
-              <div className="space-y-6 mt-6">
-                {/* Allo Finance - Bigger Button */}
-                <button
-                  onClick={() => openInNewTab('https://app.allo.xyz/trade/RWA')}
-                  className="w-full bg-gradient-to-br from-purple-500/20 to-blue-600/20 hover:from-purple-500/30 hover:to-blue-600/30 border-2 border-purple-500/30 hover:border-purple-400/50 rounded-xl p-6 transition-all duration-300 text-left group shadow-lg hover:shadow-purple-500/20"
-                >
-                  <div className="text-xl font-bold text-white group-hover:text-purple-300 mb-2">Allo Finance</div>
-                  <div className="text-sm text-crypto-silver group-hover:text-gray-300">Real World Asset (RWA) tokenization and trading platform</div>
-                </button>
+            <div className="space-y-6 mt-6">
+              {/* Allo Finance - Full Width Button */}
+              <button
+                onClick={() => openInNewTab('https://app.allo.xyz/trade/RWA')}
+                className="w-full bg-gradient-to-br from-purple-500/20 to-blue-600/20 hover:from-purple-500/30 hover:to-blue-600/30 border-2 border-purple-500/30 hover:border-purple-400/50 rounded-xl p-6 transition-all duration-300 text-left group shadow-lg hover:shadow-purple-500/20"
+              >
+                <div className="text-xl font-bold text-white group-hover:text-purple-300 mb-2">Allo Finance</div>
+                <div className="text-sm text-crypto-silver group-hover:text-gray-300">Real World Asset (RWA) tokenization and trading platform</div>
+              </button>
 
-                {/* Ondo Finance - Bigger Button */}
-                <button
-                  onClick={() => openInNewTab('https://app.ondo.finance/')}
-                  className="w-full bg-gradient-to-br from-purple-500/20 to-blue-600/20 hover:from-purple-500/30 hover:to-blue-600/30 border-2 border-purple-500/30 hover:border-purple-400/50 rounded-xl p-6 transition-all duration-300 text-left group shadow-lg hover:shadow-purple-500/20"
-                >
-                  <div className="text-xl font-bold text-white group-hover:text-purple-300 mb-2">Ondo Finance</div>
-                  <div className="text-sm text-crypto-silver group-hover:text-gray-300">Real-world asset tokenization and institutional yield products</div>
-                </button>
-
-                {/* xStocks */}
-                <button
-                  onClick={() => openInNewTab('https://xstocks.com/us/products')}
-                  className="w-full bg-gradient-to-br from-purple-500/10 to-blue-600/10 hover:from-purple-500/20 hover:to-blue-600/20 border border-purple-500/20 hover:border-purple-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
-                >
-                  <div className="text-sm font-medium text-white group-hover:text-purple-300 mb-1">xStocks - Tokenized US Stocks</div>
-                  <div className="text-xs text-crypto-silver">Trade tokenized versions of US stocks on blockchain</div>
-                </button>
-              </div>
+              {/* Ondo Finance - Full Width Button */}
+              <button
+                onClick={() => openInNewTab('https://app.ondo.finance/')}
+                className="w-full bg-gradient-to-br from-purple-500/20 to-blue-600/20 hover:from-purple-500/30 hover:to-blue-600/30 border-2 border-purple-500/30 hover:border-purple-400/50 rounded-xl p-6 transition-all duration-300 text-left group shadow-lg hover:shadow-purple-500/20"
+              >
+                <div className="text-xl font-bold text-white group-hover:text-purple-300 mb-2">Ondo Finance</div>
+                <div className="text-sm text-crypto-silver group-hover:text-gray-300">Real-world asset tokenization and institutional yield products</div>
+              </button>
+            </div>
             </div>
           </GlassCard>
         </div>
