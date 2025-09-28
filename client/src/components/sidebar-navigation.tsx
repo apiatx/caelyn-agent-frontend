@@ -227,6 +227,12 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
       icon: <Building2 className="w-4 h-4" />,
       children: [
         {
+          id: 'rwa',
+          label: 'RWA',
+          icon: <Building2 className="w-4 h-4" />,
+          path: '/app/rwa'
+        },
+        {
           id: 'crypto-stocks',
           label: 'Stonks',
           icon: <TrendingUp className="w-4 h-4" />,

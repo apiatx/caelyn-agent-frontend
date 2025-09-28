@@ -15,6 +15,7 @@ import SUIPage from "@/pages/sui";
 import CryptoStocks from "@/pages/crypto-stocks";
 import CryptoStonks from "@/pages/crypto-stonks";
 import CommoditiesPage from "@/pages/commodities";
+import RWAPage from "@/pages/rwa";
 import BittensorPage from "@/pages/bittensor";
 import TradePage from "@/pages/trade";
 import TradePerpsPage from "@/pages/trade-perps";
@@ -83,6 +84,7 @@ function Router() {
       <Route path="/trade-onramp" component={TradeOnRampPage} />
       <Route path="/app/defi" component={DeFiPage} />
       <Route path="/defi" component={DeFiPage} />
+      <Route path="/app/rwa" component={RWAPage} />
       <Route path="/app/crypto-stocks" component={CryptoStocks} />
       <Route path="/app/stocks" component={CryptoStocks} />
       <Route path="/app/stonks" component={CryptoStocks} />

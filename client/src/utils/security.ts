@@ -340,7 +340,9 @@ const TRUSTED_DOMAINS = [
   'app.ethena.fi',
   'ethena.fi',
   'app.aevo.xyz',
-  'aevo.xyz'
+  'aevo.xyz',
+  'app.rwa.xyz',
+  'rwa.xyz'
 ];
 
 /**
