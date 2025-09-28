@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
-import { ExternalLink } from "lucide-react";
-import { getSecureLinkProps } from "@/utils/security";
+import { Badge } from "@/components/ui/badge";
+import { ExternalLink, TrendingUp } from "lucide-react";
+import { getSecureLinkProps, openSecureLink } from "@/utils/security";
 import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
 import newHeaderBackground from "@assets/photo-1504333638930-c8787321eee0_1757208194192.avif";
 import criptomonedas from "@assets/Criptomonedas-r3pu02e09qriw0f9pyqx2rtyhwsri4es6sdgff2ebk_1757225856373.png";
@@ -31,6 +32,10 @@ const GlassCard = ({ children, className = "" }: { children: React.ReactNode; cl
 
 export default function RWAPage() {
   const headerOpacity = useScrollFade(30, 120);
+
+  const openInNewTab = (url: string) => {
+    openSecureLink(url);
+  };
 
   return (
     <div className="min-h-screen text-white" style={{background: 'linear-gradient(135deg, hsl(0, 0%, 0%) 0%, hsl(0, 0%, 10%) 50%, hsl(0, 0%, 0%) 100%)'}}>
@@ -103,6 +108,395 @@ export default function RWAPage() {
               <p className="text-xs text-gray-400">
                 Real World Assets platform • Tokenized assets and investment opportunities
               </p>
+            </div>
+          </GlassCard>
+
+          {/* The World Onchain ASSETS */}
+          <GlassCard className="p-6">
+            <div className="flex items-center gap-2 mb-6">
+              <div className="w-6 h-6 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full flex items-center justify-center">
+                <TrendingUp className="w-4 h-4 text-white" />
+              </div>
+              <h3 className="text-xl font-semibold text-white">The World Onchain</h3>
+              <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-xs">
+                ASSETS
+              </Badge>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="p-4 bg-black/20 border border-crypto-silver/20 rounded-lg">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-8 h-8 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">AU</span>
+                  </div>
+                  <div>
+                    <h3 className="text-white font-medium text-sm">Oro Gold</h3>
+                    <p className="text-gray-400 text-xs">Trade gold</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <a
+                    href="https://x.com/orogoldapp"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-500/20 border border-blue-500/30 rounded text-blue-400 hover:bg-blue-500/30 text-xs transition-colors"
+                  >
+                    <span className="font-bold">𝕏</span>
+                    <span>Twitter</span>
+                  </a>
+                  <a
+                    href="https://orogold.app/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-yellow-500/20 border border-yellow-500/30 rounded text-yellow-400 hover:bg-yellow-500/30 text-xs transition-colors"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                    <span>Website</span>
+                  </a>
+                </div>
+              </div>
+
+              <div className="p-4 bg-black/20 border border-crypto-silver/20 rounded-lg">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">📈</span>
+                  </div>
+                  <div>
+                    <h3 className="text-white font-medium text-sm">xStocks</h3>
+                    <p className="text-gray-400 text-xs">Trade stocks</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <a
+                    href="https://x.com/xStocksFi"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-500/20 border border-blue-500/30 rounded text-blue-400 hover:bg-blue-500/30 text-xs transition-colors"
+                  >
+                    <span className="font-bold">𝕏</span>
+                    <span>Twitter</span>
+                  </a>
+                  <a
+                    href="https://xstocks.com/us"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-500/20 border border-blue-500/30 rounded text-blue-400 hover:bg-blue-500/30 text-xs transition-colors"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                    <span>Website</span>
+                  </a>
+                </div>
+              </div>
+
+              <div className="p-4 bg-black/20 border border-crypto-silver/20 rounded-lg">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">🏢</span>
+                  </div>
+                  <div>
+                    <h3 className="text-white font-medium text-sm">PreStocks</h3>
+                    <p className="text-gray-400 text-xs">Trade pre-IPO stocks</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <a
+                    href="https://x.com/PreStocksFi"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-500/20 border border-blue-500/30 rounded text-blue-400 hover:bg-blue-500/30 text-xs transition-colors"
+                  >
+                    <span className="font-bold">𝕏</span>
+                    <span>Twitter</span>
+                  </a>
+                  <a
+                    href="https://prestocks.com/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-purple-500/20 border border-purple-500/30 rounded text-purple-400 hover:bg-purple-500/30 text-xs transition-colors"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                    <span>Website</span>
+                  </a>
+                </div>
+              </div>
+
+              <div className="p-4 bg-black/20 border border-crypto-silver/20 rounded-lg">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-yellow-500 rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">₿</span>
+                  </div>
+                  <div>
+                    <h3 className="text-white font-medium text-sm">Apollo BTC</h3>
+                    <p className="text-gray-400 text-xs">Trade native Bitcoin</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <a
+                    href="https://x.com/ApolloBTCportal"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-500/20 border border-blue-500/30 rounded text-blue-400 hover:bg-blue-500/30 text-xs transition-colors"
+                  >
+                    <span className="font-bold">𝕏</span>
+                    <span>Twitter</span>
+                  </a>
+                  <a
+                    href="https://apolloportal.io/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-orange-500/20 border border-orange-500/30 rounded text-orange-400 hover:bg-orange-500/30 text-xs transition-colors"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                    <span>Website</span>
+                  </a>
+                </div>
+              </div>
+
+              <div className="p-4 bg-black/20 border border-crypto-silver/20 rounded-lg">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">🏠</span>
+                  </div>
+                  <div>
+                    <h3 className="text-white font-medium text-sm">Parcl</h3>
+                    <p className="text-gray-400 text-xs">Trade real estate</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <a
+                    href="https://x.com/Parcl"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-500/20 border border-blue-500/30 rounded text-blue-400 hover:bg-blue-500/30 text-xs transition-colors"
+                  >
+                    <span className="font-bold">𝕏</span>
+                    <span>Twitter</span>
+                  </a>
+                  <a
+                    href="https://www.parcl.co/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-green-500/20 border border-green-500/30 rounded text-green-400 hover:bg-green-500/30 text-xs transition-colors"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                    <span>Website</span>
+                  </a>
+                </div>
+              </div>
+
+              <div className="p-4 bg-black/20 border border-crypto-silver/20 rounded-lg">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-8 h-8 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">✨</span>
+                  </div>
+                  <div>
+                    <h3 className="text-white font-medium text-sm">Magic Eden</h3>
+                    <p className="text-gray-400 text-xs">Trade digital slop</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <a
+                    href="https://x.com/MagicEden"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-500/20 border border-blue-500/30 rounded text-blue-400 hover:bg-blue-500/30 text-xs transition-colors"
+                  >
+                    <span className="font-bold">𝕏</span>
+                    <span>Twitter</span>
+                  </a>
+                  <a
+                    href="https://magiceden.io/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-pink-500/20 border border-pink-500/30 rounded text-pink-400 hover:bg-pink-500/30 text-xs transition-colors"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                    <span>Website</span>
+                  </a>
+                </div>
+              </div>
+
+              <div className="p-4 bg-black/20 border border-crypto-silver/20 rounded-lg">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-8 h-8 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">🏦</span>
+                  </div>
+                  <div>
+                    <h3 className="text-white font-medium text-sm">RECC Finance</h3>
+                    <p className="text-gray-400 text-xs">Trade RWA</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <a
+                    href="https://x.com/RECCFinance"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-500/20 border border-blue-500/30 rounded text-blue-400 hover:bg-blue-500/30 text-xs transition-colors"
+                  >
+                    <span className="font-bold">𝕏</span>
+                    <span>Twitter</span>
+                  </a>
+                  <a
+                    href="https://recc.finance/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-cyan-500/20 border border-cyan-500/30 rounded text-cyan-400 hover:bg-cyan-500/30 text-xs transition-colors"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                    <span>Website</span>
+                  </a>
+                </div>
+              </div>
+
+              <div className="p-4 bg-black/20 border border-crypto-silver/20 rounded-lg">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">📊</span>
+                  </div>
+                  <div>
+                    <h3 className="text-white font-medium text-sm">Etherfuse</h3>
+                    <p className="text-gray-400 text-xs">Trade bonds</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <a
+                    href="https://x.com/etherfuse"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-500/20 border border-blue-500/30 rounded text-blue-400 hover:bg-blue-500/30 text-xs transition-colors"
+                  >
+                    <span className="font-bold">𝕏</span>
+                    <span>Twitter</span>
+                  </a>
+                  <a
+                    href="https://www.etherfuse.com/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-indigo-500/20 border border-indigo-500/30 rounded text-indigo-400 hover:bg-indigo-500/30 text-xs transition-colors"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                    <span>Website</span>
+                  </a>
+                </div>
+              </div>
+
+              <div className="p-4 bg-black/20 border border-crypto-silver/20 rounded-lg">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">💱</span>
+                  </div>
+                  <div>
+                    <h3 className="text-white font-medium text-sm">Circle</h3>
+                    <p className="text-gray-400 text-xs">Trade forex</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <a
+                    href="https://x.com/circle"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-500/20 border border-blue-500/30 rounded text-blue-400 hover:bg-blue-500/30 text-xs transition-colors"
+                  >
+                    <span className="font-bold">𝕏</span>
+                    <span>Twitter</span>
+                  </a>
+                  <a
+                    href="https://www.circle.com/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-emerald-500/20 border border-emerald-500/30 rounded text-emerald-400 hover:bg-emerald-500/30 text-xs transition-colors"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                    <span>Website</span>
+                  </a>
+                </div>
+              </div>
+
+              <div className="p-4 bg-black/20 border border-crypto-silver/20 rounded-lg">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-8 h-8 bg-gradient-to-r from-green-600 to-lime-500 rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">🌾</span>
+                  </div>
+                  <div>
+                    <h3 className="text-white font-medium text-sm">AgriDex</h3>
+                    <p className="text-gray-400 text-xs">Trade agriculture</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <a
+                    href="https://x.com/AgriDexPlatform"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-500/20 border border-blue-500/30 rounded text-blue-400 hover:bg-blue-500/30 text-xs transition-colors"
+                  >
+                    <span className="font-bold">𝕏</span>
+                    <span>Twitter</span>
+                  </a>
+                  <a
+                    href="https://agridex.com/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-green-600/20 border border-green-600/30 rounded text-green-400 hover:bg-green-600/30 text-xs transition-colors"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                    <span>Website</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </GlassCard>
+
+          {/* Tokenized Stocks */}
+          <GlassCard className="p-3 sm:p-4 lg:p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
+                  <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-semibold text-white">Tokenized Stocks</h3>
+                <Badge className="bg-gradient-to-r from-purple-500/20 to-blue-500/20 text-white border-crypto-silver/30 text-xs">
+                  BLOCKCHAIN STOCKS
+                </Badge>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {/* Allo Finance */}
+              <button
+                onClick={() => openInNewTab('https://app.allo.xyz/trade/RWA')}
+                className="bg-gradient-to-br from-purple-500/10 to-blue-600/10 hover:from-purple-500/20 hover:to-blue-600/20 border border-purple-500/20 hover:border-purple-400/40 rounded-lg p-4 transition-all duration-300 text-left group w-full"
+              >
+                <div className="text-sm font-medium text-white group-hover:text-purple-300 mb-1">Allo Finance</div>
+                <div className="text-xs text-crypto-silver">Real World Asset (RWA) tokenization and trading</div>
+              </button>
+
+              {/* Ondo Finance */}
+              <button
+                onClick={() => openInNewTab('https://app.ondo.finance/')}
+                className="bg-gradient-to-br from-purple-500/10 to-blue-600/10 hover:from-purple-500/20 hover:to-blue-600/20 border border-purple-500/20 hover:border-purple-400/40 rounded-lg p-4 transition-all duration-300 text-left group w-full"
+              >
+                <div className="text-sm font-medium text-white group-hover:text-purple-300 mb-1">Ondo Finance</div>
+                <div className="text-xs text-crypto-silver">Real-world asset tokenization and yield products</div>
+              </button>
+
+              {/* Jupiter Pro & xStocks */}
+              <div className="grid grid-cols-1 gap-3">
+                <button
+                  onClick={() => openInNewTab('https://jup.ag/pro?tab=stocks')}
+                  className="bg-gradient-to-br from-purple-500/10 to-blue-600/10 hover:from-purple-500/20 hover:to-blue-600/20 border border-purple-500/20 hover:border-purple-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+                >
+                  <div className="text-sm font-medium text-white group-hover:text-purple-300 mb-1">Jupiter Pro - Stocks</div>
+                  <div className="text-xs text-crypto-silver">Tokenized stock trading on Solana</div>
+                </button>
+                
+                <button
+                  onClick={() => openInNewTab('https://xstocks.com/us/products')}
+                  className="bg-gradient-to-br from-purple-500/10 to-blue-600/10 hover:from-purple-500/20 hover:to-blue-600/20 border border-purple-500/20 hover:border-purple-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+                >
+                  <div className="text-sm font-medium text-white group-hover:text-purple-300 mb-1">xStocks - Tokenized US Stocks</div>
+                  <div className="text-xs text-crypto-silver">Trade tokenized versions of US stocks on blockchain</div>
+                </button>
+              </div>
             </div>
           </GlassCard>
         </div>
