@@ -198,45 +198,24 @@ export default function TradeOptionsPage() {
                   </div>
                 </Button>
 
+                <Button
+                  variant="outline"
+                  onClick={() => openInNewTab('https://speedmarkets.xyz/speed-markets')}
+                  className="group bg-gradient-to-br from-blue-600/30 via-indigo-600/20 to-purple-600/30 border-blue-400/40 hover:from-blue-500/40 hover:via-indigo-500/30 hover:to-purple-500/40 hover:border-blue-300/60 text-white justify-center p-5 h-auto shadow-xl hover:shadow-blue-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+                >
+                  <div className="text-center">
+                    <div className="font-bold text-base flex items-center justify-center">
+                      <Activity className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
+                      Speed Markets
+                    </div>
+                    <div className="text-sm text-blue-200/90">Fast-paced options trading</div>
+                  </div>
+                </Button>
+
               </div>
             </div>
           </GlassCard>
 
-          {/* Speed Markets Iframe */}
-          <GlassCard className="p-6">
-            <div className="flex items-center gap-2 mb-6">
-              <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                <Activity className="w-4 h-4 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold text-white">Speed Markets</h3>
-              <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
-                FAST OPTIONS
-              </Badge>
-            </div>
-
-            <div className="flex justify-end mb-3">
-              <SafeLink
-                href="https://speedmarkets.xyz/speed-markets"
-                className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
-              >
-                Open Full View <ExternalLink className="w-3 h-3" />
-              </SafeLink>
-            </div>
-            
-            <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-              <SafeIframe
-                src="https://speedmarkets.xyz/speed-markets"
-                title="Speed Markets Trading Platform"
-                className="w-full h-[600px] border-0"
-              />
-            </div>
-            
-            <div className="mt-2 text-center">
-              <p className="text-xs text-gray-400">
-                Speed Markets • Fast-paced options trading platform
-              </p>
-            </div>
-          </GlassCard>
         </div>
       </main>
     </div>
