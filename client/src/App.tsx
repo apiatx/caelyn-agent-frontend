@@ -80,6 +80,8 @@ function Router() {
       <Route path="/app/trade/perps" component={TradePerpsPage} />
       <Route path="/trade-perps" component={TradePerpsPage} />
       <Route path="/app/trade/options" component={TradeOptionsPage} />
+      <Route path="/app/trade-options" component={TradeOptionsPage} />
+      <Route path="/trade-options" component={TradeOptionsPage} />
       <Route path="/app/trade/onramp" component={TradeOnRampPage} />
       <Route path="/trade-onramp" component={TradeOnRampPage} />
       <Route path="/app/defi" component={DeFiPage} />
