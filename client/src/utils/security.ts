@@ -349,7 +349,8 @@ const TRUSTED_DOMAINS = [
   'ondo.finance',
   'xstocks.com',
   'yield.goat.network',
-  'goat.network'
+  'goat.network',
+  'speedmarkets.xyz'
 ];
 
 /**
