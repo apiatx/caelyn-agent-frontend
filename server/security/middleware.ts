@@ -375,8 +375,8 @@ export const helmetConfig = helmet({
     useDefaults: true,
     directives: {
       ...helmet.contentSecurityPolicy.getDefaultDirectives(),
-      // Allow embedding by Replit preview + your prod domain
-      'frame-ancestors': ["'self'", "*.replit.dev", "*.repl.co", "*.replit.app"],
+      // Allow embedding by Replit preview (permissive for development)
+      'frame-ancestors': ["'self'", "*"],
       // Keep other necessary directives for functionality
       'script-src': ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https:"],
       'style-src': ["'self'", "'unsafe-inline'", "https:"],
