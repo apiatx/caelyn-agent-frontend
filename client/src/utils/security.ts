@@ -396,7 +396,10 @@ const TRUSTED_DOMAINS = [
   'www.arkm.com',
   'lighter.xyz',
   'app.lighter.xyz',
-  'www.lighter.xyz'
+  'www.lighter.xyz',
+  'arbitrum.io',
+  'portal.arbitrum.io',
+  'www.arbitrum.io'
 ];
 
 /**
