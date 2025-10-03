@@ -360,7 +360,10 @@ const TRUSTED_DOMAINS = [
   'app.gearbox.fi',
   'gearbox.fi',
   'balancer.fi',
-  'pinlink.ai'
+  'pinlink.ai',
+  'impermax.finance',
+  'app.impermax.finance',
+  'www.impermax.finance'
 ];
 
 /**
