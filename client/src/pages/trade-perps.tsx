@@ -109,7 +109,7 @@ export default function TradePerpsPage() {
           <GlassCard className="p-8">
             <div className="space-y-6">
               
-              {/* Hyperliquid Trading - Moved above Avantis */}
+              {/* Hyperliquid Trading */}
               <div className="mb-6">
                 <div className="flex justify-end mb-3">
                   <a
@@ -133,22 +133,6 @@ export default function TradePerpsPage() {
                   </p>
                 </div>
               </div>
-
-              {/* Aark Digital - Full Width Button */}
-              <Button
-                variant="outline"
-                onClick={() => openInNewTab('https://app.aark.digital/dashboard')}
-                className="group w-full bg-gradient-to-br from-cyan-500/40 via-blue-500/30 to-cyan-500/40 border-cyan-400/50 hover:from-cyan-400/50 hover:via-blue-400/40 hover:to-cyan-400/50 hover:border-cyan-300/70 text-white justify-center p-7 h-auto shadow-2xl hover:shadow-cyan-500/30 transform hover:scale-[1.02] transition-all duration-500 backdrop-blur-sm mb-8"
-                data-testid="button-aark"
-              >
-                <div className="text-center">
-                  <div className="font-bold text-xl flex items-center justify-center">
-                    <Activity className="w-6 h-6 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-500" />
-                    Aark Digital
-                  </div>
-                  <div className="text-sm text-cyan-100/90 font-medium">Advanced perpetual futures trading platform</div>
-                </div>
-              </Button>
 
               {/* Avantisfi Iframe */}
               <div className="mb-6">
@@ -176,85 +160,94 @@ export default function TradePerpsPage() {
                 </div>
               </div>
 
-              {/* AsterDex - Full Width Button */}
+              {/* Aark Digital - Full Width Button */}
               <Button
                 variant="outline"
-                onClick={() => openInNewTab('https://www.asterdex.com/en/futures/v1/BTCUSDT')}
-                className="group w-full bg-gradient-to-br from-purple-500/40 via-pink-500/30 to-purple-500/40 border-purple-400/50 hover:from-purple-400/50 hover:via-pink-400/40 hover:to-purple-400/50 hover:border-purple-300/70 text-white justify-center p-7 h-auto shadow-2xl hover:shadow-purple-500/30 transform hover:scale-[1.02] transition-all duration-500 backdrop-blur-sm mb-8"
-                data-testid="button-asterdex"
+                onClick={() => openInNewTab('https://app.aark.digital/dashboard')}
+                className="group w-full bg-gradient-to-br from-cyan-500/40 via-blue-500/30 to-cyan-500/40 border-cyan-400/50 hover:from-cyan-400/50 hover:via-blue-400/40 hover:to-cyan-400/50 hover:border-cyan-300/70 text-white justify-center p-7 h-auto shadow-2xl hover:shadow-cyan-500/30 transform hover:scale-[1.02] transition-all duration-500 backdrop-blur-sm mb-8"
+                data-testid="button-aark"
               >
                 <div className="text-center">
                   <div className="font-bold text-xl flex items-center justify-center">
-                    <TrendingUp className="w-6 h-6 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-500" />
-                    AsterDex
+                    <Activity className="w-6 h-6 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-500" />
+                    Aark Digital
                   </div>
-                  <div className="text-sm text-purple-100/90 font-medium">Advanced perpetual futures trading platform</div>
+                  <div className="text-sm text-cyan-100/90 font-medium">Advanced perpetual futures trading platform</div>
                 </div>
               </Button>
 
-              {/* DeFi.app - Full Width Primary Button */}
-              <Button
-                variant="outline"
-                onClick={() => openInNewTab('https://app.defi.app/portfolio')}
-                className="group w-full bg-gradient-to-br from-blue-500/40 via-indigo-500/30 to-purple-500/40 border-blue-400/50 hover:from-blue-400/50 hover:via-indigo-400/40 hover:to-purple-400/50 hover:border-blue-300/70 text-white justify-center p-7 h-auto shadow-2xl hover:shadow-blue-500/30 transform hover:scale-[1.02] transition-all duration-500 backdrop-blur-sm mb-8"
-                data-testid="button-defi-app"
-              >
-                <div className="text-center">
-                  <div className="font-bold text-xl flex items-center justify-center">
-                    <Wallet className="w-6 h-6 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-500" />
-                    DeFi.app
+              {/* 3-Column Grid for AsterDex, DeFi.app, Paradex, Thena, Aevo */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                <Button
+                  variant="outline"
+                  onClick={() => openInNewTab('https://www.asterdex.com/en/futures/v1/BTCUSDT')}
+                  className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+                  data-testid="button-asterdex"
+                >
+                  <div className="text-center">
+                    <div className="font-bold text-base flex items-center justify-center">
+                      <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
+                      AsterDex
+                    </div>
                   </div>
-                  <div className="text-sm text-blue-100/90 font-medium">Primary onchain perpetuals super app</div>
-                </div>
-              </Button>
+                </Button>
 
-              {/* Paradex - Full Width Button */}
-              <Button
-                variant="outline"
-                onClick={() => openInNewTab('https://www.paradex.trade/')}
-                className="group w-full bg-gradient-to-br from-white/40 via-gray-100/30 to-white/40 border-white/50 hover:from-white/50 hover:via-gray-100/40 hover:to-white/50 hover:border-white/70 text-black justify-center p-7 h-auto shadow-2xl hover:shadow-white/30 transform hover:scale-[1.02] transition-all duration-500 backdrop-blur-sm mb-8"
-                data-testid="button-paradex"
-              >
-                <div className="text-center">
-                  <div className="font-bold text-xl flex items-center justify-center">
-                    <TrendingUp className="w-6 h-6 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-500" />
-                    Paradex
+                <Button
+                  variant="outline"
+                  onClick={() => openInNewTab('https://app.defi.app/portfolio')}
+                  className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+                  data-testid="button-defi-app"
+                >
+                  <div className="text-center">
+                    <div className="font-bold text-base flex items-center justify-center">
+                      <Wallet className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
+                      DeFi.app
+                    </div>
                   </div>
-                  <div className="text-sm text-white font-medium">Advanced perpetual futures trading</div>
-                </div>
-              </Button>
+                </Button>
 
-              {/* Thena Perps - Full Width Yellow Button */}
-              <Button
-                variant="outline"
-                onClick={() => openInNewTab('https://perps.thena.fi/trade/BTCUSDT')}
-                className="group w-full bg-gradient-to-br from-yellow-500/40 via-orange-500/30 to-yellow-500/40 border-yellow-400/50 hover:from-yellow-400/50 hover:via-orange-400/40 hover:to-yellow-400/50 hover:border-yellow-300/70 text-white justify-center p-7 h-auto shadow-2xl hover:shadow-yellow-500/30 transform hover:scale-[1.02] transition-all duration-500 backdrop-blur-sm mb-8"
-                data-testid="button-thena-perps"
-              >
-                <div className="text-center">
-                  <div className="font-bold text-xl flex items-center justify-center">
-                    <TrendingUp className="w-6 h-6 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-500" />
-                    Thena Perps
+                <Button
+                  variant="outline"
+                  onClick={() => openInNewTab('https://www.paradex.trade/')}
+                  className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+                  data-testid="button-paradex"
+                >
+                  <div className="text-center">
+                    <div className="font-bold text-base flex items-center justify-center">
+                      <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
+                      Paradex
+                    </div>
                   </div>
-                  <div className="text-sm text-yellow-100/90 font-medium">BTC-USDT perpetual futures trading</div>
-                </div>
-              </Button>
+                </Button>
 
-              {/* Aevo - Full Width White Button */}
-              <Button
-                variant="outline"
-                onClick={() => openInNewTab('https://app.aevo.xyz/perpetual/eth')}
-                className="group w-full bg-white hover:bg-white/90 border-white/50 hover:border-white/70 text-black justify-center p-7 h-auto shadow-2xl hover:shadow-white/30 transform hover:scale-[1.02] transition-all duration-500 backdrop-blur-sm mb-8"
-                data-testid="button-aevo"
-              >
-                <div className="text-center">
-                  <div className="font-bold text-xl flex items-center justify-center">
-                    <TrendingUp className="w-6 h-6 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-500" />
-                    Aevo
+                <Button
+                  variant="outline"
+                  onClick={() => openInNewTab('https://perps.thena.fi/trade/BTCUSDT')}
+                  className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+                  data-testid="button-thena-perps"
+                >
+                  <div className="text-center">
+                    <div className="font-bold text-base flex items-center justify-center">
+                      <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
+                      Thena Perps
+                    </div>
                   </div>
-                  <div className="text-sm text-black/80 font-medium">ETH perpetual futures trading</div>
-                </div>
-              </Button>
+                </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={() => openInNewTab('https://app.aevo.xyz/perpetual/eth')}
+                  className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+                  data-testid="button-aevo"
+                >
+                  <div className="text-center">
+                    <div className="font-bold text-base flex items-center justify-center">
+                      <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
+                      Aevo
+                    </div>
+                  </div>
+                </Button>
+              </div>
 
               {/* Other Apps */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
