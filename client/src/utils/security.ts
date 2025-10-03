@@ -390,7 +390,10 @@ const TRUSTED_DOMAINS = [
   'www.solstice.finance',
   'stellaxyz.io',
   'app.stellaxyz.io',
-  'www.stellaxyz.io'
+  'www.stellaxyz.io',
+  'arkm.com',
+  'intel.arkm.com',
+  'www.arkm.com'
 ];
 
 /**

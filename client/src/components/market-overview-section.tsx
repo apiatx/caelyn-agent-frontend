@@ -778,6 +778,31 @@ export function MarketOverviewSection() {
             />
           </div>
 
+          {/* Arkham Intel Insights iframe */}
+          <div className="mt-6">
+            <div className="flex justify-end mb-3">
+              <button
+                onClick={() => openInNewTab('https://intel.arkm.com/insights')}
+                className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
+                data-testid="button-arkham-intel-fullview"
+              >
+                Open Full View <ExternalLink className="w-3 h-3" />
+              </button>
+            </div>
+            <div className="w-full">
+              <iframe
+                src="https://intel.arkm.com/insights"
+                className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+                title="Arkham Intel Insights"
+                frameBorder="0"
+                loading="lazy"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+                referrerPolicy="no-referrer-when-downgrade"
+                data-testid="iframe-arkham-intel"
+              />
+            </div>
+          </div>
+
           {/* Crypto Events Calendar Button */}
           <div className="mt-6">
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
