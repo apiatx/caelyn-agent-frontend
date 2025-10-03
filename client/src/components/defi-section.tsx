@@ -273,32 +273,6 @@ export default function DeFiSection() {
           </div>
         </div>
 
-        {/* Escher Finance Iframe */}
-        <div className="mb-8">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-6 h-6 bg-cyan-500 rounded-full flex items-center justify-center">
-              <DollarSign className="w-4 h-4 text-white" />
-            </div>
-            <h4 className="text-xl font-semibold text-white">Escher Finance</h4>
-            <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30">
-              DEFI PROTOCOL
-            </Badge>
-            <button
-              onClick={() => openInNewTab('https://app.escher.finance/')}
-              className="text-cyan-400 hover:text-cyan-300 text-sm ml-auto"
-            >
-              Open Full View →
-            </button>
-          </div>
-          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-            <SafeIframe
-              src="https://app.escher.finance/"
-              title="Escher Finance"
-              className="w-full h-[600px] border-0"
-            />
-          </div>
-        </div>
-
         {/* Synthetix 420 Iframe */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-4">
@@ -1004,6 +978,36 @@ export default function DeFiSection() {
               <div className="text-center">
                 <div className="font-semibold text-lg">SatLayer</div>
                 <div className="text-sm text-crypto-silver">Bitcoin restaking vaults</div>
+              </div>
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://www.btcfi.one/dashboard')}
+              className="bg-black/20 border-crypto-silver/20 hover:bg-orange-500/20 hover:border-orange-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
+              data-testid="button-btcfi-dashboard"
+            >
+              <div className="p-3 rounded-lg bg-gradient-to-r from-orange-500/20 to-amber-500/20">
+                <DollarSign className="h-6 w-6 text-orange-400" />
+              </div>
+              <div className="text-center">
+                <div className="font-semibold text-lg">BTCfi Dashboard</div>
+                <div className="text-sm text-crypto-silver">Bitcoin DeFi Dashboard</div>
+              </div>
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://app.solv.finance/solvbtc?network=ethereum')}
+              className="bg-black/20 border-crypto-silver/20 hover:bg-orange-500/20 hover:border-orange-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
+              data-testid="button-solv-finance"
+            >
+              <div className="p-3 rounded-lg bg-gradient-to-r from-yellow-500/20 to-orange-500/20">
+                <Layers className="h-6 w-6 text-yellow-400" />
+              </div>
+              <div className="text-center">
+                <div className="font-semibold text-lg">Solv Finance</div>
+                <div className="text-sm text-crypto-silver">SolvBTC Ethereum</div>
               </div>
             </Button>
           </div>
