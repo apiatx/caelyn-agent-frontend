@@ -134,30 +134,21 @@ export default function TradePerpsPage() {
                 </div>
               </div>
 
-              {/* Aark Digital Dashboard */}
-              <div className="mb-6">
-                <div className="flex justify-end mb-3">
-                  <a
-                    {...getSecureLinkProps('https://app.aark.digital/dashboard')}
-                    className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1"
-                  >
-                    Open Full View <ExternalLink className="w-3 h-3" />
-                  </a>
+              {/* Aark Digital - Full Width Button */}
+              <Button
+                variant="outline"
+                onClick={() => openInNewTab('https://app.aark.digital/dashboard')}
+                className="group w-full bg-gradient-to-br from-cyan-500/40 via-blue-500/30 to-cyan-500/40 border-cyan-400/50 hover:from-cyan-400/50 hover:via-blue-400/40 hover:to-cyan-400/50 hover:border-cyan-300/70 text-white justify-center p-7 h-auto shadow-2xl hover:shadow-cyan-500/30 transform hover:scale-[1.02] transition-all duration-500 backdrop-blur-sm mb-8"
+                data-testid="button-aark"
+              >
+                <div className="text-center">
+                  <div className="font-bold text-xl flex items-center justify-center">
+                    <Activity className="w-6 h-6 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-500" />
+                    Aark Digital
+                  </div>
+                  <div className="text-sm text-cyan-100/90 font-medium">Advanced perpetual futures trading platform</div>
                 </div>
-                
-                <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-                  <iframe
-                    {...getSecureIframeProps('https://app.aark.digital/dashboard', 'Aark Digital Dashboard')}
-                    className="w-full h-[800px] border-0"
-                  />
-                </div>
-                
-                <div className="mt-4 text-center">
-                  <p className="text-xs text-gray-400">
-                    Aark Digital trading dashboard • Advanced perpetual futures
-                  </p>
-                </div>
-              </div>
+              </Button>
 
               {/* Avantisfi Iframe */}
               <div className="mb-6">
