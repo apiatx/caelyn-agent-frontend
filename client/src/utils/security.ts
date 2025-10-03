@@ -393,7 +393,10 @@ const TRUSTED_DOMAINS = [
   'www.stellaxyz.io',
   'arkm.com',
   'intel.arkm.com',
-  'www.arkm.com'
+  'www.arkm.com',
+  'lighter.xyz',
+  'app.lighter.xyz',
+  'www.lighter.xyz'
 ];
 
 /**
