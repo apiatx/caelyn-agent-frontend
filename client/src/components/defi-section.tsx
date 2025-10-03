@@ -273,6 +273,240 @@ export default function DeFiSection() {
           </div>
         </div>
 
+        {/* Escher Finance Iframe */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-6 h-6 bg-cyan-500 rounded-full flex items-center justify-center">
+              <DollarSign className="w-4 h-4 text-white" />
+            </div>
+            <h4 className="text-xl font-semibold text-white">Escher Finance</h4>
+            <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30">
+              DEFI PROTOCOL
+            </Badge>
+            <button
+              onClick={() => openInNewTab('https://app.escher.finance/')}
+              className="text-cyan-400 hover:text-cyan-300 text-sm ml-auto"
+            >
+              Open Full View →
+            </button>
+          </div>
+          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+            <SafeIframe
+              src="https://app.escher.finance/"
+              title="Escher Finance"
+              className="w-full h-[600px] border-0"
+            />
+          </div>
+        </div>
+
+        {/* Synthetix 420 Iframe */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-6 h-6 bg-indigo-500 rounded-full flex items-center justify-center">
+              <DollarSign className="w-4 h-4 text-white" />
+            </div>
+            <h4 className="text-xl font-semibold text-white">Synthetix 420</h4>
+            <Badge className="bg-indigo-500/20 text-indigo-400 border-indigo-500/30">
+              SYNTHETIC ASSETS
+            </Badge>
+            <button
+              onClick={() => openInNewTab('https://420.synthetix.io/')}
+              className="text-indigo-400 hover:text-indigo-300 text-sm ml-auto"
+            >
+              Open Full View →
+            </button>
+          </div>
+          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+            <SafeIframe
+              src="https://420.synthetix.io/"
+              title="Synthetix 420"
+              className="w-full h-[600px] border-0"
+            />
+          </div>
+        </div>
+
+        {/* Orderly Network Iframe */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
+              <DollarSign className="w-4 h-4 text-white" />
+            </div>
+            <h4 className="text-xl font-semibold text-white">Orderly Network</h4>
+            <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
+              STAKING
+            </Badge>
+            <button
+              onClick={() => openInNewTab('https://app.orderly.network/staking')}
+              className="text-purple-400 hover:text-purple-300 text-sm ml-auto"
+            >
+              Open Full View →
+            </button>
+          </div>
+          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+            <SafeIframe
+              src="https://app.orderly.network/staking"
+              title="Orderly Network Staking"
+              className="w-full h-[600px] border-0"
+            />
+          </div>
+        </div>
+
+        {/* Huma Finance Iframe */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-6 h-6 bg-teal-500 rounded-full flex items-center justify-center">
+              <DollarSign className="w-4 h-4 text-white" />
+            </div>
+            <h4 className="text-xl font-semibold text-white">Huma Finance</h4>
+            <Badge className="bg-teal-500/20 text-teal-400 border-teal-500/30">
+              DEFI LENDING
+            </Badge>
+            <button
+              onClick={() => openInNewTab('https://app.huma.finance/')}
+              className="text-teal-400 hover:text-teal-300 text-sm ml-auto"
+            >
+              Open Full View →
+            </button>
+          </div>
+          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+            <SafeIframe
+              src="https://app.huma.finance/"
+              title="Huma Finance"
+              className="w-full h-[600px] border-0"
+            />
+          </div>
+        </div>
+
+        {/* Sky Money Iframe */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-6 h-6 bg-sky-500 rounded-full flex items-center justify-center">
+              <DollarSign className="w-4 h-4 text-white" />
+            </div>
+            <h4 className="text-xl font-semibold text-white">Sky Money</h4>
+            <Badge className="bg-sky-500/20 text-sky-400 border-sky-500/30">
+              ETHEREUM DEFI
+            </Badge>
+            <button
+              onClick={() => openInNewTab('https://app.sky.money/?network=ethereum')}
+              className="text-sky-400 hover:text-sky-300 text-sm ml-auto"
+            >
+              Open Full View →
+            </button>
+          </div>
+          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+            <SafeIframe
+              src="https://app.sky.money/?network=ethereum"
+              title="Sky Money"
+              className="w-full h-[600px] border-0"
+            />
+          </div>
+        </div>
+
+        {/* Venus Protocol Iframe */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center">
+              <DollarSign className="w-4 h-4 text-white" />
+            </div>
+            <h4 className="text-xl font-semibold text-white">Venus Protocol</h4>
+            <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">
+              BSC LENDING
+            </Badge>
+            <button
+              onClick={() => openInNewTab('https://app.venus.io/#/pool/0xfD36E2c2a6789Db23113685031d7F16329158384?chainId=56&tab=assets')}
+              className="text-yellow-400 hover:text-yellow-300 text-sm ml-auto"
+            >
+              Open Full View →
+            </button>
+          </div>
+          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+            <SafeIframe
+              src="https://app.venus.io/#/pool/0xfD36E2c2a6789Db23113685031d7F16329158384?chainId=56&tab=assets"
+              title="Venus Protocol"
+              className="w-full h-[600px] border-0"
+            />
+          </div>
+        </div>
+
+        {/* Convex Finance Iframe */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
+              <DollarSign className="w-4 h-4 text-white" />
+            </div>
+            <h4 className="text-xl font-semibold text-white">Convex Finance</h4>
+            <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
+              CURVE BOOSTER
+            </Badge>
+            <button
+              onClick={() => openInNewTab('https://www.convexfinance.com/')}
+              className="text-red-400 hover:text-red-300 text-sm ml-auto"
+            >
+              Open Full View →
+            </button>
+          </div>
+          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+            <SafeIframe
+              src="https://www.convexfinance.com/"
+              title="Convex Finance"
+              className="w-full h-[600px] border-0"
+            />
+          </div>
+        </div>
+
+        {/* Solstice Finance Iframe */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
+              <DollarSign className="w-4 h-4 text-white" />
+            </div>
+            <h4 className="text-xl font-semibold text-white">Solstice Finance</h4>
+            <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30">
+              DEFI PLATFORM
+            </Badge>
+            <button
+              onClick={() => openInNewTab('https://app.solstice.finance/')}
+              className="text-orange-400 hover:text-orange-300 text-sm ml-auto"
+            >
+              Open Full View →
+            </button>
+          </div>
+          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+            <SafeIframe
+              src="https://app.solstice.finance/"
+              title="Solstice Finance"
+              className="w-full h-[600px] border-0"
+            />
+          </div>
+        </div>
+
+        {/* Stella XYZ Iframe */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-6 h-6 bg-pink-500 rounded-full flex items-center justify-center">
+              <DollarSign className="w-4 h-4 text-white" />
+            </div>
+            <h4 className="text-xl font-semibold text-white">Stella XYZ</h4>
+            <Badge className="bg-pink-500/20 text-pink-400 border-pink-500/30">
+              DEFI PROTOCOL
+            </Badge>
+            <button
+              onClick={() => openInNewTab('https://app.stellaxyz.io/')}
+              className="text-pink-400 hover:text-pink-300 text-sm ml-auto"
+            >
+              Open Full View →
+            </button>
+          </div>
+          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+            <SafeIframe
+              src="https://app.stellaxyz.io/"
+              title="Stella XYZ"
+              className="w-full h-[600px] border-0"
+            />
+          </div>
+        </div>
+
 {/* Peapods Finance Iframe */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-4">
