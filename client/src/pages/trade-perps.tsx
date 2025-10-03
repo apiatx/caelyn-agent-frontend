@@ -160,34 +160,18 @@ export default function TradePerpsPage() {
                 </div>
               </div>
 
-              {/* Aark Digital - Full Width Button */}
-              <Button
-                variant="outline"
-                onClick={() => openInNewTab('https://app.aark.digital/dashboard')}
-                className="group w-full bg-gradient-to-br from-cyan-500/40 via-blue-500/30 to-cyan-500/40 border-cyan-400/50 hover:from-cyan-400/50 hover:via-blue-400/40 hover:to-cyan-400/50 hover:border-cyan-300/70 text-white justify-center p-7 h-auto shadow-2xl hover:shadow-cyan-500/30 transform hover:scale-[1.02] transition-all duration-500 backdrop-blur-sm mb-8"
-                data-testid="button-aark"
-              >
-                <div className="text-center">
-                  <div className="font-bold text-xl flex items-center justify-center">
-                    <Activity className="w-6 h-6 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-500" />
-                    Aark Digital
-                  </div>
-                  <div className="text-sm text-cyan-100/90 font-medium">Advanced perpetual futures trading platform</div>
-                </div>
-              </Button>
-
-              {/* 3-Column Grid for AsterDex, DeFi.app, Paradex, Thena, Aevo */}
+              {/* 3-Column Grid for Apex, DeFi.app, Paradex, Thena, Aevo, Aark */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                 <Button
                   variant="outline"
-                  onClick={() => openInNewTab('https://www.asterdex.com/en/futures/v1/BTCUSDT')}
+                  onClick={() => openInNewTab('https://www.apex.exchange/en/trade/perpetual/BTCUSDT')}
                   className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
-                  data-testid="button-asterdex"
+                  data-testid="button-apex"
                 >
                   <div className="text-center">
                     <div className="font-bold text-base flex items-center justify-center">
                       <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
-                      AsterDex
+                      Apex Exchange
                     </div>
                   </div>
                 </Button>
@@ -244,6 +228,20 @@ export default function TradePerpsPage() {
                     <div className="font-bold text-base flex items-center justify-center">
                       <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
                       Aevo
+                    </div>
+                  </div>
+                </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={() => openInNewTab('https://app.aark.digital/dashboard')}
+                  className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+                  data-testid="button-aark"
+                >
+                  <div className="text-center">
+                    <div className="font-bold text-base flex items-center justify-center">
+                      <Activity className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
+                      Aark Digital
                     </div>
                   </div>
                 </Button>
@@ -433,7 +431,7 @@ export default function TradePerpsPage() {
                 </Button>
               </div>
 
-              {/* Drift and Apex Exchange - Two Across */}
+              {/* Drift and AsterDex - Two Across */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                 <Button
                   variant="outline"
@@ -451,14 +449,14 @@ export default function TradePerpsPage() {
 
                 <Button
                   variant="outline"
-                  onClick={() => openInNewTab('https://omni.apex.exchange/trade/BTCUSDT?lang=en-US')}
+                  onClick={() => openInNewTab('https://www.asterdex.com/en/futures/v1/BTCUSDT')}
                   className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
-                  data-testid="button-apex-exchange"
+                  data-testid="button-asterdex"
                 >
                   <div className="text-center">
                     <div className="font-bold text-base flex items-center justify-center">
                       <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
-                      Apex Exchange
+                      AsterDex
                     </div>
                   </div>
                 </Button>
