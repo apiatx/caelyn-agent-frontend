@@ -402,7 +402,10 @@ const TRUSTED_DOMAINS = [
   'www.arbitrum.io',
   'based.one',
   'app.based.one',
-  'www.based.one'
+  'www.based.one',
+  'vooi.io',
+  'app.vooi.io',
+  'www.vooi.io'
 ];
 
 /**

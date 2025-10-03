@@ -273,6 +273,20 @@ export default function TradePerpsPage() {
                     </div>
                   </div>
                 </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={() => openInNewTab('https://app.vooi.io/')}
+                  className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+                  data-testid="button-vooi"
+                >
+                  <div className="text-center">
+                    <div className="font-bold text-base flex items-center justify-center">
+                      <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
+                      Vooi
+                    </div>
+                  </div>
+                </Button>
               </div>
 
               {/* Other Apps */}
