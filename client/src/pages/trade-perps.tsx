@@ -134,6 +134,31 @@ export default function TradePerpsPage() {
                 </div>
               </div>
 
+              {/* Omni (Variational) BTC Perpetuals */}
+              <div className="mb-6">
+                <div className="flex justify-end mb-3">
+                  <a
+                    {...getSecureLinkProps('https://omni.variational.io/perpetual/BTC')}
+                    className="text-xs text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-1"
+                  >
+                    Open Full View <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+                
+                <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+                  <iframe
+                    {...getSecureIframeProps('https://omni.variational.io/perpetual/BTC', 'Omni BTC Perpetuals')}
+                    className="w-full h-[800px] border-0"
+                  />
+                </div>
+                
+                <div className="mt-4 text-center">
+                  <p className="text-xs text-gray-400">
+                    BTC perpetual trading on Omni • Variational decentralized exchange
+                  </p>
+                </div>
+              </div>
+
               {/* Avantisfi Iframe */}
               <div className="mb-6">
                 <div className="flex justify-end mb-3">

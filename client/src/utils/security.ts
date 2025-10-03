@@ -405,7 +405,10 @@ const TRUSTED_DOMAINS = [
   'www.based.one',
   'vooi.io',
   'app.vooi.io',
-  'www.vooi.io'
+  'www.vooi.io',
+  'variational.io',
+  'omni.variational.io',
+  'www.variational.io'
 ];
 
 /**
