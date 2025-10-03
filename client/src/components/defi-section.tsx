@@ -247,6 +247,33 @@ export default function DeFiSection() {
           </div>
         </div>
 
+        {/* Twitter/X @thenewmoney_tnm */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+              <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+              </svg>
+            </div>
+            <h4 className="text-xl font-semibold text-white">The New Money</h4>
+            <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+              TWITTER/X
+            </Badge>
+            <button
+              onClick={() => openInNewTab('https://x.com/thenewmoney_tnm')}
+              className="text-blue-400 hover:text-blue-300 text-sm ml-auto"
+            >
+              Open Full View →
+            </button>
+          </div>
+          <iframe
+            src="https://x.com/thenewmoney_tnm"
+            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+            title="The New Money Twitter/X"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+          />
+        </div>
+
 {/* Peapods Finance Iframe */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-4">
