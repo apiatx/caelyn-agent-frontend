@@ -399,7 +399,10 @@ const TRUSTED_DOMAINS = [
   'www.lighter.xyz',
   'arbitrum.io',
   'portal.arbitrum.io',
-  'www.arbitrum.io'
+  'www.arbitrum.io',
+  'based.one',
+  'app.based.one',
+  'www.based.one'
 ];
 
 /**

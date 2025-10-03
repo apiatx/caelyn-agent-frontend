@@ -134,12 +134,12 @@ export default function TradePerpsPage() {
                 </div>
               </div>
 
-              {/* Lighter.xyz Trading */}
+              {/* Based.one BTC Trading */}
               <div className="mb-6">
                 <div className="flex justify-end mb-3">
                   <a
-                    {...getSecureLinkProps('https://app.lighter.xyz/trade/ETH')}
-                    className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
+                    {...getSecureLinkProps('https://app.based.one/BTC')}
+                    className="text-xs text-orange-400 hover:text-orange-300 transition-colors flex items-center gap-1"
                   >
                     Open Full View <ExternalLink className="w-3 h-3" />
                   </a>
@@ -147,14 +147,14 @@ export default function TradePerpsPage() {
                 
                 <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
                   <iframe
-                    {...getSecureIframeProps('https://app.lighter.xyz/trade/ETH', 'Lighter ETH Trading')}
+                    {...getSecureIframeProps('https://app.based.one/BTC', 'Based.one BTC Trading')}
                     className="w-full h-[800px] border-0"
                   />
                 </div>
                 
                 <div className="mt-4 text-center">
                   <p className="text-xs text-gray-400">
-                    Live ETH trading on Lighter • Decentralized perpetuals exchange
+                    Live BTC trading on Based.one • Decentralized perpetuals exchange
                   </p>
                 </div>
               </div>
@@ -185,8 +185,22 @@ export default function TradePerpsPage() {
                 </div>
               </div>
 
-              {/* 3-Column Grid for Apex, DeFi.app, Paradex, Thena, Aevo, Aark */}
+              {/* 3-Column Grid for Lighter, Apex, DeFi.app, Paradex, Thena, Aevo, Aark */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                <Button
+                  variant="outline"
+                  onClick={() => openInNewTab('https://app.lighter.xyz/trade/ETH')}
+                  className="group bg-black/20 border-crypto-silver/20 hover:bg-blue-500/20 hover:border-blue-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-blue-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+                  data-testid="button-lighter"
+                >
+                  <div className="text-center">
+                    <div className="font-bold text-base flex items-center justify-center">
+                      <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
+                      Lighter
+                    </div>
+                  </div>
+                </Button>
+
                 <Button
                   variant="outline"
                   onClick={() => openInNewTab('https://www.apex.exchange/en/trade/perpetual/BTCUSDT')}
