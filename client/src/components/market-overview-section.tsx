@@ -764,6 +764,21 @@ export function MarketOverviewSection() {
               </div>
               <p className="text-gray-400 text-sm">Blockchain Analytics</p>
             </div>
+
+            <div 
+              onClick={() => openInNewTab('https://intel.arkm.com/insights')}
+              className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-4 cursor-pointer group hover:opacity-80 transition-opacity duration-200"
+              title="Click to view Arkham Intel Insights"
+              data-testid="button-arkham-intel"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-xs">A</span>
+                </div>
+                <h4 className="text-white font-medium">Arkham Intel</h4>
+              </div>
+              <p className="text-gray-400 text-sm">On-chain intelligence & whale tracking</p>
+            </div>
           </div>
           
           {/* CryptoPanic News iframe */}
@@ -776,31 +791,6 @@ export function MarketOverviewSection() {
               sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
               referrerPolicy="no-referrer-when-downgrade"
             />
-          </div>
-
-          {/* Arkham Intel Insights iframe */}
-          <div className="mt-6">
-            <div className="flex justify-end mb-3">
-              <button
-                onClick={() => openInNewTab('https://intel.arkm.com/insights')}
-                className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
-                data-testid="button-arkham-intel-fullview"
-              >
-                Open Full View <ExternalLink className="w-3 h-3" />
-              </button>
-            </div>
-            <div className="w-full">
-              <iframe
-                src="https://intel.arkm.com/insights"
-                className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-                title="Arkham Intel Insights"
-                frameBorder="0"
-                loading="lazy"
-                sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
-                referrerPolicy="no-referrer-when-downgrade"
-                data-testid="iframe-arkham-intel"
-              />
-            </div>
           </div>
 
           {/* Crypto Events Calendar Button */}
