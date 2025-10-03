@@ -325,58 +325,6 @@ export default function DeFiSection() {
           </div>
         </div>
 
-        {/* Orderly Network Iframe */}
-        <div className="mb-8">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
-              <DollarSign className="w-4 h-4 text-white" />
-            </div>
-            <h4 className="text-xl font-semibold text-white">Orderly Network</h4>
-            <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
-              STAKING
-            </Badge>
-            <button
-              onClick={() => openInNewTab('https://app.orderly.network/staking')}
-              className="text-purple-400 hover:text-purple-300 text-sm ml-auto"
-            >
-              Open Full View →
-            </button>
-          </div>
-          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-            <SafeIframe
-              src="https://app.orderly.network/staking"
-              title="Orderly Network Staking"
-              className="w-full h-[600px] border-0"
-            />
-          </div>
-        </div>
-
-        {/* Huma Finance Iframe */}
-        <div className="mb-8">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-6 h-6 bg-teal-500 rounded-full flex items-center justify-center">
-              <DollarSign className="w-4 h-4 text-white" />
-            </div>
-            <h4 className="text-xl font-semibold text-white">Huma Finance</h4>
-            <Badge className="bg-teal-500/20 text-teal-400 border-teal-500/30">
-              DEFI LENDING
-            </Badge>
-            <button
-              onClick={() => openInNewTab('https://app.huma.finance/')}
-              className="text-teal-400 hover:text-teal-300 text-sm ml-auto"
-            >
-              Open Full View →
-            </button>
-          </div>
-          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-            <SafeIframe
-              src="https://app.huma.finance/"
-              title="Huma Finance"
-              className="w-full h-[600px] border-0"
-            />
-          </div>
-        </div>
-
         {/* Sky Money Iframe */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-4">
@@ -476,32 +424,6 @@ export default function DeFiSection() {
             <SafeIframe
               src="https://app.solstice.finance/"
               title="Solstice Finance"
-              className="w-full h-[600px] border-0"
-            />
-          </div>
-        </div>
-
-        {/* Stella XYZ Iframe */}
-        <div className="mb-8">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-6 h-6 bg-pink-500 rounded-full flex items-center justify-center">
-              <DollarSign className="w-4 h-4 text-white" />
-            </div>
-            <h4 className="text-xl font-semibold text-white">Stella XYZ</h4>
-            <Badge className="bg-pink-500/20 text-pink-400 border-pink-500/30">
-              DEFI PROTOCOL
-            </Badge>
-            <button
-              onClick={() => openInNewTab('https://app.stellaxyz.io/')}
-              className="text-pink-400 hover:text-pink-300 text-sm ml-auto"
-            >
-              Open Full View →
-            </button>
-          </div>
-          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-            <SafeIframe
-              src="https://app.stellaxyz.io/"
-              title="Stella XYZ"
               className="w-full h-[600px] border-0"
             />
           </div>
@@ -974,6 +896,23 @@ export default function DeFiSection() {
           </Button>
         </div>
 
+        {/* Huma Finance Button Row */}
+        <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-8">
+          <Button
+            variant="outline"
+            onClick={() => openInNewTab('https://app.huma.finance/')}
+            className="bg-black/20 border-crypto-silver/20 hover:bg-teal-500/20 hover:border-teal-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
+            data-testid="button-huma"
+          >
+            <div className="p-3 rounded-lg bg-gradient-to-r from-teal-500/20 to-emerald-500/20">
+              <DollarSign className="h-6 w-6 text-teal-400" />
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-lg">Huma Finance</div>
+              <div className="text-sm text-crypto-silver">DeFi lending</div>
+            </div>
+          </Button>
+        </div>
 
         {/* Bitcoin DeFi Section */}
         <div className="mt-8">
