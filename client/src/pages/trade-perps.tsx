@@ -134,31 +134,6 @@ export default function TradePerpsPage() {
                 </div>
               </div>
 
-              {/* Based.one BTC Trading */}
-              <div className="mb-6">
-                <div className="flex justify-end mb-3">
-                  <a
-                    {...getSecureLinkProps('https://app.based.one/BTC')}
-                    className="text-xs text-orange-400 hover:text-orange-300 transition-colors flex items-center gap-1"
-                  >
-                    Open Full View <ExternalLink className="w-3 h-3" />
-                  </a>
-                </div>
-                
-                <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-                  <iframe
-                    {...getSecureIframeProps('https://app.based.one/BTC', 'Based.one BTC Trading')}
-                    className="w-full h-[800px] border-0"
-                  />
-                </div>
-                
-                <div className="mt-4 text-center">
-                  <p className="text-xs text-gray-400">
-                    Live BTC trading on Based.one • Decentralized perpetuals exchange
-                  </p>
-                </div>
-              </div>
-
               {/* Avantisfi Iframe */}
               <div className="mb-6">
                 <div className="flex justify-end mb-3">
@@ -239,6 +214,20 @@ export default function TradePerpsPage() {
                     <div className="font-bold text-base flex items-center justify-center">
                       <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
                       Paradex
+                    </div>
+                  </div>
+                </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={() => openInNewTab('https://app.based.one/BTC')}
+                  className="group bg-black/20 border-crypto-silver/20 hover:bg-orange-500/20 hover:border-orange-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-orange-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+                  data-testid="button-based-one"
+                >
+                  <div className="text-center">
+                    <div className="font-bold text-base flex items-center justify-center">
+                      <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
+                      Based.one
                     </div>
                   </div>
                 </Button>
@@ -470,8 +459,8 @@ export default function TradePerpsPage() {
                 </Button>
               </div>
 
-              {/* Drift and AsterDex - Two Across */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+              {/* Drift and AsterDex - Three Across */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
                 <Button
                   variant="outline"
                   onClick={() => openInNewTab('https://app.drift.trade/BTC-PERP')}
