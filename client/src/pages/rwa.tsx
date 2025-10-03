@@ -165,6 +165,32 @@ export default function RWAPage() {
               </div>
             </div>
 
+            {/* Ostium RWA Trading */}
+            <div className="mb-6">
+              <div className="flex justify-end items-center mb-3">
+                <a
+                  href="https://app.ostium.com/trade?from=SPX&to=USD"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1"
+                >
+                  Open Full View <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+              <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+                <SafeIframe
+                  src="https://app.ostium.com/trade?from=SPX&to=USD"
+                  title="Ostium RWA Trading"
+                  className="w-full h-[600px] border-0"
+                />
+              </div>
+              <div className="mt-2 text-center">
+                <p className="text-xs text-gray-400">
+                  S&P 500 (SPX) trading on Ostium • Real-world asset perpetuals
+                </p>
+              </div>
+            </div>
+
             {/* Allo Finance and Ondo Finance Buttons */}
             <div className="grid grid-cols-2 gap-4 mb-6">
               {/* Allo Finance - Orange Button */}

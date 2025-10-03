@@ -408,7 +408,10 @@ const TRUSTED_DOMAINS = [
   'www.vooi.io',
   'variational.io',
   'omni.variational.io',
-  'www.variational.io'
+  'www.variational.io',
+  'ostium.com',
+  'app.ostium.com',
+  'www.ostium.com'
 ];
 
 /**
