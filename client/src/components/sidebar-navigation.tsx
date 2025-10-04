@@ -184,6 +184,12 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
           path: '/app/trade/perps'
         },
         {
+          id: 'trade-spot-terminals',
+          label: 'Spot Terminals',
+          icon: <BarChart3 className="w-4 h-4" />,
+          path: '/app/trade/spot-terminals'
+        },
+        {
           id: 'trade-options',
           label: 'Options',
           icon: <Zap className="w-4 h-4" />,
