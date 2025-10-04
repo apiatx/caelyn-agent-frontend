@@ -12,7 +12,7 @@ export default function TradePage() {
       {/* Header */}
       <header 
         className="glass-card-dark border-b border-crypto-silver/20 sticky top-0 z-50 transition-opacity duration-300 relative overflow-hidden" 
-        style={{ opacity: headerOpacity }}
+        style={{ opacity: headerOpacity, pointerEvents: headerOpacity < 0.1 ? 'none' : 'auto' }}
       >
         {/* Background Image */}
         <div 
