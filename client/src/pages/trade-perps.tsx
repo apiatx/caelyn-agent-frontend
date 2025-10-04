@@ -618,26 +618,14 @@ export default function TradePerpsPage() {
 
               {/* CoinGlass Main Analytics */}
               <div className="mb-6">
-                <div className="flex justify-end mb-3">
-                  <a
-                    {...getSecureLinkProps('https://www.coinglass.com/')}
-                    className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
-                  >
-                    Open Full View <ExternalLink className="w-3 h-3" />
-                  </a>
-                </div>
-                
-                <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+                <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
                   <iframe
-                    {...getSecureIframeProps('https://www.coinglass.com/', 'CoinGlass Analytics')}
-                    className="w-full h-[800px] border-0"
+                    src="https://www.coinglass.com/"
+                    className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+                    title="CoinGlass"
+                    frameBorder="0"
+                    scrolling="yes"
                   />
-                </div>
-                
-                <div className="mt-4 text-center">
-                  <p className="text-xs text-gray-400">
-                    Comprehensive crypto market analytics • CoinGlass insights and data
-                  </p>
                 </div>
               </div>
 
