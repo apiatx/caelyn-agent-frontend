@@ -119,7 +119,16 @@ export default function AlphaSection() {
 
 
           {/* CoinGlass iframe */}
-          <div className="mb-8">
+          <div className="mb-8 mt-8">
+            <div className="mb-3 flex justify-end">
+              <button
+                onClick={() => openInNewTab('https://www.coinglass.com/')}
+                className="text-blue-300 hover:text-blue-200 text-sm font-medium hover:underline transition-colors duration-300 flex items-center gap-1"
+                data-testid="button-coinglass-external"
+              >
+                Open Full View →
+              </button>
+            </div>
             <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
               <iframe
                 src="https://www.coinglass.com/"
@@ -127,26 +136,6 @@ export default function AlphaSection() {
                 title="CoinGlass"
                 frameBorder="0"
                 scrolling="yes"
-              />
-            </div>
-          </div>
-
-
-          {/* BBTerminal Trading Terminal */}
-          <div className="mb-8">
-            <div className="mb-3 flex justify-end">
-              <SafeLink
-                href="https://app.bbterminal.com/degen"
-                className="text-purple-300 hover:text-purple-200 text-sm font-medium hover:underline transition-colors duration-300"
-              >
-                Open Full Terminal →
-              </SafeLink>
-            </div>
-            <div className="w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg">
-              <SafeIframe
-                src="https://app.bbterminal.com/degen"
-                title="BBTerminal Degen Trading Terminal"
-                className="w-full h-[600px] rounded-lg"
               />
             </div>
           </div>
@@ -285,6 +274,25 @@ export default function AlphaSection() {
               </div>
               <p className="text-gray-300 text-sm font-medium text-center">DeFi Portfolio Management</p>
             </SafeLink>
+          </div>
+
+          {/* BBTerminal Trading Terminal */}
+          <div className="mt-8">
+            <div className="mb-3 flex justify-end">
+              <SafeLink
+                href="https://app.bbterminal.com/degen"
+                className="text-purple-300 hover:text-purple-200 text-sm font-medium hover:underline transition-colors duration-300"
+              >
+                Open Full Terminal →
+              </SafeLink>
+            </div>
+            <div className="w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg">
+              <SafeIframe
+                src="https://app.bbterminal.com/degen"
+                title="BBTerminal Degen Trading Terminal"
+                className="w-full h-[600px] rounded-lg"
+              />
+            </div>
           </div>
         </GlassCard>
       </div>
