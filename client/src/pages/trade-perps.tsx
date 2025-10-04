@@ -109,31 +109,6 @@ export default function TradePerpsPage() {
           <GlassCard className="p-8">
             <div className="space-y-6">
               
-              {/* Pacifica AI Agent Trading */}
-              <div className="mb-6">
-                <div className="flex justify-end mb-3">
-                  <a
-                    {...getSecureLinkProps('https://app.pacifica.fi/agent/BTC')}
-                    className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
-                  >
-                    Open Full View <ExternalLink className="w-3 h-3" />
-                  </a>
-                </div>
-                
-                <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-                  <iframe
-                    {...getSecureIframeProps('https://app.pacifica.fi/agent/BTC', 'Pacifica AI Agent BTC Trading')}
-                    className="w-full h-[800px] border-0"
-                  />
-                </div>
-                
-                <div className="mt-4 text-center">
-                  <p className="text-xs text-gray-400">
-                    AI-powered BTC trading on Pacifica • Autonomous agent trading
-                  </p>
-                </div>
-              </div>
-
               {/* Hyperliquid Trading */}
               <div className="mb-6">
                 <div className="flex justify-end mb-3">
@@ -639,6 +614,49 @@ export default function TradePerpsPage() {
                   <h1 className="text-3xl font-bold text-white">Analyze</h1>
                 </div>
                 <p className="text-crypto-silver">Advanced market analytics and trading insights</p>
+              </div>
+
+              {/* CoinGlass Main Analytics */}
+              <div className="mb-6">
+                <div className="flex justify-end mb-3">
+                  <a
+                    {...getSecureLinkProps('https://www.coinglass.com/')}
+                    className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
+                  >
+                    Open Full View <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+                
+                <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+                  <iframe
+                    {...getSecureIframeProps('https://www.coinglass.com/', 'CoinGlass Analytics')}
+                    className="w-full h-[800px] border-0"
+                  />
+                </div>
+                
+                <div className="mt-4 text-center">
+                  <p className="text-xs text-gray-400">
+                    Comprehensive crypto market analytics • CoinGlass insights and data
+                  </p>
+                </div>
+              </div>
+
+              {/* Pacifica - Enhanced Button */}
+              <div className="w-full mt-6">
+                <Button
+                  variant="outline"
+                  onClick={() => openInNewTab('https://app.pacifica.fi/agent/BTC')}
+                  className="group w-full bg-gradient-to-br from-blue-500/40 via-indigo-500/30 to-purple-500/40 border border-blue-400/50 hover:from-blue-400/50 hover:via-indigo-400/40 hover:to-purple-400/50 hover:border-blue-300/70 text-white justify-center p-8 h-auto rounded-lg transition-all duration-500 flex items-center shadow-2xl hover:shadow-blue-500/40 transform hover:scale-[1.02] backdrop-blur-sm"
+                  data-testid="button-pacifica"
+                >
+                  <div className="text-center">
+                    <div className="font-bold text-2xl flex items-center justify-center gap-3 mb-2">
+                      <Activity className="w-7 h-7 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-500" />
+                      Pacifica AI Agent
+                    </div>
+                    <div className="text-base text-blue-100/90 font-medium">Autonomous perps AI trading for BTC</div>
+                  </div>
+                </Button>
               </div>
 
               {/* HyperDash */}
