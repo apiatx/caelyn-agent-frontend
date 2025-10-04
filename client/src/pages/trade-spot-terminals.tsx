@@ -70,6 +70,47 @@ export default function TradeSpotTerminalsPage() {
       {/* Main Content */}
       <main className="max-w-[95vw] mx-auto px-2 sm:px-3 py-4">
         <div className="space-y-12 p-6">
+          {/* AltFins Section */}
+          <GlassCard className="p-6">
+            <div className="flex flex-col items-center text-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
+                <TrendingUp className="text-white text-xl" />
+              </div>
+              <div>
+                <h3 className="text-2xl font-bold text-white">AltFins</h3>
+                <p className="text-crypto-silver">Advanced crypto analytics and trading tools</p>
+              </div>
+            </div>
+
+            <div className="flex justify-end mb-3">
+              <a
+                href="https://altfins.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
+                data-testid="button-altfins-fullview"
+              >
+                Open Full View <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+            
+            <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+              <iframe
+                src="https://altfins.com/"
+                className="w-full h-[700px] border-0"
+                title="AltFins - Crypto Analytics"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+                data-testid="iframe-altfins"
+              />
+            </div>
+            
+            <div className="mt-4 text-center">
+              <p className="text-xs text-gray-400">
+                AltFins • Advanced cryptocurrency analytics and trading platform
+              </p>
+            </div>
+          </GlassCard>
+
           {/* Spot Terminals Section - Enhanced Header */}
           <div className="text-center relative">
             <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 via-fuchsia-500/20 to-pink-500/20 blur-3xl -z-10"></div>
