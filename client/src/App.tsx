@@ -19,6 +19,7 @@ import RWAPage from "@/pages/rwa";
 import BittensorPage from "@/pages/bittensor";
 import TradePage from "@/pages/trade";
 import TradePerpsPage from "@/pages/trade-perps";
+import TradeSpotTerminalsPage from "@/pages/trade-spot-terminals";
 import TradeOptionsPage from "@/pages/trade-options";
 import TradeOnRampPage from "@/pages/trade-onramp";
 
@@ -80,6 +81,9 @@ function Router() {
       <Route path="/app/trade/perps" component={TradePerpsPage} />
       <Route path="/trade-perps" component={TradePerpsPage} />
       <Route path="/perps" component={TradePerpsPage} />
+      <Route path="/app/trade/spot-terminals" component={TradeSpotTerminalsPage} />
+      <Route path="/trade-spot-terminals" component={TradeSpotTerminalsPage} />
+      <Route path="/spot-terminals" component={TradeSpotTerminalsPage} />
       <Route path="/app/trade/options" component={TradeOptionsPage} />
       <Route path="/app/trade-options" component={TradeOptionsPage} />
       <Route path="/trade-options" component={TradeOptionsPage} />
