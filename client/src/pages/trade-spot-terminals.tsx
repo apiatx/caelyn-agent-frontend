@@ -70,47 +70,6 @@ export default function TradeSpotTerminalsPage() {
       {/* Main Content */}
       <main className="max-w-[95vw] mx-auto px-2 sm:px-3 py-4">
         <div className="space-y-12 p-6">
-          {/* AltFins Section */}
-          <GlassCard className="p-6">
-            <div className="flex flex-col items-center text-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
-                <TrendingUp className="text-white text-xl" />
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold text-white">AltFins</h3>
-                <p className="text-crypto-silver">Advanced crypto analytics and trading tools</p>
-              </div>
-            </div>
-
-            <div className="flex justify-end mb-3">
-              <a
-                href="https://altfins.com/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
-                data-testid="button-altfins-fullview"
-              >
-                Open Full View <ExternalLink className="w-3 h-3" />
-              </a>
-            </div>
-            
-            <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-              <iframe
-                src="https://altfins.com/"
-                className="w-full h-[700px] border-0"
-                title="AltFins - Crypto Analytics"
-                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-                data-testid="iframe-altfins"
-              />
-            </div>
-            
-            <div className="mt-4 text-center">
-              <p className="text-xs text-gray-400">
-                AltFins • Advanced cryptocurrency analytics and trading platform
-              </p>
-            </div>
-          </GlassCard>
-
           {/* Spot Terminals Section - Enhanced Header */}
           <div className="text-center relative">
             <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 via-fuchsia-500/20 to-pink-500/20 blur-3xl -z-10"></div>
@@ -161,19 +120,20 @@ export default function TradeSpotTerminalsPage() {
                 data-testid="iframe-tabtrader"
               />
 
-              {/* Primary App - OurBit (Full Width) */}
+              {/* Primary App - AltFins (Full Width) */}
               <div className="w-full">
                 <Button
                   variant="outline"
-                  onClick={() => openInNewTab('https://www.ourbit.com/')}
-                  className="group w-full bg-gradient-to-br from-purple-500/40 via-fuchsia-500/30 to-pink-500/40 border-purple-400/50 hover:from-purple-400/50 hover:via-fuchsia-400/40 hover:to-pink-400/50 hover:border-purple-300/70 text-white justify-center p-8 h-auto shadow-2xl hover:shadow-purple-500/40 transform hover:scale-[1.02] transition-all duration-500 backdrop-blur-sm"
+                  onClick={() => openInNewTab('https://altfins.com/')}
+                  className="group w-full bg-gradient-to-br from-cyan-500/40 via-teal-500/30 to-emerald-500/40 border-cyan-400/50 hover:from-cyan-400/50 hover:via-teal-400/40 hover:to-emerald-400/50 hover:border-cyan-300/70 text-white justify-center p-8 h-auto shadow-2xl hover:shadow-cyan-500/40 transform hover:scale-[1.02] transition-all duration-500 backdrop-blur-sm"
+                  data-testid="button-altfins"
                 >
                   <div className="text-center">
                     <div className="font-bold text-2xl flex items-center justify-center gap-3 mb-2">
-                      <ArrowLeftRight className="w-7 h-7 group-hover:rotate-180 transition-transform duration-500" />
-                      OurBit
+                      <TrendingUp className="w-7 h-7 group-hover:scale-110 transition-transform duration-500" />
+                      AltFins
                     </div>
-                    <div className="text-base text-purple-100/90 font-medium">Primary multi-chain trading terminal - CEX & DEX, Spot & Futures</div>
+                    <div className="text-base text-cyan-100/90 font-medium">Advanced crypto analytics and trading tools</div>
                   </div>
                 </Button>
               </div>
@@ -230,6 +190,7 @@ export default function TradeSpotTerminalsPage() {
                   variant="outline"
                   onClick={() => openInNewTab('https://ave.ai/')}
                   className="group w-full bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+                  data-testid="button-ave-ai"
                 >
                   <div className="text-center">
                     <div className="font-bold text-base flex items-center justify-center">
@@ -237,6 +198,24 @@ export default function TradeSpotTerminalsPage() {
                       Ave.ai
                     </div>
                     <div className="text-sm text-gray-300">AI-powered multi-chain trading terminal</div>
+                  </div>
+                </Button>
+              </div>
+
+              {/* OurBit Button */}
+              <div className="w-full">
+                <Button
+                  variant="outline"
+                  onClick={() => openInNewTab('https://www.ourbit.com/')}
+                  className="group w-full bg-gradient-to-br from-purple-500/40 via-fuchsia-500/30 to-pink-500/40 border-purple-400/50 hover:from-purple-400/50 hover:via-fuchsia-400/40 hover:to-pink-400/50 hover:border-purple-300/70 text-white justify-center p-8 h-auto shadow-2xl hover:shadow-purple-500/40 transform hover:scale-[1.02] transition-all duration-500 backdrop-blur-sm"
+                  data-testid="button-ourbit"
+                >
+                  <div className="text-center">
+                    <div className="font-bold text-2xl flex items-center justify-center gap-3 mb-2">
+                      <ArrowLeftRight className="w-7 h-7 group-hover:rotate-180 transition-transform duration-500" />
+                      OurBit
+                    </div>
+                    <div className="text-base text-purple-100/90 font-medium">Primary multi-chain trading terminal - CEX & DEX, Spot & Futures</div>
                   </div>
                 </Button>
               </div>
