@@ -97,18 +97,6 @@ export default function CryptoDashboardSection() {
         
       </div>
 
-      {/* CoinGlass Analytics */}
-      <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
-        <iframe
-          src="https://www.coinglass.com/"
-          className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
-          title="CoinGlass"
-          frameBorder="0"
-          scrolling="yes"
-        />
-      </div>
-
-
       <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
         <iframe
           src="https://www.coinglass.com/bull-market-peak-signals"
