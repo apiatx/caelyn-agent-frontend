@@ -1,6 +1,6 @@
 import React, { Suspense } from 'react';
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, Activity } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import bitcoinLogo from "@assets/Bitcoin.svg_1755979187828.webp";
 import ethereumLogo from "@assets/Ethereum_logo_2014.svg_1755977414942.png";
 import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
@@ -364,20 +364,35 @@ export default function TopChartsPage() {
             <CryptoMarketDataBare symbol="ETH" />
           </div>
 
-          {/* Monthly Returns - Moved to Perps Page Analyze Section */}
-          <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6">
-            <div className="flex items-center justify-between mb-4">
+          {/* Monthly Returns */}
+          <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6 space-y-4">
+            <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <h3 className="text-lg font-semibold text-emerald-400">Market Analytics</h3>
+                <h3 className="text-lg font-semibold text-emerald-400">Monthly Returns</h3>
                 <Badge variant="outline" className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30">
-                  MOVED
+                  RETURNS
                 </Badge>
               </div>
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={() => openSecureLink('https://www.coinglass.com/today')}
+                  className="text-emerald-400 hover:text-emerald-300 text-xs sm:text-sm flex items-center gap-1"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                  Open Full View →
+                </button>
+              </div>
             </div>
-            <div className="text-center py-8 text-gray-400">
-              <Activity className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p className="text-sm">CoinGlass Market Analytics has been moved to the Perps page.</p>
-              <p className="text-xs mt-2">Visit the <strong>Perps → Analyze</strong> section to access market analytics.</p>
+            <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
+              <iframe
+                src="https://www.coinglass.com/today"
+                className="w-full h-[600px] sm:h-[800px] lg:h-[900px] rounded-lg border border-crypto-silver/20"
+                title="CoinGlass Monthly Returns"
+                frameBorder="0"
+                scrolling="yes"
+                loading="lazy"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+              />
             </div>
           </div>
         </div>
