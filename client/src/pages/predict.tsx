@@ -149,26 +149,26 @@ export default function PredictPage() {
 
           {/* PMX Trading */}
           <div className="mt-8">
-            <h3 className="text-xl font-semibold text-white mb-4">PMX Trading</h3>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
+                  <TrendingUp className="w-4 h-4 text-white" />
+                </div>
+                <h3 className="text-xl font-semibold text-white">PMX Trading</h3>
+              </div>
+              <Button
+                onClick={() => openInNewTab('https://pmx.trade/markets')}
+                className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Open Full View
+              </Button>
+            </div>
             <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
               <iframe
                 src="https://pmx.trade/markets"
                 className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
                 title="PMX Trading"
-                frameBorder="0"
-                scrolling="yes"
-              />
-            </div>
-          </div>
-
-          {/* Kalshi */}
-          <div className="mt-8">
-            <h3 className="text-xl font-semibold text-white mb-4">Kalshi</h3>
-            <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
-              <iframe
-                src="https://kalshi.com/"
-                className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
-                title="Kalshi"
                 frameBorder="0"
                 scrolling="yes"
               />
@@ -186,6 +186,39 @@ export default function PredictPage() {
               sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
               referrerPolicy="no-referrer-when-downgrade"
             />
+          </div>
+
+          {/* Kalshi */}
+          <div className="mt-6">
+            <div className="p-6 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 rounded-lg">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full flex items-center justify-center">
+                    <TrendingUp className="w-4 h-4 text-white" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-white">Kalshi</h3>
+                </div>
+                <Button
+                  onClick={() => openInNewTab("https://kalshi.com/")}
+                  className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white font-semibold px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  Open Kalshi
+                </Button>
+              </div>
+              <p className="text-crypto-silver mb-4">
+                CFTC-regulated prediction markets where you can trade on real-world events.
+              </p>
+              <div className="bg-black/20 rounded-lg p-4 border border-indigo-500/20">
+                <p className="text-sm text-crypto-silver">
+                  📊 Trade on elections, economic data, and news events
+                  <br />
+                  🏛️ CFTC-regulated and fully legal in the US
+                  <br />
+                  💰 Real money trading with transparent odds
+                </p>
+              </div>
+            </div>
           </div>
 
           {/* TrueMarkets */}
