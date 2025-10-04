@@ -133,23 +133,6 @@ export default function TradeSection() {
             </div>
           </div>
 
-          {/* Jumper Exchange Button - Big purple button like Matcha */}
-          <div className="w-full mt-6">
-            <Button
-              variant="outline"
-              onClick={() => openInNewTab('https://jumper.exchange/')}
-              className="group w-full bg-gradient-to-br from-purple-500/40 via-violet-500/30 to-purple-500/40 border-purple-400/50 hover:from-purple-400/50 hover:via-violet-400/40 hover:to-purple-400/50 hover:border-purple-300/70 text-white justify-center p-8 h-auto shadow-2xl hover:shadow-purple-500/40 transform hover:scale-[1.02] transition-all duration-500 backdrop-blur-sm"
-            >
-              <div className="text-center">
-                <div className="font-bold text-2xl flex items-center justify-center gap-3 mb-2">
-                  <ArrowLeftRight className="w-7 h-7 group-hover:rotate-180 transition-transform duration-500" />
-                  Jumper Exchange
-                </div>
-                <div className="text-base text-purple-100/90 font-medium">Multi-chain bridge aggregator</div>
-              </div>
-            </Button>
-          </div>
-
           {/* Matcha Button - Same style as Definitive Edge but green */}
           <div className="w-full mt-6">
             <Button
@@ -257,6 +240,23 @@ export default function TradeSection() {
             </Button>
           </div>
 
+          {/* Jumper Exchange Button - Big purple button like Matcha */}
+          <div className="w-full mt-6">
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://jumper.exchange/')}
+              className="group w-full bg-gradient-to-br from-purple-500/40 via-violet-500/30 to-purple-500/40 border-purple-400/50 hover:from-purple-400/50 hover:via-violet-400/40 hover:to-purple-400/50 hover:border-purple-300/70 text-white justify-center p-8 h-auto shadow-2xl hover:shadow-purple-500/40 transform hover:scale-[1.02] transition-all duration-500 backdrop-blur-sm"
+            >
+              <div className="text-center">
+                <div className="font-bold text-2xl flex items-center justify-center gap-3 mb-2">
+                  <ArrowLeftRight className="w-7 h-7 group-hover:rotate-180 transition-transform duration-500" />
+                  Jumper Exchange
+                </div>
+                <div className="text-base text-purple-100/90 font-medium">Multi-chain bridge aggregator</div>
+              </div>
+            </Button>
+          </div>
+
 {/* Mayan Finance iframe */}
           <div className="mt-8">
             <div className="flex justify-end mb-3">
@@ -282,29 +282,6 @@ export default function TradeSection() {
             </div>
           </div>
 
-        </div>
-      </GlassCard>
-
-      {/* Multi-Charts Section */}
-      <GlassCard className="p-8">
-        <div className="w-full bg-gradient-to-br from-slate-900/80 via-gray-900/80 to-cyan-900/30 rounded-2xl border border-cyan-400/20 p-12 text-center shadow-2xl">
-          <div className="flex flex-col items-center gap-6">
-            <div className="w-24 h-24 bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-500 rounded-3xl flex items-center justify-center shadow-2xl shadow-cyan-500/30 hover:scale-110 transition-transform duration-300">
-              <TrendingUp className="w-12 h-12 text-white" />
-            </div>
-            <div>
-              <h5 className="text-3xl font-bold text-white mb-3">Multi-Charts Dashboard</h5>
-              <p className="text-cyan-200/80 text-lg mb-6 max-w-md mx-auto">
-                Advanced Multi-Chart Tracking for Watchlist and Active Trades
-              </p>
-              <button
-                onClick={() => openInNewTab('https://dexscreener.com/multicharts?theme=dark')}
-                className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white px-8 py-4 rounded-xl transition-all duration-300 text-lg font-semibold shadow-2xl hover:shadow-cyan-500/30 transform hover:scale-105"
-              >
-                Open Multi-Charts Dashboard
-              </button>
-            </div>
-          </div>
         </div>
       </GlassCard>
 
