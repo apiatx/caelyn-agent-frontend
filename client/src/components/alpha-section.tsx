@@ -380,6 +380,47 @@ export default function AlphaSection() {
         </GlassCard>
       </div>
 
+      {/* AskSurf.ai Hub */}
+      <GlassCard className="p-6">
+        <div className="flex flex-col items-center text-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
+            <Brain className="text-white text-xl" />
+          </div>
+          <div>
+            <h3 className="text-2xl font-bold text-white">AskSurf AI Hub</h3>
+            <p className="text-crypto-silver">AI-powered crypto intelligence platform</p>
+          </div>
+        </div>
+
+        <div className="flex justify-end mb-3">
+          <a
+            href="https://asksurf.ai/hub"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
+            data-testid="button-asksurf-fullview"
+          >
+            Open Full View <ExternalLink className="w-3 h-3" />
+          </a>
+        </div>
+        
+        <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+          <iframe
+            src="https://asksurf.ai/hub"
+            className="w-full h-[700px] border-0"
+            title="AskSurf AI Hub"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+            data-testid="iframe-asksurf"
+          />
+        </div>
+        
+        <div className="mt-4 text-center">
+          <p className="text-xs text-gray-400">
+            AskSurf AI Hub • AI-powered crypto intelligence and analytics
+          </p>
+        </div>
+      </GlassCard>
+
     </div>
   );
 }
