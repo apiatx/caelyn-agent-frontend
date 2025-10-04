@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Activity, BarChart3, TrendingUp, ChartLine, Brain, Zap, DollarSign, Building2, Layers, Coins, ChevronRight, ChevronDown, ChevronLeft, Wallet, Users, MessageSquare, Rocket, Globe, ArrowLeftRight, Search, Menu, X } from "lucide-react";
+import { Activity, BarChart3, TrendingUp, ChartLine, Brain, Zap, DollarSign, Building2, Layers, Coins, ChevronRight, ChevronDown, ChevronLeft, Wallet, Users, MessageSquare, Rocket, Globe, ArrowLeftRight, Search, Menu, X, Gamepad2 } from "lucide-react";
 import { useLocation } from "wouter";
 import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
 
@@ -200,6 +200,12 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
           label: 'DePIN',
           icon: <Zap className="w-4 h-4" />,
           path: '/app/defi/depin'
+        },
+        {
+          id: 'p2e',
+          label: 'P2E',
+          icon: <Gamepad2 className="w-4 h-4" />,
+          path: '/app/p2e'
         }
       ]
     },

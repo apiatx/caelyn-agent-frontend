@@ -14,6 +14,7 @@ import DeFiPage from "@/pages/defi";
 import BTCDeFiPage from "@/pages/btc-defi";
 import DeFAIPage from "@/pages/defai";
 import DePINPage from "@/pages/depin";
+import P2EPage from "@/pages/p2e";
 import BNBPage from "@/pages/bnb";
 import SUIPage from "@/pages/sui";
 import CryptoStocks from "@/pages/crypto-stocks";
@@ -102,6 +103,8 @@ function Router() {
       <Route path="/app/defi/btc-defi" component={BTCDeFiPage} />
       <Route path="/app/defi/defai" component={DeFAIPage} />
       <Route path="/app/defi/depin" component={DePINPage} />
+      <Route path="/app/p2e" component={P2EPage} />
+      <Route path="/p2e" component={P2EPage} />
       <Route path="/app/rwa" component={RWAPage} />
       <Route path="/app/crypto-stocks" component={CryptoStocks} />
       <Route path="/app/stocks" component={CryptoStocks} />
