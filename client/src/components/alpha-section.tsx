@@ -182,18 +182,46 @@ export default function AlphaSection() {
             </SafeLink>
           </div>
 
-          {/* Messari.io */}
-          <div className="mb-8">
+          {/* Nansen, Messari, Cookie - Three Across */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+            <SafeLink
+              href='https://app.nansen.ai/'
+              className="p-5 bg-gradient-to-br from-purple-600/15 to-purple-700/15 hover:from-purple-600/25 hover:to-purple-700/25 border border-purple-600/30 hover:border-purple-500/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-purple-600/20 transform"
+            >
+              <div className="flex flex-col items-center gap-2 mb-3">
+                <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-purple-700 rounded-lg flex items-center justify-center shadow-md">
+                  <span className="text-white font-bold text-xs">N</span>
+                </div>
+                <h4 className="text-purple-300 font-bold text-lg">Nansen.ai</h4>
+              </div>
+              <p className="text-gray-300 text-sm font-medium text-center">On-chain insights and wallet tracking</p>
+            </SafeLink>
+
             <button
               onClick={() => openInNewTab('https://messari.io/')}
-              className="w-full p-6 text-center bg-gradient-to-b from-orange-600/10 to-orange-700/10 hover:from-orange-600/20 hover:to-orange-700/20 border border-orange-600/20 hover:border-orange-500/40 rounded-lg transition-all duration-300 group"
+              className="p-5 text-center bg-gradient-to-b from-orange-600/10 to-orange-700/10 hover:from-orange-600/20 hover:to-orange-700/20 border border-orange-600/20 hover:border-orange-500/40 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-orange-500/20 transform group"
             >
-              <div className="w-12 h-12 bg-orange-600 rounded-full flex items-center justify-center mx-auto mb-3">
-                <BarChart3 className="w-6 h-6 text-white" />
+              <div className="flex flex-col items-center gap-2 mb-3">
+                <div className="w-8 h-8 bg-orange-600 rounded-full flex items-center justify-center shadow-md">
+                  <BarChart3 className="w-6 h-6 text-white" />
+                </div>
+                <h4 className="text-orange-300 font-bold text-lg group-hover:text-orange-200">Messari.io</h4>
               </div>
-              <h4 className="text-lg font-bold text-white group-hover:text-orange-300 mb-2">Messari.io</h4>
-              <p className="text-gray-400 group-hover:text-gray-300 text-sm max-w-md mx-auto">Research reports, market data, and institutional-grade analysis</p>
+              <p className="text-gray-300 text-sm font-medium text-center group-hover:text-gray-200">Research reports, market data, and institutional-grade analysis</p>
             </button>
+
+            <SafeLink
+              href='https://cookie.fun/'
+              className="p-5 bg-gradient-to-br from-yellow-500/15 to-yellow-600/15 hover:from-yellow-500/25 hover:to-yellow-600/25 border border-yellow-500/30 hover:border-yellow-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-yellow-500/20 transform"
+            >
+              <div className="flex flex-col items-center gap-2 mb-3">
+                <div className="w-8 h-8 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-lg flex items-center justify-center shadow-md">
+                  <span className="text-white font-bold text-xs">C</span>
+                </div>
+                <h4 className="text-yellow-300 font-bold text-lg">Cookie.fun</h4>
+              </div>
+              <p className="text-gray-300 text-sm font-medium text-center">Interactive Trading Platform</p>
+            </SafeLink>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
@@ -237,8 +265,8 @@ export default function AlphaSection() {
             </SafeLink>
           </div>
 
-          {/* DexCheck and Velvet Capital - Two Across */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* DexCheck, Velvet Capital, Binance Alpha, Binance Web3 - Four Across */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <SafeLink
               href='https://dexcheck.ai/app'
               className="p-5 bg-gradient-to-br from-yellow-500/15 to-yellow-600/15 hover:from-yellow-500/25 hover:to-yellow-600/25 border border-yellow-500/30 hover:border-yellow-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-yellow-500/20 transform"
@@ -264,61 +292,31 @@ export default function AlphaSection() {
               </div>
               <p className="text-gray-300 text-sm font-medium text-center">DeFi Portfolio Management</p>
             </SafeLink>
-          </div>
-
-          {/* BBTerminal Trading Terminal */}
-          <div className="mt-8">
-            <div className="mb-3 flex justify-end">
-              <SafeLink
-                href="https://app.bbterminal.com/degen"
-                className="text-purple-300 hover:text-purple-200 text-sm font-medium hover:underline transition-colors duration-300"
-              >
-                Open Full Terminal →
-              </SafeLink>
-            </div>
-            <div className="w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg">
-              <SafeIframe
-                src="https://app.bbterminal.com/degen"
-                title="BBTerminal Degen Trading Terminal"
-                className="w-full h-[600px] rounded-lg"
-              />
-            </div>
-          </div>
-        </GlassCard>
-      </div>
-
-      {/* Signal Section - Separate GlassCard */}
-      <div className="space-y-8 mt-12">
-        <GlassCard className="p-3 sm:p-4 lg:p-6">
-          <div className="flex items-center justify-center mb-6">
-            <h4 className="text-2xl font-bold bg-gradient-to-r from-white to-indigo-100 bg-clip-text text-transparent">Signal</h4>
-          </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-            <SafeLink
-              href='https://app.nansen.ai/'
-              className="p-5 bg-gradient-to-br from-purple-600/15 to-purple-700/15 hover:from-purple-600/25 hover:to-purple-700/25 border border-purple-600/30 hover:border-purple-500/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-purple-600/20 transform"
-            >
-              <div className="flex flex-col items-center gap-2 mb-3">
-                <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-purple-700 rounded-lg flex items-center justify-center shadow-md">
-                  <span className="text-white font-bold text-xs">N</span>
-                </div>
-                <h4 className="text-purple-300 font-bold text-lg">Nansen.ai</h4>
-              </div>
-              <p className="text-gray-300 text-sm font-medium text-center">On-chain insights and wallet tracking</p>
-            </SafeLink>
 
             <SafeLink
-              href='https://cookie.fun/'
+              href='https://www.binance.com/en/markets/alpha-all'
               className="p-5 bg-gradient-to-br from-yellow-500/15 to-yellow-600/15 hover:from-yellow-500/25 hover:to-yellow-600/25 border border-yellow-500/30 hover:border-yellow-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-yellow-500/20 transform"
             >
               <div className="flex flex-col items-center gap-2 mb-3">
                 <div className="w-8 h-8 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-lg flex items-center justify-center shadow-md">
-                  <span className="text-white font-bold text-xs">C</span>
+                  <span className="text-white font-bold text-xs">B</span>
                 </div>
-                <h4 className="text-yellow-300 font-bold text-lg">Cookie.fun</h4>
+                <h4 className="text-yellow-300 font-bold text-lg">Binance Alpha</h4>
               </div>
-              <p className="text-gray-300 text-sm font-medium text-center">Interactive Trading Platform</p>
+              <p className="text-gray-300 text-sm font-medium text-center">Alpha project listings and market data</p>
+            </SafeLink>
+
+            <SafeLink
+              href='https://web3.binance.com/en/markets/alpha?chain=bsc'
+              className="p-5 bg-gradient-to-br from-orange-500/15 to-orange-600/15 hover:from-orange-500/25 hover:to-orange-600/25 border border-orange-500/30 hover:border-orange-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-orange-500/20 transform"
+            >
+              <div className="flex flex-col items-center gap-2 mb-3">
+                <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center shadow-md">
+                  <span className="text-white font-bold text-xs">W3</span>
+                </div>
+                <h4 className="text-orange-300 font-bold text-lg">Binance Web3 Alpha</h4>
+              </div>
+              <p className="text-gray-300 text-sm font-medium text-center">Web3 alpha projects on BSC</p>
             </SafeLink>
           </div>
         </GlassCard>
@@ -361,44 +359,6 @@ export default function AlphaSection() {
         </GlassCard>
       </div>
 
-      {/* Alpha Section - Separate GlassCard */}
-      <div className="space-y-8 mt-12">
-        <GlassCard className="p-3 sm:p-4 lg:p-6">
-          <div className="flex items-center justify-center mb-6">
-            <h4 className="text-2xl font-bold bg-gradient-to-r from-white to-yellow-100 bg-clip-text text-transparent">Alpha</h4>
-          </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <SafeLink
-              href='https://www.binance.com/en/markets/alpha-all'
-              className="p-5 bg-gradient-to-br from-yellow-500/15 to-yellow-600/15 hover:from-yellow-500/25 hover:to-yellow-600/25 border border-yellow-500/30 hover:border-yellow-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-yellow-500/20 transform"
-            >
-              <div className="flex flex-col items-center gap-2 mb-3">
-                <div className="w-8 h-8 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-lg flex items-center justify-center shadow-md">
-                  <span className="text-white font-bold text-xs">B</span>
-                </div>
-                <h4 className="text-yellow-300 font-bold text-lg">Binance Alpha</h4>
-              </div>
-              <p className="text-gray-300 text-sm font-medium text-center">Alpha project listings and market data</p>
-            </SafeLink>
-
-            <SafeLink
-              href='https://web3.binance.com/en/markets/alpha?chain=bsc'
-              className="p-5 bg-gradient-to-br from-orange-500/15 to-orange-600/15 hover:from-orange-500/25 hover:to-orange-600/25 border border-orange-500/30 hover:border-orange-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-orange-500/20 transform"
-            >
-              <div className="flex flex-col items-center gap-2 mb-3">
-                <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center shadow-md">
-                  <span className="text-white font-bold text-xs">W3</span>
-                </div>
-                <h4 className="text-orange-300 font-bold text-lg">Binance Web3 Alpha</h4>
-              </div>
-              <p className="text-gray-300 text-sm font-medium text-center">Web3 alpha projects on BSC</p>
-            </SafeLink>
-          </div>
-          
-        </GlassCard>
-      </div>
-
       {/* Alphanomics Bubble Scanner - Separate GlassCard */}
       <div className="space-y-8 mt-12">
         <GlassCard className="p-3 sm:p-4 lg:p-6">
@@ -426,6 +386,27 @@ export default function AlphaSection() {
             className="h-[700px]"
           />
           
+        </GlassCard>
+      </div>
+
+      {/* BBTerminal Trading Terminal */}
+      <div className="space-y-8 mt-12">
+        <GlassCard className="p-3 sm:p-4 lg:p-6">
+          <div className="mb-3 flex justify-end">
+            <SafeLink
+              href="https://app.bbterminal.com/degen"
+              className="text-purple-300 hover:text-purple-200 text-sm font-medium hover:underline transition-colors duration-300"
+            >
+              Open Full Terminal →
+            </SafeLink>
+          </div>
+          <div className="w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg">
+            <SafeIframe
+              src="https://app.bbterminal.com/degen"
+              title="BBTerminal Degen Trading Terminal"
+              className="w-full h-[600px] rounded-lg"
+            />
+          </div>
         </GlassCard>
       </div>
 
