@@ -140,18 +140,8 @@ export default function AlphaSection() {
             </div>
           </div>
 
-
-        </GlassCard>
-      </div>
-
-      {/* Screeners Section - Separate GlassCard */}
-      <div className="space-y-8 mt-12">
-        <GlassCard className="p-3 sm:p-4 lg:p-6">
-          <div className="flex items-center justify-center mb-6">
-            <h4 className="text-2xl font-bold bg-gradient-to-r from-white to-purple-100 bg-clip-text text-transparent">Screeners</h4>
-          </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+          {/* Screeners - Combined in same card */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6 mt-8">
             <SafeLink
               href='https://coinmarketcap.com/?type=coins&tableRankBy=trending_all_24h'
               className="p-5 bg-gradient-to-br from-blue-500/15 to-blue-600/15 hover:from-blue-500/25 hover:to-blue-600/25 border border-blue-500/30 hover:border-blue-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-blue-500/20 transform"
@@ -160,9 +150,22 @@ export default function AlphaSection() {
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-md">
                   <span className="text-white font-bold text-xs">C</span>
                 </div>
-                <h4 className="text-blue-300 font-bold text-lg">CMC Leaderboard</h4>
+                <h4 className="text-blue-300 font-bold text-lg">CMC</h4>
               </div>
               <p className="text-gray-300 text-sm font-medium text-center">Market Rankings</p>
+            </SafeLink>
+
+            <SafeLink
+              href='https://www.coingecko.com/'
+              className="p-5 bg-gradient-to-br from-green-500/15 to-green-600/15 hover:from-green-500/25 hover:to-green-600/25 border border-green-500/30 hover:border-green-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-green-500/20 transform"
+            >
+              <div className="flex flex-col items-center gap-2 mb-3">
+                <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center shadow-md">
+                  <span className="text-white font-bold text-xs">G</span>
+                </div>
+                <h4 className="text-green-300 font-bold text-lg">CoinGecko</h4>
+              </div>
+              <p className="text-gray-300 text-sm font-medium text-center">Blockchain Analytics</p>
             </SafeLink>
 
             <SafeLink
@@ -176,19 +179,6 @@ export default function AlphaSection() {
                 <h4 className="text-cyan-300 font-bold text-lg">OpenSea</h4>
               </div>
               <p className="text-gray-300 text-sm font-medium text-center">Trending Altcoin Timeframes</p>
-            </SafeLink>
-
-            <SafeLink
-              href='https://www.coingecko.com/en/chains'
-              className="p-5 bg-gradient-to-br from-green-500/15 to-green-600/15 hover:from-green-500/25 hover:to-green-600/25 border border-green-500/30 hover:border-green-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-green-500/20 transform"
-            >
-              <div className="flex flex-col items-center gap-2 mb-3">
-                <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center shadow-md">
-                  <span className="text-white font-bold text-xs">G</span>
-                </div>
-                <h4 className="text-green-300 font-bold text-lg">CoinGecko Chains</h4>
-              </div>
-              <p className="text-gray-300 text-sm font-medium text-center">Blockchain Analytics</p>
             </SafeLink>
           </div>
 
@@ -215,7 +205,7 @@ export default function AlphaSection() {
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-md">
                   <span className="text-white font-bold text-xs">CMC</span>
                 </div>
-                <h4 className="text-blue-300 font-bold text-lg">CoinMarketCap</h4>
+                <h4 className="text-blue-300 font-bold text-lg">CMC Dex</h4>
               </div>
               <p className="text-gray-300 text-sm font-medium text-center">DEX Trending (Utility)</p>
             </SafeLink>
