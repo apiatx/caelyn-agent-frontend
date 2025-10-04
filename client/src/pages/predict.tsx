@@ -147,6 +147,34 @@ export default function PredictPage() {
             />
           </div>
 
+          {/* PMX Trading */}
+          <div className="mt-8">
+            <h3 className="text-xl font-semibold text-white mb-4">PMX Trading</h3>
+            <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
+              <iframe
+                src="https://pmx.trade/markets"
+                className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+                title="PMX Trading"
+                frameBorder="0"
+                scrolling="yes"
+              />
+            </div>
+          </div>
+
+          {/* Kalshi */}
+          <div className="mt-8">
+            <h3 className="text-xl font-semibold text-white mb-4">Kalshi</h3>
+            <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
+              <iframe
+                src="https://kalshi.com/"
+                className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+                title="Kalshi"
+                frameBorder="0"
+                scrolling="yes"
+              />
+            </div>
+          </div>
+
           {/* Moby Screener Predictions */}
           <div className="mt-8">
             <h3 className="text-xl font-semibold text-white mb-4">Moby Screener Predictions</h3>
