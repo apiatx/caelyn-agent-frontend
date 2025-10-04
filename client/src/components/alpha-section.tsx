@@ -80,10 +80,12 @@ export default function AlphaSection() {
         <GlassCard className="p-3 sm:p-4 lg:p-6">
 
           {/* Screening Section - Side by Side Layout */}
-          <div className="flex flex-col lg:flex-row gap-6">
+          <div className="flex flex-col lg:flex-row gap-6 lg:items-stretch">
             {/* 24h Gainers (CMC Top 500) - Left Side */}
-            <div className="lg:w-1/3">
-              <TopDailyGainersTop500 />
+            <div className="lg:w-1/3 flex">
+              <div className="w-full">
+                <TopDailyGainersTop500 />
+              </div>
             </div>
 
             {/* Banterbubbles and SAG3.ai - Right Side Stacked */}

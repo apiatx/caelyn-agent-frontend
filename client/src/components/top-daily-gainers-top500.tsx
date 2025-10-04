@@ -114,7 +114,7 @@ const TopDailyGainersTop500 = () => {
 
   if (isLoading) {
     return (
-      <div className="mt-6 bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-6">
+      <div className="h-full bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-6 flex flex-col">
         <div className="flex flex-col items-center justify-center space-y-2 mb-4">
           <div className="flex items-center space-x-2">
             <TrendingUp className="w-5 h-5 text-blue-400" />
@@ -128,7 +128,7 @@ const TopDailyGainersTop500 = () => {
             <ExternalLink className="w-3 h-3" />
           </button>
         </div>
-        <div className="flex items-center justify-center py-8">
+        <div className="flex items-center justify-center py-8 flex-1">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400"></div>
           <span className="ml-3 text-crypto-silver">Loading top 500 gainers...</span>
         </div>
@@ -138,7 +138,7 @@ const TopDailyGainersTop500 = () => {
 
   if (error) {
     return (
-      <div className="mt-6 bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-6">
+      <div className="h-full bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-6 flex flex-col">
         <div className="flex flex-col items-center justify-center space-y-2 mb-4">
           <div className="flex items-center space-x-2">
             <TrendingUp className="w-5 h-5 text-blue-400" />
@@ -152,7 +152,7 @@ const TopDailyGainersTop500 = () => {
             <ExternalLink className="w-3 h-3" />
           </button>
         </div>
-        <div className="text-center py-8">
+        <div className="text-center py-8 flex-1">
           <TrendingDown className="w-12 h-12 text-red-400 mx-auto mb-2" />
           <p className="text-red-400">{error}</p>
         </div>
@@ -161,15 +161,15 @@ const TopDailyGainersTop500 = () => {
   }
 
   return (
-    <div className="mt-6 bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-6" data-testid="top-daily-gainers-top500">
-      <div className="flex flex-col items-center justify-center space-y-2 mb-6">
+    <div className="h-full bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-6 flex flex-col" data-testid="top-daily-gainers-top500">
+      <div className="flex flex-col items-center justify-center space-y-2 mb-6 flex-shrink-0">
         <div className="flex items-center space-x-2">
           <TrendingUp className="w-5 h-5 text-blue-400" />
           <h3 className="text-lg font-semibold text-white">24h Gainers (CMC Top 500)</h3>
         </div>
       </div>
       
-      <div className="space-y-2">
+      <div className="space-y-2 overflow-y-auto flex-1 pr-2">
         {gainers.slice(0, 20).map((coin, index) => (
           <div
             key={coin.id}
@@ -215,7 +215,7 @@ const TopDailyGainersTop500 = () => {
         ))}
       </div>
       
-      <div className="mt-4 text-center">
+      <div className="mt-4 text-center flex-shrink-0">
         <p className="text-xs text-crypto-silver">
           Data updates every 5 minutes • Click any coin to view on CoinMarketCap
         </p>
