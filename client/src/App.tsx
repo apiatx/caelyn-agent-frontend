@@ -9,6 +9,7 @@ import TopChartsPage from "@/pages/top-charts";
 import AltcoinsPage from "@/pages/altcoins";
 import EthereumPage from "@/pages/ethereum";
 import SolanaPage from "@/pages/solana";
+import ArbitrumPage from "@/pages/arbitrum";
 import DeFiPage from "@/pages/defi";
 import BTCDeFiPage from "@/pages/btc-defi";
 import DeFAIPage from "@/pages/defai";
@@ -70,6 +71,8 @@ function Router() {
       <Route path="/base" component={BasePage} />
       <Route path="/app/ethereum" component={EthereumPage} />
       <Route path="/ethereum" component={EthereumPage} />
+      <Route path="/app/arbitrum" component={ArbitrumPage} />
+      <Route path="/arbitrum" component={ArbitrumPage} />
       <Route path="/app/solana" component={SolanaPage} />
       <Route path="/solana" component={SolanaPage} />
       <Route path="/app/bittensor" component={BittensorPage} />
