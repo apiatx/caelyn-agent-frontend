@@ -173,71 +173,43 @@ const TopDailyGainersTop500 = () => {
         {gainers.slice(0, 20).map((coin, index) => (
           <div
             key={coin.id}
-            className="bg-gradient-to-r from-blue-500/5 to-cyan-600/5 border border-blue-500/10 rounded-lg p-3 hover:border-blue-400/30 hover:bg-blue-500/10 transition-all duration-200 cursor-pointer group"
+            className="bg-gradient-to-r from-blue-500/5 to-cyan-600/5 border border-blue-500/10 rounded-lg p-2 hover:border-blue-400/30 hover:bg-blue-500/10 transition-all duration-200 cursor-pointer group"
             onClick={() => openCoinPage(coin)}
             data-testid={`top500-gainer-card-${coin.symbol}`}
           >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4 flex-1">
-                <span className="text-xs font-bold text-blue-400 w-6">#{index + 1}</span>
-                
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center space-x-2">
-                    <h4 className="font-semibold text-white text-sm truncate">{coin.name}</h4>
-                    <span className="text-xs text-crypto-silver">{coin.symbol}</span>
-                    <span className="text-xs text-gray-500">#{coin.cmc_rank}</span>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-bold text-blue-400 min-w-[24px]">#{index + 1}</span>
+              
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-col">
+                  <h4 className="font-semibold text-white text-xs truncate">{coin.name}</h4>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[10px] text-crypto-silver">{coin.symbol}</span>
+                    <span className="text-[10px] text-gray-500">#{coin.cmc_rank}</span>
                   </div>
                 </div>
-                
-                <div className="text-right min-w-[80px]">
-                  <div className="text-sm font-medium text-white">{formatPrice(coin.quote.USD.price)}</div>
-                </div>
-                
-                <div className="flex items-center space-x-4 text-xs">
-                  <div className="text-center min-w-[60px]">
-                    <div className={`font-medium ${getChangeColor(coin.quote.USD.percent_change_1h)}`}>
-                      {formatPercentChange(coin.quote.USD.percent_change_1h)}
-                    </div>
-                    <div className="text-crypto-silver text-[10px]">1h</div>
-                  </div>
-                  
-                  <div className="text-center min-w-[70px]">
-                    <div className="flex items-center justify-center space-x-1">
-                      <TrendingUp className="w-3 h-3 text-green-400" />
-                      <span className="font-medium text-green-400">
-                        {formatPercentChange(coin.quote.USD.percent_change_24h)}
-                      </span>
-                    </div>
-                    <div className="text-crypto-silver text-[10px]">24h</div>
-                  </div>
-                  
-                  <div className="text-center min-w-[60px]">
-                    <div className={`font-medium ${getChangeColor(coin.quote.USD.percent_change_7d)}`}>
-                      {formatPercentChange(coin.quote.USD.percent_change_7d)}
-                    </div>
-                    <div className="text-crypto-silver text-[10px]">7d</div>
-                  </div>
-                  
-                  <div className="text-center min-w-[60px]">
-                    <div className={`font-medium ${getChangeColor(coin.quote.USD.percent_change_30d)}`}>
-                      {formatPercentChange(coin.quote.USD.percent_change_30d)}
-                    </div>
-                    <div className="text-crypto-silver text-[10px]">30d</div>
-                  </div>
-                  
-                  <div className="text-center min-w-[70px]">
-                    <div className="font-medium text-white">{formatMarketCap(coin.quote.USD.market_cap)}</div>
-                    <div className="text-crypto-silver text-[10px]">MCap</div>
-                  </div>
-                  
-                  <div className="text-center min-w-[70px]">
-                    <div className="font-medium text-white">{formatVolume(coin.quote.USD.volume_24h)}</div>
-                    <div className="text-crypto-silver text-[10px]">Vol</div>
-                  </div>
-                </div>
-                
-                <ExternalLink className="w-3 h-3 text-gray-400 group-hover:text-blue-400 transition-colors ml-2" />
               </div>
+              
+              <div className="text-right min-w-[60px]">
+                <div className="text-xs font-medium text-white">{formatPrice(coin.quote.USD.price)}</div>
+              </div>
+              
+              <div className="text-center min-w-[60px]">
+                <div className="flex items-center justify-center space-x-1">
+                  <TrendingUp className="w-3 h-3 text-green-400" />
+                  <span className="font-medium text-green-400 text-xs">
+                    {formatPercentChange(coin.quote.USD.percent_change_24h)}
+                  </span>
+                </div>
+                <div className="text-crypto-silver text-[9px]">24h</div>
+              </div>
+              
+              <div className="text-center min-w-[50px]">
+                <div className="font-medium text-white text-xs">{formatMarketCap(coin.quote.USD.market_cap)}</div>
+                <div className="text-crypto-silver text-[9px]">MCap</div>
+              </div>
+              
+              <ExternalLink className="w-3 h-3 text-gray-400 group-hover:text-blue-400 transition-colors flex-shrink-0" />
             </div>
           </div>
         ))}

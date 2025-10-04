@@ -79,64 +79,70 @@ export default function AlphaSection() {
       <div className="space-y-8 mt-12">
         <GlassCard className="p-3 sm:p-4 lg:p-6">
 
-          {/* 24h Gainers (CMC Top 500) */}
-          <div className="mb-6">
-            <TopDailyGainersTop500 />
-          </div>
+          {/* Screening Section - Side by Side Layout */}
+          <div className="flex flex-col lg:flex-row gap-6">
+            {/* 24h Gainers (CMC Top 500) - Left Side */}
+            <div className="lg:w-2/5">
+              <TopDailyGainersTop500 />
+            </div>
 
-          {/* Banterbubbles */}
-          <div className="mb-8">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+            {/* Banterbubbles and SAG3.ai - Right Side Stacked */}
+            <div className="lg:w-3/5 space-y-6">
+              {/* Banterbubbles */}
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                    <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                  </div>
+                  <h4 className="text-lg font-semibold text-white">Banterbubbles</h4>
+                  <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-xs">
+                    MARKET INTELLIGENCE
+                  </Badge>
+                </div>
+                <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
+                  <iframe
+                    src="https://banterbubbles.com/?utm_source=cbanter&utm_medium=cbanter&utm_campaign=cbanter&source=cbanter"
+                    className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+                    title="Banterbubbles Market Intelligence"
+                    frameBorder="0"
+                    loading="eager"
+                    sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
+                    allow="fullscreen; clipboard-write; autoplay; camera; microphone; geolocation"
+                  />
+                </div>
               </div>
-              <h4 className="text-lg font-semibold text-white">Banterbubbles</h4>
-              <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-xs">
-                MARKET INTELLIGENCE
-              </Badge>
-            </div>
-            <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
-              <iframe
-                src="https://banterbubbles.com/?utm_source=cbanter&utm_medium=cbanter&utm_campaign=cbanter&source=cbanter"
-                className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
-                title="Banterbubbles Market Intelligence"
-                frameBorder="0"
-                loading="eager"
-                sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
-                allow="fullscreen; clipboard-write; autoplay; camera; microphone; geolocation"
-              />
-            </div>
-          </div>
 
-          {/* SAG3.ai Analysis */}
-          <div className="mb-8">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center">
-                <Brain className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+              {/* SAG3.ai Analysis */}
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center">
+                    <Brain className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                  </div>
+                  <h4 className="text-lg font-semibold text-white">SAG3.ai</h4>
+                  <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 text-xs">
+                    AI ANALYSIS
+                  </Badge>
+                  <button
+                    onClick={() => openInNewTab('https://sag3.ai/analyze')}
+                    className="ml-auto text-cyan-400 hover:text-cyan-300 text-xs sm:text-sm flex items-center gap-1"
+                    data-testid="button-sag3-external"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                    Open Full View
+                  </button>
+                </div>
+                <iframe
+                  src="https://sag3.ai/analyze"
+                  className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+                  title="SAG3.ai Analysis"
+                  frameBorder="0"
+                  loading="lazy"
+                  sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  data-testid="iframe-sag3"
+                />
               </div>
-              <h4 className="text-lg font-semibold text-white">SAG3.ai</h4>
-              <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 text-xs">
-                AI ANALYSIS
-              </Badge>
-              <button
-                onClick={() => openInNewTab('https://sag3.ai/analyze')}
-                className="ml-auto text-cyan-400 hover:text-cyan-300 text-xs sm:text-sm flex items-center gap-1"
-                data-testid="button-sag3-external"
-              >
-                <ExternalLink className="w-3 h-3" />
-                Open Full View
-              </button>
             </div>
-            <iframe
-              src="https://sag3.ai/analyze"
-              className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-              title="SAG3.ai Analysis"
-              frameBorder="0"
-              loading="lazy"
-              sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
-              referrerPolicy="no-referrer-when-downgrade"
-              data-testid="iframe-sag3"
-            />
           </div>
 
 
