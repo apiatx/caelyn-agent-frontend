@@ -397,8 +397,8 @@ export default function TradePerpsPage() {
               </div>
 
 
-              {/* Ranger Finance, SuperP, and BounceBit - Three Across */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+              {/* Ranger Finance and BounceBit - Two Across */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                 <Button
                   variant="outline"
                   onClick={() => openInNewTab('https://www.app.ranger.finance/perps')}
@@ -409,20 +409,6 @@ export default function TradePerpsPage() {
                     <div className="font-bold text-base flex items-center justify-center">
                       <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
                       Ranger Finance
-                    </div>
-                  </div>
-                </Button>
-
-                <Button
-                  variant="outline"
-                  onClick={() => openInNewTab('https://noliquidation.superp.xyz/en')}
-                  className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
-                  data-testid="button-superp"
-                >
-                  <div className="text-center">
-                    <div className="font-bold text-base flex items-center justify-center">
-                      <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
-                      SuperP
                     </div>
                   </div>
                 </Button>
@@ -535,6 +521,24 @@ export default function TradePerpsPage() {
                     <div className="text-base text-blue-100/90 font-medium">Advanced perpetual futures trading platform</div>
                   </div>
                 </Button>
+              </div>
+
+              {/* SuperP - Iframe */}
+              <div className="mb-6 mt-6">
+                <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
+                  <iframe
+                    src="https://noliquidation.superp.xyz/en"
+                    className="w-full h-[500px] sm:h-[600px] lg:h-[800px] rounded-lg border border-crypto-silver/20"
+                    title="SuperP"
+                    frameBorder="0"
+                    scrolling="yes"
+                  />
+                </div>
+                <div className="mt-4 text-center">
+                  <p className="text-xs text-gray-400">
+                    No liquidation perpetual futures • SuperP trading platform
+                  </p>
+                </div>
               </div>
 
             </div>
