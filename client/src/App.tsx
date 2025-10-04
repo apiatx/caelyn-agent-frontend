@@ -10,6 +10,9 @@ import AltcoinsPage from "@/pages/altcoins";
 import EthereumPage from "@/pages/ethereum";
 import SolanaPage from "@/pages/solana";
 import DeFiPage from "@/pages/defi";
+import BTCDeFiPage from "@/pages/btc-defi";
+import DeFAIPage from "@/pages/defai";
+import DePINPage from "@/pages/depin";
 import BNBPage from "@/pages/bnb";
 import SUIPage from "@/pages/sui";
 import CryptoStocks from "@/pages/crypto-stocks";
@@ -91,6 +94,9 @@ function Router() {
       <Route path="/trade-onramp" component={TradeOnRampPage} />
       <Route path="/app/defi" component={DeFiPage} />
       <Route path="/defi" component={DeFiPage} />
+      <Route path="/app/defi/btc-defi" component={BTCDeFiPage} />
+      <Route path="/app/defi/defai" component={DeFAIPage} />
+      <Route path="/app/defi/depin" component={DePINPage} />
       <Route path="/app/rwa" component={RWAPage} />
       <Route path="/app/crypto-stocks" component={CryptoStocks} />
       <Route path="/app/stocks" component={CryptoStocks} />

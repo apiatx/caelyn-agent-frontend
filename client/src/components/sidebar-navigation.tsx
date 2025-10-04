@@ -22,7 +22,7 @@ interface NavItem {
 
 export function SidebarNavigation({ className = "", isCollapsed, isMobile = false, isMobileMenuOpen = false, onToggle, onCloseMobile }: SidebarNavigationProps) {
   const [location, setLocation] = useLocation();
-  const [expandedItems, setExpandedItems] = useState<string[]>(isCollapsed ? [] : ['charts', 'onchain', 'ecosystems', 'trade', 'tradfi']);
+  const [expandedItems, setExpandedItems] = useState<string[]>(isCollapsed ? [] : ['charts', 'onchain', 'ecosystems', 'trade', 'defi', 'tradfi']);
 
   const navigateTo = (url: string) => {
     setLocation(url);
@@ -213,7 +213,32 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
       id: 'defi',
       label: 'DeFi',
       icon: <DollarSign className="w-4 h-4" />,
-      path: '/app/defi'
+      children: [
+        {
+          id: 'defi-overview',
+          label: 'DeFi',
+          icon: <DollarSign className="w-4 h-4" />,
+          path: '/app/defi'
+        },
+        {
+          id: 'btc-defi',
+          label: 'BTC DeFi',
+          icon: <Coins className="w-4 h-4" />,
+          path: '/app/defi/btc-defi'
+        },
+        {
+          id: 'defai',
+          label: 'DeFAI',
+          icon: <Brain className="w-4 h-4" />,
+          path: '/app/defi/defai'
+        },
+        {
+          id: 'depin',
+          label: 'DePIN',
+          icon: <Zap className="w-4 h-4" />,
+          path: '/app/defi/depin'
+        }
+      ]
     },
     {
       id: 'tradfi',
