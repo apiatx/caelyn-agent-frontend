@@ -109,31 +109,6 @@ export default function TradePerpsPage() {
           <GlassCard className="p-8">
             <div className="space-y-6">
               
-              {/* Pacifica AI Agent Trading */}
-              <div className="mb-6">
-                <div className="flex justify-end mb-3">
-                  <a
-                    {...getSecureLinkProps('https://app.pacifica.fi/agent/BTC')}
-                    className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
-                  >
-                    Open Full View <ExternalLink className="w-3 h-3" />
-                  </a>
-                </div>
-                
-                <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-                  <iframe
-                    {...getSecureIframeProps('https://app.pacifica.fi/agent/BTC', 'Pacifica AI Agent BTC Trading')}
-                    className="w-full h-[800px] border-0"
-                  />
-                </div>
-                
-                <div className="mt-4 text-center">
-                  <p className="text-xs text-gray-400">
-                    AI-powered BTC trading on Pacifica • Autonomous agent trading
-                  </p>
-                </div>
-              </div>
-
               {/* Hyperliquid Trading */}
               <div className="mb-6">
                 <div className="flex justify-end mb-3">
@@ -639,6 +614,57 @@ export default function TradePerpsPage() {
                   <h1 className="text-3xl font-bold text-white">Analyze</h1>
                 </div>
                 <p className="text-crypto-silver">Advanced market analytics and trading insights</p>
+              </div>
+
+              {/* CoinGlass Market Analytics - Moved from Market Overview */}
+              <div className="mt-6">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center space-x-2">
+                    <h3 className="text-lg font-semibold text-emerald-400">Market Analytics</h3>
+                    <Badge variant="outline" className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30">
+                      ANALYTICS
+                    </Badge>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <button
+                      onClick={() => openSecureLink('https://www.coinglass.com/today')}
+                      className="text-emerald-400 hover:text-emerald-300 text-xs sm:text-sm flex items-center gap-1"
+                      data-testid="button-coinglass-open"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                      Open Full View →
+                    </button>
+                  </div>
+                </div>
+                <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
+                  <iframe
+                    src="https://www.coinglass.com/today"
+                    className="w-full h-[600px] sm:h-[800px] lg:h-[900px] rounded-lg border border-crypto-silver/20"
+                    title="CoinGlass Market Analytics"
+                    frameBorder="0"
+                    scrolling="yes"
+                    loading="lazy"
+                    sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+                  />
+                </div>
+              </div>
+
+              {/* Pacifica AI Agent - Enhanced Button */}
+              <div className="w-full mt-6">
+                <Button
+                  variant="outline"
+                  onClick={() => openInNewTab('https://app.pacifica.fi/agent/BTC')}
+                  className="group w-full bg-gradient-to-br from-blue-500/40 via-cyan-500/30 to-teal-500/40 border border-blue-400/50 hover:from-blue-400/50 hover:via-cyan-400/40 hover:to-teal-400/50 hover:border-blue-300/70 text-white justify-center p-8 h-auto rounded-lg transition-all duration-500 flex items-center shadow-2xl hover:shadow-blue-500/40 transform hover:scale-[1.02] backdrop-blur-sm"
+                  data-testid="button-pacifica"
+                >
+                  <div className="text-center">
+                    <div className="font-bold text-2xl flex items-center justify-center gap-3 mb-2">
+                      <Activity className="w-7 h-7 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-500" />
+                      Pacifica AI Agent
+                    </div>
+                    <div className="text-base text-blue-100/90 font-medium">Autonomous AI-powered BTC trading</div>
+                  </div>
+                </Button>
               </div>
 
               {/* HyperDash */}
