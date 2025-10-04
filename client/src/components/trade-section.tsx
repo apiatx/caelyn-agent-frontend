@@ -189,19 +189,32 @@ export default function TradeSection() {
             </Button>
           </div>
 
-          {/* Rubic Exchange iframe */}
+          {/* Rubic Exchange and Ethereum Chart - Side by Side */}
           <div className="mt-8">
-            <div className="w-full">
-              <iframe
-                src="https://app.rubic.exchange/?fromChain=ETH&toChain=ETH"
-                className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-                title="Rubic Exchange"
-                frameBorder="0"
-                loading="lazy"
-                sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
-                referrerPolicy="no-referrer-when-downgrade"
-                data-testid="iframe-rubic"
-              />
+            <div className="flex flex-col lg:flex-row gap-4">
+              {/* Ethereum TradingView Chart - 3/4 width */}
+              <div className="w-full lg:w-3/4">
+                <iframe
+                  src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_eth&symbol=BINANCE%3AETHUSDT&interval=1D&hidesidetoolbar=0&hidetoptoolbar=0&symboledit=1&saveimage=1&toolbarbg=0a0a0a&studies=[]&hideideas=1&theme=dark&style=1&timezone=Etc%2FUTC&studies_overrides={}&overrides={}&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22,%22timeframes_toolbar%22,%22show_interval_dialog_on_key_press%22]&disabled_features=[]&locale=en&utm_source=cryptohippo.com&utm_medium=widget&utm_campaign=chart&utm_term=BINANCE%3AETHUSDT"
+                  className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+                  title="TradingView Ethereum Chart"
+                  sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+                />
+              </div>
+
+              {/* Rubic Exchange - 1/4 width */}
+              <div className="w-full lg:w-1/4">
+                <iframe
+                  src="https://app.rubic.exchange/?fromChain=ETH&toChain=ETH"
+                  className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+                  title="Rubic Exchange"
+                  frameBorder="0"
+                  loading="lazy"
+                  sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  data-testid="iframe-rubic"
+                />
+              </div>
             </div>
           </div>
 
