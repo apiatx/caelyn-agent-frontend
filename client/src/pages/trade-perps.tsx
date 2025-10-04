@@ -629,22 +629,22 @@ export default function TradePerpsPage() {
                 </div>
               </div>
 
-              {/* Pacifica - Enhanced Button */}
-              <div className="w-full mt-6">
-                <Button
-                  variant="outline"
-                  onClick={() => openInNewTab('https://app.pacifica.fi/agent/BTC')}
-                  className="group w-full bg-gradient-to-br from-blue-500/40 via-indigo-500/30 to-purple-500/40 border border-blue-400/50 hover:from-blue-400/50 hover:via-indigo-400/40 hover:to-purple-400/50 hover:border-blue-300/70 text-white justify-center p-8 h-auto rounded-lg transition-all duration-500 flex items-center shadow-2xl hover:shadow-blue-500/40 transform hover:scale-[1.02] backdrop-blur-sm"
-                  data-testid="button-pacifica"
-                >
-                  <div className="text-center">
-                    <div className="font-bold text-2xl flex items-center justify-center gap-3 mb-2">
-                      <Activity className="w-7 h-7 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-500" />
-                      Pacifica AI Agent
-                    </div>
-                    <div className="text-base text-blue-100/90 font-medium">Autonomous perps AI trading for BTC</div>
-                  </div>
-                </Button>
+              {/* Pacifica AI Agent */}
+              <div className="mb-6">
+                <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
+                  <iframe
+                    src="https://app.pacifica.fi/agent/BTC"
+                    className="w-full h-[500px] sm:h-[600px] lg:h-[800px] rounded-lg border border-crypto-silver/20"
+                    title="Pacifica AI Agent"
+                    frameBorder="0"
+                    scrolling="yes"
+                  />
+                </div>
+                <div className="mt-4 text-center">
+                  <p className="text-xs text-gray-400">
+                    Autonomous perps AI trading for BTC • Pacifica AI Agent
+                  </p>
+                </div>
               </div>
 
               {/* HyperDash */}
