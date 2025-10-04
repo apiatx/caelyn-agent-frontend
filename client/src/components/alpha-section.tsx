@@ -125,7 +125,7 @@ export default function AlphaSection() {
               href='https://app.nansen.ai/'
               className="p-3 bg-gradient-to-br from-purple-600/15 to-purple-700/15 hover:from-purple-600/25 hover:to-purple-700/25 border border-purple-600/30 hover:border-purple-500/50 rounded-lg hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-purple-600/20 transform"
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center gap-2">
                 <div className="w-6 h-6 bg-gradient-to-br from-purple-600 to-purple-700 rounded-lg flex items-center justify-center shadow-md flex-shrink-0">
                   <span className="text-white font-bold text-xs">N</span>
                 </div>
@@ -135,9 +135,9 @@ export default function AlphaSection() {
 
             <button
               onClick={() => openInNewTab('https://messari.io/')}
-              className="p-3 text-left bg-gradient-to-b from-orange-600/10 to-orange-700/10 hover:from-orange-600/20 hover:to-orange-700/20 border border-orange-600/20 hover:border-orange-500/40 rounded-lg hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-orange-500/20 transform group"
+              className="p-3 bg-gradient-to-b from-orange-600/10 to-orange-700/10 hover:from-orange-600/20 hover:to-orange-700/20 border border-orange-600/20 hover:border-orange-500/40 rounded-lg hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-orange-500/20 transform group"
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center gap-2">
                 <div className="w-6 h-6 bg-orange-600 rounded-full flex items-center justify-center shadow-md flex-shrink-0">
                   <BarChart3 className="w-4 h-4 text-white" />
                 </div>
@@ -149,7 +149,7 @@ export default function AlphaSection() {
               href='https://cookie.fun/'
               className="p-3 bg-gradient-to-br from-yellow-500/15 to-yellow-600/15 hover:from-yellow-500/25 hover:to-yellow-600/25 border border-yellow-500/30 hover:border-yellow-400/50 rounded-lg hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-yellow-500/20 transform"
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center gap-2">
                 <div className="w-6 h-6 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-lg flex items-center justify-center shadow-md flex-shrink-0">
                   <span className="text-white font-bold text-xs">C</span>
                 </div>
@@ -186,7 +186,7 @@ export default function AlphaSection() {
               href='https://coinmarketcap.com/?type=coins&tableRankBy=trending_all_24h'
               className="p-3 bg-gradient-to-br from-blue-500/15 to-blue-600/15 hover:from-blue-500/25 hover:to-blue-600/25 border border-blue-500/30 hover:border-blue-400/50 rounded-lg hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-blue-500/20 transform"
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center gap-2">
                 <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-md flex-shrink-0">
                   <span className="text-white font-bold text-xs">C</span>
                 </div>
@@ -198,7 +198,7 @@ export default function AlphaSection() {
               href='https://www.coingecko.com/'
               className="p-3 bg-gradient-to-br from-green-500/15 to-green-600/15 hover:from-green-500/25 hover:to-green-600/25 border border-green-500/30 hover:border-green-400/50 rounded-lg hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-green-500/20 transform"
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center gap-2">
                 <div className="w-6 h-6 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center shadow-md flex-shrink-0">
                   <span className="text-white font-bold text-xs">G</span>
                 </div>
@@ -210,7 +210,7 @@ export default function AlphaSection() {
               href='https://opensea.io/stats/tokens'
               className="p-3 bg-gradient-to-br from-cyan-500/15 to-cyan-600/15 hover:from-cyan-500/25 hover:to-cyan-600/25 border border-cyan-500/30 hover:border-cyan-400/50 rounded-lg hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-cyan-500/20 transform"
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center gap-2">
                 <div className="w-6 h-6 bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-lg flex items-center justify-center shadow-md flex-shrink-0">
                   <span className="text-white font-bold text-xs">O</span>
                 </div>
@@ -224,7 +224,7 @@ export default function AlphaSection() {
               href='https://dex.coinmarketcap.com/token/all/'
               className="p-3 bg-gradient-to-br from-blue-500/15 to-blue-600/15 hover:from-blue-500/25 hover:to-blue-600/25 border border-blue-500/30 hover:border-blue-400/50 rounded-lg hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-blue-500/20 transform"
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center gap-2">
                 <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-md flex-shrink-0">
                   <span className="text-white font-bold text-[10px]">CMC</span>
                 </div>
@@ -236,7 +236,7 @@ export default function AlphaSection() {
               href='https://geckoterminal.com/'
               className="p-3 bg-gradient-to-br from-emerald-500/15 to-emerald-600/15 hover:from-emerald-500/25 hover:to-emerald-600/25 border border-emerald-500/30 hover:border-emerald-400/50 rounded-lg hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-emerald-500/20 transform"
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center gap-2">
                 <div className="w-6 h-6 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center shadow-md flex-shrink-0">
                   <span className="text-white font-bold text-xs">GT</span>
                 </div>
@@ -248,7 +248,7 @@ export default function AlphaSection() {
               href='https://dexscreener.com/'
               className="p-3 bg-gradient-to-br from-purple-500/15 to-purple-600/15 hover:from-purple-500/25 hover:to-purple-600/25 border border-purple-500/30 hover:border-purple-400/50 rounded-lg hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-purple-500/20 transform"
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center gap-2">
                 <div className="w-6 h-6 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center shadow-md flex-shrink-0">
                   <span className="text-white font-bold text-xs">DS</span>
                 </div>
@@ -263,7 +263,7 @@ export default function AlphaSection() {
               href='https://dexcheck.ai/app'
               className="p-3 bg-gradient-to-br from-yellow-500/15 to-yellow-600/15 hover:from-yellow-500/25 hover:to-yellow-600/25 border border-yellow-500/30 hover:border-yellow-400/50 rounded-lg hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-yellow-500/20 transform"
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center gap-2">
                 <div className="w-6 h-6 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-lg flex items-center justify-center shadow-md flex-shrink-0">
                   <span className="text-white font-bold text-xs">D</span>
                 </div>
@@ -275,7 +275,7 @@ export default function AlphaSection() {
               href='https://dapp.velvet.capital/'
               className="p-3 bg-gradient-to-br from-pink-500/15 to-pink-600/15 hover:from-pink-500/25 hover:to-pink-600/25 border border-pink-500/30 hover:border-pink-400/50 rounded-lg hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-pink-500/20 transform"
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center gap-2">
                 <div className="w-6 h-6 bg-gradient-to-br from-pink-500 to-pink-600 rounded-lg flex items-center justify-center shadow-md flex-shrink-0">
                   <span className="text-white font-bold text-xs">V</span>
                 </div>
@@ -287,7 +287,7 @@ export default function AlphaSection() {
               href='https://www.binance.com/en/markets/alpha-all'
               className="p-3 bg-gradient-to-br from-yellow-500/15 to-yellow-600/15 hover:from-yellow-500/25 hover:to-yellow-600/25 border border-yellow-500/30 hover:border-yellow-400/50 rounded-lg hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-yellow-500/20 transform"
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center gap-2">
                 <div className="w-6 h-6 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-lg flex items-center justify-center shadow-md flex-shrink-0">
                   <span className="text-white font-bold text-xs">B</span>
                 </div>
@@ -299,7 +299,7 @@ export default function AlphaSection() {
               href='https://web3.binance.com/en/markets/alpha?chain=bsc'
               className="p-3 bg-gradient-to-br from-orange-500/15 to-orange-600/15 hover:from-orange-500/25 hover:to-orange-600/25 border border-orange-500/30 hover:border-orange-400/50 rounded-lg hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-orange-500/20 transform"
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center gap-2">
                 <div className="w-6 h-6 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center shadow-md flex-shrink-0">
                   <span className="text-white font-bold text-xs">W3</span>
                 </div>
@@ -356,7 +356,7 @@ export default function AlphaSection() {
                 href='https://agents.cookie.fun/'
                 className="p-3 bg-gradient-to-br from-green-500/15 to-green-600/15 hover:from-green-500/25 hover:to-green-600/25 border border-green-500/30 hover:border-green-400/50 rounded-lg hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-green-500/20 transform"
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center justify-center gap-2">
                   <div className="w-6 h-6 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center shadow-md flex-shrink-0">
                     <span className="text-white font-bold text-xs">C</span>
                   </div>
@@ -368,7 +368,7 @@ export default function AlphaSection() {
                 href='https://ayaoracle.xyz/#agents_data'
                 className="p-3 bg-gradient-to-br from-indigo-500/15 to-indigo-600/15 hover:from-indigo-500/25 hover:to-indigo-600/25 border border-indigo-500/30 hover:border-indigo-400/50 rounded-lg hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-indigo-500/20 transform"
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center justify-center gap-2">
                   <div className="w-6 h-6 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-md flex-shrink-0">
                     <span className="text-white font-bold text-xs">A</span>
                   </div>
