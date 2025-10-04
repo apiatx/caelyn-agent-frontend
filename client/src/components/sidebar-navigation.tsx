@@ -223,7 +223,7 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
     },
     {
       id: 'defi',
-      label: 'DeFi',
+      label: 'Earn',
       icon: <DollarSign className="w-4 h-4" />,
       children: [
         {
