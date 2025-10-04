@@ -535,8 +535,7 @@ export function getSecureIframeProps(src: string, title: string) {
     loading: "lazy" as const,
     sandbox: getIframeSandbox(sanitizedSrc),
     referrerPolicy: "strict-origin-when-cross-origin" as const,
-    allow: "clipboard-read; clipboard-write; encrypted-media; fullscreen; picture-in-picture",
-    className: "w-full rounded-lg border border-crypto-silver/20"
+    allow: "clipboard-read; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
   };
 }
 
