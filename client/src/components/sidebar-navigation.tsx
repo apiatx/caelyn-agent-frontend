@@ -130,55 +130,6 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
       ]
     },
     {
-      id: 'ecosystems',
-      label: 'Ecosystems',
-      icon: <Layers className="w-4 h-4" />,
-      children: [
-        {
-          id: 'ethereum',
-          label: 'ETH',
-          icon: <Coins className="w-4 h-4" />,
-          path: '/app/ethereum'
-        },
-        {
-          id: 'base',
-          label: 'Base',
-          icon: <ChartLine className="w-4 h-4" />,
-          path: '/app/base'
-        },
-        {
-          id: 'solana',
-          label: 'Solana',
-          icon: <Zap className="w-4 h-4" />,
-          path: '/app/solana'
-        },
-        {
-          id: 'bittensor',
-          label: 'Bittensor',
-          icon: <Brain className="w-4 h-4" />,
-          path: '/app/bittensor'
-        },
-        {
-          id: 'bnb',
-          label: 'BNB',
-          icon: <Coins className="w-4 h-4" />,
-          path: '/app/bnb'
-        },
-        {
-          id: 'sui',
-          label: 'SUI',
-          icon: <Zap className="w-4 h-4" />,
-          path: '/app/sui'
-        },
-        {
-          id: 'arbitrum',
-          label: 'Arbitrum',
-          icon: <Layers className="w-4 h-4" />,
-          path: '/app/arbitrum'
-        },
-      ]
-    },
-    {
       id: 'trade',
       label: 'Trade',
       icon: <TrendingUp className="w-4 h-4" />,
@@ -250,6 +201,55 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
           icon: <Zap className="w-4 h-4" />,
           path: '/app/defi/depin'
         }
+      ]
+    },
+    {
+      id: 'ecosystems',
+      label: 'Ecosystems',
+      icon: <Layers className="w-4 h-4" />,
+      children: [
+        {
+          id: 'ethereum',
+          label: 'ETH',
+          icon: <Coins className="w-4 h-4" />,
+          path: '/app/ethereum'
+        },
+        {
+          id: 'base',
+          label: 'Base',
+          icon: <ChartLine className="w-4 h-4" />,
+          path: '/app/base'
+        },
+        {
+          id: 'solana',
+          label: 'Solana',
+          icon: <Zap className="w-4 h-4" />,
+          path: '/app/solana'
+        },
+        {
+          id: 'bittensor',
+          label: 'Bittensor',
+          icon: <Brain className="w-4 h-4" />,
+          path: '/app/bittensor'
+        },
+        {
+          id: 'bnb',
+          label: 'BNB',
+          icon: <Coins className="w-4 h-4" />,
+          path: '/app/bnb'
+        },
+        {
+          id: 'sui',
+          label: 'SUI',
+          icon: <Zap className="w-4 h-4" />,
+          path: '/app/sui'
+        },
+        {
+          id: 'arbitrum',
+          label: 'Arbitrum',
+          icon: <Layers className="w-4 h-4" />,
+          path: '/app/arbitrum'
+        },
       ]
     },
     {
