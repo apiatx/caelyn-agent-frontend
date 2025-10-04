@@ -82,12 +82,12 @@ export default function AlphaSection() {
           {/* Screening Section - Side by Side Layout */}
           <div className="flex flex-col lg:flex-row gap-6">
             {/* 24h Gainers (CMC Top 500) - Left Side */}
-            <div className="lg:w-2/5">
+            <div className="lg:w-1/3">
               <TopDailyGainersTop500 />
             </div>
 
             {/* Banterbubbles and SAG3.ai - Right Side Stacked */}
-            <div className="lg:w-3/5 flex flex-col gap-3">
+            <div className="lg:w-2/3 flex flex-col gap-3">
               {/* Banterbubbles */}
               <div className="flex-1 bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
                 <iframe
