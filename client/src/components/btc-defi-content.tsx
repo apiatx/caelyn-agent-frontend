@@ -2,6 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DollarSign, ExternalLink, Layers, Shield } from "lucide-react";
 import { openSecureLink, getSecureIframeProps } from "@/utils/security";
+import bitcoinLogo from "@assets/Bitcoin.svg_1755979187828.webp";
 
 const SafeLink = ({ href, children, className = "", ...props }: { 
   href: string; 
@@ -55,13 +56,18 @@ export default function BTCDeFiContent() {
       {/* Bitcoin DeFi Glass Card */}
       <GlassCard className="p-6">
         <div className="flex flex-col items-center text-center gap-3 mb-6">
-          <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/30">
-            <span className="text-white font-bold text-sm">₿</span>
-          </div>
-          <div>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center">
+              <img 
+                src={bitcoinLogo}
+                alt="Bitcoin"
+                className="w-8 h-8 object-contain"
+                style={{filter: 'drop-shadow(0 0 4px rgba(255, 165, 0, 0.3))'}}
+              />
+            </div>
             <h3 className="text-2xl font-bold text-white">Bitcoin DeFi</h3>
-            <p className="text-crypto-silver">Bitcoin-based DeFi protocols and layers</p>
           </div>
+          <p className="text-crypto-silver">Bitcoin-based DeFi protocols and layers</p>
         </div>
         
         {/* BitFi BTC Staking - Full Width Iframe */}
