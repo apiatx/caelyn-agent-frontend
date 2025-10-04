@@ -32,6 +32,7 @@ import OnchainAlphaPage from "@/pages/onchain-alpha";
 import OnchainSmartWalletsPage from "@/pages/onchain-smart-wallets";
 import OnchainSocialPage from "@/pages/onchain-social";
 import OnchainLaunchpadPage from "@/pages/onchain-launchpad";
+import OnchainAirdropPage from "@/pages/onchain-airdrop";
 import OnchainMemesPage from "@/pages/onchain-memes";
 import OnchainDiscoverPage from "@/pages/onchain-discover";
 import OnchainAnalyzePage from "@/pages/onchain-analyze";
@@ -63,6 +64,7 @@ function Router() {
       <Route path="/app/onchain/smart-wallets" component={OnchainSmartWalletsPage} />
       <Route path="/app/onchain/social" component={OnchainSocialPage} />
       <Route path="/app/onchain/launchpad" component={OnchainLaunchpadPage} />
+      <Route path="/app/onchain/airdrop" component={OnchainAirdropPage} />
       <Route path="/app/onchain/memes" component={OnchainMemesPage} />
       <Route path="/app/onchain/discover" component={OnchainDiscoverPage} />
       <Route path="/app/onchain/analyze" component={OnchainAnalyzePage} />

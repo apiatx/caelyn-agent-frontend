@@ -110,6 +110,12 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
           path: '/app/onchain/launchpad'
         },
         {
+          id: 'onchain-airdrop',
+          label: 'Airdrop',
+          icon: <Zap className="w-4 h-4" />,
+          path: '/app/onchain/airdrop'
+        },
+        {
           id: 'onchain-memes',
           label: 'Memes',
           icon: <Coins className="w-4 h-4" />,
