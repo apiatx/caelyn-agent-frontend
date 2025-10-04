@@ -319,93 +319,77 @@ export default function AlphaSection() {
               <p className="text-gray-300 text-sm font-medium text-center">Web3 alpha projects on BSC</p>
             </SafeLink>
           </div>
-        </GlassCard>
-      </div>
 
-      {/* AI Agents Section - Separate GlassCard */}
-      <div className="space-y-8 mt-12">
-        <GlassCard className="p-3 sm:p-4 lg:p-6">
-          <div className="flex items-center justify-center mb-6">
-            <h4 className="text-2xl font-bold bg-gradient-to-r from-white to-cyan-100 bg-clip-text text-transparent">AI Agents</h4>
+          {/* Alphanomics Bubble Scanner */}
+          <div className="mt-8">
+            <div className="flex justify-end mb-4">
+              <SafeLink
+                href="https://platform.alphanomics.io/bubblescanner"
+                className="text-purple-300 hover:text-purple-200 text-sm font-medium hover:underline transition-colors duration-300"
+              >
+                Open Full Platform →
+              </SafeLink>
+            </div>
+            
+            <SafeIframe
+              src="https://platform.alphanomics.io/bubblescanner"
+              title="Alphanomics Bubble Scanner"
+              className="h-[700px]"
+            />
           </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <SafeLink
-              href='https://agents.cookie.fun/'
-              className="p-5 bg-gradient-to-br from-green-500/15 to-green-600/15 hover:from-green-500/25 hover:to-green-600/25 border border-green-500/30 hover:border-green-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-green-500/20 transform"
-            >
-              <div className="flex flex-col items-center gap-2 mb-3">
-                <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center shadow-md">
-                  <span className="text-white font-bold text-xs">C</span>
-                </div>
-                <h4 className="text-green-300 font-bold text-lg">Cookie Agents</h4>
-              </div>
-              <p className="text-gray-300 text-sm font-medium text-center">AI Agent Discovery Platform</p>
-            </SafeLink>
 
-            <SafeLink
-              href='https://ayaoracle.xyz/#agents_data'
-              className="p-5 bg-gradient-to-br from-indigo-500/15 to-indigo-600/15 hover:from-indigo-500/25 hover:to-indigo-600/25 border border-indigo-500/30 hover:border-indigo-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-indigo-500/20 transform"
-            >
-              <div className="flex flex-col items-center gap-2 mb-3">
-                <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-md">
-                  <span className="text-white font-bold text-xs">A</span>
-                </div>
-                <h4 className="text-indigo-300 font-bold text-lg">Aya AI</h4>
-              </div>
-              <p className="text-gray-300 text-sm font-medium text-center">Crypto AI Agent Analytics</p>
-            </SafeLink>
-          </div>
-        </GlassCard>
-      </div>
-
-      {/* Alphanomics Bubble Scanner - Separate GlassCard */}
-      <div className="space-y-8 mt-12">
-        <GlassCard className="p-3 sm:p-4 lg:p-6">
-          <div className="flex items-center justify-center mb-6">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
-                <span className="text-white text-xs font-bold">A</span>
-              </div>
-              <h4 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-blue-300 bg-clip-text text-transparent">Alphanomics Bubble Scanner</h4>
+          {/* BBTerminal Trading Terminal */}
+          <div className="mt-8">
+            <div className="mb-3 flex justify-end">
+              <SafeLink
+                href="https://app.bbterminal.com/degen"
+                className="text-purple-300 hover:text-purple-200 text-sm font-medium hover:underline transition-colors duration-300"
+              >
+                Open Full Terminal →
+              </SafeLink>
+            </div>
+            <div className="w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg">
+              <SafeIframe
+                src="https://app.bbterminal.com/degen"
+                title="BBTerminal Degen Trading Terminal"
+                className="w-full h-[600px] rounded-lg"
+              />
             </div>
           </div>
-          
-          <div className="flex justify-end mb-4">
-            <SafeLink
-              href="https://platform.alphanomics.io/bubblescanner"
-              className="text-purple-300 hover:text-purple-200 text-sm font-medium hover:underline transition-colors duration-300"
-            >
-              Open Full Platform →
-            </SafeLink>
-          </div>
-          
-          <SafeIframe
-            src="https://platform.alphanomics.io/bubblescanner"
-            title="Alphanomics Bubble Scanner"
-            className="h-[700px]"
-          />
-          
-        </GlassCard>
-      </div>
 
-      {/* BBTerminal Trading Terminal */}
-      <div className="space-y-8 mt-12">
-        <GlassCard className="p-3 sm:p-4 lg:p-6">
-          <div className="mb-3 flex justify-end">
-            <SafeLink
-              href="https://app.bbterminal.com/degen"
-              className="text-purple-300 hover:text-purple-200 text-sm font-medium hover:underline transition-colors duration-300"
-            >
-              Open Full Terminal →
-            </SafeLink>
-          </div>
-          <div className="w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg">
-            <SafeIframe
-              src="https://app.bbterminal.com/degen"
-              title="BBTerminal Degen Trading Terminal"
-              className="w-full h-[600px] rounded-lg"
-            />
+          {/* AI Agents Section */}
+          <div className="mt-8">
+            <div className="flex items-center justify-center mb-6">
+              <h4 className="text-2xl font-bold bg-gradient-to-r from-white to-cyan-100 bg-clip-text text-transparent">AI Agents</h4>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <SafeLink
+                href='https://agents.cookie.fun/'
+                className="p-5 bg-gradient-to-br from-green-500/15 to-green-600/15 hover:from-green-500/25 hover:to-green-600/25 border border-green-500/30 hover:border-green-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-green-500/20 transform"
+              >
+                <div className="flex flex-col items-center gap-2 mb-3">
+                  <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center shadow-md">
+                    <span className="text-white font-bold text-xs">C</span>
+                  </div>
+                  <h4 className="text-green-300 font-bold text-lg">Cookie Agents</h4>
+                </div>
+                <p className="text-gray-300 text-sm font-medium text-center">AI Agent Discovery Platform</p>
+              </SafeLink>
+
+              <SafeLink
+                href='https://ayaoracle.xyz/#agents_data'
+                className="p-5 bg-gradient-to-br from-indigo-500/15 to-indigo-600/15 hover:from-indigo-500/25 hover:to-indigo-600/25 border border-indigo-500/30 hover:border-indigo-400/50 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-indigo-500/20 transform"
+              >
+                <div className="flex flex-col items-center gap-2 mb-3">
+                  <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-md">
+                    <span className="text-white font-bold text-xs">A</span>
+                  </div>
+                  <h4 className="text-indigo-300 font-bold text-lg">Aya AI</h4>
+                </div>
+                <p className="text-gray-300 text-sm font-medium text-center">Crypto AI Agent Analytics</p>
+              </SafeLink>
+            </div>
           </div>
         </GlassCard>
       </div>
