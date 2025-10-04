@@ -411,7 +411,10 @@ const TRUSTED_DOMAINS = [
   'www.variational.io',
   'ostium.com',
   'app.ostium.com',
-  'www.ostium.com'
+  'www.ostium.com',
+  'pacifica.fi',
+  'app.pacifica.fi',
+  'www.pacifica.fi'
 ];
 
 /**
