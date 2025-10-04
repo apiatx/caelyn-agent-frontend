@@ -174,50 +174,34 @@ export default function BTCDeFiContent() {
               <div className="text-sm text-crypto-silver">SolvBTC Ethereum</div>
             </div>
           </Button>
-        </div>
-        
-        {/* Avalon Finance USDA Markets - Full Width Button */}
-        <div className="mt-6">
+
           <Button
             variant="outline"
             onClick={() => openInNewTab('https://usda.avalonfinance.xyz/markets/')}
-            className="w-full h-20 text-white border-orange-500/40 bg-gradient-to-r from-orange-500/20 via-red-600/15 to-yellow-500/20 hover:from-orange-500/30 hover:via-red-600/25 hover:to-yellow-500/30 hover:border-orange-400/60 shadow-lg hover:shadow-orange-500/25 transition-all duration-300"
+            className="bg-black/20 border-crypto-silver/20 hover:bg-orange-500/20 hover:border-orange-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
             data-testid="button-avalon"
           >
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/30">
-                <DollarSign className="h-6 w-6 text-white" />
-              </div>
-              <div className="text-center flex-1">
-                <div className="font-bold text-xl">Avalon Finance</div>
-                <div className="text-sm text-orange-200">Bitcoin DeFi USDA Markets</div>
-              </div>
-              <div className="ml-auto text-orange-300/60">
-                →
-              </div>
+            <div className="p-3 rounded-lg bg-gradient-to-r from-orange-500/20 to-red-500/20">
+              <DollarSign className="h-6 w-6 text-orange-400" />
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-lg">Avalon Finance</div>
+              <div className="text-sm text-crypto-silver">Bitcoin DeFi USDA Markets</div>
             </div>
           </Button>
-        </div>
 
-        {/* Lombard Finance - Full Width Button */}
-        <div className="mt-6">
           <Button
             variant="outline"
             onClick={() => openInNewTab('https://www.lombard.finance/app/')}
-            className="w-full h-20 text-white border-green-500/40 bg-gradient-to-r from-green-500/20 via-emerald-600/15 to-teal-500/20 hover:from-green-500/30 hover:via-emerald-600/25 hover:to-teal-500/30 hover:border-green-400/60 shadow-lg hover:shadow-green-500/25 transition-all duration-300"
+            className="bg-black/20 border-crypto-silver/20 hover:bg-orange-500/20 hover:border-orange-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
             data-testid="button-lombard"
           >
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg shadow-green-500/30">
-                <DollarSign className="h-6 w-6 text-white" />
-              </div>
-              <div className="text-center flex-1">
-                <div className="font-bold text-xl">Lombard Finance</div>
-                <div className="text-sm text-green-200">Bitcoin DeFi Protocol</div>
-              </div>
-              <div className="ml-auto text-green-300/60">
-                →
-              </div>
+            <div className="p-3 rounded-lg bg-gradient-to-r from-green-500/20 to-emerald-500/20">
+              <Shield className="h-6 w-6 text-green-400" />
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-lg">Lombard Finance</div>
+              <div className="text-sm text-crypto-silver">Bitcoin DeFi Protocol</div>
             </div>
           </Button>
         </div>
