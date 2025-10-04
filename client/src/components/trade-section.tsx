@@ -74,91 +74,6 @@ export default function TradeSection() {
         <div className="w-32 h-1 bg-gradient-to-r from-blue-500 to-purple-500 mx-auto mt-4 rounded-full"></div>
       </div>
 
-      {/* Swap Section */}
-      <GlassCard className="p-8">
-        {/* Swap Subsection */}
-        <div className="space-y-6">
-          <div className="text-center mb-6">
-            <div className="flex items-center justify-center gap-3 mb-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-pink-400 to-rose-500 rounded-lg flex items-center justify-center">
-                <ArrowUpDown className="w-4 h-4 text-white" />
-              </div>
-              <h4 className="text-2xl font-bold bg-gradient-to-r from-pink-400 to-rose-300 bg-clip-text text-transparent">Swap</h4>
-            </div>
-          </div>
-          
-          {/* DefiLlama Swap iframe */}
-          <div className="mb-8">
-            <div className="flex justify-end mb-3">
-              <button
-                onClick={() => openInNewTab('https://swap.defillama.com/?chain=bsc&from=0x0000000000000000000000000000000000000000&tab=swap&to=')}
-                className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
-                data-testid="button-defillama-swap-fullview"
-              >
-                Open Full View <ExternalLink className="w-3 h-3" />
-              </button>
-            </div>
-            <div className="w-full">
-              <iframe
-                src="https://swap.defillama.com/?chain=bsc&from=0x0000000000000000000000000000000000000000&tab=swap&to="
-                className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-                title="DefiLlama Swap - BSC Cross-chain Swap"
-                frameBorder="0"
-                loading="lazy"
-                sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
-                referrerPolicy="no-referrer-when-downgrade"
-                data-testid="iframe-defillama-swap"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Button
-              variant="outline"
-              onClick={() => openInNewTab('https://app.uniswap.org')}
-              className="group bg-gradient-to-br from-pink-500/30 via-pink-600/20 to-rose-600/30 border-pink-400/40 hover:from-pink-400/40 hover:via-pink-500/30 hover:to-rose-500/40 hover:border-pink-300/60 text-white justify-center p-6 h-auto shadow-2xl hover:shadow-pink-500/30 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
-            >
-              <div className="text-center">
-                <div className="font-bold text-lg flex items-center justify-center">
-                  <ArrowUpDown className="w-5 h-5 mr-2 group-hover:rotate-180 transition-transform duration-300" />
-                  Uniswap
-                </div>
-                <div className="text-sm text-pink-100/90">Leading DEX on Ethereum</div>
-              </div>
-            </Button>
-
-            <Button
-              variant="outline"
-              onClick={() => openInNewTab('https://pancakeswap.finance/swap')}
-              className="group bg-gradient-to-br from-yellow-500/30 via-amber-500/20 to-orange-500/30 border-yellow-400/40 hover:from-yellow-400/40 hover:via-amber-400/30 hover:to-orange-400/40 hover:border-yellow-300/60 text-white justify-center p-6 h-auto shadow-2xl hover:shadow-yellow-500/30 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
-            >
-              <div className="text-center">
-                <div className="font-bold text-lg flex items-center justify-center">
-                  <ArrowUpDown className="w-5 h-5 mr-2 group-hover:rotate-180 transition-transform duration-300" />
-                  PancakeSwap
-                </div>
-                <div className="text-sm text-yellow-100/90">Popular BSC DEX</div>
-              </div>
-            </Button>
-
-            <Button
-              variant="outline"
-              onClick={() => openInNewTab('https://jup.ag')}
-              className="group bg-gradient-to-br from-teal-500/30 via-cyan-500/20 to-blue-500/30 border-teal-400/40 hover:from-teal-400/40 hover:via-cyan-400/30 hover:to-blue-400/40 hover:border-teal-300/60 text-white justify-center p-6 h-auto shadow-2xl hover:shadow-teal-500/30 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
-            >
-              <div className="text-center">
-                <div className="font-bold text-lg flex items-center justify-center">
-                  <ArrowUpDown className="w-5 h-5 mr-2 group-hover:rotate-180 transition-transform duration-300" />
-                  Jupiter
-                </div>
-                <div className="text-sm text-teal-100/90">Solana swap aggregator</div>
-              </div>
-            </Button>
-          </div>
-
-        </div>
-      </GlassCard>
-
       {/* Swidge Section */}
       <GlassCard className="p-8">
         {/* Swidge Subsection */}
@@ -508,6 +423,91 @@ export default function TradeSection() {
               </button>
             </div>
           </div>
+        </div>
+      </GlassCard>
+
+      {/* Simple Swap Section */}
+      <GlassCard className="p-8">
+        {/* Simple Swap Subsection */}
+        <div className="space-y-6">
+          <div className="text-center mb-6">
+            <div className="flex items-center justify-center gap-3 mb-2">
+              <div className="w-8 h-8 bg-gradient-to-r from-pink-400 to-rose-500 rounded-lg flex items-center justify-center">
+                <ArrowUpDown className="w-4 h-4 text-white" />
+              </div>
+              <h4 className="text-2xl font-bold bg-gradient-to-r from-pink-400 to-rose-300 bg-clip-text text-transparent">Simple Swap</h4>
+            </div>
+          </div>
+          
+          {/* DefiLlama Swap iframe */}
+          <div className="mb-8">
+            <div className="flex justify-end mb-3">
+              <button
+                onClick={() => openInNewTab('https://swap.defillama.com/?chain=bsc&from=0x0000000000000000000000000000000000000000&tab=swap&to=')}
+                className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
+                data-testid="button-defillama-swap-fullview"
+              >
+                Open Full View <ExternalLink className="w-3 h-3" />
+              </button>
+            </div>
+            <div className="w-full">
+              <iframe
+                src="https://swap.defillama.com/?chain=bsc&from=0x0000000000000000000000000000000000000000&tab=swap&to="
+                className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+                title="DefiLlama Swap - BSC Cross-chain Swap"
+                frameBorder="0"
+                loading="lazy"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+                referrerPolicy="no-referrer-when-downgrade"
+                data-testid="iframe-defillama-swap"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://app.uniswap.org')}
+              className="group bg-gradient-to-br from-pink-500/30 via-pink-600/20 to-rose-600/30 border-pink-400/40 hover:from-pink-400/40 hover:via-pink-500/30 hover:to-rose-500/40 hover:border-pink-300/60 text-white justify-center p-6 h-auto shadow-2xl hover:shadow-pink-500/30 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+            >
+              <div className="text-center">
+                <div className="font-bold text-lg flex items-center justify-center">
+                  <ArrowUpDown className="w-5 h-5 mr-2 group-hover:rotate-180 transition-transform duration-300" />
+                  Uniswap
+                </div>
+                <div className="text-sm text-pink-100/90">Leading DEX on Ethereum</div>
+              </div>
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://pancakeswap.finance/swap')}
+              className="group bg-gradient-to-br from-yellow-500/30 via-amber-500/20 to-orange-500/30 border-yellow-400/40 hover:from-yellow-400/40 hover:via-amber-400/30 hover:to-orange-400/40 hover:border-yellow-300/60 text-white justify-center p-6 h-auto shadow-2xl hover:shadow-yellow-500/30 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+            >
+              <div className="text-center">
+                <div className="font-bold text-lg flex items-center justify-center">
+                  <ArrowUpDown className="w-5 h-5 mr-2 group-hover:rotate-180 transition-transform duration-300" />
+                  PancakeSwap
+                </div>
+                <div className="text-sm text-yellow-100/90">Popular BSC DEX</div>
+              </div>
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => openInNewTab('https://jup.ag')}
+              className="group bg-gradient-to-br from-teal-500/30 via-cyan-500/20 to-blue-500/30 border-teal-400/40 hover:from-teal-400/40 hover:via-cyan-400/30 hover:to-blue-400/40 hover:border-teal-300/60 text-white justify-center p-6 h-auto shadow-2xl hover:shadow-teal-500/30 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+            >
+              <div className="text-center">
+                <div className="font-bold text-lg flex items-center justify-center">
+                  <ArrowUpDown className="w-5 h-5 mr-2 group-hover:rotate-180 transition-transform duration-300" />
+                  Jupiter
+                </div>
+                <div className="text-sm text-teal-100/90">Solana swap aggregator</div>
+              </div>
+            </Button>
+          </div>
+
         </div>
       </GlassCard>
 
