@@ -1,0 +1,227 @@
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { DollarSign, ExternalLink, Layers, Shield } from "lucide-react";
+import { openSecureLink, getSecureIframeProps } from "@/utils/security";
+
+const SafeLink = ({ href, children, className = "", ...props }: { 
+  href: string; 
+  children: React.ReactNode; 
+  className?: string; 
+  [key: string]: any; 
+}) => (
+  <a
+    href={href}
+    target="_blank"
+    rel="noopener noreferrer"
+    className={className}
+    onClick={(e) => {
+      e.preventDefault();
+      openSecureLink(href);
+    }}
+    {...props}
+  >
+    {children}
+  </a>
+);
+
+const SafeIframe = ({ src, title, className = "", ...props }: { 
+  src: string; 
+  title: string; 
+  className?: string; 
+  [key: string]: any; 
+}) => (
+  <iframe
+    src={src}
+    title={title}
+    className={className}
+    sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+    {...props}
+  />
+);
+
+const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+  <Card className={`bg-black/40 backdrop-blur-lg border-crypto-silver/20 ${className}`}>
+    {children}
+  </Card>
+);
+
+const openInNewTab = (url: string) => {
+  openSecureLink(url);
+};
+
+export default function BTCDeFiContent() {
+  return (
+    <div className="space-y-8">
+      {/* Bitcoin DeFi Glass Card */}
+      <GlassCard className="p-6">
+        <div className="flex flex-col items-center text-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/30">
+            <span className="text-white font-bold text-sm">₿</span>
+          </div>
+          <div>
+            <h3 className="text-2xl font-bold text-white">Bitcoin DeFi</h3>
+            <p className="text-crypto-silver">Bitcoin-based DeFi protocols and layers</p>
+          </div>
+        </div>
+        
+        {/* BitFi BTC Staking - Full Width Iframe */}
+        <div className="mb-6">
+          <div className="flex justify-end mb-3">
+            <SafeLink
+              href="https://app.bitfi.one/bfBTC/stake"
+              className="text-xs text-orange-400 hover:text-orange-300 transition-colors flex items-center gap-1"
+            >
+              Open Full View <ExternalLink className="w-3 h-3" />
+            </SafeLink>
+          </div>
+          
+          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+            <SafeIframe
+              src="https://app.bitfi.one/bfBTC/stake"
+              title="BitFi BTC Staking"
+              className="w-full h-[600px] border-0"
+            />
+          </div>
+          
+          <div className="mt-4 text-center">
+            <p className="text-xs text-gray-400">
+              BitFi bfBTC staking • Bitcoin DeFi yield farming protocol
+            </p>
+          </div>
+        </div>
+
+        {/* Goat Network Yield - Full Width Iframe */}
+        <div className="mb-6">
+          <div className="flex justify-end mb-3">
+            <SafeLink
+              href="https://yield.goat.network/"
+              className="text-xs text-green-400 hover:text-green-300 transition-colors flex items-center gap-1"
+            >
+              Open Full View <ExternalLink className="w-3 h-3" />
+            </SafeLink>
+          </div>
+          
+          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+            <SafeIframe
+              src="https://yield.goat.network/"
+              title="Goat Network Yield Protocol"
+              className="w-full h-[600px] border-0"
+            />
+          </div>
+          
+          <div className="mt-4 text-center">
+            <p className="text-xs text-gray-400">
+              Goat Network Yield • DeFi yield optimization protocol
+            </p>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Button
+            variant="outline"
+            onClick={() => openInNewTab('https://www.stacks.co/explore/ecosystem?category=All+Teams#apps')}
+            className="bg-black/20 border-crypto-silver/20 hover:bg-orange-500/20 hover:border-orange-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
+          >
+            <div className="p-3 rounded-lg bg-gradient-to-r from-orange-500/20 to-yellow-500/20">
+              <Layers className="h-6 w-6 text-orange-400" />
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-lg">Stacks</div>
+              <div className="text-sm text-crypto-silver">Bitcoin DeFi Layer</div>
+            </div>
+          </Button>
+
+          <Button
+            variant="outline"
+            onClick={() => openInNewTab('https://app.satlayer.xyz/vaults/restake')}
+            className="bg-black/20 border-crypto-silver/20 hover:bg-orange-500/20 hover:border-orange-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
+          >
+            <div className="p-3 rounded-lg bg-gradient-to-r from-orange-500/20 to-red-500/20">
+              <Shield className="h-6 w-6 text-orange-400" />
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-lg">SatLayer</div>
+              <div className="text-sm text-crypto-silver">Bitcoin restaking vaults</div>
+            </div>
+          </Button>
+
+          <Button
+            variant="outline"
+            onClick={() => openInNewTab('https://www.btcfi.one/dashboard')}
+            className="bg-black/20 border-crypto-silver/20 hover:bg-orange-500/20 hover:border-orange-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
+            data-testid="button-btcfi-dashboard"
+          >
+            <div className="p-3 rounded-lg bg-gradient-to-r from-orange-500/20 to-amber-500/20">
+              <DollarSign className="h-6 w-6 text-orange-400" />
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-lg">BTCfi Dashboard</div>
+              <div className="text-sm text-crypto-silver">Bitcoin DeFi Dashboard</div>
+            </div>
+          </Button>
+
+          <Button
+            variant="outline"
+            onClick={() => openInNewTab('https://app.solv.finance/solvbtc?network=ethereum')}
+            className="bg-black/20 border-crypto-silver/20 hover:bg-orange-500/20 hover:border-orange-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
+            data-testid="button-solv-finance"
+          >
+            <div className="p-3 rounded-lg bg-gradient-to-r from-yellow-500/20 to-orange-500/20">
+              <Layers className="h-6 w-6 text-yellow-400" />
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-lg">Solv Finance</div>
+              <div className="text-sm text-crypto-silver">SolvBTC Ethereum</div>
+            </div>
+          </Button>
+        </div>
+        
+        {/* Avalon Finance USDA Markets - Full Width Button */}
+        <div className="mt-6">
+          <Button
+            variant="outline"
+            onClick={() => openInNewTab('https://usda.avalonfinance.xyz/markets/')}
+            className="w-full h-20 text-white border-orange-500/40 bg-gradient-to-r from-orange-500/20 via-red-600/15 to-yellow-500/20 hover:from-orange-500/30 hover:via-red-600/25 hover:to-yellow-500/30 hover:border-orange-400/60 shadow-lg hover:shadow-orange-500/25 transition-all duration-300"
+            data-testid="button-avalon"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/30">
+                <DollarSign className="h-6 w-6 text-white" />
+              </div>
+              <div className="text-center flex-1">
+                <div className="font-bold text-xl">Avalon Finance</div>
+                <div className="text-sm text-orange-200">Bitcoin DeFi USDA Markets</div>
+              </div>
+              <div className="ml-auto text-orange-300/60">
+                →
+              </div>
+            </div>
+          </Button>
+        </div>
+
+        {/* Lombard Finance - Full Width Button */}
+        <div className="mt-6">
+          <Button
+            variant="outline"
+            onClick={() => openInNewTab('https://www.lombard.finance/app/')}
+            className="w-full h-20 text-white border-green-500/40 bg-gradient-to-r from-green-500/20 via-emerald-600/15 to-teal-500/20 hover:from-green-500/30 hover:via-emerald-600/25 hover:to-teal-500/30 hover:border-green-400/60 shadow-lg hover:shadow-green-500/25 transition-all duration-300"
+            data-testid="button-lombard"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg shadow-green-500/30">
+                <DollarSign className="h-6 w-6 text-white" />
+              </div>
+              <div className="text-center flex-1">
+                <div className="font-bold text-xl">Lombard Finance</div>
+                <div className="text-sm text-green-200">Bitcoin DeFi Protocol</div>
+              </div>
+              <div className="ml-auto text-green-300/60">
+                →
+              </div>
+            </div>
+          </Button>
+        </div>
+      </GlassCard>
+    </div>
+  );
+}

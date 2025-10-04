@@ -1,9 +1,8 @@
-import { GlassCard } from "@/components/ui/glass-card";
+import BTCDeFiContent from "@/components/btc-defi-content";
 import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
 import newHeaderBackground from "@assets/photo-1504333638930-c8787321eee0_1757208194192.avif";
 import criptomonedas from "@assets/Criptomonedas-r3pu02e09qriw0f9pyqx2rtyhwsri4es6sdgff2ebk_1757225856373.png";
 import { useScrollFade } from "@/hooks/useScrollFade";
-import { Bitcoin } from "lucide-react";
 
 export default function BTCDeFiPage() {
   const headerOpacity = useScrollFade(30, 120);
@@ -54,17 +53,7 @@ export default function BTCDeFiPage() {
 
       {/* Main Content */}
       <main className="max-w-[95vw] mx-auto px-2 sm:px-3 py-4">
-        <GlassCard className="p-8">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-yellow-600 rounded-full flex items-center justify-center">
-              <Bitcoin className="w-6 h-6 text-white" />
-            </div>
-            <h2 className="text-3xl font-bold text-white">BTC DeFi</h2>
-          </div>
-          <p className="text-gray-300 text-lg">
-            Bitcoin DeFi ecosystem - Layer 2 solutions, wrapped Bitcoin, and Bitcoin-backed DeFi protocols.
-          </p>
-        </GlassCard>
+        <BTCDeFiContent />
       </main>
     </div>
   );
