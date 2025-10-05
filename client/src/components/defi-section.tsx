@@ -168,32 +168,6 @@ export default function DeFiSection() {
           </div>
         </div>
 
-        {/* River Iframe */}
-        <div className="mb-8">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-6 h-6 bg-cyan-500 rounded-full flex items-center justify-center">
-              <Layers className="w-4 h-4 text-white" />
-            </div>
-            <h4 className="text-xl font-semibold text-white">River</h4>
-            <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30">
-              DEFI PLATFORM
-            </Badge>
-            <button
-              onClick={() => openInNewTab('https://app.river.inc/')}
-              className="text-cyan-400 hover:text-cyan-300 text-sm ml-auto"
-            >
-              Open Full View →
-            </button>
-          </div>
-          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-            <SafeIframe
-              src="https://app.river.inc/"
-              title="River DeFi Platform"
-              className="w-full h-[600px] border-0"
-            />
-          </div>
-        </div>
-
         {/* Aarna AI Engine Iframe */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-4">
@@ -896,7 +870,7 @@ export default function DeFiSection() {
           </Button>
         </div>
 
-        {/* Huma Finance Button Row */}
+        {/* Huma Finance and River Button Row */}
         <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-8">
           <Button
             variant="outline"
@@ -910,6 +884,21 @@ export default function DeFiSection() {
             <div className="text-center">
               <div className="font-semibold text-lg">Huma Finance</div>
               <div className="text-sm text-crypto-silver">DeFi lending</div>
+            </div>
+          </Button>
+
+          <Button
+            variant="outline"
+            onClick={() => openInNewTab('https://app.river.inc/')}
+            className="bg-black/20 border-crypto-silver/20 hover:bg-cyan-500/20 hover:border-cyan-500/30 text-white justify-start p-6 h-auto flex-col space-y-2"
+            data-testid="button-river"
+          >
+            <div className="p-3 rounded-lg bg-gradient-to-r from-cyan-500/20 to-blue-500/20">
+              <Layers className="h-6 w-6 text-cyan-400" />
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-lg">River</div>
+              <div className="text-sm text-crypto-silver">DeFi platform</div>
             </div>
           </Button>
         </div>
