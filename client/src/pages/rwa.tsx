@@ -165,6 +165,32 @@ export default function RWAPage() {
               </div>
             </div>
 
+            {/* Plume Network Iframe */}
+            <div className="mb-6">
+              <div className="flex justify-end items-center mb-3">
+                <a
+                  href="https://portal.plume.org/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-1"
+                >
+                  Open Full View <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+              <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+                <SafeIframe
+                  src="https://portal.plume.org/"
+                  title="Plume Network Portal"
+                  className="w-full h-[600px] border-0"
+                />
+              </div>
+              <div className="mt-2 text-center">
+                <p className="text-xs text-gray-400">
+                  Plume Network • RWA-focused blockchain platform
+                </p>
+              </div>
+            </div>
+
             {/* Ostium RWA Trading */}
             <div className="mb-6">
               <div className="flex justify-end items-center mb-3">
