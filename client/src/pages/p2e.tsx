@@ -81,10 +81,6 @@ export default function P2EPage() {
               <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
                 <Gamepad2 className="w-6 h-6 text-white" />
               </div>
-              <div>
-                <h3 className="text-2xl font-bold text-white">Trending Blockchain Games</h3>
-                <p className="text-crypto-silver">PlayToEarn.com</p>
-              </div>
             </div>
             
             <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden mb-6">
