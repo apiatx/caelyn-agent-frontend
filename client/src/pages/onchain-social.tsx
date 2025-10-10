@@ -618,7 +618,8 @@ export default function OnchainSocialPage() {
                     { name: 'BKnight221', handle: '@BKnight221' },
                     { name: 'NFT Lunatic', handle: '@NFTLunatic' },
                     { name: 'AllISeeIs_W', handle: '@alliseeis_W' },
-                    { name: 'HyesGregory', handle: '@HyesGregory' }
+                    { name: 'HyesGregory', handle: '@HyesGregory' },
+                    { name: 'StockOptionCole', handle: '@StockOptionCole' }
                   ].map((account) => {
                     const getAccountUrl = (handle: string) => {
                       return `https://x.com/${handle.replace('@', '')}`;
