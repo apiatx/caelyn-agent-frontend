@@ -264,20 +264,14 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
       icon: <Building2 className="w-4 h-4" />,
       children: [
         {
-          id: 'rwa',
-          label: 'RWA',
-          icon: <Building2 className="w-4 h-4" />,
-          path: '/app/rwa'
-        },
-        {
           id: 'crypto-stocks',
-          label: 'Stonks',
+          label: 'Stocks',
           icon: <TrendingUp className="w-4 h-4" />,
           path: '/app/crypto-stocks'
         },
         {
           id: 'crypto-stonks',
-          label: 'Crypto Stonks',
+          label: 'Crypto Stocks',
           icon: <Building2 className="w-4 h-4" />,
           path: '/app/crypto-stonks'
         },
@@ -286,6 +280,12 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
           label: 'Commodities',
           icon: <Coins className="w-4 h-4" />,
           path: '/app/commodities'
+        },
+        {
+          id: 'rwa',
+          label: 'RWA',
+          icon: <Building2 className="w-4 h-4" />,
+          path: '/app/rwa'
         }
       ]
     },

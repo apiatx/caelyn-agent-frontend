@@ -41,7 +41,7 @@ export default function CryptoStocksSection() {
               className="w-full h-full object-cover"
             />
           </div>
-          <h1 className="text-3xl font-bold text-white">Stonks</h1>
+          <h1 className="text-3xl font-bold text-white">Stocks</h1>
         </div>
         <p className="text-crypto-silver">AI-powered financial analysis and market intelligence</p>
       </div>
