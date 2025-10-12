@@ -146,12 +146,12 @@ export default function CryptoStocksSection() {
           />
         </div>
 
-        {/* StockAnalysis.com Trending iframe */}
+        {/* Tradytics Overall Market iframe */}
         <div className="w-full mb-6">
           <iframe
-            src="https://stockanalysis.com/trending/"
+            src="https://tradytics.com/overall-market"
             className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
-            title="StockAnalysis.com Trending"
+            title="Tradytics Overall Market"
             frameBorder="0"
             loading="eager"
             sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
