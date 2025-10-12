@@ -146,6 +146,19 @@ export default function CryptoStocksSection() {
           />
         </div>
 
+        {/* StockAnalysis.com Trending iframe */}
+        <div className="w-full mb-6">
+          <iframe
+            src="https://stockanalysis.com/trending/"
+            className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+            title="StockAnalysis.com Trending"
+            frameBorder="0"
+            loading="eager"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
+            allow="fullscreen; clipboard-write; autoplay; camera; microphone; geolocation"
+          />
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
           <button
             onClick={() => openInNewTab('https://finviz.com/')}
