@@ -146,6 +146,19 @@ export default function CryptoStocksSection() {
           />
         </div>
 
+        {/* Coinbubbles iframe */}
+        <div className="w-full mb-6">
+          <iframe
+            src="https://coinbubbles.app/"
+            className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+            title="Coinbubbles - Rank: Top of 1000"
+            frameBorder="0"
+            loading="eager"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
+            allow="fullscreen; clipboard-write; autoplay; camera; microphone; geolocation"
+          />
+        </div>
+
         {/* Tradytics Overall Market iframe */}
         <div className="w-full mb-6">
           <iframe
