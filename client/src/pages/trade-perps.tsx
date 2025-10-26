@@ -186,8 +186,8 @@ export default function TradePerpsPage() {
                 </div>
               </div>
 
-              {/* 3-Column Grid for Lighter, Apex, DeFi.app, Paradex, Thena, Aevo, Aark */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              {/* All Perps Platforms - Organized in Clean 3-Column Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <Button
                   variant="outline"
                   onClick={() => openInNewTab('https://app.lighter.xyz/trade/ETH')}
@@ -327,11 +327,6 @@ export default function TradePerpsPage() {
                     </div>
                   </div>
                 </Button>
-              </div>
-
-              {/* Other Apps */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-
 
                 <Button
                   variant="outline"
@@ -344,7 +339,6 @@ export default function TradePerpsPage() {
                       <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
                       Saros
                     </div>
-
                   </div>
                 </Button>
 
@@ -359,7 +353,6 @@ export default function TradePerpsPage() {
                       <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
                       Raydium
                     </div>
-
                   </div>
                 </Button>
 
@@ -374,7 +367,6 @@ export default function TradePerpsPage() {
                       <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
                       EdgeX Pro
                     </div>
-
                   </div>
                 </Button>
 
@@ -420,11 +412,6 @@ export default function TradePerpsPage() {
                   </div>
                 </Button>
 
-              </div>
-
-
-              {/* Ranger Finance and BounceBit - Two Across */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                 <Button
                   variant="outline"
                   onClick={() => openInNewTab('https://www.app.ranger.finance/perps')}
@@ -452,10 +439,7 @@ export default function TradePerpsPage() {
                     </div>
                   </div>
                 </Button>
-              </div>
 
-              {/* dYdX, NovaEx, and GMX - Three Across */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
                 <Button
                   variant="outline"
                   onClick={() => openInNewTab('https://dydx.trade/trade/BTC-USD')}
@@ -497,10 +481,7 @@ export default function TradePerpsPage() {
                     </div>
                   </div>
                 </Button>
-              </div>
 
-              {/* Drift and AsterDex - Three Across */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
                 <Button
                   variant="outline"
                   onClick={() => openInNewTab('https://app.drift.trade/BTC-PERP')}

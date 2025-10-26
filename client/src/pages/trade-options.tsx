@@ -212,6 +212,21 @@ export default function TradeOptionsPage() {
                   </div>
                 </Button>
 
+                <Button
+                  variant="outline"
+                  onClick={() => openInNewTab('https://app.derive.xyz/trade/options?symbol=BTC')}
+                  className="group bg-gradient-to-br from-orange-600/30 via-red-600/20 to-pink-600/30 border-orange-400/40 hover:from-orange-500/40 hover:via-red-500/30 hover:to-pink-500/40 hover:border-orange-300/60 text-white justify-center p-5 h-auto shadow-xl hover:shadow-orange-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+                  data-testid="button-derive"
+                >
+                  <div className="text-center">
+                    <div className="font-bold text-base flex items-center justify-center">
+                      <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
+                      Derive
+                    </div>
+                    <div className="text-sm text-orange-200/90">BTC options trading platform</div>
+                  </div>
+                </Button>
+
               </div>
             </div>
           </GlassCard>
