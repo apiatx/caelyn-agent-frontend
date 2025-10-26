@@ -323,6 +323,24 @@ export default function AlphaSection() {
             </div>
           </div>
 
+          {/* Coinbubbles */}
+          <div className="mt-8">
+            <div className="flex justify-end mb-4">
+              <SafeLink
+                href="https://coinbubbles.app/"
+                className="text-purple-300 hover:text-purple-200 text-sm font-medium hover:underline transition-colors duration-300"
+              >
+                Open Full View →
+              </SafeLink>
+            </div>
+            
+            <SafeIframe
+              src="https://coinbubbles.app/"
+              title="Coinbubbles - Rank: Top of 1000"
+              className="h-[700px]"
+            />
+          </div>
+
           {/* Alphanomics Bubble Scanner */}
           <div className="mt-8">
             <div className="flex justify-end mb-4">
