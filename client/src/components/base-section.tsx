@@ -400,6 +400,15 @@ export default function BaseSection() {
           </SafeLink>
         </div>
         <div className="space-y-4">
+          {/* Coinbubbles iframe */}
+          <div className="w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg mb-4">
+            <SafeIframe 
+              src="https://coinbubbles.app/"
+              title="Coinbubbles - Rank: Top of 1000"
+              className="w-full h-[600px] rounded-lg"
+            />
+          </div>
+
           {/* Alphanomics iframe */}
           <div className="w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg mb-4">
             <SafeIframe 
