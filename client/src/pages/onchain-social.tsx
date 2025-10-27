@@ -154,7 +154,8 @@ export default function OnchainSocialPage() {
                     'MWhalekiller', 'smileycapital', 'thedefivillain', 'doomsdart', 
                     'bitcodyy', 'CryptoDarkSide4', 'DefiSabali', '0xTindorr', 
                     'Chroma_Trading', 'follis_', 'AltcoinSniperTA', 'Bitcoinhabebe', 
-                    'sonder_crypto', 'istudycharts', 'Crypto_Tigers1'
+                    'sonder_crypto', 'istudycharts', 'Crypto_Tigers1', 'CryptoLimbo_',
+                    'cryptoknight890', 'CryptoEmree_', 'spetsnaz_3', 'newzage', 'The__Solstice'
                   ].map((account) => {
                     return (
                     <SafeLink
@@ -178,6 +179,17 @@ export default function OnchainSocialPage() {
                     <div className="flex items-center gap-2">
                       <span className="text-yellow-400 font-bold text-sm">𝕏</span>
                       <span className="text-yellow-400 font-semibold text-sm">sonder_crypto</span>
+                    </div>
+                  </SafeLink>
+
+                  {/* AlecTrading Tweet */}
+                  <SafeLink
+                    href="https://x.com/alecTrading/status/1971938635097559333"
+                    className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg hover:bg-yellow-500/20 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-yellow-400 font-bold text-sm">𝕏</span>
+                      <span className="text-yellow-400 font-semibold text-sm">alecTrading</span>
                     </div>
                   </SafeLink>
                 </div>
@@ -570,7 +582,7 @@ export default function OnchainSocialPage() {
                     <div className="flex items-center justify-center mb-6">
                       <h4 className="text-lg font-bold bg-gradient-to-r from-white to-yellow-100 bg-clip-text text-transparent">BNB Ecosystem</h4>
                     </div>
-                    <div className="grid grid-cols-1 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <SafeLink
                         href='https://x.com/cryptoknight890'
                         className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg hover:bg-yellow-500/20 transition-colors"
@@ -580,6 +592,28 @@ export default function OnchainSocialPage() {
                           <span className="text-yellow-400 font-semibold text-sm">CryptoKnight890</span>
                         </div>
                         <div className="text-xs text-crypto-silver">@cryptoknight890 - BNB ecosystem insights</div>
+                      </SafeLink>
+
+                      <SafeLink
+                        href='https://x.com/BastilleBtc'
+                        className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg hover:bg-yellow-500/20 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-yellow-400 font-bold text-sm">𝕏</span>
+                          <span className="text-yellow-400 font-semibold text-sm">BastilleBtc</span>
+                        </div>
+                        <div className="text-xs text-crypto-silver">@BastilleBtc - BNB trading and insights</div>
+                      </SafeLink>
+
+                      <SafeLink
+                        href='https://x.com/JuliusElum'
+                        className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg hover:bg-yellow-500/20 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-yellow-400 font-bold text-sm">𝕏</span>
+                          <span className="text-yellow-400 font-semibold text-sm">JuliusElum</span>
+                        </div>
+                        <div className="text-xs text-crypto-silver">@JuliusElum - BNB ecosystem analysis</div>
                       </SafeLink>
                     </div>
                   </GlassCard>
@@ -619,7 +653,10 @@ export default function OnchainSocialPage() {
                     { name: 'NFT Lunatic', handle: '@NFTLunatic' },
                     { name: 'AllISeeIs_W', handle: '@alliseeis_W' },
                     { name: 'HyesGregory', handle: '@HyesGregory' },
-                    { name: 'StockOptionCole', handle: '@StockOptionCole' }
+                    { name: 'StockOptionCole', handle: '@StockOptionCole' },
+                    { name: 'newzage', handle: '@newzage' },
+                    { name: 'The__Solstice', handle: '@The__Solstice' },
+                    { name: 'thenewmoney_tnm', handle: '@thenewmoney_tnm' }
                   ].map((account) => {
                     const getAccountUrl = (handle: string) => {
                       return `https://x.com/${handle.replace('@', '')}`;
