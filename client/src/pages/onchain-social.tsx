@@ -124,7 +124,7 @@ export default function OnchainSocialPage() {
                     'martypartymusic', 'Defi0xJeff', 'altcoinvector', 'DeFi_Paanda', 
                     'cryptorinweb3', 'jkrdoc', 'Agent_rsch', 'OverkillTrading', 
                     'dontbuytops', 'MetaverseRanger', 'aixCB_Vc', 'aixbt_agent',
-                    'nansen_ai', 'rogue_says', 'Globalflows'
+                    'nansen_ai', 'rogue_says', 'Globalflows', 'crypto_linn'
                   ].map((account) => {
                     return (
                     <SafeLink
@@ -155,7 +155,8 @@ export default function OnchainSocialPage() {
                     'bitcodyy', 'CryptoDarkSide4', 'DefiSabali', '0xTindorr', 
                     'Chroma_Trading', 'follis_', 'AltcoinSniperTA', 'Bitcoinhabebe', 
                     'sonder_crypto', 'istudycharts', 'Crypto_Tigers1', 'CryptoLimbo_',
-                    'cryptoknight890', 'CryptoEmree_', 'spetsnaz_3', 'newzage', 'The__Solstice'
+                    'cryptoknight890', 'CryptoEmree_', 'spetsnaz_3', 'newzage', 'The__Solstice',
+                    'jaydee_757', 'EasyInvests', 'sarper_onder', 'XForceGlobal', 'alecTrading', 'redhairshanks86'
                   ].map((account) => {
                     return (
                     <SafeLink
@@ -213,6 +214,31 @@ export default function OnchainSocialPage() {
                       <div className="flex items-center gap-2">
                         <span className="text-blue-400 font-bold text-sm">𝕏</span>
                         <span className="text-blue-400 font-semibold text-sm">{account}</span>
+                      </div>
+                    </SafeLink>
+                    );
+                  })}
+                </div>
+              </GlassCard>
+
+              {/* Macro Subsection */}
+              <GlassCard className="mb-6 p-4">
+                <div className="flex items-center justify-center mb-6">
+                  <h4 className="text-xl font-bold bg-gradient-to-r from-white to-cyan-100 bg-clip-text text-transparent">Macro</h4>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {[
+                    '_The_Prophet__'
+                  ].map((account) => {
+                    return (
+                    <SafeLink
+                      key={account}
+                      href={`https://x.com/${account}`}
+                      className="p-3 bg-cyan-500/10 border border-cyan-500/20 rounded-lg hover:bg-cyan-500/20 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-cyan-400 font-bold text-sm">𝕏</span>
+                        <span className="text-cyan-400 font-semibold text-sm">{account}</span>
                       </div>
                     </SafeLink>
                     );
