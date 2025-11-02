@@ -546,21 +546,39 @@ export default function BaseSection() {
               <div className="w-4 h-4 text-gray-400 group-hover:text-purple-400 transition-colors">→</div>
             </SafeLink>
 
-            {/* Whale Intel iframe for Virtuals */}
-            <div className="border-t border-crypto-silver/20 pt-4">
-              <SafeIframe 
-                src="https://whaleintel.ai/virtuals"
-                title="Whale Intel Virtuals"
-              />
-            </div>
+            {/* Whale Intel Button */}
+            <SafeLink
+              href="https://whaleintel.ai/virtuals"
+              className="w-full flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-cyan-500/30 transition-all duration-200 group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">W</span>
+                </div>
+                <div>
+                  <h4 className="text-white font-medium text-sm">Whale Intel</h4>
+                  <p className="text-gray-400 text-xs">Virtuals whale analytics</p>
+                </div>
+              </div>
+              <div className="w-4 h-4 text-gray-400 group-hover:text-cyan-400 transition-colors">→</div>
+            </SafeLink>
 
-            {/* Loky AI Terminal iframe */}
-            <div className="border-t border-crypto-silver/20 pt-4">
-              <SafeIframe 
-                src="https://lokyai.com/terminal/genesis"
-                title="Loky AI Terminal Genesis"
-              />
-            </div>
+            {/* Loky AI Terminal Button */}
+            <SafeLink
+              href="https://lokyai.com/terminal/genesis"
+              className="w-full flex items-center justify-between p-4 bg-black/20 border border-crypto-silver/20 rounded-lg hover:bg-black/30 hover:border-indigo-500/30 transition-all duration-200 group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">L</span>
+                </div>
+                <div>
+                  <h4 className="text-white font-medium text-sm">Loky AI</h4>
+                  <p className="text-gray-400 text-xs">AI trading terminal</p>
+                </div>
+              </div>
+              <div className="w-4 h-4 text-gray-400 group-hover:text-indigo-400 transition-colors">→</div>
+            </SafeLink>
           </div>
         </GlassCard>
 
