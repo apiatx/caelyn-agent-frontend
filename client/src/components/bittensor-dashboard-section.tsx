@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Brain, ExternalLink } from "lucide-react";
 import { getSecureIframeProps, getSecureLinkProps } from "@/utils/security";
 import bittensorLogo from "@assets/bittensor_1755977414942.png";
+import { openSecureLink } from '@/utils/security';
 
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
   <Card className={`backdrop-blur-sm bg-gradient-to-br from-white/10 to-white/5 border border-white/20 ${className}`}>
@@ -24,58 +25,6 @@ export default function BittensorDashboardSection() {
       </div>
 
       <div className="grid grid-cols-1 gap-6">
-        {/* TaoStats Integration */}
-        <div>
-          <div className="flex justify-end mb-3">
-            <a
-              {...getSecureLinkProps('https://taostats.io/')}
-              className="text-xs text-orange-400 hover:text-orange-300 transition-colors flex items-center gap-1"
-            >
-              Open Full View <ExternalLink className="w-3 h-3" />
-            </a>
-          </div>
-          
-          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-            <iframe
-              {...getSecureIframeProps('https://taostats.io/', 'TaoStats')}
-              className="w-full h-[600px] border-0"
-              style={{
-                background: 'transparent',
-                colorScheme: 'dark'
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Tao.app Explorer */}
-        <div>
-          <div className="flex justify-end mb-3">
-            <a
-              href="https://www.tao.app/explorer"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors flex items-center gap-1"
-            >
-              Open Full View <ExternalLink className="w-3 h-3" />
-            </a>
-          </div>
-          
-          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-            <iframe
-              src="https://www.tao.app/explorer"
-              className="w-full h-[600px] border-0"
-              title="Tao.app Explorer"
-              frameBorder="0"
-              loading="lazy"
-              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
-              style={{
-                background: 'transparent',
-                colorScheme: 'dark'
-              }}
-            />
-          </div>
-        </div>
-
         {/* TaoBot */}
         <div>
           <div className="flex justify-end mb-3">
@@ -102,6 +51,45 @@ export default function BittensorDashboardSection() {
               }}
             />
           </div>
+        </div>
+
+        {/* TaoStats and Tao.app Buttons */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* TaoStats Button - Black with White Text */}
+          <button
+            onClick={() => openSecureLink('https://taostats.io/')}
+            className="group relative overflow-hidden bg-black border border-white/20 rounded-lg p-6 hover:border-orange-400/50 transition-all duration-300 hover:scale-[1.02]"
+            data-testid="button-taostats"
+          >
+            <div className="flex flex-col items-center justify-center space-y-3">
+              <div className="w-16 h-16 bg-orange-500/10 border border-orange-500/30 rounded-xl flex items-center justify-center group-hover:bg-orange-500/20 transition-all">
+                <span className="text-3xl font-bold text-orange-400">TS</span>
+              </div>
+              <h3 className="text-xl font-bold text-white">TaoStats</h3>
+              <p className="text-sm text-gray-400">Bittensor network analytics</p>
+            </div>
+            <div className="absolute top-3 right-3">
+              <ExternalLink className="w-4 h-4 text-gray-500 group-hover:text-orange-400 transition-colors" />
+            </div>
+          </button>
+
+          {/* Tao.app Explorer Button - White with Black Text */}
+          <button
+            onClick={() => openSecureLink('https://www.tao.app/explorer')}
+            className="group relative overflow-hidden bg-white border border-gray-300 rounded-lg p-6 hover:border-cyan-500 transition-all duration-300 hover:scale-[1.02]"
+            data-testid="button-taoapp"
+          >
+            <div className="flex flex-col items-center justify-center space-y-3">
+              <div className="w-16 h-16 bg-cyan-500/10 border border-cyan-500/30 rounded-xl flex items-center justify-center group-hover:bg-cyan-500/20 transition-all">
+                <span className="text-3xl font-bold text-cyan-600">TA</span>
+              </div>
+              <h3 className="text-xl font-bold text-black">Tao.app</h3>
+              <p className="text-sm text-gray-600">Explorer & analytics</p>
+            </div>
+            <div className="absolute top-3 right-3">
+              <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-cyan-500 transition-colors" />
+            </div>
+          </button>
         </div>
 
         {/* TaoBridge */}
