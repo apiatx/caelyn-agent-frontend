@@ -425,7 +425,11 @@ const TRUSTED_DOMAINS = [
   'www.ostium.com',
   'pacifica.fi',
   'app.pacifica.fi',
-  'www.pacifica.fi'
+  'www.pacifica.fi',
+  'taobridge.xyz',
+  'www.taobridge.xyz',
+  'tao.app',
+  'www.tao.app'
 ];
 
 /**

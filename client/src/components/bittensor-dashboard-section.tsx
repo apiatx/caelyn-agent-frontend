@@ -92,35 +92,6 @@ export default function BittensorDashboardSection() {
           </button>
         </div>
 
-        {/* TaoBridge */}
-        <div>
-          <div className="flex justify-end mb-3">
-            <a
-              href="https://taobridge.xyz/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-1"
-            >
-              Open Full View <ExternalLink className="w-3 h-3" />
-            </a>
-          </div>
-          
-          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-            <iframe
-              src="https://taobridge.xyz/"
-              className="w-full h-[600px] border-0"
-              title="TaoBridge"
-              frameBorder="0"
-              loading="lazy"
-              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
-              style={{
-                background: 'transparent',
-                colorScheme: 'dark'
-              }}
-            />
-          </div>
-        </div>
-
         {/* Backprop Finance */}
         <div>
           <div className="flex justify-end mb-3">
@@ -169,6 +140,35 @@ export default function BittensorDashboardSection() {
               title="Top dTAO Wallets"
               frameBorder="0"
               loading="lazy"
+              style={{
+                background: 'transparent',
+                colorScheme: 'dark'
+              }}
+            />
+          </div>
+        </div>
+
+        {/* TaoBridge - Moved under TaoMarketCap */}
+        <div>
+          <div className="flex justify-end mb-3">
+            <a
+              href="https://taobridge.xyz/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-1"
+            >
+              Open Full View <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
+          
+          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+            <iframe
+              src="https://taobridge.xyz/"
+              className="w-full h-[600px] border-0"
+              title="TaoBridge"
+              frameBorder="0"
+              loading="lazy"
+              sandbox="allow-scripts allow-forms allow-popups"
               style={{
                 background: 'transparent',
                 colorScheme: 'dark'
