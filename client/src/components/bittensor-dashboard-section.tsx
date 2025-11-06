@@ -148,23 +148,34 @@ export default function BittensorDashboardSection() {
           </div>
         </div>
 
-        {/* TaoBridge Button - Converted to button to prevent auto wallet connection */}
-        <button
-          onClick={() => openSecureLink('https://taobridge.xyz/')}
-          className="group relative overflow-hidden bg-gradient-to-br from-purple-900/30 to-indigo-900/30 border border-purple-500/30 rounded-lg p-6 hover:border-purple-400/60 transition-all duration-300 hover:scale-[1.02]"
-          data-testid="button-taobridge"
-        >
-          <div className="flex flex-col items-center justify-center space-y-3">
-            <div className="w-16 h-16 bg-purple-500/10 border border-purple-500/30 rounded-xl flex items-center justify-center group-hover:bg-purple-500/20 transition-all">
-              <span className="text-3xl font-bold text-purple-400">TB</span>
-            </div>
-            <h3 className="text-xl font-bold text-white">TaoBridge</h3>
-            <p className="text-sm text-gray-400">Cross-chain bridge for TAO</p>
+        {/* TaoBridge */}
+        <div>
+          <div className="flex justify-end mb-3">
+            <a
+              href="https://taobridge.xyz/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-1"
+            >
+              Open Full View <ExternalLink className="w-3 h-3" />
+            </a>
           </div>
-          <div className="absolute top-3 right-3">
-            <ExternalLink className="w-4 h-4 text-gray-500 group-hover:text-purple-400 transition-colors" />
+          
+          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+            <iframe
+              src="https://taobridge.xyz/"
+              className="w-full h-[600px] border-0"
+              title="TaoBridge"
+              frameBorder="0"
+              loading="lazy"
+              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+              style={{
+                background: 'transparent',
+                colorScheme: 'dark'
+              }}
+            />
           </div>
-        </button>
+        </div>
 
         {/* TaoFi Swap Integration */}
         <div>
