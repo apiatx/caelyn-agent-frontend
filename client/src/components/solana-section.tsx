@@ -73,21 +73,19 @@ export default function SolanaSection() {
           </button>
         </div>
         <div className="w-full space-y-4">
-          {/* Moby Screener iframe */}
-          <div className="w-full">
-            <iframe
-              src="https://www.mobyscreener.com/"
-              title="Moby Screener Analytics"
-              className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
-              referrerPolicy="no-referrer-when-downgrade"
-              loading="lazy"
-              style={{
-                background: 'transparent',
-                colorScheme: 'dark'
-              }}
-            />
-          </div>
+          {/* Moby Screener Button */}
+          <button
+            onClick={() => openSecureLink("https://www.mobyscreener.com/")}
+            className="w-full p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors text-left"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                <ExternalLink className="w-4 h-4 text-white" />
+              </div>
+              <h4 className="text-blue-400 font-semibold">Moby Screener</h4>
+            </div>
+            <p className="text-gray-400 text-sm">Advanced Solana token analytics and screening tools</p>
+          </button>
           
           <button
             onClick={() => openSecureLink("https://dexscreener.com/solana?theme=dark")}
