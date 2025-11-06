@@ -580,6 +580,17 @@ export default function OnchainSocialPage() {
                       </SafeLink>
 
                       <SafeLink
+                        href='https://x.com/TalkingTensor'
+                        className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-purple-400 font-bold text-sm">𝕏</span>
+                          <span className="text-purple-400 font-semibold text-sm">Talking Tensor</span>
+                        </div>
+                        <div className="text-xs text-crypto-silver">@TalkingTensor - Bittensor Insights</div>
+                      </SafeLink>
+
+                      <SafeLink
                         href='https://x.com/Shogun__base'
                         className="p-3 bg-gray-500/10 border border-gray-500/20 rounded-lg hover:bg-gray-500/20 transition-colors"
                       >
