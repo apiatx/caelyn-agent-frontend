@@ -447,8 +447,8 @@ export const corsConfig = cors({
     // Always allow requests with no origin (mobile apps, curl, etc.)
     if (!origin) return callback(null, true);
     
-    // In development, be more permissive
-    if (process.env.NODE_ENV === 'development') {
+    // In development/test, allow all origins
+    if (process.env.NODE_ENV !== 'production') {
       return callback(null, true);
     }
     
@@ -457,8 +457,14 @@ export const corsConfig = cors({
       return callback(null, true);
     }
     
-    // Allow Replit domains
-    if (origin.includes('.replit.dev') || origin.includes('.replit.app') || origin.includes('.replit.co')) {
+    // Allow ALL Replit domains (dev, app, co, io, com)
+    if (origin.includes('.replit.dev') || 
+        origin.includes('.replit.app') || 
+        origin.includes('.replit.co') ||
+        origin.includes('.replit.io') ||
+        origin.includes('.replit.com') ||
+        origin.includes('replit.dev') ||
+        origin.includes('replit.app')) {
       return callback(null, true);
     }
     
