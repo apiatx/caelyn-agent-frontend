@@ -265,40 +265,6 @@ export default function PortfolioSection() {
           </div>
         </div>
 
-        {/* Bittensor Section */}
-        <div className="backdrop-blur-xl bg-gradient-to-br from-white/5 via-orange-500/5 to-white/5 border border-orange-400/20 rounded-xl px-6 py-5 shadow-lg shadow-orange-500/10">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-black/30">
-                  <img src={bittensorLogo} alt="Bittensor" className="w-7 h-7 rounded-lg" />
-                </div>
-                <h4 className="text-xl font-bold bg-gradient-to-r from-orange-300 to-red-200 bg-clip-text text-transparent">Bittensor</h4>
-              </div>
-              <button
-                onClick={() => window.open('https://www.taohub.info/portfolio', '_blank', 'noopener,noreferrer')}
-                className="text-orange-300 hover:text-orange-200 text-xs font-medium bg-orange-500/10 px-3 py-1.5 rounded-md border border-orange-400/20 hover:bg-orange-500/20 transition-all flex items-center gap-1.5"
-              >
-                Open Full <ExternalLink className="w-3 h-3" />
-              </button>
-            </div>
-            <div className="bg-black/20 border border-orange-400/10 rounded-lg overflow-hidden">
-              <iframe
-                src="https://www.taohub.info/portfolio"
-                className="w-full h-[450px] border-0"
-                title="TaoHub Portfolio"
-                frameBorder="0"
-                loading="lazy"
-                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-                style={{
-                  background: 'transparent',
-                  colorScheme: 'dark'
-                }}
-              />
-            </div>
-          </div>
-        </div>
-
       </div>
 
       {/* Holding Detail Modal */}

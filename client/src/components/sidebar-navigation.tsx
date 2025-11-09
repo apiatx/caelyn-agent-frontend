@@ -163,14 +163,14 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
           label: 'On Ramp',
           icon: <Wallet className="w-4 h-4" />,
           path: '/app/trade/onramp'
-        },
-        {
-          id: 'portfolio',
-          label: 'Portfolio',
-          icon: <Activity className="w-4 h-4" />,
-          path: '/app/portfolio'
         }
       ]
+    },
+    {
+      id: 'portfolio',
+      label: 'Portfolio',
+      icon: <Activity className="w-4 h-4" />,
+      path: '/app/portfolio'
     },
     {
       id: 'defi',

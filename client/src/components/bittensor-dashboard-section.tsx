@@ -121,6 +121,22 @@ export default function BittensorDashboardSection() {
           </div>
         </div>
 
+        {/* TaoHub Portfolio */}
+        <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+          <iframe
+            src="https://www.taohub.info/portfolio"
+            className="w-full h-[600px] border-0"
+            title="TaoHub Portfolio"
+            frameBorder="0"
+            loading="lazy"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
+            style={{
+              background: 'transparent',
+              colorScheme: 'dark'
+            }}
+          />
+        </div>
+
         {/* Backprop Finance */}
         <div>
           <div className="flex justify-end mb-3">
