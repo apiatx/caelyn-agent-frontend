@@ -124,7 +124,7 @@ export default function BittensorDashboardSection() {
         {/* TaoHub Portfolio */}
         <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
           <iframe
-            src="https://www.taohub.info/portfolio"
+            src="https://www.taohub.info/"
             className="w-full h-[600px] border-0"
             title="TaoHub Portfolio"
             frameBorder="0"
