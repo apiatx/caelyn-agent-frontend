@@ -114,19 +114,19 @@ const TopTrendingCMC = () => {
         <div className="flex flex-col items-center justify-center space-y-2 mb-4">
           <div className="flex items-center space-x-2">
             <Flame className="w-5 h-5 text-orange-400" />
-            <h3 className="text-lg font-semibold text-white">Top 20 Trending on CMC</h3>
+            <h3 className="text-lg font-semibold text-white">Top 20 by Volume</h3>
           </div>
           <button
-            onClick={() => window.open('https://coinmarketcap.com/?type=coins&tableRankBy=trending_all_24h', '_blank', 'noopener,noreferrer')}
+            onClick={() => window.open('https://coinmarketcap.com/', '_blank', 'noopener,noreferrer')}
             className="text-sm text-yellow-400 hover:text-yellow-300 transition-colors duration-200 flex items-center gap-1"
           >
-            View All Trending
+            View on CMC
             <ExternalLink className="w-3 h-3" />
           </button>
         </div>
         <div className="flex items-center justify-center py-8 flex-1">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-400"></div>
-          <span className="ml-3 text-crypto-silver">Loading trending coins...</span>
+          <span className="ml-3 text-crypto-silver">Loading top coins by volume...</span>
         </div>
       </div>
     );
@@ -138,13 +138,13 @@ const TopTrendingCMC = () => {
         <div className="flex flex-col items-center justify-center space-y-2 mb-4">
           <div className="flex items-center space-x-2">
             <Flame className="w-5 h-5 text-orange-400" />
-            <h3 className="text-lg font-semibold text-white">Top 20 Trending on CMC</h3>
+            <h3 className="text-lg font-semibold text-white">Top 20 by Volume</h3>
           </div>
           <button
-            onClick={() => window.open('https://coinmarketcap.com/?type=coins&tableRankBy=trending_all_24h', '_blank', 'noopener,noreferrer')}
+            onClick={() => window.open('https://coinmarketcap.com/', '_blank', 'noopener,noreferrer')}
             className="text-sm text-yellow-400 hover:text-yellow-300 transition-colors duration-200 flex items-center gap-1"
           >
-            View All Trending
+            View on CMC
             <ExternalLink className="w-3 h-3" />
           </button>
         </div>
@@ -161,7 +161,7 @@ const TopTrendingCMC = () => {
       <div className="flex flex-col items-center justify-center space-y-2 mb-6 flex-shrink-0">
         <div className="flex items-center space-x-2">
           <Flame className="w-5 h-5 text-orange-400" />
-          <h3 className="text-lg font-semibold text-white">Top 20 Trending on CMC</h3>
+          <h3 className="text-lg font-semibold text-white">Top 20 by Volume</h3>
         </div>
       </div>
       

@@ -83,14 +83,14 @@ export default function AlphaSection() {
           {/* Screening Section - Side by Side Layout */}
           <div className="flex flex-col lg:flex-row gap-6 lg:items-stretch">
             {/* 24h Gainers (CMC Top 500) - Left Side */}
-            <div className="lg:w-1/3 flex">
+            <div className="lg:w-1/2 flex">
               <div className="w-full">
                 <TopDailyGainersTop500 />
               </div>
             </div>
 
-            {/* Top 20 Trending on CMC - Right Side */}
-            <div className="lg:w-2/3 flex">
+            {/* Top 20 by Volume - Right Side */}
+            <div className="lg:w-1/2 flex">
               <div className="w-full">
                 <TopTrendingCMC />
               </div>
