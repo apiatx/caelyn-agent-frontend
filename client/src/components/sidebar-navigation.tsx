@@ -167,6 +167,12 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
       ]
     },
     {
+      id: 'portfolio',
+      label: 'Portfolio',
+      icon: <Activity className="w-4 h-4" />,
+      path: '/app/portfolio'
+    },
+    {
       id: 'defi',
       label: 'Earn',
       icon: <DollarSign className="w-4 h-4" />,
@@ -282,12 +288,6 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
           path: '/app/rwa'
         }
       ]
-    },
-    {
-      id: 'portfolio',
-      label: 'Portfolio',
-      icon: <Activity className="w-4 h-4" />,
-      path: '/app/portfolio'
     },
     {
       id: 'predict',

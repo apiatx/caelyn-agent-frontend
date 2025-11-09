@@ -66,6 +66,22 @@ app.get("/ready", (req, res) => {
 // Log security configuration
 logSecurityConfig();
 
+// Apply static asset CORS for JS, CSS, images, fonts, etc.
+app.use((req, res, next) => {
+  const staticAssetExtensions = ['.js', '.css', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.woff', '.woff2', '.ttf', '.eot', '.map'];
+  const isStaticAsset = staticAssetExtensions.some(ext => req.path.toLowerCase().endsWith(ext)) || 
+                       req.path.startsWith('/assets/') || 
+                       req.path.startsWith('/static/') ||
+                       req.path.startsWith('/@vite/') ||
+                       req.path.includes('.vite');
+  
+  if (isStaticAsset) {
+    return staticAssetCorsConfig(req, res, next);
+  } else {
+    return corsConfig(req, res, next);
+  }
+});
+
 // Apply security middleware FIRST (CSP disabled for investing.com)
 app.use(securityHeaders);
 app.use(helmetConfig);
@@ -81,22 +97,6 @@ if (isProduction && env.FORCE_HTTPS) {
     }
   });
 }
-
-// Apply static asset CORS for JS, CSS, images, fonts, etc. - AFTER helmet to prevent overwrite
-app.use((req, res, next) => {
-  const staticAssetExtensions = ['.js', '.css', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.woff', '.woff2', '.ttf', '.eot', '.map'];
-  const isStaticAsset = staticAssetExtensions.some(ext => req.path.toLowerCase().endsWith(ext)) || 
-                       req.path.startsWith('/assets/') || 
-                       req.path.startsWith('/static/') ||
-                       req.path.startsWith('/@vite/') ||
-                       req.path.includes('.vite');
-  
-  if (isStaticAsset) {
-    return staticAssetCorsConfig(req, res, next);
-  } else {
-    return corsConfig(req, res, next);
-  }
-});
 
 // Rate limiting for API routes
 app.use('/api', apiRateLimit);
