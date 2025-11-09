@@ -645,6 +645,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // CoinMarketCap top 20 trending coins endpoint
+  app.get('/api/coinmarketcap/trending', async (req, res) => {
+    try {
+      console.log('🔍 [API] Fetching top 20 trending coins from CoinMarketCap...');
+      
+      const trending = await coinMarketCapService.getTrendingCoins();
+      
+      console.log(`✅ [API] Successfully retrieved ${trending.length} trending coins`);
+      res.json(trending);
+    } catch (error) {
+      console.error('❌ [API] Failed to fetch trending coins:', error);
+      res.status(500).json({ message: 'Failed to fetch trending coins data' });
+    }
+  });
+
   // CoinMarketCap DEX token gainers endpoint
   app.get('/api/coinmarketcap/dex-gainers', async (req, res) => {
     try {

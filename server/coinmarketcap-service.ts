@@ -459,9 +459,80 @@ class CoinMarketCapService {
       throw error;
     }
   }
+
+  async getTrendingCoins(): Promise<CoinMarketCapCrypto[]> {
+    try {
+      console.log('🔍 [CMC] Fetching top 20 trending coins from CoinMarketCap...');
+      const url = `${this.baseUrl}/cryptocurrency/trending/most-visited?start=1&limit=20&convert=USD`;
+      
+      const response = await fetch(url, {
+        headers: {
+          'X-CMC_PRO_API_KEY': this.apiKey,
+          'Accept': 'application/json',
+        },
+      });
+
+      console.log('🔍 [CMC] Trending endpoint response status:', response.status);
+
+      if (!response.ok) {
+        console.log('🔍 [CMC] Trending endpoint failed, using fallback...');
+        return this.getTrendingCoinsFallback();
+      }
+
+      const data = await response.json() as any;
+      
+      if (data.status && data.status.error_code !== 0) {
+        console.log('🔍 [CMC] Trending endpoint error, using fallback...');
+        return this.getTrendingCoinsFallback();
+      }
+
+      console.log(`✅ [CMC] Successfully retrieved ${data.data?.length || 0} trending coins`);
+      return data.data || [];
+    } catch (error) {
+      console.error('❌ [CMC] Failed to fetch trending coins, using fallback:', error);
+      return this.getTrendingCoinsFallback();
+    }
+  }
+
+  private async getTrendingCoinsFallback(): Promise<CoinMarketCapCrypto[]> {
+    try {
+      console.log('🔍 [CMC] Using fallback method for trending coins (Top 100 by volume)...');
+      // Use top 100 by market cap, sorted by volume as proxy for trending
+      const url = `${this.baseUrl}/cryptocurrency/listings/latest?start=1&limit=100&convert=USD&sort=volume_24h&sort_dir=desc`;
+      
+      const response = await fetch(url, {
+        headers: {
+          'X-CMC_PRO_API_KEY': this.apiKey,
+          'Accept': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`CoinMarketCap API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json() as CoinMarketCapResponse;
+      
+      if (data.status.error_code !== 0) {
+        throw new Error(`CoinMarketCap API error: ${data.status.error_message}`);
+      }
+
+      console.log(`🔍 [CMC] Received ${data.data.length} cryptocurrencies, taking top 20 by volume`);
+      return data.data.slice(0, 20);
+    } catch (error) {
+      console.error('❌ [CMC] Fallback method also failed:', error);
+      throw error;
+    }
+  }
 }
 
 export const coinMarketCapService = new CoinMarketCapService();
+
+// Get trending coins (most visited on CMC)
+export async function getTrendingCoins(): Promise<CoinMarketCapCrypto[]> {
+  const service = new CoinMarketCapService();
+  return service.getTrendingCoins();
+}
 
 // Additional method for fetching multiple specific cryptocurrencies
 export async function getMajorCryptocurrencies(): Promise<CoinMarketCapCrypto[]> {

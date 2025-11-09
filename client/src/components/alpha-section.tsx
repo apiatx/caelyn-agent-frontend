@@ -5,6 +5,7 @@ import { openSecureLink } from '@/utils/security';
 import onchainImage from "@assets/images_1756750962640.jpeg";
 import diamondImage from "@assets/images (4)_1757213323269.jpeg";
 import TopDailyGainersTop500 from './top-daily-gainers-top500';
+import TopTrendingCMC from './top-trending-cmc';
 
 // Enhanced Glass Card component
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
@@ -88,33 +89,10 @@ export default function AlphaSection() {
               </div>
             </div>
 
-            {/* AskSurf and SAG3.ai - Right Side Stacked */}
-            <div className="lg:w-2/3 flex flex-col gap-3">
-              {/* AskSurf AI Hub */}
-              <div className="flex-1 bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
-                <iframe
-                  src="https://asksurf.ai/hub"
-                  className="w-full h-full min-h-[400px] rounded-lg border border-crypto-silver/20"
-                  title="AskSurf AI Hub"
-                  frameBorder="0"
-                  loading="eager"
-                  sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-                  data-testid="iframe-asksurf"
-                />
-              </div>
-
-              {/* SAG3.ai Analysis */}
-              <div className="flex-1 bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
-                <iframe
-                  src="https://sag3.ai/analyze"
-                  className="w-full h-full min-h-[400px] rounded-lg border border-crypto-silver/20"
-                  title="SAG3.ai Analysis"
-                  frameBorder="0"
-                  loading="lazy"
-                  sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
-                  referrerPolicy="no-referrer-when-downgrade"
-                  data-testid="iframe-sag3"
-                />
+            {/* Top 20 Trending on CMC - Right Side */}
+            <div className="lg:w-2/3 flex">
+              <div className="w-full">
+                <TopTrendingCMC />
               </div>
             </div>
           </div>
