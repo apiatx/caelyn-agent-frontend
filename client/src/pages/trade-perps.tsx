@@ -160,6 +160,32 @@ export default function TradePerpsPage() {
                 </div>
               </div>
 
+              {/* Vooi.io Iframe */}
+              <div className="mb-6">
+                <div className="flex justify-end mb-3">
+                  <a
+                    {...getSecureLinkProps('https://pro.vooi.io/')}
+                    className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1"
+                  >
+                    Open Full View <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+                
+                <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+                  <SafeIframe
+                    src="https://pro.vooi.io/"
+                    title="Vooi.io Pro Trading"
+                    className="w-full h-[800px] border-0"
+                  />
+                </div>
+                
+                <div className="mt-4 text-center">
+                  <p className="text-xs text-gray-400">
+                    Professional perpetual trading on Vooi.io • Advanced trading interface
+                  </p>
+                </div>
+              </div>
+
               {/* Avantisfi Iframe */}
               <div className="mb-6">
                 <div className="flex justify-end mb-3">
