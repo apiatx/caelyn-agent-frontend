@@ -156,7 +156,7 @@ export default function OnchainSocialPage() {
                     'Chroma_Trading', 'follis_', 'AltcoinSniperTA', 'Bitcoinhabebe', 
                     'sonder_crypto', 'istudycharts', 'Crypto_Tigers1', 'CryptoLimbo_',
                     'cryptoknight890', 'CryptoEmree_', 'spetsnaz_3', 'newzage', 'The__Solstice',
-                    'jaydee_757', 'EasyInvests', 'sarper_onder', 'XForceGlobal', 'alecTrading', 'redhairshanks86'
+                    'jaydee_757', 'EasyInvests', 'sarper_onder', 'XForceGlobal', 'alecTrading', 'redhairshanks86', 'eliz883'
                   ].map((account) => {
                     return (
                     <SafeLink
