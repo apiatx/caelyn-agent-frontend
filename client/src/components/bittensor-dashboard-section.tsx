@@ -121,20 +121,33 @@ export default function BittensorDashboardSection() {
           </div>
         </div>
 
-        {/* TaoHub Portfolio */}
-        <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-          <iframe
-            src="https://www.taohub.info/"
-            className="w-full h-[600px] border-0"
-            title="TaoHub Portfolio"
-            frameBorder="0"
-            loading="lazy"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
-            style={{
-              background: 'transparent',
-              colorScheme: 'dark'
-            }}
-          />
+        {/* TaoTrack Simulator */}
+        <div>
+          <div className="flex justify-end mb-3">
+            <a
+              href="https://taotrack.com/simulator"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors flex items-center gap-1"
+            >
+              Open Full View <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
+          
+          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+            <iframe
+              src="https://taotrack.com/simulator"
+              className="w-full h-[600px] border-0"
+              title="TaoTrack Simulator"
+              frameBorder="0"
+              loading="lazy"
+              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+              style={{
+                background: 'transparent',
+                colorScheme: 'dark'
+              }}
+            />
+          </div>
         </div>
 
         {/* Backprop Finance */}
@@ -307,6 +320,22 @@ export default function BittensorDashboardSection() {
               }}
             />
           </div>
+        </div>
+
+        {/* TaoHub Portfolio */}
+        <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+          <iframe
+            src="https://www.taohub.info/"
+            className="w-full h-[600px] border-0"
+            title="TaoHub Portfolio"
+            frameBorder="0"
+            loading="lazy"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
+            style={{
+              background: 'transparent',
+              colorScheme: 'dark'
+            }}
+          />
         </div>
       </div>
     </div>
