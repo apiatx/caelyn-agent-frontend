@@ -186,32 +186,6 @@ export default function TradePerpsPage() {
                 </div>
               </div>
 
-              {/* Omni Variational Markets */}
-              <div className="mb-6">
-                <div className="flex justify-end mb-3">
-                  <a
-                    {...getSecureLinkProps('https://omni.variational.io/markets')}
-                    className="text-xs text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-1"
-                  >
-                    Open Full View <ExternalLink className="w-3 h-3" />
-                  </a>
-                </div>
-                
-                <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-                  <SafeIframe
-                    src="https://omni.variational.io/markets"
-                    title="Omni Variational Markets"
-                    className="w-full h-[800px] border-0"
-                  />
-                </div>
-                
-                <div className="mt-4 text-center">
-                  <p className="text-xs text-gray-400">
-                    Omni Variational perpetual markets • Multi-chain trading platform
-                  </p>
-                </div>
-              </div>
-
               {/* Avantisfi Iframe */}
               <div className="mb-6">
                 <div className="flex justify-end mb-3">
@@ -382,14 +356,14 @@ export default function TradePerpsPage() {
 
                 <Button
                   variant="outline"
-                  onClick={() => openInNewTab('https://perps.saros.xyz/trade/PERP_SOL_USDC')}
-                  className="group bg-black/20 border-crypto-silver/20 hover:bg-gray-500/20 hover:border-gray-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-gray-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
-                  data-testid="button-saros"
+                  onClick={() => openInNewTab('https://omni.variational.io/markets')}
+                  className="group bg-black/20 border-crypto-silver/20 hover:bg-purple-500/20 hover:border-purple-500/30 text-white justify-center p-5 h-auto shadow-lg hover:shadow-purple-500/20 transform hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+                  data-testid="button-variational"
                 >
                   <div className="text-center">
                     <div className="font-bold text-base flex items-center justify-center">
                       <TrendingUp className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
-                      Saros
+                      Variational
                     </div>
                   </div>
                 </Button>
