@@ -431,7 +431,9 @@ const TRUSTED_DOMAINS = [
   'taobridge.xyz',
   'www.taobridge.xyz',
   'tao.app',
-  'www.tao.app'
+  'www.tao.app',
+  'taoyield.com',
+  'www.taoyield.com'
 ];
 
 /**

@@ -92,6 +92,35 @@ export default function BittensorDashboardSection() {
           </button>
         </div>
 
+        {/* TaoYield */}
+        <div>
+          <div className="flex justify-end mb-3">
+            <a
+              href="https://www.taoyield.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1"
+            >
+              Open Full View <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
+          
+          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+            <iframe
+              src="https://www.taoyield.com/"
+              className="w-full h-[600px] border-0"
+              title="TaoYield"
+              frameBorder="0"
+              loading="lazy"
+              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+              style={{
+                background: 'transparent',
+                colorScheme: 'dark'
+              }}
+            />
+          </div>
+        </div>
+
         {/* TaoRevenue */}
         <div>
           <div className="flex justify-end mb-3">
@@ -139,35 +168,6 @@ export default function BittensorDashboardSection() {
               src="https://taotrack.com/simulator"
               className="w-full h-[600px] border-0"
               title="TaoTrack Simulator"
-              frameBorder="0"
-              loading="lazy"
-              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
-              style={{
-                background: 'transparent',
-                colorScheme: 'dark'
-              }}
-            />
-          </div>
-        </div>
-
-        {/* NeuralTeq Dashboard */}
-        <div>
-          <div className="flex justify-end mb-3">
-            <a
-              href="https://dashboard.neuralteq.com/subnets/0"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
-            >
-              Open Full View <ExternalLink className="w-3 h-3" />
-            </a>
-          </div>
-          
-          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-            <iframe
-              src="https://dashboard.neuralteq.com/subnets/0"
-              className="w-full h-[600px] border-0"
-              title="NeuralTeq Subnets Dashboard"
               frameBorder="0"
               loading="lazy"
               sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
