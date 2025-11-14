@@ -182,6 +182,31 @@ export default function CryptoDashboardSection() {
           </div>
         </div>
 
+        {/* NotifAI News iframe */}
+        <div className="mb-6">
+          <div className="flex justify-end mb-3">
+            <button
+              onClick={() => openInNewTab('https://www.notifai.news/')}
+              className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
+              data-testid="button-notifai-fullview"
+            >
+              Open Full View <ExternalLink className="w-3 h-3" />
+            </button>
+          </div>
+          <div className="w-full">
+            <iframe
+              src="https://www.notifai.news/"
+              className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+              title="NotifAI News"
+              frameBorder="0"
+              loading="lazy"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+              referrerPolicy="no-referrer-when-downgrade"
+              data-testid="iframe-notifai"
+            />
+          </div>
+        </div>
+
         {/* DL News Research iframe */}
         <div className="mb-6">
           <div className="flex justify-end mb-3">

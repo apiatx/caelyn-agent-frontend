@@ -310,6 +310,8 @@ const TRUSTED_DOMAINS = [
   // News Sources
   'dlnews.com',
   'www.dlnews.com',
+  'notifai.news',
+  'www.notifai.news',
   // Social Platforms
   'x.com',
   // Cross-chain Swap Platforms
