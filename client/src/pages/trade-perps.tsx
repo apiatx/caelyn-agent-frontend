@@ -109,31 +109,6 @@ export default function TradePerpsPage() {
           <GlassCard className="p-8">
             <div className="space-y-6">
               
-              {/* Hyperliquid Trading */}
-              <div className="mb-6">
-                <div className="flex justify-end mb-3">
-                  <a
-                    {...getSecureLinkProps('https://app.hyperliquid.xyz/trade/HYPE')}
-                    className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1"
-                  >
-                    Open Full View <ExternalLink className="w-3 h-3" />
-                  </a>
-                </div>
-                
-                <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-                  <iframe
-                    {...getSecureIframeProps('https://app.hyperliquid.xyz/trade/HYPE', 'Hyperliquid HYPE Trading')}
-                    className="w-full h-[800px] border-0"
-                  />
-                </div>
-                
-                <div className="mt-4 text-center">
-                  <p className="text-xs text-gray-400">
-                    Live HYPE trading on Hyperliquid • Real-time orderbook and charts
-                  </p>
-                </div>
-              </div>
-
               {/* DeFiLlama Derivatives */}
               <div className="mb-6">
                 <div className="flex justify-end mb-3">
@@ -160,6 +135,31 @@ export default function TradePerpsPage() {
                 </div>
               </div>
 
+              {/* Hyperliquid Trading */}
+              <div className="mb-6">
+                <div className="flex justify-end mb-3">
+                  <a
+                    {...getSecureLinkProps('https://app.hyperliquid.xyz/trade/HYPE')}
+                    className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1"
+                  >
+                    Open Full View <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+                
+                <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+                  <iframe
+                    {...getSecureIframeProps('https://app.hyperliquid.xyz/trade/HYPE', 'Hyperliquid HYPE Trading')}
+                    className="w-full h-[800px] border-0"
+                  />
+                </div>
+                
+                <div className="mt-4 text-center">
+                  <p className="text-xs text-gray-400">
+                    Live HYPE trading on Hyperliquid • Real-time orderbook and charts
+                  </p>
+                </div>
+              </div>
+
               {/* Vooi.io Iframe */}
               <div className="mb-6">
                 <div className="flex justify-end mb-3">
@@ -182,6 +182,32 @@ export default function TradePerpsPage() {
                 <div className="mt-4 text-center">
                   <p className="text-xs text-gray-400">
                     Professional perpetual trading on Vooi.io • Advanced trading interface
+                  </p>
+                </div>
+              </div>
+
+              {/* Omni Variational Markets */}
+              <div className="mb-6">
+                <div className="flex justify-end mb-3">
+                  <a
+                    {...getSecureLinkProps('https://omni.variational.io/markets')}
+                    className="text-xs text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-1"
+                  >
+                    Open Full View <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+                
+                <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+                  <SafeIframe
+                    src="https://omni.variational.io/markets"
+                    title="Omni Variational Markets"
+                    className="w-full h-[800px] border-0"
+                  />
+                </div>
+                
+                <div className="mt-4 text-center">
+                  <p className="text-xs text-gray-400">
+                    Omni Variational perpetual markets • Multi-chain trading platform
                   </p>
                 </div>
               </div>
