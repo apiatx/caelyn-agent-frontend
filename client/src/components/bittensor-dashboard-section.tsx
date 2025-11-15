@@ -110,6 +110,65 @@ export default function BittensorDashboardSection() {
           </button>
         </div>
 
+        {/* TaoMarketCap and Backprop Finance - Side by Side */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Top dTAO Wallets (TaoMarketCap) */}
+          <div>
+            <div className="flex justify-end mb-3">
+              <a
+                href="https://taomarketcap.com/blockchain/accounts"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-orange-400 hover:text-orange-300 transition-colors flex items-center gap-1"
+              >
+                Open Full View <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+            
+            <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+              <iframe
+                src="https://taomarketcap.com/blockchain/accounts"
+                className="w-full h-[600px] border-0"
+                title="Top dTAO Wallets"
+                frameBorder="0"
+                loading="lazy"
+                style={{
+                  background: 'transparent',
+                  colorScheme: 'dark'
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Backprop Finance */}
+          <div>
+            <div className="flex justify-end mb-3">
+              <a
+                href="https://backprop.finance/screener/bubbles"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-green-400 hover:text-green-300 transition-colors flex items-center gap-1"
+              >
+                Open Full View <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+            
+            <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+              <iframe
+                src="https://backprop.finance/screener/bubbles"
+                className="w-full h-[600px] border-0"
+                title="Backprop Finance Screener"
+                frameBorder="0"
+                loading="lazy"
+                style={{
+                  background: 'transparent',
+                  colorScheme: 'dark'
+                }}
+              />
+            </div>
+          </div>
+        </div>
+
         {/* TaoYield */}
         <div>
           <div className="flex justify-end mb-3">
@@ -197,62 +256,32 @@ export default function BittensorDashboardSection() {
           </div>
         </div>
 
-        {/* TaoMarketCap and Backprop Finance - Side by Side */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Top dTAO Wallets (TaoMarketCap) */}
-          <div>
-            <div className="flex justify-end mb-3">
-              <a
-                href="https://taomarketcap.com/blockchain/accounts"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-orange-400 hover:text-orange-300 transition-colors flex items-center gap-1"
-              >
-                Open Full View <ExternalLink className="w-3 h-3" />
-              </a>
-            </div>
-            
-            <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-              <iframe
-                src="https://taomarketcap.com/blockchain/accounts"
-                className="w-full h-[600px] border-0"
-                title="Top dTAO Wallets"
-                frameBorder="0"
-                loading="lazy"
-                style={{
-                  background: 'transparent',
-                  colorScheme: 'dark'
-                }}
-              />
-            </div>
+        {/* SubnetAlpha */}
+        <div>
+          <div className="flex justify-end mb-3">
+            <a
+              href="https://subnetalpha.ai/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-1"
+            >
+              Open Full View <ExternalLink className="w-3 h-3" />
+            </a>
           </div>
-
-          {/* Backprop Finance */}
-          <div>
-            <div className="flex justify-end mb-3">
-              <a
-                href="https://backprop.finance/screener/bubbles"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-green-400 hover:text-green-300 transition-colors flex items-center gap-1"
-              >
-                Open Full View <ExternalLink className="w-3 h-3" />
-              </a>
-            </div>
-            
-            <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-              <iframe
-                src="https://backprop.finance/screener/bubbles"
-                className="w-full h-[600px] border-0"
-                title="Backprop Finance Screener"
-                frameBorder="0"
-                loading="lazy"
-                style={{
-                  background: 'transparent',
-                  colorScheme: 'dark'
-                }}
-              />
-            </div>
+          
+          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+            <iframe
+              src="https://subnetalpha.ai/"
+              className="w-full h-[600px] border-0"
+              title="SubnetAlpha"
+              frameBorder="0"
+              loading="lazy"
+              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+              style={{
+                background: 'transparent',
+                colorScheme: 'dark'
+              }}
+            />
           </div>
         </div>
 
@@ -343,35 +372,6 @@ export default function BittensorDashboardSection() {
                 }}
               />
             </div>
-          </div>
-        </div>
-
-        {/* SubnetAlpha */}
-        <div>
-          <div className="flex justify-end mb-3">
-            <a
-              href="https://subnetalpha.ai/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-1"
-            >
-              Open Full View <ExternalLink className="w-3 h-3" />
-            </a>
-          </div>
-          
-          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-            <iframe
-              src="https://subnetalpha.ai/"
-              className="w-full h-[600px] border-0"
-              title="SubnetAlpha"
-              frameBorder="0"
-              loading="lazy"
-              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
-              style={{
-                background: 'transparent',
-                colorScheme: 'dark'
-              }}
-            />
           </div>
         </div>
 
