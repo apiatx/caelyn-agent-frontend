@@ -53,8 +53,8 @@ export default function BittensorDashboardSection() {
           </div>
         </div>
 
-        {/* TaoStats and Tao.app Buttons */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* TaoStats, Tao.app, and Bittensor.ai Buttons */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* TaoStats Button - Black with White Text */}
           <button
             onClick={() => openSecureLink('https://taostats.io/')}
@@ -88,6 +88,24 @@ export default function BittensorDashboardSection() {
             </div>
             <div className="absolute top-3 right-3">
               <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-cyan-500 transition-colors" />
+            </div>
+          </button>
+
+          {/* Bittensor.ai Button - Purple with White Text */}
+          <button
+            onClick={() => openSecureLink('https://www.bittensor.ai/')}
+            className="group relative overflow-hidden bg-purple-600 border border-purple-400/50 rounded-lg p-6 hover:border-purple-300 transition-all duration-300 hover:scale-[1.02]"
+            data-testid="button-bittensor"
+          >
+            <div className="flex flex-col items-center justify-center space-y-3">
+              <div className="w-16 h-16 bg-white/10 border border-white/30 rounded-xl flex items-center justify-center group-hover:bg-white/20 transition-all">
+                <span className="text-3xl font-bold text-white">B</span>
+              </div>
+              <h3 className="text-xl font-bold text-white">Bittensor.ai</h3>
+              <p className="text-sm text-purple-100">Official Bittensor hub</p>
+            </div>
+            <div className="absolute top-3 right-3">
+              <ExternalLink className="w-4 h-4 text-purple-200 group-hover:text-white transition-colors" />
             </div>
           </button>
         </div>
