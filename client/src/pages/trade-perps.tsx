@@ -212,6 +212,24 @@ export default function TradePerpsPage() {
                 </div>
               </div>
 
+              {/* Variational - Full Width Blue Button */}
+              <div className="w-full mt-6">
+                <Button
+                  variant="outline"
+                  onClick={() => openInNewTab('https://omni.variational.io/')}
+                  className="group w-full bg-gradient-to-br from-blue-600/40 via-cyan-500/30 to-blue-500/40 border border-blue-400/50 hover:from-blue-500/50 hover:via-cyan-400/40 hover:to-blue-400/50 hover:border-blue-300/70 text-white justify-center p-8 h-auto rounded-lg transition-all duration-500 flex items-center shadow-2xl hover:shadow-blue-500/40 transform hover:scale-[1.02] backdrop-blur-sm"
+                  data-testid="button-variational-featured"
+                >
+                  <div className="text-center">
+                    <div className="font-bold text-2xl flex items-center justify-center gap-3 mb-2">
+                      <TrendingUp className="w-7 h-7 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-500" />
+                      Variational
+                    </div>
+                    <div className="text-base text-blue-100/90 font-medium">Multi-chain perpetual trading platform</div>
+                  </div>
+                </Button>
+              </div>
+
               {/* BloFin - Full Width Colored Button */}
               <div className="w-full mt-6">
                 <Button
