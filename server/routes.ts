@@ -11,6 +11,7 @@ import { MarketOverviewService } from './market-overview-service';
 import { cmcPortfolioService } from './cmc-portfolio-service';
 import { coinbasePortfolioService } from './coinbase-portfolio-service';
 import { ETFService } from './etf-service';
+import { taoStatsService } from './taostats-service';
 import { z } from "zod";
 import { insertPremiumAccessSchema } from "@shared/schema";
 
@@ -331,6 +332,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(enhancedSubnets);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch TAO Stats data" });
+    }
+  });
+
+  // TaoStats Top Gainers endpoint
+  app.get("/api/taostats/top-gainers", async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 10;
+      const gainers = await taoStatsService.getTopGainers(limit);
+      res.json(gainers);
+    } catch (error) {
+      console.error('Error fetching top gainers:', error);
+      res.status(500).json({ message: "Failed to fetch top gainers data" });
     }
   });
 

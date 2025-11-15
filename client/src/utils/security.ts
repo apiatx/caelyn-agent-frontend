@@ -15,6 +15,8 @@ export const IFRAME_CSP = "default-src 'self'; script-src 'self' 'unsafe-inline'
 const TRUSTED_DOMAINS = [
   'dexscreener.com',
   'taostats.io',
+  'bittensor.ai',
+  'www.bittensor.ai',
   'swordscan.com',
   'taohub.info',
   'hyperliquid.xyz',

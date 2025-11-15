@@ -4,6 +4,7 @@ import { Brain, ExternalLink } from "lucide-react";
 import { getSecureIframeProps, getSecureLinkProps } from "@/utils/security";
 import bittensorLogo from "@assets/bittensor_1755977414942.png";
 import { openSecureLink } from '@/utils/security';
+import SubnetTopGainers from './subnet-top-gainers';
 
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
   <Card className={`backdrop-blur-sm bg-gradient-to-br from-white/10 to-white/5 border border-white/20 ${className}`}>
@@ -25,6 +26,9 @@ export default function BittensorDashboardSection() {
       </div>
 
       <div className="grid grid-cols-1 gap-6">
+        {/* Top 10 Gainer Subnets */}
+        <SubnetTopGainers />
+
         {/* TaoBot */}
         <div>
           <div className="flex justify-end mb-3">
