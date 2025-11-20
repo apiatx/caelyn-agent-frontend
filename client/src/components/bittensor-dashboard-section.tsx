@@ -110,8 +110,37 @@ export default function BittensorDashboardSection() {
           </button>
         </div>
 
-        {/* TaoMarketCap and Backprop Finance - Side by Side */}
+        {/* TaoTensorLaw and TaoMarketCap - Side by Side */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* TaoTensorLaw */}
+          <div>
+            <div className="flex justify-end mb-3">
+              <a
+                href="https://taotensorlaw.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
+              >
+                Open Full View <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+            
+            <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+              <iframe
+                src="https://taotensorlaw.com/"
+                className="w-full h-[600px] border-0"
+                title="TaoTensorLaw"
+                frameBorder="0"
+                loading="lazy"
+                sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+                style={{
+                  background: 'transparent',
+                  colorScheme: 'dark'
+                }}
+              />
+            </div>
+          </div>
+
           {/* Top dTAO Wallets (TaoMarketCap) */}
           <div>
             <div className="flex justify-end mb-3">
@@ -132,34 +161,7 @@ export default function BittensorDashboardSection() {
                 title="Top dTAO Wallets"
                 frameBorder="0"
                 loading="lazy"
-                style={{
-                  background: 'transparent',
-                  colorScheme: 'dark'
-                }}
-              />
-            </div>
-          </div>
-
-          {/* Backprop Finance */}
-          <div>
-            <div className="flex justify-end mb-3">
-              <a
-                href="https://backprop.finance/screener/bubbles"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-green-400 hover:text-green-300 transition-colors flex items-center gap-1"
-              >
-                Open Full View <ExternalLink className="w-3 h-3" />
-              </a>
-            </div>
-            
-            <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-              <iframe
-                src="https://backprop.finance/screener/bubbles"
-                className="w-full h-[600px] border-0"
-                title="Backprop Finance Screener"
-                frameBorder="0"
-                loading="lazy"
+                sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
                 style={{
                   background: 'transparent',
                   colorScheme: 'dark'
@@ -198,61 +200,125 @@ export default function BittensorDashboardSection() {
           </div>
         </div>
 
-        {/* TaoRevenue */}
-        <div>
-          <div className="flex justify-end mb-3">
-            <a
-              href="https://taorevenue.com/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-1"
-            >
-              Open Full View <ExternalLink className="w-3 h-3" />
-            </a>
+        {/* TaoRevenue and Backprop Finance - Side by Side */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* TaoRevenue */}
+          <div>
+            <div className="flex justify-end mb-3">
+              <a
+                href="https://taorevenue.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-1"
+              >
+                Open Full View <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+            
+            <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+              <iframe
+                src="https://taorevenue.com/"
+                className="w-full h-[600px] border-0"
+                title="TaoRevenue"
+                frameBorder="0"
+                loading="lazy"
+                sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+                style={{
+                  background: 'transparent',
+                  colorScheme: 'dark'
+                }}
+              />
+            </div>
           </div>
-          
-          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-            <iframe
-              src="https://taorevenue.com/"
-              className="w-full h-[600px] border-0"
-              title="TaoRevenue"
-              frameBorder="0"
-              loading="lazy"
-              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
-              style={{
-                background: 'transparent',
-                colorScheme: 'dark'
-              }}
-            />
+
+          {/* Backprop Finance */}
+          <div>
+            <div className="flex justify-end mb-3">
+              <a
+                href="https://backprop.finance/screener/bubbles"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-green-400 hover:text-green-300 transition-colors flex items-center gap-1"
+              >
+                Open Full View <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+            
+            <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+              <iframe
+                src="https://backprop.finance/screener/bubbles"
+                className="w-full h-[600px] border-0"
+                title="Backprop Finance Screener"
+                frameBorder="0"
+                loading="lazy"
+                sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+                style={{
+                  background: 'transparent',
+                  colorScheme: 'dark'
+                }}
+              />
+            </div>
           </div>
         </div>
 
-        {/* TaoTrack Simulator */}
-        <div>
-          <div className="flex justify-end mb-3">
-            <a
-              href="https://taotrack.com/simulator"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors flex items-center gap-1"
-            >
-              Open Full View <ExternalLink className="w-3 h-3" />
-            </a>
+        {/* TaoTrack Simulator and TaoCagr - Side by Side */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* TaoTrack Simulator */}
+          <div>
+            <div className="flex justify-end mb-3">
+              <a
+                href="https://taotrack.com/simulator"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors flex items-center gap-1"
+              >
+                Open Full View <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+            
+            <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+              <iframe
+                src="https://taotrack.com/simulator"
+                className="w-full h-[600px] border-0"
+                title="TaoTrack Simulator"
+                frameBorder="0"
+                loading="lazy"
+                sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+                style={{
+                  background: 'transparent',
+                  colorScheme: 'dark'
+                }}
+              />
+            </div>
           </div>
-          
-          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-            <iframe
-              src="https://taotrack.com/simulator"
-              className="w-full h-[600px] border-0"
-              title="TaoTrack Simulator"
-              frameBorder="0"
-              loading="lazy"
-              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
-              style={{
-                background: 'transparent',
-                colorScheme: 'dark'
-              }}
-            />
+
+          {/* TaoCagr */}
+          <div>
+            <div className="flex justify-end mb-3">
+              <a
+                href="https://taocagr.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-amber-400 hover:text-amber-300 transition-colors flex items-center gap-1"
+              >
+                Open Full View <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+            
+            <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+              <iframe
+                src="https://taocagr.com/"
+                className="w-full h-[600px] border-0"
+                title="TaoCagr"
+                frameBorder="0"
+                loading="lazy"
+                sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+                style={{
+                  background: 'transparent',
+                  colorScheme: 'dark'
+                }}
+              />
+            </div>
           </div>
         </div>
 
