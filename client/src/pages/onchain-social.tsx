@@ -611,6 +611,17 @@ export default function OnchainSocialPage() {
                         </div>
                         <div className="text-xs text-crypto-silver">@Victor_crypto_2 - Crypto Market Analysis</div>
                       </SafeLink>
+
+                      <SafeLink
+                        href='https://x.com/btcrenaissance'
+                        className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-purple-400 font-bold text-sm">𝕏</span>
+                          <span className="text-purple-400 font-semibold text-sm">BTC Renaissance</span>
+                        </div>
+                        <div className="text-xs text-crypto-silver">@btcrenaissance - Bittensor Insights</div>
+                      </SafeLink>
                     </div>
                   </GlassCard>
 
@@ -693,7 +704,8 @@ export default function OnchainSocialPage() {
                     { name: 'StockOptionCole', handle: '@StockOptionCole' },
                     { name: 'newzage', handle: '@newzage' },
                     { name: 'The__Solstice', handle: '@The__Solstice' },
-                    { name: 'thenewmoney_tnm', handle: '@thenewmoney_tnm' }
+                    { name: 'thenewmoney_tnm', handle: '@thenewmoney_tnm' },
+                    { name: 'aleabitoreddit', handle: '@aleabitoreddit' }
                   ].map((account) => {
                     const getAccountUrl = (handle: string) => {
                       return `https://x.com/${handle.replace('@', '')}`;
