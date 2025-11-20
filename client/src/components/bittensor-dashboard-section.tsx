@@ -322,6 +322,35 @@ export default function BittensorDashboardSection() {
           </div>
         </div>
 
+        {/* TaoGalaxy */}
+        <div>
+          <div className="flex justify-end mb-3">
+            <a
+              href="https://taogalaxy.com/app"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-pink-400 hover:text-pink-300 transition-colors flex items-center gap-1"
+            >
+              Open Full View <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
+          
+          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+            <iframe
+              src="https://taogalaxy.com/app"
+              className="w-full h-[600px] border-0"
+              title="TaoGalaxy"
+              frameBorder="0"
+              loading="lazy"
+              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+              style={{
+                background: 'transparent',
+                colorScheme: 'dark'
+              }}
+            />
+          </div>
+        </div>
+
         {/* SubnetAlpha */}
         <div>
           <div className="flex justify-end mb-3">
