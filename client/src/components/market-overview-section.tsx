@@ -816,6 +816,43 @@ export function MarketOverviewSection() {
         </div>
       </div>
 
+      {/* DXY (U.S. Dollar Index) Chart */}
+      <div className="bg-black/20 border border-crypto-silver/20 rounded-lg p-3 sm:p-4 lg:p-6 mt-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-green-500 rounded-full flex items-center justify-center">
+              <span className="text-white font-bold text-xs">$</span>
+            </div>
+            <h3 className="text-lg sm:text-xl font-semibold text-white">U.S. Dollar Index (DXY)</h3>
+            <div className="bg-green-500/20 text-green-400 border border-green-500/30 text-xs px-2 py-1 rounded-full">
+              FOREX
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => openInNewTab('https://www.tradingview.com/chart/e5l95XgZ/?symbol=TVC%3ADXY')}
+              className="text-green-400 hover:text-green-300 text-xs sm:text-sm flex items-center gap-1"
+            >
+              Open in New Tab <ExternalLink className="w-3 h-3" />
+            </button>
+          </div>
+        </div>
+
+        <div className="w-full">
+          <iframe
+            src="https://www.tradingview.com/chart/e5l95XgZ/?symbol=TVC%3ADXY"
+            className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
+            title="U.S. Dollar Index (DXY) Chart"
+            frameBorder="0"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+            style={{
+              background: 'transparent',
+              colorScheme: 'dark'
+            }}
+          />
+        </div>
+      </div>
+
       {/* M2 Global Liquidity Index Chart */}
       <div className="bg-black/20 border border-crypto-silver/20 rounded-lg p-3 sm:p-4 lg:p-6 mt-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
