@@ -370,6 +370,49 @@ export default function TradeSection() {
         </div>
       </GlassCard>
 
+      {/* Private Swap Section */}
+      <GlassCard className="p-8">
+        <div className="space-y-6">
+          <div className="text-center mb-6">
+            <div className="flex items-center justify-center gap-3 mb-2">
+              <div className="w-8 h-8 bg-gradient-to-r from-purple-400 to-violet-500 rounded-lg flex items-center justify-center">
+                <ArrowLeftRight className="w-4 h-4 text-white" />
+              </div>
+              <h4 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-violet-300 bg-clip-text text-transparent">Private Swap</h4>
+            </div>
+          </div>
+          
+          {/* Zkaster iframe */}
+          <div>
+            <div className="flex justify-end mb-3">
+              <button
+                onClick={() => openInNewTab('https://app.zkaster.com/')}
+                className="text-xs text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-1"
+                data-testid="button-zkaster-fullview"
+              >
+                Open Full View <ExternalLink className="w-3 h-3" />
+              </button>
+            </div>
+            <div className="w-full">
+              <iframe
+                src="https://app.zkaster.com/"
+                className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+                title="Zkaster Private Swap"
+                frameBorder="0"
+                loading="lazy"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
+                style={{
+                  background: 'transparent',
+                  colorScheme: 'dark'
+                }}
+                data-testid="iframe-zkaster"
+              />
+            </div>
+          </div>
+
+        </div>
+      </GlassCard>
+
     </div>
   );
 }
