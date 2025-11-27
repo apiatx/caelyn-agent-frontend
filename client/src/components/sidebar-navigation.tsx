@@ -179,7 +179,7 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
         },
         {
           id: 'btc-defi',
-          label: 'BTC DeFi',
+          label: 'BTC Fi',
           icon: <Coins className="w-4 h-4" />,
           path: '/app/defi/btc-defi'
         },

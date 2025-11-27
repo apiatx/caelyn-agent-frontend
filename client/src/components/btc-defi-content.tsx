@@ -65,7 +65,7 @@ export default function BTCDeFiContent() {
                 style={{filter: 'drop-shadow(0 0 4px rgba(255, 165, 0, 0.3))'}}
               />
             </div>
-            <h3 className="text-2xl font-bold text-white">Bitcoin DeFi</h3>
+            <h3 className="text-2xl font-bold text-white">BTC Fi</h3>
           </div>
           <p className="text-crypto-silver">Bitcoin-based DeFi protocols and layers</p>
         </div>
@@ -92,6 +92,32 @@ export default function BTCDeFiContent() {
           <div className="mt-4 text-center">
             <p className="text-xs text-gray-400">
               BitFi bfBTC staking • Bitcoin DeFi yield farming protocol
+            </p>
+          </div>
+        </div>
+
+        {/* Merlin Chain Stake BTC - Full Width Iframe */}
+        <div className="mb-6">
+          <div className="flex justify-end mb-3">
+            <SafeLink
+              href="https://merlinchain.io/stakebtc"
+              className="text-xs text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-1"
+            >
+              Open Full View <ExternalLink className="w-3 h-3" />
+            </SafeLink>
+          </div>
+          
+          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+            <SafeIframe
+              src="https://merlinchain.io/stakebtc"
+              title="Merlin Chain Stake BTC"
+              className="w-full h-[600px] border-0"
+            />
+          </div>
+          
+          <div className="mt-4 text-center">
+            <p className="text-xs text-gray-400">
+              Merlin Chain • Bitcoin Layer 2 staking protocol
             </p>
           </div>
         </div>
