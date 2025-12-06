@@ -133,12 +133,21 @@ export default function CryptoStocksSection() {
           </div>
         </div>
 
-        {/* Banterbubbles iframe */}
+        {/* Tradytics Overall Market iframe */}
         <div className="w-full mb-6">
+          <div className="flex justify-end mb-3">
+            <button
+              onClick={() => openInNewTab('https://tradytics.com/overall-market')}
+              className="text-green-400 hover:text-green-300 text-xs sm:text-sm flex items-center gap-1"
+            >
+              <ExternalLink className="w-3 h-3" />
+              Open Full View
+            </button>
+          </div>
           <iframe
-            src="https://banterbubbles.com/?utm_source=cbanter&utm_medium=cbanter&utm_campaign=cbanter&source=cbanter#stocks"
+            src="https://tradytics.com/overall-market"
             className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
-            title="Banterbubbles Stock Analysis"
+            title="Tradytics Overall Market"
             frameBorder="0"
             loading="eager"
             sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
@@ -146,12 +155,21 @@ export default function CryptoStocksSection() {
           />
         </div>
 
-        {/* Tradytics Overall Market iframe */}
+        {/* Banterbubbles iframe */}
         <div className="w-full mb-6">
+          <div className="flex justify-end mb-3">
+            <button
+              onClick={() => openInNewTab('https://banterbubbles.com/?utm_source=cbanter&utm_medium=cbanter&utm_campaign=cbanter&source=cbanter#stocks')}
+              className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm flex items-center gap-1"
+            >
+              <ExternalLink className="w-3 h-3" />
+              Open Full View
+            </button>
+          </div>
           <iframe
-            src="https://tradytics.com/overall-market"
+            src="https://banterbubbles.com/?utm_source=cbanter&utm_medium=cbanter&utm_campaign=cbanter&source=cbanter#stocks"
             className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
-            title="Tradytics Overall Market"
+            title="Banterbubbles Stock Analysis"
             frameBorder="0"
             loading="eager"
             sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
