@@ -219,14 +219,6 @@ export default function CryptoStocksSection() {
           </button>
 
           <button
-            onClick={() => openInNewTab('https://www.kavout.com/')}
-            className="bg-gradient-to-br from-teal-500/10 to-teal-600/10 hover:from-teal-500/20 hover:to-teal-600/20 border border-teal-500/20 hover:border-teal-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
-          >
-            <div className="text-sm font-medium text-white group-hover:text-teal-300 mb-1">Kavout</div>
-            <div className="text-xs text-crypto-silver">AI-powered investment research platform</div>
-          </button>
-
-          <button
             onClick={() => openInNewTab('https://www.ainvest.com/screener/')}
             className="bg-gradient-to-br from-green-500/10 to-green-600/10 hover:from-green-500/20 hover:to-green-600/20 border border-green-500/20 hover:border-green-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
           >
@@ -248,38 +240,6 @@ export default function CryptoStocksSection() {
           >
             <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">StockAnalysis.com</div>
             <div className="text-xs text-crypto-silver">Trending stocks and market analysis</div>
-          </button>
-          
-          <button
-            onClick={() => openInNewTab('https://www.tipranks.com/dashboard')}
-            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
-          >
-            <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">TipRanks</div>
-            <div className="text-xs text-crypto-silver">Analyst ratings and stock insights</div>
-          </button>
-
-          <button
-            onClick={() => openInNewTab('https://tradytics.com/charts')}
-            className="bg-gradient-to-br from-green-500/10 to-green-600/10 hover:from-green-500/20 hover:to-green-600/20 border border-green-500/20 hover:border-green-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
-          >
-            <div className="text-sm font-medium text-white group-hover:text-green-300 mb-1">Tradytics</div>
-            <div className="text-xs text-crypto-silver">Advanced options flow and analytics</div>
-          </button>
-          
-          <button
-            onClick={() => openInNewTab('https://app.intellectia.ai/stock-market')}
-            className="bg-gradient-to-br from-purple-500/10 to-purple-600/10 hover:from-purple-500/20 hover:to-purple-600/20 border border-purple-500/20 hover:border-purple-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
-          >
-            <div className="text-sm font-medium text-white group-hover:text-purple-300 mb-1">Intellectia AI</div>
-            <div className="text-xs text-crypto-silver">AI-powered stock market analytics</div>
-          </button>
-          
-          <button
-            onClick={() => openInNewTab('https://www.screener.in/explore/')}
-            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
-          >
-            <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">Screener.in</div>
-            <div className="text-xs text-crypto-silver">Indian stock screening and exploration</div>
           </button>
           
           <button
@@ -307,11 +267,27 @@ export default function CryptoStocksSection() {
           </button>
           
           <button
-            onClick={() => openInNewTab('https://www.barchart.com/news/chart-of-the-day')}
-            className="bg-gradient-to-br from-orange-500/10 to-orange-600/10 hover:from-orange-500/20 hover:to-orange-600/20 border border-orange-500/20 hover:border-orange-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+            onClick={() => openInNewTab('https://www.perplexity.ai/finance')}
+            className="bg-gradient-to-br from-cyan-500/10 to-cyan-600/10 hover:from-cyan-500/20 hover:to-cyan-600/20 border border-cyan-500/20 hover:border-cyan-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
           >
-            <div className="text-sm font-medium text-white group-hover:text-orange-300 mb-1">Chart of the day</div>
-            <div className="text-xs text-crypto-silver">Daily featured charts and market insights</div>
+            <div className="text-sm font-medium text-white group-hover:text-cyan-300 mb-1">Perplexity AI Finance</div>
+            <div className="text-xs text-crypto-silver">AI-powered financial research and insights</div>
+          </button>
+          
+          <button
+            onClick={() => openInNewTab('https://www.kavout.com/')}
+            className="bg-gradient-to-br from-teal-500/10 to-teal-600/10 hover:from-teal-500/20 hover:to-teal-600/20 border border-teal-500/20 hover:border-teal-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-teal-300 mb-1">Kavout</div>
+            <div className="text-xs text-crypto-silver">AI-powered investment research platform</div>
+          </button>
+          
+          <button
+            onClick={() => openInNewTab('https://app.intellectia.ai/stock-market')}
+            className="bg-gradient-to-br from-purple-500/10 to-purple-600/10 hover:from-purple-500/20 hover:to-purple-600/20 border border-purple-500/20 hover:border-purple-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-purple-300 mb-1">Intellectia AI</div>
+            <div className="text-xs text-crypto-silver">AI-powered stock market analytics</div>
           </button>
           
           <button
@@ -323,6 +299,14 @@ export default function CryptoStocksSection() {
           </button>
           
           <button
+            onClick={() => openInNewTab('https://www.tipranks.com/dashboard')}
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">TipRanks</div>
+            <div className="text-xs text-crypto-silver">Analyst ratings and stock insights</div>
+          </button>
+          
+          <button
             onClick={() => openInNewTab('https://www.marketwatch.com/')}
             className="bg-gradient-to-br from-green-500/10 to-green-600/10 hover:from-green-500/20 hover:to-green-600/20 border border-green-500/20 hover:border-green-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
           >
@@ -331,19 +315,19 @@ export default function CryptoStocksSection() {
           </button>
           
           <button
-            onClick={() => openInNewTab('https://www.cnn.com/markets/premarkets')}
-            className="bg-gradient-to-br from-red-500/10 to-red-600/10 hover:from-red-500/20 hover:to-red-600/20 border border-red-500/20 hover:border-red-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+            onClick={() => openInNewTab('https://www.barchart.com/news/chart-of-the-day')}
+            className="bg-gradient-to-br from-orange-500/10 to-orange-600/10 hover:from-orange-500/20 hover:to-orange-600/20 border border-orange-500/20 hover:border-orange-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
           >
-            <div className="text-sm font-medium text-white group-hover:text-red-300 mb-1">CNN Pre-Market</div>
-            <div className="text-xs text-crypto-silver">Live premarket trading data and futures</div>
+            <div className="text-sm font-medium text-white group-hover:text-orange-300 mb-1">Chart of the day</div>
+            <div className="text-xs text-crypto-silver">Daily featured charts and market insights</div>
           </button>
           
           <button
-            onClick={() => openInNewTab('https://www.cnn.com/markets/after-hours')}
-            className="bg-gradient-to-br from-red-500/10 to-red-600/10 hover:from-red-500/20 hover:to-red-600/20 border border-red-500/20 hover:border-red-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+            onClick={() => openInNewTab('https://www.screener.in/explore/')}
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
           >
-            <div className="text-sm font-medium text-white group-hover:text-red-300 mb-1">CNN After-Hours</div>
-            <div className="text-xs text-crypto-silver">After-hours trading data and analysis</div>
+            <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">Screener.in</div>
+            <div className="text-xs text-crypto-silver">Indian stock screening and exploration</div>
           </button>
         </div>
 
