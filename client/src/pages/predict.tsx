@@ -175,19 +175,6 @@ export default function PredictPage() {
             </div>
           </div>
 
-          {/* Moby Screener Predictions */}
-          <div className="mt-8">
-            <h3 className="text-xl font-semibold text-white mb-4">Moby Screener Predictions</h3>
-            <iframe
-              src="https://www.mobyscreener.com/predictions-feed"
-              className="w-full h-[500px] rounded-lg border border-crypto-silver/20"
-              title="Moby Screener Predictions"
-              frameBorder="0"
-              sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
-              referrerPolicy="no-referrer-when-downgrade"
-            />
-          </div>
-
           {/* Kalshi */}
           <div className="mt-6">
             <div className="p-6 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 rounded-lg">
