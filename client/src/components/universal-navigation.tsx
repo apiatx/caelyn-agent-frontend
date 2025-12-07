@@ -266,7 +266,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
             <DropdownMenuTrigger asChild>
               <button
                 className={`flex-1 min-w-[90px] max-w-[120px] py-3 px-1 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
-                  isActive("crypto-stocks") || isActive("crypto-stonks") || isActive("commodities")
+                  isActive("crypto-stocks") || isActive("crypto-stonks")
                     ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                     : "hover:bg-white/5 text-crypto-silver"
                 }`}
@@ -289,13 +289,6 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
               >
                 <Building2 className="w-4 h-4 mr-2" />
                 Crypto Stonks
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => navigateTo("/app/commodities")}
-                className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
-              >
-                <Coins className="w-4 h-4 mr-2" />
-                Commodities
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -531,7 +524,7 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
                 <DropdownMenuTrigger asChild>
                   <button
                     className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
-                      isActive("crypto-stocks") || isActive("crypto-stonks") || isActive("commodities")
+                      isActive("crypto-stocks") || isActive("crypto-stonks")
                         ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
                         : "hover:bg-white/5 text-crypto-silver"
                     }`}
@@ -554,13 +547,6 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
                   >
                     <Building2 className="w-4 h-4 mr-2" />
                     Crypto Stonks
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => navigateTo("/app/commodities")}
-                    className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
-                  >
-                    <Coins className="w-4 h-4 mr-2" />
-                    Commodities
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

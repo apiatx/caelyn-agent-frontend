@@ -270,12 +270,6 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
           path: '/app/crypto-stonks'
         },
         {
-          id: 'commodities',
-          label: 'Commodities',
-          icon: <Coins className="w-4 h-4" />,
-          path: '/app/commodities'
-        },
-        {
           id: 'rwa',
           label: 'RWA',
           icon: <Building2 className="w-4 h-4" />,
