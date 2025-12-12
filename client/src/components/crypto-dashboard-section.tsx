@@ -98,10 +98,18 @@ export default function CryptoDashboardSection() {
       </div>
 
       <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
+        <div className="flex justify-end p-3">
+          <button
+            onClick={() => openInNewTab('https://precog.coinmetrics.io/')}
+            className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors flex items-center gap-1"
+          >
+            Open Full View <ExternalLink className="w-3 h-3" />
+          </button>
+        </div>
         <iframe
-          src="https://www.coinglass.com/bull-market-peak-signals"
+          src="https://precog.coinmetrics.io/"
           className="w-full h-[400px] sm:h-[500px] lg:h-[600px]"
-          title="Coinglass Bull Market Peak Signals"
+          title="Precog CoinMetrics"
           sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
           referrerPolicy="no-referrer-when-downgrade"
         />
@@ -132,31 +140,6 @@ export default function CryptoDashboardSection() {
           </Button>
         </div>
         
-        {/* DefiLlama Feed iframe */}
-        <div className="mb-6">
-          <div className="flex justify-end mb-3">
-            <button
-              onClick={() => openInNewTab('https://feed.defillama.com/')}
-              className="text-xs text-green-400 hover:text-green-300 transition-colors flex items-center gap-1"
-              data-testid="button-defillama-feed-fullview"
-            >
-              Open Full View <ExternalLink className="w-3 h-3" />
-            </button>
-          </div>
-          <div className="w-full">
-            <iframe
-              src="https://feed.defillama.com/"
-              className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-              title="DefiLlama News Feed"
-              frameBorder="0"
-              loading="lazy"
-              sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
-              referrerPolicy="no-referrer-when-downgrade"
-              data-testid="iframe-defillama-feed"
-            />
-          </div>
-        </div>
-
         {/* DL News Main iframe */}
         <div className="mb-6">
           <div className="flex justify-end mb-3">
@@ -203,31 +186,6 @@ export default function CryptoDashboardSection() {
               sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
               referrerPolicy="no-referrer-when-downgrade"
               data-testid="iframe-notifai"
-            />
-          </div>
-        </div>
-
-        {/* DL News Research iframe */}
-        <div className="mb-6">
-          <div className="flex justify-end mb-3">
-            <button
-              onClick={() => openInNewTab('https://www.dlnews.com/research/')}
-              className="text-xs text-green-400 hover:text-green-300 transition-colors flex items-center gap-1"
-              data-testid="button-dlnews-research-fullview"
-            >
-              Open Full View <ExternalLink className="w-3 h-3" />
-            </button>
-          </div>
-          <div className="w-full">
-            <iframe
-              src="https://www.dlnews.com/research/"
-              className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-              title="DL News Research"
-              frameBorder="0"
-              loading="lazy"
-              sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
-              referrerPolicy="no-referrer-when-downgrade"
-              data-testid="iframe-dlnews-research"
             />
           </div>
         </div>
@@ -432,6 +390,25 @@ export default function CryptoDashboardSection() {
           </div>
         </div>
       </GlassCard>
+
+      {/* Coinglass Bull Market Peak Signals */}
+      <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
+        <div className="flex justify-end p-3">
+          <button
+            onClick={() => openInNewTab('https://www.coinglass.com/bull-market-peak-signals')}
+            className="text-xs text-green-400 hover:text-green-300 transition-colors flex items-center gap-1"
+          >
+            Open Full View <ExternalLink className="w-3 h-3" />
+          </button>
+        </div>
+        <iframe
+          src="https://www.coinglass.com/bull-market-peak-signals"
+          className="w-full h-[400px] sm:h-[500px] lg:h-[600px]"
+          title="Coinglass Bull Market Peak Signals"
+          sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+          referrerPolicy="no-referrer-when-downgrade"
+        />
+      </div>
     </div>
   );
 }
