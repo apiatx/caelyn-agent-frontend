@@ -1,8 +1,9 @@
+import React from 'react';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, TrendingUp, Briefcase } from "lucide-react";
+import { Building2, ExternalLink, Bitcoin, FileText, TrendingUp, Briefcase, Brain } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import stonksIcon from "@assets/download (2)_1757104529784.jpeg";
-import { LazyIframe } from "@/components/lazy-iframe";
 
 // SafeLink component for secure external links
 const SafeLink = ({ href, children, className }: { href: string; children: React.ReactNode; className?: string }) => (

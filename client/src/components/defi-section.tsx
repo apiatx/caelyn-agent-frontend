@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { DollarSign, TrendingUp, BarChart3, Brain, ArrowLeftRight, Wallet, ExternalLink, Layers, Shield, Database, Zap } from "lucide-react";
 import { openSecureLink, getSecureIframeProps } from "@/utils/security";
 import cryptoHippoDefi from "@assets/CryptoHippo_1757212757402.png";
-import { LazyIframe } from './lazy-iframe';
 
 // Safe components for external links and iframes
 const SafeLink = ({ href, children, className = "", ...props }: { 
@@ -35,7 +34,7 @@ const SafeIframe = ({ src, title, className = "", ...props }: {
   className?: string; 
   [key: string]: any; 
 }) => (
-  <LazyIframe
+  <iframe
     src={src}
     title={title}
     className={className}
@@ -447,9 +446,9 @@ export default function DeFiSection() {
               Open Full View →
             </button>
           </div>
-          <LazyIframe
+          <iframe
             src="https://peapods.finance/"
-            className="w-full h-[600px] rounded-lg"
+            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
             title="Peapods Finance"
             sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
           />

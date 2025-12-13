@@ -7,7 +7,6 @@ import cryptoHippoWithBitcoin from "@assets/download (3)_1757211833568.png";
 
 import { MarketOverviewSection } from './market-overview-section';
 import { openSecureLink } from '@/utils/security';
-import { LazyIframe } from './lazy-iframe';
 
 // Glass card component for crypto dashboard
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
@@ -107,7 +106,7 @@ export default function CryptoDashboardSection() {
             Open Full View <ExternalLink className="w-3 h-3" />
           </button>
         </div>
-        <LazyIframe
+        <iframe
           src="https://precog.coinmetrics.io/"
           className="w-full h-[400px] sm:h-[500px] lg:h-[600px]"
           title="Precog CoinMetrics"
@@ -153,12 +152,15 @@ export default function CryptoDashboardSection() {
             </button>
           </div>
           <div className="w-full">
-            <LazyIframe
+            <iframe
               src="https://www.dlnews.com/"
-              className="w-full h-[600px] rounded-lg"
+              className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
               title="DL News"
+              frameBorder="0"
+              loading="lazy"
               sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
               referrerPolicy="no-referrer-when-downgrade"
+              data-testid="iframe-dlnews"
             />
           </div>
         </div>
@@ -175,12 +177,15 @@ export default function CryptoDashboardSection() {
             </button>
           </div>
           <div className="w-full">
-            <LazyIframe
+            <iframe
               src="https://www.notifai.news/"
-              className="w-full h-[600px] rounded-lg"
+              className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
               title="NotifAI News"
+              frameBorder="0"
+              loading="lazy"
               sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
               referrerPolicy="no-referrer-when-downgrade"
+              data-testid="iframe-notifai"
             />
           </div>
         </div>
@@ -396,7 +401,7 @@ export default function CryptoDashboardSection() {
             Open Full View <ExternalLink className="w-3 h-3" />
           </button>
         </div>
-        <LazyIframe
+        <iframe
           src="https://www.coinglass.com/bull-market-peak-signals"
           className="w-full h-[400px] sm:h-[500px] lg:h-[600px]"
           title="Coinglass Bull Market Peak Signals"

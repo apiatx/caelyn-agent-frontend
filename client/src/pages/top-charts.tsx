@@ -1,16 +1,17 @@
-import { useEffect } from 'react';
+import React, { Suspense, useEffect } from 'react';
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink } from "lucide-react";
 import bitcoinLogo from "@assets/Bitcoin.svg_1755979187828.webp";
 import ethereumLogo from "@assets/Ethereum_logo_2014.svg_1755977414942.png";
 import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
 import criptomonedas from "@assets/Criptomonedas-r3pu02e09qriw0f9pyqx2rtyhwsri4es6sdgff2ebk_1757225856373.png";
-import { openSecureLink } from "@/utils/security";
+import { SectionLoadingState } from "@/components/loading-screen";
+import { openSecureLink, getSecureIframeProps } from "@/utils/security";
 import { useScrollFade } from "@/hooks/useScrollFade";
 import newHeaderBackground from "@assets/photo-1504333638930-c8787321eee0_1757208194192.avif";
+import CryptoMarketData from "@/components/crypto-market-data";
 import CryptoMarketDataBare from "@/components/crypto-market-data-bare";
 import TopDailyGainers from "@/components/top-daily-gainers";
-import { LazyIframe } from "@/components/lazy-iframe";
 
 export default function TopChartsPage() {
   const headerOpacity = useScrollFade(30, 120);
@@ -98,6 +99,24 @@ export default function TopChartsPage() {
 
           {/* AltFins Screener Widget */}
           <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                  <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-semibold text-white">BTC & ETH Technical Analysis</h3>
+                <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
+                  ALTFINS
+                </Badge>
+              </div>
+              <button
+                onClick={() => window.open('https://altfins.com/', '_blank', 'noopener,noreferrer')}
+                className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm flex items-center gap-1"
+              >
+                <ExternalLink className="w-3 h-3" />
+                Open Full View
+              </button>
+            </div>
             <div 
               className="w-full overflow-x-auto"
               dangerouslySetInnerHTML={{

@@ -1,4 +1,5 @@
 import { GlassCard } from "@/components/ui/glass-card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, ExternalLink } from "lucide-react";
 import { openSecureLink } from "@/utils/security";
@@ -7,7 +8,6 @@ import diceImage from "@assets/istockphoto-1252690598-612x612_1756665072306.jpg"
 import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
 import newHeaderBackground from "@assets/photo-1504333638930-c8787321eee0_1757208194192.avif";
 import criptomonedas from "@assets/Criptomonedas-r3pu02e09qriw0f9pyqx2rtyhwsri4es6sdgff2ebk_1757225856373.png";
-import { LazyIframe } from "@/components/lazy-iframe";
 
 // Safe components for external links
 const openInNewTab = (url: string) => {
