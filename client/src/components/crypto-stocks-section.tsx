@@ -1,3 +1,4 @@
+import React from 'react';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Building2, ExternalLink, Bitcoin, FileText, TrendingUp, Briefcase, Brain } from "lucide-react";

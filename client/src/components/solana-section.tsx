@@ -4,7 +4,6 @@ import { Badge } from "@/components/ui/badge";
 import { BarChart3, Activity, Zap, TrendingDown, TrendingUp, ExternalLink, Star } from "lucide-react";
 import { openSecureLink, getSecureIframeProps } from "@/utils/security";
 import solanaLogo from "@assets/solana_1755977414939.png";
-import { LazyIframe } from './lazy-iframe';
 
 // Glass card component for Solana section
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
@@ -44,11 +43,12 @@ export default function SolanaSection() {
           </button>
         </div>
         <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
-          <LazyIframe
+          <iframe
             src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]&symbol=BINANCE%3ASOLUSDT"
             className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
             title="Solana Advanced Chart"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+            frameBorder="0"
+            scrolling="no"
           />
         </div>
       </div>
@@ -158,7 +158,7 @@ export default function SolanaSection() {
             </Badge>
           </div>
           <div className="w-full">
-            <LazyIframe
+            <iframe
               src="https://jup.ag/?utm_source=phantom&utm_medium=list"
               className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
               title="Jupiter DEX Aggregator"
@@ -179,7 +179,7 @@ export default function SolanaSection() {
             </Badge>
           </div>
           <div className="w-full">
-            <LazyIframe
+            <iframe
               src="https://raydium.io/swap/?inputMint=sol&outputMint=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
               className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
               title="Raydium"
@@ -200,7 +200,7 @@ export default function SolanaSection() {
             </Badge>
           </div>
           <div className="w-full">
-            <LazyIframe
+            <iframe
               src="https://uranus.ag/trade/?token=BFgdzMkTPdKKJeTipv2njtDEwhKxkgFueJQfJGt1jups"
               className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
               title="Uranus DEX"
