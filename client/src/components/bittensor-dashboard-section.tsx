@@ -4,6 +4,7 @@ import { Brain, ExternalLink } from "lucide-react";
 import { getSecureIframeProps, getSecureLinkProps } from "@/utils/security";
 import bittensorLogo from "@assets/bittensor_1755977414942.png";
 import { openSecureLink } from '@/utils/security';
+import { LazyIframe } from './lazy-iframe';
 
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
   <Card className={`backdrop-blur-sm bg-gradient-to-br from-white/10 to-white/5 border border-white/20 ${className}`}>
@@ -39,16 +40,10 @@ export default function BittensorDashboardSection() {
           </div>
           
           <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-            <iframe
+            <LazyIframe
               src="https://www.tao.bot/explore"
-              className="w-full h-[600px] border-0"
+              className="w-full h-[600px]"
               title="TaoBot"
-              frameBorder="0"
-              loading="lazy"
-              style={{
-                background: 'transparent',
-                colorScheme: 'dark'
-              }}
             />
           </div>
         </div>
@@ -126,17 +121,11 @@ export default function BittensorDashboardSection() {
             </div>
             
             <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-              <iframe
+              <LazyIframe
                 src="https://taotensorlaw.com/"
-                className="w-full h-[600px] border-0"
+                className="w-full h-[600px]"
                 title="TaoTensorLaw"
-                frameBorder="0"
-                loading="lazy"
                 sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
-                style={{
-                  background: 'transparent',
-                  colorScheme: 'dark'
-                }}
               />
             </div>
           </div>
@@ -155,17 +144,11 @@ export default function BittensorDashboardSection() {
             </div>
             
             <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-              <iframe
+              <LazyIframe
                 src="https://taomarketcap.com/blockchain/accounts"
-                className="w-full h-[600px] border-0"
+                className="w-full h-[600px]"
                 title="Top dTAO Wallets"
-                frameBorder="0"
-                loading="lazy"
                 sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
-                style={{
-                  background: 'transparent',
-                  colorScheme: 'dark'
-                }}
               />
             </div>
           </div>
@@ -185,17 +168,11 @@ export default function BittensorDashboardSection() {
           </div>
           
           <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-            <iframe
+            <LazyIframe
               src="https://www.taoyield.com/"
-              className="w-full h-[600px] border-0"
+              className="w-full h-[600px]"
               title="TaoYield"
-              frameBorder="0"
-              loading="lazy"
               sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
-              style={{
-                background: 'transparent',
-                colorScheme: 'dark'
-              }}
             />
           </div>
         </div>
@@ -216,17 +193,11 @@ export default function BittensorDashboardSection() {
             </div>
             
             <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-              <iframe
+              <LazyIframe
                 src="https://taorevenue.com/"
-                className="w-full h-[600px] border-0"
+                className="w-full h-[600px]"
                 title="TaoRevenue"
-                frameBorder="0"
-                loading="lazy"
                 sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
-                style={{
-                  background: 'transparent',
-                  colorScheme: 'dark'
-                }}
               />
             </div>
           </div>
@@ -245,17 +216,11 @@ export default function BittensorDashboardSection() {
             </div>
             
             <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-              <iframe
+              <LazyIframe
                 src="https://backprop.finance/screener/bubbles"
-                className="w-full h-[600px] border-0"
+                className="w-full h-[600px]"
                 title="Backprop Finance Screener"
-                frameBorder="0"
-                loading="lazy"
                 sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
-                style={{
-                  background: 'transparent',
-                  colorScheme: 'dark'
-                }}
               />
             </div>
           </div>
@@ -277,17 +242,11 @@ export default function BittensorDashboardSection() {
             </div>
             
             <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-              <iframe
+              <LazyIframe
                 src="https://taotrack.com/simulator"
-                className="w-full h-[600px] border-0"
+                className="w-full h-[600px]"
                 title="TaoTrack Simulator"
-                frameBorder="0"
-                loading="lazy"
                 sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
-                style={{
-                  background: 'transparent',
-                  colorScheme: 'dark'
-                }}
               />
             </div>
           </div>
@@ -306,17 +265,11 @@ export default function BittensorDashboardSection() {
             </div>
             
             <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-              <iframe
+              <LazyIframe
                 src="https://taocagr.com/"
-                className="w-full h-[600px] border-0"
+                className="w-full h-[600px]"
                 title="TaoCagr"
-                frameBorder="0"
-                loading="lazy"
                 sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
-                style={{
-                  background: 'transparent',
-                  colorScheme: 'dark'
-                }}
               />
             </div>
           </div>
@@ -336,17 +289,11 @@ export default function BittensorDashboardSection() {
           </div>
           
           <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-            <iframe
+            <LazyIframe
               src="https://taogalaxy.com/app"
-              className="w-full h-[600px] border-0"
+              className="w-full h-[600px]"
               title="TaoGalaxy"
-              frameBorder="0"
-              loading="lazy"
               sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
-              style={{
-                background: 'transparent',
-                colorScheme: 'dark'
-              }}
             />
           </div>
         </div>
@@ -365,17 +312,11 @@ export default function BittensorDashboardSection() {
           </div>
           
           <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-            <iframe
+            <LazyIframe
               src="https://subnetalpha.ai/"
-              className="w-full h-[600px] border-0"
+              className="w-full h-[600px]"
               title="SubnetAlpha"
-              frameBorder="0"
-              loading="lazy"
               sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
-              style={{
-                background: 'transparent',
-                colorScheme: 'dark'
-              }}
             />
           </div>
         </div>
@@ -396,17 +337,11 @@ export default function BittensorDashboardSection() {
             </div>
             
             <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-              <iframe
+              <LazyIframe
                 src="https://taobridge.xyz/"
-                className="w-full h-[600px] border-0"
+                className="w-full h-[600px]"
                 title="TaoBridge"
-                frameBorder="0"
-                loading="lazy"
                 sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
-                style={{
-                  background: 'transparent',
-                  colorScheme: 'dark'
-                }}
               />
             </div>
           </div>
@@ -425,17 +360,11 @@ export default function BittensorDashboardSection() {
             </div>
             
             <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-              <iframe
+              <LazyIframe
                 src="https://www.taofi.com/swap"
-                className="w-full h-[600px] border-0"
+                className="w-full h-[600px]"
                 title="TaoFi Swap"
-                frameBorder="0"
-                loading="lazy"
                 sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
-                style={{
-                  background: 'transparent',
-                  colorScheme: 'dark'
-                }}
               />
             </div>
           </div>
@@ -454,17 +383,11 @@ export default function BittensorDashboardSection() {
             </div>
             
             <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-              <iframe
+              <LazyIframe
                 src="https://bridge.voidai.com/bridge-chains"
-                className="w-full h-[600px] border-0"
+                className="w-full h-[600px]"
                 title="VoidAI Bridge"
-                frameBorder="0"
-                loading="lazy"
                 sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
-                style={{
-                  background: 'transparent',
-                  colorScheme: 'dark'
-                }}
               />
             </div>
           </div>
@@ -472,17 +395,11 @@ export default function BittensorDashboardSection() {
 
         {/* TaoHub Portfolio */}
         <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-          <iframe
+          <LazyIframe
             src="https://www.taohub.info/"
-            className="w-full h-[600px] border-0"
+            className="w-full h-[600px]"
             title="TaoHub Portfolio"
-            frameBorder="0"
-            loading="lazy"
             sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
-            style={{
-              background: 'transparent',
-              colorScheme: 'dark'
-            }}
           />
         </div>
       </div>

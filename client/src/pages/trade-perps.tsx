@@ -10,19 +10,20 @@ import tradeIcon from "@assets/3676668_1757212085729.png";
 import hyperliquidLogo from "@assets/hyperliquid-logo_1755977414943.png";
 import { useScrollFade } from "@/hooks/useScrollFade";
 
-// Safe iframe component
+import { LazyIframe } from "@/components/lazy-iframe";
+
+// Safe iframe component using LazyIframe for better performance
 const SafeIframe = ({ src, title, className = "", ...props }: { 
   src: string; 
   title: string; 
   className?: string; 
   [key: string]: any; 
 }) => (
-  <iframe
+  <LazyIframe
     src={src}
     title={title}
     className={className}
     sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-    {...props}
   />
 );
 

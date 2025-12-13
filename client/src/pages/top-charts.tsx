@@ -1,17 +1,16 @@
-import React, { Suspense, useEffect } from 'react';
+import { useEffect } from 'react';
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink } from "lucide-react";
 import bitcoinLogo from "@assets/Bitcoin.svg_1755979187828.webp";
 import ethereumLogo from "@assets/Ethereum_logo_2014.svg_1755977414942.png";
 import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
 import criptomonedas from "@assets/Criptomonedas-r3pu02e09qriw0f9pyqx2rtyhwsri4es6sdgff2ebk_1757225856373.png";
-import { SectionLoadingState } from "@/components/loading-screen";
-import { openSecureLink, getSecureIframeProps } from "@/utils/security";
+import { openSecureLink } from "@/utils/security";
 import { useScrollFade } from "@/hooks/useScrollFade";
 import newHeaderBackground from "@assets/photo-1504333638930-c8787321eee0_1757208194192.avif";
-import CryptoMarketData from "@/components/crypto-market-data";
 import CryptoMarketDataBare from "@/components/crypto-market-data-bare";
 import TopDailyGainers from "@/components/top-daily-gainers";
+import { LazyIframe } from "@/components/lazy-iframe";
 
 export default function TopChartsPage() {
   const headerOpacity = useScrollFade(30, 120);

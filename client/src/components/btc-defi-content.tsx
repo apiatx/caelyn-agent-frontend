@@ -1,8 +1,9 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DollarSign, ExternalLink, Layers, Shield } from "lucide-react";
-import { openSecureLink, getSecureIframeProps } from "@/utils/security";
+import { openSecureLink } from "@/utils/security";
 import bitcoinLogo from "@assets/Bitcoin.svg_1755979187828.webp";
+import { LazyIframe } from "@/components/lazy-iframe";
 
 const SafeLink = ({ href, children, className = "", ...props }: { 
   href: string; 
@@ -31,12 +32,11 @@ const SafeIframe = ({ src, title, className = "", ...props }: {
   className?: string; 
   [key: string]: any; 
 }) => (
-  <iframe
+  <LazyIframe
     src={src}
     title={title}
     className={className}
     sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-    {...props}
   />
 );
 
