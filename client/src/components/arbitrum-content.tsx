@@ -1,7 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { ExternalLink, Layers } from "lucide-react";
 import { openSecureLink, getSecureIframeProps } from "@/utils/security";
-import { LazyIframe } from "@/components/lazy-iframe";
 
 const SafeLink = ({ href, children, className = "", ...props }: { 
   href: string; 
@@ -54,11 +53,10 @@ export default function ArbitrumContent() {
           </SafeLink>
         </div>
         
-        <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden h-[700px]">
-          <LazyIframe
-            src="https://portal.arbitrum.io/"
-            title="Arbitrum Ecosystem Portal"
-            className="w-full h-full"
+        <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+          <iframe
+            {...getSecureIframeProps('https://portal.arbitrum.io/', 'Arbitrum Ecosystem Portal')}
+            className="w-full h-[700px] border-0"
           />
         </div>
         

@@ -3,7 +3,6 @@ import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { Globe, ArrowLeftRight, TrendingUp, ExternalLink, Star } from "lucide-react";
 import { openSecureLink } from "@/utils/security";
-import { LazyIframe } from "@/components/lazy-iframe";
 import baseLogo from "@assets/base logo_1755977414942.webp";
 
 
@@ -50,15 +49,22 @@ const GlassCard = ({ children, className = "" }: { children: React.ReactNode; cl
   </Card>
 );
 
-// Safe iframe component that uses LazyIframe for performance
+// Safe iframe component that doesn't throw errors
 const SafeIframe = ({ src, title, className = "" }: { src: string; title: string; className?: string }) => {
   return (
-    <div className="w-full h-[600px]">
-      <LazyIframe
+    <div className="w-full">
+      <iframe
         src={src}
         title={title}
-        className={`w-full h-full rounded-lg ${className}`}
+        className={`w-full h-[600px] rounded-lg border border-crypto-silver/20 ${className}`}
+        frameBorder="0"
+        loading="lazy"
+        sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation-by-user-activation"
         referrerPolicy="strict-origin-when-cross-origin"
+        style={{
+          background: '#000000',
+          colorScheme: 'dark'
+        }}
       />
     </div>
   );

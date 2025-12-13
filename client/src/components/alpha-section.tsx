@@ -2,7 +2,6 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { BarChart3, ExternalLink, TrendingUp, Link2, Star, Wallet, TrendingDown, Globe, Layers, Activity, Brain } from 'lucide-react';
 import { openSecureLink } from '@/utils/security';
-import { LazyIframe } from "@/components/lazy-iframe";
 import onchainImage from "@assets/images_1756750962640.jpeg";
 import diamondImage from "@assets/images (4)_1757213323269.jpeg";
 import TopDailyGainersTop500 from './top-daily-gainers-top500';
@@ -15,14 +14,22 @@ const GlassCard = ({ children, className = "" }: { children: React.ReactNode; cl
   </Card>
 );
 
-// Safe iframe component using LazyIframe for performance with secure defaults
+// Safe iframe component
 const SafeIframe = ({ src, title, className = "" }: { src: string; title: string; className?: string }) => {
   return (
-    <div className="w-full h-[600px]">
-      <LazyIframe
+    <div className="w-full">
+      <iframe
         src={src}
         title={title}
-        className={`w-full h-full ${className}`}
+        className={`w-full h-[600px] rounded-lg border border-crypto-silver/20 ${className}`}
+        frameBorder="0"
+        loading="lazy"
+        sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation-by-user-activation"
+        referrerPolicy="strict-origin-when-cross-origin"
+        style={{
+          background: '#000000',
+          colorScheme: 'dark'
+        }}
       />
     </div>
   );
@@ -140,11 +147,13 @@ export default function AlphaSection() {
                 Open Full View →
               </button>
             </div>
-            <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden h-[500px] sm:h-[600px] lg:h-[700px]">
-              <LazyIframe
+            <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
+              <iframe
                 src="https://www.coinglass.com/"
-                className="w-full h-full"
+                className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
                 title="CoinGlass"
+                frameBorder="0"
+                scrolling="yes"
               />
             </div>
           </div>
@@ -279,11 +288,15 @@ export default function AlphaSection() {
 
           {/* Banterbubbles */}
           <div className="mt-8">
-            <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden h-[600px]">
-              <LazyIframe
+            <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
+              <iframe
                 src="https://banterbubbles.com/?utm_source=cbanter&utm_medium=cbanter&utm_campaign=cbanter&source=cbanter"
-                className="w-full h-full"
+                className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
                 title="Banterbubbles Market Intelligence"
+                frameBorder="0"
+                loading="lazy"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
+                allow="fullscreen; clipboard-write; autoplay; camera; microphone; geolocation"
               />
             </div>
           </div>

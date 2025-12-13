@@ -4,7 +4,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DollarSign, TrendingUp, BarChart3, Brain, ArrowLeftRight, Wallet, ExternalLink, Layers, Shield, Database, Zap } from "lucide-react";
 import { openSecureLink, getSecureIframeProps } from "@/utils/security";
-import { LazyIframe } from "@/components/lazy-iframe";
 import cryptoHippoDefi from "@assets/CryptoHippo_1757212757402.png";
 
 // Safe components for external links and iframes
@@ -29,6 +28,20 @@ const SafeLink = ({ href, children, className = "", ...props }: {
   </a>
 );
 
+const SafeIframe = ({ src, title, className = "", ...props }: { 
+  src: string; 
+  title: string; 
+  className?: string; 
+  [key: string]: any; 
+}) => (
+  <iframe
+    src={src}
+    title={title}
+    className={className}
+    sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+    {...props}
+  />
+);
 
 // Glass card component for DeFi section
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
@@ -84,11 +97,11 @@ export default function DeFiSection() {
           </SafeLink>
         </div>
         
-        <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden h-[600px]">
-          <LazyIframe
+        <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+          <SafeIframe
             src="https://defillama.com/"
             title="DeFi TVL Rankings by DefiLlama"
-            className="w-full h-full"
+            className="w-full h-[600px] border-0"
           />
         </div>
       </GlassCard>
@@ -122,13 +135,11 @@ export default function DeFiSection() {
               Open Full View →
             </button>
           </div>
-          <div className="h-[600px]">
-            <LazyIframe
-              src="https://app.reservoir.xyz/"
-              title="Reservoir NFT Protocol"
-              className="w-full h-full"
-            />
-          </div>
+          <SafeIframe
+            src="https://app.reservoir.xyz/"
+            title="Reservoir NFT Protocol"
+            className="w-full h-[600px] border-0"
+          />
         </div>
 
         {/* Yield.fi Iframe */}
@@ -148,11 +159,11 @@ export default function DeFiSection() {
               Open Full View →
             </button>
           </div>
-          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden h-[600px]">
-            <LazyIframe
+          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+            <SafeIframe
               src="https://www.yield.fi/vyusd"
               title="Yield.fi vyUSD Yield Protocol"
-              className="w-full h-full"
+              className="w-full h-[600px] border-0"
             />
           </div>
         </div>
@@ -174,11 +185,11 @@ export default function DeFiSection() {
               Open Full View →
             </button>
           </div>
-          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden h-[600px]">
-            <LazyIframe
+          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+            <SafeIframe
               src="https://engine.aarna.ai/?_branch_match_id=1349040087720564161&_branch_referrer=H4sIAAAAAAAAA8soKSkottLXTywo0EtMLMpL1EvM1HfLN7Lw98oxzAxPsq8rSk1LLSrKzEuPTyrKLy9OLbJ1zijKz00FAD%2FYufM6AAAA"
               title="Aarna AI Engine Platform"
-              className="w-full h-full"
+              className="w-full h-[600px] border-0"
             />
           </div>
         </div>
@@ -200,11 +211,11 @@ export default function DeFiSection() {
               Open Full View →
             </button>
           </div>
-          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden h-[600px]">
-            <LazyIframe
+          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+            <SafeIframe
               src="https://app.spark.fi/"
               title="Spark Fi Lending Protocol"
-              className="w-full h-full"
+              className="w-full h-[600px] border-0"
             />
           </div>
         </div>
@@ -227,11 +238,11 @@ export default function DeFiSection() {
               Open Full View →
             </button>
           </div>
-          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden h-[600px]">
-            <LazyIframe
+          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+            <SafeIframe
               src="https://balancer.fi/pools"
               title="Balancer Liquidity Pools"
-              className="w-full h-full"
+              className="w-full h-[600px] border-0"
             />
           </div>
         </div>
@@ -253,11 +264,11 @@ export default function DeFiSection() {
               Open Full View →
             </button>
           </div>
-          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden h-[600px]">
-            <LazyIframe
+          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+            <SafeIframe
               src="https://app.impermax.finance/"
               title="Impermax Finance"
-              className="w-full h-full"
+              className="w-full h-[600px] border-0"
             />
           </div>
         </div>
@@ -279,11 +290,11 @@ export default function DeFiSection() {
               Open Full View →
             </button>
           </div>
-          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden h-[600px]">
-            <LazyIframe
+          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+            <SafeIframe
               src="https://420.synthetix.io/"
               title="Synthetix 420"
-              className="w-full h-full"
+              className="w-full h-[600px] border-0"
             />
           </div>
         </div>
@@ -305,11 +316,11 @@ export default function DeFiSection() {
               Open Full View →
             </button>
           </div>
-          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden h-[600px]">
-            <LazyIframe
+          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+            <SafeIframe
               src="https://app.sky.money/?network=ethereum"
               title="Sky Money"
-              className="w-full h-full"
+              className="w-full h-[600px] border-0"
             />
           </div>
         </div>
@@ -331,11 +342,11 @@ export default function DeFiSection() {
               Open Full View →
             </button>
           </div>
-          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden h-[600px]">
-            <LazyIframe
+          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+            <SafeIframe
               src="https://app.venus.io/#/pool/0xfD36E2c2a6789Db23113685031d7F16329158384?chainId=56&tab=assets"
               title="Venus Protocol"
-              className="w-full h-full"
+              className="w-full h-[600px] border-0"
             />
           </div>
         </div>
@@ -357,11 +368,11 @@ export default function DeFiSection() {
               Open Full View →
             </button>
           </div>
-          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden h-[600px]">
-            <LazyIframe
+          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+            <SafeIframe
               src="https://www.convexfinance.com/"
               title="Convex Finance"
-              className="w-full h-full"
+              className="w-full h-[600px] border-0"
             />
           </div>
         </div>
@@ -383,11 +394,11 @@ export default function DeFiSection() {
               Open Full View →
             </button>
           </div>
-          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden h-[600px]">
-            <LazyIframe
+          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+            <SafeIframe
               src="https://app.solstice.finance/"
               title="Solstice Finance"
-              className="w-full h-full"
+              className="w-full h-[600px] border-0"
             />
           </div>
         </div>
@@ -409,11 +420,11 @@ export default function DeFiSection() {
               Open Full View →
             </button>
           </div>
-          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden h-[600px]">
-            <LazyIframe
+          <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
+            <SafeIframe
               src="https://portal.plume.org/"
               title="Plume Network Portal"
-              className="w-full h-full"
+              className="w-full h-[600px] border-0"
             />
           </div>
         </div>
@@ -435,13 +446,12 @@ export default function DeFiSection() {
               Open Full View →
             </button>
           </div>
-          <div className="h-[600px]">
-            <LazyIframe
-              src="https://peapods.finance/"
-              className="w-full h-full"
-              title="Peapods Finance"
-            />
-          </div>
+          <iframe
+            src="https://peapods.finance/"
+            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+            title="Peapods Finance"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+          />
         </div>
 
         {/* DeFi Platform Links */}

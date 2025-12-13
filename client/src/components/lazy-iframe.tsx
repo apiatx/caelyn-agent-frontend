@@ -1,10 +1,6 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Loader2, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { getIframeSandbox, sanitizeUrl } from '@/utils/security';
-
-const DEFAULT_ALLOW = 'clipboard-read; clipboard-write; encrypted-media; fullscreen; picture-in-picture';
-const DEFAULT_REFERRER_POLICY = 'strict-origin-when-cross-origin';
 
 interface LazyIframeProps {
   src: string;
@@ -20,20 +16,11 @@ export function LazyIframe({
   src,
   title,
   className = '',
-  sandbox,
-  allow = DEFAULT_ALLOW,
-  referrerPolicy = DEFAULT_REFERRER_POLICY,
+  sandbox = 'allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox',
+  allow = 'fullscreen; clipboard-write; autoplay; camera; microphone; geolocation',
+  referrerPolicy,
   onLoad,
 }: LazyIframeProps) {
-  const securityProps = useMemo(() => {
-    const sanitizedUrl = sanitizeUrl(src);
-    if (!sanitizedUrl) {
-      return { isBlocked: true, sandbox: '', sanitizedSrc: '' };
-    }
-    const effectiveSandbox = sandbox ?? getIframeSandbox(sanitizedUrl);
-    return { isBlocked: false, sandbox: effectiveSandbox, sanitizedSrc: sanitizedUrl };
-  }, [src, sandbox]);
-  
   const [isVisible, setIsVisible] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
@@ -85,31 +72,6 @@ export function LazyIframe({
     window.open(src, '_blank', 'noopener,noreferrer');
   }, [src]);
 
-  if (securityProps.isBlocked) {
-    return (
-      <div ref={containerRef} className={`relative ${className}`}>
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-crypto-dark/50 backdrop-blur-sm rounded-lg border border-red-500/20">
-          <div className="text-center p-6">
-            <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-red-500/10 flex items-center justify-center">
-              <ExternalLink className="w-6 h-6 text-red-400" />
-            </div>
-            <p className="text-red-400 text-sm mb-2">Domain not whitelisted</p>
-            <p className="text-crypto-silver text-xs mb-4">This content is blocked for security</p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={openInNewTab}
-              className="bg-white/5 border-crypto-silver/30 hover:bg-white/10"
-            >
-              <ExternalLink className="w-4 h-4 mr-2" />
-              Open in New Tab
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div ref={containerRef} className={`relative ${className}`}>
       {!shouldLoad && (
@@ -159,12 +121,12 @@ export function LazyIframe({
 
       {shouldLoad && (
         <iframe
-          src={securityProps.sanitizedSrc}
+          src={src}
           title={title}
           className={`w-full h-full rounded-lg border border-crypto-silver/20 ${!isLoaded ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}
           frameBorder="0"
           loading="lazy"
-          sandbox={securityProps.sandbox}
+          sandbox={sandbox}
           allow={allow}
           referrerPolicy={referrerPolicy}
           onLoad={handleLoad}
@@ -187,16 +149,14 @@ interface TabbedIframeContainerProps {
   iframeHeight?: string;
   sandbox?: string;
   allow?: string;
-  referrerPolicy?: React.HTMLAttributeReferrerPolicy;
 }
 
 export function TabbedIframeContainer({
   tabs,
   defaultTab,
   iframeHeight = 'h-[600px]',
-  sandbox,
-  allow = DEFAULT_ALLOW,
-  referrerPolicy = DEFAULT_REFERRER_POLICY,
+  sandbox = 'allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox',
+  allow = 'fullscreen; clipboard-write; autoplay; camera; microphone; geolocation',
 }: TabbedIframeContainerProps) {
   const [activeTab, setActiveTab] = useState(defaultTab || tabs[0]?.id);
   const [loadedTabs, setLoadedTabs] = useState<Set<string>>(new Set());
@@ -236,7 +196,6 @@ export function TabbedIframeContainer({
             className="w-full h-full"
             sandbox={sandbox}
             allow={allow}
-            referrerPolicy={referrerPolicy}
           />
         )}
       </div>

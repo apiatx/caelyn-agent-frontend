@@ -2,7 +2,6 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { Globe, ArrowLeftRight, TrendingUp, ExternalLink } from "lucide-react";
-import { LazyIframe } from "@/components/lazy-iframe";
 
 interface DashboardData {
   portfolioValue: number;
@@ -47,14 +46,30 @@ const GlassCard = ({ children, className = "" }: { children: React.ReactNode; cl
   </Card>
 );
 
-// SafeIframe uses LazyIframe internally for performance with secure defaults
+// Safe iframe component that doesn't throw errors
 const SafeIframe = ({ src, title, className = "" }: { src: string; title: string; className?: string }) => {
+  const openInNewTab = (url: string) => {
+    try {
+      window.open(url, '_blank');
+    } catch (error) {
+      console.warn('Failed to open URL:', url, error);
+    }
+  };
+
   return (
-    <div className="w-full h-[600px]">
-      <LazyIframe
+    <div className="w-full">
+      <iframe
         src={src}
         title={title}
-        className={`w-full h-full ${className}`}
+        className={`w-full h-[600px] rounded-lg border border-crypto-silver/20 ${className}`}
+        frameBorder="0"
+        loading="lazy"
+        sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation-by-user-activation"
+        referrerPolicy="strict-origin-when-cross-origin"
+        style={{
+          background: '#000000',
+          colorScheme: 'dark'
+        }}
       />
     </div>
   );
@@ -174,13 +189,15 @@ export default function BaseSectionSafe() {
             Open in New Tab →
           </SafeLink>
         </div>
-        <div className="h-[600px]">
-          <LazyIframe
-            src="https://www.zoracle.xyz/"
-            title="Zoracle"
-            className="w-full h-full"
-          />
-        </div>
+        <iframe 
+          src="https://www.zoracle.xyz/"
+          title="Zoracle"
+          className="w-full h-[600px] border-0 rounded-lg bg-black"
+          sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+          allow="encrypted-media; fullscreen; clipboard-read; clipboard-write"
+        />
       </GlassCard>
 
       {/* Checkr.social */}
