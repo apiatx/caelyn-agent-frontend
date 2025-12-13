@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeftRight, TrendingUp, ExternalLink, Wallet, ArrowUpDown } from "lucide-react";
 import { openSecureLink, getSecureIframeProps } from "@/utils/security";
+import { LazyIframe } from "@/components/lazy-iframe";
 import tradeIcon from "@assets/3676668_1757212085729.png";
 
 // Safe components for external links and iframes
@@ -27,20 +28,6 @@ const SafeLink = ({ href, children, className = "", ...props }: {
   </a>
 );
 
-const SafeIframe = ({ src, title, className = "", ...props }: { 
-  src: string; 
-  title: string; 
-  className?: string; 
-  [key: string]: any; 
-}) => (
-  <iframe
-    src={src}
-    title={title}
-    className={className}
-    sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-    {...props}
-  />
-);
 
 // Enhanced glass card component for Trade section
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
@@ -108,26 +95,20 @@ export default function TradeSection() {
           <div className="mt-8">
             <div className="flex flex-col lg:flex-row gap-4">
               {/* Rubic Exchange - 1/3 width */}
-              <div className="w-full lg:w-1/3">
-                <iframe
+              <div className="w-full lg:w-1/3 h-[600px]">
+                <LazyIframe
                   src="https://app.rubic.exchange/?fromChain=ETH&toChain=ETH"
-                  className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+                  className="w-full h-full"
                   title="Rubic Exchange"
-                  frameBorder="0"
-                  loading="lazy"
-                  sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
-                  referrerPolicy="no-referrer-when-downgrade"
-                  data-testid="iframe-rubic"
                 />
               </div>
 
               {/* Ethereum TradingView Chart - 2/3 width */}
-              <div className="w-full lg:w-2/3">
-                <iframe
+              <div className="w-full lg:w-2/3 h-[600px]">
+                <LazyIframe
                   src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]&symbol=BINANCE%3AETHUSDT"
-                  className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+                  className="w-full h-full"
                   title="TradingView Ethereum Chart"
-                  sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
                 />
               </div>
             </div>
@@ -268,16 +249,11 @@ export default function TradeSection() {
                 Open Full View <ExternalLink className="w-3 h-3" />
               </button>
             </div>
-            <div className="w-full">
-              <iframe
+            <div className="w-full h-[600px]">
+              <LazyIframe
                 src="https://swap.mayan.finance/"
-                className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+                className="w-full h-full"
                 title="Mayan Finance Cross-chain Swap"
-                frameBorder="0"
-                loading="lazy"
-                sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
-                referrerPolicy="no-referrer-when-downgrade"
-                data-testid="iframe-mayan"
               />
             </div>
           </div>
@@ -309,16 +285,11 @@ export default function TradeSection() {
                 Open Full View <ExternalLink className="w-3 h-3" />
               </button>
             </div>
-            <div className="w-full">
-              <iframe
+            <div className="w-full h-[600px]">
+              <LazyIframe
                 src="https://swap.defillama.com/?chain=bsc&from=0x0000000000000000000000000000000000000000&tab=swap&to="
-                className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+                className="w-full h-full"
                 title="DefiLlama Swap - BSC Cross-chain Swap"
-                frameBorder="0"
-                loading="lazy"
-                sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
-                referrerPolicy="no-referrer-when-downgrade"
-                data-testid="iframe-defillama-swap"
               />
             </div>
           </div>
@@ -393,19 +364,11 @@ export default function TradeSection() {
                 Open Full View <ExternalLink className="w-3 h-3" />
               </button>
             </div>
-            <div className="w-full">
-              <iframe
+            <div className="w-full h-[600px]">
+              <LazyIframe
                 src="https://app.zkaster.com/"
-                className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+                className="w-full h-full"
                 title="Zkaster Private Swap"
-                frameBorder="0"
-                loading="lazy"
-                sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
-                style={{
-                  background: 'transparent',
-                  colorScheme: 'dark'
-                }}
-                data-testid="iframe-zkaster"
               />
             </div>
           </div>

@@ -2,6 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DollarSign, ExternalLink, Layers, Shield } from "lucide-react";
 import { openSecureLink, getSecureIframeProps } from "@/utils/security";
+import { LazyIframe } from "@/components/lazy-iframe";
 import bitcoinLogo from "@assets/Bitcoin.svg_1755979187828.webp";
 
 const SafeLink = ({ href, children, className = "", ...props }: { 
@@ -25,19 +26,19 @@ const SafeLink = ({ href, children, className = "", ...props }: {
   </a>
 );
 
-const SafeIframe = ({ src, title, className = "", ...props }: { 
+// SafeIframe now uses LazyIframe for performance
+const SafeIframe = ({ src, title, className = "" }: { 
   src: string; 
   title: string; 
   className?: string; 
-  [key: string]: any; 
 }) => (
-  <iframe
-    src={src}
-    title={title}
-    className={className}
-    sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-    {...props}
-  />
+  <div className="w-full h-[600px]">
+    <LazyIframe
+      src={src}
+      title={title}
+      className={`w-full h-full ${className}`}
+    />
+  </div>
 );
 
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (

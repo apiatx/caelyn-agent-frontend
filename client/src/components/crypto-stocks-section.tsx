@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Building2, ExternalLink, Bitcoin, FileText, TrendingUp, Briefcase, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { LazyIframe } from "@/components/lazy-iframe";
 import stonksIcon from "@assets/download (2)_1757104529784.jpeg";
 
 const StocktwitsWidget = () => {
@@ -119,13 +120,11 @@ export default function CryptoStocksSection() {
                 </button>
               </div>
             </div>
-            <div className="w-full">
-              <iframe
+            <div className="w-full h-[500px] sm:h-[600px] lg:h-[700px]">
+              <LazyIframe
                 src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=610&interval=1D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=true&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22]&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]&symbol=CAPITALCOM%3AUS500"
-                className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+                className="w-full h-full"
                 title="TradingView (CAPITALCOM:US500) Chart"
-                frameBorder="0"
-                scrolling="no"
                 allow="fullscreen"
               />
             </div>
@@ -150,10 +149,10 @@ export default function CryptoStocksSection() {
                 Open Full View →
               </button>
             </div>
-            <div className="w-full">
-              <iframe
+            <div className="w-full h-[500px] sm:h-[600px] lg:h-[700px]">
+              <LazyIframe
                 src="https://trendspider.com/markets/"
-                className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+                className="w-full h-full"
                 title="TrendSpider Markets"
                 sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
               />
@@ -183,15 +182,11 @@ export default function CryptoStocksSection() {
           </button>
         </div>
 
-        <div className="w-full">
-          <iframe
+        <div className="w-full h-[500px] sm:h-[600px] lg:h-[700px]">
+          <LazyIframe
             src="https://tradytics.com/overall-market"
-            className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+            className="w-full h-full"
             title="Tradytics Overall Market"
-            frameBorder="0"
-            loading="eager"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
-            allow="fullscreen; clipboard-write; autoplay; camera; microphone; geolocation"
           />
         </div>
       </GlassCard>
@@ -363,15 +358,11 @@ export default function CryptoStocksSection() {
           </button>
         </div>
 
-        <div className="w-full">
-          <iframe
+        <div className="w-full h-[500px] sm:h-[600px] lg:h-[700px]">
+          <LazyIframe
             src="https://banterbubbles.com/?utm_source=cbanter&utm_medium=cbanter&utm_campaign=cbanter&source=cbanter#stocks"
-            className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+            className="w-full h-full"
             title="Banterbubbles Stock Analysis"
-            frameBorder="0"
-            loading="eager"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
-            allow="fullscreen; clipboard-write; autoplay; camera; microphone; geolocation"
           />
         </div>
       </GlassCard>
@@ -397,16 +388,12 @@ export default function CryptoStocksSection() {
           </button>
         </div>
 
-        <div className="w-full">
-          <iframe
+        <div className="w-full h-[600px]">
+          <LazyIframe
             src="https://www.slickcharts.com/"
-            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+            className="w-full h-full"
             title="Slickcharts Stock Market Data"
-            loading="eager"
             referrerPolicy="no-referrer"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
-            allow="fullscreen; clipboard-write; autoplay; camera; microphone; geolocation"
-            frameBorder="0"
           />
         </div>
       </GlassCard>

@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { TrendingUp, ExternalLink, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { openDexScreenerLink } from "@/utils/mobile-links";
+import { LazyIframe } from "@/components/lazy-iframe";
 
 export default function ChartsSection() {
   const openInNewTab = (url: string) => {
@@ -39,12 +40,11 @@ export default function ChartsSection() {
           </Button>
         </div>
         
-        <div className="w-full">
-          <iframe
+        <div className="w-full h-[600px] lg:h-[800px]">
+          <LazyIframe
             src="https://dexscreener.com/multicharts?theme=dark"
-            className="w-full h-[600px] lg:h-[800px] rounded-lg border border-crypto-silver/20"
+            className="w-full h-full"
             title="DexScreener Multicharts"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
           />
         </div>
       </GlassCard>

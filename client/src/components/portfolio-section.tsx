@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import type { Holding, Subnet } from "@shared/schema";
 import { getSecureIframeProps, getSecureLinkProps } from "@/utils/security";
+import { LazyIframe } from "@/components/lazy-iframe";
 import ethereumLogo from "@assets/Ethereum_logo_2014.svg_1755977414942.png";
 import solanaLogo from "@assets/solana_1755977414939.png";
 import bittensorLogo from "@assets/bittensor_1755977414942.png";
@@ -119,19 +120,11 @@ export default function PortfolioSection() {
                   Open Full <ExternalLink className="w-3 h-3" />
                 </button>
               </div>
-              <div className="bg-black/20 border border-cyan-400/10 rounded-lg overflow-hidden">
-                <iframe
+              <div className="bg-black/20 border border-cyan-400/10 rounded-lg overflow-hidden h-[450px]">
+                <LazyIframe
                   src="https://app.bbterminal.com/portfolio"
                   title="BBTerminal Portfolio"
-                  className="w-full h-[450px] border-0"
-                  frameBorder="0"
-                  loading="lazy"
-                  sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation-by-user-activation"
-                  referrerPolicy="strict-origin-when-cross-origin"
-                  style={{
-                    background: '#000000',
-                    colorScheme: 'dark'
-                  }}
+                  className="w-full h-full"
                 />
               </div>
             </div>
@@ -196,18 +189,11 @@ export default function PortfolioSection() {
                 Open Full <ExternalLink className="w-3 h-3" />
               </button>
             </div>
-            <div className="bg-black/20 border border-purple-400/10 rounded-lg overflow-hidden">
-              <iframe
+            <div className="bg-black/20 border border-purple-400/10 rounded-lg overflow-hidden h-[450px]">
+              <LazyIframe
                 src="https://jup.ag/portfolio"
-                className="w-full h-[450px] border-0"
+                className="w-full h-full"
                 title="Jupiter Portfolio"
-                frameBorder="0"
-                loading="lazy"
-                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-                style={{
-                  background: 'transparent',
-                  colorScheme: 'dark'
-                }}
               />
             </div>
           </div>
@@ -232,18 +218,11 @@ export default function PortfolioSection() {
                   Open Full <ExternalLink className="w-3 h-3" />
                 </button>
               </div>
-              <div className="bg-black/20 border border-teal-400/10 rounded-lg overflow-hidden">
-                <iframe
+              <div className="bg-black/20 border border-teal-400/10 rounded-lg overflow-hidden h-[450px]">
+                <LazyIframe
                   src="https://app.hyperliquid.xyz/portfolio"
-                  className="w-full h-[450px] border-0"
+                  className="w-full h-full"
                   title="HyperLiquid Portfolio"
-                  frameBorder="0"
-                  loading="lazy"
-                  sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-                  style={{
-                    background: 'transparent',
-                    colorScheme: 'dark'
-                  }}
                 />
               </div>
             </div>
