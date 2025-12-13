@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect } from 'react';
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink } from "lucide-react";
 import bitcoinLogo from "@assets/Bitcoin.svg_1755979187828.webp";
@@ -15,6 +15,17 @@ import TopDailyGainers from "@/components/top-daily-gainers";
 
 export default function TopChartsPage() {
   const headerOpacity = useScrollFade(30, 120);
+
+  useEffect(() => {
+    const scriptId = 'altfins-screener-script';
+    if (!document.getElementById(scriptId)) {
+      const script = document.createElement('script');
+      script.id = scriptId;
+      script.type = 'module';
+      script.src = 'https://cdn.altfins.com/js/altfins-screener-data-component.js';
+      document.body.appendChild(script);
+    }
+  }, []);
 
   return (
     <div className="min-h-screen text-white" style={{background: 'linear-gradient(135deg, hsl(0, 0%, 0%) 0%, hsl(0, 0%, 10%) 50%, hsl(0, 0%, 0%) 100%)'}}>
@@ -84,6 +95,34 @@ export default function TopChartsPage() {
               </div>
             </div>
             <p className="text-sm sm:text-base text-crypto-silver">Bitcoin and Ethereum price action and market dominance analysis</p>
+          </div>
+
+          {/* AltFins Screener Widget */}
+          <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                  <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-semibold text-white">BTC & ETH Technical Analysis</h3>
+                <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
+                  ALTFINS
+                </Badge>
+              </div>
+              <button
+                onClick={() => window.open('https://altfins.com/', '_blank', 'noopener,noreferrer')}
+                className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm flex items-center gap-1"
+              >
+                <ExternalLink className="w-3 h-3" />
+                Open Full View
+              </button>
+            </div>
+            <div 
+              className="w-full overflow-x-auto"
+              dangerouslySetInnerHTML={{
+                __html: `<altfins-screener-data-component symbols='["BTC", "ETH"]' theme='no-border compact dark' valueids='["COIN", "LAST_PRICE", "MACD_BS_SIGNAL", "SMA20_SMA50_BS_SIGNAL", "X_EMA50_CROSS_EMA200", "SHORT_TERM_TREND_CHANGE", "MEDIUM_TERM_TREND_CHANGE", "LONG_TERM_TREND_CHANGE", "PERCENTAGE_ABOVE_FROM_52_WEEK_LOW", "PERCENTAGE_DOWN_FROM_52_WEEK_HIGH", "SMA50_TREND", "SMA200_TREND", "VOLUME_CHANGE", "PRICE_CHANGE_1D", "PRICE_CHANGE_1W", "PRICE_CHANGE_1M", "PRICE_CHANGE_3M", "PRICE_CHANGE_6M", "PRICE_CHANGE_1Y"]' affiliateid='test_id'></altfins-screener-data-component>`
+              }}
+            />
           </div>
 
           {/* Crypto Total Market Cap Section */}
