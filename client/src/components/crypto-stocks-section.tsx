@@ -431,6 +431,14 @@ export default function CryptoStocksSection() {
             <div className="text-sm font-medium text-white group-hover:text-yellow-300 mb-1">Yahoo Finance Portfolios</div>
             <div className="text-xs text-crypto-silver">Portfolio tracking and analysis</div>
           </button>
+
+          <button
+            onClick={() => openInNewTab('https://snowball-analytics.com/dashboard')}
+            className="bg-gradient-to-br from-cyan-500/10 to-cyan-600/10 hover:from-cyan-500/20 hover:to-cyan-600/20 border border-cyan-500/20 hover:border-cyan-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-cyan-300 mb-1">Snowball Analytics</div>
+            <div className="text-xs text-crypto-silver">Portfolio dashboard and analytics</div>
+          </button>
           
           <button
             onClick={() => openInNewTab('https://simplywall.st/portfolio/65b1f9ab-7fa4-4d25-95c6-b8fa93d94d77/holdings')}

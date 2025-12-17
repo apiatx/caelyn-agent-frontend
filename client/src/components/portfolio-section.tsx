@@ -103,37 +103,11 @@ export default function PortfolioSection() {
         {/* Multi-Chain Section */}
         <div className="backdrop-blur-xl bg-gradient-to-br from-white/5 via-cyan-500/5 to-white/5 border border-cyan-400/20 rounded-xl px-6 py-5 shadow-lg shadow-cyan-500/10">
           <div className="space-y-5">
-            {/* BBTerminal Portfolio Iframe */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-lg flex items-center justify-center shadow-md">
-                    <Activity className="w-5 h-5 text-white" />
-                  </div>
-                  <h4 className="text-xl font-bold bg-gradient-to-r from-cyan-300 to-blue-200 bg-clip-text text-transparent">Multi-Chain</h4>
-                </div>
-                <button
-                  onClick={() => window.open('https://app.bbterminal.com/portfolio', '_blank', 'noopener,noreferrer')}
-                  className="text-cyan-300 hover:text-cyan-200 text-xs font-medium bg-cyan-500/10 px-3 py-1.5 rounded-md border border-cyan-400/20 hover:bg-cyan-500/20 transition-all flex items-center gap-1.5"
-                >
-                  Open Full <ExternalLink className="w-3 h-3" />
-                </button>
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-lg flex items-center justify-center shadow-md">
+                <Activity className="w-5 h-5 text-white" />
               </div>
-              <div className="bg-black/20 border border-cyan-400/10 rounded-lg overflow-hidden">
-                <iframe
-                  src="https://app.bbterminal.com/portfolio"
-                  title="BBTerminal Portfolio"
-                  className="w-full h-[450px] border-0"
-                  frameBorder="0"
-                  loading="lazy"
-                  sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation-by-user-activation"
-                  referrerPolicy="strict-origin-when-cross-origin"
-                  style={{
-                    background: '#000000',
-                    colorScheme: 'dark'
-                  }}
-                />
-              </div>
+              <h4 className="text-xl font-bold bg-gradient-to-r from-cyan-300 to-blue-200 bg-clip-text text-transparent">Multi-Chain</h4>
             </div>
             
             <Button
@@ -264,22 +238,6 @@ export default function PortfolioSection() {
             </Button>
           </div>
         </div>
-
-        {/* Stocks Button */}
-        <Button
-          variant="outline"
-          onClick={() => window.open('https://snowball-analytics.com/dashboard', '_blank', 'noopener,noreferrer')}
-          className="group w-full bg-gradient-to-br from-green-600/15 via-emerald-600/10 to-teal-600/15 border-green-400/30 hover:from-green-500/25 hover:via-emerald-500/20 hover:to-teal-500/25 hover:border-green-300/50 text-white justify-start p-4 h-auto shadow-md hover:shadow-green-500/15 hover:scale-[1.02] transition-all duration-200"
-        >
-          <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-emerald-500 rounded-lg flex items-center justify-center mr-3 group-hover:scale-110 transition-transform">
-            <TrendingUp className="w-5 h-5 text-white" />
-          </div>
-          <div className="text-left flex-1">
-            <div className="font-bold text-base">Stocks</div>
-            <div className="text-xs text-green-200/80">Snowball Analytics Portfolio Dashboard</div>
-          </div>
-          <ExternalLink className="h-4 w-4 text-green-300" />
-        </Button>
 
       </div>
 
