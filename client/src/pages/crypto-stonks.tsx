@@ -71,14 +71,14 @@ export default function CryptoStonksPage() {
           {/* Page Header */}
           <div className="text-center mb-6">
             <div className="flex items-center justify-center gap-3 mb-3">
-              <div className="w-12 h-12 rounded-xl overflow-hidden">
+              <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-yellow-400 shadow-lg">
                 <img 
                   src={chartIcon} 
                   alt="Chart Icon" 
                   className="w-full h-full object-cover"
                 />
               </div>
-              <h1 className="text-3xl font-bold text-white">Crypto Stocks</h1>
+              <h1 className="text-3xl font-bold text-white">Crypto Treasuries</h1>
             </div>
             <p className="text-crypto-silver">Track corporate Bitcoin treasuries and crypto adoption by public companies</p>
           </div>
