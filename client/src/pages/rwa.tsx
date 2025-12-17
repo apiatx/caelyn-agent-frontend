@@ -5,6 +5,7 @@ import { getSecureLinkProps, openSecureLink } from "@/utils/security";
 import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
 import newHeaderBackground from "@assets/photo-1504333638930-c8787321eee0_1757208194192.avif";
 import criptomonedas from "@assets/Criptomonedas-r3pu02e09qriw0f9pyqx2rtyhwsri4es6sdgff2ebk_1757225856373.png";
+import tokenizedStocksLogo from "@assets/image_1765946345697.png";
 import { useScrollFade } from "@/hooks/useScrollFade";
 
 // Safe iframe component
@@ -89,8 +90,8 @@ export default function RWAPage() {
             <div className="text-center relative mb-8">
               <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 via-blue-500/20 to-indigo-500/20 blur-3xl -z-10"></div>
               <div className="flex justify-center items-center gap-4 mb-6">
-                <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center border-2 border-purple-400/50 shadow-2xl hover:scale-110 transition-transform duration-300">
-                  <TrendingUp className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-2 border-yellow-400 shadow-2xl hover:scale-110 transition-transform duration-300">
+                  <img src={tokenizedStocksLogo} alt="Tokenized Stocks" className="w-full h-full object-cover" />
                 </div>
                 <div className="text-left">
                   <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-white via-purple-200 to-blue-200 bg-clip-text text-transparent">Tokenized Stocks</h3>
