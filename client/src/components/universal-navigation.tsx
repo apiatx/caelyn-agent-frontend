@@ -253,6 +253,16 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
             <DollarSign className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />DeFi
           </button>
           <button
+            onClick={() => navigateTo("/app/crypto-stocks")}
+            className={`flex-1 min-w-[90px] max-w-[120px] py-3 px-1 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
+              isActive("crypto-stocks")
+                ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
+                : "hover:bg-white/5 text-crypto-silver"
+            }`}
+          >
+            <TrendingUp className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />Stocks
+          </button>
+          <button
             onClick={() => navigateTo("/app/portfolio")}
             className={`flex-1 min-w-[90px] max-w-[120px] py-3 px-1 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
               isActive("portfolio")
@@ -262,36 +272,26 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
           >
             <Activity className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />Portfolio
           </button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                className={`flex-1 min-w-[90px] max-w-[120px] py-3 px-1 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
-                  isActive("crypto-stocks") || isActive("crypto-stonks")
-                    ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
-                    : "hover:bg-white/5 text-crypto-silver"
-                }`}
-              >
-                <Building2 className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />TradFi
-                <ChevronDown className="w-3 h-3 xl:w-4 xl:h-4 ml-1 inline" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="bg-black/80 backdrop-blur-lg border-crypto-silver/20">
-              <DropdownMenuItem
-                onClick={() => navigateTo("/app/crypto-stocks")}
-                className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
-              >
-                <TrendingUp className="w-4 h-4 mr-2" />
-                Stonks
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => navigateTo("/app/crypto-stonks")}
-                className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
-              >
-                <Building2 className="w-4 h-4 mr-2" />
-                Crypto Stonks
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <button
+            onClick={() => navigateTo("/app/crypto-stonks")}
+            className={`flex-1 min-w-[90px] max-w-[120px] py-3 px-1 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
+              isActive("crypto-stonks")
+                ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
+                : "hover:bg-white/5 text-crypto-silver"
+            }`}
+          >
+            <Building2 className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />Treasuries
+          </button>
+          <button
+            onClick={() => navigateTo("/app/rwa")}
+            className={`flex-1 min-w-[90px] max-w-[120px] py-3 px-1 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
+              isActive("rwa")
+                ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
+                : "hover:bg-white/5 text-crypto-silver"
+            }`}
+          >
+            <Building2 className="w-3 h-3 xl:w-4 xl:h-4 mr-1 inline" />RWA
+          </button>
           <button
             onClick={() => navigateTo("/app/predict")}
             className={`flex-1 min-w-[90px] max-w-[120px] py-3 px-1 rounded-xl text-xs xl:text-sm font-medium transition-all duration-300 text-center ${
@@ -511,6 +511,16 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
                 <DollarSign className="w-4 h-4 mr-1 inline" />DeFi
               </button>
               <button
+                onClick={() => navigateTo("/app/crypto-stocks")}
+                className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+                  isActive("crypto-stocks")
+                    ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
+                    : "hover:bg-white/5 text-crypto-silver"
+                }`}
+              >
+                <TrendingUp className="w-4 h-4 mr-1 inline" />Stocks
+              </button>
+              <button
                 onClick={() => navigateTo("/app/portfolio")}
                 className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                   isActive("portfolio")
@@ -520,36 +530,26 @@ export function UniversalNavigation({ activePage }: UniversalNavigationProps) {
               >
                 <Activity className="w-4 h-4 mr-1 inline" />Portfolio
               </button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
-                      isActive("crypto-stocks") || isActive("crypto-stonks")
-                        ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
-                        : "hover:bg-white/5 text-crypto-silver"
-                    }`}
-                  >
-                    <Building2 className="w-4 h-4 mr-1 inline" />TradFi
-                    <ChevronDown className="w-4 h-4 ml-1 inline" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="bg-black/80 backdrop-blur-lg border-crypto-silver/20">
-                  <DropdownMenuItem
-                    onClick={() => navigateTo("/app/crypto-stocks")}
-                    className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
-                  >
-                    <TrendingUp className="w-4 h-4 mr-2" />
-                    Stonks
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => navigateTo("/app/crypto-stonks")}
-                    className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer"
-                  >
-                    <Building2 className="w-4 h-4 mr-2" />
-                    Crypto Stonks
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <button
+                onClick={() => navigateTo("/app/crypto-stonks")}
+                className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+                  isActive("crypto-stonks")
+                    ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
+                    : "hover:bg-white/5 text-crypto-silver"
+                }`}
+              >
+                <Building2 className="w-4 h-4 mr-1 inline" />Treasuries
+              </button>
+              <button
+                onClick={() => navigateTo("/app/rwa")}
+                className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+                  isActive("rwa")
+                    ? "bg-gradient-to-r from-crypto-warning/30 to-yellow-400/20 border border-crypto-warning/50 text-white shadow-lg"
+                    : "hover:bg-white/5 text-crypto-silver"
+                }`}
+              >
+                <Building2 className="w-4 h-4 mr-1 inline" />RWA
+              </button>
               <button
                 onClick={() => navigateTo("/app/predict")}
                 className={`whitespace-nowrap py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${

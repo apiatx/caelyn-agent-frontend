@@ -253,35 +253,28 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
       ]
     },
     {
-      id: 'tradfi',
-      label: 'TradFi',
-      icon: <Building2 className="w-4 h-4" />,
-      children: [
-        {
-          id: 'crypto-stocks',
-          label: 'Stocks',
-          icon: <TrendingUp className="w-4 h-4" />,
-          path: '/app/crypto-stocks'
-        },
-        {
-          id: 'crypto-stonks',
-          label: 'Crypto Stocks',
-          icon: <Building2 className="w-4 h-4" />,
-          path: '/app/crypto-stonks'
-        },
-        {
-          id: 'rwa',
-          label: 'RWA',
-          icon: <Building2 className="w-4 h-4" />,
-          path: '/app/rwa'
-        }
-      ]
+      id: 'crypto-stocks',
+      label: 'Stocks',
+      icon: <TrendingUp className="w-4 h-4" />,
+      path: '/app/crypto-stocks'
     },
     {
       id: 'portfolio',
       label: 'Portfolio',
       icon: <Activity className="w-4 h-4" />,
       path: '/app/portfolio'
+    },
+    {
+      id: 'crypto-stonks',
+      label: 'Treasuries',
+      icon: <Building2 className="w-4 h-4" />,
+      path: '/app/crypto-stonks'
+    },
+    {
+      id: 'rwa',
+      label: 'RWA',
+      icon: <Building2 className="w-4 h-4" />,
+      path: '/app/rwa'
     },
     {
       id: 'predict',
