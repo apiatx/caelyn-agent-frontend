@@ -34,7 +34,7 @@ export default function CryptoStocksSection() {
       {/* Page Header */}
       <div className="text-center mb-6">
         <div className="flex items-center justify-center gap-3 mb-3">
-          <div className="w-16 h-16 rounded-xl overflow-hidden border-2 border-yellow-500 shadow-lg">
+          <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-yellow-400 shadow-lg">
             <img 
               src={stonksIcon} 
               alt="Stonks Icon" 
