@@ -85,16 +85,25 @@ export default function PortfolioSection() {
   return (
     <div className="space-y-6">
       {/* PORTFOLIO Section - Enhanced Header */}
-      <div className="text-center mb-8">
-        <div className="flex justify-center items-center gap-4 mb-4">
-          <img 
-            src={smartWalletsImage} 
-            alt="Portfolio" 
-            className="w-16 h-16 rounded-xl object-cover border-2 border-cyan-400/50 shadow-lg shadow-cyan-500/20"
-          />
-          <h2 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-white via-cyan-100 to-emerald-100 bg-clip-text text-transparent">Portfolio</h2>
+      <div className="text-center relative mb-8">
+        <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 via-emerald-500/20 to-teal-500/20 blur-3xl -z-10"></div>
+        <div className="flex justify-center items-center gap-4 mb-6">
+          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-2 border-yellow-400 shadow-2xl hover:scale-110 transition-transform duration-300">
+            <img 
+              src={smartWalletsImage} 
+              alt="Portfolio" 
+              className="w-full h-full object-cover"
+            />
+          </div>
+          <div className="text-left">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-white via-cyan-100 to-emerald-100 bg-clip-text text-transparent">Portfolio</h2>
+            <Badge className="bg-gradient-to-r from-cyan-500/30 to-emerald-500/30 text-white border-cyan-400/50 text-sm mt-2 px-3 py-1">
+              MULTI-CHAIN
+            </Badge>
+          </div>
         </div>
-        <p className="text-base text-gray-300 tracking-wide">Cross-Chain Portfolio Management & Analytics</p>
+        <p className="text-lg text-white/80 font-medium tracking-wide">Cross-Chain Portfolio Management & Analytics</p>
+        <div className="w-32 h-1 bg-gradient-to-r from-cyan-500 to-emerald-500 mx-auto mt-4 rounded-full"></div>
       </div>
 
       {/* Portfolio Sections - Individual Glass Cards */}

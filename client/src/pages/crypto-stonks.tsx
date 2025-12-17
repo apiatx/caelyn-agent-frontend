@@ -69,18 +69,25 @@ export default function CryptoStonksPage() {
       <main className="max-w-[95vw] mx-auto px-2 sm:px-3 py-4">
         <div className="space-y-6">
           {/* Page Header */}
-          <div className="text-center mb-6">
-            <div className="flex items-center justify-center gap-3 mb-3">
-              <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-yellow-400 shadow-lg">
+          <div className="text-center relative mb-8">
+            <div className="absolute inset-0 bg-gradient-to-r from-orange-500/20 via-amber-500/20 to-yellow-500/20 blur-3xl -z-10"></div>
+            <div className="flex justify-center items-center gap-4 mb-6">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-2 border-yellow-400 shadow-2xl hover:scale-110 transition-transform duration-300">
                 <img 
                   src={chartIcon} 
                   alt="Chart Icon" 
                   className="w-full h-full object-cover"
                 />
               </div>
-              <h1 className="text-3xl font-bold text-white">Crypto Treasuries</h1>
+              <div className="text-left">
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-white via-orange-100 to-amber-100 bg-clip-text text-transparent">Crypto Treasuries</h1>
+                <Badge className="bg-gradient-to-r from-orange-500/30 to-amber-500/30 text-white border-orange-400/50 text-sm mt-2 px-3 py-1">
+                  CORPORATE HOLDINGS
+                </Badge>
+              </div>
             </div>
-            <p className="text-crypto-silver">Track corporate Bitcoin treasuries and crypto adoption by public companies</p>
+            <p className="text-lg text-white/80 font-medium tracking-wide">Track corporate Bitcoin treasuries and crypto adoption by public companies</p>
+            <div className="w-32 h-1 bg-gradient-to-r from-orange-500 to-amber-500 mx-auto mt-4 rounded-full"></div>
           </div>
 
           {/* Crypto Treasuries */}

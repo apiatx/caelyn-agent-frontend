@@ -32,18 +32,25 @@ export default function CryptoStocksSection() {
   return (
     <div className="space-y-4 lg:space-y-8">
       {/* Page Header */}
-      <div className="text-center mb-6">
-        <div className="flex items-center justify-center gap-3 mb-3">
-          <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-yellow-400 shadow-lg">
+      <div className="text-center relative mb-8">
+        <div className="absolute inset-0 bg-gradient-to-r from-green-500/20 via-emerald-500/20 to-teal-500/20 blur-3xl -z-10"></div>
+        <div className="flex justify-center items-center gap-4 mb-6">
+          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-2 border-yellow-400 shadow-2xl hover:scale-110 transition-transform duration-300">
             <img 
               src={stonksIcon} 
               alt="Stonks Icon" 
               className="w-full h-full object-cover"
             />
           </div>
-          <h1 className="text-3xl font-bold text-white">Stocks</h1>
+          <div className="text-left">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-white via-green-100 to-emerald-100 bg-clip-text text-transparent">Stocks</h1>
+            <Badge className="bg-gradient-to-r from-green-500/30 to-emerald-500/30 text-white border-green-400/50 text-sm mt-2 px-3 py-1">
+              MARKET ANALYSIS
+            </Badge>
+          </div>
         </div>
-        <p className="text-crypto-silver">AI-powered financial analysis and market intelligence</p>
+        <p className="text-lg text-white/80 font-medium tracking-wide">AI-powered financial analysis and market intelligence</p>
+        <div className="w-32 h-1 bg-gradient-to-r from-green-500 to-emerald-500 mx-auto mt-4 rounded-full"></div>
       </div>
 
       {/* TradingView & TrendSpider Side by Side */}
