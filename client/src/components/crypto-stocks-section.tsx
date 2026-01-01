@@ -264,14 +264,6 @@ export default function CryptoStocksSection() {
           </button>
           
           <button
-            onClick={() => openInNewTab('https://www.slickcharts.com/')}
-            className="bg-gradient-to-br from-blue-500/10 to-cyan-600/10 hover:from-blue-500/20 hover:to-cyan-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
-          >
-            <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">SlickCharts</div>
-            <div className="text-xs text-crypto-silver">Stock market indices and data</div>
-          </button>
-          
-          <button
             onClick={() => openInNewTab('https://app.intellectia.ai/stock-market')}
             className="bg-gradient-to-br from-purple-500/10 to-purple-600/10 hover:from-purple-500/20 hover:to-purple-600/20 border border-purple-500/20 hover:border-purple-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
           >
@@ -372,16 +364,16 @@ export default function CryptoStocksSection() {
         </div>
       </GlassCard>
 
-      {/* Sectors */}
+      {/* Sectors + ETFs */}
       <GlassCard className="p-3 sm:p-4 lg:p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-6">
           <div className="flex items-center gap-2">
             <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
               <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
             </div>
-            <h3 className="text-lg sm:text-xl font-semibold text-white">Sectors</h3>
+            <h3 className="text-lg sm:text-xl font-semibold text-white">Sectors + ETFs</h3>
             <Badge className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-white border-crypto-silver/30 text-xs">
-              MARKET SECTORS
+              SECTORS & FUNDS
             </Badge>
           </div>
           <button
@@ -393,7 +385,7 @@ export default function CryptoStocksSection() {
           </button>
         </div>
 
-        <div className="w-full">
+        <div className="w-full space-y-6">
           <iframe
             src="https://screener.nextbigtrade.com/#/markets"
             className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
@@ -404,6 +396,43 @@ export default function CryptoStocksSection() {
             allow="fullscreen; clipboard-write; autoplay; camera; microphone; geolocation"
             frameBorder="0"
           />
+          
+          <div className="flex items-center justify-between">
+            <h4 className="text-base font-medium text-white">Sprott ETFs</h4>
+            <button
+              onClick={() => openInNewTab('https://sprottetfs.com/')}
+              className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm flex items-center gap-1"
+            >
+              <ExternalLink className="w-3 h-3" />
+              Open Full View
+            </button>
+          </div>
+          <iframe
+            src="https://sprottetfs.com/"
+            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+            title="Sprott ETFs"
+            loading="eager"
+            referrerPolicy="no-referrer"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
+            allow="fullscreen; clipboard-write; autoplay; camera; microphone; geolocation"
+            frameBorder="0"
+          />
+          
+          <button
+            onClick={() => openInNewTab('https://www.slickcharts.com/')}
+            className="w-full bg-gradient-to-br from-blue-500/10 to-cyan-600/10 hover:from-blue-500/20 hover:to-cyan-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">SlickCharts Indices</div>
+            <div className="text-xs text-crypto-silver">Stock market indices and data</div>
+          </button>
+          
+          <button
+            onClick={() => openInNewTab('https://www.etf.com/')}
+            className="w-full bg-gradient-to-br from-green-500/10 to-emerald-600/10 hover:from-green-500/20 hover:to-emerald-600/20 border border-green-500/20 hover:border-green-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-green-300 mb-1">ETF.com</div>
+            <div className="text-xs text-crypto-silver">ETF research, news and analysis</div>
+          </button>
         </div>
       </GlassCard>
 
