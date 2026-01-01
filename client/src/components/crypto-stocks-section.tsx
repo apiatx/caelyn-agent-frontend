@@ -126,40 +126,6 @@ export default function CryptoStocksSection() {
         </div>
       </GlassCard>
 
-      {/* Tradytics */}
-      <GlassCard className="p-3 sm:p-4 lg:p-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-6">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-green-500 rounded-full flex items-center justify-center">
-              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-            </div>
-            <h3 className="text-lg sm:text-xl font-semibold text-white">Tradytics</h3>
-            <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
-              MARKET ANALYSIS
-            </Badge>
-          </div>
-          <button
-            onClick={() => openInNewTab('https://tradytics.com/overall-market')}
-            className="text-green-400 hover:text-green-300 text-xs sm:text-sm flex items-center gap-1"
-          >
-            <ExternalLink className="w-3 h-3" />
-            Open Full View
-          </button>
-        </div>
-
-        <div className="w-full">
-          <iframe
-            src="https://tradytics.com/overall-market"
-            className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
-            title="Tradytics Overall Market"
-            frameBorder="0"
-            loading="eager"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
-            allow="fullscreen; clipboard-write; autoplay; camera; microphone; geolocation"
-          />
-        </div>
-      </GlassCard>
-
       {/* Fiscal.ai Dashboard */}
       <GlassCard className="p-3 sm:p-4 lg:p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-6">
@@ -209,14 +175,6 @@ export default function CryptoStocksSection() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
-          <button
-            onClick={() => openInNewTab('https://finviz.com/')}
-            className="bg-gradient-to-br from-purple-500/10 to-purple-600/10 hover:from-purple-500/20 hover:to-purple-600/20 border border-purple-500/20 hover:border-purple-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
-          >
-            <div className="text-sm font-medium text-white group-hover:text-purple-300 mb-1">Finviz</div>
-            <div className="text-xs text-crypto-silver">Stock screener and market visualization</div>
-          </button>
-
           <button
             onClick={() => openInNewTab('https://stocktwits.com/')}
             className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
@@ -287,6 +245,30 @@ export default function CryptoStocksSection() {
           >
             <div className="text-sm font-medium text-white group-hover:text-teal-300 mb-1">Kavout</div>
             <div className="text-xs text-crypto-silver">AI-powered investment research platform</div>
+          </button>
+          
+          <button
+            onClick={() => openInNewTab('https://finviz.com/')}
+            className="bg-gradient-to-br from-purple-500/10 to-purple-600/10 hover:from-purple-500/20 hover:to-purple-600/20 border border-purple-500/20 hover:border-purple-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-purple-300 mb-1">Finviz</div>
+            <div className="text-xs text-crypto-silver">Stock screener and market visualization</div>
+          </button>
+          
+          <button
+            onClick={() => openInNewTab('https://tradytics.com/overall-market')}
+            className="bg-gradient-to-br from-green-500/10 to-green-600/10 hover:from-green-500/20 hover:to-green-600/20 border border-green-500/20 hover:border-green-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-green-300 mb-1">Tradytics</div>
+            <div className="text-xs text-crypto-silver">Overall market analysis and trends</div>
+          </button>
+          
+          <button
+            onClick={() => openInNewTab('https://www.slickcharts.com/')}
+            className="bg-gradient-to-br from-blue-500/10 to-cyan-600/10 hover:from-blue-500/20 hover:to-cyan-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">SlickCharts</div>
+            <div className="text-xs text-crypto-silver">Stock market indices and data</div>
           </button>
           
           <button
@@ -416,41 +398,6 @@ export default function CryptoStocksSection() {
             src="https://screener.nextbigtrade.com/#/markets"
             className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
             title="Next Big Trade Sectors Screener"
-            loading="eager"
-            referrerPolicy="no-referrer"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
-            allow="fullscreen; clipboard-write; autoplay; camera; microphone; geolocation"
-            frameBorder="0"
-          />
-        </div>
-      </GlassCard>
-
-      {/* Indices */}
-      <GlassCard className="p-3 sm:p-4 lg:p-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-6">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center">
-              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-            </div>
-            <h3 className="text-lg sm:text-xl font-semibold text-white">Indices</h3>
-            <Badge className="bg-gradient-to-r from-green-500/20 to-blue-500/20 text-white border-crypto-silver/30 text-xs">
-              STOCK MARKET DATA
-            </Badge>
-          </div>
-          <button
-            onClick={() => openInNewTab('https://www.slickcharts.com/')}
-            className="text-green-400 hover:text-green-300 text-xs sm:text-sm flex items-center gap-1"
-          >
-            <ExternalLink className="w-3 h-3" />
-            Open Full View
-          </button>
-        </div>
-
-        <div className="w-full">
-          <iframe
-            src="https://www.slickcharts.com/"
-            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            title="Slickcharts Stock Market Data"
             loading="eager"
             referrerPolicy="no-referrer"
             sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
