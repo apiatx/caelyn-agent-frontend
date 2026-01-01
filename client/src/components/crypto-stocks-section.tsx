@@ -264,14 +264,6 @@ export default function CryptoStocksSection() {
           </button>
           
           <button
-            onClick={() => openInNewTab('https://www.slickcharts.com/')}
-            className="bg-gradient-to-br from-blue-500/10 to-cyan-600/10 hover:from-blue-500/20 hover:to-cyan-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
-          >
-            <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">SlickCharts</div>
-            <div className="text-xs text-crypto-silver">Stock market indices and data</div>
-          </button>
-          
-          <button
             onClick={() => openInNewTab('https://app.intellectia.ai/stock-market')}
             className="bg-gradient-to-br from-purple-500/10 to-purple-600/10 hover:from-purple-500/20 hover:to-purple-600/20 border border-purple-500/20 hover:border-purple-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
           >
@@ -317,14 +309,6 @@ export default function CryptoStocksSection() {
           >
             <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">Screener.in</div>
             <div className="text-xs text-crypto-silver">Indian stock screening and exploration</div>
-          </button>
-          
-          <button
-            onClick={() => openInNewTab('https://seekingalpha.com/etfs-and-funds/etf-tables/key_markets')}
-            className="bg-gradient-to-br from-orange-500/10 to-amber-600/10 hover:from-orange-500/20 hover:to-amber-600/20 border border-orange-500/20 hover:border-orange-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
-          >
-            <div className="text-sm font-medium text-white group-hover:text-orange-300 mb-1">Seeking Alpha ETFs</div>
-            <div className="text-xs text-crypto-silver">ETF tables and key market funds</div>
           </button>
           
           <button

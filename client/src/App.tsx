@@ -19,6 +19,7 @@ import BNBPage from "@/pages/bnb";
 import SUIPage from "@/pages/sui";
 import CryptoStocks from "@/pages/crypto-stocks";
 import CryptoStonks from "@/pages/crypto-stonks";
+import SectorsEtfsPage from "@/pages/sectors-etfs";
 import RWAPage from "@/pages/rwa";
 import BittensorPage from "@/pages/bittensor";
 import TradePage from "@/pages/trade";
@@ -108,6 +109,7 @@ function Router() {
       <Route path="/app/crypto-stocks" component={CryptoStocks} />
       <Route path="/app/stocks" component={CryptoStocks} />
       <Route path="/app/stonks" component={CryptoStocks} />
+      <Route path="/app/stocks/sectors-etfs" component={SectorsEtfsPage} />
       <Route path="/app/crypto-stonks" component={CryptoStonks} />
       <Route path="/app/predict" component={PredictPage} />
       <Route path="/predict" component={PredictPage} />
