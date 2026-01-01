@@ -240,14 +240,6 @@ export default function CryptoStocksSection() {
           </button>
           
           <button
-            onClick={() => openInNewTab('https://www.kavout.com/')}
-            className="bg-gradient-to-br from-teal-500/10 to-teal-600/10 hover:from-teal-500/20 hover:to-teal-600/20 border border-teal-500/20 hover:border-teal-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
-          >
-            <div className="text-sm font-medium text-white group-hover:text-teal-300 mb-1">Kavout</div>
-            <div className="text-xs text-crypto-silver">AI-powered investment research platform</div>
-          </button>
-          
-          <button
             onClick={() => openInNewTab('https://finviz.com/')}
             className="bg-gradient-to-br from-purple-500/10 to-purple-600/10 hover:from-purple-500/20 hover:to-purple-600/20 border border-purple-500/20 hover:border-purple-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
           >
@@ -522,6 +514,14 @@ export default function CryptoStocksSection() {
           >
             <div className="text-sm font-medium text-white group-hover:text-amber-300 mb-1">AskEdgar</div>
             <div className="text-xs text-crypto-silver">SEC filings and company documents</div>
+          </button>
+          
+          <button
+            onClick={() => openInNewTab('https://www.kavout.com/')}
+            className="bg-gradient-to-br from-teal-500/10 to-teal-600/10 hover:from-teal-500/20 hover:to-teal-600/20 border border-teal-500/20 hover:border-teal-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-teal-300 mb-1">Kavout</div>
+            <div className="text-xs text-crypto-silver">AI-powered investment research platform</div>
           </button>
         </div>
       </GlassCard>
