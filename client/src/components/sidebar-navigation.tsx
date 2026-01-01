@@ -256,15 +256,7 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
       id: 'crypto-stocks',
       label: 'Stocks',
       icon: <TrendingUp className="w-4 h-4" />,
-      path: '/app/crypto-stocks',
-      children: [
-        {
-          id: 'sectors-etfs',
-          label: 'Sectors + ETFs',
-          icon: <Layers className="w-4 h-4" />,
-          path: '/app/stocks/sectors-etfs'
-        }
-      ]
+      path: '/app/crypto-stocks'
     },
     {
       id: 'crypto-stonks',
