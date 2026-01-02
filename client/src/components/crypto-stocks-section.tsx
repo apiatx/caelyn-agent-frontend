@@ -126,6 +126,40 @@ export default function CryptoStocksSection() {
         </div>
       </GlassCard>
 
+      {/* WallStreetZen Stock Screener */}
+      <GlassCard className="p-3 sm:p-4 lg:p-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-6">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full flex items-center justify-center">
+              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+            </div>
+            <h3 className="text-lg sm:text-xl font-semibold text-white">WallStreetZen</h3>
+            <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-xs">
+              STOCK SCREENER
+            </Badge>
+          </div>
+          <button
+            onClick={() => openInNewTab('https://www.wallstreetzen.com/stock-screener/?t=1&p=1&f%5Bsid%5D=1%2C5%2C10%2C11&f%5Bmc%5D=50000000%2C1000000000&s=mc&sd=desc')}
+            className="text-emerald-400 hover:text-emerald-300 text-xs sm:text-sm flex items-center gap-1"
+          >
+            <ExternalLink className="w-3 h-3" />
+            Open Full View
+          </button>
+        </div>
+
+        <div className="w-full">
+          <iframe
+            src="https://www.wallstreetzen.com/stock-screener/?t=1&p=1&f%5Bsid%5D=1%2C5%2C10%2C11&f%5Bmc%5D=50000000%2C1000000000&s=mc&sd=desc"
+            className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+            title="WallStreetZen Stock Screener"
+            frameBorder="0"
+            loading="eager"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
+            allow="fullscreen; clipboard-write; autoplay; camera; microphone; geolocation"
+          />
+        </div>
+      </GlassCard>
+
       {/* Fiscal.ai Dashboard */}
       <GlassCard className="p-3 sm:p-4 lg:p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-6">
