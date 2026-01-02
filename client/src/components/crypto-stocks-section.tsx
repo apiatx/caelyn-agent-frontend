@@ -160,40 +160,6 @@ export default function CryptoStocksSection() {
         </div>
       </GlassCard>
 
-      {/* Fiscal.ai Dashboard */}
-      <GlassCard className="p-3 sm:p-4 lg:p-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-6">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center">
-              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-            </div>
-            <h3 className="text-lg sm:text-xl font-semibold text-white">Fiscal.ai</h3>
-            <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 text-xs">
-              AI ANALYTICS
-            </Badge>
-          </div>
-          <button
-            onClick={() => openInNewTab('https://fiscal.ai/dashboard/7b99775e-bf9c-4b18-85a8-7a62cd29a52b/')}
-            className="text-cyan-400 hover:text-cyan-300 text-xs sm:text-sm flex items-center gap-1"
-          >
-            <ExternalLink className="w-3 h-3" />
-            Open Full View
-          </button>
-        </div>
-
-        <div className="w-full">
-          <iframe
-            src="https://fiscal.ai/dashboard/7b99775e-bf9c-4b18-85a8-7a62cd29a52b/"
-            className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
-            title="Fiscal.ai Dashboard"
-            frameBorder="0"
-            loading="eager"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
-            allow="fullscreen; clipboard-write; autoplay; camera; microphone; geolocation"
-          />
-        </div>
-      </GlassCard>
-
       {/* Screening */}
       <GlassCard className="p-3 sm:p-4 lg:p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
@@ -210,11 +176,11 @@ export default function CryptoStocksSection() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
           <button
-            onClick={() => openInNewTab('https://stocktwits.com/')}
+            onClick={() => openInNewTab('https://app.koyfin.com/home')}
             className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
           >
-            <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">StockTwits</div>
-            <div className="text-xs text-crypto-silver">Social trading platform</div>
+            <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">Koyfin</div>
+            <div className="text-xs text-crypto-silver">Professional market data and analytics</div>
           </button>
 
           <button
@@ -250,14 +216,6 @@ export default function CryptoStocksSection() {
           </button>
           
           <button
-            onClick={() => openInNewTab('https://app.koyfin.com/home')}
-            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
-          >
-            <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">Koyfin</div>
-            <div className="text-xs text-crypto-silver">Professional market data and analytics</div>
-          </button>
-          
-          <button
             onClick={() => openInNewTab('https://unusualwhales.com/stock-screener')}
             className="bg-gradient-to-br from-purple-500/10 to-purple-600/10 hover:from-purple-500/20 hover:to-purple-600/20 border border-purple-500/20 hover:border-purple-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
           >
@@ -271,6 +229,14 @@ export default function CryptoStocksSection() {
           >
             <div className="text-sm font-medium text-white group-hover:text-cyan-300 mb-1">Perplexity AI Finance</div>
             <div className="text-xs text-crypto-silver">AI-powered financial research and insights</div>
+          </button>
+          
+          <button
+            onClick={() => openInNewTab('https://stocktwits.com/')}
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">StockTwits</div>
+            <div className="text-xs text-crypto-silver">Social trading platform</div>
           </button>
           
           <button
@@ -297,8 +263,50 @@ export default function CryptoStocksSection() {
             <div className="text-xs text-crypto-silver">AI-powered stock market analytics</div>
           </button>
           
+          <button
+            onClick={() => openInNewTab('https://fintel.io/s/us')}
+            className="bg-gradient-to-br from-indigo-500/10 to-blue-600/10 hover:from-indigo-500/20 hover:to-blue-600/20 border border-indigo-500/20 hover:border-indigo-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
+          >
+            <div className="text-sm font-medium text-white group-hover:text-indigo-300 mb-1">Fintel</div>
+            <div className="text-xs text-crypto-silver">Institutional ownership data</div>
+          </button>
+          
         </div>
 
+      </GlassCard>
+
+      {/* Fiscal.ai Dashboard */}
+      <GlassCard className="p-3 sm:p-4 lg:p-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-6">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center">
+              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+            </div>
+            <h3 className="text-lg sm:text-xl font-semibold text-white">Fiscal.ai</h3>
+            <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 text-xs">
+              AI ANALYTICS
+            </Badge>
+          </div>
+          <button
+            onClick={() => openInNewTab('https://fiscal.ai/dashboard/7b99775e-bf9c-4b18-85a8-7a62cd29a52b/')}
+            className="text-cyan-400 hover:text-cyan-300 text-xs sm:text-sm flex items-center gap-1"
+          >
+            <ExternalLink className="w-3 h-3" />
+            Open Full View
+          </button>
+        </div>
+
+        <div className="w-full">
+          <iframe
+            src="https://fiscal.ai/dashboard/7b99775e-bf9c-4b18-85a8-7a62cd29a52b/"
+            className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+            title="Fiscal.ai Dashboard"
+            frameBorder="0"
+            loading="eager"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
+            allow="fullscreen; clipboard-write; autoplay; camera; microphone; geolocation"
+          />
+        </div>
       </GlassCard>
 
       {/* Banterbubbles */}
@@ -327,40 +335,6 @@ export default function CryptoStocksSection() {
             src="https://banterbubbles.com/?utm_source=cbanter&utm_medium=cbanter&utm_campaign=cbanter&source=cbanter#stocks"
             className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
             title="Banterbubbles Stock Analysis"
-            frameBorder="0"
-            loading="eager"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
-            allow="fullscreen; clipboard-write; autoplay; camera; microphone; geolocation"
-          />
-        </div>
-      </GlassCard>
-
-      {/* Fintel Institutional Ownership */}
-      <GlassCard className="p-3 sm:p-4 lg:p-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-6">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center">
-              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-            </div>
-            <h3 className="text-lg sm:text-xl font-semibold text-white">Fintel</h3>
-            <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
-              INSTITUTIONAL DATA
-            </Badge>
-          </div>
-          <button
-            onClick={() => openInNewTab('https://fintel.io/s/us')}
-            className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm flex items-center gap-1"
-          >
-            <ExternalLink className="w-3 h-3" />
-            Open Full View
-          </button>
-        </div>
-
-        <div className="w-full">
-          <iframe
-            src="https://fintel.io/s/us"
-            className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
-            title="Fintel Institutional Ownership"
             frameBorder="0"
             loading="eager"
             sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
