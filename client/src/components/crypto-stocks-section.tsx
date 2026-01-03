@@ -365,6 +365,28 @@ export default function CryptoStocksSection() {
         </div>
 
         <div className="w-full space-y-6">
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-base font-medium text-white">SPDR Sector Tracker</h4>
+              <button
+                onClick={() => openInNewTab('https://www.ssga.com/us/en/institutional/resources/sector-tracker#currentTab=dayOne&fundTicker=xle')}
+                className="text-yellow-400 hover:text-yellow-300 text-xs flex items-center gap-1"
+              >
+                <ExternalLink className="w-3 h-3" />
+                Open Full View
+              </button>
+            </div>
+            <iframe
+              src="https://www.ssga.com/us/en/institutional/resources/sector-tracker#currentTab=dayOne&fundTicker=xle"
+              className="w-full h-[500px] rounded-lg border border-crypto-silver/20"
+              title="SPDR Sector Tracker"
+              loading="eager"
+              frameBorder="0"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
+              allow="fullscreen; clipboard-write; autoplay; camera; microphone; geolocation"
+            />
+          </div>
+          
           <iframe
             src="https://screener.nextbigtrade.com/#/markets"
             className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
