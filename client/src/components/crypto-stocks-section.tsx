@@ -384,27 +384,6 @@ export default function CryptoStocksSection() {
             <div className="text-xs text-crypto-silver">State Street sector performance and ETF analysis</div>
           </button>
           
-          <div className="flex items-center justify-between">
-            <h4 className="text-base font-medium text-white">Sprott ETFs</h4>
-            <button
-              onClick={() => openInNewTab('https://sprottetfs.com/')}
-              className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm flex items-center gap-1"
-            >
-              <ExternalLink className="w-3 h-3" />
-              Open Full View
-            </button>
-          </div>
-          <iframe
-            src="https://sprottetfs.com/"
-            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            title="Sprott ETFs"
-            loading="eager"
-            referrerPolicy="no-referrer"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
-            allow="fullscreen; clipboard-write; autoplay; camera; microphone; geolocation"
-            frameBorder="0"
-          />
-          
           <button
             onClick={() => openInNewTab('https://www.slickcharts.com/')}
             className="w-full bg-gradient-to-br from-blue-500/10 to-cyan-600/10 hover:from-blue-500/20 hover:to-cyan-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group"

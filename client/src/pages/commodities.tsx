@@ -79,6 +79,73 @@ export default function CommoditiesPage() {
             <p className="text-crypto-silver">Track precious metals and commodity market movements</p>
           </div>
 
+          {/* Junior Mining Network Commodity Charts */}
+          <GlassCard className="p-3 sm:p-4 lg:p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-6">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-amber-500 to-yellow-500 rounded-full flex items-center justify-center">
+                  <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-semibold text-white">Commodity Charts</h3>
+                <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-xs">
+                  LIVE PRICES
+                </Badge>
+              </div>
+              <button
+                onClick={() => window.open('https://www.juniorminingnetwork.com/commodity-charts.html', '_blank', 'noopener,noreferrer')}
+                className="text-amber-400 hover:text-amber-300 text-xs sm:text-sm flex items-center gap-1"
+              >
+                Open Full View →
+              </button>
+            </div>
+
+            <div className="w-full">
+              <iframe
+                src="https://www.juniorminingnetwork.com/commodity-charts.html"
+                className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+                title="Junior Mining Network Commodity Charts"
+                frameBorder="0"
+                loading="eager"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
+                allow="fullscreen; clipboard-write; autoplay; camera; microphone; geolocation"
+              />
+            </div>
+          </GlassCard>
+
+          {/* Sprott ETFs */}
+          <GlassCard className="p-3 sm:p-4 lg:p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-6">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                  <Gem className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-semibold text-white">Sprott ETFs</h3>
+                <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-xs">
+                  PRECIOUS METALS
+                </Badge>
+              </div>
+              <button
+                onClick={() => window.open('https://sprottetfs.com/', '_blank', 'noopener,noreferrer')}
+                className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm flex items-center gap-1"
+              >
+                Open Full View →
+              </button>
+            </div>
+
+            <div className="w-full">
+              <iframe
+                src="https://sprottetfs.com/"
+                className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
+                title="Sprott ETFs"
+                loading="eager"
+                referrerPolicy="no-referrer"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
+                allow="fullscreen; clipboard-write; autoplay; camera; microphone; geolocation"
+                frameBorder="0"
+              />
+            </div>
+          </GlassCard>
+
           {/* Gold */}
           <GlassCard className="p-3 sm:p-4 lg:p-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
