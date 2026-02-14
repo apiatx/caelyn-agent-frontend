@@ -270,12 +270,6 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
           path: '/app/stocks/charts'
         },
         {
-          id: 'stocks-screeners',
-          label: 'Screeners',
-          icon: <TrendingUp className="w-4 h-4" />,
-          path: '/app/stocks/screeners'
-        },
-        {
           id: 'stocks-sectors',
           label: 'Sectors + ETFs',
           icon: <Layers className="w-4 h-4" />,
@@ -283,7 +277,7 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
         },
         {
           id: 'stocks-portfolio',
-          label: 'Portfolio + Tools',
+          label: 'Portfolio + Other',
           icon: <Wallet className="w-4 h-4" />,
           path: '/app/stocks/portfolio'
         }

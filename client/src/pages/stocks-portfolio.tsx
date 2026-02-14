@@ -51,7 +51,7 @@ export default function StocksPortfolioPage() {
                 <img src={stonksIcon} alt="Portfolio" className="w-full h-full object-cover" />
               </div>
             </div>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-3 bg-gradient-to-r from-green-400 via-emerald-300 to-teal-400 bg-clip-text text-transparent">Portfolio + Tools</h2>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-3 bg-gradient-to-r from-green-400 via-emerald-300 to-teal-400 bg-clip-text text-transparent">Portfolio + Other</h2>
             <Badge className="bg-gradient-to-r from-green-500/30 to-emerald-500/30 text-white border-green-400/50 text-sm px-4 py-1 mb-4">PORTFOLIO & RESOURCES</Badge>
             <div className="w-32 h-1 bg-gradient-to-r from-green-500 to-emerald-500 mx-auto rounded-full mb-4"></div>
             <p className="text-lg text-white/80">Portfolio management and additional research tools</p>
