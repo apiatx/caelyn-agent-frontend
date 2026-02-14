@@ -270,12 +270,6 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
           path: '/app/stocks/dashboard'
         },
         {
-          id: 'stocks-charts',
-          label: 'Charts',
-          icon: <BarChart3 className="w-4 h-4" />,
-          path: '/app/stocks/charts'
-        },
-        {
           id: 'stocks-sectors',
           label: 'Sectors + ETFs',
           icon: <Layers className="w-4 h-4" />,
