@@ -13,6 +13,31 @@ const GlassCard = ({ children, className = "" }: { children: React.ReactNode; cl
   </Card>
 );
 
+const ForexHeatmapWidget = memo(function ForexHeatmapWidget() {
+  const container = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!container.current) return;
+    const script = document.createElement("script");
+    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-forex-heat-map.js";
+    script.type = "text/javascript";
+    script.async = true;
+    script.innerHTML = JSON.stringify({
+      colorTheme: "dark",
+      isTransparent: true,
+      locale: "en",
+      currencies: ["EUR", "USD", "JPY", "GBP", "CHF", "AUD", "CAD", "NZD", "CNY"],
+      width: "100%",
+      height: "100%"
+    });
+    container.current.appendChild(script);
+  }, []);
+  return (
+    <div className="tradingview-widget-container" ref={container} style={{ width: "100%", height: "100%" }}>
+      <div className="tradingview-widget-container__widget" style={{ width: "100%", height: "100%" }}></div>
+    </div>
+  );
+});
+
 function EconomicMapWidget() {
   const containerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -174,6 +199,18 @@ export default function StocksDashboardPage() {
               </div>
             </GlassCard>
           </div>
+
+          <GlassCard className="p-3 sm:p-4 lg:p-6">
+            <div className="flex items-center gap-2 mb-6">
+              <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full flex items-center justify-center">
+                <Activity className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+              </div>
+              <h3 className="text-lg sm:text-xl font-semibold text-white">Forex Heatmap</h3>
+            </div>
+            <div className="w-full h-[500px] rounded-lg overflow-hidden border border-crypto-silver/20">
+              <ForexHeatmapWidget />
+            </div>
+          </GlassCard>
 
           <GlassCard className="p-3 sm:p-4 lg:p-6">
             <div className="flex items-center gap-2 mb-6">
