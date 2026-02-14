@@ -1,3 +1,4 @@
+import { useEffect, useRef, memo } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, ExternalLink, BarChart3 } from "lucide-react";
@@ -12,6 +13,40 @@ const GlassCard = ({ children, className = "" }: { children: React.ReactNode; cl
     {children}
   </Card>
 );
+
+const ETFHeatmapWidget = memo(function ETFHeatmapWidget() {
+  const container = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!container.current) return;
+    const script = document.createElement("script");
+    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-etf-heatmap.js";
+    script.type = "text/javascript";
+    script.async = true;
+    script.innerHTML = JSON.stringify({
+      dataSource: "AllUSEtf",
+      blockSize: "Value.Traded|1W",
+      blockColor: "change",
+      grouping: "asset_class",
+      locale: "en",
+      symbolUrl: "",
+      colorTheme: "dark",
+      hasTopBar: false,
+      isDataSetEnabled: false,
+      isZoomEnabled: true,
+      hasSymbolTooltip: true,
+      isMonoSize: false,
+      width: "100%",
+      height: "100%"
+    });
+    container.current.appendChild(script);
+  }, []);
+
+  return (
+    <div className="tradingview-widget-container" ref={container}>
+      <div className="tradingview-widget-container__widget"></div>
+    </div>
+  );
+});
 
 export default function StocksSectorsPage() {
   const headerOpacity = useScrollFade(30, 120);
@@ -54,33 +89,21 @@ export default function StocksSectorsPage() {
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-3 bg-gradient-to-r from-purple-400 via-pink-300 to-orange-400 bg-clip-text text-transparent">Sectors + ETFs</h2>
             <Badge className="bg-gradient-to-r from-purple-500/30 to-pink-500/30 text-white border-purple-400/50 text-sm px-4 py-1 mb-4">SECTORS & FUNDS</Badge>
             <div className="w-32 h-1 bg-gradient-to-r from-purple-500 to-pink-500 mx-auto rounded-full mb-4"></div>
-            <p className="text-lg text-white/80">Sector analysis, bubbles visualization, and ETF research</p>
+            <p className="text-lg text-white/80">Sector analysis, ETF heatmaps, and fund research</p>
           </div>
 
           <GlassCard className="p-3 sm:p-4 lg:p-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-6">
               <div className="flex items-center gap-2">
-                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-purple-500 rounded-full flex items-center justify-center">
-                  <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full flex items-center justify-center">
+                  <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
                 </div>
-                <h3 className="text-lg sm:text-xl font-semibold text-white">Banterbubbles</h3>
-                <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-xs">STOCK BUBBLES</Badge>
+                <h3 className="text-lg sm:text-xl font-semibold text-white">ETF Heatmap</h3>
+                <Badge className="bg-teal-500/20 text-teal-400 border-teal-500/30 text-xs">ALL US ETFs</Badge>
               </div>
-              <button onClick={() => openInNewTab('https://banterbubbles.com/?utm_source=cbanter&utm_medium=cbanter&utm_campaign=cbanter&source=cbanter#stocks')} className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm flex items-center gap-1">
-                <ExternalLink className="w-3 h-3" />
-                Open Full View
-              </button>
             </div>
-            <div className="w-full">
-              <iframe
-                src="https://banterbubbles.com/?utm_source=cbanter&utm_medium=cbanter&utm_campaign=cbanter&source=cbanter#stocks"
-                className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
-                title="Banterbubbles Stock Analysis"
-                frameBorder="0"
-                loading="eager"
-                sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
-                allow="fullscreen; clipboard-write; autoplay; camera; microphone; geolocation"
-              />
+            <div className="w-full h-[600px] sm:h-[700px] rounded-lg overflow-hidden border border-crypto-silver/20">
+              <ETFHeatmapWidget />
             </div>
           </GlassCard>
 
