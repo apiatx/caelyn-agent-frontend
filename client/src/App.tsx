@@ -18,6 +18,10 @@ import P2EPage from "@/pages/p2e";
 import BNBPage from "@/pages/bnb";
 import SUIPage from "@/pages/sui";
 import CryptoStocks from "@/pages/crypto-stocks";
+import StocksChartsPage from "@/pages/stocks-charts";
+import StocksScreenersPage from "@/pages/stocks-screeners";
+import StocksSectorsPage from "@/pages/stocks-sectors";
+import StocksPortfolioPage from "@/pages/stocks-portfolio";
 import CryptoStonks from "@/pages/crypto-stonks";
 import CommoditiesPage from "@/pages/commodities";
 import RWAPage from "@/pages/rwa";
@@ -109,6 +113,10 @@ function Router() {
       <Route path="/app/crypto-stocks" component={CryptoStocks} />
       <Route path="/app/stocks" component={CryptoStocks} />
       <Route path="/app/stonks" component={CryptoStocks} />
+      <Route path="/app/stocks/charts" component={StocksChartsPage} />
+      <Route path="/app/stocks/screeners" component={StocksScreenersPage} />
+      <Route path="/app/stocks/sectors" component={StocksSectorsPage} />
+      <Route path="/app/stocks/portfolio" component={StocksPortfolioPage} />
       <Route path="/app/crypto-stonks" component={CryptoStonks} />
       <Route path="/app/commodities" component={CommoditiesPage} />
       <Route path="/commodities" component={CommoditiesPage} />

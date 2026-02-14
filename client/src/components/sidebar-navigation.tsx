@@ -256,7 +256,38 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
       id: 'crypto-stocks',
       label: 'Stocks',
       icon: <TrendingUp className="w-4 h-4" />,
-      path: '/app/crypto-stocks'
+      children: [
+        {
+          id: 'stocks-screening',
+          label: 'Screening',
+          icon: <Search className="w-4 h-4" />,
+          path: '/app/stocks'
+        },
+        {
+          id: 'stocks-charts',
+          label: 'Charts',
+          icon: <BarChart3 className="w-4 h-4" />,
+          path: '/app/stocks/charts'
+        },
+        {
+          id: 'stocks-screeners',
+          label: 'Screeners',
+          icon: <TrendingUp className="w-4 h-4" />,
+          path: '/app/stocks/screeners'
+        },
+        {
+          id: 'stocks-sectors',
+          label: 'Sectors + ETFs',
+          icon: <Layers className="w-4 h-4" />,
+          path: '/app/stocks/sectors'
+        },
+        {
+          id: 'stocks-portfolio',
+          label: 'Portfolio + Tools',
+          icon: <Wallet className="w-4 h-4" />,
+          path: '/app/stocks/portfolio'
+        }
+      ]
     },
     {
       id: 'commodities',
