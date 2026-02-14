@@ -264,6 +264,12 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
           path: '/app/stocks'
         },
         {
+          id: 'stocks-dashboard',
+          label: 'Dashboard',
+          icon: <Activity className="w-4 h-4" />,
+          path: '/app/stocks/dashboard'
+        },
+        {
           id: 'stocks-charts',
           label: 'Charts',
           icon: <BarChart3 className="w-4 h-4" />,
