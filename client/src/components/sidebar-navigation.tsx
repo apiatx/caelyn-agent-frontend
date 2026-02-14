@@ -50,205 +50,212 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
 
   const navItems: NavItem[] = [
     {
-      id: 'dashboard',
-      label: 'Market Overview',
-      icon: <Activity className="w-4 h-4" />,
-      path: '/app'
-    },
-    {
-      id: 'charts',
-      label: 'Charts',
-      icon: <BarChart3 className="w-4 h-4" />,
+      id: 'crypto',
+      label: 'Crypto',
+      icon: <Coins className="w-4 h-4" />,
       children: [
         {
-          id: 'majors',
-          label: 'Majors',
+          id: 'dashboard',
+          label: 'Market Overview',
+          icon: <Activity className="w-4 h-4" />,
+          path: '/app'
+        },
+        {
+          id: 'charts',
+          label: 'Charts',
           icon: <BarChart3 className="w-4 h-4" />,
-          path: '/app/charts/majors'
+          children: [
+            {
+              id: 'majors',
+              label: 'Majors',
+              icon: <BarChart3 className="w-4 h-4" />,
+              path: '/app/charts/majors'
+            },
+            {
+              id: 'altcoins',
+              label: 'Altcoins',
+              icon: <Coins className="w-4 h-4" />,
+              path: '/app/charts/altcoins'
+            }
+          ]
         },
         {
-          id: 'altcoins',
-          label: 'Altcoins',
-          icon: <Coins className="w-4 h-4" />,
-          path: '/app/charts/altcoins'
-        }
-      ]
-    },
-    {
-      id: 'onchain',
-      label: 'Onchain',
-      icon: <BarChart3 className="w-4 h-4" />,
-      children: [
-        {
-          id: 'onchain-analytics',
-          label: 'Screening',
-          icon: <TrendingUp className="w-4 h-4" />,
-          path: '/app/onchain/analytics'
-        },
-        {
-          id: 'onchain-analyze',
-          label: 'Analyze',
-          icon: <Brain className="w-4 h-4" />,
-          path: '/app/onchain/analyze'
-        },
-        {
-          id: 'onchain-inspect',
-          label: 'Inspect',
-          icon: <Search className="w-4 h-4" />,
-          path: '/app/onchain/inspect'
-        },
-        {
-          id: 'onchain-smart-wallets',
-          label: 'Smart Wallets',
-          icon: <Wallet className="w-4 h-4" />,
-          path: '/app/onchain/smart-wallets'
-        },
-        {
-          id: 'onchain-launchpad',
-          label: 'Launchpad',
-          icon: <Rocket className="w-4 h-4" />,
-          path: '/app/onchain/launchpad'
-        },
-        {
-          id: 'onchain-airdrop',
-          label: 'Airdrop',
-          icon: <Zap className="w-4 h-4" />,
-          path: '/app/onchain/airdrop'
-        },
-        {
-          id: 'onchain-memes',
-          label: 'Memes',
-          icon: <Coins className="w-4 h-4" />,
-          path: '/app/onchain/memes'
-        },
-        {
-          id: 'onchain-discover',
-          label: 'Discover Web3',
-          icon: <Globe className="w-4 h-4" />,
-          path: '/app/onchain/discover'
-        }
-      ]
-    },
-    {
-      id: 'trade',
-      label: 'Trade',
-      icon: <TrendingUp className="w-4 h-4" />,
-      children: [
-        {
-          id: 'trade-swidge',
-          label: 'Swidge',
-          icon: <ArrowLeftRight className="w-4 h-4" />,
-          path: '/app/trade'
-        },
-        {
-          id: 'trade-perps',
-          label: 'Perps',
-          icon: <TrendingUp className="w-4 h-4" />,
-          path: '/app/trade/perps'
-        },
-        {
-          id: 'trade-spot-terminals',
-          label: 'Spot Terminals',
+          id: 'onchain',
+          label: 'Onchain',
           icon: <BarChart3 className="w-4 h-4" />,
-          path: '/app/trade/spot-terminals'
+          children: [
+            {
+              id: 'onchain-analytics',
+              label: 'Screening',
+              icon: <TrendingUp className="w-4 h-4" />,
+              path: '/app/onchain/analytics'
+            },
+            {
+              id: 'onchain-analyze',
+              label: 'Analyze',
+              icon: <Brain className="w-4 h-4" />,
+              path: '/app/onchain/analyze'
+            },
+            {
+              id: 'onchain-inspect',
+              label: 'Inspect',
+              icon: <Search className="w-4 h-4" />,
+              path: '/app/onchain/inspect'
+            },
+            {
+              id: 'onchain-smart-wallets',
+              label: 'Smart Wallets',
+              icon: <Wallet className="w-4 h-4" />,
+              path: '/app/onchain/smart-wallets'
+            },
+            {
+              id: 'onchain-launchpad',
+              label: 'Launchpad',
+              icon: <Rocket className="w-4 h-4" />,
+              path: '/app/onchain/launchpad'
+            },
+            {
+              id: 'onchain-airdrop',
+              label: 'Airdrop',
+              icon: <Zap className="w-4 h-4" />,
+              path: '/app/onchain/airdrop'
+            },
+            {
+              id: 'onchain-memes',
+              label: 'Memes',
+              icon: <Coins className="w-4 h-4" />,
+              path: '/app/onchain/memes'
+            },
+            {
+              id: 'onchain-discover',
+              label: 'Discover Web3',
+              icon: <Globe className="w-4 h-4" />,
+              path: '/app/onchain/discover'
+            }
+          ]
         },
         {
-          id: 'trade-options',
-          label: 'Options',
-          icon: <Zap className="w-4 h-4" />,
-          path: '/app/trade/options'
+          id: 'trade',
+          label: 'Trade',
+          icon: <TrendingUp className="w-4 h-4" />,
+          children: [
+            {
+              id: 'trade-swidge',
+              label: 'Swidge',
+              icon: <ArrowLeftRight className="w-4 h-4" />,
+              path: '/app/trade'
+            },
+            {
+              id: 'trade-perps',
+              label: 'Perps',
+              icon: <TrendingUp className="w-4 h-4" />,
+              path: '/app/trade/perps'
+            },
+            {
+              id: 'trade-spot-terminals',
+              label: 'Spot Terminals',
+              icon: <BarChart3 className="w-4 h-4" />,
+              path: '/app/trade/spot-terminals'
+            },
+            {
+              id: 'trade-options',
+              label: 'Options',
+              icon: <Zap className="w-4 h-4" />,
+              path: '/app/trade/options'
+            },
+            {
+              id: 'trade-onramp',
+              label: 'On Ramp',
+              icon: <Wallet className="w-4 h-4" />,
+              path: '/app/trade/onramp'
+            }
+          ]
         },
         {
-          id: 'trade-onramp',
-          label: 'On Ramp',
-          icon: <Wallet className="w-4 h-4" />,
-          path: '/app/trade/onramp'
-        }
-      ]
-    },
-    {
-      id: 'defi',
-      label: 'Earn',
-      icon: <DollarSign className="w-4 h-4" />,
-      children: [
-        {
-          id: 'defi-overview',
-          label: 'DeFi',
+          id: 'defi',
+          label: 'Earn',
           icon: <DollarSign className="w-4 h-4" />,
-          path: '/app/defi'
+          children: [
+            {
+              id: 'defi-overview',
+              label: 'DeFi',
+              icon: <DollarSign className="w-4 h-4" />,
+              path: '/app/defi'
+            },
+            {
+              id: 'btc-defi',
+              label: 'BTC Fi',
+              icon: <Coins className="w-4 h-4" />,
+              path: '/app/defi/btc-defi'
+            },
+            {
+              id: 'defai',
+              label: 'DeFAI',
+              icon: <Brain className="w-4 h-4" />,
+              path: '/app/defi/defai'
+            },
+            {
+              id: 'depin',
+              label: 'DePIN',
+              icon: <Zap className="w-4 h-4" />,
+              path: '/app/defi/depin'
+            },
+            {
+              id: 'p2e',
+              label: 'P2E',
+              icon: <Gamepad2 className="w-4 h-4" />,
+              path: '/app/p2e'
+            }
+          ]
         },
         {
-          id: 'btc-defi',
-          label: 'BTC Fi',
-          icon: <Coins className="w-4 h-4" />,
-          path: '/app/defi/btc-defi'
-        },
-        {
-          id: 'defai',
-          label: 'DeFAI',
-          icon: <Brain className="w-4 h-4" />,
-          path: '/app/defi/defai'
-        },
-        {
-          id: 'depin',
-          label: 'DePIN',
-          icon: <Zap className="w-4 h-4" />,
-          path: '/app/defi/depin'
-        },
-        {
-          id: 'p2e',
-          label: 'P2E',
-          icon: <Gamepad2 className="w-4 h-4" />,
-          path: '/app/p2e'
-        }
-      ]
-    },
-    {
-      id: 'ecosystems',
-      label: 'Ecosystems',
-      icon: <Layers className="w-4 h-4" />,
-      children: [
-        {
-          id: 'ethereum',
-          label: 'ETH',
-          icon: <Coins className="w-4 h-4" />,
-          path: '/app/ethereum'
-        },
-        {
-          id: 'base',
-          label: 'Base',
-          icon: <ChartLine className="w-4 h-4" />,
-          path: '/app/base'
-        },
-        {
-          id: 'solana',
-          label: 'Solana',
-          icon: <Zap className="w-4 h-4" />,
-          path: '/app/solana'
-        },
-        {
-          id: 'bittensor',
-          label: 'Bittensor',
-          icon: <Brain className="w-4 h-4" />,
-          path: '/app/bittensor'
-        },
-        {
-          id: 'bnb',
-          label: 'BNB',
-          icon: <Coins className="w-4 h-4" />,
-          path: '/app/bnb'
-        },
-        {
-          id: 'sui',
-          label: 'SUI',
-          icon: <Zap className="w-4 h-4" />,
-          path: '/app/sui'
-        },
-        {
-          id: 'arbitrum',
-          label: 'Arbitrum',
+          id: 'ecosystems',
+          label: 'Ecosystems',
           icon: <Layers className="w-4 h-4" />,
-          path: '/app/arbitrum'
+          children: [
+            {
+              id: 'ethereum',
+              label: 'ETH',
+              icon: <Coins className="w-4 h-4" />,
+              path: '/app/ethereum'
+            },
+            {
+              id: 'base',
+              label: 'Base',
+              icon: <ChartLine className="w-4 h-4" />,
+              path: '/app/base'
+            },
+            {
+              id: 'solana',
+              label: 'Solana',
+              icon: <Zap className="w-4 h-4" />,
+              path: '/app/solana'
+            },
+            {
+              id: 'bittensor',
+              label: 'Bittensor',
+              icon: <Brain className="w-4 h-4" />,
+              path: '/app/bittensor'
+            },
+            {
+              id: 'bnb',
+              label: 'BNB',
+              icon: <Coins className="w-4 h-4" />,
+              path: '/app/bnb'
+            },
+            {
+              id: 'sui',
+              label: 'SUI',
+              icon: <Zap className="w-4 h-4" />,
+              path: '/app/sui'
+            },
+            {
+              id: 'arbitrum',
+              label: 'Arbitrum',
+              icon: <Layers className="w-4 h-4" />,
+              path: '/app/arbitrum'
+            },
+          ]
         },
       ]
     },
@@ -333,11 +340,18 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
     }
   ];
 
+  const hasActiveDescendant = (item: NavItem): boolean => {
+    if (!item.children) return false;
+    return item.children.some(child => 
+      (child.path && isActive(child.path)) || hasActiveDescendant(child)
+    );
+  };
+
   const renderNavItem = (item: NavItem, level: number = 0) => {
     const hasChildren = item.children && item.children.length > 0;
     const isExpanded = !isCollapsed && expandedItems.includes(item.id);
     const itemIsActive = item.path ? isActive(item.path) : false;
-    const hasActiveChild = item.children?.some(child => child.path ? isActive(child.path) : false);
+    const hasActiveChild = hasActiveDescendant(item);
 
     return (
       <div key={item.id} className="w-full">
