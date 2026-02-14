@@ -50,6 +50,43 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
 
   const navItems: NavItem[] = [
     {
+      id: 'crypto-stocks',
+      label: 'Stocks',
+      icon: <TrendingUp className="w-4 h-4" />,
+      children: [
+        {
+          id: 'stocks-dashboard',
+          label: 'Dashboard',
+          icon: <Activity className="w-4 h-4" />,
+          path: '/app/stocks/dashboard'
+        },
+        {
+          id: 'stocks-screening',
+          label: 'Screening',
+          icon: <Search className="w-4 h-4" />,
+          path: '/app/stocks'
+        },
+        {
+          id: 'stocks-sectors',
+          label: 'Sectors + ETFs',
+          icon: <Layers className="w-4 h-4" />,
+          path: '/app/stocks/sectors'
+        },
+        {
+          id: 'stocks-fundamentals',
+          label: 'Fundamentals',
+          icon: <TrendingUp className="w-4 h-4" />,
+          path: '/app/stocks/fundamentals'
+        },
+        {
+          id: 'stocks-portfolio',
+          label: 'Portfolio + Other',
+          icon: <Wallet className="w-4 h-4" />,
+          path: '/app/stocks/portfolio'
+        }
+      ]
+    },
+    {
       id: 'crypto',
       label: 'Crypto',
       icon: <Coins className="w-4 h-4" />,
@@ -257,43 +294,6 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
             },
           ]
         },
-      ]
-    },
-    {
-      id: 'crypto-stocks',
-      label: 'Stocks',
-      icon: <TrendingUp className="w-4 h-4" />,
-      children: [
-        {
-          id: 'stocks-dashboard',
-          label: 'Dashboard',
-          icon: <Activity className="w-4 h-4" />,
-          path: '/app/stocks/dashboard'
-        },
-        {
-          id: 'stocks-screening',
-          label: 'Screening',
-          icon: <Search className="w-4 h-4" />,
-          path: '/app/stocks'
-        },
-        {
-          id: 'stocks-sectors',
-          label: 'Sectors + ETFs',
-          icon: <Layers className="w-4 h-4" />,
-          path: '/app/stocks/sectors'
-        },
-        {
-          id: 'stocks-fundamentals',
-          label: 'Fundamentals',
-          icon: <TrendingUp className="w-4 h-4" />,
-          path: '/app/stocks/fundamentals'
-        },
-        {
-          id: 'stocks-portfolio',
-          label: 'Portfolio + Other',
-          icon: <Wallet className="w-4 h-4" />,
-          path: '/app/stocks/portfolio'
-        }
       ]
     },
     {
