@@ -5,7 +5,6 @@ import { TrendingUp, ExternalLink, BarChart3 } from "lucide-react";
 import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
 import newHeaderBackground from "@assets/photo-1504333638930-c8787321eee0_1757208194192.avif";
 import criptomonedas from "@assets/Criptomonedas-r3pu02e09qriw0f9pyqx2rtyhwsri4es6sdgff2ebk_1757225856373.png";
-import stonksIcon from "@assets/download (2)_1757104529784.jpeg";
 import { useScrollFade } from "@/hooks/useScrollFade";
 
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
@@ -79,19 +78,6 @@ export default function StocksSectorsPage() {
 
       <main className="max-w-[95vw] mx-auto px-2 sm:px-3 py-4">
         <div className="space-y-4 lg:space-y-8">
-          <div className="text-center relative mb-8">
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-orange-500/20 blur-3xl -z-10"></div>
-            <div className="flex justify-center items-center gap-4 mb-6">
-              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-2 border-yellow-400 shadow-2xl hover:scale-110 transition-transform duration-300">
-                <img src={stonksIcon} alt="Sectors" className="w-full h-full object-cover" />
-              </div>
-            </div>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-3 bg-gradient-to-r from-purple-400 via-pink-300 to-orange-400 bg-clip-text text-transparent">Sectors + ETFs</h2>
-            <Badge className="bg-gradient-to-r from-purple-500/30 to-pink-500/30 text-white border-purple-400/50 text-sm px-4 py-1 mb-4">SECTORS & FUNDS</Badge>
-            <div className="w-32 h-1 bg-gradient-to-r from-purple-500 to-pink-500 mx-auto rounded-full mb-4"></div>
-            <p className="text-lg text-white/80">Sector analysis, ETF heatmaps, and fund research</p>
-          </div>
-
           <GlassCard className="p-3 sm:p-4 lg:p-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-6">
               <div className="flex items-center gap-2">

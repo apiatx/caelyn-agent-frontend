@@ -1,14 +1,40 @@
-import React from 'react';
+import React, { useEffect, useRef, memo } from 'react';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, ExternalLink } from "lucide-react";
-import stonksIcon from "@assets/download (2)_1757104529784.jpeg";
+import { TrendingUp, ExternalLink, Search } from "lucide-react";
 
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
   <Card className={`bg-black/40 backdrop-blur-lg border-crypto-silver/20 ${className}`}>
     {children}
   </Card>
 );
+
+const StockScreenerWidget = memo(function StockScreenerWidget() {
+  const container = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!container.current) return;
+    const script = document.createElement("script");
+    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-screener.js";
+    script.type = "text/javascript";
+    script.async = true;
+    script.innerHTML = JSON.stringify({
+      width: "100%",
+      height: "100%",
+      defaultColumn: "overview",
+      defaultScreen: "most_capitalized",
+      showToolbar: true,
+      locale: "en",
+      market: "us",
+      colorTheme: "dark"
+    });
+    container.current.appendChild(script);
+  }, []);
+  return (
+    <div className="tradingview-widget-container" ref={container} style={{ width: "100%", height: "100%" }}>
+      <div className="tradingview-widget-container__widget" style={{ width: "100%", height: "100%" }}></div>
+    </div>
+  );
+});
 
 export default function CryptoStocksSection() {
   const openInNewTab = (url: string) => {
@@ -17,26 +43,20 @@ export default function CryptoStocksSection() {
 
   return (
     <div className="space-y-4 lg:space-y-8">
-      <div className="text-center relative mb-8">
-        <div className="absolute inset-0 bg-gradient-to-r from-green-500/20 via-emerald-500/20 to-teal-500/20 blur-3xl -z-10"></div>
-        <div className="flex justify-center items-center gap-4 mb-6">
-          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-2 border-yellow-400 shadow-2xl hover:scale-110 transition-transform duration-300">
-            <img 
-              src={stonksIcon} 
-              alt="Stonks Icon" 
-              className="w-full h-full object-cover"
-            />
-          </div>
-          <div className="text-left">
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-white via-green-100 to-emerald-100 bg-clip-text text-transparent">Stocks</h1>
-            <Badge className="bg-gradient-to-r from-green-500/30 to-emerald-500/30 text-white border-green-400/50 text-sm mt-2 px-3 py-1">
-              MARKET ANALYSIS
-            </Badge>
+      <GlassCard className="p-3 sm:p-4 lg:p-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-6">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
+              <Search className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+            </div>
+            <h3 className="text-lg sm:text-xl font-semibold text-white">Stock Screener</h3>
+            <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">MOST CAPITALIZED</Badge>
           </div>
         </div>
-        <p className="text-lg text-white/80 font-medium tracking-wide">AI-powered financial analysis and market intelligence</p>
-        <div className="w-32 h-1 bg-gradient-to-r from-green-500 to-emerald-500 mx-auto mt-4 rounded-full"></div>
-      </div>
+        <div className="w-full h-[600px] sm:h-[700px] rounded-lg overflow-hidden border border-crypto-silver/20">
+          <StockScreenerWidget />
+        </div>
+      </GlassCard>
 
       <GlassCard className="p-3 sm:p-4 lg:p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">

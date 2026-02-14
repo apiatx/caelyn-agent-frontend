@@ -258,16 +258,16 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
       icon: <TrendingUp className="w-4 h-4" />,
       children: [
         {
-          id: 'stocks-screening',
-          label: 'Screening',
-          icon: <Search className="w-4 h-4" />,
-          path: '/app/stocks'
-        },
-        {
           id: 'stocks-dashboard',
           label: 'Dashboard',
           icon: <Activity className="w-4 h-4" />,
           path: '/app/stocks/dashboard'
+        },
+        {
+          id: 'stocks-screening',
+          label: 'Screening',
+          icon: <Search className="w-4 h-4" />,
+          path: '/app/stocks'
         },
         {
           id: 'stocks-sectors',
