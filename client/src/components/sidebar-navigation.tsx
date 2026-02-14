@@ -50,6 +50,12 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
 
   const navItems: NavItem[] = [
     {
+      id: 'hippo-ai',
+      label: 'HippoAI',
+      icon: <Brain className="w-4 h-4" />,
+      path: '/app/hippo-ai'
+    },
+    {
       id: 'crypto-stocks',
       label: 'Stocks',
       icon: <TrendingUp className="w-4 h-4" />,

@@ -17,6 +17,7 @@ import DePINPage from "@/pages/depin";
 import P2EPage from "@/pages/p2e";
 import BNBPage from "@/pages/bnb";
 import SUIPage from "@/pages/sui";
+import HippoAIPage from "@/pages/hippo-ai";
 import CryptoStocks from "@/pages/crypto-stocks";
 import StocksDashboardPage from "@/pages/stocks-dashboard";
 import StocksSectorsPage from "@/pages/stocks-sectors";
@@ -111,6 +112,7 @@ function Router() {
       <Route path="/p2e" component={P2EPage} />
       <Route path="/app/rwa" component={RWAPage} />
       <Route path="/app/crypto-stocks" component={CryptoStocks} />
+      <Route path="/app/hippo-ai" component={HippoAIPage} />
       <Route path="/app/stocks" component={CryptoStocks} />
       <Route path="/app/stonks" component={CryptoStocks} />
       <Route path="/app/stocks/dashboard" component={StocksDashboardPage} />
