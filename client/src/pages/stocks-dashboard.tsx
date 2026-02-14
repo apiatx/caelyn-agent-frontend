@@ -52,7 +52,7 @@ function TickerTapeWidget() {
     const doc = iframe.contentDocument;
     if (doc) {
       doc.open();
-      doc.write(`<!DOCTYPE html><html><head><style>body{margin:0;padding:0;overflow:hidden;background:transparent;}</style></head><body><script type="module" src="https://widgets.tradingview-widget.com/w/en/tv-ticker-tape.js"><\/script><tv-ticker-tape symbols="FOREXCOM:SPXUSD,FOREXCOM:NSXUSD,FOREXCOM:DJI,FX:EURUSD,BITSTAMP:BTCUSD,BITSTAMP:ETHUSD,CMCMARKETS:GOLD,TVC:DXY,TVC:RUT,CBOE:VIX,TVC:TNX,TASE:TASE,TVC:SILVER" show-hover style="width:100%;display:block;"></tv-ticker-tape></body></html>`);
+      doc.write(`<!DOCTYPE html><html><head><style>body{margin:0;padding:0;overflow:hidden;background:transparent;}</style></head><body><script type="module" src="https://widgets.tradingview-widget.com/w/en/tv-ticker-tape.js"><\/script><tv-ticker-tape symbols="FOREXCOM:SPXUSD,FOREXCOM:NSXUSD,FOREXCOM:DJI,FX:EURUSD,BITSTAMP:BTCUSD,BITSTAMP:ETHUSD,CMCMARKETS:GOLD" hover-type="performance-grid" show-hover theme="dark" transparent style="width:100%;display:block;"></tv-ticker-tape></body></html>`);
       doc.close();
     }
     return () => {
