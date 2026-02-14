@@ -1,7 +1,7 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Activity } from "lucide-react";
+import { Activity, Newspaper, BarChart3 } from "lucide-react";
 import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
 import newHeaderBackground from "@assets/photo-1504333638930-c8787321eee0_1757208194192.avif";
 import criptomonedas from "@assets/Criptomonedas-r3pu02e09qriw0f9pyqx2rtyhwsri4es6sdgff2ebk_1757225856373.png";
@@ -14,18 +14,41 @@ const GlassCard = ({ children, className = "" }: { children: React.ReactNode; cl
   </Card>
 );
 
+function TradingViewWidget({ containerId, html }: { containerId: string; html: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const iframe = document.createElement("iframe");
+    iframe.style.width = "100%";
+    iframe.style.height = "100%";
+    iframe.style.border = "none";
+    iframe.setAttribute("sandbox", "allow-scripts allow-same-origin allow-popups");
+    containerRef.current.appendChild(iframe);
+    const doc = iframe.contentDocument;
+    if (doc) {
+      doc.open();
+      doc.write(`<!DOCTYPE html><html><head><style>body{margin:0;padding:0;overflow:hidden;background:transparent;}</style></head><body>${html}</body></html>`);
+      doc.close();
+    }
+    return () => {
+      if (containerRef.current && iframe.parentNode === containerRef.current) {
+        containerRef.current.removeChild(iframe);
+      }
+    };
+  }, []);
+
+  return <div ref={containerRef} id={containerId} className="w-full h-full" />;
+}
+
 export default function StocksDashboardPage() {
   const headerOpacity = useScrollFade(30, 120);
 
-  useEffect(() => {
-    const script = document.createElement("script");
-    script.type = "module";
-    script.src = "https://widgets.tradingview-widget.com/w/en/tv-economic-map.js";
-    document.body.appendChild(script);
-    return () => {
-      document.body.removeChild(script);
-    };
-  }, []);
+  const economicMapHtml = `<script type="module" src="https://widgets.tradingview-widget.com/w/en/tv-economic-map.js"><\/script><tv-economic-map style="width:100%;height:700px;display:block;"></tv-economic-map>`;
+
+  const tickerTapeHtml = `<script type="module" src="https://widgets.tradingview-widget.com/w/en/tv-ticker-tape.js"><\/script><tv-ticker-tape symbols="FOREXCOM:SPXUSD,FOREXCOM:NSXUSD,FOREXCOM:DJI,FX:EURUSD,BITSTAMP:BTCUSD,BITSTAMP:ETHUSD,CMCMARKETS:GOLD" style="width:100%;display:block;"></tv-ticker-tape>`;
+
+  const timelineHtml = `<div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div><script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-timeline.js" async>{"displayMode":"regular","feedMode":"all_symbols","colorTheme":"dark","isTransparent":true,"locale":"en","width":"100%","height":550}<\/script></div>`;
 
   return (
     <div className="min-h-screen text-white" style={{background: 'linear-gradient(135deg, hsl(0, 0%, 0%) 0%, hsl(0, 0%, 10%) 50%, hsl(0, 0%, 0%) 100%)'}}>
@@ -49,6 +72,10 @@ export default function StocksDashboardPage() {
         </div>
       </header>
 
+      <div className="w-full h-[50px] overflow-hidden">
+        <TradingViewWidget containerId="ticker-tape" html={tickerTapeHtml} />
+      </div>
+
       <main className="max-w-[95vw] mx-auto px-2 sm:px-3 py-4">
         <div className="space-y-4 lg:space-y-8">
           <div className="text-center relative mb-8">
@@ -59,9 +86,9 @@ export default function StocksDashboardPage() {
               </div>
             </div>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-3 bg-gradient-to-r from-green-400 via-emerald-300 to-teal-400 bg-clip-text text-transparent">Dashboard</h2>
-            <Badge className="bg-gradient-to-r from-green-500/30 to-emerald-500/30 text-white border-green-400/50 text-sm px-4 py-1 mb-4">ECONOMIC MAP</Badge>
+            <Badge className="bg-gradient-to-r from-green-500/30 to-emerald-500/30 text-white border-green-400/50 text-sm px-4 py-1 mb-4">MARKET OVERVIEW</Badge>
             <div className="w-32 h-1 bg-gradient-to-r from-green-500 to-emerald-500 mx-auto rounded-full mb-4"></div>
-            <p className="text-lg text-white/80">Global economic heatmap and market overview</p>
+            <p className="text-lg text-white/80">Global economic heatmap, top stories, and market overview</p>
           </div>
 
           <GlassCard className="p-3 sm:p-4 lg:p-6">
@@ -72,9 +99,21 @@ export default function StocksDashboardPage() {
               <h3 className="text-lg sm:text-xl font-semibold text-white">Economic Map</h3>
               <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">TRADINGVIEW</Badge>
             </div>
-            <div className="w-full min-h-[600px] rounded-lg overflow-hidden border border-crypto-silver/20">
-              {/* @ts-ignore */}
-              <tv-economic-map style={{ width: '100%', height: '700px', display: 'block' }}></tv-economic-map>
+            <div className="w-full h-[700px] rounded-lg overflow-hidden border border-crypto-silver/20">
+              <TradingViewWidget containerId="economic-map" html={economicMapHtml} />
+            </div>
+          </GlassCard>
+
+          <GlassCard className="p-3 sm:p-4 lg:p-6">
+            <div className="flex items-center gap-2 mb-6">
+              <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
+                <Newspaper className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+              </div>
+              <h3 className="text-lg sm:text-xl font-semibold text-white">Top Stories</h3>
+              <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">TRADINGVIEW</Badge>
+            </div>
+            <div className="w-full h-[560px] rounded-lg overflow-hidden border border-crypto-silver/20">
+              <TradingViewWidget containerId="top-stories" html={timelineHtml} />
             </div>
           </GlassCard>
         </div>
