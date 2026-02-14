@@ -22,6 +22,7 @@ import StocksChartsPage from "@/pages/stocks-charts";
 import StocksDashboardPage from "@/pages/stocks-dashboard";
 import StocksSectorsPage from "@/pages/stocks-sectors";
 import StocksPortfolioPage from "@/pages/stocks-portfolio";
+import StocksFundamentalsPage from "@/pages/stocks-fundamentals";
 import CryptoStonks from "@/pages/crypto-stonks";
 import CommoditiesPage from "@/pages/commodities";
 import RWAPage from "@/pages/rwa";
@@ -116,6 +117,7 @@ function Router() {
       <Route path="/app/stocks/dashboard" component={StocksDashboardPage} />
       <Route path="/app/stocks/charts" component={StocksChartsPage} />
       <Route path="/app/stocks/sectors" component={StocksSectorsPage} />
+      <Route path="/app/stocks/fundamentals" component={StocksFundamentalsPage} />
       <Route path="/app/stocks/portfolio" component={StocksPortfolioPage} />
       <Route path="/app/crypto-stonks" component={CryptoStonks} />
       <Route path="/app/commodities" component={CommoditiesPage} />
