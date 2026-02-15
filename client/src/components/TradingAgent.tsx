@@ -28,7 +28,7 @@ export default function TradingAgent() {
     const q = customPrompt || prompt;
 
     if (q === '__PORTFOLIO__') {
-      setShowTickerInput(true);
+      setShowTickerInput(!showTickerInput);
       return;
     }
 
