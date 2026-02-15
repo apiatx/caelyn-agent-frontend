@@ -54,8 +54,8 @@ import NotFound from "@/pages/not-found";
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Dashboard} />
-      <Route path="/app" component={Dashboard} />
+      <Route path="/" component={HippoAIPage} />
+      <Route path="/app" component={HippoAIPage} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/app/charts/majors" component={TopChartsPage} />
       <Route path="/app/charts/altcoins" component={AltcoinsPage} />
