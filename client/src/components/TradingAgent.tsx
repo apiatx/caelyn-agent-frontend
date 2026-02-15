@@ -17,9 +17,17 @@ export default function TradingAgent() {
   const [chatHistory, setChatHistory] = useState<Array<{role: string, content: string}>>([]);
   const [loadingStage, setLoadingStage] = useState('');
   const [expandedTicker, setExpandedTicker] = useState<string | null>(null);
+  const [showTickerInput, setShowTickerInput] = useState(false);
+  const [tickerInput, setTickerInput] = useState('');
 
   async function askAgent(customPrompt?: string) {
     const q = customPrompt || prompt;
+
+    if (q === '__PORTFOLIO__') {
+      setShowTickerInput(true);
+      return;
+    }
+
     if (!q.trim()) return;
     setLoading(true); setError(null); setResult(null); setExpandedTicker(null);
     setPrompt('');
@@ -43,6 +51,15 @@ export default function TradingAgent() {
     } catch (err: any) {
       setError(err.message.includes('429') ? 'Rate limit reached. Wait a moment.' : err.message.includes('403') ? 'Auth failed.' : err.message);
     } finally { clearInterval(iv); setLoadingStage(''); setLoading(false); }
+  }
+
+  function submitPortfolio() {
+    if (!tickerInput.trim()) return;
+    const tickers = tickerInput.toUpperCase().split(/[,\s]+/).filter(t => t.length >= 1 && t.length <= 5);
+    if (tickers.length === 0) return;
+    setShowTickerInput(false);
+    const portfolioPrompt = `Review and rate these positions: ${tickers.join(', ')}. For each ticker give me a rating (Strong Buy, Buy, Hold, Sell, or Short) with full technical summary, fundamental summary, sentiment, key risk, insider activity, relative strength vs SPY, and suggested action. Then give me portfolio-level insights: sector concentration, risk flags, and suggested changes.`;
+    askAgent(portfolioPrompt);
   }
 
   const C = {
@@ -358,6 +375,111 @@ export default function TradingAgent() {
     </div>;
   }
 
+  function renderPortfolio(s: any) {
+    const positions = s.positions || [];
+    const insights = s.portfolio_insights || {};
+
+    const ratingConfig: Record<string, {color: string, bg: string}> = {
+      'Strong Buy': { color: '#22c55e', bg: '#22c55e12' },
+      'Buy': { color: '#4ade80', bg: '#4ade8012' },
+      'Hold': { color: '#f59e0b', bg: '#f59e0b12' },
+      'Sell': { color: '#ef4444', bg: '#ef444412' },
+      'Short': { color: '#dc2626', bg: '#dc262612' },
+    };
+
+    return <div>
+      {s.summary && <div style={{ padding:'16px 20px', background:`${C.blue}08`, border:`1px solid ${C.blue}15`, borderRadius:10, marginBottom:16, color:C.text, fontSize:12, fontFamily:sansFont, lineHeight:1.7 }}>{s.summary}</div>}
+
+      {s.spy_context && <div style={{ display:'flex', alignItems:'center', gap:16, padding:'10px 16px', background:C.card, border:`1px solid ${C.border}`, borderRadius:8, marginBottom:16 }}>
+        <span style={{ color:C.dim, fontSize:11, fontWeight:700, fontFamily:font }}>SPY BENCHMARK</span>
+        <span style={{ color:C.bright, fontSize:14, fontWeight:700, fontFamily:font }}>{s.spy_context.price}</span>
+        <span style={{ color:changeColor(s.spy_context.change), fontSize:12, fontWeight:600, fontFamily:font }}>{s.spy_context.change}</span>
+        <span style={{ color:trendColor(s.spy_context.trend), fontSize:11, fontFamily:font }}>{s.spy_context.trend}</span>
+      </div>}
+
+      <div style={{ display:'flex', flexDirection:'column', gap:10, marginBottom:16 }}>
+        {positions.map((p: any, i: number) => {
+          const isExp = expandedTicker === `port-${i}`;
+          const rc = ratingConfig[p.rating] || ratingConfig['Hold'];
+          return <CardWrap key={i} onClick={() => setExpandedTicker(isExp ? null : `port-${i}`)} expanded={isExp}>
+            <div style={{ padding:'14px 18px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                <span style={{ color:C.blue, fontWeight:800, fontSize:16, fontFamily:font }}>{p.ticker}</span>
+                <span style={{ color:C.dim, fontSize:11 }}>{p.company}</span>
+                <span style={{ color:changeColor(p.change), fontWeight:600, fontSize:13, fontFamily:font }}>{p.price} {p.change}</span>
+              </div>
+              <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+                <Badge color={C.dim}>{p.market_cap}</Badge>
+                <span style={{ display:'inline-block', padding:'4px 14px', borderRadius:6, fontSize:11, fontWeight:800, fontFamily:font, color:rc.color, background:rc.bg, border:`1px solid ${rc.color}30`, letterSpacing:'0.04em', textTransform:'uppercase' }}>{p.rating}</span>
+              </div>
+            </div>
+            <div style={{ padding:'0 18px 10px', display:'flex', gap:16, fontSize:10, fontFamily:font }}>
+              <span style={{ color:C.dim }}>Combined: <span style={{ color:C.bright, fontWeight:700 }}>{p.combined_score}</span></span>
+              <span style={{ color:C.dim }}>Trade: <span style={{ color:C.blue }}>{p.trade_score}</span></span>
+              <span style={{ color:C.dim }}>Invest: <span style={{ color:C.green }}>{p.invest_score}</span></span>
+              {p.relative_strength && <span style={{ color:C.dim }}>vs SPY: <span style={{ color:trendColor(p.relative_strength) }}>{p.relative_strength}</span></span>}
+            </div>
+            <div style={{ padding:'0 18px 14px', color:C.text, fontSize:12, lineHeight:1.6, fontFamily:sansFont }}>{p.thesis}</div>
+            {isExp && <div style={{ borderTop:`1px solid ${C.border}`, padding:18 }}>
+              <TradingViewMini ticker={p.ticker} />
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:14 }}>
+                <div style={{ background:C.bg, borderRadius:8, padding:12, border:`1px solid ${C.border}` }}>
+                  <div style={{ color:C.blue, fontSize:10, fontWeight:700, fontFamily:font, textTransform:'uppercase', marginBottom:6 }}>Technical</div>
+                  <div style={{ color:C.text, fontSize:11, lineHeight:1.7, fontFamily:sansFont }}>{p.ta_summary}</div>
+                </div>
+                <div style={{ background:C.bg, borderRadius:8, padding:12, border:`1px solid ${C.border}` }}>
+                  <div style={{ color:C.green, fontSize:10, fontWeight:700, fontFamily:font, textTransform:'uppercase', marginBottom:6 }}>Fundamentals</div>
+                  <div style={{ color:C.text, fontSize:11, lineHeight:1.7, fontFamily:sansFont }}>{p.fundamental_summary}</div>
+                </div>
+              </div>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:12, marginBottom:14 }}>
+                {p.sentiment && <div style={{ background:C.bg, borderRadius:8, padding:10, border:`1px solid ${C.border}` }}>
+                  <div style={{ color:C.purple, fontSize:9, fontWeight:700, fontFamily:font, textTransform:'uppercase', marginBottom:4 }}>Sentiment</div>
+                  <div style={{ color:C.text, fontSize:11, fontFamily:sansFont }}>{p.sentiment}</div>
+                </div>}
+                {p.insider_activity && <div style={{ background:C.bg, borderRadius:8, padding:10, border:`1px solid ${C.border}` }}>
+                  <div style={{ color:C.gold, fontSize:9, fontWeight:700, fontFamily:font, textTransform:'uppercase', marginBottom:4 }}>Insider Activity</div>
+                  <div style={{ color:C.text, fontSize:11, fontFamily:sansFont }}>{p.insider_activity}</div>
+                </div>}
+                {p.key_risk && <div style={{ background:`${C.red}06`, borderRadius:8, padding:10, border:`1px solid ${C.red}12` }}>
+                  <div style={{ color:C.red, fontSize:9, fontWeight:700, fontFamily:font, textTransform:'uppercase', marginBottom:4 }}>Key Risk</div>
+                  <div style={{ color:C.text, fontSize:11, fontFamily:sansFont }}>{p.key_risk}</div>
+                </div>}
+              </div>
+              {p.action && <div style={{ padding:12, background:`${rc.bg}`, border:`1px solid ${rc.color}20`, borderRadius:8, color:C.bright, fontSize:12, fontWeight:600, fontFamily:sansFont }}>
+                <span style={{ color:rc.color, fontWeight:700 }}>Action: </span>{p.action}
+              </div>}
+            </div>}
+          </CardWrap>;
+        })}
+      </div>
+
+      {Object.keys(insights).length > 0 && <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:10, padding:18, marginBottom:16 }}>
+        <div style={{ color:C.bright, fontSize:14, fontWeight:700, fontFamily:sansFont, marginBottom:14 }}>Portfolio Insights</div>
+        {insights.sector_concentration && <div style={{ marginBottom:12 }}>
+          <div style={{ color:C.blue, fontSize:10, fontWeight:700, fontFamily:font, textTransform:'uppercase', marginBottom:6 }}>Sector Concentration</div>
+          <div style={{ color:C.text, fontSize:12, fontFamily:sansFont }}>{insights.sector_concentration}</div>
+        </div>}
+        {insights.risk_flags && insights.risk_flags.length > 0 && <div style={{ marginBottom:12 }}>
+          <div style={{ color:C.red, fontSize:10, fontWeight:700, fontFamily:font, textTransform:'uppercase', marginBottom:6 }}>Risk Flags</div>
+          {insights.risk_flags.map((flag: string, i: number) => (
+            <div key={i} style={{ padding:'6px 0', borderBottom: i < insights.risk_flags.length - 1 ? `1px solid ${C.border}` : 'none', color:C.text, fontSize:11, fontFamily:sansFont, display:'flex', gap:8 }}>
+              <span style={{ color:C.red }}>⚠️</span> {flag}
+            </div>
+          ))}
+        </div>}
+        {insights.suggested_actions && insights.suggested_actions.length > 0 && <div>
+          <div style={{ color:C.green, fontSize:10, fontWeight:700, fontFamily:font, textTransform:'uppercase', marginBottom:6 }}>Suggested Actions</div>
+          {insights.suggested_actions.map((action: string, i: number) => (
+            <div key={i} style={{ padding:'6px 0', borderBottom: i < insights.suggested_actions.length - 1 ? `1px solid ${C.border}` : 'none', color:C.text, fontSize:11, fontFamily:sansFont, display:'flex', gap:8 }}>
+              <span style={{ color:C.green }}>→</span> {action}
+            </div>
+          ))}
+        </div>}
+      </div>}
+    </div>;
+  }
+
   function renderCommodities(s: any) {
     const commodities = s.commodities || [];
     const sectors = s.sector_summary || {};
@@ -585,8 +707,42 @@ export default function TradingAgent() {
             {l:'⚛️ Uranium/Nuclear', p:'Momentum check on uranium and nuclear stocks. For EVERY ticker show me: price, change today, RSI, trend vs 50 and 200 SMA, volume, sentiment. Rank strongest to weakest vs URA ETF. What is the uranium spot price doing? Any regulatory catalysts (DOE, NRC)? Is the sector in accumulation or distribution? Show me which names are leading and which are lagging the theme.'},
             {l:'🎯 Small Cap Spec', p:'Scan for speculative small cap stocks UNDER $2B market cap with: volume surging 2x+ average, positive social sentiment, price breaking above key moving averages, and a clean chart pattern. NO large caps. NO mega caps. I want high-beta, high-volatility small caps where a catalyst could cause a 20-50%+ move. Show volume ratio, short interest if high, social buzz, and a trade plan.'},
             {l:'🛢️ Commodities', p:'Show me a full commodities market dashboard — oil, gold, silver, copper, uranium, natural gas. For each commodity show me price action, short and long term trends, RSI, key levels, drivers, risks, related ETFs, sentiment, and 3-month and 12-month outlook. Include DXY impact, macro factors, upcoming catalysts, and your top conviction commodity plays.'},
+            {l:'📋 Portfolio Review', p:'__PORTFOLIO__'},
           ].map(q => <button key={q.l} onClick={() => askAgent(q.p)} disabled={loading} style={{ padding:'6px 14px', background:C.card, border:`1px solid ${C.border}`, borderRadius:8, color:C.dim, fontSize:11, cursor:loading?'not-allowed':'pointer', fontFamily:font, transition:'all 0.15s' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; }}>{q.l}</button>)}
         </div>
+        {showTickerInput && (
+          <div style={{ marginTop:10, padding:16, background:C.card, border:`1px solid ${C.blue}30`, borderRadius:10 }}>
+            <div style={{ color:C.bright, fontSize:13, fontWeight:600, fontFamily:sansFont, marginBottom:8 }}>
+              Enter your tickers (up to 25, separated by commas or spaces)
+            </div>
+            <div style={{ display:'flex', gap:8 }}>
+              <input
+                type="text"
+                value={tickerInput}
+                onChange={e => setTickerInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && submitPortfolio()}
+                placeholder="NVDA, AMD, SMCI, CCJ, UEC, SMR, PLTR, CRDO..."
+                style={{ flex:1, padding:'12px 16px', border:`1px solid ${C.border}`, borderRadius:8, background:C.bg, color:C.bright, fontSize:13, fontFamily:font, outline:'none' }}
+                autoFocus
+              />
+              <button
+                onClick={submitPortfolio}
+                style={{ padding:'10px 24px', background:`linear-gradient(135deg, ${C.blue}, #2563eb)`, color:'white', border:'none', borderRadius:8, cursor:'pointer', fontWeight:700, fontSize:13, fontFamily:sansFont }}
+              >
+                Analyze
+              </button>
+              <button
+                onClick={() => setShowTickerInput(false)}
+                style={{ padding:'10px 16px', background:C.card, border:`1px solid ${C.border}`, borderRadius:8, color:C.dim, cursor:'pointer', fontSize:12, fontFamily:font }}
+              >
+                Cancel
+              </button>
+            </div>
+            <div style={{ color:C.dim, fontSize:10, fontFamily:font, marginTop:6 }}>
+              Example: NVDA, AMD, AVGO, MRVL, CRDO, SMCI, CCJ, UEC, PLTR, VRT
+            </div>
+          </div>
+        )}
       </div>
 
       {chatHistory.length > 0 && !loading && !result && <div style={{ padding:'8px 14px', background:C.card, border:`1px solid ${C.border}`, borderRadius:8, marginBottom:12, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
@@ -611,10 +767,11 @@ export default function TradingAgent() {
         {s.display_type === 'fundamentals' && renderFundamentals(s)}
         {s.display_type === 'technicals' && renderTechnicals(s)}
         {s.display_type === 'analysis' && renderAnalysis(s)}
+        {s.display_type === 'portfolio' && renderPortfolio(s)}
         {s.display_type === 'commodities' && renderCommodities(s)}
         {s.display_type === 'sector_rotation' && renderSectorRotation(s)}
         {s.display_type === 'earnings_catalyst' && renderEarningsCatalyst(s)}
-        {(s.display_type === 'chat' || !['trades','investments','fundamentals','technicals','analysis','dashboard','sector_rotation','earnings_catalyst','commodities'].includes(s.display_type)) && <div style={{ padding:22, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont }} dangerouslySetInnerHTML={{ __html: formatAnalysis(result.analysis) }} />}
+        {(s.display_type === 'chat' || !['trades','investments','fundamentals','technicals','analysis','dashboard','sector_rotation','earnings_catalyst','commodities','portfolio'].includes(s.display_type)) && <div style={{ padding:22, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont }} dangerouslySetInnerHTML={{ __html: formatAnalysis(result.analysis) }} />}
         {s.display_type !== 'chat' && result.analysis && <div style={{ marginTop:16, padding:22, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont }} dangerouslySetInnerHTML={{ __html: formatAnalysis(result.analysis) }} />}
       </div>}
 
