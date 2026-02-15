@@ -18,6 +18,7 @@ export default function TradingAgent() {
   const [loadingStage, setLoadingStage] = useState('');
   const [expandedTicker, setExpandedTicker] = useState<string | null>(null);
   const [showTickerInput, setShowTickerInput] = useState(false);
+  const [showScreener, setShowScreener] = useState(false);
   const [tickerInput, setTickerInput] = useState('');
   const [screenerInput, setScreenerInput] = useState('');
   const [screenerSortCol, setScreenerSortCol] = useState('');
@@ -1126,12 +1127,10 @@ export default function TradingAgent() {
           ].map(q => <button key={q.l} onClick={() => askAgent(q.p)} disabled={loading} style={{ padding:'8px 14px', background:C.card, border:`1px solid ${C.border}`, borderRadius:8, color:C.dim, fontSize:11, cursor:loading?'not-allowed':'pointer', fontFamily:font, transition:'all 0.15s', whiteSpace:'nowrap', flex:'0 0 auto' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; }}>{q.l}</button>)}
           <div style={{ width:'100%', height:0, marginTop:4 }} />
           <button onClick={() => askAgent('__PORTFOLIO__')} disabled={loading} style={{ padding:'8px 14px', background:C.card, border:`1px solid ${C.border}`, borderRadius:8, color:C.dim, fontSize:11, cursor:loading?'not-allowed':'pointer', fontFamily:font, transition:'all 0.15s', whiteSpace:'nowrap', flex:'0 0 auto' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; }}>📋 Watchlist Review</button>
+          <button onClick={() => setShowScreener(!showScreener)} style={{ padding:'8px 14px', background: showScreener ? `${C.purple}15` : C.card, border:`1px solid ${showScreener ? C.purple : C.border}`, borderRadius:8, color: showScreener ? C.purple : C.dim, fontSize:11, cursor:'pointer', fontFamily:font, transition:'all 0.15s', whiteSpace:'nowrap', flex:'0 0 auto' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.purple; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { if (!showScreener) { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; } }}>🔬 AI Screener</button>
         </div>
-        <div style={{ marginTop:16, padding:14, background:`linear-gradient(135deg, ${C.bg} 0%, #0e0f14 100%)`, border:`1px solid ${C.purple}20`, borderRadius:12, borderTop:`1px solid ${C.purple}30` }}>
-          <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10 }}>
-            <span style={{ fontSize:14 }}>🔬</span>
-            <span style={{ color:C.purple, fontSize:12, fontWeight:700, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.06em' }}>AI Screener</span>
-          </div>
+        {showScreener && (
+        <div style={{ marginTop:10, padding:14, background:`linear-gradient(135deg, ${C.bg} 0%, #0e0f14 100%)`, border:`1px solid ${C.purple}20`, borderRadius:12, borderTop:`1px solid ${C.purple}30` }}>
           <div style={{ display:'flex', gap:8, marginBottom:8, flexWrap:'wrap' }}>
             <textarea
               value={screenerInput}
@@ -1162,6 +1161,7 @@ export default function TradingAgent() {
             ))}
           </div>
         </div>
+        )}
         {showTickerInput && (
           <div style={{ marginTop:10, padding:16, background:C.card, border:`1px solid ${C.blue}30`, borderRadius:10 }}>
             <div style={{ color:C.bright, fontSize:13, fontWeight:600, fontFamily:sansFont, marginBottom:8 }}>
