@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Activity, BarChart3, TrendingUp, ChartLine, Brain, Zap, DollarSign, Building2, Layers, Coins, ChevronRight, ChevronDown, ChevronLeft, Wallet, Users, MessageSquare, Rocket, Globe, ArrowLeftRight, Search, Menu, X, Gamepad2, Gem } from "lucide-react";
 import { useLocation } from "wouter";
-import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
+import cryptoHippoImage from "@assets/image_1771175798315.png";
 
 interface SidebarNavigationProps {
   className?: string;
@@ -472,7 +472,7 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
           </div>
           {(!isCollapsed || isMobile) && (
             <div className="flex flex-col">
-              <span className="text-white font-bold text-lg">CryptoHippo</span>
+              <span className="text-white font-bold text-lg">TradeBlade</span>
               <span className="text-gray-400 text-xs">Trading Dashboard</span>
             </div>
           )}

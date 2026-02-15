@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import cryptoHippoLogo from "@assets/image_1771140771730.png";
+import cryptoHippoLogo from "@assets/image_1771175798315.png";
 import TradingAgent from "@/components/TradingAgent";
 
 function TickerTapeWidget() {
