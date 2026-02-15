@@ -49,10 +49,6 @@ export default function CommoditiesPage() {
       {/* Main Content */}
       <main className="max-w-[95vw] mx-auto px-2 sm:px-3 py-4">
         <div className="space-y-6">
-          <div className="w-full h-[500px] rounded-lg overflow-hidden border border-crypto-silver/20">
-            <CommoditiesQuotesWidget />
-          </div>
-
           {/* Page Header */}
           <div className="text-center mb-6">
             <div className="flex items-center justify-center gap-3 mb-3">
@@ -66,6 +62,10 @@ export default function CommoditiesPage() {
               <h1 className="text-3xl font-bold text-white">Commodities</h1>
             </div>
             <p className="text-crypto-silver">Track precious metals and commodity market movements</p>
+          </div>
+
+          <div className="w-full h-[500px] rounded-lg overflow-hidden border border-crypto-silver/20">
+            <CommoditiesQuotesWidget />
           </div>
 
           {/* Junior Mining Network Commodity Charts */}
