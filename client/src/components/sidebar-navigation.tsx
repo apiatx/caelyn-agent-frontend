@@ -70,7 +70,7 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
           id: 'stocks-screening',
           label: 'Screening',
           icon: <Search className="w-4 h-4" />,
-          path: '/app/stocks'
+          path: '/app/stocks/screening'
         },
         {
           id: 'stocks-sectors',

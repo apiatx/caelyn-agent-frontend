@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, ExternalLink } from "lucide-react";
-import TickerTapeWidget from "@/components/TickerTapeWidget";
+
 
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
   <Card className={`bg-black/40 backdrop-blur-lg border-crypto-silver/20 ${className}`}>
@@ -16,9 +16,6 @@ export default function StocksFundamentalsPage() {
 
   return (
     <div className="min-h-screen text-white" style={{background: 'linear-gradient(135deg, hsl(0, 0%, 0%) 0%, hsl(0, 0%, 10%) 50%, hsl(0, 0%, 0%) 100%)'}}>
-      <div className="w-full h-[72px] overflow-hidden">
-        <TickerTapeWidget />
-      </div>
       <main className="max-w-[95vw] mx-auto px-2 sm:px-3 py-4">
         <div className="space-y-4 lg:space-y-8">
           <GlassCard className="p-3 sm:p-4 lg:p-6">
