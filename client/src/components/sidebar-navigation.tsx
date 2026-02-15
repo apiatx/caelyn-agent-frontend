@@ -462,10 +462,10 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
       {/* Header with Logo */}
       <div className="flex-shrink-0 p-4 border-b border-crypto-silver/20">
         <div className={`flex items-center ${isCollapsed && !isMobile ? 'justify-center' : 'gap-3'}`}>
-          <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-yellow-400 shadow-lg">
+          <div className="w-12 h-12 rounded-full overflow-hidden shadow-lg">
             <img 
               src={cryptoHippoImage}
-              alt="CryptoHippo"
+              alt="TradeBlade"
               className="w-full h-full object-cover"
               data-testid="logo-cryptohippo"
             />
