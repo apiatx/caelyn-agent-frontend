@@ -977,6 +977,7 @@ export default function TradingAgent() {
         </div>
         <div style={{ display:'flex', gap:8, marginTop:8, flexWrap:'wrap' }}>
           {[
+            {l:'🔥 Trending Now', p:'What stocks are trending across ALL platforms right now? Cross-reference StockTwits, Yahoo Finance, StockAnalysis, Finviz, and Polygon. Show me which stocks appear on the MOST platforms simultaneously — that\'s the strongest signal. For each trending stock show me: which platforms it\'s on, why it\'s trending, social sentiment, TA summary, StockAnalysis fundamentals (revenue, margins, valuation), analyst consensus, and whether it\'s trending because of real fundamentals or just hype. Flag any divergences where a stock is trending on some platforms but not others.'},
             {l:'⚡ Daily Briefing', p:'Give me the full daily intelligence briefing. Market pulse, key numbers (SPY, QQQ, VIX, Fear & Greed, DXY, 10Y yield, oil, gold), what is moving across all scanners, the top signal from each category (best TA setup, best fundamental play, hottest social name, top squeeze, biggest volume spike, strongest sector), and your top 3-5 highest conviction actionable moves today with full trade plans. I want to know exactly what to do in 60 seconds.'},
             {l:'🔥 Best Trades', p:'Show me the best trade SETUPS right now — I want stocks with multiple technical indicators aligning: MACD crossovers, RSI in the 50-65 sweet spot, price above rising 20 and 50 SMAs, volume 2x+ average CONFIRMING the move. Stage 2 breakouts only. Show me the quant score, every TA indicator, social sentiment, and a trade plan with entry/stop/target for each. I want setups, not stocks that already pumped.'},
             {l:'💎 Best Investments', p:'Show me the best investment opportunities — stocks with ACCELERATING revenue growth (QoQ and YoY), expanding EBITDA margins, low P/S relative to growth rate, insider buying, and analyst upgrades. Run the SQGLP framework on each. I want to see the fundamental numbers: revenue growth rate, margin trajectory, valuation multiples, earnings beat streak. Show me stocks where fundamentals are improving AND the chart confirms with a Stage 2 trend.'},
@@ -1058,13 +1059,14 @@ export default function TradingAgent() {
         {s.display_type === 'fundamentals' && renderFundamentals(s)}
         {s.display_type === 'technicals' && renderTechnicals(s)}
         {s.display_type === 'analysis' && renderAnalysis(s)}
+        {s.display_type === 'trending' && renderTrades(s)}
         {s.display_type === 'crypto' && renderCrypto(s)}
         {s.display_type === 'briefing' && renderBriefing(s)}
         {s.display_type === 'portfolio' && renderPortfolio(s)}
         {s.display_type === 'commodities' && renderCommodities(s)}
         {s.display_type === 'sector_rotation' && renderSectorRotation(s)}
         {s.display_type === 'earnings_catalyst' && renderEarningsCatalyst(s)}
-        {(s.display_type === 'chat' || !['trades','investments','fundamentals','technicals','analysis','dashboard','sector_rotation','earnings_catalyst','commodities','portfolio','briefing','crypto'].includes(s.display_type)) && <div style={{ padding:22, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont }} dangerouslySetInnerHTML={{ __html: formatAnalysis(result.analysis) }} />}
+        {(s.display_type === 'chat' || !['trades','investments','fundamentals','technicals','analysis','dashboard','sector_rotation','earnings_catalyst','commodities','portfolio','briefing','crypto','trending'].includes(s.display_type)) && <div style={{ padding:22, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont }} dangerouslySetInnerHTML={{ __html: formatAnalysis(result.analysis) }} />}
         {s.display_type !== 'chat' && result.analysis && <div style={{ marginTop:16, padding:22, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont }} dangerouslySetInnerHTML={{ __html: formatAnalysis(result.analysis) }} />}
       </div>}
 
