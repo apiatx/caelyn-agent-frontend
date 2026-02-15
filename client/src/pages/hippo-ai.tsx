@@ -58,7 +58,7 @@ export default function HippoAIPage() {
 
       <main className="relative z-10 flex-1 flex items-center justify-center px-2 sm:px-3 py-4" style={{ minHeight: 'calc(100vh - 72px)' }}>
         <div className="w-full max-w-[1000px] mx-auto" style={{ marginTop: '-20px' }}>
-          <div className="text-center mb-5">
+          <div className="text-center mb-5" style={{ paddingTop: '20px' }}>
             <img 
               src={cryptoHippoLogo}
               alt="HippoAI Mascot"
