@@ -428,7 +428,7 @@ export default function TradingAgent() {
       else { setScreenerSortCol(key); setScreenerSortAsc(true); }
     };
 
-    return <div>
+    return <div style={{ overflowX:'auto', WebkitOverflowScrolling:'touch' }}>
       {s.summary && <div style={{ padding:'14px 18px', background:`${C.purple}08`, border:`1px solid ${C.purple}20`, borderRadius:10, marginBottom:10, color:C.text, fontSize:12, fontFamily:sansFont, lineHeight:1.7 }}>{s.summary}</div>}
 
       {topPicks.length > 0 && <div style={{ marginBottom:10 }}>
@@ -1094,17 +1094,17 @@ export default function TradingAgent() {
   const s = result?.structured || {};
 
   return (
-    <div style={{ maxWidth:1000, margin:'0 auto', fontFamily:sansFont }}>
+    <div style={{ maxWidth:1000, margin:'0 auto', fontFamily:sansFont, width:'100%', padding:'0 12px', boxSizing:'border-box' as const }}>
       <div style={{ marginBottom:10 }}>
         <div style={{ display:'flex', gap:8 }}>
-          <input type="text" value={prompt} onChange={e => setPrompt(e.target.value)} onKeyDown={e => e.key === 'Enter' && askAgent()} placeholder="Best trades today... Analyze NVDA... Best improving fundamentals..." style={{ flex:1, padding:'14px 18px', border:`1px solid ${C.border}`, borderRadius:10, background:C.bg, color:C.bright, fontSize:14, fontFamily:sansFont, outline:'none' }} />
+          <input type="text" value={prompt} onChange={e => setPrompt(e.target.value)} onKeyDown={e => e.key === 'Enter' && askAgent()} placeholder="Best trades today... Analyze NVDA... Best improving fundamentals..." style={{ flex:1, padding:'14px 18px', border:`1px solid ${C.border}`, borderRadius:10, background:C.bg, color:C.bright, fontSize:16, fontFamily:sansFont, outline:'none' }} />
           <button onClick={() => askAgent()} disabled={loading} style={{ padding:'12px 28px', background:loading ? C.card : `linear-gradient(135deg, ${C.blue}, #2563eb)`, color:loading ? C.dim : 'white', border:'none', borderRadius:10, cursor:loading?'not-allowed':'pointer', fontWeight:700, fontSize:14, fontFamily:sansFont }}>
             {loading ? 'Scanning...' : 'Analyze'}
           </button>
         </div>
         <div style={{ display:'flex', flexDirection:'column', gap:8, marginTop:10 }}>
           <div>
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(5, 1fr)', gap:8 }}>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(140px, 1fr))', gap:8 }}>
               {[
                 {l:'🔥 Trending Now', p:'What stocks are trending across ALL platforms right now? Cross-reference StockTwits, Yahoo Finance, StockAnalysis, Finviz, and Polygon. Show me which stocks appear on the MOST platforms simultaneously — that\'s the strongest signal. For each trending stock show me: which platforms it\'s on, why it\'s trending, social sentiment, TA summary, StockAnalysis fundamentals (revenue, margins, valuation), analyst consensus, and whether it\'s trending because of real fundamentals or just hype. Flag any divergences where a stock is trending on some platforms but not others.'},
                 {l:'✧ Daily Briefing', p:'Give me the full daily intelligence briefing. Market pulse, key numbers (SPY, QQQ, VIX, Fear & Greed, DXY, 10Y yield, oil, gold), what is moving across all scanners, the top signal from each category (best TA setup, best fundamental play, hottest social name, top squeeze, biggest volume spike, strongest sector), and your top 3-5 highest conviction actionable moves today with full trade plans. I want to know exactly what to do in 60 seconds.'},
@@ -1115,7 +1115,7 @@ export default function TradingAgent() {
             </div>
           </div>
           <div>
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(5, 1fr)', gap:8 }}>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(140px, 1fr))', gap:8 }}>
               {[
                 {l:'🔥 Best Trades', p:'Show me the best trade SETUPS right now — I want stocks with multiple technical indicators aligning: MACD crossovers, RSI in the 50-65 sweet spot, price above rising 20 and 50 SMAs, volume 2x+ average CONFIRMING the move. Stage 2 breakouts only. Show me the quant score, every TA indicator, social sentiment, and a trade plan with entry/stop/target for each. I want setups, not stocks that already pumped.'},
                 {l:'💎 Best Investments', p:'Show me the best investment opportunities — stocks with ACCELERATING revenue growth (QoQ and YoY), expanding EBITDA margins, low P/S relative to growth rate, insider buying, and analyst upgrades. Run the SQGLP framework on each. I want to see the fundamental numbers: revenue growth rate, margin trajectory, valuation multiples, earnings beat streak. Show me stocks where fundamentals are improving AND the chart confirms with a Stage 2 trend.'},
@@ -1126,7 +1126,7 @@ export default function TradingAgent() {
             </div>
           </div>
           <div>
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(5, 1fr)', gap:8 }}>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(140px, 1fr))', gap:8 }}>
               {[
                 {l:'💥 Short Squeeze', p:'Scan for short squeeze setups. I need: short interest >15% of float, days to cover >3, rising borrow cost, volume surging above average, price moving UP (shorts getting squeezed, not shorts winning), positive social sentiment acceleration, and ideally a bullish catalyst. Show me short float %, days to cover, volume ratio, social buzz level, and a trade plan for each. Filter out anything with declining price — I want squeezes that are STARTING, not over.'},
                 {l:'🚀 Social Momentum', p:'Show me stocks with the FASTEST accelerating social media buzz RIGHT NOW — mentions spiking on StockTwits, Reddit, Twitter in the last 24 hours. For each show me: sentiment % bullish, volume confirmation (is volume backing up the buzz?), price action, and whether this looks like early-stage momentum or late-stage hype. I want to catch momentum EARLY, not chase.'},
@@ -1137,7 +1137,7 @@ export default function TradingAgent() {
             </div>
           </div>
           <div>
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:8 }}>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(150px, 1fr))', gap:8 }}>
               {[
                 {l:'🤖 AI/Compute Check', p:'Momentum check on the full AI and compute infrastructure theme. For EVERY ticker in the watchlist show me: price, change today, RSI, above/below key SMAs, volume vs average, social sentiment, and relative strength vs SMH (semiconductor ETF). Rank from strongest to weakest. Which names are LEADING the theme? Which are LAGGING? Are any showing distribution (price up but volume declining)? Is the overall theme bullish, neutral, or bearish right now?'},
                 {l:'⚛️ Uranium/Nuclear', p:'Momentum check on uranium and nuclear stocks. For EVERY ticker show me: price, change today, RSI, trend vs 50 and 200 SMA, volume, sentiment. Rank strongest to weakest vs URA ETF. What is the uranium spot price doing? Any regulatory catalysts (DOE, NRC)? Is the sector in accumulation or distribution? Show me which names are leading and which are lagging the theme.'},
@@ -1147,7 +1147,7 @@ export default function TradingAgent() {
             </div>
           </div>
           <div style={{ marginTop:4 }}>
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(5, 1fr)', gap:8 }}>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(140px, 1fr))', gap:8 }}>
               <button onClick={() => askAgent('__PORTFOLIO__')} disabled={loading} style={{ padding:'7px 4px', background:C.card, border:`1px solid ${C.border}`, borderRadius:8, color:C.dim, fontSize:11, cursor:loading?'not-allowed':'pointer', fontFamily:font, transition:'all 0.15s', whiteSpace:'nowrap' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; }}>📋 Watchlist Review</button>
             </div>
           </div>
@@ -1157,14 +1157,14 @@ export default function TradingAgent() {
             <span style={{ fontSize:14 }}>🔬</span>
             <span style={{ color:C.purple, fontSize:12, fontWeight:700, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.06em' }}>AI Screener</span>
           </div>
-          <div style={{ display:'flex', gap:8, marginBottom:8 }}>
+          <div style={{ display:'flex', gap:8, marginBottom:8, flexWrap:'wrap' }}>
             <textarea
               value={screenerInput}
               onChange={e => setScreenerInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (screenerInput.trim()) askAgent(screenerInput); setScreenerInput(''); } }}
               placeholder="Screen for stocks... e.g. 'Small caps under $2B, revenue growth >30%, positive EBITDA, RSI under 40, insider buying in last 30 days'"
               rows={2}
-              style={{ flex:1, padding:'10px 14px', border:`1px solid ${C.border}`, borderRadius:8, background:C.card, color:C.bright, fontSize:12, fontFamily:sansFont, outline:'none', resize:'none', lineHeight:1.5 }}
+              style={{ flex:1, padding:'10px 14px', border:`1px solid ${C.border}`, borderRadius:8, background:C.card, color:C.bright, fontSize:16, fontFamily:sansFont, outline:'none', resize:'none', lineHeight:1.5 }}
             />
             <button
               onClick={() => { if (screenerInput.trim()) { askAgent(screenerInput); setScreenerInput(''); } }}
@@ -1174,7 +1174,7 @@ export default function TradingAgent() {
               Scan
             </button>
           </div>
-          <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+          <div style={{ display:'flex', gap:6, flexWrap:'wrap', overflowX:'auto', WebkitOverflowScrolling:'touch' }}>
             {[
               {l:'Oversold + Growing', v:'Stocks with RSI under 35, revenue growth >20%, above SMA200, avg volume >300K'},
               {l:'Value + Momentum', v:'P/E under 20, revenue growth >15%, above SMA50 and SMA200, relative volume >1.5x'},

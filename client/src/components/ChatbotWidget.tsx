@@ -298,8 +298,8 @@ export default function ChatbotWidget() {
   if (mode === 'collapsed') {
     return (
       <button onClick={() => { setMode('small'); setHasUnread(false); }} style={{
-        position: 'fixed', bottom: 24, right: 24, zIndex: 9999,
-        width: 56, height: 56, borderRadius: '50%',
+        position: 'fixed', bottom: isMobile ? 16 : 24, right: isMobile ? 16 : 24, zIndex: 9999,
+        width: isMobile ? 48 : 56, height: isMobile ? 48 : 56, borderRadius: '50%',
         background: `linear-gradient(135deg, ${C.card} 0%, #1a1d28 100%)`,
         border: `1px solid ${C.purple}40`,
         boxShadow: `0 4px 20px rgba(0,0,0,0.4), 0 0 20px ${C.purple}20`,
@@ -307,7 +307,7 @@ export default function ChatbotWidget() {
         transition: 'all 0.2s ease-out',
         opacity: isScrolling ? 0.7 : 1,
       }}>
-        <img src={cryptoHippoLogo} alt="Chat" style={{ width: 36, height: 36, borderRadius: '50%' }} />
+        <img src={cryptoHippoLogo} alt="Chat" style={{ width: isMobile ? 30 : 36, height: isMobile ? 30 : 36, borderRadius: '50%' }} />
         {hasUnread && <span style={{ position:'absolute', top:2, right:2, width:12, height:12, borderRadius:'50%', background:C.green, border:`2px solid ${C.bg}` }} />}
       </button>
     );
@@ -315,7 +315,7 @@ export default function ChatbotWidget() {
 
   const isExpanded = mode === 'expanded';
   const panelW = isMobile ? '100vw' : (isExpanded ? 700 : 400);
-  const panelH = isMobile ? '100vh' : (isExpanded ? '80vh' : 500);
+  const panelH = isMobile ? (isExpanded ? '100vh' : '60vh') : (isExpanded ? '80vh' : 500);
   const showChips = messages.length === 0;
 
   return (
@@ -331,7 +331,7 @@ export default function ChatbotWidget() {
       backdropFilter: 'blur(12px)',
       WebkitBackdropFilter: 'blur(12px)',
       border: `1px solid ${C.border}`,
-      borderRadius: isMobile ? 0 : 12,
+      borderRadius: isMobile ? (isExpanded ? 0 : '16px 16px 0 0') : 12,
       boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
       transition: 'all 0.2s ease-out',
       overflow: 'hidden',
@@ -394,11 +394,11 @@ export default function ChatbotWidget() {
 
       <div style={{ flexShrink: 0, borderTop: `1px solid ${C.border}`, padding: 10, background: C.card }}>
         {showChips && (
-          <div style={{ display: 'flex', gap: 4, marginBottom: 8, overflowX: 'auto', paddingBottom: 4 }}>
+          <div style={{ display: 'flex', gap: 4, marginBottom: 8, overflowX: 'auto', paddingBottom: 4, WebkitOverflowScrolling: 'touch' }}>
             {QUICK_PROMPTS.map(qp => (
               <button key={qp.l} onClick={() => { sendMessage(qp.p); }} disabled={isLoading} style={{
-                padding: '4px 10px', background: `${C.purple}08`, border: `1px solid ${C.purple}18`,
-                borderRadius: 12, color: C.dim, fontSize: 9, fontWeight: 600, fontFamily: font,
+                padding: isMobile ? '6px 12px' : '4px 10px', background: `${C.purple}08`, border: `1px solid ${C.purple}18`,
+                borderRadius: 12, color: C.dim, fontSize: isMobile ? 11 : 9, fontWeight: 600, fontFamily: font,
                 cursor: isLoading ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s', flexShrink: 0,
               }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.purple; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.borderColor = `${C.purple}18`; e.currentTarget.style.color = C.dim; }}>{qp.l}</button>
             ))}
@@ -411,7 +411,7 @@ export default function ChatbotWidget() {
             placeholder="Ask about any stock, crypto, macro..."
             style={{
               flex: 1, padding: '8px 12px', border: `1px solid ${C.border}`, borderRadius: 8,
-              background: C.bg, color: C.bright, fontSize: 12, fontFamily: sansFont, outline: 'none',
+              background: C.bg, color: C.bright, fontSize: isMobile ? 16 : 12, fontFamily: sansFont, outline: 'none',
             }}
           />
           <button onClick={handleSend} disabled={isLoading || !input.trim()} style={{
