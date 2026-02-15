@@ -68,14 +68,12 @@ export default function HippoAIPage() {
         <TickerTapeWidget />
       </div>
 
-      <main className="max-w-[95vw] mx-auto px-2 sm:px-3 py-4">
-        <div className="space-y-4 lg:space-y-8">
-          <GlassCard className="p-6 lg:p-8 text-center">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-3 bg-gradient-to-r from-purple-400 via-pink-300 to-cyan-400 bg-clip-text text-transparent">HippoAI</h2>
-            <p className="text-lg text-white/80 mb-6">Your AI-powered trading assistant</p>
-            <TradingAgent />
-          </GlassCard>
-        </div>
+      <main className="flex-1 flex items-center justify-center px-2 sm:px-3 py-4" style={{ minHeight: 'calc(100vh - 140px)' }}>
+        <GlassCard className="w-full max-w-[95vw] p-6 lg:p-8 text-center">
+          <h2 className="text-3xl sm:text-4xl font-bold mb-3 bg-gradient-to-r from-purple-400 via-pink-300 to-cyan-400 bg-clip-text text-transparent">HippoAI</h2>
+          <p className="text-lg text-white/80 mb-6">Your AI-powered trading assistant</p>
+          <TradingAgent />
+        </GlassCard>
       </main>
     </div>
   );
