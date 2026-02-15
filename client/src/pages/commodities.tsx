@@ -6,7 +6,6 @@ import newHeaderBackground from "@assets/photo-1504333638930-c8787321eee0_175720
 import criptomonedas from "@assets/Criptomonedas-r3pu02e09qriw0f9pyqx2rtyhwsri4es6sdgff2ebk_1757225856373.png";
 import goldBarsImage from "@assets/istockphoto-1455233823-612x612_1757104224615.jpg";
 import { useScrollFade } from "@/hooks/useScrollFade";
-import { usePageContext } from '@/contexts/ChatbotContext';
 
 // Glass card component
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (

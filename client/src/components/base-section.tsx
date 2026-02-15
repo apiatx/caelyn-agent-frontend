@@ -3,7 +3,6 @@ import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { Globe, ArrowLeftRight, TrendingUp, ExternalLink, Star } from "lucide-react";
 import { openSecureLink } from "@/utils/security";
-import { usePageContext } from '@/contexts/ChatbotContext';
 import baseLogo from "@assets/base logo_1755977414942.webp";
 
 

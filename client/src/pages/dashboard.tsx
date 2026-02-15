@@ -12,7 +12,6 @@ import newHeaderBackground from "@assets/photo-1504333638930-c8787321eee0_175720
 import criptomonedas from "@assets/Criptomonedas-r3pu02e09qriw0f9pyqx2rtyhwsri4es6sdgff2ebk_1757225856373.png";
 import { SectionLoadingState } from "@/components/loading-screen";
 import { useScrollFade } from "@/hooks/useScrollFade";
-import { usePageContext } from '@/contexts/ChatbotContext';
 
 type TabType = "dashboard" | "alpha" | "base" | "bittensor" | "solana" | "defi" | "portfolio";
 
