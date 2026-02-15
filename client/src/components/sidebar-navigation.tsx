@@ -472,7 +472,7 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
           </div>
           {(!isCollapsed || isMobile) && (
             <div className="flex flex-col">
-              <span className="text-white font-bold text-lg">TradeBlade</span>
+              <span style={{ fontSize:'1.15rem', fontWeight:800, letterSpacing:'0.08em', textTransform:'uppercase', background:'linear-gradient(135deg, #e8eaef 0%, #a78bfa 40%, #3b82f6 70%, #22c55e 100%)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', fontFamily:"'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>TradeBlade</span>
               <span className="text-gray-400 text-xs">Trading Dashboard</span>
             </div>
           )}
