@@ -1,7 +1,5 @@
 import { useEffect, useRef } from "react";
-import cryptoHippoLogo from "@assets/image_1771139098685.png";
-import newHeaderBackground from "@assets/photo-1504333638930-c8787321eee0_1757208194192.avif";
-import { useScrollFade } from "@/hooks/useScrollFade";
+import cryptoHippoLogo from "@assets/image_1771140771730.png";
 import TradingAgent from "@/components/TradingAgent";
 
 function TickerTapeWidget() {
@@ -30,8 +28,6 @@ function TickerTapeWidget() {
 }
 
 export default function HippoAIPage() {
-  const headerOpacity = useScrollFade(30, 120);
-
   return (
     <div className="min-h-screen text-white relative overflow-hidden">
       <div className="fixed inset-0 z-0" style={{
@@ -56,40 +52,22 @@ export default function HippoAIPage() {
         backgroundSize: '200px 200px'
       }} />
 
-      <header 
-        className="relative z-50 sticky top-0 border-b border-white/10 transition-opacity duration-300 overflow-hidden" 
-        style={{ opacity: headerOpacity, pointerEvents: headerOpacity < 0.1 ? 'none' : 'auto', backdropFilter: 'blur(16px)', background: 'rgba(5, 5, 16, 0.7)' }}
-      >
-        <div className="absolute inset-0 opacity-40" style={{ backgroundImage: `url(${newHeaderBackground})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }} />
-        <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(60, 20, 120, 0.3) 0%, rgba(10, 10, 30, 0.6) 100%)' }} />
-        <div className="relative z-10 max-w-[95vw] mx-auto px-2 sm:px-3 py-2 lg:py-3">
-          <div className="flex justify-center items-center">
-            <img 
-              src={cryptoHippoLogo}
-              alt="HippoAI"
-              className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 object-contain drop-shadow-[0_0_20px_rgba(120,80,255,0.4)]"
-            />
-          </div>
-        </div>
-      </header>
-
-      <div className="w-full h-[72px] overflow-hidden relative z-10 border-b border-white/5" style={{ background: 'rgba(5, 5, 16, 0.5)' }}>
+      <div className="relative z-10 w-full h-[72px] overflow-hidden border-b border-white/5" style={{ background: 'rgba(5, 5, 16, 0.5)' }}>
         <TickerTapeWidget />
       </div>
 
-      <main className="relative z-10 flex-1 flex items-center justify-center px-2 sm:px-3 py-8" style={{ minHeight: 'calc(100vh - 140px)' }}>
+      <main className="relative z-10 flex-1 flex items-center justify-center px-2 sm:px-3 py-8" style={{ minHeight: 'calc(100vh - 72px)' }}>
         <div className="w-full max-w-[1000px] mx-auto">
           <div className="text-center mb-8">
             <img 
               src={cryptoHippoLogo}
               alt="HippoAI Mascot"
-              className="w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-4 drop-shadow-[0_0_30px_rgba(120,80,255,0.5)]"
+              className="w-24 h-24 sm:w-28 sm:h-28 mx-auto mb-4 drop-shadow-[0_0_30px_rgba(120,80,255,0.5)]"
             />
             <h2 className="text-4xl sm:text-5xl font-bold mb-3" style={{
               background: 'linear-gradient(135deg, #c0c0c0 0%, #ffffff 25%, #e0d0ff 50%, #ffffff 75%, #c0c0c0 100%)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
-              textShadow: 'none',
               letterSpacing: '0.02em'
             }}>HippoAI</h2>
             <p className="text-base sm:text-lg text-white/60 font-light tracking-wide">Your AI-powered trading assistant</p>
