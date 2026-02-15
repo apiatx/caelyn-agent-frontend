@@ -168,7 +168,7 @@ export default function StocksDashboardPage() {
         </div>
       </header>
 
-      <div className="w-full h-[50px] overflow-hidden">
+      <div className="w-full h-[72px] overflow-hidden">
         <TickerTapeWidget />
       </div>
 
