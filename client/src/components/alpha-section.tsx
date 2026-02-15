@@ -60,20 +60,6 @@ export default function AlphaSection() {
 
   return (
     <div className="space-y-8">
-      <div className="text-center mb-8">
-        <div className="flex items-center justify-center gap-4 mb-4">
-          <div className="relative">
-            <img 
-              src={onchainImage} 
-              alt="Analytics" 
-              className="w-20 h-20 rounded-full object-cover shadow-lg shadow-blue-500/30 border-2 border-blue-400/50"
-            />
-            <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-blue-400/20 to-purple-400/20"></div>
-          </div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-blue-100 to-purple-100 bg-clip-text text-transparent drop-shadow-lg">Onchain</h1>
-        </div>
-        <p className="text-lg text-gray-300 font-medium tracking-wide">Comprehensive onchain intelligence & data</p>
-      </div>
 
 
 

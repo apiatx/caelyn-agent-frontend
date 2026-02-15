@@ -140,12 +140,6 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
               path: '/app/onchain/analyze'
             },
             {
-              id: 'onchain-inspect',
-              label: 'Inspect',
-              icon: <Search className="w-4 h-4" />,
-              path: '/app/onchain/inspect'
-            },
-            {
               id: 'onchain-smart-wallets',
               label: 'Smart Wallets',
               icon: <Wallet className="w-4 h-4" />,

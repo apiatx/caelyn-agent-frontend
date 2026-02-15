@@ -79,34 +79,7 @@ export default function OnchainLaunchpadPage() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         
-        {/* 1. CryptoRank Fundraising Platforms */}
-        <GlassCard className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-cyan-500 rounded-full flex items-center justify-center">
-                <Rocket className="w-4 h-4 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold text-white">CryptoRank Fundraising Platforms</h3>
-            </div>
-            <Button
-              onClick={() => openInNewTab('https://cryptorank.io/fundraising-platforms')}
-              className="bg-gradient-to-r from-indigo-500 to-cyan-500 hover:from-indigo-600 hover:to-cyan-600 text-white font-semibold px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2"
-            >
-              <ExternalLink className="w-4 h-4" />
-              Open Full View
-            </Button>
-          </div>
-          <iframe
-            src="https://cryptorank.io/fundraising-platforms"
-            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            title="CryptoRank Fundraising Platforms"
-            frameBorder="0"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
-            referrerPolicy="no-referrer-when-downgrade"
-          />
-        </GlassCard>
-
-        {/* 2. CoinLaunch Launchpads */}
+        {/* CoinLaunch Launchpads */}
         <GlassCard className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">

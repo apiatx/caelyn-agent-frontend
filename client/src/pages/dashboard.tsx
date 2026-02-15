@@ -61,34 +61,21 @@ export default function Dashboard() {
           }}
         />
         {/* Content Layer */}
-        <div className="relative z-10 max-w-[95vw] mx-auto px-2 sm:px-3 py-4 lg:py-6">
+        <div className="relative z-10 max-w-[95vw] mx-auto px-2 sm:px-3 py-2 lg:py-3">
           <div className="flex justify-between items-center">
-            {/* Left side - spacer */}
             <div className="flex-1"></div>
-            
-            {/* Center - Crypto Hippo with Bitcoin Goggles and Text */}
-            <div className="flex flex-col items-center text-center space-y-2">
+            <div className="flex items-center gap-3">
               <img 
                 src={cryptoHippoWithBitcoin}
                 alt="Crypto Hippo with Bitcoin Goggles"
-                className="w-24 h-24 sm:w-28 sm:h-28 lg:w-32 lg:h-32 object-contain drop-shadow-lg"
+                className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 object-contain drop-shadow-lg"
               />
-              <div>
-                <h1 className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-bold text-white drop-shadow-lg mb-1">
-                  Crypto Market Overview
-                </h1>
-                <p className="text-xs sm:text-sm lg:text-base text-crypto-silver drop-shadow-md">
-                  Global market metrics and key indicators
-                </p>
-              </div>
             </div>
-            
-            {/* Right side - Crypto coins image */}
             <div className="flex-1 hidden sm:flex justify-end items-center">
               <img 
                 src={criptomonedas}
                 alt="Crypto Coins"
-                className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 xl:w-32 xl:h-32 object-contain drop-shadow-lg"
+                className="w-14 h-14 sm:w-16 sm:h-16 lg:w-20 lg:h-20 object-contain drop-shadow-lg"
               />
             </div>
           </div>

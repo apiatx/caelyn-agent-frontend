@@ -69,23 +69,6 @@ export default function OnchainAnalyzePage() {
       {/* Main Content */}
       <main className="max-w-[95vw] mx-auto px-2 sm:px-3 py-4">
         <div className="space-y-8">
-          {/* Analyze Section - Enhanced Header */}
-          <div className="text-center relative mb-6">
-            <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-teal-500/20 blur-3xl -z-10"></div>
-            <div className="flex justify-center items-center gap-4 mb-6">
-              <div className="w-28 h-28 rounded-full flex items-center justify-center border-2 border-yellow-400 shadow-2xl hover:scale-110 transition-transform duration-300 overflow-hidden">
-                <img 
-                  src={analyzeImage} 
-                  alt="Analyze" 
-                  className="w-28 h-28 object-cover"
-                />
-              </div>
-              <h2 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-white via-cyan-200 to-blue-200 bg-clip-text text-transparent">Analyze</h2>
-            </div>
-            <p className="text-lg text-white/80 font-medium tracking-wide">AI-powered blockchain analytics and insights</p>
-            <div className="w-32 h-1 bg-gradient-to-r from-cyan-500 to-blue-500 mx-auto mt-4 rounded-full"></div>
-          </div>
-
           {/* Main Analysis Tools */}
           <GlassCard className="p-6">
             

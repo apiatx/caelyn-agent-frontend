@@ -42,7 +42,6 @@ import OnchainAirdropPage from "@/pages/onchain-airdrop";
 import OnchainMemesPage from "@/pages/onchain-memes";
 import OnchainDiscoverPage from "@/pages/onchain-discover";
 import OnchainAnalyzePage from "@/pages/onchain-analyze";
-import OnchainInspectPage from "@/pages/onchain-inspect";
 import BasePage from "@/pages/base";
 import PortfolioPage from "@/pages/portfolio";
 import PredictPage from "@/pages/predict";
@@ -74,7 +73,6 @@ function Router() {
       <Route path="/app/onchain/memes" component={OnchainMemesPage} />
       <Route path="/app/onchain/discover" component={OnchainDiscoverPage} />
       <Route path="/app/onchain/analyze" component={OnchainAnalyzePage} />
-      <Route path="/app/onchain/inspect" component={OnchainInspectPage} />
       <Route path="/app/base" component={BasePage} />
       <Route path="/base" component={BasePage} />
       <Route path="/app/ethereum" component={EthereumPage} />
