@@ -130,7 +130,7 @@ function EconomicMapWidget() {
     const doc = iframe.contentDocument;
     if (doc) {
       doc.open();
-      doc.write(`<!DOCTYPE html><html><head><style>body{margin:0;padding:0;overflow:hidden;background:transparent;}</style></head><body><script type="module" src="https://widgets.tradingview-widget.com/w/en/tv-economic-map.js"><\/script><tv-economic-map style="width:100%;height:700px;display:block;"></tv-economic-map></body></html>`);
+      doc.write(`<!DOCTYPE html><html><head><style>body{margin:0;padding:0;overflow:hidden;background:transparent;}</style></head><body><script type="module" src="https://widgets.tradingview-widget.com/w/en/tv-economic-map.js"><\/script><tv-economic-map metric="intr" theme="dark" transparent style="width:100%;height:700px;display:block;"></tv-economic-map></body></html>`);
       doc.close();
     }
     return () => {
