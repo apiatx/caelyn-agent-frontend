@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 const AGENT_BACKEND_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
+const AGENT_API_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
 
 interface RowData {
   ticker: string;
@@ -92,7 +93,10 @@ export default function TradingAgent() {
     try {
       const res = await fetch(`${AGENT_BACKEND_URL}/api/query`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': AGENT_API_KEY,
+        },
         body: JSON.stringify({
           prompt: queryText.trim(),
           history: chatHistory.slice(-20),
@@ -111,6 +115,8 @@ export default function TradingAgent() {
     } catch (err: any) {
       if (err.message.includes('429') || err.message.includes('Rate')) {
         setError('Rate limit reached. Please wait a moment before trying again.');
+      } else if (err.message.includes('403') || err.message.includes('401')) {
+        setError('Authentication failed. Please check your API key.');
       } else {
         setError(err.message);
       }
