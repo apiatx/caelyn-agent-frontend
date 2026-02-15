@@ -56,13 +56,13 @@ export default function HippoAIPage() {
         <TickerTapeWidget />
       </div>
 
-      <main className="relative z-10 flex-1 flex items-center justify-center px-2 sm:px-3 py-8" style={{ minHeight: 'calc(100vh - 72px)' }}>
-        <div className="w-full max-w-[1000px] mx-auto">
-          <div className="text-center mb-8">
+      <main className="relative z-10 flex-1 flex items-center justify-center px-2 sm:px-3 py-4" style={{ minHeight: 'calc(100vh - 72px)' }}>
+        <div className="w-full max-w-[1000px] mx-auto" style={{ marginTop: '-20px' }}>
+          <div className="text-center mb-5">
             <img 
               src={cryptoHippoLogo}
               alt="HippoAI Mascot"
-              className="w-24 h-24 sm:w-28 sm:h-28 mx-auto mb-4 drop-shadow-[0_0_30px_rgba(120,80,255,0.5)]"
+              className="w-32 h-32 sm:w-36 sm:h-36 mx-auto mb-3 drop-shadow-[0_0_30px_rgba(120,80,255,0.5)]"
             />
             <h2 className="text-4xl sm:text-5xl font-bold mb-3" style={{
               background: 'linear-gradient(135deg, #c0c0c0 0%, #ffffff 25%, #e0d0ff 50%, #ffffff 75%, #c0c0c0 100%)',
