@@ -131,3 +131,51 @@
     display: none;  /* Safari and Chrome */
   }
 }
+
+/* Mobile Responsiveness */
+@media (max-width: 767px) {
+  html, body {
+    overflow-x: hidden !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+  }
+
+  #root {
+    overflow-x: hidden !important;
+    max-width: 100vw !important;
+  }
+
+  * {
+    max-width: 100vw;
+    box-sizing: border-box;
+  }
+
+  h1 { font-size: 1.5rem !important; }
+  h2 { font-size: 1.25rem !important; }
+  h3 { font-size: 1.1rem !important; }
+
+  table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  iframe {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 250px;
+  }
+}
+
+/* Responsive iframes */
+iframe {
+  max-width: 100%;
+}
+
+/* Touch target minimum size on mobile */
+@media (max-width: 767px) {
+  .mobile-touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}

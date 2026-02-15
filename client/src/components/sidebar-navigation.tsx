@@ -359,7 +359,7 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
           <button
             onClick={() => !isCollapsed && toggleExpanded(item.id)}
             title={isCollapsed ? item.label : undefined}
-            className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} px-3 py-2 text-left text-sm font-medium transition-all duration-200 rounded-lg group ${
+            className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} px-3 ${isMobile ? 'py-3' : 'py-2'} text-left text-sm font-medium transition-all duration-200 rounded-lg group ${
               hasActiveChild
                 ? "bg-gradient-to-r from-crypto-warning/20 to-yellow-400/10 border-l-2 border-crypto-warning text-white"
                 : "text-gray-300 hover:bg-white/5 hover:text-white"
@@ -382,7 +382,7 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
           <button
             onClick={() => item.path && navigateTo(item.path)}
             title={isCollapsed ? item.label : undefined}
-            className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} px-3 py-2 text-left text-sm font-medium transition-all duration-200 rounded-lg group ${
+            className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} px-3 ${isMobile ? 'py-3' : 'py-2'} text-left text-sm font-medium transition-all duration-200 rounded-lg group ${
               itemIsActive
                 ? "bg-gradient-to-r from-crypto-warning/20 to-yellow-400/10 border-l-2 border-crypto-warning text-white shadow-md"
                 : "text-gray-300 hover:bg-white/5 hover:text-white"
@@ -405,36 +405,30 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
 
   return (
     <>
-      {/* Mobile Hamburger Menu Button */}
       {isMobile && (
-        <div className="fixed top-4 left-4 z-50 lg:hidden">
+        <div className="fixed top-0 left-0 right-0 z-50 lg:hidden flex items-center justify-between px-4 h-14 bg-black/95 backdrop-blur-lg border-b border-crypto-silver/20">
+          <div className="flex items-center gap-3">
+            <img src={cryptoHippoImage} alt="TradeBlade" className="w-8 h-8 rounded-full" />
+            <span style={{ fontSize:'0.9rem', fontWeight:800, letterSpacing:'0.1em', textTransform:'uppercase', background:'linear-gradient(135deg, #e8eaef 0%, #a78bfa 40%, #3b82f6 70%, #22c55e 100%)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', fontFamily:"'JetBrains Mono', 'SF Mono', 'Fira Code', monospace" }}>TradeBlade</span>
+          </div>
           <button
             onClick={onToggle}
-            className="bg-black/90 backdrop-blur-lg border border-crypto-silver/20 rounded-lg p-2 text-gray-300 hover:text-white hover:bg-white/5 transition-all duration-200 shadow-lg"
-            data-testid="mobile-menu-toggle"
-            aria-label={isMobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
-            aria-expanded={isMobileMenuOpen}
-            aria-controls="mobile-navigation-menu"
+            className="bg-white/5 border border-crypto-silver/20 rounded-lg p-2.5 text-gray-300 hover:text-white transition-all"
+            aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
           >
-            {isMobileMenuOpen ? (
-              <X className="w-5 h-5" />
-            ) : (
-              <Menu className="w-5 h-5" />
-            )}
+            {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </div>
       )}
       
       <div 
         id="mobile-navigation-menu"
-        className={`fixed left-0 top-0 h-full ${
+        className={`fixed top-0 h-full ${
           isMobile 
-            ? `w-80 transform transition-transform duration-300 ease-in-out ${
-                isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+            ? `right-0 w-full transform transition-transform duration-300 ease-in-out ${
+                isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
               }` 
-            : isCollapsed 
-              ? 'w-16' 
-              : 'w-64'
+            : `left-0 ${isCollapsed ? 'w-16' : 'w-64'}`
         } bg-black/95 backdrop-blur-lg border-r border-crypto-silver/20 ${
           isMobile ? 'z-50' : 'z-40'
         } ${!isMobile ? 'transition-all duration-300 ease-in-out' : ''} flex flex-col ${className}`}
@@ -459,7 +453,7 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
           </div>
         )}
 
-      {/* Header with Logo */}
+      {!isMobile && (
       <div className="flex-shrink-0 p-4 border-b border-crypto-silver/20">
         <div className={`flex items-center ${isCollapsed && !isMobile ? 'justify-center' : 'gap-3'}`}>
           <div className="w-12 h-12 rounded-full overflow-hidden shadow-lg">
@@ -478,9 +472,10 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
           )}
         </div>
       </div>
+      )}
 
       {/* Navigation Items - Scrollable Area */}
-      <div className="flex-1 min-h-0 overflow-y-auto px-2 py-4 space-y-1 scrollbar-thin scrollbar-thumb-crypto-silver/20 scrollbar-track-transparent">
+      <div className={`flex-1 min-h-0 overflow-y-auto px-2 py-4 space-y-1 scrollbar-thin scrollbar-thumb-crypto-silver/20 scrollbar-track-transparent ${isMobile ? 'pt-16' : ''}`}>
         {navItems.map(item => renderNavItem(item))}
       </div>
 
