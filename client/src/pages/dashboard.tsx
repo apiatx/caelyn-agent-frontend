@@ -6,8 +6,8 @@ import BittensorDashboardSection from "@/components/bittensor-dashboard-section"
 import BaseSection from "@/components/base-section";
 import SolanaSection from "@/components/solana-section";
 import DeFiSection from "@/components/defi-section";
-import cryptoHippoImage from "@assets/image_1771139146931.png";
-import cryptoHippoWithBitcoin from "@assets/image_1771139146931.png";
+import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
+import cryptoHippoWithBitcoin from "@assets/image_1758740882958.png";
 import newHeaderBackground from "@assets/photo-1504333638930-c8787321eee0_1757208194192.avif";
 import criptomonedas from "@assets/Criptomonedas-r3pu02e09qriw0f9pyqx2rtyhwsri4es6sdgff2ebk_1757225856373.png";
 import { SectionLoadingState } from "@/components/loading-screen";
