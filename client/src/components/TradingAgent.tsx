@@ -97,8 +97,8 @@ export default function TradingAgent() {
     </div>;
   }
 
-  function CardWrap({ children, onClick, expanded }: { children: React.ReactNode, onClick?: () => void, expanded?: boolean }) {
-    return <div onClick={onClick} style={{ background:C.card, border:`1px solid ${expanded ? C.blue+'40' : C.border}`, borderRadius:10, overflow:'hidden', cursor: onClick ? 'pointer' : 'default', transition:'all 0.2s' }}>{children}</div>;
+  function CardWrap({ children, onClick, expanded, borderColor }: { children: React.ReactNode, onClick?: () => void, expanded?: boolean, borderColor?: string }) {
+    return <div onClick={onClick} style={{ background:C.card, border:`1px solid ${expanded ? C.blue+'40' : C.border}`, borderLeft:`3px solid ${borderColor || C.border}`, borderRadius:10, overflow:'hidden', cursor: onClick ? 'pointer' : 'default', transition:'all 0.2s' }}>{children}</div>;
   }
 
   function TradingViewMini({ ticker }: { ticker: string }) {
@@ -109,19 +109,26 @@ export default function TradingAgent() {
 
   function formatAnalysis(text: string) {
     if (!text) return '';
-    return text.replace(/\*\*(.*?)\*\*/g, `<strong style="color:${C.bright}">$1</strong>`).replace(/### (.*?)(\n|$)/g, `<div style="color:${C.blue};font-weight:700;font-size:14px;margin:16px 0 8px;font-family:${sansFont}">$1</div>`).replace(/## (.*?)(\n|$)/g, `<div style="color:${C.bright};font-weight:700;font-size:16px;margin:20px 0 10px;font-family:${sansFont}">$1</div>`).replace(/\n/g, '<br/>');
+    return text
+      .replace(/^---+$/gm, '')
+      .replace(/^# (.*?)$/gm, `<div style="color:${C.bright};font-weight:800;font-size:18px;margin:20px 0 10px;font-family:${sansFont}">$1</div>`)
+      .replace(/^## (.*?)$/gm, `<div style="color:${C.bright};font-weight:700;font-size:16px;margin:16px 0 8px;font-family:${sansFont}">$1</div>`)
+      .replace(/^### (.*?)$/gm, `<div style="color:${C.blue};font-weight:700;font-size:14px;margin:12px 0 6px;font-family:${sansFont}">$1</div>`)
+      .replace(/\*\*(.*?)\*\*/g, `<span style="color:${C.bright};font-weight:700">$1</span>`)
+      .replace(/\n/g, '<br/>');
   }
 
   function renderTrades(s: any) {
     const picks = s.picks || [];
     return <div>
-      {s.market_context && <div style={{ padding:'14px 18px', background:`${C.blue}08`, border:`1px solid ${C.blue}15`, borderRadius:10, marginBottom:16, color:C.text, fontSize:12, fontFamily:sansFont, lineHeight:1.6 }}>{s.market_context}</div>}
-      <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+      {s.market_context && <div style={{ padding:'14px 18px', background:`${C.blue}08`, border:`1px solid ${C.blue}15`, borderRadius:10, marginBottom:10, color:C.text, fontSize:12, fontFamily:sansFont, lineHeight:1.6 }}>{s.market_context}</div>}
+      <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
         {picks.map((p: any, i: number) => {
           const isExp = expandedTicker === `t-${i}`;
-          return <CardWrap key={i} onClick={() => setExpandedTicker(isExp ? null : `t-${i}`)} expanded={isExp}>
+          return <CardWrap key={i} onClick={() => setExpandedTicker(isExp ? null : `t-${i}`)} expanded={isExp} borderColor={convColor(p.conviction)}>
             <div style={{ padding:'14px 18px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
               <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+                <span style={{ width:22, height:22, borderRadius:'50%', background:`${C.blue}15`, display:'inline-flex', alignItems:'center', justifyContent:'center', color:C.blue, fontSize:10, fontWeight:800, fontFamily:font, flexShrink:0 }}>{i+1}</span>
                 <span style={{ color:C.blue, fontWeight:800, fontSize:16, fontFamily:font }}>{p.ticker}</span>
                 <span style={{ color:C.dim, fontSize:12 }}>{p.company}</span>
                 <span style={{ color:changeColor(p.change), fontWeight:600, fontSize:13, fontFamily:font }}>{p.price} <span style={{ fontSize:11 }}>{p.change}</span></span>
@@ -131,10 +138,16 @@ export default function TradingAgent() {
                 <Badge color={convColor(p.conviction)}>{p.conviction}</Badge>
               </div>
             </div>
-            <div style={{ padding:'0 18px 14px', color:C.text, fontSize:12, lineHeight:1.6, fontFamily:sansFont }}>{p.thesis}</div>
-            {isExp && <div style={{ borderTop:`1px solid ${C.border}`, padding:18 }}>
+            <div style={{ padding:'0 18px 10px', color:C.text, fontSize:12, lineHeight:1.6, fontFamily:sansFont, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.thesis}</div>
+            {p.sources && <div style={{ padding:'0 18px 8px', display:'flex', gap:4, flexWrap:'wrap' }}>
+              {(Array.isArray(p.sources) ? p.sources : [p.sources]).map((src: string, j: number) => (
+                <span key={j} style={{ padding:'2px 8px', borderRadius:10, fontSize:9, fontWeight:600, fontFamily:font, color:C.dim, background:`${C.dim}10`, border:`1px solid ${C.border}` }}>{src}</span>
+              ))}
+            </div>}
+            <div style={{ padding:'4px 14px', background:`${convColor(p.conviction)}08`, borderTop:`1px solid ${C.border}`, color:convColor(p.conviction), fontSize:10, fontWeight:700, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.04em' }}>{p.conviction} CONVICTION{p.why_conviction ? ' — ' + p.why_conviction : ''}</div>
+            {isExp && <div style={{ borderTop:`1px solid ${C.border}`, padding:14 }}>
               <TradingViewMini ticker={p.ticker} />
-              {p.ta && <div style={{ marginBottom:16 }}>
+              {p.ta && <div style={{ marginBottom:10 }}>
                 <div style={{ color:C.blue, fontSize:11, fontWeight:700, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:10 }}>Technical Setup — {p.ta.stage || ''}</div>
                 <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(140px, 1fr))', gap:8 }}>
                   <IndicatorPill label="RSI" value={p.ta.rsi} signal={p.ta.rsi_signal} />
@@ -146,7 +159,7 @@ export default function TradingAgent() {
                 </div>
                 {p.ta.pattern && <div style={{ marginTop:8, color:C.text, fontSize:11, fontFamily:sansFont }}>Pattern: <span style={{ color:C.bright, fontWeight:600 }}>{p.ta.pattern}</span></div>}
               </div>}
-              {p.sentiment && <div style={{ marginBottom:16 }}>
+              {p.sentiment && <div style={{ marginBottom:10 }}>
                 <div style={{ color:C.purple, fontSize:11, fontWeight:700, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:10 }}>Social Sentiment — {p.sentiment.buzz_level} Buzz</div>
                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
                   <div style={{ background:`${C.green}08`, border:`1px solid ${C.green}15`, borderRadius:8, padding:12 }}>
@@ -175,14 +188,15 @@ export default function TradingAgent() {
 
   function renderFundamentals(s: any) {
     const picks = s.picks || [];
-    return <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+    return <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
       {picks.map((p: any, i: number) => {
         const isExp = expandedTicker === `f-${i}`;
         const fin = p.financials || {};
         const val = p.valuation || {};
-        return <CardWrap key={i} onClick={() => setExpandedTicker(isExp ? null : `f-${i}`)} expanded={isExp}>
+        return <CardWrap key={i} onClick={() => setExpandedTicker(isExp ? null : `f-${i}`)} expanded={isExp} borderColor={convColor(p.conviction)}>
           <div style={{ padding:'14px 18px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
             <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+              <span style={{ width:22, height:22, borderRadius:'50%', background:`${C.blue}15`, display:'inline-flex', alignItems:'center', justifyContent:'center', color:C.blue, fontSize:10, fontWeight:800, fontFamily:font, flexShrink:0 }}>{i+1}</span>
               <span style={{ color:C.blue, fontWeight:800, fontSize:16, fontFamily:font }}>{p.ticker}</span>
               <span style={{ color:C.dim, fontSize:12 }}>{p.company}</span>
               <span style={{ color:changeColor(p.change), fontWeight:600, fontSize:13, fontFamily:font }}>{p.price} {p.change}</span>
@@ -193,8 +207,9 @@ export default function TradingAgent() {
               <Badge color={convColor(p.conviction)}>{p.conviction}</Badge>
             </div>
           </div>
-          {p.headline && <div style={{ padding:'0 18px 14px', color:C.gold, fontSize:12, fontWeight:600, fontFamily:sansFont }}>{p.headline}</div>}
-          {isExp && <div style={{ borderTop:`1px solid ${C.border}`, padding:18 }}>
+          {p.headline && <div style={{ padding:'0 18px 10px', color:C.gold, fontSize:12, fontWeight:600, fontFamily:sansFont }}>{p.headline}</div>}
+          <div style={{ padding:'4px 14px', background:`${convColor(p.conviction)}08`, borderTop:`1px solid ${C.border}`, color:convColor(p.conviction), fontSize:10, fontWeight:700, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.04em' }}>{p.conviction} CONVICTION{p.why_conviction ? ' — ' + p.why_conviction : ''}</div>
+          {isExp && <div style={{ borderTop:`1px solid ${C.border}`, padding:14 }}>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
               <div>
                 <div style={{ color:C.green, fontSize:11, fontWeight:700, fontFamily:font, textTransform:'uppercase', marginBottom:10 }}>Revenue & Growth</div>
@@ -234,13 +249,14 @@ export default function TradingAgent() {
 
   function renderTechnicals(s: any) {
     const picks = s.picks || [];
-    return <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+    return <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
       {picks.map((p: any, i: number) => {
         const isExp = expandedTicker === `ta-${i}`;
         const ind = p.indicators || {};
-        return <CardWrap key={i} onClick={() => setExpandedTicker(isExp ? null : `ta-${i}`)} expanded={isExp}>
+        return <CardWrap key={i} onClick={() => setExpandedTicker(isExp ? null : `ta-${i}`)} expanded={isExp} borderColor={convColor(p.conviction)}>
           <div style={{ padding:'14px 18px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
             <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+              <span style={{ width:22, height:22, borderRadius:'50%', background:`${C.blue}15`, display:'inline-flex', alignItems:'center', justifyContent:'center', color:C.blue, fontSize:10, fontWeight:800, fontFamily:font, flexShrink:0 }}>{i+1}</span>
               <span style={{ color:C.blue, fontWeight:800, fontSize:16, fontFamily:font }}>{p.ticker}</span>
               <span style={{ color:C.dim, fontSize:12 }}>{p.company}</span>
               <span style={{ color:changeColor(p.change), fontWeight:600, fontSize:13, fontFamily:font }}>{p.price} {p.change}</span>
@@ -250,10 +266,11 @@ export default function TradingAgent() {
               <Badge color={convColor(p.conviction)}>{p.conviction}</Badge>
             </div>
           </div>
-          <div style={{ padding:'0 18px 14px', color:C.gold, fontSize:12, fontWeight:600, fontFamily:sansFont }}>{p.setup_name}</div>
-          {isExp && <div style={{ borderTop:`1px solid ${C.border}`, padding:18 }}>
+          <div style={{ padding:'0 18px 10px', color:C.gold, fontSize:12, fontWeight:600, fontFamily:sansFont }}>{p.setup_name}</div>
+          <div style={{ padding:'4px 14px', background:`${convColor(p.conviction)}08`, borderTop:`1px solid ${C.border}`, color:convColor(p.conviction), fontSize:10, fontWeight:700, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.04em' }}>{p.conviction} CONVICTION{p.why_conviction ? ' — ' + p.why_conviction : ''}</div>
+          {isExp && <div style={{ borderTop:`1px solid ${C.border}`, padding:14 }}>
             <TradingViewMini ticker={p.ticker} />
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(140px, 1fr))', gap:8, marginBottom:16 }}>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(140px, 1fr))', gap:8, marginBottom:10 }}>
               <IndicatorPill label="Stage" value={ind.stage} />
               <IndicatorPill label="RSI (14)" value={ind.rsi_14} signal={ind.rsi_signal} />
               <IndicatorPill label="MACD" value="—" signal={ind.macd} />
@@ -267,7 +284,7 @@ export default function TradingAgent() {
               <IndicatorPill label="Support" value="—" signal={ind.support} />
               <IndicatorPill label="Resistance" value="—" signal={ind.resistance} />
             </div>
-            {p.pattern && <div style={{ padding:12, background:`${C.blue}06`, border:`1px solid ${C.blue}15`, borderRadius:8, color:C.text, fontSize:12, lineHeight:1.6, fontFamily:sansFont, marginBottom:14 }}>{p.pattern}</div>}
+            {p.pattern && <div style={{ padding:12, background:`${C.blue}06`, border:`1px solid ${C.blue}15`, borderRadius:8, color:C.text, fontSize:12, lineHeight:1.6, fontFamily:sansFont, marginBottom:10 }}>{p.pattern}</div>}
             {p.trade_plan && <div style={{ background:`${C.green}06`, border:`1px solid ${C.green}15`, borderRadius:8, padding:14 }}>
               <div style={{ color:C.green, fontSize:11, fontWeight:700, fontFamily:font, marginBottom:10, textTransform:'uppercase' }}>Trade Plan</div>
               <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(120px, 1fr))', gap:8 }}>
@@ -282,8 +299,8 @@ export default function TradingAgent() {
 
   function renderAnalysis(s: any) {
     return <div>
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'18px 22px', background:C.card, border:`1px solid ${C.border}`, borderRadius:10, marginBottom:16 }}>
-        <div style={{ display:'flex', alignItems:'center', gap:14 }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'18px 22px', background:C.card, border:`1px solid ${C.border}`, borderRadius:10, marginBottom:10 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
           <span style={{ color:C.blue, fontWeight:800, fontSize:22, fontFamily:font }}>{s.ticker}</span>
           <span style={{ color:C.dim, fontSize:13 }}>{s.company}</span>
           <span style={{ color:changeColor(s.change), fontWeight:700, fontSize:15, fontFamily:font }}>{s.price} {s.change}</span>
@@ -293,9 +310,9 @@ export default function TradingAgent() {
           <Badge color={C.blue}>{s.stage}</Badge>
         </div>
       </div>
-      {s.verdict && <div style={{ padding:'14px 18px', background:`${C.green}08`, border:`1px solid ${C.green}20`, borderRadius:10, marginBottom:16, color:C.bright, fontSize:13, fontWeight:600, fontFamily:sansFont }}>{s.verdict}</div>}
+      {s.verdict && <div style={{ padding:'14px 18px', background:`${C.green}08`, border:`1px solid ${C.green}20`, borderRadius:10, marginBottom:10, color:C.bright, fontSize:13, fontWeight:600, fontFamily:sansFont }}>{s.verdict}</div>}
       {s.ticker && <TradingViewMini ticker={s.ticker} />}
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:14, marginBottom:16 }}>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8, marginBottom:10 }}>
         {s.ta && <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:10, padding:16 }}>
           <div style={{ color:C.blue, fontSize:11, fontWeight:700, fontFamily:font, textTransform:'uppercase', marginBottom:12 }}>Technical</div>
           {Object.entries(s.ta).map(([k,v]) => <StatRow key={k} label={k.replace(/_/g,' ')} value={v as string} />)}
@@ -326,15 +343,16 @@ export default function TradingAgent() {
   function renderInvestments(s: any) {
     const picks = s.picks || [];
     return <div>
-      {s.market_context && <div style={{ padding:'14px 18px', background:`${C.green}06`, border:`1px solid ${C.green}15`, borderRadius:10, marginBottom:16, color:C.text, fontSize:12, fontFamily:sansFont, lineHeight:1.6 }}>{s.market_context}</div>}
-      <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+      {s.market_context && <div style={{ padding:'14px 18px', background:`${C.green}06`, border:`1px solid ${C.green}15`, borderRadius:10, marginBottom:10, color:C.text, fontSize:12, fontFamily:sansFont, lineHeight:1.6 }}>{s.market_context}</div>}
+      <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
         {picks.map((p: any, i: number) => {
           const isExp = expandedTicker === `inv-${i}`;
           const fund = p.fundamentals || {};
           const sq = p.sqglp || {};
-          return <CardWrap key={i} onClick={() => setExpandedTicker(isExp ? null : `inv-${i}`)} expanded={isExp}>
+          return <CardWrap key={i} onClick={() => setExpandedTicker(isExp ? null : `inv-${i}`)} expanded={isExp} borderColor={convColor(p.conviction)}>
             <div style={{ padding:'14px 18px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
               <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+                <span style={{ width:22, height:22, borderRadius:'50%', background:`${C.blue}15`, display:'inline-flex', alignItems:'center', justifyContent:'center', color:C.blue, fontSize:10, fontWeight:800, fontFamily:font, flexShrink:0 }}>{i+1}</span>
                 <span style={{ color:C.blue, fontWeight:800, fontSize:16, fontFamily:font }}>{p.ticker}</span>
                 <span style={{ color:C.dim, fontSize:12 }}>{p.company}</span>
                 <span style={{ color:C.bright, fontWeight:600, fontSize:13, fontFamily:font }}>{p.price}</span>
@@ -344,14 +362,15 @@ export default function TradingAgent() {
                 <Badge color={convColor(p.conviction)}>{p.conviction}</Badge>
               </div>
             </div>
-            <div style={{ padding:'0 18px 14px', color:C.text, fontSize:12, lineHeight:1.6, fontFamily:sansFont }}>{p.investment_thesis}</div>
-            {isExp && <div style={{ borderTop:`1px solid ${C.border}`, padding:18 }}>
-              {p.moat && <div style={{ padding:12, background:`${C.purple}08`, border:`1px solid ${C.purple}15`, borderRadius:8, marginBottom:14, color:C.text, fontSize:12, fontFamily:sansFont }}><span style={{ color:C.purple, fontWeight:700 }}>Moat: </span>{p.moat}</div>}
-              <div style={{ marginBottom:14 }}>
+            <div style={{ padding:'0 18px 10px', color:C.text, fontSize:12, lineHeight:1.6, fontFamily:sansFont, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.investment_thesis}</div>
+            <div style={{ padding:'4px 14px', background:`${convColor(p.conviction)}08`, borderTop:`1px solid ${C.border}`, color:convColor(p.conviction), fontSize:10, fontWeight:700, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.04em' }}>{p.conviction} CONVICTION{p.why_conviction ? ' — ' + p.why_conviction : ''}</div>
+            {isExp && <div style={{ borderTop:`1px solid ${C.border}`, padding:14 }}>
+              {p.moat && <div style={{ padding:12, background:`${C.purple}08`, border:`1px solid ${C.purple}15`, borderRadius:8, marginBottom:10, color:C.text, fontSize:12, fontFamily:sansFont }}><span style={{ color:C.purple, fontWeight:700 }}>Moat: </span>{p.moat}</div>}
+              <div style={{ marginBottom:10 }}>
                 <div style={{ color:C.gold, fontSize:11, fontWeight:700, fontFamily:font, textTransform:'uppercase', marginBottom:10 }}>SQGLP Assessment</div>
                 {Object.entries(sq).map(([k, v]) => <StatRow key={k} label={k.charAt(0).toUpperCase() + k.slice(1)} value={v as string} />)}
               </div>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:14 }}>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:10 }}>
                 <div>
                   <div style={{ color:C.green, fontSize:11, fontWeight:700, fontFamily:font, textTransform:'uppercase', marginBottom:10 }}>Growth & Profitability</div>
                   <StatRow label="Revenue YoY" value={fund.revenue_growth_yoy} />
@@ -410,9 +429,9 @@ export default function TradingAgent() {
     };
 
     return <div>
-      {s.summary && <div style={{ padding:'14px 18px', background:`${C.purple}08`, border:`1px solid ${C.purple}20`, borderRadius:10, marginBottom:16, color:C.text, fontSize:12, fontFamily:sansFont, lineHeight:1.7 }}>{s.summary}</div>}
+      {s.summary && <div style={{ padding:'14px 18px', background:`${C.purple}08`, border:`1px solid ${C.purple}20`, borderRadius:10, marginBottom:10, color:C.text, fontSize:12, fontFamily:sansFont, lineHeight:1.7 }}>{s.summary}</div>}
 
-      {topPicks.length > 0 && <div style={{ marginBottom:16 }}>
+      {topPicks.length > 0 && <div style={{ marginBottom:10 }}>
         <div style={{ color:C.bright, fontSize:14, fontWeight:800, fontFamily:sansFont, marginBottom:10 }}>Top Picks</div>
         <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
           {topPicks.map((pick: any, i: number) => (
@@ -457,9 +476,9 @@ export default function TradingAgent() {
               <div style={{ padding:'8px 6px', color: row.analyst_rating?.toLowerCase().includes('buy') ? C.green : row.analyst_rating?.toLowerCase().includes('sell') ? C.red : C.text, fontSize:10, fontWeight:600, fontFamily:font }}>{row.analyst_rating}</div>
               <div style={{ padding:'8px 6px', color:changeColor(row.upside), fontSize:11, fontWeight:600, fontFamily:font }}>{row.upside}</div>
             </div>
-            {isExp && <div style={{ padding:18, background:`${C.card}`, borderBottom:`1px solid ${C.border}` }}>
+            {isExp && <div style={{ padding:14, background:`${C.card}`, borderBottom:`1px solid ${C.border}` }}>
               <TradingViewMini ticker={row.ticker} />
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:14 }}>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:10 }}>
                 {row.ta_summary && <div style={{ background:C.bg, borderRadius:8, padding:12, border:`1px solid ${C.border}` }}>
                   <div style={{ color:C.blue, fontSize:10, fontWeight:700, fontFamily:font, textTransform:'uppercase', marginBottom:6 }}>Technical</div>
                   <div style={{ color:C.text, fontSize:11, lineHeight:1.7, fontFamily:sansFont }}>{row.ta_summary}</div>
@@ -492,9 +511,9 @@ export default function TradingAgent() {
     const btcEth = s.btc_eth_summary || {};
 
     return <div>
-      {s.market_overview && <div style={{ padding:'16px 20px', background:`${C.purple}08`, border:`1px solid ${C.purple}20`, borderRadius:10, marginBottom:16, color:C.text, fontSize:12, fontFamily:sansFont, lineHeight:1.7 }}>{s.market_overview}</div>}
+      {s.market_overview && <div style={{ padding:'16px 20px', background:`${C.purple}08`, border:`1px solid ${C.purple}20`, borderRadius:10, marginBottom:10, color:C.text, fontSize:12, fontFamily:sansFont, lineHeight:1.7 }}>{s.market_overview}</div>}
 
-      {(btcEth.btc || btcEth.eth) && <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:16 }}>
+      {(btcEth.btc || btcEth.eth) && <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:10 }}>
         {['btc', 'eth'].map(key => {
           const d = btcEth[key];
           if (!d) return null;
@@ -514,7 +533,7 @@ export default function TradingAgent() {
         })}
       </div>}
 
-      {Object.keys(funding).length > 0 && <div style={{ marginBottom:16 }}>
+      {Object.keys(funding).length > 0 && <div style={{ marginBottom:10 }}>
         <div style={{ color:C.bright, fontSize:13, fontWeight:700, fontFamily:sansFont, marginBottom:10 }}>Derivatives & Funding Rates</div>
         {funding.market_bias && <div style={{ padding:'10px 16px', background:C.card, border:`1px solid ${C.border}`, borderRadius:8, marginBottom:10, display:'flex', gap:16, fontSize:11, fontFamily:font }}>
           <span style={{ color:C.dim }}>Market Bias: <span style={{ color:trendColor(funding.market_bias), fontWeight:600 }}>{funding.market_bias}</span></span>
@@ -543,7 +562,7 @@ export default function TradingAgent() {
         </div>
       </div>}
 
-      {categories.length > 0 && <div style={{ marginBottom:16 }}>
+      {categories.length > 0 && <div style={{ marginBottom:10 }}>
         <div style={{ color:C.bright, fontSize:13, fontWeight:700, fontFamily:sansFont, marginBottom:10 }}>Narrative Rotation — Hot Categories</div>
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(200px, 1fr))', gap:10 }}>
           {categories.map((cat: any, i: number) => (
@@ -557,7 +576,7 @@ export default function TradingAgent() {
         </div>
       </div>}
 
-      {momentum.length > 0 && <div style={{ marginBottom:16 }}>
+      {momentum.length > 0 && <div style={{ marginBottom:10 }}>
         <div style={{ color:C.bright, fontSize:13, fontWeight:700, fontFamily:sansFont, marginBottom:10 }}>Top Momentum Picks</div>
         <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
           {momentum.map((c: any, i: number) => {
@@ -575,15 +594,15 @@ export default function TradingAgent() {
                   <Badge color={convColor(c.conviction)}>{c.conviction}</Badge>
                 </div>
               </div>
-              <div style={{ padding:'0 18px 10px', display:'flex', gap:14, fontSize:11, fontFamily:font }}>
+              <div style={{ padding:'0 18px 10px', display:'flex', gap:8, fontSize:11, fontFamily:font }}>
                 <span style={{ color:C.dim }}>7d: <span style={{ color:changeColor(c.change_7d), fontWeight:600 }}>{c.change_7d}</span></span>
                 <span style={{ color:C.dim }}>30d: <span style={{ color:changeColor(c.change_30d), fontWeight:600 }}>{c.change_30d}</span></span>
                 <span style={{ color:C.dim }}>Funding: <span style={{ color:parseFloat(c.funding_rate || '0') > 0.03 ? C.red : parseFloat(c.funding_rate || '0') < -0.01 ? C.green : C.text, fontWeight:600 }}>{c.funding_rate}</span></span>
                 <span style={{ color:C.dim }}>OI: <span style={{ color:C.bright }}>{c.open_interest}</span></span>
               </div>
               <div style={{ padding:'0 18px 14px', color:C.text, fontSize:12, lineHeight:1.6, fontFamily:sansFont }}>{c.thesis}</div>
-              {isExp && <div style={{ borderTop:`1px solid ${C.border}`, padding:18 }}>
-                {c.social && <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(130px, 1fr))', gap:8, marginBottom:14 }}>
+              {isExp && <div style={{ borderTop:`1px solid ${C.border}`, padding:14 }}>
+                {c.social && <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(130px, 1fr))', gap:8, marginBottom:10 }}>
                   {c.social.twitter_followers && <IndicatorPill label="Twitter" value={c.social.twitter_followers} />}
                   {c.social.reddit_subscribers && <IndicatorPill label="Reddit" value={c.social.reddit_subscribers} />}
                   {c.social.dev_activity && <IndicatorPill label="Dev Activity" value="—" signal={c.social.dev_activity} />}
@@ -603,14 +622,14 @@ export default function TradingAgent() {
         </div>
       </div>}
 
-      {Object.keys(onChain).length > 0 && <div style={{ marginBottom:16 }}>
+      {Object.keys(onChain).length > 0 && <div style={{ marginBottom:10 }}>
         <div style={{ color:C.bright, fontSize:13, fontWeight:700, fontFamily:sansFont, marginBottom:10 }}>On-Chain Signals</div>
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(200px, 1fr))', gap:8 }}>
           {Object.entries(onChain).map(([k, v]) => <IndicatorPill key={k} label={k.replace(/_/g, ' ')} value={v as string} />)}
         </div>
       </div>}
 
-      {catalysts.length > 0 && <div style={{ marginBottom:16 }}>
+      {catalysts.length > 0 && <div style={{ marginBottom:10 }}>
         <div style={{ color:C.bright, fontSize:13, fontWeight:700, fontFamily:sansFont, marginBottom:10 }}>Upcoming Catalysts</div>
         <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:10, padding:14 }}>
           {catalysts.map((cat: string, i: number) => (
@@ -648,7 +667,7 @@ export default function TradingAgent() {
     };
 
     return <div>
-      <div style={{ padding:'20px 24px', background:`linear-gradient(135deg, ${C.card} 0%, ${C.bg} 100%)`, border:`1px solid ${C.border}`, borderRadius:12, marginBottom:16 }}>
+      <div style={{ padding:'20px 24px', background:`linear-gradient(135deg, ${C.card} 0%, ${C.bg} 100%)`, border:`1px solid ${C.border}`, borderRadius:12, marginBottom:10 }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
           <div style={{ display:'flex', alignItems:'center', gap:12 }}>
             <span style={{ fontSize:22 }}>⚡</span>
@@ -659,7 +678,7 @@ export default function TradingAgent() {
         {pulse.summary && <div style={{ color:C.text, fontSize:13, lineHeight:1.7, fontFamily:sansFont }}>{pulse.summary}</div>}
       </div>
 
-      {Object.keys(numbers).length > 0 && <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(140px, 1fr))', gap:8, marginBottom:16 }}>
+      {Object.keys(numbers).length > 0 && <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(140px, 1fr))', gap:8, marginBottom:10 }}>
         {Object.entries(numbers).map(([key, val]: [string, any]) => (
           <div key={key} style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:8, padding:'10px 12px' }}>
             <div style={{ color:C.dim, fontSize:9, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:4 }}>{key.replace(/_/g, ' ')}</div>
@@ -673,7 +692,7 @@ export default function TradingAgent() {
         ))}
       </div>}
 
-      {moving.length > 0 && <div style={{ marginBottom:16 }}>
+      {moving.length > 0 && <div style={{ marginBottom:10 }}>
         <div style={{ color:C.bright, fontSize:13, fontWeight:700, fontFamily:sansFont, marginBottom:10 }}>What's Moving</div>
         <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
           {moving.map((item: any, i: number) => (
@@ -685,7 +704,7 @@ export default function TradingAgent() {
         </div>
       </div>}
 
-      {Object.keys(highlights).length > 0 && <div style={{ marginBottom:16 }}>
+      {Object.keys(highlights).length > 0 && <div style={{ marginBottom:10 }}>
         <div style={{ color:C.bright, fontSize:13, fontWeight:700, fontFamily:sansFont, marginBottom:10 }}>Top Signal From Each Scanner</div>
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(200px, 1fr))', gap:10 }}>
           {Object.entries(highlights).map(([key, val]: [string, any]) => {
@@ -710,7 +729,7 @@ export default function TradingAgent() {
         </div>
       </div>}
 
-      {topMoves.length > 0 && <div style={{ marginBottom:16 }}>
+      {topMoves.length > 0 && <div style={{ marginBottom:10 }}>
         <div style={{ color:C.bright, fontSize:14, fontWeight:800, fontFamily:sansFont, marginBottom:10 }}>Top Moves Today</div>
         <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
           {topMoves.map((move: any, i: number) => {
@@ -735,7 +754,7 @@ export default function TradingAgent() {
                 </div>}
                 <div style={{ color:C.text, fontSize:12, lineHeight:1.7, fontFamily:sansFont }}>{move.thesis}</div>
               </div>
-              {isExp && <div style={{ borderTop:`1px solid ${C.border}`, padding:18 }}>
+              {isExp && <div style={{ borderTop:`1px solid ${C.border}`, padding:14 }}>
                 <TradingViewMini ticker={move.ticker} />
                 <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(120px, 1fr))', gap:8, marginTop:12 }}>
                   {[
@@ -755,7 +774,7 @@ export default function TradingAgent() {
         </div>
       </div>}
 
-      {catalysts.length > 0 && <div style={{ marginBottom:16 }}>
+      {catalysts.length > 0 && <div style={{ marginBottom:10 }}>
         <div style={{ color:C.bright, fontSize:13, fontWeight:700, fontFamily:sansFont, marginBottom:8 }}>Upcoming Catalysts</div>
         <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:10, padding:12 }}>
           {catalysts.map((cat: string, i: number) => (
@@ -766,7 +785,7 @@ export default function TradingAgent() {
         </div>
       </div>}
 
-      {s.portfolio_bias && <div style={{ padding:'14px 18px', background:`${C.blue}06`, border:`1px solid ${C.blue}15`, borderRadius:10, marginBottom:16, color:C.text, fontSize:12, lineHeight:1.7, fontFamily:sansFont }}>
+      {s.portfolio_bias && <div style={{ padding:'14px 18px', background:`${C.blue}06`, border:`1px solid ${C.blue}15`, borderRadius:10, marginBottom:10, color:C.text, fontSize:12, lineHeight:1.7, fontFamily:sansFont }}>
         <span style={{ color:C.blue, fontWeight:700 }}>Portfolio Bias: </span>{s.portfolio_bias}
       </div>}
     </div>;
@@ -785,16 +804,16 @@ export default function TradingAgent() {
     };
 
     return <div>
-      {s.summary && <div style={{ padding:'16px 20px', background:`${C.blue}08`, border:`1px solid ${C.blue}15`, borderRadius:10, marginBottom:16, color:C.text, fontSize:12, fontFamily:sansFont, lineHeight:1.7 }}>{s.summary}</div>}
+      {s.summary && <div style={{ padding:'16px 20px', background:`${C.blue}08`, border:`1px solid ${C.blue}15`, borderRadius:10, marginBottom:10, color:C.text, fontSize:12, fontFamily:sansFont, lineHeight:1.7 }}>{s.summary}</div>}
 
-      {s.spy_context && <div style={{ display:'flex', alignItems:'center', gap:16, padding:'10px 16px', background:C.card, border:`1px solid ${C.border}`, borderRadius:8, marginBottom:16 }}>
+      {s.spy_context && <div style={{ display:'flex', alignItems:'center', gap:16, padding:'10px 16px', background:C.card, border:`1px solid ${C.border}`, borderRadius:8, marginBottom:10 }}>
         <span style={{ color:C.dim, fontSize:11, fontWeight:700, fontFamily:font }}>SPY BENCHMARK</span>
         <span style={{ color:C.bright, fontSize:14, fontWeight:700, fontFamily:font }}>{s.spy_context.price}</span>
         <span style={{ color:changeColor(s.spy_context.change), fontSize:12, fontWeight:600, fontFamily:font }}>{s.spy_context.change}</span>
         <span style={{ color:trendColor(s.spy_context.trend), fontSize:11, fontFamily:font }}>{s.spy_context.trend}</span>
       </div>}
 
-      <div style={{ display:'flex', flexDirection:'column', gap:10, marginBottom:16 }}>
+      <div style={{ display:'flex', flexDirection:'column', gap:10, marginBottom:10 }}>
         {positions.map((p: any, i: number) => {
           const isExp = expandedTicker === `port-${i}`;
           const rc = ratingConfig[p.rating] || ratingConfig['Hold'];
@@ -817,9 +836,9 @@ export default function TradingAgent() {
               {p.relative_strength && <span style={{ color:C.dim }}>vs SPY: <span style={{ color:trendColor(p.relative_strength) }}>{p.relative_strength}</span></span>}
             </div>
             <div style={{ padding:'0 18px 14px', color:C.text, fontSize:12, lineHeight:1.6, fontFamily:sansFont }}>{p.thesis}</div>
-            {isExp && <div style={{ borderTop:`1px solid ${C.border}`, padding:18 }}>
+            {isExp && <div style={{ borderTop:`1px solid ${C.border}`, padding:14 }}>
               <TradingViewMini ticker={p.ticker} />
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:14 }}>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:10 }}>
                 <div style={{ background:C.bg, borderRadius:8, padding:12, border:`1px solid ${C.border}` }}>
                   <div style={{ color:C.blue, fontSize:10, fontWeight:700, fontFamily:font, textTransform:'uppercase', marginBottom:6 }}>Technical</div>
                   <div style={{ color:C.text, fontSize:11, lineHeight:1.7, fontFamily:sansFont }}>{p.ta_summary}</div>
@@ -829,7 +848,7 @@ export default function TradingAgent() {
                   <div style={{ color:C.text, fontSize:11, lineHeight:1.7, fontFamily:sansFont }}>{p.fundamental_summary}</div>
                 </div>
               </div>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:12, marginBottom:14 }}>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:12, marginBottom:10 }}>
                 {p.sentiment && <div style={{ background:C.bg, borderRadius:8, padding:10, border:`1px solid ${C.border}` }}>
                   <div style={{ color:C.purple, fontSize:9, fontWeight:700, fontFamily:font, textTransform:'uppercase', marginBottom:4 }}>Sentiment</div>
                   <div style={{ color:C.text, fontSize:11, fontFamily:sansFont }}>{p.sentiment}</div>
@@ -851,8 +870,8 @@ export default function TradingAgent() {
         })}
       </div>
 
-      {Object.keys(insights).length > 0 && <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:10, padding:18, marginBottom:16 }}>
-        <div style={{ color:C.bright, fontSize:14, fontWeight:700, fontFamily:sansFont, marginBottom:14 }}>Portfolio Insights</div>
+      {Object.keys(insights).length > 0 && <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:10, padding:14, marginBottom:10 }}>
+        <div style={{ color:C.bright, fontSize:14, fontWeight:700, fontFamily:sansFont, marginBottom:10 }}>Portfolio Insights</div>
         {insights.sector_concentration && <div style={{ marginBottom:12 }}>
           <div style={{ color:C.blue, fontSize:10, fontWeight:700, fontFamily:font, textTransform:'uppercase', marginBottom:6 }}>Sector Concentration</div>
           <div style={{ color:C.text, fontSize:12, fontFamily:sansFont }}>{insights.sector_concentration}</div>
@@ -885,9 +904,9 @@ export default function TradingAgent() {
     const topPlays = s.top_conviction_plays || [];
 
     return <div>
-      {s.market_overview && <div style={{ padding:'16px 20px', background:`${C.gold}08`, border:`1px solid ${C.gold}20`, borderRadius:10, marginBottom:16, color:C.text, fontSize:12, fontFamily:sansFont, lineHeight:1.7 }}>{s.market_overview}</div>}
+      {s.market_overview && <div style={{ padding:'16px 20px', background:`${C.gold}08`, border:`1px solid ${C.gold}20`, borderRadius:10, marginBottom:10, color:C.text, fontSize:12, fontFamily:sansFont, lineHeight:1.7 }}>{s.market_overview}</div>}
 
-      {s.dxy_context && <div style={{ display:'flex', alignItems:'center', gap:16, padding:'12px 18px', background:C.card, border:`1px solid ${C.border}`, borderRadius:10, marginBottom:16 }}>
+      {s.dxy_context && <div style={{ display:'flex', alignItems:'center', gap:16, padding:'12px 18px', background:C.card, border:`1px solid ${C.border}`, borderRadius:10, marginBottom:10 }}>
         <div style={{ display:'flex', alignItems:'center', gap:8 }}>
           <span style={{ color:C.gold, fontSize:11, fontWeight:700, fontFamily:font, textTransform:'uppercase' }}>DXY</span>
           <span style={{ color:C.bright, fontSize:16, fontWeight:700, fontFamily:font }}>{s.dxy_context.price}</span>
@@ -897,7 +916,7 @@ export default function TradingAgent() {
         <span style={{ color:C.dim, fontSize:11, fontFamily:sansFont, flex:1 }}>{s.dxy_context.impact}</span>
       </div>}
 
-      <div style={{ display:'flex', flexDirection:'column', gap:10, marginBottom:16 }}>
+      <div style={{ display:'flex', flexDirection:'column', gap:10, marginBottom:10 }}>
         {commodities.map((c: any, i: number) => {
           const isExp = expandedTicker === `comm-${i}`;
           return <CardWrap key={i} onClick={() => setExpandedTicker(isExp ? null : `comm-${i}`)} expanded={isExp}>
@@ -915,8 +934,8 @@ export default function TradingAgent() {
               <span style={{ color:C.dim }}>Short: <span style={{ color:trendColor(c.trend_short) }}>{c.trend_short}</span></span>
               <span style={{ color:C.dim }}>Long: <span style={{ color:trendColor(c.trend_long) }}>{c.trend_long}</span></span>
             </div>
-            {isExp && <div style={{ borderTop:`1px solid ${C.border}`, padding:18 }}>
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(140px, 1fr))', gap:8, marginBottom:14 }}>
+            {isExp && <div style={{ borderTop:`1px solid ${C.border}`, padding:14 }}>
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(140px, 1fr))', gap:8, marginBottom:10 }}>
                 <IndicatorPill label="RSI" value={c.rsi} signal={c.rsi > 70 ? 'Overbought ⚠️' : c.rsi < 30 ? 'Oversold' : 'Neutral'} />
                 <IndicatorPill label="50 SMA" value="—" signal={c.above_50_sma ? 'Price Above ↑' : 'Price Below ↓'} />
                 <IndicatorPill label="200 SMA" value="—" signal={c.above_200_sma ? 'Price Above ↑' : 'Price Below ↓'} />
@@ -952,7 +971,7 @@ export default function TradingAgent() {
         })}
       </div>
 
-      {Object.keys(sectors).length > 0 && <div style={{ marginBottom:16 }}>
+      {Object.keys(sectors).length > 0 && <div style={{ marginBottom:10 }}>
         <div style={{ color:C.bright, fontSize:13, fontWeight:700, fontFamily:sansFont, marginBottom:10 }}>Commodity Sectors</div>
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(180px, 1fr))', gap:10 }}>
           {Object.entries(sectors).map(([key, sec]: [string, any]) => (
@@ -966,14 +985,14 @@ export default function TradingAgent() {
         </div>
       </div>}
 
-      {Object.keys(macro).length > 0 && <div style={{ marginBottom:16 }}>
+      {Object.keys(macro).length > 0 && <div style={{ marginBottom:10 }}>
         <div style={{ color:C.bright, fontSize:13, fontWeight:700, fontFamily:sansFont, marginBottom:10 }}>Macro Factors Affecting Commodities</div>
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(180px, 1fr))', gap:8 }}>
           {Object.entries(macro).map(([k, v]) => <IndicatorPill key={k} label={k.replace(/_/g, ' ')} value={v as string} />)}
         </div>
       </div>}
 
-      {catalysts.length > 0 && <div style={{ marginBottom:16 }}>
+      {catalysts.length > 0 && <div style={{ marginBottom:10 }}>
         <div style={{ color:C.bright, fontSize:13, fontWeight:700, fontFamily:sansFont, marginBottom:10 }}>Upcoming Catalysts</div>
         <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:10, padding:14 }}>
           {catalysts.map((cat: string, i: number) => (
@@ -984,7 +1003,7 @@ export default function TradingAgent() {
         </div>
       </div>}
 
-      {topPlays.length > 0 && <div style={{ marginBottom:16 }}>
+      {topPlays.length > 0 && <div style={{ marginBottom:10 }}>
         <div style={{ color:C.bright, fontSize:13, fontWeight:700, fontFamily:sansFont, marginBottom:10 }}>Top Commodity Plays</div>
         <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
           {topPlays.map((play: any, i: number) => (
@@ -1007,8 +1026,8 @@ export default function TradingAgent() {
   function renderSectorRotation(s: any) {
     const sectors = s.sectors || [];
     return <div>
-      {s.summary && <div style={{ padding:'14px 18px', background:`${C.blue}08`, border:`1px solid ${C.blue}15`, borderRadius:10, marginBottom:16, color:C.text, fontSize:12, fontFamily:sansFont, lineHeight:1.6 }}>{s.summary}</div>}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(200px, 1fr))', gap:10, marginBottom:16 }}>
+      {s.summary && <div style={{ padding:'14px 18px', background:`${C.blue}08`, border:`1px solid ${C.blue}15`, borderRadius:10, marginBottom:10, color:C.text, fontSize:12, fontFamily:sansFont, lineHeight:1.6 }}>{s.summary}</div>}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(200px, 1fr))', gap:10, marginBottom:10 }}>
         {sectors.map((sec: any, i: number) => {
           const isPos = parseFloat(sec.change_today) >= 0;
           return <div key={i} style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:10, padding:14 }}>
@@ -1027,7 +1046,7 @@ export default function TradingAgent() {
           </div>;
         })}
       </div>
-      {s.rotation_signal && <div style={{ padding:'14px 18px', background:`${C.gold}08`, border:`1px solid ${C.gold}15`, borderRadius:10, marginBottom:16, color:C.text, fontSize:12, fontFamily:sansFont, lineHeight:1.6 }}><span style={{ color:C.gold, fontWeight:700 }}>Rotation Signal: </span>{s.rotation_signal}</div>}
+      {s.rotation_signal && <div style={{ padding:'14px 18px', background:`${C.gold}08`, border:`1px solid ${C.gold}15`, borderRadius:10, marginBottom:10, color:C.text, fontSize:12, fontFamily:sansFont, lineHeight:1.6 }}><span style={{ color:C.gold, fontWeight:700 }}>Rotation Signal: </span>{s.rotation_signal}</div>}
       {s.macro_context && <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(140px, 1fr))', gap:8 }}>
         {Object.entries(s.macro_context).map(([k, v]) => <IndicatorPill key={k} label={k.replace(/_/g, ' ')} value={v as string} />)}
       </div>}
@@ -1036,7 +1055,7 @@ export default function TradingAgent() {
 
   function renderEarningsCatalyst(s: any) {
     const upcoming = s.upcoming || [];
-    return <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+    return <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
       {upcoming.map((e: any, i: number) => {
         const isExp = expandedTicker === `earn-${i}`;
         return <CardWrap key={i} onClick={() => setExpandedTicker(isExp ? null : `earn-${i}`)} expanded={isExp}>
@@ -1048,7 +1067,7 @@ export default function TradingAgent() {
             </div>
             <Badge color={C.dim}>{e.market_cap}</Badge>
           </div>
-          {isExp && <div style={{ borderTop:`1px solid ${C.border}`, padding:18 }}>
+          {isExp && <div style={{ borderTop:`1px solid ${C.border}`, padding:14 }}>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
               <div>
                 <div style={{ color:C.green, fontSize:11, fontWeight:700, fontFamily:font, textTransform:'uppercase', marginBottom:10 }}>Estimates</div>
@@ -1133,7 +1152,7 @@ export default function TradingAgent() {
             </div>
           </div>
         </div>
-        <div style={{ marginTop:16, padding:18, background:`linear-gradient(135deg, ${C.bg} 0%, #0e0f14 100%)`, border:`1px solid ${C.purple}20`, borderRadius:12, borderTop:`1px solid ${C.purple}30` }}>
+        <div style={{ marginTop:16, padding:14, background:`linear-gradient(135deg, ${C.bg} 0%, #0e0f14 100%)`, border:`1px solid ${C.purple}20`, borderRadius:12, borderTop:`1px solid ${C.purple}30` }}>
           <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10 }}>
             <span style={{ fontSize:14 }}>🔬</span>
             <span style={{ color:C.purple, fontSize:12, fontWeight:700, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.06em' }}>AI Screener</span>
