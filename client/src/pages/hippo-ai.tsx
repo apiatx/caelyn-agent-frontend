@@ -1,31 +1,6 @@
-import { useEffect, useRef } from "react";
 import cryptoHippoLogo from "@assets/image_1771175798315.png";
 import TradingAgent from "@/components/TradingAgent";
-
-function TickerTapeWidget() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!containerRef.current) return;
-    const iframe = document.createElement("iframe");
-    iframe.style.width = "100%";
-    iframe.style.height = "100%";
-    iframe.style.border = "none";
-    iframe.setAttribute("sandbox", "allow-scripts allow-same-origin allow-popups");
-    containerRef.current.appendChild(iframe);
-    const doc = iframe.contentDocument;
-    if (doc) {
-      doc.open();
-      doc.write(`<!DOCTYPE html><html><head><style>body{margin:0;padding:0;overflow:hidden;background:transparent;}</style></head><body><script type="module" src="https://widgets.tradingview-widget.com/w/en/tv-ticker-tape.js"><\/script><tv-ticker-tape symbols="FOREXCOM:SPXUSD,FOREXCOM:NSXUSD,FOREXCOM:DJI,FX:EURUSD,BITSTAMP:BTCUSD,BITSTAMP:ETHUSD,CMCMARKETS:GOLD,TVC:SILVER,TVC:DXY,CBOE:VIX,TVC:RUT" theme="dark" transparent style="width:100%;display:block;"></tv-ticker-tape></body></html>`);
-      doc.close();
-    }
-    return () => {
-      if (containerRef.current && iframe.parentNode === containerRef.current) {
-        containerRef.current.removeChild(iframe);
-      }
-    };
-  }, []);
-  return <div ref={containerRef} className="w-full h-full" />;
-}
+import TickerTapeWidget from "@/components/TickerTapeWidget";
 
 export default function HippoAIPage() {
   return (
