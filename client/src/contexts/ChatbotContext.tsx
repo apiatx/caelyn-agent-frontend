@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 
 const AGENT_BACKEND_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
 const AGENT_API_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
@@ -10,6 +10,11 @@ interface Message {
   type?: string;
 }
 
+interface PageContext {
+  pageName: string;
+  data: any;
+}
+
 interface ChatbotContextType {
   messages: Message[];
   isLoading: boolean;
@@ -18,6 +23,8 @@ interface ChatbotContextType {
   clearChat: () => void;
   hasUnread: boolean;
   setHasUnread: (v: boolean) => void;
+  pageContext: PageContext | null;
+  setPageContext: (ctx: PageContext | null) => void;
 }
 
 const ChatbotContext = createContext<ChatbotContextType | null>(null);
@@ -28,12 +35,21 @@ export function useChatbot() {
   return ctx;
 }
 
+export function usePageContext(pageName: string, data: any) {
+  const { setPageContext } = useChatbot();
+  useEffect(() => {
+    setPageContext({ pageName, data });
+    return () => setPageContext(null);
+  }, [pageName, JSON.stringify(data)]);
+}
+
 export function ChatbotProvider({ children }: { children: React.ReactNode }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [chatHistory, setChatHistory] = useState<Array<{role: string, content: string}>>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStage, setLoadingStage] = useState('');
   const [hasUnread, setHasUnread] = useState(false);
+  const [pageContext, setPageContext] = useState<PageContext | null>(null);
 
   const sendMessage = useCallback(async (prompt: string) => {
     if (!prompt.trim() || isLoading) return;
@@ -83,7 +99,7 @@ export function ChatbotProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <ChatbotContext.Provider value={{ messages, isLoading, loadingStage, sendMessage, clearChat, hasUnread, setHasUnread }}>
+    <ChatbotContext.Provider value={{ messages, isLoading, loadingStage, sendMessage, clearChat, hasUnread, setHasUnread, pageContext, setPageContext }}>
       {children}
     </ChatbotContext.Provider>
   );

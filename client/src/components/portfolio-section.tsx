@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import type { Holding, Subnet } from "@shared/schema";
 import { getSecureIframeProps, getSecureLinkProps } from "@/utils/security";
+import { usePageContext } from '@/contexts/ChatbotContext';
 import ethereumLogo from "@assets/Ethereum_logo_2014.svg_1755977414942.png";
 import solanaLogo from "@assets/solana_1755977414939.png";
 import bittensorLogo from "@assets/bittensor_1755977414942.png";
