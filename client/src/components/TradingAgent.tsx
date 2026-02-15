@@ -109,7 +109,11 @@ export default function TradingAgent() {
         { role: 'assistant', content: data.analysis || '' },
       ]);
     } catch (err: any) {
-      setError(err.message);
+      if (err.message.includes('429') || err.message.includes('Rate')) {
+        setError('Rate limit reached. Please wait a moment before trying again.');
+      } else {
+        setError(err.message);
+      }
     } finally {
       clearInterval(progressInterval);
       setLoadingStage('');
