@@ -4,6 +4,7 @@ import cryptoHippoWithBitcoin from "@assets/image_1758740882958.png";
 import newHeaderBackground from "@assets/photo-1504333638930-c8787321eee0_1757208194192.avif";
 import criptomonedas from "@assets/Criptomonedas-r3pu02e09qriw0f9pyqx2rtyhwsri4es6sdgff2ebk_1757225856373.png";
 import { useScrollFade } from "@/hooks/useScrollFade";
+import TradingAgent from "@/components/TradingAgent";
 
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
   <Card className={`bg-black/40 backdrop-blur-lg border-crypto-silver/20 ${className}`}>
@@ -71,7 +72,8 @@ export default function HippoAIPage() {
         <div className="space-y-4 lg:space-y-8">
           <GlassCard className="p-6 lg:p-8 text-center">
             <h2 className="text-3xl sm:text-4xl font-bold mb-3 bg-gradient-to-r from-purple-400 via-pink-300 to-cyan-400 bg-clip-text text-transparent">HippoAI</h2>
-            <p className="text-base text-white/60">Coming soon</p>
+            <p className="text-lg text-white/80 mb-6">Your AI-powered trading assistant</p>
+            <TradingAgent />
           </GlassCard>
         </div>
       </main>
