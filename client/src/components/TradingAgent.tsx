@@ -358,6 +358,133 @@ export default function TradingAgent() {
     </div>;
   }
 
+  function renderCommodities(s: any) {
+    const commodities = s.commodities || [];
+    const sectors = s.sector_summary || {};
+    const macro = s.macro_factors || {};
+    const catalysts = s.upcoming_catalysts || [];
+    const topPlays = s.top_conviction_plays || [];
+
+    return <div>
+      {s.market_overview && <div style={{ padding:'16px 20px', background:`${C.gold}08`, border:`1px solid ${C.gold}20`, borderRadius:10, marginBottom:16, color:C.text, fontSize:12, fontFamily:sansFont, lineHeight:1.7 }}>{s.market_overview}</div>}
+
+      {s.dxy_context && <div style={{ display:'flex', alignItems:'center', gap:16, padding:'12px 18px', background:C.card, border:`1px solid ${C.border}`, borderRadius:10, marginBottom:16 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+          <span style={{ color:C.gold, fontSize:11, fontWeight:700, fontFamily:font, textTransform:'uppercase' }}>DXY</span>
+          <span style={{ color:C.bright, fontSize:16, fontWeight:700, fontFamily:font }}>{s.dxy_context.price}</span>
+          <span style={{ color:changeColor(s.dxy_context.change), fontSize:13, fontWeight:600, fontFamily:font }}>{s.dxy_context.change}</span>
+        </div>
+        <span style={{ color:trendColor(s.dxy_context.trend), fontSize:12, fontFamily:font }}>{s.dxy_context.trend}</span>
+        <span style={{ color:C.dim, fontSize:11, fontFamily:sansFont, flex:1 }}>{s.dxy_context.impact}</span>
+      </div>}
+
+      <div style={{ display:'flex', flexDirection:'column', gap:10, marginBottom:16 }}>
+        {commodities.map((c: any, i: number) => {
+          const isExp = expandedTicker === `comm-${i}`;
+          return <CardWrap key={i} onClick={() => setExpandedTicker(isExp ? null : `comm-${i}`)} expanded={isExp}>
+            <div style={{ padding:'14px 18px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                <span style={{ color:C.gold, fontWeight:800, fontSize:15, fontFamily:font }}>{c.name}</span>
+                <span style={{ color:C.bright, fontSize:16, fontWeight:700, fontFamily:font }}>{c.price}</span>
+                <span style={{ color:changeColor(c.change_today), fontWeight:600, fontSize:13, fontFamily:font }}>{c.change_today}</span>
+              </div>
+              <Badge color={convColor(c.conviction)}>{c.conviction}</Badge>
+            </div>
+            <div style={{ padding:'0 18px 10px', display:'flex', gap:16, fontSize:11, fontFamily:font }}>
+              <span style={{ color:C.dim }}>1W: <span style={{ color:changeColor(c.change_1w), fontWeight:600 }}>{c.change_1w}</span></span>
+              <span style={{ color:C.dim }}>1M: <span style={{ color:changeColor(c.change_1m), fontWeight:600 }}>{c.change_1m}</span></span>
+              <span style={{ color:C.dim }}>Short: <span style={{ color:trendColor(c.trend_short) }}>{c.trend_short}</span></span>
+              <span style={{ color:C.dim }}>Long: <span style={{ color:trendColor(c.trend_long) }}>{c.trend_long}</span></span>
+            </div>
+            {isExp && <div style={{ borderTop:`1px solid ${C.border}`, padding:18 }}>
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(140px, 1fr))', gap:8, marginBottom:14 }}>
+                <IndicatorPill label="RSI" value={c.rsi} signal={c.rsi > 70 ? 'Overbought ⚠️' : c.rsi < 30 ? 'Oversold' : 'Neutral'} />
+                <IndicatorPill label="50 SMA" value="—" signal={c.above_50_sma ? 'Price Above ↑' : 'Price Below ↓'} />
+                <IndicatorPill label="200 SMA" value="—" signal={c.above_200_sma ? 'Price Above ↑' : 'Price Below ↓'} />
+                <IndicatorPill label="Volume" value="—" signal={c.volume_signal} />
+              </div>
+              {c.key_levels && <div style={{ padding:10, background:C.bg, borderRadius:8, border:`1px solid ${C.border}`, marginBottom:12, color:C.text, fontSize:11, fontFamily:font }}>{c.key_levels}</div>}
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:12 }}>
+                <div style={{ background:`${C.green}06`, border:`1px solid ${C.green}12`, borderRadius:8, padding:12 }}>
+                  <div style={{ color:C.green, fontSize:10, fontWeight:700, fontFamily:font, marginBottom:6, textTransform:'uppercase' }}>Drivers</div>
+                  <div style={{ color:C.text, fontSize:11, lineHeight:1.6, fontFamily:sansFont }}>{c.drivers}</div>
+                </div>
+                <div style={{ background:`${C.red}06`, border:`1px solid ${C.red}12`, borderRadius:8, padding:12 }}>
+                  <div style={{ color:C.red, fontSize:10, fontWeight:700, fontFamily:font, marginBottom:6, textTransform:'uppercase' }}>Risks</div>
+                  <div style={{ color:C.text, fontSize:11, lineHeight:1.6, fontFamily:sansFont }}>{c.risks}</div>
+                </div>
+              </div>
+              <div style={{ display:'flex', gap:16, marginBottom:12, fontSize:11 }}>
+                {c.related_etfs && <div style={{ fontFamily:font }}><span style={{ color:C.dim }}>Trade via: </span><span style={{ color:C.blue, fontWeight:600 }}>{c.related_etfs}</span></div>}
+                {c.sentiment && <div style={{ fontFamily:font }}><span style={{ color:C.dim }}>Sentiment: </span><span style={{ color:C.bright }}>{c.sentiment}</span></div>}
+              </div>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+                {c.outlook_3m && <div style={{ background:C.bg, borderRadius:8, padding:10, border:`1px solid ${C.border}` }}>
+                  <div style={{ color:C.blue, fontSize:9, fontWeight:700, fontFamily:font, textTransform:'uppercase', marginBottom:4 }}>3-Month Outlook</div>
+                  <div style={{ color:C.text, fontSize:11, lineHeight:1.5, fontFamily:sansFont }}>{c.outlook_3m}</div>
+                </div>}
+                {c.outlook_12m && <div style={{ background:C.bg, borderRadius:8, padding:10, border:`1px solid ${C.border}` }}>
+                  <div style={{ color:C.purple, fontSize:9, fontWeight:700, fontFamily:font, textTransform:'uppercase', marginBottom:4 }}>12-Month Outlook</div>
+                  <div style={{ color:C.text, fontSize:11, lineHeight:1.5, fontFamily:sansFont }}>{c.outlook_12m}</div>
+                </div>}
+              </div>
+            </div>}
+          </CardWrap>;
+        })}
+      </div>
+
+      {Object.keys(sectors).length > 0 && <div style={{ marginBottom:16 }}>
+        <div style={{ color:C.bright, fontSize:13, fontWeight:700, fontFamily:sansFont, marginBottom:10 }}>Commodity Sectors</div>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(180px, 1fr))', gap:10 }}>
+          {Object.entries(sectors).map(([key, sec]: [string, any]) => (
+            <div key={key} style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:8, padding:12 }}>
+              <div style={{ color:C.gold, fontSize:11, fontWeight:700, fontFamily:font, textTransform:'uppercase', marginBottom:8 }}>{key.replace(/_/g, ' ')}</div>
+              <StatRow label="Trend" value={sec.trend} />
+              <StatRow label="Leader" value={sec.leader} />
+              <StatRow label="Laggard" value={sec.laggard} />
+            </div>
+          ))}
+        </div>
+      </div>}
+
+      {Object.keys(macro).length > 0 && <div style={{ marginBottom:16 }}>
+        <div style={{ color:C.bright, fontSize:13, fontWeight:700, fontFamily:sansFont, marginBottom:10 }}>Macro Factors Affecting Commodities</div>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(180px, 1fr))', gap:8 }}>
+          {Object.entries(macro).map(([k, v]) => <IndicatorPill key={k} label={k.replace(/_/g, ' ')} value={v as string} />)}
+        </div>
+      </div>}
+
+      {catalysts.length > 0 && <div style={{ marginBottom:16 }}>
+        <div style={{ color:C.bright, fontSize:13, fontWeight:700, fontFamily:sansFont, marginBottom:10 }}>Upcoming Catalysts</div>
+        <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:10, padding:14 }}>
+          {catalysts.map((cat: string, i: number) => (
+            <div key={i} style={{ padding:'6px 0', borderBottom: i < catalysts.length - 1 ? `1px solid ${C.border}` : 'none', color:C.text, fontSize:12, fontFamily:sansFont, display:'flex', alignItems:'center', gap:8 }}>
+              <span style={{ color:C.gold, fontSize:10 }}>📅</span> {cat}
+            </div>
+          ))}
+        </div>
+      </div>}
+
+      {topPlays.length > 0 && <div style={{ marginBottom:16 }}>
+        <div style={{ color:C.bright, fontSize:13, fontWeight:700, fontFamily:sansFont, marginBottom:10 }}>Top Commodity Plays</div>
+        <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+          {topPlays.map((play: any, i: number) => (
+            <div key={i} style={{ background:`${C.green}06`, border:`1px solid ${C.green}15`, borderRadius:10, padding:14, display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
+              <div style={{ flex:1 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:6 }}>
+                  <span style={{ color:C.bright, fontWeight:700, fontSize:14, fontFamily:font }}>{play.asset}</span>
+                  <Badge color={play.direction === 'Long' ? C.green : C.red}>{play.direction}</Badge>
+                  <Badge color={convColor(play.conviction)}>{play.conviction}</Badge>
+                </div>
+                <div style={{ color:C.text, fontSize:12, lineHeight:1.6, fontFamily:sansFont }}>{play.thesis}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>}
+    </div>;
+  }
+
   function renderSectorRotation(s: any) {
     const sectors = s.sectors || [];
     return <div>
@@ -457,6 +584,7 @@ export default function TradingAgent() {
             {l:'🤖 AI/Compute Check', p:'Run a momentum check on AI and compute infrastructure stocks — NVDA, AMD, AVGO, MRVL, CRDO, SMCI, VRT, ANET. Show relative strength, which are leading, which are lagging.'},
             {l:'⚛️ Uranium/Nuclear', p:'Run a momentum check on uranium and nuclear stocks — CCJ, UEC, UUUU, DNN, LEU, SMR, OKLO, VST, CEG. Show relative strength and sector trend.'},
             {l:'🎯 Small Cap Spec', p:'Scan for speculative small cap stocks (under $2B) with high volatility, increasing volume, positive sentiment, and clean breakout structure. High risk high reward.'},
+            {l:'🛢️ Commodities', p:'Show me a full commodities market dashboard — oil, gold, silver, copper, uranium, natural gas. For each commodity show me price action, short and long term trends, RSI, key levels, drivers, risks, related ETFs, sentiment, and 3-month and 12-month outlook. Include DXY impact, macro factors, upcoming catalysts, and your top conviction commodity plays.'},
           ].map(q => <button key={q.l} onClick={() => askAgent(q.p)} disabled={loading} style={{ padding:'6px 14px', background:C.card, border:`1px solid ${C.border}`, borderRadius:8, color:C.dim, fontSize:11, cursor:loading?'not-allowed':'pointer', fontFamily:font, transition:'all 0.15s' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; }}>{q.l}</button>)}
         </div>
       </div>
@@ -483,9 +611,10 @@ export default function TradingAgent() {
         {s.display_type === 'fundamentals' && renderFundamentals(s)}
         {s.display_type === 'technicals' && renderTechnicals(s)}
         {s.display_type === 'analysis' && renderAnalysis(s)}
+        {s.display_type === 'commodities' && renderCommodities(s)}
         {s.display_type === 'sector_rotation' && renderSectorRotation(s)}
         {s.display_type === 'earnings_catalyst' && renderEarningsCatalyst(s)}
-        {(s.display_type === 'chat' || !['trades','investments','fundamentals','technicals','analysis','dashboard','sector_rotation','earnings_catalyst'].includes(s.display_type)) && <div style={{ padding:22, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont }} dangerouslySetInnerHTML={{ __html: formatAnalysis(result.analysis) }} />}
+        {(s.display_type === 'chat' || !['trades','investments','fundamentals','technicals','analysis','dashboard','sector_rotation','earnings_catalyst','commodities'].includes(s.display_type)) && <div style={{ padding:22, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont }} dangerouslySetInnerHTML={{ __html: formatAnalysis(result.analysis) }} />}
         {s.display_type !== 'chat' && result.analysis && <div style={{ marginTop:16, padding:22, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont }} dangerouslySetInnerHTML={{ __html: formatAnalysis(result.analysis) }} />}
       </div>}
 
