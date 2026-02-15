@@ -1,7 +1,40 @@
+import { useEffect, useRef, memo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { TrendingUp, Coins, Diamond, Droplets, Flame, Zap, Gem, Mountain, Hammer, Wheat, Box } from "lucide-react";
 import goldBarsImage from "@assets/istockphoto-1455233823-612x612_1757104224615.jpg";
+
+const CommoditiesQuotesWidget = memo(function CommoditiesQuotesWidget() {
+  const container = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!container.current) return;
+    const script = document.createElement("script");
+    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-market-quotes.js";
+    script.type = "text/javascript";
+    script.async = true;
+    script.innerHTML = JSON.stringify({
+      "title": "Commodities",
+      "width": "100%",
+      "height": "100%",
+      "locale": "en",
+      "showSymbolLogo": true,
+      "symbolsGroups": [
+        {"name": "Energy", "symbols": [{"name": "PYTH:WTI3!", "displayName": "WTI Crude Oil"}, {"name": "BMFBOVESPA:ETH1!", "displayName": "Ethanol"}]},
+        {"name": "Metals", "symbols": [{"name": "CMCMARKETS:GOLD", "displayName": "Gold"}, {"name": "CMCMARKETS:SILVER", "displayName": "Silver"}, {"name": "CMCMARKETS:PLATINUM", "displayName": "Platinum"}, {"name": "CMCMARKETS:COPPER", "displayName": "Copper"}]},
+        {"name": "Agricultural", "symbols": [{"name": "BMFBOVESPA:ICF1!", "displayName": "Coffee"}, {"name": "CMCMARKETS:COTTON", "displayName": "Cotton"}, {"name": "BMFBOVESPA:SJC1!", "displayName": "Soybean"}, {"name": "BMFBOVESPA:CCM1!", "displayName": "Corn"}]},
+        {"name": "Currencies", "symbols": [{"name": "BMFBOVESPA:EUR1!", "displayName": "Euro"}, {"name": "BMFBOVESPA:GBP1!", "displayName": "British Pound"}, {"name": "BMFBOVESPA:JPY1!", "displayName": "Japanese Yen"}, {"name": "BMFBOVESPA:CHF1!", "displayName": "Swiss Franc"}, {"name": "BMFBOVESPA:AUD1!", "displayName": "Australian Dollar"}, {"name": "BMFBOVESPA:CAD1!", "displayName": "Canadian Dollar"}]},
+        {"name": "Indices", "symbols": [{"name": "BMFBOVESPA:ISP1!", "displayName": "S&P 500"}, {"name": "BMFBOVESPA:BRI1!", "displayName": "Brazil 50"}, {"name": "BMFBOVESPA:INK1!", "displayName": "Nikkei 225"}, {"name": "EUREX:FDAX1!", "displayName": "DAX"}, {"name": "BMFBOVESPA:WIN1!", "displayName": "Bovespa Index-Mini Futures"}]}
+      ],
+      "colorTheme": "dark"
+    });
+    container.current.appendChild(script);
+  }, []);
+  return (
+    <div className="tradingview-widget-container" ref={container} style={{ width: "100%", height: "100%" }}>
+      <div className="tradingview-widget-container__widget" style={{ width: "100%", height: "100%" }}></div>
+    </div>
+  );
+});
 
 // Glass card component
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
@@ -16,6 +49,10 @@ export default function CommoditiesPage() {
       {/* Main Content */}
       <main className="max-w-[95vw] mx-auto px-2 sm:px-3 py-4">
         <div className="space-y-6">
+          <div className="w-full h-[500px] rounded-lg overflow-hidden border border-crypto-silver/20">
+            <CommoditiesQuotesWidget />
+          </div>
+
           {/* Page Header */}
           <div className="text-center mb-6">
             <div className="flex items-center justify-center gap-3 mb-3">
