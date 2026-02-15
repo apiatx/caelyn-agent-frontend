@@ -56,16 +56,16 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
       path: '/app/hippo-ai'
     },
     {
+      id: 'macro-dashboard',
+      label: 'Macro Dashboard',
+      icon: <Activity className="w-4 h-4" />,
+      path: '/app/stocks/dashboard'
+    },
+    {
       id: 'crypto-stocks',
       label: 'Stocks',
       icon: <TrendingUp className="w-4 h-4" />,
       children: [
-        {
-          id: 'stocks-dashboard',
-          label: 'Dashboard',
-          icon: <Activity className="w-4 h-4" />,
-          path: '/app/stocks/dashboard'
-        },
         {
           id: 'stocks-screening',
           label: 'Screening',
