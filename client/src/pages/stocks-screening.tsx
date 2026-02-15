@@ -14,7 +14,7 @@ function MarketSummaryWidget() {
     const doc = iframe.contentDocument;
     if (doc) {
       doc.open();
-      doc.write(`<!DOCTYPE html><html><head><style>body{margin:0;padding:0;overflow:hidden;background:transparent;}</style></head><body><script type="module" src="https://widgets.tradingview-widget.com/w/en/tv-market-summary.js"><\/script><tv-market-summary time-frame="7D" direction="horizontal"></tv-market-summary></body></html>`);
+      doc.write(`<!DOCTYPE html><html><head><style>body{margin:0;padding:0;overflow:hidden;background:transparent;}</style></head><body><script type="module" src="https://widgets.tradingview-widget.com/w/en/tv-market-summary.js"><\/script><tv-market-summary time-frame="7D" direction="horizontal" theme="dark" transparent></tv-market-summary></body></html>`);
       doc.close();
     }
     return () => {
