@@ -101,7 +101,7 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
           id: 'dashboard',
           label: 'Market Overview',
           icon: <Activity className="w-4 h-4" />,
-          path: '/app'
+          path: '/app/market-overview'
         },
         {
           id: 'charts',
