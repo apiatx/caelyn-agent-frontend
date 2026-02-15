@@ -232,7 +232,7 @@ export default function StocksDashboardPage() {
             </GlassCard>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
             <div className="w-full h-[500px] rounded-lg overflow-hidden border border-crypto-silver/20">
               <MarketOverviewWidget config={indicesConfig} />
             </div>
