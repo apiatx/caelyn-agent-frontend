@@ -19,6 +19,9 @@ export default function TradingAgent() {
   const [expandedTicker, setExpandedTicker] = useState<string | null>(null);
   const [showTickerInput, setShowTickerInput] = useState(false);
   const [tickerInput, setTickerInput] = useState('');
+  const [screenerInput, setScreenerInput] = useState('');
+  const [screenerSortCol, setScreenerSortCol] = useState('');
+  const [screenerSortAsc, setScreenerSortAsc] = useState(true);
 
   async function askAgent(customPrompt?: string) {
     const q = customPrompt || prompt;
@@ -372,6 +375,111 @@ export default function TradingAgent() {
           </CardWrap>;
         })}
       </div>
+    </div>;
+  }
+
+  function renderScreener(s: any) {
+    const topPicks = s.top_picks || [];
+    const rows = s.results || [];
+    const sortedRows = [...rows].sort((a: any, b: any) => {
+      if (!screenerSortCol) return 0;
+      const av = a[screenerSortCol] ?? '';
+      const bv = b[screenerSortCol] ?? '';
+      const an = parseFloat(String(av).replace(/[^0-9.\-]/g, ''));
+      const bn = parseFloat(String(bv).replace(/[^0-9.\-]/g, ''));
+      if (!isNaN(an) && !isNaN(bn)) return screenerSortAsc ? an - bn : bn - an;
+      return screenerSortAsc ? String(av).localeCompare(String(bv)) : String(bv).localeCompare(String(av));
+    });
+    const cols = [
+      {key:'ticker', label:'Ticker', w:'70px'},
+      {key:'company', label:'Company', w:'1fr'},
+      {key:'price', label:'Price', w:'80px'},
+      {key:'change', label:'Chg%', w:'70px'},
+      {key:'market_cap', label:'Mkt Cap', w:'80px'},
+      {key:'rev_growth', label:'Rev Grw', w:'70px'},
+      {key:'margin', label:'Margin', w:'65px'},
+      {key:'pe', label:'P/E', w:'55px'},
+      {key:'rsi', label:'RSI', w:'50px'},
+      {key:'volume', label:'Vol', w:'70px'},
+      {key:'analyst_rating', label:'Rating', w:'70px'},
+      {key:'upside', label:'Upside', w:'65px'},
+    ];
+    const handleSort = (key: string) => {
+      if (screenerSortCol === key) setScreenerSortAsc(!screenerSortAsc);
+      else { setScreenerSortCol(key); setScreenerSortAsc(true); }
+    };
+
+    return <div>
+      {s.summary && <div style={{ padding:'14px 18px', background:`${C.purple}08`, border:`1px solid ${C.purple}20`, borderRadius:10, marginBottom:16, color:C.text, fontSize:12, fontFamily:sansFont, lineHeight:1.7 }}>{s.summary}</div>}
+
+      {topPicks.length > 0 && <div style={{ marginBottom:16 }}>
+        <div style={{ color:C.bright, fontSize:14, fontWeight:800, fontFamily:sansFont, marginBottom:10 }}>Top Picks</div>
+        <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+          {topPicks.map((pick: any, i: number) => (
+            <div key={i} style={{ padding:'14px 18px', background:C.card, border:`1px solid ${C.purple}25`, borderRadius:10, borderLeft:`3px solid ${C.purple}` }}>
+              <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:6 }}>
+                <span style={{ color:C.gold, fontWeight:800, fontSize:16, fontFamily:font }}>#{i+1}</span>
+                <span style={{ color:C.blue, fontWeight:800, fontSize:16, fontFamily:font }}>{pick.ticker}</span>
+                <span style={{ color:C.dim, fontSize:11 }}>{pick.company}</span>
+                <span style={{ color:C.bright, fontSize:14, fontWeight:700, fontFamily:font }}>{pick.price}</span>
+                <span style={{ color:changeColor(pick.change), fontSize:12, fontWeight:600, fontFamily:font }}>{pick.change}</span>
+                {pick.conviction && <Badge color={convColor(pick.conviction)}>{pick.conviction}</Badge>}
+              </div>
+              <div style={{ color:C.text, fontSize:12, lineHeight:1.7, fontFamily:sansFont }}>{pick.analysis || pick.thesis}</div>
+            </div>
+          ))}
+        </div>
+      </div>}
+
+      {sortedRows.length > 0 && <div style={{ borderRadius:10, overflow:'hidden', border:`1px solid ${C.border}` }}>
+        <div style={{ display:'grid', gridTemplateColumns:cols.map(c => c.w).join(' '), background:'#0d0e12', borderBottom:`1px solid ${C.border}` }}>
+          {cols.map(col => (
+            <div key={col.key} onClick={() => handleSort(col.key)} style={{ padding:'8px 6px', color:screenerSortCol === col.key ? C.blue : C.dim, fontSize:9, fontWeight:700, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.04em', cursor:'pointer', userSelect:'none', display:'flex', alignItems:'center', gap:2 }}>
+              {col.label}{screenerSortCol === col.key ? (screenerSortAsc ? ' ↑' : ' ↓') : ''}
+            </div>
+          ))}
+        </div>
+        {sortedRows.map((row: any, i: number) => {
+          const isExp = expandedTicker === `scr-${i}`;
+          const isTop = topPicks.some((p: any) => p.ticker === row.ticker);
+          return <div key={i}>
+            <div onClick={() => setExpandedTicker(isExp ? null : `scr-${i}`)} style={{ display:'grid', gridTemplateColumns:cols.map(c => c.w).join(' '), background: isTop ? `${C.purple}06` : (i % 2 === 0 ? C.card : C.bg), borderBottom:`1px solid ${C.border}`, cursor:'pointer', transition:'background 0.1s', borderLeft: isTop ? `2px solid ${C.purple}` : '2px solid transparent' }} onMouseEnter={e => e.currentTarget.style.background = `${C.blue}08`} onMouseLeave={e => e.currentTarget.style.background = isTop ? `${C.purple}06` : (i % 2 === 0 ? C.card : C.bg)}>
+              <div style={{ padding:'8px 6px', color:C.blue, fontSize:12, fontWeight:700, fontFamily:font }}>{row.ticker}</div>
+              <div style={{ padding:'8px 6px', color:C.text, fontSize:11, fontFamily:sansFont, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{row.company}</div>
+              <div style={{ padding:'8px 6px', color:C.bright, fontSize:12, fontWeight:600, fontFamily:font }}>{row.price}</div>
+              <div style={{ padding:'8px 6px', color:changeColor(row.change), fontSize:11, fontWeight:600, fontFamily:font }}>{row.change}</div>
+              <div style={{ padding:'8px 6px', color:C.text, fontSize:11, fontFamily:font }}>{row.market_cap}</div>
+              <div style={{ padding:'8px 6px', color:trendColor(row.rev_growth), fontSize:11, fontWeight:600, fontFamily:font }}>{row.rev_growth}</div>
+              <div style={{ padding:'8px 6px', color:trendColor(row.margin), fontSize:11, fontFamily:font }}>{row.margin}</div>
+              <div style={{ padding:'8px 6px', color:C.text, fontSize:11, fontFamily:font }}>{row.pe}</div>
+              <div style={{ padding:'8px 6px', color: parseFloat(row.rsi||'50') < 35 ? C.green : parseFloat(row.rsi||'50') > 70 ? C.red : C.text, fontSize:11, fontWeight:600, fontFamily:font }}>{row.rsi}</div>
+              <div style={{ padding:'8px 6px', color:C.text, fontSize:11, fontFamily:font }}>{row.volume}</div>
+              <div style={{ padding:'8px 6px', color: row.analyst_rating?.toLowerCase().includes('buy') ? C.green : row.analyst_rating?.toLowerCase().includes('sell') ? C.red : C.text, fontSize:10, fontWeight:600, fontFamily:font }}>{row.analyst_rating}</div>
+              <div style={{ padding:'8px 6px', color:changeColor(row.upside), fontSize:11, fontWeight:600, fontFamily:font }}>{row.upside}</div>
+            </div>
+            {isExp && <div style={{ padding:18, background:`${C.card}`, borderBottom:`1px solid ${C.border}` }}>
+              <TradingViewMini ticker={row.ticker} />
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:14 }}>
+                {row.ta_summary && <div style={{ background:C.bg, borderRadius:8, padding:12, border:`1px solid ${C.border}` }}>
+                  <div style={{ color:C.blue, fontSize:10, fontWeight:700, fontFamily:font, textTransform:'uppercase', marginBottom:6 }}>Technical</div>
+                  <div style={{ color:C.text, fontSize:11, lineHeight:1.7, fontFamily:sansFont }}>{row.ta_summary}</div>
+                </div>}
+                {row.fundamental_summary && <div style={{ background:C.bg, borderRadius:8, padding:12, border:`1px solid ${C.border}` }}>
+                  <div style={{ color:C.green, fontSize:10, fontWeight:700, fontFamily:font, textTransform:'uppercase', marginBottom:6 }}>Fundamentals</div>
+                  <div style={{ color:C.text, fontSize:11, lineHeight:1.7, fontFamily:sansFont }}>{row.fundamental_summary}</div>
+                </div>}
+              </div>
+              {row.thesis && <div style={{ padding:10, background:`${C.blue}06`, border:`1px solid ${C.blue}15`, borderRadius:8, marginBottom:12, color:C.text, fontSize:11, fontFamily:sansFont, lineHeight:1.6 }}>{row.thesis}</div>}
+              {row.trade_plan && <div style={{ background:`${C.green}06`, border:`1px solid ${C.green}15`, borderRadius:8, padding:14 }}>
+                <div style={{ color:C.green, fontSize:11, fontWeight:700, fontFamily:font, marginBottom:10, textTransform:'uppercase' }}>Trade Plan</div>
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(120px, 1fr))', gap:8 }}>
+                  {[['Entry', row.trade_plan.entry, C.bright], ['Stop', row.trade_plan.stop, C.red], ['Target', row.trade_plan.target, C.green], ['R/R', row.trade_plan.risk_reward, C.gold]].map(([l,v,col]) => v ? <div key={l as string}><div style={{ color:C.dim, fontSize:9, fontFamily:font, textTransform:'uppercase' }}>{l as string}</div><div style={{ color:col as string, fontSize:14, fontWeight:700, fontFamily:font, marginTop:2 }}>{v as string}</div></div> : null)}
+                </div>
+              </div>}
+            </div>}
+          </div>;
+        })}
+      </div>}
     </div>;
   }
 
@@ -1025,6 +1133,41 @@ export default function TradingAgent() {
             </div>
           </div>
         </div>
+        <div style={{ marginTop:16, padding:18, background:`linear-gradient(135deg, ${C.bg} 0%, #0e0f14 100%)`, border:`1px solid ${C.purple}20`, borderRadius:12, borderTop:`1px solid ${C.purple}30` }}>
+          <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10 }}>
+            <span style={{ fontSize:14 }}>🔬</span>
+            <span style={{ color:C.purple, fontSize:12, fontWeight:700, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.06em' }}>AI Screener</span>
+          </div>
+          <div style={{ display:'flex', gap:8, marginBottom:8 }}>
+            <textarea
+              value={screenerInput}
+              onChange={e => setScreenerInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (screenerInput.trim()) askAgent(screenerInput); setScreenerInput(''); } }}
+              placeholder="Screen for stocks... e.g. 'Small caps under $2B, revenue growth >30%, positive EBITDA, RSI under 40, insider buying in last 30 days'"
+              rows={2}
+              style={{ flex:1, padding:'10px 14px', border:`1px solid ${C.border}`, borderRadius:8, background:C.card, color:C.bright, fontSize:12, fontFamily:sansFont, outline:'none', resize:'none', lineHeight:1.5 }}
+            />
+            <button
+              onClick={() => { if (screenerInput.trim()) { askAgent(screenerInput); setScreenerInput(''); } }}
+              disabled={loading || !screenerInput.trim()}
+              style={{ padding:'10px 20px', background: loading || !screenerInput.trim() ? C.card : `linear-gradient(135deg, ${C.purple}, #7c3aed)`, color: loading || !screenerInput.trim() ? C.dim : 'white', border:'none', borderRadius:8, cursor: loading || !screenerInput.trim() ? 'not-allowed' : 'pointer', fontWeight:700, fontSize:13, fontFamily:sansFont, alignSelf:'flex-end' }}
+            >
+              Scan
+            </button>
+          </div>
+          <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+            {[
+              {l:'Oversold + Growing', v:'Stocks with RSI under 35, revenue growth >20%, above SMA200, avg volume >300K'},
+              {l:'Value + Momentum', v:'P/E under 20, revenue growth >15%, above SMA50 and SMA200, relative volume >1.5x'},
+              {l:'Insider + Breakout', v:'Insider buying last 30 days, above SMA50 and SMA200, unusual volume, market cap under $10B'},
+              {l:'High Growth Small Cap', v:'Market cap under $2B, revenue growth >30%, EPS growth >25%, positive margins'},
+              {l:'Dividend Value', v:'Dividend yield >3%, P/E under 20, debt to equity under 0.5, market cap over $2B'},
+              {l:'Short Squeeze Setup', v:'Short float >15%, RSI under 40, above SMA50, unusual volume, market cap under $5B'},
+            ].map(chip => (
+              <button key={chip.l} onClick={() => setScreenerInput(chip.v)} style={{ padding:'4px 10px', background:`${C.purple}08`, border:`1px solid ${C.purple}18`, borderRadius:20, color:C.dim, fontSize:9, fontWeight:600, fontFamily:font, cursor:'pointer', transition:'all 0.15s' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.purple; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.borderColor = `${C.purple}18`; e.currentTarget.style.color = C.dim; }}>{chip.l}</button>
+            ))}
+          </div>
+        </div>
         {showTickerInput && (
           <div style={{ marginTop:10, padding:16, background:C.card, border:`1px solid ${C.blue}30`, borderRadius:10 }}>
             <div style={{ color:C.bright, fontSize:13, fontWeight:600, fontFamily:sansFont, marginBottom:8 }}>
@@ -1083,13 +1226,14 @@ export default function TradingAgent() {
         {s.display_type === 'technicals' && renderTechnicals(s)}
         {s.display_type === 'analysis' && renderAnalysis(s)}
         {s.display_type === 'trending' && renderTrades(s)}
+        {s.display_type === 'screener' && renderScreener(s)}
         {s.display_type === 'crypto' && renderCrypto(s)}
         {s.display_type === 'briefing' && renderBriefing(s)}
         {s.display_type === 'portfolio' && renderPortfolio(s)}
         {s.display_type === 'commodities' && renderCommodities(s)}
         {s.display_type === 'sector_rotation' && renderSectorRotation(s)}
         {s.display_type === 'earnings_catalyst' && renderEarningsCatalyst(s)}
-        {(s.display_type === 'chat' || !['trades','investments','fundamentals','technicals','analysis','dashboard','sector_rotation','earnings_catalyst','commodities','portfolio','briefing','crypto','trending'].includes(s.display_type)) && <div style={{ padding:22, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont }} dangerouslySetInnerHTML={{ __html: formatAnalysis(result.analysis) }} />}
+        {(s.display_type === 'chat' || !['trades','investments','fundamentals','technicals','analysis','dashboard','sector_rotation','earnings_catalyst','commodities','portfolio','briefing','crypto','trending','screener'].includes(s.display_type)) && <div style={{ padding:22, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont }} dangerouslySetInnerHTML={{ __html: formatAnalysis(result.analysis) }} />}
         {s.display_type !== 'chat' && result.analysis && <div style={{ marginTop:16, padding:22, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont }} dangerouslySetInnerHTML={{ __html: formatAnalysis(result.analysis) }} />}
       </div>}
 
