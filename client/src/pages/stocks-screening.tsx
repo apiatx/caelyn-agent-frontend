@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import CryptoStocksSection from "@/components/crypto-stocks-section";
 
 function MarketSummaryWidget() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -29,7 +30,10 @@ export default function StocksScreeningPage() {
   return (
     <div className="min-h-screen text-white" style={{background: 'linear-gradient(135deg, hsl(0, 0%, 0%) 0%, hsl(0, 0%, 10%) 50%, hsl(0, 0%, 0%) 100%)'}}>
       <main className="max-w-[95vw] mx-auto px-2 sm:px-3 py-4">
-        <MarketSummaryWidget />
+        <div className="w-full h-[600px] rounded-lg overflow-hidden border border-crypto-silver/20 mb-4">
+          <MarketSummaryWidget />
+        </div>
+        <CryptoStocksSection />
       </main>
     </div>
   );
