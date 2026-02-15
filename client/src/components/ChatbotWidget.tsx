@@ -267,8 +267,6 @@ export default function ChatbotWidget() {
   const scrollTimerRef = useRef<any>(null);
   const { messages, isLoading, loadingStage, sendMessage, clearChat, hasUnread, setHasUnread } = useChatbot();
 
-  if (location === '/app/hippo-ai') return null;
-
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading]);
@@ -286,6 +284,8 @@ export default function ChatbotWidget() {
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  if (location === '/app/hippo-ai') return null;
 
   const handleSend = () => {
     if (!input.trim() || isLoading) return;
