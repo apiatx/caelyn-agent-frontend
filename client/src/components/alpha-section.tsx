@@ -141,6 +141,21 @@ export default function AlphaSection() {
             </div>
           </div>
 
+          {/* Banterbubbles */}
+          <div className="mt-8 mb-6">
+            <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
+              <iframe
+                src="https://banterbubbles.com/?utm_source=cbanter&utm_medium=cbanter&utm_campaign=cbanter&source=cbanter"
+                className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+                title="Banterbubbles Market Intelligence"
+                frameBorder="0"
+                loading="lazy"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
+                allow="fullscreen; clipboard-write; autoplay; camera; microphone; geolocation"
+              />
+            </div>
+          </div>
+
           {/* Screeners - Combined in same card */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
             <SafeLink
@@ -267,39 +282,6 @@ export default function AlphaSection() {
                 <h4 className="text-orange-300 font-bold text-sm">Binance Web3 Alpha</h4>
               </div>
             </SafeLink>
-          </div>
-
-          {/* Banterbubbles */}
-          <div className="mt-8">
-            <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
-              <iframe
-                src="https://banterbubbles.com/?utm_source=cbanter&utm_medium=cbanter&utm_campaign=cbanter&source=cbanter"
-                className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-                title="Banterbubbles Market Intelligence"
-                frameBorder="0"
-                loading="lazy"
-                sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
-                allow="fullscreen; clipboard-write; autoplay; camera; microphone; geolocation"
-              />
-            </div>
-          </div>
-
-          {/* Coinbubbles */}
-          <div className="mt-8">
-            <div className="flex justify-end mb-4">
-              <SafeLink
-                href="https://coinbubbles.app/"
-                className="text-purple-300 hover:text-purple-200 text-sm font-medium hover:underline transition-colors duration-300"
-              >
-                Open Full View →
-              </SafeLink>
-            </div>
-            
-            <SafeIframe
-              src="https://coinbubbles.app/"
-              title="Coinbubbles - Rank: Top of 1000"
-              className="h-[700px]"
-            />
           </div>
 
           {/* AI Agents Section */}
