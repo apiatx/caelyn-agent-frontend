@@ -59,11 +59,8 @@ export default function AlphaSection() {
   };
 
   return (
-    <div className="space-y-8">
-
-
-
-      <div className="space-y-8 mt-12">
+    <div className="space-y-4">
+      <div className="space-y-8">
         <GlassCard className="p-3 sm:p-4 lg:p-6">
 
           {/* Screening Section - Side by Side Layout */}

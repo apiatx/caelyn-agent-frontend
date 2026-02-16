@@ -33,7 +33,7 @@ export default function OnchainAlphaPage() {
         <CryptoTickerTape />
       </div>
 
-      <main className="max-w-[95vw] mx-auto px-2 sm:px-3 py-4">
+      <main className="max-w-[95vw] mx-auto px-2 sm:px-3 pt-2 pb-8">
         <AlphaSection />
       </main>
     </div>
