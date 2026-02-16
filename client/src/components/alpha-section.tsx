@@ -180,6 +180,42 @@ export default function AlphaSection() {
                 __html: `<altfins-market-data-component theme='no-border compact dark' type='OVERSOLD_IN_UPTREND' valueids='["COIN", "LAST_PRICE", "PRICE_CHANGE_1D", "RSI14", "SHORT_TERM_SCORE", "MEDIUM_TERM_SCORE", "LONG_TERM_SCORE"]' affiliateid='test_id'></altfins-market-data-component>`
               }} />
             </div>
+            <div className="bg-black/40 backdrop-blur-lg border border-white/10 rounded-xl p-3 sm:p-4">
+              <h3 className="text-sm font-bold text-emerald-400 mb-3 tracking-wide uppercase">Pullback Day Uptrend</h3>
+              <div className="altfins-market-clip w-full" dangerouslySetInnerHTML={{
+                __html: `<altfins-market-data-component theme='no-border compact dark' type='PULLBACK_DAY_UPTREND' valueids='["COIN", "LAST_PRICE", "PRICE_CHANGE_1D", "SHORT_TERM_SCORE", "MEDIUM_TERM_SCORE", "LONG_TERM_SCORE"]' affiliateid='test_id'></altfins-market-data-component>`
+              }} />
+            </div>
+            <div className="bg-black/40 backdrop-blur-lg border border-white/10 rounded-xl p-3 sm:p-4">
+              <h3 className="text-sm font-bold text-emerald-400 mb-3 tracking-wide uppercase">Pullback Week Uptrend</h3>
+              <div className="altfins-market-clip w-full" dangerouslySetInnerHTML={{
+                __html: `<altfins-market-data-component theme='no-border compact dark' type='PULLBACK_WEEK_UPTREND' valueids='["COIN", "LAST_PRICE", "PRICE_CHANGE_1W", "SHORT_TERM_SCORE", "MEDIUM_TERM_SCORE", "LONG_TERM_SCORE"]' affiliateid='test_id'></altfins-market-data-component>`
+              }} />
+            </div>
+            <div className="bg-black/40 backdrop-blur-lg border border-white/10 rounded-xl p-3 sm:p-4">
+              <h3 className="text-sm font-bold text-red-400 mb-3 tracking-wide uppercase">Strong Trend Downtrend</h3>
+              <div className="altfins-market-clip w-full" dangerouslySetInnerHTML={{
+                __html: `<altfins-market-data-component theme='no-border compact dark' type='STRONG_DOWNTREND' valueids='["COIN", "LAST_PRICE", "PRICE_CHANGE_1D", "SHORT_TERM_SCORE", "MEDIUM_TERM_SCORE", "LONG_TERM_SCORE"]' affiliateid='test_id'></altfins-market-data-component>`
+              }} />
+            </div>
+            <div className="bg-black/40 backdrop-blur-lg border border-white/10 rounded-xl p-3 sm:p-4">
+              <h3 className="text-sm font-bold text-emerald-400 mb-3 tracking-wide uppercase">Strong Trend Uptrend</h3>
+              <div className="altfins-market-clip w-full" dangerouslySetInnerHTML={{
+                __html: `<altfins-market-data-component theme='no-border compact dark' type='STRONG_UPTREND' valueids='["COIN", "LAST_PRICE", "PRICE_CHANGE_1D", "SHORT_TERM_SCORE", "MEDIUM_TERM_SCORE", "LONG_TERM_SCORE"]' affiliateid='test_id'></altfins-market-data-component>`
+              }} />
+            </div>
+            <div className="bg-black/40 backdrop-blur-lg border border-white/10 rounded-xl p-3 sm:p-4">
+              <h3 className="text-sm font-bold text-blue-400 mb-3 tracking-wide uppercase">Trading in Range</h3>
+              <div className="altfins-market-clip w-full" dangerouslySetInnerHTML={{
+                __html: `<altfins-market-data-component theme='no-border compact dark' type='TRADING_IN_RANGE' valueids='["COIN", "LAST_PRICE", "PRICE_CHANGE_1D"]' affiliateid='test_id'></altfins-market-data-component>`
+              }} />
+            </div>
+            <div className="bg-black/40 backdrop-blur-lg border border-white/10 rounded-xl p-3 sm:p-4">
+              <h3 className="text-sm font-bold text-purple-400 mb-3 tracking-wide uppercase">Unusual Volume</h3>
+              <div className="altfins-market-clip w-full" dangerouslySetInnerHTML={{
+                __html: `<altfins-market-data-component theme='no-border compact dark' type='UNUSUAL_VOLUME' valueids='["COIN", "LAST_PRICE", "PRICE_CHANGE_1D", "VOLUME_CHANGE"]' affiliateid='test_id'></altfins-market-data-component>`
+              }} />
+            </div>
           </div>
 
           {/* Nansen, Messari, Cookie - Three Across */}
