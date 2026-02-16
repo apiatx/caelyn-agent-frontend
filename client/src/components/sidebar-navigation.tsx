@@ -119,14 +119,7 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
               label: 'Altcoins',
               icon: <Coins className="w-4 h-4" />,
               path: '/app/charts/altcoins'
-            }
-          ]
-        },
-        {
-          id: 'onchain',
-          label: 'Onchain',
-          icon: <BarChart3 className="w-4 h-4" />,
-          children: [
+            },
             {
               id: 'onchain-analytics',
               label: 'Screening',
@@ -138,36 +131,6 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
               label: 'Analyze',
               icon: <Brain className="w-4 h-4" />,
               path: '/app/onchain/analyze'
-            },
-            {
-              id: 'onchain-smart-wallets',
-              label: 'Smart Wallets',
-              icon: <Wallet className="w-4 h-4" />,
-              path: '/app/onchain/smart-wallets'
-            },
-            {
-              id: 'onchain-launchpad',
-              label: 'Launchpad',
-              icon: <Rocket className="w-4 h-4" />,
-              path: '/app/onchain/launchpad'
-            },
-            {
-              id: 'onchain-airdrop',
-              label: 'Airdrop',
-              icon: <Zap className="w-4 h-4" />,
-              path: '/app/onchain/airdrop'
-            },
-            {
-              id: 'onchain-memes',
-              label: 'Memes',
-              icon: <Coins className="w-4 h-4" />,
-              path: '/app/onchain/memes'
-            },
-            {
-              id: 'onchain-discover',
-              label: 'Discover Web3',
-              icon: <Globe className="w-4 h-4" />,
-              path: '/app/onchain/discover'
             }
           ]
         },
@@ -292,6 +255,43 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
               icon: <Layers className="w-4 h-4" />,
               path: '/app/arbitrum'
             },
+          ]
+        },
+        {
+          id: 'onchain',
+          label: 'Onchain',
+          icon: <BarChart3 className="w-4 h-4" />,
+          children: [
+            {
+              id: 'onchain-smart-wallets',
+              label: 'Smart Wallets',
+              icon: <Wallet className="w-4 h-4" />,
+              path: '/app/onchain/smart-wallets'
+            },
+            {
+              id: 'onchain-launchpad',
+              label: 'Launchpad',
+              icon: <Rocket className="w-4 h-4" />,
+              path: '/app/onchain/launchpad'
+            },
+            {
+              id: 'onchain-airdrop',
+              label: 'Airdrop',
+              icon: <Zap className="w-4 h-4" />,
+              path: '/app/onchain/airdrop'
+            },
+            {
+              id: 'onchain-memes',
+              label: 'Memes',
+              icon: <Coins className="w-4 h-4" />,
+              path: '/app/onchain/memes'
+            },
+            {
+              id: 'onchain-discover',
+              label: 'Discover Web3',
+              icon: <Globe className="w-4 h-4" />,
+              path: '/app/onchain/discover'
+            }
           ]
         },
       ]
