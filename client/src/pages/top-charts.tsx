@@ -47,6 +47,45 @@ export default function TopChartsPage() {
     }
   }, []);
 
+  useEffect(() => {
+    const hideAltfinsBranding = () => {
+      const widget = document.querySelector('altfins-screener-data-component');
+      if (!widget) return;
+      const shadow = widget.shadowRoot;
+      if (shadow) {
+        let style = shadow.querySelector('#hide-branding-style') as HTMLStyleElement;
+        if (!style) {
+          style = document.createElement('style');
+          style.id = 'hide-branding-style';
+          style.textContent = `
+            .altfins-link, [class*="altfins-link"], a[href*="altfins"], .powered-by,
+            tr:last-child td[colspan], tfoot, .footer, [class*="footer"],
+            [class*="branding"], [class*="watermark"], [class*="see-more"],
+            a[href*="altfins.com"] {
+              display: none !important;
+              visibility: hidden !important;
+              height: 0 !important;
+              overflow: hidden !important;
+            }
+          `;
+          shadow.appendChild(style);
+        }
+      }
+      const allLinks = widget.querySelectorAll('a[href*="altfins"]');
+      allLinks.forEach(el => (el as HTMLElement).style.display = 'none');
+      const rows = widget.querySelectorAll('tr');
+      rows.forEach(row => {
+        if (row.textContent?.includes('FINS') && row.textContent?.includes('See more')) {
+          (row as HTMLElement).style.display = 'none';
+        }
+      });
+    };
+
+    const interval = setInterval(hideAltfinsBranding, 500);
+    const timeout = setTimeout(() => clearInterval(interval), 15000);
+    return () => { clearInterval(interval); clearTimeout(timeout); };
+  }, []);
+
   return (
     <div className="min-h-screen text-white" style={{background: 'linear-gradient(135deg, hsl(0, 0%, 0%) 0%, hsl(0, 0%, 10%) 50%, hsl(0, 0%, 0%) 100%)'}}>
       <div className="sticky top-0 z-50 border-b border-crypto-silver/20 bg-black/90 backdrop-blur-lg">
@@ -82,8 +121,7 @@ export default function TopChartsPage() {
           {/* AltFins Screener Widget */}
           <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6">
             <div 
-              className="w-full overflow-hidden"
-              style={{ maxHeight: '160px' }}
+              className="w-full overflow-x-auto"
               dangerouslySetInnerHTML={{
                 __html: `<altfins-screener-data-component symbols='["BTC", "ETH"]' theme='no-border compact dark' valueids='["COIN", "LAST_PRICE", "MACD_BS_SIGNAL", "SMA20_SMA50_BS_SIGNAL", "X_EMA50_CROSS_EMA200", "SHORT_TERM_TREND_CHANGE", "MEDIUM_TERM_TREND_CHANGE", "LONG_TERM_TREND_CHANGE", "PERCENTAGE_ABOVE_FROM_52_WEEK_LOW", "PERCENTAGE_DOWN_FROM_52_WEEK_HIGH", "SMA50_TREND", "SMA200_TREND", "VOLUME_CHANGE", "PRICE_CHANGE_1D", "PRICE_CHANGE_1W", "PRICE_CHANGE_1M", "PRICE_CHANGE_3M", "PRICE_CHANGE_6M", "PRICE_CHANGE_1Y"]' affiliateid='test_id'></altfins-screener-data-component>`
               }}
