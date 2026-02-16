@@ -144,34 +144,8 @@ export default function RWAPage() {
               </div>
             </div>
 
-            {/* Ostium RWA Trading */}
-            <div className="mb-6">
-              <div className="flex justify-end items-center mb-3">
-                <a
-                  href="https://app.ostium.com/trade?from=SPX&to=USD"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1"
-                >
-                  Open Full View <ExternalLink className="w-3 h-3" />
-                </a>
-              </div>
-              <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-                <SafeIframe
-                  src="https://app.ostium.com/trade?from=SPX&to=USD"
-                  title="Ostium RWA Trading"
-                  className="w-full h-[600px] border-0"
-                />
-              </div>
-              <div className="mt-2 text-center">
-                <p className="text-xs text-gray-400">
-                  S&P 500 (SPX) trading on Ostium • Real-world asset perpetuals
-                </p>
-              </div>
-            </div>
-
-            {/* Allo Finance and Ondo Finance Buttons */}
-            <div className="grid grid-cols-2 gap-4 mb-6">
+            {/* Allo Finance, Ondo Finance, and Ostium Buttons */}
+            <div className="grid grid-cols-3 gap-4 mb-6">
               {/* Allo Finance - Orange Button */}
               <button
                 onClick={() => openInNewTab('https://app.allo.xyz/trade/RWA')}
@@ -187,7 +161,16 @@ export default function RWAPage() {
                 className="bg-white hover:bg-gray-100 border-2 border-gray-300 hover:border-gray-400 rounded-xl p-6 transition-all duration-300 text-left group shadow-lg hover:shadow-gray-300/20"
               >
                 <div className="text-xl font-bold text-black group-hover:text-gray-800 mb-2">Ondo Finance</div>
-                <div className="text-sm text-black/80 group-hover:text-black">Real-world asset tokenization and institutional yield products</div>
+                <div className="text-sm text-black/80 group-hover:text-black">Institutional yield & tokenized treasuries</div>
+              </button>
+
+              {/* Ostium - Orange Button */}
+              <button
+                onClick={() => openInNewTab('https://app.ostium.com/trade?from=SPX&to=USD')}
+                className="bg-gradient-to-br from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 border-2 border-orange-400 hover:border-orange-300 rounded-xl p-6 transition-all duration-300 text-left group shadow-lg hover:shadow-orange-500/20"
+              >
+                <div className="text-xl font-bold text-white group-hover:text-orange-50 mb-2">Ostium</div>
+                <div className="text-sm text-white/90 group-hover:text-white">Real-world asset perpetuals trading</div>
               </button>
             </div>
 

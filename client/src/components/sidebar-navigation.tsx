@@ -310,7 +310,7 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
     },
     {
       id: 'rwa',
-      label: 'RWA',
+      label: 'Tokenization',
       icon: <Building2 className="w-4 h-4" />,
       path: '/app/rwa'
     },
