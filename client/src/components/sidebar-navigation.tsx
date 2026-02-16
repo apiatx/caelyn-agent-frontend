@@ -454,8 +454,8 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
         )}
 
       {!isMobile && (
-      <div className="flex-shrink-0 border-b border-crypto-silver/20 flex items-center justify-center" style={{ height: isCollapsed ? 64 : 192, width: '100%' }}>
-        <div className={`rounded-full overflow-hidden shadow-lg ${isCollapsed ? 'w-10 h-10' : 'w-28 h-28'}`} style={{ transition: 'all 0.3s ease-in-out' }}>
+      <div className="flex-shrink-0 border-b border-crypto-silver/20 flex items-center justify-center" style={{ height: isCollapsed ? 64 : 120, width: '100%' }}>
+        <div className={`rounded-full overflow-hidden shadow-lg ${isCollapsed ? 'w-10 h-10' : 'w-20 h-20'}`} style={{ transition: 'all 0.3s ease-in-out' }}>
           <img 
             src={cryptoHippoImage}
             alt="TradeBlade"
