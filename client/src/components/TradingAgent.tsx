@@ -23,6 +23,8 @@ export default function TradingAgent() {
   const [screenerSortAsc, setScreenerSortAsc] = useState(true);
   const [showPrompts, setShowPrompts] = useState(true);
   const [showScansExpanded, setShowScansExpanded] = useState(false);
+  const [groupExpanded, setGroupExpanded] = useState<Record<string, boolean>>({ g1: true, g2: true, g3: true, g4: true, g5: true });
+  const [allGroupsVisible, setAllGroupsVisible] = useState(true);
   const [savedChats, setSavedChats] = useState<Array<{id: number, title: string, messages: Array<{role: string, content: string, parsed?: any}>, history: Array<{role: string, content: string}>}>>([]);
   const [showChatHistory, setShowChatHistory] = useState(false);
   const scrollAnchorRef = useRef<HTMLDivElement>(null);
@@ -1190,38 +1192,99 @@ export default function TradingAgent() {
     </div>;
   }
 
-  const promptButtons = [
-    {l:'🔥 Trending Now', p:'What stocks are trending across ALL platforms right now? Cross-reference StockTwits, Yahoo Finance, StockAnalysis, Finviz, and Polygon. Show me which stocks appear on the MOST platforms simultaneously — that\'s the strongest signal. For each trending stock show me: which platforms it\'s on, why it\'s trending, social sentiment, TA summary, StockAnalysis fundamentals (revenue, margins, valuation), analyst consensus, and whether it\'s trending because of real fundamentals or just hype. Flag any divergences where a stock is trending on some platforms but not others.'},
-    {l:'✧ Daily Briefing', p:'Give me the full daily intelligence briefing. Market pulse, key numbers (SPY, QQQ, VIX, Fear & Greed, DXY, 10Y yield, oil, gold), what is moving across all scanners, the top signal from each category (best TA setup, best fundamental play, hottest social name, top squeeze, biggest volume spike, strongest sector), and your top 3-5 highest conviction actionable moves today with full trade plans. I want to know exactly what to do in 60 seconds.'},
-    {l:'🌍 Macro Overview', p:'Full macro dashboard. Fed funds rate and next decision date, CPI and Core PCE latest readings plus trend, yield curve (2Y vs 10Y spread — inverted or normalizing?), VIX level and trend, Fear & Greed Index, DXY trend and what it means for stocks and commodities, oil and gold prices. Tell me: is it risk-on or risk-off right now? Which sectors should I favor? What is the liquidity environment? What economic data releases are coming this week that could move markets? Should I be increasing or decreasing leverage based on current conditions?'},
-    {l:'🔄 Sector Rotation', p:'Full sector rotation analysis. Show me every major sector ETF (XLK, XLV, XLF, XLE, XLI, XLP, XLY, XLB, XLU, XLRE, XLC) plus thematic ETFs (SMH, URA, HACK, XBI). For each: today\'s performance, RSI, trend direction, and relative strength vs SPY. Which sectors are LEADING (outperforming SPY)? Which are LAGGING? Where is institutional money rotating TO and FROM? What does the DXY and yield curve tell us about where to be allocated?'},
-    {l:'📊 Stage 2 Breakouts', p:'Using Weinstein Stage Analysis, show me which sectors have the highest percentage of stocks in Stage 2 (above both SMA50 and SMA200). Then from the TOP Stage 2 sectors, find individual stocks that are breaking out RIGHT NOW on unusual volume (1.5x+ average). For each breakout candidate show me: sector, price vs SMA50/SMA200, relative volume, StockAnalysis fundamentals (revenue growth, margins, P/E), analyst consensus, and a trade plan with entry/stop/target. I only want stocks from sectors where 50%+ of stocks are in Stage 2 — Weinstein says never buy stocks in weak sectors.'},
-    {l:'🔥 Best Trades', p:'Show me the best trade SETUPS right now — I want stocks with multiple technical indicators aligning: MACD crossovers, RSI in the 50-65 sweet spot, price above rising 20 and 50 SMAs, volume 2x+ average CONFIRMING the move. Stage 2 breakouts only. Show me the quant score, every TA indicator, social sentiment, and a trade plan with entry/stop/target for each. I want setups, not stocks that already pumped.'},
-    {l:'💎 Best Investments', p:'Show me the best investment opportunities — stocks with ACCELERATING revenue growth (QoQ and YoY), expanding EBITDA margins, low P/S relative to growth rate, insider buying, and analyst upgrades. Run the SQGLP framework on each. I want to see the fundamental numbers: revenue growth rate, margin trajectory, valuation multiples, earnings beat streak. Show me stocks where fundamentals are improving AND the chart confirms with a Stage 2 trend.'},
-    {l:'📈 Improving Fundamentals', p:'Scan the market for stocks with the most rapidly improving financial metrics. I want to see: revenue acceleration (growth rate increasing quarter over quarter), EBITDA margin expansion, companies turning profitable for the first time, raised guidance, consecutive earnings beats, and improving free cash flow. Show me the actual numbers in a table — revenue growth %, EBITDA margin %, net income trend, EPS surprise %. Rank by rate of fundamental improvement.'},
-    {l:'⚡ Asymmetric Only', p:'Only show me asymmetric setups with 4:1+ risk/reward minimum. I want: compressed valuation (low P/S vs peers AND vs own history), clear catalyst within 1-3 months, defined floor (tangible book value, cash on balance sheet, insider buying as support), improving fundamentals (revenue accelerating, margins expanding), and a technical entry point. Show me the math: worst case floor price, base case target, best case target, and the probability-weighted expected return.'},
-    {l:'📅 Earnings Watch', p:'Show me the most important upcoming earnings in the next 7 days, ranked by volatility potential. For each show me: earnings date, EPS/revenue estimates, beat streak (how many consecutive beats), implied move from options, average historical move on earnings, pre-earnings technical setup, sentiment, and a suggested play (buy calls, sell puts, straddle, avoid). I want to know which earnings have the highest probability of a big move.'},
-    {l:'💥 Short Squeeze', p:'Scan for short squeeze setups. I need: short interest >15% of float, days to cover >3, rising borrow cost, volume surging above average, price moving UP (shorts getting squeezed, not shorts winning), positive social sentiment acceleration, and ideally a bullish catalyst. Show me short float %, days to cover, volume ratio, social buzz level, and a trade plan for each. Filter out anything with declining price — I want squeezes that are STARTING, not over.'},
-    {l:'🚀 Social Momentum', p:'Show me stocks with the FASTEST accelerating social media buzz RIGHT NOW — mentions spiking on StockTwits, Reddit, Twitter in the last 24 hours. For each show me: sentiment % bullish, volume confirmation (is volume backing up the buzz?), price action, and whether this looks like early-stage momentum or late-stage hype. I want to catch momentum EARLY, not chase.'},
-    {l:'📊 Volume Spikes', p:'Scan for the biggest volume spikes vs 30-day average today. For each show me: exact volume ratio (e.g. 4.2x average), whether price is UP or DOWN on the volume (accumulation vs distribution), what is likely causing the spike (news, earnings, insider activity?), and the technical setup. High volume + price up = institutional buying signal. High volume + price down = distribution warning.'},
-    {l:'🔻 Bearish Setups', p:'Show me the weakest stocks breaking down. I want: Stage 3 to Stage 4 transitions (price breaking below 200 SMA on volume), deteriorating fundamentals (declining revenue, shrinking margins, earnings misses), heavy insider selling, analyst downgrades, high short interest with shorts WINNING (price declining + high short interest = continued pressure). These are stocks to avoid, hedge against, or short.'},
-    {l:'🐾 Small Cap Spec', p:'Scan for speculative small cap stocks UNDER $2B market cap with: volume surging 2x+ average, positive social sentiment, price breaking above key moving averages, and a clean chart pattern. NO large caps. NO mega caps. I want high-beta, high-volatility small caps where a catalyst could cause a 20-50%+ move. Show volume ratio, short interest if high, social buzz, and a trade plan.'},
-    {l:'🤖 AI/Compute Check', p:'Momentum check on the full AI and compute infrastructure theme. For EVERY ticker in the watchlist show me: price, change today, RSI, above/below key SMAs, volume vs average, social sentiment, and relative strength vs SMH (semiconductor ETF). Rank from strongest to weakest. Which names are LEADING the theme? Which are LAGGING? Are any showing distribution (price up but volume declining)? Is the overall theme bullish, neutral, or bearish right now?'},
-    {l:'⚛️ Uranium/Nuclear', p:'Momentum check on uranium and nuclear stocks. For EVERY ticker show me: price, change today, RSI, trend vs 50 and 200 SMA, volume, sentiment. Rank strongest to weakest vs URA ETF. What is the uranium spot price doing? Any regulatory catalysts (DOE, NRC)? Is the sector in accumulation or distribution? Show me which names are leading and which are lagging the theme.'},
-    {l:'🛢️ Commodities', p:'Show me a full commodities market dashboard — oil, gold, silver, copper, uranium, natural gas. For each commodity show me price action, short and long term trends, RSI, key levels, drivers, risks, related ETFs, sentiment, and 3-month and 12-month outlook. Include DXY impact, macro factors, upcoming catalysts, and your top conviction commodity plays.'},
-    {l:'🪙 Crypto Scanner', p:'Full crypto market scan. Show me: global market state (total cap, BTC dominance, volume), funding rate analysis across all perps (which coins have crowded longs? which have squeeze potential from negative funding?), which crypto categories/narratives are leading (AI, memes, DeFi, L2, gaming), top momentum coins with social buzz + dev activity + funding rate data, and your highest conviction crypto trades with entry/stop/target. I want to see funding rate divergences — where price action disagrees with derivatives positioning.'},
+  const promptGroups = [
+    { id: 'g1', title: '\uD83C\uDFAF All-Encompassing', buttons: [
+      {l:'\uD83D\uDD25 Trending Now', p:'What\'s trending across all markets right now? Show me the highest-conviction stocks, crypto, and commodities that are buzzing with real catalysts \u2014 not just hype. Apply the full top-down workflow: verify news, check sector alignment, filter for best setups.'},
+      {l:'\u2726 Daily Briefing', p:'Give me today\'s market intelligence briefing. Cover macro regime, sector positioning, top trade setups, top investment ideas, and key risks. What should I be paying attention to today?'},
+      {l:'\uD83D\uDD25 Best Trades', p:'What are the best short-term trade setups right now across stocks, crypto, and commodities? I want high risk/reward setups with clear entry, stop, and targets. Apply the full top-down workflow \u2014 only show me trades in sectors with tailwinds.'},
+      {l:'\uD83D\uDC8E Best Investments', p:'What are the best long-term investment opportunities right now? Find undervalued companies with improving fundamentals, strong moats, and secular tailwinds. SQGLP framework. Apply the top-down workflow \u2014 only recommend investments in sectors with macro support.'},
+      {l:'\uD83C\uDF0D Macro Overview', p:'Give me a comprehensive macro overview. Fed stance, rate trajectory, inflation data, yield curve, DXY, VIX, credit spreads, Fear & Greed. What regime are we in? What sectors and asset classes benefit from the current environment? What should I avoid?'},
+    ]},
+    { id: 'g2', title: '\uD83C\uDFDB Sectors', buttons: [
+      {l:'\uD83D\uDD04 Sector Rotation', p:'Run a full sector rotation analysis. Which stock sectors, commodity groups, and crypto segments are seeing the strongest inflows right now? Rank them by momentum. For the top 3 sectors, give me the best individual plays. For the bottom 3, tell me what to avoid. What timeframe does this rotation favor \u2014 weeks or months? Use Weinstein stages, volume flows, macro alignment, and sentiment to support your analysis.'},
+      {l:'\uD83E\uDE99 Crypto', p:'Scan the crypto market. What\'s the macro setup for crypto right now (BTC dominance, total market cap trend, funding rates, fear/greed)? Which crypto sectors are leading (L1s, DeFi, AI coins, meme coins)? Give me the best trade and investment setups in crypto right now. Apply the full workflow \u2014 only recommend coins with real catalysts and favorable technicals.'},
+      {l:'\u26A1 Energy', p:'Scan the energy sector for the best opportunities. Cover oil & gas, renewables, utilities, nuclear, and energy infrastructure. What\'s driving energy right now (demand growth, AI power needs, geopolitics, regulation)? Find me the best trade setups and investment opportunities in energy. What are the bottleneck plays?'},
+      {l:'\uD83E\uDD16 AI/Compute', p:'Scan the AI and compute sector. Cover chip makers, cloud infrastructure, AI software, data centers, cooling, and power infrastructure for AI. What\'s the current demand/supply dynamic? Where is the bottleneck? Find me the best setups \u2014 both the obvious leaders and the under-the-radar plays. What\'s overvalued and what\'s still cheap?'},
+      {l:'\uD83C\uDFD7 Materials', p:'Scan the materials and mining sector. Cover steel, copper, lithium, rare earths, and industrial metals. What\'s driving demand (infrastructure, EVs, AI data centers, defense)? Which materials are in supply deficit? Find me the best trade and investment setups in materials right now.'},
+      {l:'\uD83D\uDD2C Quantum', p:'Scan quantum computing and related stocks. Who are the pure-play quantum companies? Who are the adjacent beneficiaries (cryo cooling, specialized chips, defense/intelligence)? Is this sector investable yet or still speculative? What\'s the best way to get exposure with favorable risk/reward?'},
+      {l:'\uD83D\uDEE1 Aerospace/Defense', p:'Scan the aerospace and defense sector. What\'s driving spending (geopolitics, NATO commitments, space, drones, hypersonics)? Who has the best order backlog? Find me defense stocks with improving fundamentals, strong technicals, and upcoming catalysts. What\'s the best risk/reward in this sector right now?'},
+      {l:'\uD83D\uDCBB Tech', p:'Scan the broader technology sector beyond AI. Cover cybersecurity, SaaS, fintech, semiconductors, consumer tech. What sub-sectors within tech are showing relative strength? What\'s cheap? What has momentum? Give me the best trade and investment setups in tech right now.'},
+      {l:'\uD83C\uDFE6 Finance', p:'Scan the financial sector. Cover banks, insurance, asset managers, fintech, and crypto-adjacent financials. How does the rate environment affect each sub-sector? Who benefits from the current yield curve? Find me the best setups in financials \u2014 both value plays and momentum plays.'},
+      {l:'\uD83D\uDEE2 Commodities', p:'Run a full commodities dashboard. Cover oil, natural gas, gold, silver, copper, uranium, lithium, agricultural commodities. Which commodities are in breakout mode? Which are oversold? What\'s the macro backdrop (dollar, rates, supply/demand)? Give me the best commodity trades and the best commodity-producer stocks right now.'},
+      {l:'\uD83D\uDC8A Healthcare', p:'Scan the healthcare sector. Cover biotech, pharma, medical devices, healthcare services, and health insurance. Any major FDA catalysts coming up? What\'s cheap with improving pipelines? What has technical breakout setups? Find me the best trade and investment opportunities in healthcare.'},
+      {l:'\uD83C\uDFE0 Real Estate', p:'Scan the real estate sector. Cover REITs (residential, commercial, data center, industrial), homebuilders, and real estate services. How do current rates affect the sector? Who benefits if rates come down? What\'s the best risk/reward setup in real estate right now? Any data center REITs benefiting from AI demand?'},
+      {l:'\u2622\uFE0F Uranium/Nuclear', p:'Deep dive into the uranium and nuclear sector. Cover uranium miners, nuclear utilities, enrichment companies, and SMR plays. What\'s the supply/demand picture for uranium? What contracts are coming up? Give me the best trade and investment setups in the nuclear renaissance theme.'},
+    ]},
+    { id: 'g3', title: '\uD83D\uDCCA Technical Analysis', buttons: [
+      {l:'\uD83D\uDCC8 Stage 2 Breakouts', p:'Find stocks, crypto, and commodities breaking into Weinstein Stage 2 right now \u2014 price moving above a rising 200-day SMA with above-average volume. These are the early-stage uptrends. Only show me setups where fundamentals also support the breakout.'},
+      {l:'\uD83D\uDD3B Bearish Setups', p:'Find the weakest stocks, crypto, and commodities right now. Stage 4 breakdowns, death crosses, bearish pattern breakouts, deteriorating fundamentals. What should I be avoiding or shorting? What looks like a value trap?'},
+      {l:'\u26A1 Asymmetric Only', p:'Find the most asymmetric risk/reward setups across stocks, crypto, and commodities right now. I want compressed valuations with upcoming catalysts \u2014 setups where the downside is limited but the upside is 3x or more. Tight stops, big potential.'},
+      {l:'\uD83D\uDC23 Small Cap Spec', p:'Find the best speculative small cap and micro cap opportunities right now \u2014 stocks under $2B market cap with explosive potential. High risk, high reward. Volume surges, catalyst-driven, momentum plays. What small caps are institutional money starting to notice?'},
+      {l:'\uD83D\uDCA5 Short Squeeze', p:'Find the best short squeeze candidates across stocks and crypto. High short interest (>20%), low float, rising cost to borrow, utilization near 100%, plus a catalyst that could force covering. What\'s set up for a squeeze right now?'},
+      {l:'\uD83D\uDFE2 Bullish Breakouts', p:'Find stocks, crypto, and commodities with confirmed bullish pattern breakouts \u2014 cup and handle, ascending triangle, bull flag, inverse head and shoulders, channel breakout. Only include breakouts confirmed by volume. What\'s breaking out RIGHT NOW with real momentum?'},
+      {l:'\uD83D\uDD34 Bearish Breakdowns', p:'Find stocks, crypto, and commodities with confirmed bearish pattern breakdowns \u2014 head and shoulders, descending triangle, bear flag, rising wedge breakdown. What\'s breaking down with increasing volume? These are warns or short candidates.'},
+      {l:'\uD83D\uDCC9 Oversold Bounces', p:'Find stocks, crypto, and commodities that are deeply oversold near key support levels \u2014 RSI below 30, near 200-day SMA, at major support, but in sectors that still have favorable macro tailwinds. These are dip-buy candidates where the uptrend is intact. Pullbacks in uptrends, not falling knives.'},
+      {l:'\uD83D\uDCC8 Overbought Warnings', p:'Find stocks, crypto, and commodities that are extremely overbought \u2014 RSI above 70, extended above Bollinger Bands, far above moving averages. These are candidates for a pullback or mean reversion. What should I take profits on or avoid chasing?'},
+      {l:'\uD83D\uDD00 Crossover Signals', p:'Find stocks, crypto, and commodities with fresh moving average crossovers in the last 5 days \u2014 golden crosses (50 above 200 SMA), death crosses (50 below 200 SMA), fresh bullish or bearish EMA crossovers, and fresh MACD signal line crossovers. What just triggered a new trend signal?'},
+      {l:'\uD83D\uDE80 Momentum Shifts', p:'Find stocks, crypto, and commodities showing early momentum shifts \u2014 MACD histogram turning positive after being negative, RSI crossing above 50 from below, early bullish or bearish momentum inflections. What\'s about to start moving before the crowd notices?'},
+      {l:'\uD83D\uDCCF Trend Status', p:'Give me a trend status report across markets. What stocks, crypto, and commodities are in strong uptrends vs strong downtrends vs trading in range? What just shifted from downtrend to uptrend (trend upgrades)? What\'s losing its uptrend? This is the Weinstein stage map of the market.'},
+      {l:'\uD83D\uDD0A Volume & Movers', p:'Find the biggest volume spikes and price movers across stocks, crypto, and commodities today. Unusual volume (2x+ average), new local highs, new local lows, top gainers, top losers. What\'s moving on heavy volume and WHY? Separate the signal from the noise.'},
+    ]},
+    { id: 'g4', title: '\uD83D\uDCCB Fundamental Analysis', buttons: [
+      {l:'\uD83C\uDFC6 Fundamental Leaders', p:'Find stocks with the strongest fundamentals across all sectors \u2014 highest ROIC, best margins, fastest revenue growth, cleanest balance sheets, strongest free cash flow. These are the highest-quality businesses in the market. Now filter: which of these are also in technically favorable positions and not overvalued?'},
+      {l:'\uD83D\uDCC8 Rapidly Improving Fundamentals', p:'Find stocks where fundamentals are rapidly improving \u2014 revenue growth accelerating, margins expanding, EBITDA turning positive, EPS beats increasing, guidance being raised. These are turnaround stories and inflection points. The key is TRAJECTORY, not current absolute numbers. What\'s getting better fastest?'},
+      {l:'\uD83D\uDCC5 Earnings Watch', p:'What are the most important earnings reports coming up in the next 2 weeks? For each, give me: what the market expects, what would be a beat/miss catalyst, how the stock is positioned technically going into earnings, and whether I should hold through or trade around it. Focus on names that could move big.'},
+    ]},
+    { id: 'g5', title: '\uD83D\uDCE1 Buzz', buttons: [
+      {l:'\uD83D\uDE80 Social Momentum', p:'What stocks, crypto, and commodities have the highest social momentum right now? Cross-reference X/Twitter, StockTwits, Reddit, and Finviz. What\'s buzzing across multiple platforms simultaneously? For each, tell me: is the buzz backed by a real catalyst or is it noise? Is this an entry or a trap?'},
+      {l:'\uD83D\uDCF0 News Headline Leaders', p:'What stocks, crypto, and commodities are dominating the news cycle right now? Major headlines, breaking developments, analyst upgrades/downgrades, insider transactions, regulatory actions. For each headline-driven mover, assess: is the move done or just starting? Is this a trade or does it change the long-term thesis?'},
+      {l:'\uD83C\uDFAF Upcoming Catalysts', p:'What are the biggest upcoming catalysts across markets in the next 1-4 weeks? Earnings dates, FDA decisions, FOMC meetings, CPI/jobs data, product launches, contract announcements, ex-dividend dates, index rebalancing. For each, which stocks are most affected and how should I position?'},
+    ]},
   ];
+
+  function toggleAllGroups() {
+    const newState = !allGroupsVisible;
+    setAllGroupsVisible(newState);
+    setGroupExpanded({ g1: newState, g2: newState, g3: newState, g4: newState, g5: newState });
+  }
+
+  function toggleGroup(id: string) {
+    setGroupExpanded(prev => ({ ...prev, [id]: !prev[id] }));
+  }
+
+  function renderPromptGroups() {
+    return (
+      <div>
+        <div style={{ marginBottom: 10 }}>
+          <button onClick={toggleAllGroups} style={{ padding:'7px 14px', background: allGroupsVisible ? `${C.blue}12` : C.card, border:`1px solid ${allGroupsVisible ? C.blue+'40' : C.border}`, borderRadius:8, color: allGroupsVisible ? C.blue : C.dim, fontSize:11, cursor:'pointer', fontFamily:font, transition:'all 0.15s' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.borderColor = allGroupsVisible ? C.blue+'40' : C.border; e.currentTarget.style.color = allGroupsVisible ? C.blue : C.dim; }}>
+            {allGroupsVisible ? '\u25BE Hide All Prompts' : '\u25B8 Show All Prompts'}
+          </button>
+        </div>
+        {promptGroups.map(group => (
+          <div key={group.id} style={{ marginBottom: 8 }}>
+            <button onClick={() => toggleGroup(group.id)} style={{ display:'flex', alignItems:'center', gap:6, padding:'6px 10px', background:'transparent', border:'none', color: groupExpanded[group.id] ? C.bright : C.dim, fontSize:12, cursor:'pointer', fontFamily:font, transition:'all 0.15s', fontWeight:700 }} onMouseEnter={e => { e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.color = groupExpanded[group.id] ? C.bright : C.dim; }}>
+              <span style={{ fontSize:8, transform: groupExpanded[group.id] ? 'rotate(90deg)' : 'rotate(0deg)', transition:'transform 0.2s', display:'inline-block' }}>\u25B6</span>
+              {group.title}
+            </button>
+            {groupExpanded[group.id] && (
+              <div style={{ display:'flex', flexWrap:'wrap', gap:6, paddingLeft:6, marginTop:4 }}>
+                {group.buttons.map(q => (
+                  <button key={q.l} onClick={() => { newChat(); askAgent(q.p, true); }} disabled={loading} style={{ padding:'8px 14px', background:C.card, border:`1px solid ${C.border}`, borderRadius:8, color:C.dim, fontSize:11, cursor:loading?'not-allowed':'pointer', fontFamily:font, transition:'all 0.15s', whiteSpace:'nowrap', flex:'0 0 auto' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; }}>{q.l}</button>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div style={{ maxWidth:1000, margin:'0 auto', fontFamily:sansFont, width:'100%', padding:'0 12px', boxSizing:'border-box' as const }}>
       <div style={{ marginBottom:10 }}>
         {showPrompts ? (
           <>
-            <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
-              {promptButtons.map(q => <button key={q.l} onClick={() => { newChat(); askAgent(q.p, true); }} disabled={loading} style={{ padding:'8px 14px', background:C.card, border:`1px solid ${C.border}`, borderRadius:8, color:C.dim, fontSize:11, cursor:loading?'not-allowed':'pointer', fontFamily:font, transition:'all 0.15s', whiteSpace:'nowrap', flex:'0 0 auto' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; }}>{q.l}</button>)}
-            </div>
-
-
+            {renderPromptGroups()}
             <div style={{ marginTop:10, padding:14, background:`linear-gradient(135deg, ${C.bg} 0%, #0e0f14 100%)`, border:`1px solid ${C.purple}20`, borderRadius:12, borderTop:`1px solid ${C.purple}30` }}>
               <div style={{ display:'flex', gap:8, marginBottom:8, flexWrap:'wrap' }}>
                 <textarea
@@ -1256,13 +1319,9 @@ export default function TradingAgent() {
           </>
         ) : (
           <div>
-            <button onClick={() => setShowScansExpanded(!showScansExpanded)} style={{ padding:'8px 14px', background: showScansExpanded ? `${C.blue}15` : C.card, border:`1px solid ${showScansExpanded ? C.blue : C.border}`, borderRadius:8, color: showScansExpanded ? C.blue : C.dim, fontSize:11, cursor:'pointer', fontFamily:font, transition:'all 0.15s', whiteSpace:'nowrap' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { if (!showScansExpanded) { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; } }}>{showScansExpanded ? '▾ Hide Scans' : '▸ Show Scans'}</button>
+            <button onClick={() => setShowScansExpanded(!showScansExpanded)} style={{ padding:'8px 14px', background: showScansExpanded ? `${C.blue}15` : C.card, border:`1px solid ${showScansExpanded ? C.blue : C.border}`, borderRadius:8, color: showScansExpanded ? C.blue : C.dim, fontSize:11, cursor:'pointer', fontFamily:font, transition:'all 0.15s', whiteSpace:'nowrap' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { if (!showScansExpanded) { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; } }}>{showScansExpanded ? '\u25BE Hide Scans' : '\u25B8 Show Scans'}</button>
             {showScansExpanded && <>
-              <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginTop:8 }}>
-                {promptButtons.map(q => <button key={q.l} onClick={() => { newChat(); askAgent(q.p, true); }} disabled={loading} style={{ padding:'8px 14px', background:C.card, border:`1px solid ${C.border}`, borderRadius:8, color:C.dim, fontSize:11, cursor:loading?'not-allowed':'pointer', fontFamily:font, transition:'all 0.15s', whiteSpace:'nowrap', flex:'0 0 auto' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; }}>{q.l}</button>)}
-              </div>
-
-
+              <div style={{ marginTop:8 }}>{renderPromptGroups()}</div>
               <div style={{ marginTop:10, padding:14, background:`linear-gradient(135deg, ${C.bg} 0%, #0e0f14 100%)`, border:`1px solid ${C.purple}20`, borderRadius:12, borderTop:`1px solid ${C.purple}30` }}>
                 <div style={{ display:'flex', gap:8, marginBottom:8, flexWrap:'wrap' }}>
                   <textarea
