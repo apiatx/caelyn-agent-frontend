@@ -54,20 +54,9 @@ export default function TopChartsPage() {
         position: relative;
         overflow: hidden;
       }
-      .altfins-clip-wrapper::after {
-        content: '';
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        height: 40px;
-        background: rgb(0 0 0 / 0.4);
-        z-index: 10;
-        pointer-events: none;
-      }
       .altfins-clip-wrapper altfins-screener-data-component {
         display: block;
-        margin-bottom: -36px;
+        margin-bottom: -30px;
       }
     `;
     document.head.appendChild(style);
