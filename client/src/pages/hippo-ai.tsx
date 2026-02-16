@@ -27,11 +27,13 @@ export default function HippoAIPage() {
         backgroundSize: '200px 200px'
       }} />
 
-      <div className="sticky top-0 z-50 w-full h-[110px] overflow-hidden border-b border-white/5 backdrop-blur-lg" style={{ background: 'rgba(5, 5, 16, 0.85)' }}>
-        <TickerTapeWidget />
+      <div className="sticky top-0 z-50 w-full h-[78px] overflow-hidden border-b border-white/5 backdrop-blur-lg" style={{ background: 'rgba(5, 5, 16, 0.85)' }}>
+        <div style={{ height: '110px' }}>
+          <TickerTapeWidget />
+        </div>
       </div>
 
-      <main className="relative z-10 flex-1 flex items-center justify-center px-2 sm:px-3 py-4" style={{ minHeight: 'calc(100vh - 110px)' }}>
+      <main className="relative z-10 flex-1 flex items-center justify-center px-2 sm:px-3 py-4" style={{ minHeight: 'calc(100vh - 78px)' }}>
         <div className="w-full max-w-[1000px] mx-auto" style={{ marginTop: '-20px' }}>
           <div className="text-center mb-5" style={{ paddingTop: '20px' }}>
             <img 
