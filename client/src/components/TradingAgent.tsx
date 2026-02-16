@@ -43,11 +43,6 @@ export default function TradingAgent() {
   async function askAgent(customPrompt?: string, freshChat?: boolean) {
     const q = customPrompt || prompt;
 
-    if (q === '__PORTFOLIO__') {
-      setShowTickerInput(!showTickerInput);
-      return;
-    }
-
     if (!q.trim()) return;
     setLoading(true); setError(null); setExpandedTicker(null);
     setPrompt('');
@@ -1162,29 +1157,54 @@ export default function TradingAgent() {
 
   return (
     <div style={{ maxWidth:1000, margin:'0 auto', fontFamily:sansFont, width:'100%', padding:'0 12px', boxSizing:'border-box' as const }}>
-      {messages.length > 0 && <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:8 }}>
-        <button onClick={newChat} style={{ padding:'6px 14px', background:C.card, border:`1px solid ${C.border}`, borderRadius:8, color:C.dim, fontSize:11, cursor:'pointer', fontFamily:font, transition:'all 0.15s' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; }}>+ New Chat</button>
-      </div>}
+      <div style={{ display:'flex', gap:8, marginBottom:10 }}>
+        {messages.length > 0 && <button onClick={newChat} style={{ padding:'12px 14px', background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.dim, fontSize:11, cursor:'pointer', fontFamily:font, transition:'all 0.15s', whiteSpace:'nowrap' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; }}>+ New</button>}
+        <input type="text" value={prompt} onChange={e => setPrompt(e.target.value)} onKeyDown={e => e.key === 'Enter' && askAgent()} placeholder={messages.length > 0 ? "Ask a follow-up..." : "Best trades today... Analyze NVDA... Best improving fundamentals..."} style={{ flex:1, padding:'14px 18px', border:`1px solid ${C.border}`, borderRadius:10, background:C.bg, color:C.bright, fontSize:16, fontFamily:sansFont, outline:'none' }} />
+        <button onClick={() => askAgent()} disabled={loading} style={{ padding:'12px 28px', background:loading ? C.card : `linear-gradient(135deg, ${C.blue}, #2563eb)`, color:loading ? C.dim : 'white', border:'none', borderRadius:10, cursor:loading?'not-allowed':'pointer', fontWeight:700, fontSize:14, fontFamily:sansFont }}>
+          {loading ? 'Scanning...' : 'Analyze'}
+        </button>
+      </div>
 
       <div style={{ marginBottom:10 }}>
         {showPrompts ? (
           <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
             {promptButtons.map(q => <button key={q.l} onClick={() => { newChat(); askAgent(q.p, true); }} disabled={loading} style={{ padding:'8px 14px', background:C.card, border:`1px solid ${C.border}`, borderRadius:8, color:C.dim, fontSize:11, cursor:loading?'not-allowed':'pointer', fontFamily:font, transition:'all 0.15s', whiteSpace:'nowrap', flex:'0 0 auto' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; }}>{q.l}</button>)}
-            <div style={{ width:'100%', height:0, marginTop:4 }} />
-            <button onClick={() => askAgent('__PORTFOLIO__')} disabled={loading} style={{ padding:'8px 14px', background:C.card, border:`1px solid ${C.border}`, borderRadius:8, color:C.dim, fontSize:11, cursor:loading?'not-allowed':'pointer', fontFamily:font, transition:'all 0.15s', whiteSpace:'nowrap', flex:'0 0 auto' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; }}>📋 Watchlist Review</button>
-            <button onClick={() => setShowScreener(!showScreener)} style={{ padding:'8px 14px', background: showScreener ? `${C.purple}15` : C.card, border:`1px solid ${showScreener ? C.purple : C.border}`, borderRadius:8, color: showScreener ? C.purple : C.dim, fontSize:11, cursor:'pointer', fontFamily:font, transition:'all 0.15s', whiteSpace:'nowrap', flex:'0 0 auto' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.purple; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { if (!showScreener) { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; } }}>🔬 AI Screener</button>
           </div>
         ) : (
           <div style={{ display:'flex', gap:6, alignItems:'center', flexWrap:'wrap' }}>
             <button onClick={() => setShowScansExpanded(!showScansExpanded)} style={{ padding:'8px 14px', background: showScansExpanded ? `${C.blue}15` : C.card, border:`1px solid ${showScansExpanded ? C.blue : C.border}`, borderRadius:8, color: showScansExpanded ? C.blue : C.dim, fontSize:11, cursor:'pointer', fontFamily:font, transition:'all 0.15s', whiteSpace:'nowrap', flex:'0 0 auto' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { if (!showScansExpanded) { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; } }}>{showScansExpanded ? '▾ Hide Scans' : '▸ Show Scans'}</button>
-            <button onClick={() => askAgent('__PORTFOLIO__')} disabled={loading} style={{ padding:'8px 14px', background:C.card, border:`1px solid ${C.border}`, borderRadius:8, color:C.dim, fontSize:11, cursor:loading?'not-allowed':'pointer', fontFamily:font, transition:'all 0.15s', whiteSpace:'nowrap', flex:'0 0 auto' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; }}>📋 Watchlist Review</button>
-            <button onClick={() => setShowScreener(!showScreener)} style={{ padding:'8px 14px', background: showScreener ? `${C.purple}15` : C.card, border:`1px solid ${showScreener ? C.purple : C.border}`, borderRadius:8, color: showScreener ? C.purple : C.dim, fontSize:11, cursor:'pointer', fontFamily:font, transition:'all 0.15s', whiteSpace:'nowrap', flex:'0 0 auto' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.purple; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { if (!showScreener) { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; } }}>🔬 AI Screener</button>
             {showScansExpanded && <div style={{ width:'100%', display:'flex', flexWrap:'wrap', gap:6, marginTop:6 }}>
               {promptButtons.map(q => <button key={q.l} onClick={() => { newChat(); askAgent(q.p, true); }} disabled={loading} style={{ padding:'8px 14px', background:C.card, border:`1px solid ${C.border}`, borderRadius:8, color:C.dim, fontSize:11, cursor:loading?'not-allowed':'pointer', fontFamily:font, transition:'all 0.15s', whiteSpace:'nowrap', flex:'0 0 auto' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; }}>{q.l}</button>)}
             </div>}
           </div>
         )}
-        {showScreener && (
+
+        <div style={{ marginTop:10, padding:16, background:C.card, border:`1px solid ${C.blue}30`, borderRadius:10 }}>
+          <div style={{ color:C.bright, fontSize:13, fontWeight:600, fontFamily:sansFont, marginBottom:8 }}>
+            Enter your tickers (up to 25, separated by commas or spaces)
+          </div>
+          <div style={{ display:'flex', gap:8 }}>
+            <input
+              type="text"
+              value={tickerInput}
+              onChange={e => setTickerInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && submitPortfolio()}
+              placeholder="NVDA, AMD, SMCI, CCJ, UEC, SMR, PLTR, CRDO..."
+              style={{ flex:1, padding:'12px 16px', border:`1px solid ${C.border}`, borderRadius:8, background:C.bg, color:C.bright, fontSize:13, fontFamily:font, outline:'none' }}
+            />
+            <button
+              onClick={submitPortfolio}
+              disabled={loading || !tickerInput.trim()}
+              style={{ padding:'10px 24px', background: loading || !tickerInput.trim() ? C.card : `linear-gradient(135deg, ${C.blue}, #2563eb)`, color: loading || !tickerInput.trim() ? C.dim : 'white', border:'none', borderRadius:8, cursor: loading || !tickerInput.trim() ? 'not-allowed' : 'pointer', fontWeight:700, fontSize:13, fontFamily:sansFont }}
+            >
+              Review
+            </button>
+          </div>
+          <div style={{ color:C.dim, fontSize:10, fontFamily:font, marginTop:6 }}>
+            Example: NVDA, AMD, AVGO, MRVL, CRDO, SMCI, CCJ, UEC, PLTR, VRT
+          </div>
+        </div>
+
         <div style={{ marginTop:10, padding:14, background:`linear-gradient(135deg, ${C.bg} 0%, #0e0f14 100%)`, border:`1px solid ${C.purple}20`, borderRadius:12, borderTop:`1px solid ${C.purple}30` }}>
           <div style={{ display:'flex', gap:8, marginBottom:8, flexWrap:'wrap' }}>
             <textarea
@@ -1216,40 +1236,6 @@ export default function TradingAgent() {
             ))}
           </div>
         </div>
-        )}
-        {showTickerInput && (
-          <div style={{ marginTop:10, padding:16, background:C.card, border:`1px solid ${C.blue}30`, borderRadius:10 }}>
-            <div style={{ color:C.bright, fontSize:13, fontWeight:600, fontFamily:sansFont, marginBottom:8 }}>
-              Enter your tickers (up to 25, separated by commas or spaces)
-            </div>
-            <div style={{ display:'flex', gap:8 }}>
-              <input
-                type="text"
-                value={tickerInput}
-                onChange={e => setTickerInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && submitPortfolio()}
-                placeholder="NVDA, AMD, SMCI, CCJ, UEC, SMR, PLTR, CRDO..."
-                style={{ flex:1, padding:'12px 16px', border:`1px solid ${C.border}`, borderRadius:8, background:C.bg, color:C.bright, fontSize:13, fontFamily:font, outline:'none' }}
-                autoFocus
-              />
-              <button
-                onClick={submitPortfolio}
-                style={{ padding:'10px 24px', background:`linear-gradient(135deg, ${C.blue}, #2563eb)`, color:'white', border:'none', borderRadius:8, cursor:'pointer', fontWeight:700, fontSize:13, fontFamily:sansFont }}
-              >
-                Analyze
-              </button>
-              <button
-                onClick={() => setShowTickerInput(false)}
-                style={{ padding:'10px 16px', background:C.card, border:`1px solid ${C.border}`, borderRadius:8, color:C.dim, cursor:'pointer', fontSize:12, fontFamily:font }}
-              >
-                Cancel
-              </button>
-            </div>
-            <div style={{ color:C.dim, fontSize:10, fontFamily:font, marginTop:6 }}>
-              Example: NVDA, AMD, AVGO, MRVL, CRDO, SMCI, CCJ, UEC, PLTR, VRT
-            </div>
-          </div>
-        )}
       </div>
 
       <div style={{ marginBottom:12 }}>
@@ -1277,13 +1263,6 @@ export default function TradingAgent() {
         </div>}
 
         <div ref={scrollAnchorRef} />
-      </div>
-
-      <div style={{ display:'flex', gap:8 }}>
-        <input type="text" value={prompt} onChange={e => setPrompt(e.target.value)} onKeyDown={e => e.key === 'Enter' && askAgent()} placeholder={messages.length > 0 ? "Ask a follow-up..." : "Best trades today... Analyze NVDA..."} style={{ flex:1, padding:'14px 18px', border:`1px solid ${C.border}`, borderRadius:10, background:C.bg, color:C.bright, fontSize:16, fontFamily:sansFont, outline:'none' }} />
-        <button onClick={() => askAgent()} disabled={loading} style={{ padding:'12px 28px', background:loading ? C.card : `linear-gradient(135deg, ${C.blue}, #2563eb)`, color:loading ? C.dim : 'white', border:'none', borderRadius:10, cursor:loading?'not-allowed':'pointer', fontWeight:700, fontSize:14, fontFamily:sansFont }}>
-          {loading ? 'Scanning...' : 'Analyze'}
-        </button>
       </div>
 
       <style>{`
