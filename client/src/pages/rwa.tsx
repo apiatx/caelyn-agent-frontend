@@ -58,7 +58,7 @@ export default function RWAPage() {
 
             <div className="flex justify-between items-center mb-4">
               <a
-                {...getSecureLinkProps('https://app.rwa.xyz/')}
+                {...getSecureLinkProps('https://app.artemisanalytics.com/digital-asset-treasuries')}
                 className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1 ml-auto"
               >
                 Open Full View <ExternalLink className="w-3 h-3" />
@@ -67,17 +67,27 @@ export default function RWAPage() {
             
             <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
               <SafeIframe
-                src="https://app.rwa.xyz/"
-                title="RWA.xyz Platform"
+                src="https://app.artemisanalytics.com/digital-asset-treasuries"
+                title="Artemis Digital Asset Treasuries"
                 className="w-full h-[800px] border-0"
               />
             </div>
-            
-            <div className="mt-4 text-center">
-              <p className="text-xs text-gray-400">
-                RWA.xyz platform • Comprehensive real world asset trading
-              </p>
-            </div>
+
+            <button
+              onClick={() => window.open('https://blockworks.com/analytics/treasury-companies', '_blank', 'noopener,noreferrer')}
+              className="w-full mt-4 bg-gradient-to-r from-indigo-600/80 to-purple-600/80 hover:from-indigo-500/90 hover:to-purple-500/90 border border-indigo-400/30 hover:border-indigo-300/50 rounded-lg p-4 transition-all duration-300 group flex items-center justify-between"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5 text-indigo-300" />
+                </div>
+                <div className="text-left">
+                  <div className="text-base font-bold text-white group-hover:text-indigo-100">Blockworks Treasury Analytics</div>
+                  <div className="text-xs text-white/60 group-hover:text-white/80">Corporate treasury companies & ETF holdings</div>
+                </div>
+              </div>
+              <ExternalLink className="w-5 h-5 text-white/50 group-hover:text-white/80 transition-colors" />
+            </button>
           </GlassCard>
 
           {/* The World Onchain ASSETS */}
@@ -114,32 +124,6 @@ export default function RWAPage() {
               <div className="mt-2 text-center">
                 <p className="text-xs text-gray-400">
                   Tokenized stock trading on Solana via Jupiter Pro
-                </p>
-              </div>
-            </div>
-
-            {/* Plume Network Iframe */}
-            <div className="mb-6">
-              <div className="flex justify-end items-center mb-3">
-                <a
-                  href="https://portal.plume.org/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-1"
-                >
-                  Open Full View <ExternalLink className="w-3 h-3" />
-                </a>
-              </div>
-              <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
-                <SafeIframe
-                  src="https://portal.plume.org/"
-                  title="Plume Network Portal"
-                  className="w-full h-[600px] border-0"
-                />
-              </div>
-              <div className="mt-2 text-center">
-                <p className="text-xs text-gray-400">
-                  Plume Network • RWA-focused blockchain platform
                 </p>
               </div>
             </div>
