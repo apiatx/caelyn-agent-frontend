@@ -884,22 +884,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // === AI Portfolio Review (server-side proxy) ===
   app.post('/api/portfolio-review', async (req, res) => {
     try {
-      const { tickers } = req.body;
-      if (!tickers || !Array.isArray(tickers) || tickers.length < 1) {
-        return res.status(400).json({ error: 'At least 1 ticker is required' });
+      const { holdings } = req.body;
+      if (!holdings || !Array.isArray(holdings) || holdings.length < 1) {
+        return res.status(400).json({ error: 'At least 1 holding is required' });
       }
       const agentUrl = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
       const agentKey = 'hippo_ak_7f3x9k2m4p8q1w5t';
-      const response = await fetch(`${agentUrl}/api/watchlist`, {
+      const response = await fetch(`${agentUrl}/api/portfolio/review`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-API-Key': agentKey },
-        body: JSON.stringify({ tickers: tickers.slice(0, 25) }),
+        body: JSON.stringify({ holdings: holdings.slice(0, 25) }),
       });
       if (!response.ok) {
         return res.status(response.status).json({ error: `Agent returned ${response.status}` });
       }
       const data = await response.json();
-      res.json(data);
+      const message = data?.structured?.message || data?.message || data?.analysis || '';
+      res.json({ message, raw: data });
     } catch (error) {
       console.error('Portfolio review error:', error);
       res.status(500).json({ error: 'Failed to get portfolio review' });

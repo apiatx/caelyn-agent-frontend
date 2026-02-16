@@ -273,8 +273,7 @@ export default function StocksPortfolioPage() {
   }, [enrichedHoldings]);
 
   const runAIReview = async () => {
-    const tickers = holdings.map(h => h.ticker);
-    if (tickers.length === 0) return;
+    if (holdings.length === 0) return;
     setAiLoading(true);
     setAiReview(null);
     const stages = ['Analyzing portfolio...', 'Pulling price data...', 'Scanning technicals...', 'Checking fundamentals...', 'Reading sentiment...', 'Building portfolio view...', 'Generating ratings...'];
@@ -282,16 +281,22 @@ export default function StocksPortfolioPage() {
     setAiStage(stages[0]);
     const iv = setInterval(() => { idx++; if (idx < stages.length) setAiStage(stages[idx]); }, 2000);
     try {
+      const holdingsPayload = holdings.map(h => ({
+        ticker: h.ticker,
+        shares: h.shares,
+        avg_cost: h.avgCost,
+      }));
       const res = await fetch('/api/portfolio-review', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tickers }),
+        body: JSON.stringify({ holdings: holdingsPayload }),
       });
       if (!res.ok) throw new Error(`Status ${res.status}`);
       const data = await res.json();
-      setAiReview(data.analysis || data.message || 'No analysis returned.');
+      const analysisText = data.message || data.text || data.analysis || 'No analysis returned.';
+      setAiReview(analysisText);
     } catch (err: any) {
-      setAiReview(`Error: ${err.message}`);
+      setAiReview(`Failed to get portfolio review. Please try again. (${err.message})`);
     } finally {
       clearInterval(iv);
       setAiStage('');
@@ -329,11 +334,7 @@ export default function StocksPortfolioPage() {
     if (!text) return '';
     const safe = escapeHtml(text);
     return safe
-      .replace(/^---+$/gm, '')
-      .replace(/^# (.*?)$/gm, '<div class="text-white font-bold text-lg mt-4 mb-2">$1</div>')
-      .replace(/^## (.*?)$/gm, '<div class="text-white font-bold text-base mt-3 mb-2">$1</div>')
-      .replace(/^### (.*?)$/gm, '<div class="text-blue-400 font-bold text-sm mt-2 mb-1">$1</div>')
-      .replace(/\*\*(.*?)\*\*/g, '<span class="text-white font-bold">$1</span>')
+      .replace(/\*\*(.*?)\*\*/g, '<strong style="color:#fff">$1</strong>')
       .replace(/\n/g, '<br/>');
   }
 
@@ -388,14 +389,24 @@ export default function StocksPortfolioPage() {
 
           {/* AI Review Result */}
           {aiReview && (
-            <GlassCard className="p-4 border-purple-500/30">
+            <div style={{
+              background: "rgba(255,255,255,0.03)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              borderRadius: "12px",
+              padding: "24px",
+              marginTop: "16px",
+              lineHeight: "1.7",
+              fontSize: "14px",
+              color: "#ccc",
+              whiteSpace: "pre-wrap",
+            }}>
               <div className="flex items-center gap-2 mb-3">
                 <Bot className="w-5 h-5 text-purple-400" />
                 <h3 className="text-base font-semibold text-white">AI Portfolio Analysis</h3>
                 <button onClick={() => setAiReview(null)} className="ml-auto text-crypto-silver hover:text-white text-xs">Dismiss</button>
               </div>
-              <div className="text-sm text-crypto-silver leading-relaxed" style={{ fontFamily: "'JetBrains Mono', monospace" }} dangerouslySetInnerHTML={{ __html: formatAnalysis(aiReview) }} />
-            </GlassCard>
+              <div dangerouslySetInnerHTML={{ __html: formatAnalysis(aiReview) }} />
+            </div>
           )}
 
           {/* Section 1: Portfolio Input */}

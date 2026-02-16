@@ -21,17 +21,24 @@
     "addedAt": "2026-02-16T18:23:28.570Z"
   },
   {
-    "id": "mlpi9c37m0bmz",
-    "ticker": "HYPE",
-    "shares": 20,
-    "avgCost": 30,
-    "addedAt": "2026-02-16T18:26:02.227Z"
+    "id": "mlpies1vnyqwi",
+    "ticker": "SILVER",
+    "shares": 10,
+    "avgCost": 50,
+    "addedAt": "2026-02-16T18:30:16.195Z"
   },
   {
-    "id": "mlpi9t9jysycu",
-    "ticker": "HYPERLIQUID",
+    "id": "mlpif6am8gy0n",
+    "ticker": "HYPEUSD",
     "shares": 10,
-    "avgCost": 20,
-    "addedAt": "2026-02-16T18:26:24.487Z"
+    "avgCost": 30,
+    "addedAt": "2026-02-16T18:30:34.654Z"
+  },
+  {
+    "id": "mlpilm85zrtfp",
+    "ticker": "SPAI",
+    "shares": 10,
+    "avgCost": 3,
+    "addedAt": "2026-02-16T18:35:35.237Z"
   }
 ]
