@@ -82,7 +82,8 @@ export default function TopChartsPage() {
           {/* AltFins Screener Widget */}
           <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl p-3 sm:p-4 lg:p-6">
             <div 
-              className="w-full overflow-x-auto"
+              className="w-full overflow-hidden"
+              style={{ maxHeight: '160px' }}
               dangerouslySetInnerHTML={{
                 __html: `<altfins-screener-data-component symbols='["BTC", "ETH"]' theme='no-border compact dark' valueids='["COIN", "LAST_PRICE", "MACD_BS_SIGNAL", "SMA20_SMA50_BS_SIGNAL", "X_EMA50_CROSS_EMA200", "SHORT_TERM_TREND_CHANGE", "MEDIUM_TERM_TREND_CHANGE", "LONG_TERM_TREND_CHANGE", "PERCENTAGE_ABOVE_FROM_52_WEEK_LOW", "PERCENTAGE_DOWN_FROM_52_WEEK_HIGH", "SMA50_TREND", "SMA200_TREND", "VOLUME_CHANGE", "PRICE_CHANGE_1D", "PRICE_CHANGE_1W", "PRICE_CHANGE_1M", "PRICE_CHANGE_3M", "PRICE_CHANGE_6M", "PRICE_CHANGE_1Y"]' affiliateid='test_id'></altfins-screener-data-component>`
               }}
