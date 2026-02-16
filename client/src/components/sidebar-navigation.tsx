@@ -62,6 +62,12 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
       path: '/app/stocks/dashboard'
     },
     {
+      id: 'stocks-portfolio',
+      label: 'Portfolio',
+      icon: <Wallet className="w-4 h-4" />,
+      path: '/app/stocks/portfolio'
+    },
+    {
       id: 'crypto-stocks',
       label: 'Stocks',
       icon: <TrendingUp className="w-4 h-4" />,
@@ -83,12 +89,6 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
           label: 'Fundamentals',
           icon: <TrendingUp className="w-4 h-4" />,
           path: '/app/stocks/fundamentals'
-        },
-        {
-          id: 'stocks-portfolio',
-          label: 'Portfolio + Other',
-          icon: <Wallet className="w-4 h-4" />,
-          path: '/app/stocks/portfolio'
         }
       ]
     },
