@@ -95,13 +95,39 @@ export default function TradingAgent() {
     } finally { clearInterval(iv); setLoadingStage(''); setLoading(false); }
   }
 
-  function submitPortfolio() {
+  async function submitPortfolio() {
     if (!tickerInput.trim()) return;
-    const tickers = tickerInput.toUpperCase().split(/[,\s]+/).filter(t => t.length >= 1 && t.length <= 5);
+    const tickers = tickerInput.toUpperCase().split(/[,\s]+/).filter(t => t.length >= 1 && t.length <= 5).slice(0, 25);
     if (tickers.length === 0) return;
-    setShowTickerInput(false);
-    const portfolioPrompt = `Review and rate these positions: ${tickers.join(', ')}. For each ticker give me a rating (Strong Buy, Buy, Hold, Sell, or Short) with full technical summary, fundamental summary, sentiment, key risk, insider activity, relative strength vs SPY, and suggested action. Then give me portfolio-level insights: sector concentration, risk flags, and suggested changes.`;
-    askAgent(portfolioPrompt);
+
+    setLoading(true);
+    setError(null);
+    setExpandedTicker(null);
+    setShowPrompts(false);
+    setMessages(prev => [...prev, {role: 'user', content: `Review my watchlist: ${tickers.join(', ')}`}]);
+
+    setLoadingStage('Analyzing watchlist...');
+    const stages = ['Pulling price data...','Scanning technicals...','Checking fundamentals...','Reading sentiment...','Analyzing insider activity...','Building portfolio view...','Generating ratings...'];
+    let idx = 0;
+    const iv = setInterval(() => { if (idx < stages.length) { setLoadingStage(stages[idx]); idx++; } }, 1800);
+
+    try {
+      const res = await fetch(`${AGENT_BACKEND_URL}/api/watchlist`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-API-Key': AGENT_API_KEY },
+        body: JSON.stringify({ tickers }),
+      });
+      if (!res.ok) throw new Error(`Status ${res.status}`);
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      setMessages(prev => [...prev, {role: 'assistant', content: data.analysis || data.message || '', parsed: data}]);
+      setChatHistory(prev => [...prev, {role:'user', content:`Review my watchlist: ${tickers.join(', ')}`}, {role:'assistant', content: data.analysis || data.message || ''}]);
+    } catch (err: any) {
+      const errMsg = err.message.includes('429') ? 'Rate limit reached. Wait a moment.' : err.message.includes('403') ? 'Auth failed.' : err.message;
+      setError(errMsg);
+      setMessages(prev => [...prev, {role: 'assistant', content: errMsg}]);
+    } finally { clearInterval(iv); setLoadingStage(''); setLoading(false); }
+    setTickerInput('');
   }
 
   const C = {
@@ -1133,8 +1159,9 @@ export default function TradingAgent() {
   const knownTypes = ['trades','investments','fundamentals','technicals','analysis','dashboard','sector_rotation','earnings_catalyst','commodities','portfolio','briefing','crypto','trending','screener'];
 
   function renderAssistantMessage(msg: {role: string, content: string, parsed?: any}) {
-    const s = msg.parsed?.structured || {};
+    const s = msg.parsed?.structured || (msg.parsed?.display_type ? msg.parsed : {});
     const displayType = s.display_type;
+    const analysisText = msg.parsed?.analysis || msg.parsed?.message || msg.content;
     return <div>
       {displayType === 'trades' && renderTrades(s)}
       {displayType === 'investments' && renderInvestments(s)}
@@ -1149,8 +1176,8 @@ export default function TradingAgent() {
       {displayType === 'commodities' && renderCommodities(s)}
       {displayType === 'sector_rotation' && renderSectorRotation(s)}
       {displayType === 'earnings_catalyst' && renderEarningsCatalyst(s)}
-      {(displayType === 'chat' || !knownTypes.includes(displayType)) && <div style={{ padding:22, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont }} dangerouslySetInnerHTML={{ __html: formatAnalysis(msg.parsed?.analysis || msg.content) }} />}
-      {displayType !== 'chat' && msg.parsed?.analysis && <div style={{ marginTop:16, padding:22, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont }} dangerouslySetInnerHTML={{ __html: formatAnalysis(msg.parsed.analysis) }} />}
+      {(displayType === 'chat' || !knownTypes.includes(displayType)) && <div style={{ padding:22, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont }} dangerouslySetInnerHTML={{ __html: formatAnalysis(analysisText) }} />}
+      {displayType && displayType !== 'chat' && knownTypes.includes(displayType) && analysisText && <div style={{ marginTop:16, padding:22, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont }} dangerouslySetInnerHTML={{ __html: formatAnalysis(analysisText) }} />}
     </div>;
   }
 
