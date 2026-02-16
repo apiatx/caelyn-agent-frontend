@@ -305,43 +305,6 @@ export default function AlphaSection() {
             />
           </div>
 
-          {/* Alphanomics Bubble Scanner */}
-          <div className="mt-8">
-            <div className="flex justify-end mb-4">
-              <SafeLink
-                href="https://platform.alphanomics.io/bubblescanner"
-                className="text-purple-300 hover:text-purple-200 text-sm font-medium hover:underline transition-colors duration-300"
-              >
-                Open Full Platform →
-              </SafeLink>
-            </div>
-            
-            <SafeIframe
-              src="https://platform.alphanomics.io/bubblescanner"
-              title="Alphanomics Bubble Scanner"
-              className="h-[700px]"
-            />
-          </div>
-
-          {/* BBTerminal Trading Terminal */}
-          <div className="mt-8">
-            <div className="mb-3 flex justify-end">
-              <SafeLink
-                href="https://app.bbterminal.com/degen"
-                className="text-purple-300 hover:text-purple-200 text-sm font-medium hover:underline transition-colors duration-300"
-              >
-                Open Full Terminal →
-              </SafeLink>
-            </div>
-            <div className="w-full bg-black/20 border border-crypto-silver/20 rounded-lg p-4 shadow-lg">
-              <SafeIframe
-                src="https://app.bbterminal.com/degen"
-                title="BBTerminal Degen Trading Terminal"
-                className="w-full h-[600px] rounded-lg"
-              />
-            </div>
-          </div>
-
           {/* AI Agents Section */}
           <div className="mt-8">
             <div className="flex items-center justify-center mb-4">
