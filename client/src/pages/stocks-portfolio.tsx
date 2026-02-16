@@ -94,6 +94,7 @@ export default function StocksPortfolioPage() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiStage, setAiStage] = useState('');
   const [loadingQuotes, setLoadingQuotes] = useState(false);
+  const [quotesError, setQuotesError] = useState(false);
   const [addingHolding, setAddingHolding] = useState(false);
 
   const fetchHoldings = useCallback(async () => {
@@ -111,16 +112,24 @@ export default function StocksPortfolioPage() {
   const fetchQuotes = useCallback(async (tickers: string[]) => {
     if (tickers.length === 0) return;
     setLoadingQuotes(true);
+    setQuotesError(false);
     try {
       const res = await fetch(`/api/fmp/quotes?symbols=${tickers.join(',')}`);
       if (res.ok) {
         const data: QuoteData[] = await res.json();
-        const map: Record<string, QuoteData> = {};
-        data.forEach(q => { map[q.symbol] = q; });
-        setQuotes(map);
+        if (Array.isArray(data) && data.length > 0) {
+          const map: Record<string, QuoteData> = {};
+          data.forEach(q => { map[q.symbol] = q; });
+          setQuotes(map);
+        } else {
+          setQuotesError(true);
+        }
+      } else {
+        setQuotesError(true);
       }
     } catch (err) {
       console.error('Failed to fetch quotes:', err);
+      setQuotesError(true);
     } finally {
       setLoadingQuotes(false);
     }
@@ -433,16 +442,16 @@ export default function StocksPortfolioPage() {
                         <td className="text-right py-2.5 px-3 text-crypto-silver">{h.shares}</td>
                         <td className="text-right py-2.5 px-3 text-crypto-silver">{fmt(h.avgCost)}</td>
                         <td className="text-right py-2.5 px-3 text-white font-medium">
-                          {loadingQuotes && !h.currentPrice ? <span className="animate-pulse">...</span> : h.currentPrice > 0 ? fmt(h.currentPrice) : '—'}
+                          {loadingQuotes && !h.currentPrice ? <span className="animate-pulse text-crypto-silver">Loading...</span> : quotesError && !h.currentPrice ? <span className="text-yellow-500 text-xs">Unavailable</span> : h.currentPrice > 0 ? fmt(h.currentPrice) : <span className="text-crypto-silver/50">—</span>}
                         </td>
                         <td className={`text-right py-2.5 px-3 font-medium ${h.dailyPL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                          {h.currentPrice > 0 ? fmtPL(h.dailyPL) : '—'}
+                          {loadingQuotes && !h.currentPrice ? <span className="animate-pulse text-crypto-silver">...</span> : quotesError && !h.currentPrice ? <span className="text-yellow-500 text-xs">—</span> : h.currentPrice > 0 ? fmtPL(h.dailyPL) : <span className="text-crypto-silver/50">—</span>}
                         </td>
                         <td className={`text-right py-2.5 px-3 font-medium ${h.totalPL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                          {h.currentPrice > 0 ? <><div>{fmtPL(h.totalPL)}</div><div className="text-[10px] opacity-70">{pctPL(h.totalPL, h.avgCost * h.shares)}</div></> : '—'}
+                          {loadingQuotes && !h.currentPrice ? <span className="animate-pulse text-crypto-silver">...</span> : quotesError && !h.currentPrice ? <span className="text-yellow-500 text-xs">—</span> : h.currentPrice > 0 ? <><div>{fmtPL(h.totalPL)}</div><div className="text-[10px] opacity-70">{pctPL(h.totalPL, h.avgCost * h.shares)}</div></> : <span className="text-crypto-silver/50">—</span>}
                         </td>
                         <td className="text-right py-2.5 px-3 text-crypto-silver">
-                          {totalPortfolioValue > 0 ? ((h.totalValue / totalPortfolioValue) * 100).toFixed(1) + '%' : '—'}
+                          {totalPortfolioValue > 0 ? ((h.totalValue / totalPortfolioValue) * 100).toFixed(1) + '%' : <span className="text-crypto-silver/50">—</span>}
                         </td>
                         <td className="text-right py-2.5 pl-3">
                           <button onClick={() => deleteHolding(h.id)} className="text-red-400/50 hover:text-red-400 transition-colors p-1">

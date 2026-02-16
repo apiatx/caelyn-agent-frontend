@@ -12,5 +12,26 @@
     "shares": 100,
     "avgCost": 2,
     "addedAt": "2026-02-16T18:11:21.026Z"
+  },
+  {
+    "id": "mlpi61iyyrhdk",
+    "ticker": "BTC",
+    "shares": 1,
+    "avgCost": 69000,
+    "addedAt": "2026-02-16T18:23:28.570Z"
+  },
+  {
+    "id": "mlpi9c37m0bmz",
+    "ticker": "HYPE",
+    "shares": 20,
+    "avgCost": 30,
+    "addedAt": "2026-02-16T18:26:02.227Z"
+  },
+  {
+    "id": "mlpi9t9jysycu",
+    "ticker": "HYPERLIQUID",
+    "shares": 10,
+    "avgCost": 20,
+    "addedAt": "2026-02-16T18:26:24.487Z"
   }
 ]
