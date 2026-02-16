@@ -46,6 +46,35 @@ export default function CryptoStonksPage() {
           <GlassCard className="p-3 sm:p-4 lg:p-6">
 
             <div className="space-y-6">
+              {/* Treasuries and ETFs - Blockworks */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 bg-emerald-500 rounded-full flex items-center justify-center">
+                      <TrendingUp className="w-2.5 h-2.5 text-white" />
+                    </div>
+                    <h4 className="text-lg font-semibold text-emerald-400">Treasuries and ETFs</h4>
+                    <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-xs">
+                      BLOCKWORKS
+                    </Badge>
+                  </div>
+                  <button
+                    onClick={() => openInNewTab('https://blockworks.com/analytics/treasury-companies')}
+                    className="text-emerald-400 hover:text-emerald-300 text-xs sm:text-sm"
+                  >
+                    Open Full View →
+                  </button>
+                </div>
+                <div className="w-full">
+                  <iframe
+                    src="https://blockworks.com/analytics/treasury-companies"
+                    className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
+                    title="Treasuries and ETFs"
+                    sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+                  />
+                </div>
+              </div>
+
               {/* Bitcoin Treasuries */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
@@ -104,74 +133,6 @@ export default function CryptoStonksPage() {
                 </div>
               </div>
 
-              {/* SOL Reserve */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-purple-500 rounded-full flex items-center justify-center">
-                      <span className="text-white font-bold text-xs">SOL</span>
-                    </div>
-                    <h4 className="text-lg font-semibold text-purple-400">Solana Treasuries</h4>
-                    <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-xs">
-                      SOL
-                    </Badge>
-                  </div>
-                  <button
-                    onClick={() => openInNewTab('https://www.coingecko.com/en/treasuries/solana/companies')}
-                    className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm"
-                  >
-                    Open Full View →
-                  </button>
-                </div>
-                <div className="w-full">
-                  <button
-                    onClick={() => openInNewTab('https://www.coingecko.com/en/treasuries/solana/companies')}
-                    className="w-full bg-gradient-to-r from-purple-500/10 to-purple-600/10 hover:from-purple-500/20 hover:to-purple-600/20 border border-purple-500/20 hover:border-purple-400/30 rounded-lg p-4 transition-all duration-300 group"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
-                          <span className="text-white font-bold text-lg">SOL</span>
-                        </div>
-                        <div className="text-left">
-                          <h4 className="font-semibold text-purple-400 group-hover:text-purple-300">Solana Treasuries</h4>
-                          <p className="text-crypto-silver text-sm">Track Solana institutional adoption</p>
-                        </div>
-                      </div>
-                      <ExternalLink className="w-5 h-5 text-purple-400 group-hover:text-purple-300 transition-colors" />
-                    </div>
-                  </button>
-                </div>
-              </div>
-
-              {/* TAO Treasuries */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-gradient-to-r from-gray-400 to-gray-500 rounded-full flex items-center justify-center">
-                      <Brain className="w-2.5 h-2.5 text-white" />
-                    </div>
-                    <h4 className="text-lg font-semibold text-gray-300 bg-gradient-to-r from-gray-200 to-gray-400 bg-clip-text text-transparent">Bittensor Treasuries</h4>
-                    <Badge className="bg-gray-500/20 text-gray-300 border-gray-500/30 text-xs">
-                      TAO
-                    </Badge>
-                  </div>
-                  <button
-                    onClick={() => openInNewTab('https://taotreasuries.app/')}
-                    className="text-gray-300 hover:text-gray-200 text-xs sm:text-sm"
-                  >
-                    Open Full View →
-                  </button>
-                </div>
-                <div className="w-full">
-                  <iframe
-                    src="https://taotreasuries.app/"
-                    className="w-full h-[400px] sm:h-[500px] lg:h-[600px] rounded-lg border border-crypto-silver/20"
-                    title="Bittensor Treasuries"
-                    sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-                  />
-                </div>
-              </div>
             </div>
           </GlassCard>
 

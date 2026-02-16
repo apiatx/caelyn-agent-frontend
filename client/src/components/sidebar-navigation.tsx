@@ -294,6 +294,12 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
             }
           ]
         },
+        {
+          id: 'crypto-stonks',
+          label: 'Treasuries',
+          icon: <Building2 className="w-4 h-4" />,
+          path: '/app/crypto-stonks'
+        },
       ]
     },
     {
@@ -301,12 +307,6 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
       label: 'Commodities',
       icon: <Gem className="w-4 h-4" />,
       path: '/app/commodities'
-    },
-    {
-      id: 'crypto-stonks',
-      label: 'Treasuries',
-      icon: <Building2 className="w-4 h-4" />,
-      path: '/app/crypto-stonks'
     },
     {
       id: 'rwa',
