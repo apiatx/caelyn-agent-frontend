@@ -1157,85 +1157,139 @@ export default function TradingAgent() {
 
   return (
     <div style={{ maxWidth:1000, margin:'0 auto', fontFamily:sansFont, width:'100%', padding:'0 12px', boxSizing:'border-box' as const }}>
-      <div style={{ display:'flex', gap:8, marginBottom:10 }}>
-        {messages.length > 0 && <button onClick={newChat} style={{ padding:'12px 14px', background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.dim, fontSize:11, cursor:'pointer', fontFamily:font, transition:'all 0.15s', whiteSpace:'nowrap' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; }}>+ New</button>}
-        <input type="text" value={prompt} onChange={e => setPrompt(e.target.value)} onKeyDown={e => e.key === 'Enter' && askAgent()} placeholder={messages.length > 0 ? "Ask a follow-up..." : "Best trades today... Analyze NVDA... Best improving fundamentals..."} style={{ flex:1, padding:'14px 18px', border:`1px solid ${C.border}`, borderRadius:10, background:C.bg, color:C.bright, fontSize:16, fontFamily:sansFont, outline:'none' }} />
-        <button onClick={() => askAgent()} disabled={loading} style={{ padding:'12px 28px', background:loading ? C.card : `linear-gradient(135deg, ${C.blue}, #2563eb)`, color:loading ? C.dim : 'white', border:'none', borderRadius:10, cursor:loading?'not-allowed':'pointer', fontWeight:700, fontSize:14, fontFamily:sansFont }}>
-          {loading ? 'Scanning...' : 'Analyze'}
-        </button>
-      </div>
-
       <div style={{ marginBottom:10 }}>
         {showPrompts ? (
-          <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
-            {promptButtons.map(q => <button key={q.l} onClick={() => { newChat(); askAgent(q.p, true); }} disabled={loading} style={{ padding:'8px 14px', background:C.card, border:`1px solid ${C.border}`, borderRadius:8, color:C.dim, fontSize:11, cursor:loading?'not-allowed':'pointer', fontFamily:font, transition:'all 0.15s', whiteSpace:'nowrap', flex:'0 0 auto' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; }}>{q.l}</button>)}
-          </div>
-        ) : (
-          <div style={{ display:'flex', gap:6, alignItems:'center', flexWrap:'wrap' }}>
-            <button onClick={() => setShowScansExpanded(!showScansExpanded)} style={{ padding:'8px 14px', background: showScansExpanded ? `${C.blue}15` : C.card, border:`1px solid ${showScansExpanded ? C.blue : C.border}`, borderRadius:8, color: showScansExpanded ? C.blue : C.dim, fontSize:11, cursor:'pointer', fontFamily:font, transition:'all 0.15s', whiteSpace:'nowrap', flex:'0 0 auto' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { if (!showScansExpanded) { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; } }}>{showScansExpanded ? '▾ Hide Scans' : '▸ Show Scans'}</button>
-            {showScansExpanded && <div style={{ width:'100%', display:'flex', flexWrap:'wrap', gap:6, marginTop:6 }}>
+          <>
+            <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
               {promptButtons.map(q => <button key={q.l} onClick={() => { newChat(); askAgent(q.p, true); }} disabled={loading} style={{ padding:'8px 14px', background:C.card, border:`1px solid ${C.border}`, borderRadius:8, color:C.dim, fontSize:11, cursor:loading?'not-allowed':'pointer', fontFamily:font, transition:'all 0.15s', whiteSpace:'nowrap', flex:'0 0 auto' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; }}>{q.l}</button>)}
-            </div>}
+            </div>
+
+            <div style={{ marginTop:10, padding:16, background:C.card, border:`1px solid ${C.blue}30`, borderRadius:10 }}>
+              <div style={{ color:C.bright, fontSize:13, fontWeight:600, fontFamily:sansFont, marginBottom:8 }}>
+                Enter your tickers (up to 25, separated by commas or spaces)
+              </div>
+              <div style={{ display:'flex', gap:8 }}>
+                <input
+                  type="text"
+                  value={tickerInput}
+                  onChange={e => setTickerInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && submitPortfolio()}
+                  placeholder="NVDA, AMD, SMCI, CCJ, UEC, SMR, PLTR, CRDO..."
+                  style={{ flex:1, padding:'12px 16px', border:`1px solid ${C.border}`, borderRadius:8, background:C.bg, color:C.bright, fontSize:13, fontFamily:font, outline:'none' }}
+                />
+                <button
+                  onClick={submitPortfolio}
+                  disabled={loading || !tickerInput.trim()}
+                  style={{ padding:'10px 24px', background: loading || !tickerInput.trim() ? C.card : `linear-gradient(135deg, ${C.blue}, #2563eb)`, color: loading || !tickerInput.trim() ? C.dim : 'white', border:'none', borderRadius:8, cursor: loading || !tickerInput.trim() ? 'not-allowed' : 'pointer', fontWeight:700, fontSize:13, fontFamily:sansFont }}
+                >
+                  Review
+                </button>
+              </div>
+              <div style={{ color:C.dim, fontSize:10, fontFamily:font, marginTop:6 }}>
+                Example: NVDA, AMD, AVGO, MRVL, CRDO, SMCI, CCJ, UEC, PLTR, VRT
+              </div>
+            </div>
+
+            <div style={{ marginTop:10, padding:14, background:`linear-gradient(135deg, ${C.bg} 0%, #0e0f14 100%)`, border:`1px solid ${C.purple}20`, borderRadius:12, borderTop:`1px solid ${C.purple}30` }}>
+              <div style={{ display:'flex', gap:8, marginBottom:8, flexWrap:'wrap' }}>
+                <textarea
+                  value={screenerInput}
+                  onChange={e => setScreenerInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (screenerInput.trim()) askAgent(screenerInput); setScreenerInput(''); } }}
+                  placeholder="Screen for stocks... e.g. 'Small caps under $2B, revenue growth >30%, positive EBITDA, RSI under 40, insider buying in last 30 days'"
+                  rows={2}
+                  style={{ flex:1, padding:'10px 14px', border:`1px solid ${C.border}`, borderRadius:8, background:C.card, color:C.bright, fontSize:16, fontFamily:sansFont, outline:'none', resize:'none', lineHeight:1.5 }}
+                />
+                <button
+                  onClick={() => { if (screenerInput.trim()) { askAgent(screenerInput); setScreenerInput(''); } }}
+                  disabled={loading || !screenerInput.trim()}
+                  style={{ padding:'10px 20px', background: loading || !screenerInput.trim() ? C.card : `linear-gradient(135deg, ${C.purple}, #7c3aed)`, color: loading || !screenerInput.trim() ? C.dim : 'white', border:'none', borderRadius:8, cursor: loading || !screenerInput.trim() ? 'not-allowed' : 'pointer', fontWeight:700, fontSize:13, fontFamily:sansFont, alignSelf:'flex-end' }}
+                >
+                  Scan
+                </button>
+              </div>
+              <div style={{ display:'flex', gap:6, flexWrap:'wrap', overflowX:'auto', WebkitOverflowScrolling:'touch' }}>
+                {[
+                  {l:'Oversold + Growing', v:'Stocks with RSI under 35, revenue growth >20%, above SMA200, avg volume >300K'},
+                  {l:'Value + Momentum', v:'P/E under 20, revenue growth >15%, above SMA50 and SMA200, relative volume >1.5x'},
+                  {l:'Insider + Breakout', v:'Insider buying last 30 days, above SMA50 and SMA200, unusual volume, market cap under $10B'},
+                  {l:'High Growth Small Cap', v:'Market cap under $2B, revenue growth >30%, EPS growth >25%, positive margins'},
+                  {l:'Dividend Value', v:'Dividend yield >3%, P/E under 20, debt to equity under 0.5, market cap over $2B'},
+                  {l:'Short Squeeze Setup', v:'Short float >15%, RSI under 40, above SMA50, unusual volume, market cap under $5B'},
+                ].map(chip => (
+                  <button key={chip.l} onClick={() => setScreenerInput(chip.v)} style={{ padding:'4px 10px', background:`${C.purple}08`, border:`1px solid ${C.purple}18`, borderRadius:20, color:C.dim, fontSize:9, fontWeight:600, fontFamily:font, cursor:'pointer', transition:'all 0.15s' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.purple; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.borderColor = `${C.purple}18`; e.currentTarget.style.color = C.dim; }}>{chip.l}</button>
+                ))}
+              </div>
+            </div>
+          </>
+        ) : (
+          <div>
+            <button onClick={() => setShowScansExpanded(!showScansExpanded)} style={{ padding:'8px 14px', background: showScansExpanded ? `${C.blue}15` : C.card, border:`1px solid ${showScansExpanded ? C.blue : C.border}`, borderRadius:8, color: showScansExpanded ? C.blue : C.dim, fontSize:11, cursor:'pointer', fontFamily:font, transition:'all 0.15s', whiteSpace:'nowrap' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { if (!showScansExpanded) { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; } }}>{showScansExpanded ? '▾ Hide Scans' : '▸ Show Scans'}</button>
+            {showScansExpanded && <>
+              <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginTop:8 }}>
+                {promptButtons.map(q => <button key={q.l} onClick={() => { newChat(); askAgent(q.p, true); }} disabled={loading} style={{ padding:'8px 14px', background:C.card, border:`1px solid ${C.border}`, borderRadius:8, color:C.dim, fontSize:11, cursor:loading?'not-allowed':'pointer', fontFamily:font, transition:'all 0.15s', whiteSpace:'nowrap', flex:'0 0 auto' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; }}>{q.l}</button>)}
+              </div>
+
+              <div style={{ marginTop:10, padding:16, background:C.card, border:`1px solid ${C.blue}30`, borderRadius:10 }}>
+                <div style={{ color:C.bright, fontSize:13, fontWeight:600, fontFamily:sansFont, marginBottom:8 }}>
+                  Enter your tickers (up to 25, separated by commas or spaces)
+                </div>
+                <div style={{ display:'flex', gap:8 }}>
+                  <input
+                    type="text"
+                    value={tickerInput}
+                    onChange={e => setTickerInput(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && submitPortfolio()}
+                    placeholder="NVDA, AMD, SMCI, CCJ, UEC, SMR, PLTR, CRDO..."
+                    style={{ flex:1, padding:'12px 16px', border:`1px solid ${C.border}`, borderRadius:8, background:C.bg, color:C.bright, fontSize:13, fontFamily:font, outline:'none' }}
+                  />
+                  <button
+                    onClick={submitPortfolio}
+                    disabled={loading || !tickerInput.trim()}
+                    style={{ padding:'10px 24px', background: loading || !tickerInput.trim() ? C.card : `linear-gradient(135deg, ${C.blue}, #2563eb)`, color: loading || !tickerInput.trim() ? C.dim : 'white', border:'none', borderRadius:8, cursor: loading || !tickerInput.trim() ? 'not-allowed' : 'pointer', fontWeight:700, fontSize:13, fontFamily:sansFont }}
+                  >
+                    Review
+                  </button>
+                </div>
+                <div style={{ color:C.dim, fontSize:10, fontFamily:font, marginTop:6 }}>
+                  Example: NVDA, AMD, AVGO, MRVL, CRDO, SMCI, CCJ, UEC, PLTR, VRT
+                </div>
+              </div>
+
+              <div style={{ marginTop:10, padding:14, background:`linear-gradient(135deg, ${C.bg} 0%, #0e0f14 100%)`, border:`1px solid ${C.purple}20`, borderRadius:12, borderTop:`1px solid ${C.purple}30` }}>
+                <div style={{ display:'flex', gap:8, marginBottom:8, flexWrap:'wrap' }}>
+                  <textarea
+                    value={screenerInput}
+                    onChange={e => setScreenerInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (screenerInput.trim()) askAgent(screenerInput); setScreenerInput(''); } }}
+                    placeholder="Screen for stocks... e.g. 'Small caps under $2B, revenue growth >30%, positive EBITDA, RSI under 40, insider buying in last 30 days'"
+                    rows={2}
+                    style={{ flex:1, padding:'10px 14px', border:`1px solid ${C.border}`, borderRadius:8, background:C.card, color:C.bright, fontSize:16, fontFamily:sansFont, outline:'none', resize:'none', lineHeight:1.5 }}
+                  />
+                  <button
+                    onClick={() => { if (screenerInput.trim()) { askAgent(screenerInput); setScreenerInput(''); } }}
+                    disabled={loading || !screenerInput.trim()}
+                    style={{ padding:'10px 20px', background: loading || !screenerInput.trim() ? C.card : `linear-gradient(135deg, ${C.purple}, #7c3aed)`, color: loading || !screenerInput.trim() ? C.dim : 'white', border:'none', borderRadius:8, cursor: loading || !screenerInput.trim() ? 'not-allowed' : 'pointer', fontWeight:700, fontSize:13, fontFamily:sansFont, alignSelf:'flex-end' }}
+                  >
+                    Scan
+                  </button>
+                </div>
+                <div style={{ display:'flex', gap:6, flexWrap:'wrap', overflowX:'auto', WebkitOverflowScrolling:'touch' }}>
+                  {[
+                    {l:'Oversold + Growing', v:'Stocks with RSI under 35, revenue growth >20%, above SMA200, avg volume >300K'},
+                    {l:'Value + Momentum', v:'P/E under 20, revenue growth >15%, above SMA50 and SMA200, relative volume >1.5x'},
+                    {l:'Insider + Breakout', v:'Insider buying last 30 days, above SMA50 and SMA200, unusual volume, market cap under $10B'},
+                    {l:'High Growth Small Cap', v:'Market cap under $2B, revenue growth >30%, EPS growth >25%, positive margins'},
+                    {l:'Dividend Value', v:'Dividend yield >3%, P/E under 20, debt to equity under 0.5, market cap over $2B'},
+                    {l:'Short Squeeze Setup', v:'Short float >15%, RSI under 40, above SMA50, unusual volume, market cap under $5B'},
+                  ].map(chip => (
+                    <button key={chip.l} onClick={() => setScreenerInput(chip.v)} style={{ padding:'4px 10px', background:`${C.purple}08`, border:`1px solid ${C.purple}18`, borderRadius:20, color:C.dim, fontSize:9, fontWeight:600, fontFamily:font, cursor:'pointer', transition:'all 0.15s' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.purple; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.borderColor = `${C.purple}18`; e.currentTarget.style.color = C.dim; }}>{chip.l}</button>
+                  ))}
+                </div>
+              </div>
+            </>}
           </div>
         )}
-
-        <div style={{ marginTop:10, padding:16, background:C.card, border:`1px solid ${C.blue}30`, borderRadius:10 }}>
-          <div style={{ color:C.bright, fontSize:13, fontWeight:600, fontFamily:sansFont, marginBottom:8 }}>
-            Enter your tickers (up to 25, separated by commas or spaces)
-          </div>
-          <div style={{ display:'flex', gap:8 }}>
-            <input
-              type="text"
-              value={tickerInput}
-              onChange={e => setTickerInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && submitPortfolio()}
-              placeholder="NVDA, AMD, SMCI, CCJ, UEC, SMR, PLTR, CRDO..."
-              style={{ flex:1, padding:'12px 16px', border:`1px solid ${C.border}`, borderRadius:8, background:C.bg, color:C.bright, fontSize:13, fontFamily:font, outline:'none' }}
-            />
-            <button
-              onClick={submitPortfolio}
-              disabled={loading || !tickerInput.trim()}
-              style={{ padding:'10px 24px', background: loading || !tickerInput.trim() ? C.card : `linear-gradient(135deg, ${C.blue}, #2563eb)`, color: loading || !tickerInput.trim() ? C.dim : 'white', border:'none', borderRadius:8, cursor: loading || !tickerInput.trim() ? 'not-allowed' : 'pointer', fontWeight:700, fontSize:13, fontFamily:sansFont }}
-            >
-              Review
-            </button>
-          </div>
-          <div style={{ color:C.dim, fontSize:10, fontFamily:font, marginTop:6 }}>
-            Example: NVDA, AMD, AVGO, MRVL, CRDO, SMCI, CCJ, UEC, PLTR, VRT
-          </div>
-        </div>
-
-        <div style={{ marginTop:10, padding:14, background:`linear-gradient(135deg, ${C.bg} 0%, #0e0f14 100%)`, border:`1px solid ${C.purple}20`, borderRadius:12, borderTop:`1px solid ${C.purple}30` }}>
-          <div style={{ display:'flex', gap:8, marginBottom:8, flexWrap:'wrap' }}>
-            <textarea
-              value={screenerInput}
-              onChange={e => setScreenerInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (screenerInput.trim()) askAgent(screenerInput); setScreenerInput(''); } }}
-              placeholder="Screen for stocks... e.g. 'Small caps under $2B, revenue growth >30%, positive EBITDA, RSI under 40, insider buying in last 30 days'"
-              rows={2}
-              style={{ flex:1, padding:'10px 14px', border:`1px solid ${C.border}`, borderRadius:8, background:C.card, color:C.bright, fontSize:16, fontFamily:sansFont, outline:'none', resize:'none', lineHeight:1.5 }}
-            />
-            <button
-              onClick={() => { if (screenerInput.trim()) { askAgent(screenerInput); setScreenerInput(''); } }}
-              disabled={loading || !screenerInput.trim()}
-              style={{ padding:'10px 20px', background: loading || !screenerInput.trim() ? C.card : `linear-gradient(135deg, ${C.purple}, #7c3aed)`, color: loading || !screenerInput.trim() ? C.dim : 'white', border:'none', borderRadius:8, cursor: loading || !screenerInput.trim() ? 'not-allowed' : 'pointer', fontWeight:700, fontSize:13, fontFamily:sansFont, alignSelf:'flex-end' }}
-            >
-              Scan
-            </button>
-          </div>
-          <div style={{ display:'flex', gap:6, flexWrap:'wrap', overflowX:'auto', WebkitOverflowScrolling:'touch' }}>
-            {[
-              {l:'Oversold + Growing', v:'Stocks with RSI under 35, revenue growth >20%, above SMA200, avg volume >300K'},
-              {l:'Value + Momentum', v:'P/E under 20, revenue growth >15%, above SMA50 and SMA200, relative volume >1.5x'},
-              {l:'Insider + Breakout', v:'Insider buying last 30 days, above SMA50 and SMA200, unusual volume, market cap under $10B'},
-              {l:'High Growth Small Cap', v:'Market cap under $2B, revenue growth >30%, EPS growth >25%, positive margins'},
-              {l:'Dividend Value', v:'Dividend yield >3%, P/E under 20, debt to equity under 0.5, market cap over $2B'},
-              {l:'Short Squeeze Setup', v:'Short float >15%, RSI under 40, above SMA50, unusual volume, market cap under $5B'},
-            ].map(chip => (
-              <button key={chip.l} onClick={() => setScreenerInput(chip.v)} style={{ padding:'4px 10px', background:`${C.purple}08`, border:`1px solid ${C.purple}18`, borderRadius:20, color:C.dim, fontSize:9, fontWeight:600, fontFamily:font, cursor:'pointer', transition:'all 0.15s' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.purple; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.borderColor = `${C.purple}18`; e.currentTarget.style.color = C.dim; }}>{chip.l}</button>
-            ))}
-          </div>
-        </div>
       </div>
 
       <div style={{ marginBottom:12 }}>
@@ -1263,6 +1317,14 @@ export default function TradingAgent() {
         </div>}
 
         <div ref={scrollAnchorRef} />
+      </div>
+
+      <div style={{ display:'flex', gap:8 }}>
+        {messages.length > 0 && <button onClick={newChat} style={{ padding:'12px 14px', background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.dim, fontSize:11, cursor:'pointer', fontFamily:font, transition:'all 0.15s', whiteSpace:'nowrap' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; }}>+ New</button>}
+        <input type="text" value={prompt} onChange={e => setPrompt(e.target.value)} onKeyDown={e => e.key === 'Enter' && askAgent()} placeholder={messages.length > 0 ? "Ask a follow-up..." : "Best trades today... Analyze NVDA... Best improving fundamentals..."} style={{ flex:1, padding:'14px 18px', border:`1px solid ${C.border}`, borderRadius:10, background:C.bg, color:C.bright, fontSize:16, fontFamily:sansFont, outline:'none' }} />
+        <button onClick={() => askAgent()} disabled={loading} style={{ padding:'12px 28px', background:loading ? C.card : `linear-gradient(135deg, ${C.blue}, #2563eb)`, color:loading ? C.dim : 'white', border:'none', borderRadius:10, cursor:loading?'not-allowed':'pointer', fontWeight:700, fontSize:14, fontFamily:sansFont }}>
+          {loading ? 'Scanning...' : 'Analyze'}
+        </button>
       </div>
 
       <style>{`
