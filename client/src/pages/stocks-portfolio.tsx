@@ -66,59 +66,6 @@ export default function StocksPortfolioPage() {
             </div>
           </GlassCard>
 
-          <GlassCard className="p-3 sm:p-4 lg:p-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
-              <div className="flex items-center gap-2">
-                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-gray-500 to-slate-500 rounded-full flex items-center justify-center">
-                  <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-                </div>
-                <h3 className="text-lg sm:text-xl font-semibold text-white">Other Tools</h3>
-                <Badge className="bg-gray-500/20 text-gray-400 border-gray-500/30 text-xs">ADDITIONAL RESOURCES</Badge>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              <button onClick={() => openInNewTab('https://atypica.ai/study')} className="bg-gradient-to-br from-indigo-500/10 to-indigo-600/10 hover:from-indigo-500/20 hover:to-indigo-600/20 border border-indigo-500/20 hover:border-indigo-400/40 rounded-lg p-4 transition-all duration-300 text-left group">
-                <div className="text-sm font-medium text-white group-hover:text-indigo-300 mb-1">Atypica AI Study</div>
-                <div className="text-xs text-crypto-silver">AI-driven market research and analysis</div>
-              </button>
-              
-              <button onClick={() => openInNewTab('https://www.tipranks.com/dashboard')} className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group">
-                <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">TipRanks</div>
-                <div className="text-xs text-crypto-silver">Analyst ratings and stock insights</div>
-              </button>
-              
-              <button onClick={() => openInNewTab('https://www.marketwatch.com/')} className="bg-gradient-to-br from-green-500/10 to-green-600/10 hover:from-green-500/20 hover:to-green-600/20 border border-green-500/20 hover:border-green-400/40 rounded-lg p-4 transition-all duration-300 text-left group">
-                <div className="text-sm font-medium text-white group-hover:text-green-300 mb-1">MarketWatch</div>
-                <div className="text-xs text-crypto-silver">Financial news and market data</div>
-              </button>
-              
-              <button onClick={() => openInNewTab('https://www.barchart.com/news/chart-of-the-day')} className="bg-gradient-to-br from-orange-500/10 to-orange-600/10 hover:from-orange-500/20 hover:to-orange-600/20 border border-orange-500/20 hover:border-orange-400/40 rounded-lg p-4 transition-all duration-300 text-left group">
-                <div className="text-sm font-medium text-white group-hover:text-orange-300 mb-1">Chart of the day</div>
-                <div className="text-xs text-crypto-silver">Daily featured charts and market insights</div>
-              </button>
-              
-              <button onClick={() => openInNewTab('https://www.screener.in/explore/')} className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group">
-                <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">Screener.in</div>
-                <div className="text-xs text-crypto-silver">Indian stock screening and exploration</div>
-              </button>
-              
-              <button onClick={() => openInNewTab('https://seekingalpha.com/etfs-and-funds/etf-tables/key_markets')} className="bg-gradient-to-br from-orange-500/10 to-amber-600/10 hover:from-orange-500/20 hover:to-amber-600/20 border border-orange-500/20 hover:border-orange-400/40 rounded-lg p-4 transition-all duration-300 text-left group">
-                <div className="text-sm font-medium text-white group-hover:text-orange-300 mb-1">Seeking Alpha ETFs</div>
-                <div className="text-xs text-crypto-silver">ETF tables and key market funds</div>
-              </button>
-              
-              <button onClick={() => openInNewTab('https://app.askedgar.io/')} className="bg-gradient-to-br from-amber-500/10 to-yellow-600/10 hover:from-amber-500/20 hover:to-yellow-600/20 border border-amber-500/20 hover:border-amber-400/40 rounded-lg p-4 transition-all duration-300 text-left group">
-                <div className="text-sm font-medium text-white group-hover:text-amber-300 mb-1">AskEdgar</div>
-                <div className="text-xs text-crypto-silver">SEC filings and company documents</div>
-              </button>
-              
-              <button onClick={() => openInNewTab('https://www.kavout.com/')} className="bg-gradient-to-br from-teal-500/10 to-teal-600/10 hover:from-teal-500/20 hover:to-teal-600/20 border border-teal-500/20 hover:border-teal-400/40 rounded-lg p-4 transition-all duration-300 text-left group">
-                <div className="text-sm font-medium text-white group-hover:text-teal-300 mb-1">Kavout</div>
-                <div className="text-xs text-crypto-silver">AI-powered investment research platform</div>
-              </button>
-            </div>
-          </GlassCard>
         </div>
       </main>
     </div>
