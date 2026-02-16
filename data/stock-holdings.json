@@ -1,0 +1,16 @@
+[
+  {
+    "id": "mlphq0sfm9uo2",
+    "ticker": "IREN",
+    "shares": 100,
+    "avgCost": 10,
+    "addedAt": "2026-02-16T18:11:01.119Z"
+  },
+  {
+    "id": "mlphqg5ejxr2d",
+    "ticker": "CIFR",
+    "shares": 100,
+    "avgCost": 2,
+    "addedAt": "2026-02-16T18:11:21.026Z"
+  }
+]

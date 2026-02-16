@@ -11,8 +11,38 @@ import { MarketOverviewService } from './market-overview-service';
 import { cmcPortfolioService } from './cmc-portfolio-service';
 import { coinbasePortfolioService } from './coinbase-portfolio-service';
 import { ETFService } from './etf-service';
+import { fmpService } from './fmp-service';
 import { z } from "zod";
 import { insertPremiumAccessSchema } from "@shared/schema";
+import fs from 'fs';
+import path from 'path';
+
+const HOLDINGS_FILE = path.join(process.cwd(), 'data', 'stock-holdings.json');
+
+interface StockHolding {
+  id: string;
+  ticker: string;
+  shares: number;
+  avgCost: number;
+  addedAt: string;
+}
+
+function ensureDataDir() {
+  const dir = path.dirname(HOLDINGS_FILE);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+}
+
+function readHoldings(): StockHolding[] {
+  ensureDataDir();
+  if (!fs.existsSync(HOLDINGS_FILE)) return [];
+  try { return JSON.parse(fs.readFileSync(HOLDINGS_FILE, 'utf-8')); }
+  catch { return []; }
+}
+
+function writeHoldings(holdings: StockHolding[]) {
+  ensureDataDir();
+  fs.writeFileSync(HOLDINGS_FILE, JSON.stringify(holdings, null, 2));
+}
 
 // Security imports
 import { 
@@ -848,6 +878,132 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: "Prices updated successfully" });
     } catch (error) {
       res.status(500).json({ message: "Failed to update prices" });
+    }
+  });
+
+  // === AI Portfolio Review (server-side proxy) ===
+  app.post('/api/portfolio-review', async (req, res) => {
+    try {
+      const { tickers } = req.body;
+      if (!tickers || !Array.isArray(tickers) || tickers.length < 1) {
+        return res.status(400).json({ error: 'At least 1 ticker is required' });
+      }
+      const agentUrl = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
+      const agentKey = 'hippo_ak_7f3x9k2m4p8q1w5t';
+      const response = await fetch(`${agentUrl}/api/watchlist`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-API-Key': agentKey },
+        body: JSON.stringify({ tickers: tickers.slice(0, 25) }),
+      });
+      if (!response.ok) {
+        return res.status(response.status).json({ error: `Agent returned ${response.status}` });
+      }
+      const data = await response.json();
+      res.json(data);
+    } catch (error) {
+      console.error('Portfolio review error:', error);
+      res.status(500).json({ error: 'Failed to get portfolio review' });
+    }
+  });
+
+  // === Stock Portfolio Holdings (JSON file storage) ===
+  app.get('/api/stock-holdings', (req, res) => {
+    try {
+      const holdings = readHoldings();
+      res.json(holdings);
+    } catch (error) {
+      console.error('Error reading holdings:', error);
+      res.status(500).json({ error: 'Failed to read holdings' });
+    }
+  });
+
+  app.post('/api/stock-holdings', (req, res) => {
+    try {
+      const { ticker, shares, avgCost } = req.body;
+      if (!ticker || !shares || !avgCost) {
+        return res.status(400).json({ error: 'ticker, shares, and avgCost are required' });
+      }
+      const holdings = readHoldings();
+      const newHolding: StockHolding = {
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+        ticker: ticker.toUpperCase().trim(),
+        shares: Number(shares),
+        avgCost: Number(avgCost),
+        addedAt: new Date().toISOString(),
+      };
+      holdings.push(newHolding);
+      writeHoldings(holdings);
+      res.json(newHolding);
+    } catch (error) {
+      console.error('Error adding holding:', error);
+      res.status(500).json({ error: 'Failed to add holding' });
+    }
+  });
+
+  app.put('/api/stock-holdings/:id', (req, res) => {
+    try {
+      const { id } = req.params;
+      const { shares, avgCost } = req.body;
+      const holdings = readHoldings();
+      const idx = holdings.findIndex(h => h.id === id);
+      if (idx === -1) return res.status(404).json({ error: 'Holding not found' });
+      if (shares !== undefined) holdings[idx].shares = Number(shares);
+      if (avgCost !== undefined) holdings[idx].avgCost = Number(avgCost);
+      writeHoldings(holdings);
+      res.json(holdings[idx]);
+    } catch (error) {
+      console.error('Error updating holding:', error);
+      res.status(500).json({ error: 'Failed to update holding' });
+    }
+  });
+
+  app.delete('/api/stock-holdings/:id', (req, res) => {
+    try {
+      const { id } = req.params;
+      let holdings = readHoldings();
+      holdings = holdings.filter(h => h.id !== id);
+      writeHoldings(holdings);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting holding:', error);
+      res.status(500).json({ error: 'Failed to delete holding' });
+    }
+  });
+
+  // === FMP Stock Data Proxy Endpoints ===
+  app.get('/api/fmp/quotes', async (req, res) => {
+    try {
+      const symbols = (req.query.symbols as string || '').split(',').filter(Boolean);
+      if (symbols.length === 0) return res.json([]);
+      const quotes = await fmpService.getStockDetails(symbols);
+      res.json(quotes);
+    } catch (error) {
+      console.error('FMP quotes error:', error);
+      res.status(500).json({ error: 'Failed to fetch quotes' });
+    }
+  });
+
+  app.get('/api/fmp/price-targets', async (req, res) => {
+    try {
+      const symbols = (req.query.symbols as string || '').split(',').filter(Boolean);
+      if (symbols.length === 0) return res.json([]);
+      const targets = await fmpService.getPriceTargets(symbols);
+      res.json(targets);
+    } catch (error) {
+      console.error('FMP price targets error:', error);
+      res.status(500).json({ error: 'Failed to fetch price targets' });
+    }
+  });
+
+  app.get('/api/fmp/events', async (req, res) => {
+    try {
+      const symbols = (req.query.symbols as string || '').split(',').filter(Boolean);
+      if (symbols.length === 0) return res.json({ earnings: [], dividends: [] });
+      const events = await fmpService.getHoldingsEvents(symbols);
+      res.json(events);
+    } catch (error) {
+      console.error('FMP events error:', error);
+      res.status(500).json({ error: 'Failed to fetch events' });
     }
   });
 
