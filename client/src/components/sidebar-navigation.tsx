@@ -428,7 +428,7 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
             ? `right-0 w-full transform transition-transform duration-300 ease-in-out ${
                 isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
               }` 
-            : `left-0 ${isCollapsed ? 'w-16' : 'w-64'}`
+            : `left-0 ${isCollapsed ? 'w-16' : 'w-48'}`
         } bg-black/95 backdrop-blur-lg border-r border-crypto-silver/20 ${
           isMobile ? 'z-50' : 'z-40'
         } ${!isMobile ? 'transition-all duration-300 ease-in-out' : ''} flex flex-col ${className}`}
@@ -454,9 +454,9 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
         )}
 
       {!isMobile && (
-      <div className="flex-shrink-0 p-4 border-b border-crypto-silver/20">
-        <div className={`flex items-center ${isCollapsed && !isMobile ? 'justify-center' : 'gap-3'}`}>
-          <div className="w-12 h-12 rounded-full overflow-hidden shadow-lg">
+      <div className="flex-shrink-0 p-3 border-b border-crypto-silver/20">
+        <div className="flex items-center justify-center">
+          <div className={`${isCollapsed ? 'w-10 h-10' : 'w-9 h-9'} rounded-full overflow-hidden shadow-lg`}>
             <img 
               src={cryptoHippoImage}
               alt="TradeBlade"
@@ -464,12 +464,6 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
               data-testid="logo-cryptohippo"
             />
           </div>
-          {(!isCollapsed || isMobile) && (
-            <div className="flex flex-col">
-              <span style={{ fontSize:'1.15rem', fontWeight:800, letterSpacing:'0.12em', textTransform:'uppercase', background:'linear-gradient(135deg, #e8eaef 0%, #a78bfa 40%, #3b82f6 70%, #22c55e 100%)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', fontFamily:"'JetBrains Mono', 'SF Mono', 'Fira Code', 'Cascadia Code', monospace" }}>TradeBlade</span>
-              <span className="text-gray-400 text-xs">Trading Dashboard</span>
-            </div>
-          )}
         </div>
       </div>
       )}
