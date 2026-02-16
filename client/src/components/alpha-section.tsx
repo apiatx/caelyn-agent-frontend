@@ -137,11 +137,47 @@ export default function AlphaSection() {
               }} />
             </div>
           </div>
-          <div className="mb-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
             <div className="bg-black/40 backdrop-blur-lg border border-white/10 rounded-xl p-3 sm:p-4">
               <h3 className="text-sm font-bold text-emerald-400 mb-3 tracking-wide uppercase">Fresh Bullish EMA Crossover</h3>
               <div className="altfins-market-clip w-full" dangerouslySetInnerHTML={{
                 __html: `<altfins-market-data-component theme='no-border compact dark' type='FRESH_BULLISH_EMA_CROSSOVER' valueids='["COIN", "LAST_PRICE", "PRICE_CHANGE_1D"]' affiliateid='test_id'></altfins-market-data-component>`
+              }} />
+            </div>
+            <div className="bg-black/40 backdrop-blur-lg border border-white/10 rounded-xl p-3 sm:p-4">
+              <h3 className="text-sm font-bold text-emerald-400 mb-3 tracking-wide uppercase">Fresh Golden Crossover</h3>
+              <div className="altfins-market-clip w-full" dangerouslySetInnerHTML={{
+                __html: `<altfins-market-data-component theme='no-border compact dark' type='FRESH_GOLDEN_CROSSOVER' valueids='["COIN", "LAST_PRICE", "PRICE_CHANGE_1D"]' affiliateid='test_id'></altfins-market-data-component>`
+              }} />
+            </div>
+            <div className="bg-black/40 backdrop-blur-lg border border-white/10 rounded-xl p-3 sm:p-4">
+              <h3 className="text-sm font-bold text-emerald-400 mb-3 tracking-wide uppercase">Fresh Bullish MACD Signal Line Crossover</h3>
+              <div className="altfins-market-clip w-full" dangerouslySetInnerHTML={{
+                __html: `<altfins-market-data-component theme='no-border compact dark' type='FRESH_BULLISH_MACD_SIGNAL_LINE_CROSSOVER' valueids='["COIN", "LAST_PRICE", "PRICE_CHANGE_1D"]' affiliateid='test_id'></altfins-market-data-component>`
+              }} />
+            </div>
+            <div className="bg-black/40 backdrop-blur-lg border border-white/10 rounded-xl p-3 sm:p-4">
+              <h3 className="text-sm font-bold text-emerald-400 mb-3 tracking-wide uppercase">New Local High</h3>
+              <div className="altfins-market-clip w-full" dangerouslySetInnerHTML={{
+                __html: `<altfins-market-data-component theme='no-border compact dark' type='NEW_LOCAL_HIGH' valueids='["COIN", "LAST_PRICE", "PRICE_CHANGE_1D"]' affiliateid='test_id'></altfins-market-data-component>`
+              }} />
+            </div>
+            <div className="bg-black/40 backdrop-blur-lg border border-white/10 rounded-xl p-3 sm:p-4">
+              <h3 className="text-sm font-bold text-amber-400 mb-3 tracking-wide uppercase">Very Overbought Coins</h3>
+              <div className="altfins-market-clip w-full" dangerouslySetInnerHTML={{
+                __html: `<altfins-market-data-component theme='no-border compact dark' type='VERY_OVERBOUGHT_COINS' valueids='["COIN", "LAST_PRICE", "PRICE_CHANGE_1D", "MACD_BS_SIGNAL", "RSI14", "IR_RSI14"]' affiliateid='test_id'></altfins-market-data-component>`
+              }} />
+            </div>
+            <div className="bg-black/40 backdrop-blur-lg border border-white/10 rounded-xl p-3 sm:p-4">
+              <h3 className="text-sm font-bold text-red-400 mb-3 tracking-wide uppercase">Very Oversold Coins</h3>
+              <div className="altfins-market-clip w-full" dangerouslySetInnerHTML={{
+                __html: `<altfins-market-data-component theme='no-border compact dark' type='VERY_OVERSOLD_COINS' valueids='["COIN", "LAST_PRICE", "PRICE_CHANGE_1D", "MACD_BS_SIGNAL", "RSI14", "IR_RSI14"]' affiliateid='test_id'></altfins-market-data-component>`
+              }} />
+            </div>
+            <div className="bg-black/40 backdrop-blur-lg border border-white/10 rounded-xl p-3 sm:p-4 lg:col-span-2">
+              <h3 className="text-sm font-bold text-cyan-400 mb-3 tracking-wide uppercase">Oversold in Uptrend</h3>
+              <div className="altfins-market-clip w-full" dangerouslySetInnerHTML={{
+                __html: `<altfins-market-data-component theme='no-border compact dark' type='OVERSOLD_IN_UPTREND' valueids='["COIN", "LAST_PRICE", "PRICE_CHANGE_1D", "RSI14", "SHORT_TERM_SCORE", "MEDIUM_TERM_SCORE", "LONG_TERM_SCORE"]' affiliateid='test_id'></altfins-market-data-component>`
               }} />
             </div>
           </div>
