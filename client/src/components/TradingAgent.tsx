@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 const AGENT_BACKEND_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
 const AGENT_API_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
@@ -12,7 +12,7 @@ interface AgentResult {
 export default function TradingAgent() {
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<AgentResult | null>(null);
+  const [messages, setMessages] = useState<Array<{role: string, content: string, parsed?: any}>>([]);
   const [error, setError] = useState<string | null>(null);
   const [chatHistory, setChatHistory] = useState<Array<{role: string, content: string}>>([]);
   const [loadingStage, setLoadingStage] = useState('');
@@ -23,8 +23,24 @@ export default function TradingAgent() {
   const [screenerInput, setScreenerInput] = useState('');
   const [screenerSortCol, setScreenerSortCol] = useState('');
   const [screenerSortAsc, setScreenerSortAsc] = useState(true);
+  const [showPrompts, setShowPrompts] = useState(true);
+  const [showScansExpanded, setShowScansExpanded] = useState(false);
+  const scrollAnchorRef = useRef<HTMLDivElement>(null);
 
-  async function askAgent(customPrompt?: string) {
+  useEffect(() => {
+    scrollAnchorRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, loading]);
+
+  function newChat() {
+    setMessages([]);
+    setChatHistory([]);
+    setShowPrompts(true);
+    setShowScansExpanded(false);
+    setError(null);
+    setExpandedTicker(null);
+  }
+
+  async function askAgent(customPrompt?: string, freshChat?: boolean) {
     const q = customPrompt || prompt;
 
     if (q === '__PORTFOLIO__') {
@@ -33,8 +49,12 @@ export default function TradingAgent() {
     }
 
     if (!q.trim()) return;
-    setLoading(true); setError(null); setResult(null); setExpandedTicker(null);
+    setLoading(true); setError(null); setExpandedTicker(null);
     setPrompt('');
+    setShowPrompts(false);
+    setMessages(prev => [...prev, {role: 'user', content: q.trim()}]);
+
+    const historyToSend = freshChat ? [] : chatHistory.slice(-20);
 
     setLoadingStage('Classifying query...');
     const stages = ['Scanning market data...','Pulling technicals & volume...','Checking social sentiment...','Analyzing insider activity...','Fetching options flow...','Reading macro indicators...','Generating analysis...'];
@@ -45,15 +65,17 @@ export default function TradingAgent() {
       const res = await fetch(`${AGENT_BACKEND_URL}/api/query`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-API-Key': AGENT_API_KEY },
-        body: JSON.stringify({ prompt: q.trim(), history: chatHistory.slice(-20) }),
+        body: JSON.stringify({ prompt: q.trim(), history: historyToSend }),
       });
       if (!res.ok) throw new Error(`Status ${res.status}`);
       const data = await res.json();
       if (data.error) throw new Error(data.error);
-      setResult(data);
+      setMessages(prev => [...prev, {role: 'assistant', content: data.analysis || '', parsed: data}]);
       setChatHistory(prev => [...prev, {role:'user',content:q.trim()}, {role:'assistant',content:data.analysis||''}]);
     } catch (err: any) {
-      setError(err.message.includes('429') ? 'Rate limit reached. Wait a moment.' : err.message.includes('403') ? 'Auth failed.' : err.message);
+      const errMsg = err.message.includes('429') ? 'Rate limit reached. Wait a moment.' : err.message.includes('403') ? 'Auth failed.' : err.message;
+      setError(errMsg);
+      setMessages(prev => [...prev, {role: 'assistant', content: errMsg}]);
     } finally { clearInterval(iv); setLoadingStage(''); setLoading(false); }
   }
 
@@ -1092,43 +1114,76 @@ export default function TradingAgent() {
     </div>;
   }
 
-  const s = result?.structured || {};
+  const knownTypes = ['trades','investments','fundamentals','technicals','analysis','dashboard','sector_rotation','earnings_catalyst','commodities','portfolio','briefing','crypto','trending','screener'];
+
+  function renderAssistantMessage(msg: {role: string, content: string, parsed?: any}) {
+    const s = msg.parsed?.structured || {};
+    const displayType = s.display_type;
+    return <div>
+      {displayType === 'trades' && renderTrades(s)}
+      {displayType === 'investments' && renderInvestments(s)}
+      {displayType === 'fundamentals' && renderFundamentals(s)}
+      {displayType === 'technicals' && renderTechnicals(s)}
+      {displayType === 'analysis' && renderAnalysis(s)}
+      {displayType === 'trending' && renderTrades(s)}
+      {displayType === 'screener' && renderScreener(s)}
+      {displayType === 'crypto' && renderCrypto(s)}
+      {displayType === 'briefing' && renderBriefing(s)}
+      {displayType === 'portfolio' && renderPortfolio(s)}
+      {displayType === 'commodities' && renderCommodities(s)}
+      {displayType === 'sector_rotation' && renderSectorRotation(s)}
+      {displayType === 'earnings_catalyst' && renderEarningsCatalyst(s)}
+      {(displayType === 'chat' || !knownTypes.includes(displayType)) && <div style={{ padding:22, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont }} dangerouslySetInnerHTML={{ __html: formatAnalysis(msg.parsed?.analysis || msg.content) }} />}
+      {displayType !== 'chat' && msg.parsed?.analysis && <div style={{ marginTop:16, padding:22, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont }} dangerouslySetInnerHTML={{ __html: formatAnalysis(msg.parsed.analysis) }} />}
+    </div>;
+  }
+
+  const promptButtons = [
+    {l:'🔥 Trending Now', p:'What stocks are trending across ALL platforms right now? Cross-reference StockTwits, Yahoo Finance, StockAnalysis, Finviz, and Polygon. Show me which stocks appear on the MOST platforms simultaneously — that\'s the strongest signal. For each trending stock show me: which platforms it\'s on, why it\'s trending, social sentiment, TA summary, StockAnalysis fundamentals (revenue, margins, valuation), analyst consensus, and whether it\'s trending because of real fundamentals or just hype. Flag any divergences where a stock is trending on some platforms but not others.'},
+    {l:'✧ Daily Briefing', p:'Give me the full daily intelligence briefing. Market pulse, key numbers (SPY, QQQ, VIX, Fear & Greed, DXY, 10Y yield, oil, gold), what is moving across all scanners, the top signal from each category (best TA setup, best fundamental play, hottest social name, top squeeze, biggest volume spike, strongest sector), and your top 3-5 highest conviction actionable moves today with full trade plans. I want to know exactly what to do in 60 seconds.'},
+    {l:'🌍 Macro Overview', p:'Full macro dashboard. Fed funds rate and next decision date, CPI and Core PCE latest readings plus trend, yield curve (2Y vs 10Y spread — inverted or normalizing?), VIX level and trend, Fear & Greed Index, DXY trend and what it means for stocks and commodities, oil and gold prices. Tell me: is it risk-on or risk-off right now? Which sectors should I favor? What is the liquidity environment? What economic data releases are coming this week that could move markets? Should I be increasing or decreasing leverage based on current conditions?'},
+    {l:'🔄 Sector Rotation', p:'Full sector rotation analysis. Show me every major sector ETF (XLK, XLV, XLF, XLE, XLI, XLP, XLY, XLB, XLU, XLRE, XLC) plus thematic ETFs (SMH, URA, HACK, XBI). For each: today\'s performance, RSI, trend direction, and relative strength vs SPY. Which sectors are LEADING (outperforming SPY)? Which are LAGGING? Where is institutional money rotating TO and FROM? What does the DXY and yield curve tell us about where to be allocated?'},
+    {l:'📊 Stage 2 Breakouts', p:'Using Weinstein Stage Analysis, show me which sectors have the highest percentage of stocks in Stage 2 (above both SMA50 and SMA200). Then from the TOP Stage 2 sectors, find individual stocks that are breaking out RIGHT NOW on unusual volume (1.5x+ average). For each breakout candidate show me: sector, price vs SMA50/SMA200, relative volume, StockAnalysis fundamentals (revenue growth, margins, P/E), analyst consensus, and a trade plan with entry/stop/target. I only want stocks from sectors where 50%+ of stocks are in Stage 2 — Weinstein says never buy stocks in weak sectors.'},
+    {l:'🔥 Best Trades', p:'Show me the best trade SETUPS right now — I want stocks with multiple technical indicators aligning: MACD crossovers, RSI in the 50-65 sweet spot, price above rising 20 and 50 SMAs, volume 2x+ average CONFIRMING the move. Stage 2 breakouts only. Show me the quant score, every TA indicator, social sentiment, and a trade plan with entry/stop/target for each. I want setups, not stocks that already pumped.'},
+    {l:'💎 Best Investments', p:'Show me the best investment opportunities — stocks with ACCELERATING revenue growth (QoQ and YoY), expanding EBITDA margins, low P/S relative to growth rate, insider buying, and analyst upgrades. Run the SQGLP framework on each. I want to see the fundamental numbers: revenue growth rate, margin trajectory, valuation multiples, earnings beat streak. Show me stocks where fundamentals are improving AND the chart confirms with a Stage 2 trend.'},
+    {l:'📈 Improving Fundamentals', p:'Scan the market for stocks with the most rapidly improving financial metrics. I want to see: revenue acceleration (growth rate increasing quarter over quarter), EBITDA margin expansion, companies turning profitable for the first time, raised guidance, consecutive earnings beats, and improving free cash flow. Show me the actual numbers in a table — revenue growth %, EBITDA margin %, net income trend, EPS surprise %. Rank by rate of fundamental improvement.'},
+    {l:'⚡ Asymmetric Only', p:'Only show me asymmetric setups with 4:1+ risk/reward minimum. I want: compressed valuation (low P/S vs peers AND vs own history), clear catalyst within 1-3 months, defined floor (tangible book value, cash on balance sheet, insider buying as support), improving fundamentals (revenue accelerating, margins expanding), and a technical entry point. Show me the math: worst case floor price, base case target, best case target, and the probability-weighted expected return.'},
+    {l:'📅 Earnings Watch', p:'Show me the most important upcoming earnings in the next 7 days, ranked by volatility potential. For each show me: earnings date, EPS/revenue estimates, beat streak (how many consecutive beats), implied move from options, average historical move on earnings, pre-earnings technical setup, sentiment, and a suggested play (buy calls, sell puts, straddle, avoid). I want to know which earnings have the highest probability of a big move.'},
+    {l:'💥 Short Squeeze', p:'Scan for short squeeze setups. I need: short interest >15% of float, days to cover >3, rising borrow cost, volume surging above average, price moving UP (shorts getting squeezed, not shorts winning), positive social sentiment acceleration, and ideally a bullish catalyst. Show me short float %, days to cover, volume ratio, social buzz level, and a trade plan for each. Filter out anything with declining price — I want squeezes that are STARTING, not over.'},
+    {l:'🚀 Social Momentum', p:'Show me stocks with the FASTEST accelerating social media buzz RIGHT NOW — mentions spiking on StockTwits, Reddit, Twitter in the last 24 hours. For each show me: sentiment % bullish, volume confirmation (is volume backing up the buzz?), price action, and whether this looks like early-stage momentum or late-stage hype. I want to catch momentum EARLY, not chase.'},
+    {l:'📊 Volume Spikes', p:'Scan for the biggest volume spikes vs 30-day average today. For each show me: exact volume ratio (e.g. 4.2x average), whether price is UP or DOWN on the volume (accumulation vs distribution), what is likely causing the spike (news, earnings, insider activity?), and the technical setup. High volume + price up = institutional buying signal. High volume + price down = distribution warning.'},
+    {l:'🔻 Bearish Setups', p:'Show me the weakest stocks breaking down. I want: Stage 3 to Stage 4 transitions (price breaking below 200 SMA on volume), deteriorating fundamentals (declining revenue, shrinking margins, earnings misses), heavy insider selling, analyst downgrades, high short interest with shorts WINNING (price declining + high short interest = continued pressure). These are stocks to avoid, hedge against, or short.'},
+    {l:'🐾 Small Cap Spec', p:'Scan for speculative small cap stocks UNDER $2B market cap with: volume surging 2x+ average, positive social sentiment, price breaking above key moving averages, and a clean chart pattern. NO large caps. NO mega caps. I want high-beta, high-volatility small caps where a catalyst could cause a 20-50%+ move. Show volume ratio, short interest if high, social buzz, and a trade plan.'},
+    {l:'🤖 AI/Compute Check', p:'Momentum check on the full AI and compute infrastructure theme. For EVERY ticker in the watchlist show me: price, change today, RSI, above/below key SMAs, volume vs average, social sentiment, and relative strength vs SMH (semiconductor ETF). Rank from strongest to weakest. Which names are LEADING the theme? Which are LAGGING? Are any showing distribution (price up but volume declining)? Is the overall theme bullish, neutral, or bearish right now?'},
+    {l:'⚛️ Uranium/Nuclear', p:'Momentum check on uranium and nuclear stocks. For EVERY ticker show me: price, change today, RSI, trend vs 50 and 200 SMA, volume, sentiment. Rank strongest to weakest vs URA ETF. What is the uranium spot price doing? Any regulatory catalysts (DOE, NRC)? Is the sector in accumulation or distribution? Show me which names are leading and which are lagging the theme.'},
+    {l:'🛢️ Commodities', p:'Show me a full commodities market dashboard — oil, gold, silver, copper, uranium, natural gas. For each commodity show me price action, short and long term trends, RSI, key levels, drivers, risks, related ETFs, sentiment, and 3-month and 12-month outlook. Include DXY impact, macro factors, upcoming catalysts, and your top conviction commodity plays.'},
+    {l:'🪙 Crypto Scanner', p:'Full crypto market scan. Show me: global market state (total cap, BTC dominance, volume), funding rate analysis across all perps (which coins have crowded longs? which have squeeze potential from negative funding?), which crypto categories/narratives are leading (AI, memes, DeFi, L2, gaming), top momentum coins with social buzz + dev activity + funding rate data, and your highest conviction crypto trades with entry/stop/target. I want to see funding rate divergences — where price action disagrees with derivatives positioning.'},
+  ];
 
   return (
     <div style={{ maxWidth:1000, margin:'0 auto', fontFamily:sansFont, width:'100%', padding:'0 12px', boxSizing:'border-box' as const }}>
+      {messages.length > 0 && <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:8 }}>
+        <button onClick={newChat} style={{ padding:'6px 14px', background:C.card, border:`1px solid ${C.border}`, borderRadius:8, color:C.dim, fontSize:11, cursor:'pointer', fontFamily:font, transition:'all 0.15s' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; }}>+ New Chat</button>
+      </div>}
+
       <div style={{ marginBottom:10 }}>
-        <div style={{ display:'flex', gap:8 }}>
-          <input type="text" value={prompt} onChange={e => setPrompt(e.target.value)} onKeyDown={e => e.key === 'Enter' && askAgent()} placeholder="Best trades today... Analyze NVDA... Best improving fundamentals..." style={{ flex:1, padding:'14px 18px', border:`1px solid ${C.border}`, borderRadius:10, background:C.bg, color:C.bright, fontSize:16, fontFamily:sansFont, outline:'none' }} />
-          <button onClick={() => askAgent()} disabled={loading} style={{ padding:'12px 28px', background:loading ? C.card : `linear-gradient(135deg, ${C.blue}, #2563eb)`, color:loading ? C.dim : 'white', border:'none', borderRadius:10, cursor:loading?'not-allowed':'pointer', fontWeight:700, fontSize:14, fontFamily:sansFont }}>
-            {loading ? 'Scanning...' : 'Analyze'}
-          </button>
-        </div>
-        <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginTop:10 }}>
-          {[
-            {l:'🔥 Trending Now', p:'What stocks are trending across ALL platforms right now? Cross-reference StockTwits, Yahoo Finance, StockAnalysis, Finviz, and Polygon. Show me which stocks appear on the MOST platforms simultaneously — that\'s the strongest signal. For each trending stock show me: which platforms it\'s on, why it\'s trending, social sentiment, TA summary, StockAnalysis fundamentals (revenue, margins, valuation), analyst consensus, and whether it\'s trending because of real fundamentals or just hype. Flag any divergences where a stock is trending on some platforms but not others.'},
-            {l:'✧ Daily Briefing', p:'Give me the full daily intelligence briefing. Market pulse, key numbers (SPY, QQQ, VIX, Fear & Greed, DXY, 10Y yield, oil, gold), what is moving across all scanners, the top signal from each category (best TA setup, best fundamental play, hottest social name, top squeeze, biggest volume spike, strongest sector), and your top 3-5 highest conviction actionable moves today with full trade plans. I want to know exactly what to do in 60 seconds.'},
-            {l:'🌍 Macro Overview', p:'Full macro dashboard. Fed funds rate and next decision date, CPI and Core PCE latest readings plus trend, yield curve (2Y vs 10Y spread — inverted or normalizing?), VIX level and trend, Fear & Greed Index, DXY trend and what it means for stocks and commodities, oil and gold prices. Tell me: is it risk-on or risk-off right now? Which sectors should I favor? What is the liquidity environment? What economic data releases are coming this week that could move markets? Should I be increasing or decreasing leverage based on current conditions?'},
-            {l:'🔄 Sector Rotation', p:'Full sector rotation analysis. Show me every major sector ETF (XLK, XLV, XLF, XLE, XLI, XLP, XLY, XLB, XLU, XLRE, XLC) plus thematic ETFs (SMH, URA, HACK, XBI). For each: today\'s performance, RSI, trend direction, and relative strength vs SPY. Which sectors are LEADING (outperforming SPY)? Which are LAGGING? Where is institutional money rotating TO and FROM? What does the DXY and yield curve tell us about where to be allocated?'},
-            {l:'📊 Stage 2 Breakouts', p:'Using Weinstein Stage Analysis, show me which sectors have the highest percentage of stocks in Stage 2 (above both SMA50 and SMA200). Then from the TOP Stage 2 sectors, find individual stocks that are breaking out RIGHT NOW on unusual volume (1.5x+ average). For each breakout candidate show me: sector, price vs SMA50/SMA200, relative volume, StockAnalysis fundamentals (revenue growth, margins, P/E), analyst consensus, and a trade plan with entry/stop/target. I only want stocks from sectors where 50%+ of stocks are in Stage 2 — Weinstein says never buy stocks in weak sectors.'},
-            {l:'🔥 Best Trades', p:'Show me the best trade SETUPS right now — I want stocks with multiple technical indicators aligning: MACD crossovers, RSI in the 50-65 sweet spot, price above rising 20 and 50 SMAs, volume 2x+ average CONFIRMING the move. Stage 2 breakouts only. Show me the quant score, every TA indicator, social sentiment, and a trade plan with entry/stop/target for each. I want setups, not stocks that already pumped.'},
-            {l:'💎 Best Investments', p:'Show me the best investment opportunities — stocks with ACCELERATING revenue growth (QoQ and YoY), expanding EBITDA margins, low P/S relative to growth rate, insider buying, and analyst upgrades. Run the SQGLP framework on each. I want to see the fundamental numbers: revenue growth rate, margin trajectory, valuation multiples, earnings beat streak. Show me stocks where fundamentals are improving AND the chart confirms with a Stage 2 trend.'},
-            {l:'📈 Improving Fundamentals', p:'Scan the market for stocks with the most rapidly improving financial metrics. I want to see: revenue acceleration (growth rate increasing quarter over quarter), EBITDA margin expansion, companies turning profitable for the first time, raised guidance, consecutive earnings beats, and improving free cash flow. Show me the actual numbers in a table — revenue growth %, EBITDA margin %, net income trend, EPS surprise %. Rank by rate of fundamental improvement.'},
-            {l:'⚡ Asymmetric Only', p:'Only show me asymmetric setups with 4:1+ risk/reward minimum. I want: compressed valuation (low P/S vs peers AND vs own history), clear catalyst within 1-3 months, defined floor (tangible book value, cash on balance sheet, insider buying as support), improving fundamentals (revenue accelerating, margins expanding), and a technical entry point. Show me the math: worst case floor price, base case target, best case target, and the probability-weighted expected return.'},
-            {l:'📅 Earnings Watch', p:'Show me the most important upcoming earnings in the next 7 days, ranked by volatility potential. For each show me: earnings date, EPS/revenue estimates, beat streak (how many consecutive beats), implied move from options, average historical move on earnings, pre-earnings technical setup, sentiment, and a suggested play (buy calls, sell puts, straddle, avoid). I want to know which earnings have the highest probability of a big move.'},
-            {l:'💥 Short Squeeze', p:'Scan for short squeeze setups. I need: short interest >15% of float, days to cover >3, rising borrow cost, volume surging above average, price moving UP (shorts getting squeezed, not shorts winning), positive social sentiment acceleration, and ideally a bullish catalyst. Show me short float %, days to cover, volume ratio, social buzz level, and a trade plan for each. Filter out anything with declining price — I want squeezes that are STARTING, not over.'},
-            {l:'🚀 Social Momentum', p:'Show me stocks with the FASTEST accelerating social media buzz RIGHT NOW — mentions spiking on StockTwits, Reddit, Twitter in the last 24 hours. For each show me: sentiment % bullish, volume confirmation (is volume backing up the buzz?), price action, and whether this looks like early-stage momentum or late-stage hype. I want to catch momentum EARLY, not chase.'},
-            {l:'📊 Volume Spikes', p:'Scan for the biggest volume spikes vs 30-day average today. For each show me: exact volume ratio (e.g. 4.2x average), whether price is UP or DOWN on the volume (accumulation vs distribution), what is likely causing the spike (news, earnings, insider activity?), and the technical setup. High volume + price up = institutional buying signal. High volume + price down = distribution warning.'},
-            {l:'🔻 Bearish Setups', p:'Show me the weakest stocks breaking down. I want: Stage 3 to Stage 4 transitions (price breaking below 200 SMA on volume), deteriorating fundamentals (declining revenue, shrinking margins, earnings misses), heavy insider selling, analyst downgrades, high short interest with shorts WINNING (price declining + high short interest = continued pressure). These are stocks to avoid, hedge against, or short.'},
-            {l:'🐾 Small Cap Spec', p:'Scan for speculative small cap stocks UNDER $2B market cap with: volume surging 2x+ average, positive social sentiment, price breaking above key moving averages, and a clean chart pattern. NO large caps. NO mega caps. I want high-beta, high-volatility small caps where a catalyst could cause a 20-50%+ move. Show volume ratio, short interest if high, social buzz, and a trade plan.'},
-            {l:'🤖 AI/Compute Check', p:'Momentum check on the full AI and compute infrastructure theme. For EVERY ticker in the watchlist show me: price, change today, RSI, above/below key SMAs, volume vs average, social sentiment, and relative strength vs SMH (semiconductor ETF). Rank from strongest to weakest. Which names are LEADING the theme? Which are LAGGING? Are any showing distribution (price up but volume declining)? Is the overall theme bullish, neutral, or bearish right now?'},
-            {l:'⚛️ Uranium/Nuclear', p:'Momentum check on uranium and nuclear stocks. For EVERY ticker show me: price, change today, RSI, trend vs 50 and 200 SMA, volume, sentiment. Rank strongest to weakest vs URA ETF. What is the uranium spot price doing? Any regulatory catalysts (DOE, NRC)? Is the sector in accumulation or distribution? Show me which names are leading and which are lagging the theme.'},
-            {l:'🛢️ Commodities', p:'Show me a full commodities market dashboard — oil, gold, silver, copper, uranium, natural gas. For each commodity show me price action, short and long term trends, RSI, key levels, drivers, risks, related ETFs, sentiment, and 3-month and 12-month outlook. Include DXY impact, macro factors, upcoming catalysts, and your top conviction commodity plays.'},
-            {l:'🪙 Crypto Scanner', p:'Full crypto market scan. Show me: global market state (total cap, BTC dominance, volume), funding rate analysis across all perps (which coins have crowded longs? which have squeeze potential from negative funding?), which crypto categories/narratives are leading (AI, memes, DeFi, L2, gaming), top momentum coins with social buzz + dev activity + funding rate data, and your highest conviction crypto trades with entry/stop/target. I want to see funding rate divergences — where price action disagrees with derivatives positioning.'},
-          ].map(q => <button key={q.l} onClick={() => askAgent(q.p)} disabled={loading} style={{ padding:'8px 14px', background:C.card, border:`1px solid ${C.border}`, borderRadius:8, color:C.dim, fontSize:11, cursor:loading?'not-allowed':'pointer', fontFamily:font, transition:'all 0.15s', whiteSpace:'nowrap', flex:'0 0 auto' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; }}>{q.l}</button>)}
-          <div style={{ width:'100%', height:0, marginTop:4 }} />
-          <button onClick={() => askAgent('__PORTFOLIO__')} disabled={loading} style={{ padding:'8px 14px', background:C.card, border:`1px solid ${C.border}`, borderRadius:8, color:C.dim, fontSize:11, cursor:loading?'not-allowed':'pointer', fontFamily:font, transition:'all 0.15s', whiteSpace:'nowrap', flex:'0 0 auto' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; }}>📋 Watchlist Review</button>
-          <button onClick={() => setShowScreener(!showScreener)} style={{ padding:'8px 14px', background: showScreener ? `${C.purple}15` : C.card, border:`1px solid ${showScreener ? C.purple : C.border}`, borderRadius:8, color: showScreener ? C.purple : C.dim, fontSize:11, cursor:'pointer', fontFamily:font, transition:'all 0.15s', whiteSpace:'nowrap', flex:'0 0 auto' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.purple; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { if (!showScreener) { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; } }}>🔬 AI Screener</button>
-        </div>
+        {showPrompts ? (
+          <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+            {promptButtons.map(q => <button key={q.l} onClick={() => { newChat(); askAgent(q.p, true); }} disabled={loading} style={{ padding:'8px 14px', background:C.card, border:`1px solid ${C.border}`, borderRadius:8, color:C.dim, fontSize:11, cursor:loading?'not-allowed':'pointer', fontFamily:font, transition:'all 0.15s', whiteSpace:'nowrap', flex:'0 0 auto' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; }}>{q.l}</button>)}
+            <div style={{ width:'100%', height:0, marginTop:4 }} />
+            <button onClick={() => askAgent('__PORTFOLIO__')} disabled={loading} style={{ padding:'8px 14px', background:C.card, border:`1px solid ${C.border}`, borderRadius:8, color:C.dim, fontSize:11, cursor:loading?'not-allowed':'pointer', fontFamily:font, transition:'all 0.15s', whiteSpace:'nowrap', flex:'0 0 auto' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; }}>📋 Watchlist Review</button>
+            <button onClick={() => setShowScreener(!showScreener)} style={{ padding:'8px 14px', background: showScreener ? `${C.purple}15` : C.card, border:`1px solid ${showScreener ? C.purple : C.border}`, borderRadius:8, color: showScreener ? C.purple : C.dim, fontSize:11, cursor:'pointer', fontFamily:font, transition:'all 0.15s', whiteSpace:'nowrap', flex:'0 0 auto' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.purple; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { if (!showScreener) { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; } }}>🔬 AI Screener</button>
+          </div>
+        ) : (
+          <div style={{ display:'flex', gap:6, alignItems:'center', flexWrap:'wrap' }}>
+            <button onClick={() => setShowScansExpanded(!showScansExpanded)} style={{ padding:'8px 14px', background: showScansExpanded ? `${C.blue}15` : C.card, border:`1px solid ${showScansExpanded ? C.blue : C.border}`, borderRadius:8, color: showScansExpanded ? C.blue : C.dim, fontSize:11, cursor:'pointer', fontFamily:font, transition:'all 0.15s', whiteSpace:'nowrap', flex:'0 0 auto' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { if (!showScansExpanded) { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; } }}>{showScansExpanded ? '▾ Hide Scans' : '▸ Show Scans'}</button>
+            <button onClick={() => askAgent('__PORTFOLIO__')} disabled={loading} style={{ padding:'8px 14px', background:C.card, border:`1px solid ${C.border}`, borderRadius:8, color:C.dim, fontSize:11, cursor:loading?'not-allowed':'pointer', fontFamily:font, transition:'all 0.15s', whiteSpace:'nowrap', flex:'0 0 auto' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; }}>📋 Watchlist Review</button>
+            <button onClick={() => setShowScreener(!showScreener)} style={{ padding:'8px 14px', background: showScreener ? `${C.purple}15` : C.card, border:`1px solid ${showScreener ? C.purple : C.border}`, borderRadius:8, color: showScreener ? C.purple : C.dim, fontSize:11, cursor:'pointer', fontFamily:font, transition:'all 0.15s', whiteSpace:'nowrap', flex:'0 0 auto' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.purple; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { if (!showScreener) { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; } }}>🔬 AI Screener</button>
+            {showScansExpanded && <div style={{ width:'100%', display:'flex', flexWrap:'wrap', gap:6, marginTop:6 }}>
+              {promptButtons.map(q => <button key={q.l} onClick={() => { newChat(); askAgent(q.p, true); }} disabled={loading} style={{ padding:'8px 14px', background:C.card, border:`1px solid ${C.border}`, borderRadius:8, color:C.dim, fontSize:11, cursor:loading?'not-allowed':'pointer', fontFamily:font, transition:'all 0.15s', whiteSpace:'nowrap', flex:'0 0 auto' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; }}>{q.l}</button>)}
+            </div>}
+          </div>
+        )}
         {showScreener && (
         <div style={{ marginTop:10, padding:14, background:`linear-gradient(135deg, ${C.bg} 0%, #0e0f14 100%)`, border:`1px solid ${C.purple}20`, borderRadius:12, borderTop:`1px solid ${C.purple}30` }}>
           <div style={{ display:'flex', gap:8, marginBottom:8, flexWrap:'wrap' }}>
@@ -1197,39 +1252,39 @@ export default function TradingAgent() {
         )}
       </div>
 
-      {chatHistory.length > 0 && !loading && !result && <div style={{ padding:'8px 14px', background:C.card, border:`1px solid ${C.border}`, borderRadius:8, marginBottom:12, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-        <span style={{ color:C.dim, fontSize:11, fontFamily:font }}>{Math.floor(chatHistory.length/2)} messages in context</span>
-        <button onClick={() => setChatHistory([])} style={{ padding:'3px 10px', background:'transparent', border:`1px solid ${C.border}`, borderRadius:6, color:C.dim, fontSize:10, cursor:'pointer', fontFamily:font }}>Clear</button>
-      </div>}
+      <div style={{ marginBottom:12 }}>
+        {messages.map((msg, i) => (
+          <div key={i} style={{ marginBottom:12 }}>
+            {msg.role === 'user' ? (
+              <div style={{ display:'flex', justifyContent:'flex-end' }}>
+                <div style={{ maxWidth:'80%', padding:'12px 18px', background:`${C.purple}10`, border:`1px solid ${C.purple}20`, borderRadius:'16px 16px 4px 16px', color:C.bright, fontSize:13, fontFamily:sansFont, lineHeight:1.6 }}>{msg.content}</div>
+              </div>
+            ) : (
+              <div style={{ width:'100%' }}>
+                {renderAssistantMessage(msg)}
+              </div>
+            )}
+          </div>
+        ))}
 
-      {loading && <div style={{ textAlign:'center', padding:60, color:C.dim }}>
-        <div style={{ width:32, height:32, margin:'0 auto 16px', border:`3px solid ${C.border}`, borderTopColor:C.blue, borderRadius:'50%', animation:'agent-spin 0.7s linear infinite' }} />
-        <div style={{ fontSize:13, color:C.text, fontFamily:sansFont, marginBottom:4 }}>{loadingStage}</div>
-        <div style={{ fontSize:10, color:C.dim, fontFamily:font }}>Polygon · Finviz · StockTwits · Finnhub · EDGAR · FRED · Alpha Vantage · CNN F&G</div>
-        <div style={{ width:200, height:3, background:C.border, borderRadius:2, margin:'16px auto 0', overflow:'hidden' }}>
-          <div style={{ height:'100%', background:`linear-gradient(90deg, ${C.blue}, ${C.purple})`, borderRadius:2, animation:'agent-progress 14s ease-in-out forwards' }} />
-        </div>
-      </div>}
+        {loading && <div style={{ textAlign:'center', padding:60, color:C.dim }}>
+          <div style={{ width:32, height:32, margin:'0 auto 16px', border:`3px solid ${C.border}`, borderTopColor:C.blue, borderRadius:'50%', animation:'agent-spin 0.7s linear infinite' }} />
+          <div style={{ fontSize:13, color:C.text, fontFamily:sansFont, marginBottom:4 }}>{loadingStage}</div>
+          <div style={{ fontSize:10, color:C.dim, fontFamily:font }}>Polygon · Finviz · StockTwits · Finnhub · EDGAR · FRED · Alpha Vantage · CNN F&G</div>
+          <div style={{ width:200, height:3, background:C.border, borderRadius:2, margin:'16px auto 0', overflow:'hidden' }}>
+            <div style={{ height:'100%', background:`linear-gradient(90deg, ${C.blue}, ${C.purple})`, borderRadius:2, animation:'agent-progress 14s ease-in-out forwards' }} />
+          </div>
+        </div>}
 
-      {error && <div style={{ color:C.red, padding:20, textAlign:'center', background:C.card, border:`1px solid ${C.border}`, borderRadius:10 }}>{error}</div>}
+        <div ref={scrollAnchorRef} />
+      </div>
 
-      {result && <div>
-        {s.display_type === 'trades' && renderTrades(s)}
-        {s.display_type === 'investments' && renderInvestments(s)}
-        {s.display_type === 'fundamentals' && renderFundamentals(s)}
-        {s.display_type === 'technicals' && renderTechnicals(s)}
-        {s.display_type === 'analysis' && renderAnalysis(s)}
-        {s.display_type === 'trending' && renderTrades(s)}
-        {s.display_type === 'screener' && renderScreener(s)}
-        {s.display_type === 'crypto' && renderCrypto(s)}
-        {s.display_type === 'briefing' && renderBriefing(s)}
-        {s.display_type === 'portfolio' && renderPortfolio(s)}
-        {s.display_type === 'commodities' && renderCommodities(s)}
-        {s.display_type === 'sector_rotation' && renderSectorRotation(s)}
-        {s.display_type === 'earnings_catalyst' && renderEarningsCatalyst(s)}
-        {(s.display_type === 'chat' || !['trades','investments','fundamentals','technicals','analysis','dashboard','sector_rotation','earnings_catalyst','commodities','portfolio','briefing','crypto','trending','screener'].includes(s.display_type)) && <div style={{ padding:22, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont }} dangerouslySetInnerHTML={{ __html: formatAnalysis(result.analysis) }} />}
-        {s.display_type !== 'chat' && result.analysis && <div style={{ marginTop:16, padding:22, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont }} dangerouslySetInnerHTML={{ __html: formatAnalysis(result.analysis) }} />}
-      </div>}
+      <div style={{ display:'flex', gap:8 }}>
+        <input type="text" value={prompt} onChange={e => setPrompt(e.target.value)} onKeyDown={e => e.key === 'Enter' && askAgent()} placeholder={messages.length > 0 ? "Ask a follow-up..." : "Best trades today... Analyze NVDA..."} style={{ flex:1, padding:'14px 18px', border:`1px solid ${C.border}`, borderRadius:10, background:C.bg, color:C.bright, fontSize:16, fontFamily:sansFont, outline:'none' }} />
+        <button onClick={() => askAgent()} disabled={loading} style={{ padding:'12px 28px', background:loading ? C.card : `linear-gradient(135deg, ${C.blue}, #2563eb)`, color:loading ? C.dim : 'white', border:'none', borderRadius:10, cursor:loading?'not-allowed':'pointer', fontWeight:700, fontSize:14, fontFamily:sansFont }}>
+          {loading ? 'Scanning...' : 'Analyze'}
+        </button>
+      </div>
 
       <style>{`
         @keyframes agent-spin { to { transform: rotate(360deg); } }
