@@ -97,23 +97,6 @@ export default function CryptoDashboardSection() {
         
       </div>
 
-      <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
-        <div className="flex justify-end p-3">
-          <button
-            onClick={() => openInNewTab('https://precog.coinmetrics.io/')}
-            className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors flex items-center gap-1"
-          >
-            Open Full View <ExternalLink className="w-3 h-3" />
-          </button>
-        </div>
-        <iframe
-          src="https://precog.coinmetrics.io/"
-          className="w-full h-[400px] sm:h-[500px] lg:h-[600px]"
-          title="Precog CoinMetrics"
-          sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
-          referrerPolicy="no-referrer-when-downgrade"
-        />
-      </div>
 
 
 
