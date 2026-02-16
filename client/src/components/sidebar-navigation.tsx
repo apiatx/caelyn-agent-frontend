@@ -300,6 +300,12 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
           icon: <Building2 className="w-4 h-4" />,
           path: '/app/crypto-stonks'
         },
+        {
+          id: 'portfolio',
+          label: 'Portfolio',
+          icon: <Activity className="w-4 h-4" />,
+          path: '/app/portfolio'
+        },
       ]
     },
     {
@@ -325,12 +331,6 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
       label: 'Social',
       icon: <MessageSquare className="w-4 h-4" />,
       path: '/app/onchain/social'
-    },
-    {
-      id: 'portfolio',
-      label: 'Portfolio',
-      icon: <Activity className="w-4 h-4" />,
-      path: '/app/portfolio'
     },
     {
       id: 'about',

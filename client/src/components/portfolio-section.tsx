@@ -109,56 +109,59 @@ export default function PortfolioSection() {
       {/* Portfolio Sections - Individual Glass Cards */}
       <div className="space-y-8">
         
-        {/* Multi-Chain Section */}
-        <div className="backdrop-blur-xl bg-gradient-to-br from-white/5 via-cyan-500/5 to-white/5 border border-cyan-400/20 rounded-xl px-6 py-5 shadow-lg shadow-cyan-500/10">
-          <div className="space-y-5">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-lg flex items-center justify-center shadow-md">
-                <Activity className="w-5 h-5 text-white" />
+        {/* Multi-Chain & EVM Side by Side */}
+        <div className="grid grid-cols-2 gap-4">
+          {/* Multi-Chain Section */}
+          <div className="backdrop-blur-xl bg-gradient-to-br from-white/5 via-cyan-500/5 to-white/5 border border-cyan-400/20 rounded-xl px-6 py-5 shadow-lg shadow-cyan-500/10">
+            <div className="space-y-5">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-lg flex items-center justify-center shadow-md">
+                  <Activity className="w-5 h-5 text-white" />
+                </div>
+                <h4 className="text-xl font-bold bg-gradient-to-r from-cyan-300 to-blue-200 bg-clip-text text-transparent">Multi-Chain</h4>
               </div>
-              <h4 className="text-xl font-bold bg-gradient-to-r from-cyan-300 to-blue-200 bg-clip-text text-transparent">Multi-Chain</h4>
+              
+              <Button
+                variant="outline"
+                onClick={() => window.open('https://cerebro.xyz/dashboard', '_blank', 'noopener,noreferrer')}
+                className="group w-full bg-gradient-to-br from-cyan-600/15 via-blue-600/10 to-indigo-600/15 border-cyan-400/30 hover:from-cyan-500/25 hover:via-blue-500/20 hover:to-indigo-500/25 hover:border-cyan-300/50 text-white justify-start p-4 h-auto shadow-md hover:shadow-cyan-500/15 hover:scale-[1.02] transition-all duration-200"
+              >
+                <div className="w-10 h-10 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-lg flex items-center justify-center mr-3 group-hover:scale-110 transition-transform">
+                  <Brain className="w-5 h-5 text-white" />
+                </div>
+                <div className="text-left flex-1">
+                  <div className="font-bold text-base">Cerebro</div>
+                  <div className="text-xs text-cyan-200/80">Multi-Chain Portfolio Analytics</div>
+                </div>
+                <ExternalLink className="h-4 w-4 text-cyan-300" />
+              </Button>
             </div>
-            
-            <Button
-              variant="outline"
-              onClick={() => window.open('https://cerebro.xyz/dashboard', '_blank', 'noopener,noreferrer')}
-              className="group w-full bg-gradient-to-br from-cyan-600/15 via-blue-600/10 to-indigo-600/15 border-cyan-400/30 hover:from-cyan-500/25 hover:via-blue-500/20 hover:to-indigo-500/25 hover:border-cyan-300/50 text-white justify-start p-4 h-auto shadow-md hover:shadow-cyan-500/15 hover:scale-[1.02] transition-all duration-200"
-            >
-              <div className="w-10 h-10 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-lg flex items-center justify-center mr-3 group-hover:scale-110 transition-transform">
-                <Brain className="w-5 h-5 text-white" />
-              </div>
-              <div className="text-left flex-1">
-                <div className="font-bold text-base">Cerebro</div>
-                <div className="text-xs text-cyan-200/80">Multi-Chain Portfolio Analytics</div>
-              </div>
-              <ExternalLink className="h-4 w-4 text-cyan-300" />
-            </Button>
           </div>
-        </div>
 
-        {/* EVM Section */}
-        <div className="backdrop-blur-xl bg-gradient-to-br from-white/5 via-blue-500/5 to-white/5 border border-blue-400/20 rounded-xl px-6 py-5 shadow-lg shadow-blue-500/10">
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-black/30">
-                <img src={ethereumLogo} alt="Ethereum" className="w-7 h-7 rounded-lg" />
+          {/* EVM Section */}
+          <div className="backdrop-blur-xl bg-gradient-to-br from-white/5 via-blue-500/5 to-white/5 border border-blue-400/20 rounded-xl px-6 py-5 shadow-lg shadow-blue-500/10">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-black/30">
+                  <img src={ethereumLogo} alt="Ethereum" className="w-7 h-7 rounded-lg" />
+                </div>
+                <h4 className="text-xl font-bold bg-gradient-to-r from-blue-300 to-purple-200 bg-clip-text text-transparent">EVM</h4>
               </div>
-              <h4 className="text-xl font-bold bg-gradient-to-r from-blue-300 to-purple-200 bg-clip-text text-transparent">EVM</h4>
+              <Button
+                variant="outline"
+                onClick={() => window.open('https://debank.com/profile', '_blank', 'noopener,noreferrer')}
+                className="group w-full bg-gradient-to-br from-blue-600/15 via-purple-600/10 to-blue-600/15 border-blue-400/30 hover:from-blue-500/25 hover:via-purple-500/20 hover:to-blue-500/25 hover:border-blue-300/50 text-white justify-start p-4 h-auto shadow-md hover:shadow-blue-500/15 hover:scale-[1.02] transition-all duration-200"
+              >
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-lg flex items-center justify-center mr-3 group-hover:scale-110 transition-transform">
+                  <BarChart3 className="w-5 h-5 text-white" />
+                </div>
+                <div className="text-left flex-1">
+                  <div className="font-bold text-base">DeBank</div>
+                  <div className="text-xs text-blue-200/80">EVM Portfolio Tracking & Analytics</div>
+                </div>
+                <ExternalLink className="h-4 w-4 text-blue-300" />
+              </Button>
             </div>
-            <Button
-              variant="outline"
-              onClick={() => window.open('https://debank.com/profile', '_blank', 'noopener,noreferrer')}
-              className="group w-full bg-gradient-to-br from-blue-600/15 via-purple-600/10 to-blue-600/15 border-blue-400/30 hover:from-blue-500/25 hover:via-purple-500/20 hover:to-blue-500/25 hover:border-blue-300/50 text-white justify-start p-4 h-auto shadow-md hover:shadow-blue-500/15 hover:scale-[1.02] transition-all duration-200"
-            >
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-lg flex items-center justify-center mr-3 group-hover:scale-110 transition-transform">
-                <BarChart3 className="w-5 h-5 text-white" />
-              </div>
-              <div className="text-left flex-1">
-                <div className="font-bold text-base">DeBank</div>
-                <div className="text-xs text-blue-200/80">EVM Portfolio Tracking & Analytics</div>
-              </div>
-              <ExternalLink className="h-4 w-4 text-blue-300" />
-            </Button>
           </div>
         </div>
 
