@@ -216,6 +216,30 @@ export default function AlphaSection() {
                 __html: `<altfins-market-data-component theme='no-border compact dark' type='UNUSUAL_VOLUME' valueids='["COIN", "LAST_PRICE", "PRICE_CHANGE_1D", "VOLUME_CHANGE"]' affiliateid='test_id'></altfins-market-data-component>`
               }} />
             </div>
+            <div className="bg-black/40 backdrop-blur-lg border border-white/10 rounded-xl p-3 sm:p-4">
+              <h3 className="text-sm font-bold text-emerald-400 mb-3 tracking-wide uppercase">Uptrend Bullish Momentum</h3>
+              <div className="altfins-market-clip w-full" dangerouslySetInnerHTML={{
+                __html: `<altfins-market-data-component theme='no-border compact dark' type='UPTREND_BULLISH_MOMENTUM' valueids='["COIN", "LAST_PRICE", "PRICE_CHANGE_1D", "MACD_BS_SIGNAL", "RSI14", "SHORT_TERM_SCORE", "MEDIUM_TERM_SCORE", "LONG_TERM_SCORE"]' affiliateid='test_id'></altfins-market-data-component>`
+              }} />
+            </div>
+            <div className="bg-black/40 backdrop-blur-lg border border-white/10 rounded-xl p-3 sm:p-4">
+              <h3 className="text-sm font-bold text-emerald-400 mb-3 tracking-wide uppercase">Trend Momentum Bullish</h3>
+              <div className="altfins-market-clip w-full" dangerouslySetInnerHTML={{
+                __html: `<altfins-market-data-component theme='no-border compact dark' type='UP_DOWN_TREND_AND_FRESH_MOMENTUM_INFLECTION_BULLISH' valueids='["COIN", "LAST_PRICE", "PRICE_CHANGE_1D"]' affiliateid='test_id'></altfins-market-data-component>`
+              }} />
+            </div>
+            <div className="bg-black/40 backdrop-blur-lg border border-white/10 rounded-xl p-3 sm:p-4">
+              <h3 className="text-sm font-bold text-green-400 mb-3 tracking-wide uppercase">Top Gainers</h3>
+              <div className="altfins-market-clip w-full" dangerouslySetInnerHTML={{
+                __html: `<altfins-market-data-component theme='no-border compact dark' type='TOP_GAINERS' valueids='["COIN", "LAST_PRICE", "PRICE_CHANGE_1D"]' affiliateid='test_id'></altfins-market-data-component>`
+              }} />
+            </div>
+            <div className="bg-black/40 backdrop-blur-lg border border-white/10 rounded-xl p-3 sm:p-4">
+              <h3 className="text-sm font-bold text-red-400 mb-3 tracking-wide uppercase">Top Losers</h3>
+              <div className="altfins-market-clip w-full" dangerouslySetInnerHTML={{
+                __html: `<altfins-market-data-component theme='no-border compact dark' type='TOP_LOSERS' valueids='["COIN", "LAST_PRICE", "PRICE_CHANGE_1D"]' affiliateid='test_id'></altfins-market-data-component>`
+              }} />
+            </div>
           </div>
 
           {/* Nansen, Messari, Cookie - Three Across */}
