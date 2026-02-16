@@ -95,6 +95,31 @@ export default function StocksSectorsPage() {
                 frameBorder="0"
               />
               
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 bg-gradient-to-r from-amber-500 to-yellow-500 rounded-full flex items-center justify-center">
+                      <span className="text-white font-bold text-[10px]">B</span>
+                    </div>
+                    <h4 className="text-sm font-semibold text-white">BUZZ Social Sentiment ETF</h4>
+                  </div>
+                  <button onClick={() => openInNewTab('https://www.vaneck.com/us/en/investments/social-sentiment-etf-buzz/overview/')} className="text-amber-400 hover:text-amber-300 text-xs flex items-center gap-1">
+                    <ExternalLink className="w-3 h-3" />
+                    Open Full View
+                  </button>
+                </div>
+                <iframe
+                  src="https://www.vaneck.com/us/en/investments/social-sentiment-etf-buzz/overview/"
+                  className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+                  title="VanEck BUZZ Social Sentiment ETF"
+                  loading="lazy"
+                  referrerPolicy="no-referrer"
+                  sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
+                  allow="fullscreen; clipboard-write"
+                  frameBorder="0"
+                />
+              </div>
+
               <button
                 onClick={() => openInNewTab('https://www.ssga.com/us/en/institutional/resources/sector-tracker#currentTab=dayOne&fundTicker=xle')}
                 className="w-full bg-gradient-to-br from-yellow-500/10 to-amber-600/10 hover:from-yellow-500/20 hover:to-amber-600/20 border border-yellow-500/20 hover:border-yellow-400/40 rounded-lg p-4 transition-all duration-300 text-left group"
