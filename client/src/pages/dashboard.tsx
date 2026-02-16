@@ -32,7 +32,7 @@ function CryptoTickerTape() {
       }
     };
   }, []);
-  return <div ref={containerRef} className="w-full" style={{ height: 46 }} />;
+  return <div ref={containerRef} className="w-full" style={{ height: 78 }} />;
 }
 
 export default function Dashboard() {
