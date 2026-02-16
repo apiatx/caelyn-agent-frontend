@@ -1,4 +1,4 @@
-import { useState, Suspense, useEffect } from "react";
+import { useState, Suspense, useEffect, useRef } from "react";
 import CryptoDashboardSection from "@/components/crypto-dashboard-section";
 import PortfolioSection from "@/components/portfolio-section";
 import AlphaSection from "@/components/alpha-section";
@@ -6,18 +6,37 @@ import BittensorDashboardSection from "@/components/bittensor-dashboard-section"
 import BaseSection from "@/components/base-section";
 import SolanaSection from "@/components/solana-section";
 import DeFiSection from "@/components/defi-section";
-import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
-import cryptoHippoWithBitcoin from "@assets/image_1758740882958.png";
-import newHeaderBackground from "@assets/photo-1504333638930-c8787321eee0_1757208194192.avif";
-import criptomonedas from "@assets/Criptomonedas-r3pu02e09qriw0f9pyqx2rtyhwsri4es6sdgff2ebk_1757225856373.png";
 import { SectionLoadingState } from "@/components/loading-screen";
-import { useScrollFade } from "@/hooks/useScrollFade";
 
 type TabType = "dashboard" | "alpha" | "base" | "bittensor" | "solana" | "defi" | "portfolio";
 
+function CryptoTickerTape() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const iframe = document.createElement("iframe");
+    iframe.style.width = "100%";
+    iframe.style.height = "100%";
+    iframe.style.border = "none";
+    iframe.setAttribute("sandbox", "allow-scripts allow-same-origin allow-popups");
+    containerRef.current.appendChild(iframe);
+    const doc = iframe.contentDocument;
+    if (doc) {
+      doc.open();
+      doc.write(`<!DOCTYPE html><html><head><style>body{margin:0;padding:0;overflow:hidden;background:transparent;}</style></head><body><script type="module" src="https://widgets.tradingview-widget.com/w/en/tv-ticker-tape.js"><\/script><tv-ticker-tape symbols='BITSTAMP:BTCUSD,BITSTAMP:ETHUSD,CRYPTOCAP:XRP,CRYPTOCAP:BNB,CRYPTOCAP:SOL,CRYPTO:TRXUSD,CRYPTOCAP:DOGE,CRYPTO:HYPEHUSD,CRYPTOCAP:LINK,CRYPTOCAP:XMR,CRYPTOCAP:XLM,CRYPTOCAP:ZEC,CRYPTOCAP:HBAR,CRYPTOCAP:LTC,CRYPTOCAP:SUI,COINBASE:TAOUSD' theme="dark" transparent></tv-ticker-tape></body></html>`);
+      doc.close();
+    }
+    return () => {
+      if (containerRef.current && iframe.parentNode === containerRef.current) {
+        containerRef.current.removeChild(iframe);
+      }
+    };
+  }, []);
+  return <div ref={containerRef} className="w-full" style={{ height: 46 }} />;
+}
+
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<TabType>("dashboard");
-  const headerOpacity = useScrollFade(30, 120);
 
   // Handle URL fragments on page load and hash changes
   useEffect(() => {
@@ -44,43 +63,9 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen text-white" style={{background: 'linear-gradient(135deg, hsl(0, 0%, 0%) 0%, hsl(0, 0%, 10%) 50%, hsl(0, 0%, 0%) 100%)'}}>
-      {/* Header */}
-      <header 
-        className="glass-card-dark border-b border-crypto-silver/20 sticky top-0 z-50 transition-opacity duration-300 relative overflow-hidden" 
-        style={{ opacity: headerOpacity, pointerEvents: headerOpacity < 0.1 ? 'none' : 'auto' }}
-      >
-        {/* Background Image - Expanded */}
-        <div 
-          className="absolute inset-0 opacity-75"
-          style={{
-            backgroundImage: `url(${newHeaderBackground})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-            transform: 'scale(1.1)'
-          }}
-        />
-        {/* Content Layer */}
-        <div className="relative z-10 max-w-[95vw] mx-auto px-2 sm:px-3 py-2 lg:py-3">
-          <div className="flex justify-between items-center">
-            <div className="flex-1"></div>
-            <div className="flex items-center gap-3">
-              <img 
-                src={cryptoHippoWithBitcoin}
-                alt="Crypto Hippo with Bitcoin Goggles"
-                className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 object-contain drop-shadow-lg"
-              />
-            </div>
-            <div className="flex-1 hidden sm:flex justify-end items-center">
-              <img 
-                src={criptomonedas}
-                alt="Crypto Coins"
-                className="w-14 h-14 sm:w-16 sm:h-16 lg:w-20 lg:h-20 object-contain drop-shadow-lg"
-              />
-            </div>
-          </div>
-        </div>
-      </header>
+      <div className="sticky top-0 z-50 border-b border-crypto-silver/20 bg-black/90 backdrop-blur-lg">
+        <CryptoTickerTape />
+      </div>
 
       {/* Content */}
       <div className="max-w-[95vw] mx-auto px-2 sm:px-3 mt-4 pb-8">
