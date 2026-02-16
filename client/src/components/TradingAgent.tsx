@@ -17,9 +17,7 @@ export default function TradingAgent() {
   const [chatHistory, setChatHistory] = useState<Array<{role: string, content: string}>>([]);
   const [loadingStage, setLoadingStage] = useState('');
   const [expandedTicker, setExpandedTicker] = useState<string | null>(null);
-  const [showTickerInput, setShowTickerInput] = useState(false);
   const [showScreener, setShowScreener] = useState(false);
-  const [tickerInput, setTickerInput] = useState('');
   const [screenerInput, setScreenerInput] = useState('');
   const [screenerSortCol, setScreenerSortCol] = useState('');
   const [screenerSortAsc, setScreenerSortAsc] = useState(true);
@@ -65,6 +63,23 @@ export default function TradingAgent() {
     const q = customPrompt || prompt;
 
     if (!q.trim()) return;
+
+    const tickerPattern = /^(review|analyze|check|watchlist|rate|my)?\s*[A-Z]{1,5}(\s*[,\s]\s*[A-Z]{1,5}){2,}/i;
+    const cleanedQuery = q.trim();
+    if (tickerPattern.test(cleanedQuery)) {
+      const tickers = cleanedQuery
+        .replace(/^(review|analyze|check|watchlist|rate|my)\s*/i, '')
+        .split(/[,\s]+/)
+        .map(t => t.trim().toUpperCase())
+        .filter(t => /^[A-Z]{1,5}$/.test(t))
+        .slice(0, 25);
+      if (tickers.length >= 3) {
+        setPrompt('');
+        await sendWatchlistReview(tickers);
+        return;
+      }
+    }
+
     setLoading(true); setError(null); setExpandedTicker(null);
     setPrompt('');
     setShowPrompts(false);
@@ -95,14 +110,8 @@ export default function TradingAgent() {
     } finally { clearInterval(iv); setLoadingStage(''); setLoading(false); }
   }
 
-  async function submitPortfolio() {
-    if (!tickerInput.trim()) return;
-    const tickers = tickerInput.toUpperCase().split(/[,\s]+/).filter(t => t.length >= 1 && t.length <= 5).slice(0, 25);
-    if (tickers.length === 0) return;
-
-    setLoading(true);
-    setError(null);
-    setExpandedTicker(null);
+  async function sendWatchlistReview(tickers: string[]) {
+    setLoading(true); setError(null); setExpandedTicker(null);
     setShowPrompts(false);
     setMessages(prev => [...prev, {role: 'user', content: `Review my watchlist: ${tickers.join(', ')}`}]);
 
@@ -127,8 +136,8 @@ export default function TradingAgent() {
       setError(errMsg);
       setMessages(prev => [...prev, {role: 'assistant', content: errMsg}]);
     } finally { clearInterval(iv); setLoadingStage(''); setLoading(false); }
-    setTickerInput('');
   }
+
 
   const C = {
     bg: '#0b0c10', card: '#111318', border: '#1a1d25', text: '#c9cdd6', bright: '#e8eaef',
@@ -1212,31 +1221,6 @@ export default function TradingAgent() {
               {promptButtons.map(q => <button key={q.l} onClick={() => { newChat(); askAgent(q.p, true); }} disabled={loading} style={{ padding:'8px 14px', background:C.card, border:`1px solid ${C.border}`, borderRadius:8, color:C.dim, fontSize:11, cursor:loading?'not-allowed':'pointer', fontFamily:font, transition:'all 0.15s', whiteSpace:'nowrap', flex:'0 0 auto' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; }}>{q.l}</button>)}
             </div>
 
-            <div style={{ marginTop:10, padding:16, background:C.card, border:`1px solid ${C.blue}30`, borderRadius:10 }}>
-              <div style={{ color:C.bright, fontSize:13, fontWeight:600, fontFamily:sansFont, marginBottom:8 }}>
-                Enter your tickers (up to 25, separated by commas or spaces)
-              </div>
-              <div style={{ display:'flex', gap:8 }}>
-                <input
-                  type="text"
-                  value={tickerInput}
-                  onChange={e => setTickerInput(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && submitPortfolio()}
-                  placeholder="NVDA, AMD, SMCI, CCJ, UEC, SMR, PLTR, CRDO..."
-                  style={{ flex:1, padding:'12px 16px', border:`1px solid ${C.border}`, borderRadius:8, background:C.bg, color:C.bright, fontSize:13, fontFamily:font, outline:'none' }}
-                />
-                <button
-                  onClick={submitPortfolio}
-                  disabled={loading || !tickerInput.trim()}
-                  style={{ padding:'10px 24px', background: loading || !tickerInput.trim() ? C.card : `linear-gradient(135deg, ${C.blue}, #2563eb)`, color: loading || !tickerInput.trim() ? C.dim : 'white', border:'none', borderRadius:8, cursor: loading || !tickerInput.trim() ? 'not-allowed' : 'pointer', fontWeight:700, fontSize:13, fontFamily:sansFont }}
-                >
-                  Review
-                </button>
-              </div>
-              <div style={{ color:C.dim, fontSize:10, fontFamily:font, marginTop:6 }}>
-                Example: NVDA, AMD, AVGO, MRVL, CRDO, SMCI, CCJ, UEC, PLTR, VRT
-              </div>
-            </div>
 
             <div style={{ marginTop:10, padding:14, background:`linear-gradient(135deg, ${C.bg} 0%, #0e0f14 100%)`, border:`1px solid ${C.purple}20`, borderRadius:12, borderTop:`1px solid ${C.purple}30` }}>
               <div style={{ display:'flex', gap:8, marginBottom:8, flexWrap:'wrap' }}>
@@ -1278,31 +1262,6 @@ export default function TradingAgent() {
                 {promptButtons.map(q => <button key={q.l} onClick={() => { newChat(); askAgent(q.p, true); }} disabled={loading} style={{ padding:'8px 14px', background:C.card, border:`1px solid ${C.border}`, borderRadius:8, color:C.dim, fontSize:11, cursor:loading?'not-allowed':'pointer', fontFamily:font, transition:'all 0.15s', whiteSpace:'nowrap', flex:'0 0 auto' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; }}>{q.l}</button>)}
               </div>
 
-              <div style={{ marginTop:10, padding:16, background:C.card, border:`1px solid ${C.blue}30`, borderRadius:10 }}>
-                <div style={{ color:C.bright, fontSize:13, fontWeight:600, fontFamily:sansFont, marginBottom:8 }}>
-                  Enter your tickers (up to 25, separated by commas or spaces)
-                </div>
-                <div style={{ display:'flex', gap:8 }}>
-                  <input
-                    type="text"
-                    value={tickerInput}
-                    onChange={e => setTickerInput(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && submitPortfolio()}
-                    placeholder="NVDA, AMD, SMCI, CCJ, UEC, SMR, PLTR, CRDO..."
-                    style={{ flex:1, padding:'12px 16px', border:`1px solid ${C.border}`, borderRadius:8, background:C.bg, color:C.bright, fontSize:13, fontFamily:font, outline:'none' }}
-                  />
-                  <button
-                    onClick={submitPortfolio}
-                    disabled={loading || !tickerInput.trim()}
-                    style={{ padding:'10px 24px', background: loading || !tickerInput.trim() ? C.card : `linear-gradient(135deg, ${C.blue}, #2563eb)`, color: loading || !tickerInput.trim() ? C.dim : 'white', border:'none', borderRadius:8, cursor: loading || !tickerInput.trim() ? 'not-allowed' : 'pointer', fontWeight:700, fontSize:13, fontFamily:sansFont }}
-                  >
-                    Review
-                  </button>
-                </div>
-                <div style={{ color:C.dim, fontSize:10, fontFamily:font, marginTop:6 }}>
-                  Example: NVDA, AMD, AVGO, MRVL, CRDO, SMCI, CCJ, UEC, PLTR, VRT
-                </div>
-              </div>
 
               <div style={{ marginTop:10, padding:14, background:`linear-gradient(135deg, ${C.bg} 0%, #0e0f14 100%)`, border:`1px solid ${C.purple}20`, borderRadius:12, borderTop:`1px solid ${C.purple}30` }}>
                 <div style={{ display:'flex', gap:8, marginBottom:8, flexWrap:'wrap' }}>
@@ -1370,7 +1329,7 @@ export default function TradingAgent() {
       <div>
         <div style={{ display:'flex', gap:8 }}>
           {messages.length > 0 && <button onClick={newChat} style={{ padding:'12px 14px', background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.dim, fontSize:11, cursor:'pointer', fontFamily:font, transition:'all 0.15s', whiteSpace:'nowrap' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; }}>+ New</button>}
-          <input type="text" value={prompt} onChange={e => setPrompt(e.target.value)} onKeyDown={e => e.key === 'Enter' && askAgent()} placeholder={messages.length > 0 ? "Ask a follow-up..." : "Best trades today... Analyze NVDA... Best improving fundamentals..."} style={{ flex:1, padding:'14px 18px', border:`1px solid ${C.border}`, borderRadius:10, background:C.bg, color:C.bright, fontSize:16, fontFamily:sansFont, outline:'none' }} />
+          <input type="text" value={prompt} onChange={e => setPrompt(e.target.value)} onKeyDown={e => e.key === 'Enter' && askAgent()} placeholder={messages.length > 0 ? "Ask a follow-up..." : "Best trades today... Review NVDA, AMD, PLTR... Analyze SMCI... Screen for small caps..."} style={{ flex:1, padding:'14px 18px', border:`1px solid ${C.border}`, borderRadius:10, background:C.bg, color:C.bright, fontSize:16, fontFamily:sansFont, outline:'none' }} />
           <button onClick={() => askAgent()} disabled={loading} style={{ padding:'12px 28px', background:loading ? C.card : `linear-gradient(135deg, ${C.blue}, #2563eb)`, color:loading ? C.dim : 'white', border:'none', borderRadius:10, cursor:loading?'not-allowed':'pointer', fontWeight:700, fontSize:14, fontFamily:sansFont }}>
             {loading ? 'Scanning...' : 'Analyze'}
           </button>
