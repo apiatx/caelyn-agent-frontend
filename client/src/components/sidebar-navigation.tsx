@@ -119,20 +119,20 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
               label: 'Altcoins',
               icon: <Coins className="w-4 h-4" />,
               path: '/app/charts/altcoins'
-            },
-            {
-              id: 'onchain-analytics',
-              label: 'Screening',
-              icon: <TrendingUp className="w-4 h-4" />,
-              path: '/app/onchain/analytics'
-            },
-            {
-              id: 'onchain-analyze',
-              label: 'Analyze',
-              icon: <Brain className="w-4 h-4" />,
-              path: '/app/onchain/analyze'
             }
           ]
+        },
+        {
+          id: 'onchain-analytics',
+          label: 'Screening',
+          icon: <TrendingUp className="w-4 h-4" />,
+          path: '/app/onchain/analytics'
+        },
+        {
+          id: 'onchain-analyze',
+          label: 'Analyze',
+          icon: <Brain className="w-4 h-4" />,
+          path: '/app/onchain/analyze'
         },
         {
           id: 'trade',
