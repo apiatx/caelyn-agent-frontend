@@ -242,120 +242,6 @@ export default function AlphaSection() {
             </div>
           </div>
 
-          {/* Quick Links */}
-          <div className="mt-8 space-y-5">
-            {/* Research & Analytics */}
-            <div>
-              <h4 className="text-xs font-semibold text-crypto-silver/60 uppercase tracking-widest mb-3 px-1">Research & Analytics</h4>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
-                <SafeLink href="https://app.nansen.ai/" className="p-2.5 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] hover:border-purple-500/40 rounded-lg transition-all duration-200 group">
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 bg-purple-500/20 rounded-md flex items-center justify-center flex-shrink-0"><span className="text-purple-400 font-bold text-xs">N</span></div>
-                    <span className="text-white/70 group-hover:text-white text-sm font-medium truncate">Nansen</span>
-                  </div>
-                </SafeLink>
-                <SafeLink href="https://messari.io/" className="p-2.5 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] hover:border-orange-500/40 rounded-lg transition-all duration-200 group">
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 bg-orange-500/20 rounded-md flex items-center justify-center flex-shrink-0"><span className="text-orange-400 font-bold text-xs">M</span></div>
-                    <span className="text-white/70 group-hover:text-white text-sm font-medium truncate">Messari</span>
-                  </div>
-                </SafeLink>
-                <SafeLink href="https://cookie.fun/" className="p-2.5 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] hover:border-yellow-500/40 rounded-lg transition-all duration-200 group">
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 bg-yellow-500/20 rounded-md flex items-center justify-center flex-shrink-0"><span className="text-yellow-400 font-bold text-xs">C</span></div>
-                    <span className="text-white/70 group-hover:text-white text-sm font-medium truncate">Cookie.fun</span>
-                  </div>
-                </SafeLink>
-                <SafeLink href="https://coinmarketcap.com/?type=coins&tableRankBy=trending_all_24h" className="p-2.5 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] hover:border-blue-500/40 rounded-lg transition-all duration-200 group">
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 bg-blue-500/20 rounded-md flex items-center justify-center flex-shrink-0"><span className="text-blue-400 font-bold text-xs">C</span></div>
-                    <span className="text-white/70 group-hover:text-white text-sm font-medium truncate">CMC</span>
-                  </div>
-                </SafeLink>
-                <SafeLink href="https://www.coingecko.com/" className="p-2.5 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] hover:border-green-500/40 rounded-lg transition-all duration-200 group">
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 bg-green-500/20 rounded-md flex items-center justify-center flex-shrink-0"><span className="text-green-400 font-bold text-xs">G</span></div>
-                    <span className="text-white/70 group-hover:text-white text-sm font-medium truncate">CoinGecko</span>
-                  </div>
-                </SafeLink>
-                <SafeLink href="https://opensea.io/stats/tokens" className="p-2.5 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] hover:border-cyan-500/40 rounded-lg transition-all duration-200 group">
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 bg-cyan-500/20 rounded-md flex items-center justify-center flex-shrink-0"><span className="text-cyan-400 font-bold text-xs">O</span></div>
-                    <span className="text-white/70 group-hover:text-white text-sm font-medium truncate">OpenSea</span>
-                  </div>
-                </SafeLink>
-              </div>
-            </div>
-
-            {/* DEX & Trading */}
-            <div>
-              <h4 className="text-xs font-semibold text-crypto-silver/60 uppercase tracking-widest mb-3 px-1">DEX & Trading</h4>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2">
-                <SafeLink href="https://dex.coinmarketcap.com/token/all/" className="p-2.5 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] hover:border-blue-500/40 rounded-lg transition-all duration-200 group">
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 bg-blue-500/20 rounded-md flex items-center justify-center flex-shrink-0"><span className="text-blue-400 font-bold text-[10px]">CD</span></div>
-                    <span className="text-white/70 group-hover:text-white text-sm font-medium truncate">CMC Dex</span>
-                  </div>
-                </SafeLink>
-                <SafeLink href="https://geckoterminal.com/" className="p-2.5 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] hover:border-emerald-500/40 rounded-lg transition-all duration-200 group">
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 bg-emerald-500/20 rounded-md flex items-center justify-center flex-shrink-0"><span className="text-emerald-400 font-bold text-[10px]">GT</span></div>
-                    <span className="text-white/70 group-hover:text-white text-sm font-medium truncate">GeckoTerminal</span>
-                  </div>
-                </SafeLink>
-                <SafeLink href="https://dexscreener.com/" className="p-2.5 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] hover:border-purple-500/40 rounded-lg transition-all duration-200 group">
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 bg-purple-500/20 rounded-md flex items-center justify-center flex-shrink-0"><span className="text-purple-400 font-bold text-[10px]">DS</span></div>
-                    <span className="text-white/70 group-hover:text-white text-sm font-medium truncate">DexScreener</span>
-                  </div>
-                </SafeLink>
-                <SafeLink href="https://dexcheck.ai/app" className="p-2.5 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] hover:border-yellow-500/40 rounded-lg transition-all duration-200 group">
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 bg-yellow-500/20 rounded-md flex items-center justify-center flex-shrink-0"><span className="text-yellow-400 font-bold text-xs">D</span></div>
-                    <span className="text-white/70 group-hover:text-white text-sm font-medium truncate">DexCheck</span>
-                  </div>
-                </SafeLink>
-                <SafeLink href="https://dapp.velvet.capital/" className="p-2.5 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] hover:border-pink-500/40 rounded-lg transition-all duration-200 group">
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 bg-pink-500/20 rounded-md flex items-center justify-center flex-shrink-0"><span className="text-pink-400 font-bold text-xs">V</span></div>
-                    <span className="text-white/70 group-hover:text-white text-sm font-medium truncate">Velvet Capital</span>
-                  </div>
-                </SafeLink>
-                <SafeLink href="https://www.binance.com/en/markets/alpha-all" className="p-2.5 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] hover:border-yellow-500/40 rounded-lg transition-all duration-200 group">
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 bg-yellow-500/20 rounded-md flex items-center justify-center flex-shrink-0"><span className="text-yellow-400 font-bold text-xs">B</span></div>
-                    <span className="text-white/70 group-hover:text-white text-sm font-medium truncate">Binance Alpha</span>
-                  </div>
-                </SafeLink>
-                <SafeLink href="https://web3.binance.com/en/markets/alpha?chain=bsc" className="p-2.5 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] hover:border-orange-500/40 rounded-lg transition-all duration-200 group">
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 bg-orange-500/20 rounded-md flex items-center justify-center flex-shrink-0"><span className="text-orange-400 font-bold text-[10px]">W3</span></div>
-                    <span className="text-white/70 group-hover:text-white text-sm font-medium truncate">Web3 Alpha</span>
-                  </div>
-                </SafeLink>
-              </div>
-            </div>
-
-            {/* AI Agents */}
-            <div>
-              <h4 className="text-xs font-semibold text-crypto-silver/60 uppercase tracking-widest mb-3 px-1">AI Agents</h4>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
-                <SafeLink href="https://agents.cookie.fun/" className="p-2.5 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] hover:border-green-500/40 rounded-lg transition-all duration-200 group">
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 bg-green-500/20 rounded-md flex items-center justify-center flex-shrink-0"><span className="text-green-400 font-bold text-xs">C</span></div>
-                    <span className="text-white/70 group-hover:text-white text-sm font-medium truncate">Cookie Agents</span>
-                  </div>
-                </SafeLink>
-                <SafeLink href="https://ayaoracle.xyz/#agents_data" className="p-2.5 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] hover:border-indigo-500/40 rounded-lg transition-all duration-200 group">
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 bg-indigo-500/20 rounded-md flex items-center justify-center flex-shrink-0"><span className="text-indigo-400 font-bold text-xs">A</span></div>
-                    <span className="text-white/70 group-hover:text-white text-sm font-medium truncate">Aya AI</span>
-                  </div>
-                </SafeLink>
-              </div>
-            </div>
-          </div>
-
           {/* CoinGlass iframe */}
           <div className="mt-8 mb-8">
             <div className="mb-3 flex justify-end">
@@ -390,6 +276,107 @@ export default function AlphaSection() {
                 sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
                 allow="fullscreen; clipboard-write; autoplay; camera; microphone; geolocation"
               />
+            </div>
+          </div>
+
+          {/* All tool buttons - flex wrap for natural flow */}
+          <div className="flex flex-wrap gap-2 mt-6 mb-6">
+            <SafeLink href="https://app.nansen.ai/" className="p-2.5 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] hover:border-purple-500/40 rounded-lg transition-all duration-200 group">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 bg-purple-500/20 rounded-md flex items-center justify-center flex-shrink-0"><span className="text-purple-400 font-bold text-xs">N</span></div>
+                <span className="text-white/70 group-hover:text-white text-sm font-medium">Nansen</span>
+              </div>
+            </SafeLink>
+            <SafeLink href="https://messari.io/" className="p-2.5 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] hover:border-orange-500/40 rounded-lg transition-all duration-200 group">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 bg-orange-500/20 rounded-md flex items-center justify-center flex-shrink-0"><span className="text-orange-400 font-bold text-xs">M</span></div>
+                <span className="text-white/70 group-hover:text-white text-sm font-medium">Messari</span>
+              </div>
+            </SafeLink>
+            <SafeLink href="https://cookie.fun/" className="p-2.5 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] hover:border-yellow-500/40 rounded-lg transition-all duration-200 group">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 bg-yellow-500/20 rounded-md flex items-center justify-center flex-shrink-0"><span className="text-yellow-400 font-bold text-xs">C</span></div>
+                <span className="text-white/70 group-hover:text-white text-sm font-medium">Cookie.fun</span>
+              </div>
+            </SafeLink>
+            <SafeLink href="https://coinmarketcap.com/?type=coins&tableRankBy=trending_all_24h" className="p-2.5 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] hover:border-blue-500/40 rounded-lg transition-all duration-200 group">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 bg-blue-500/20 rounded-md flex items-center justify-center flex-shrink-0"><span className="text-blue-400 font-bold text-xs">C</span></div>
+                <span className="text-white/70 group-hover:text-white text-sm font-medium">CMC</span>
+              </div>
+            </SafeLink>
+            <SafeLink href="https://www.coingecko.com/" className="p-2.5 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] hover:border-green-500/40 rounded-lg transition-all duration-200 group">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 bg-green-500/20 rounded-md flex items-center justify-center flex-shrink-0"><span className="text-green-400 font-bold text-xs">G</span></div>
+                <span className="text-white/70 group-hover:text-white text-sm font-medium">CoinGecko</span>
+              </div>
+            </SafeLink>
+            <SafeLink href="https://opensea.io/stats/tokens" className="p-2.5 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] hover:border-cyan-500/40 rounded-lg transition-all duration-200 group">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 bg-cyan-500/20 rounded-md flex items-center justify-center flex-shrink-0"><span className="text-cyan-400 font-bold text-xs">O</span></div>
+                <span className="text-white/70 group-hover:text-white text-sm font-medium">OpenSea</span>
+              </div>
+            </SafeLink>
+            <SafeLink href="https://dex.coinmarketcap.com/token/all/" className="p-2.5 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] hover:border-blue-500/40 rounded-lg transition-all duration-200 group">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 bg-blue-500/20 rounded-md flex items-center justify-center flex-shrink-0"><span className="text-blue-400 font-bold text-[10px]">CD</span></div>
+                <span className="text-white/70 group-hover:text-white text-sm font-medium">CMC Dex</span>
+              </div>
+            </SafeLink>
+            <SafeLink href="https://geckoterminal.com/" className="p-2.5 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] hover:border-emerald-500/40 rounded-lg transition-all duration-200 group">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 bg-emerald-500/20 rounded-md flex items-center justify-center flex-shrink-0"><span className="text-emerald-400 font-bold text-[10px]">GT</span></div>
+                <span className="text-white/70 group-hover:text-white text-sm font-medium">GeckoTerminal</span>
+              </div>
+            </SafeLink>
+            <SafeLink href="https://dexscreener.com/" className="p-2.5 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] hover:border-purple-500/40 rounded-lg transition-all duration-200 group">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 bg-purple-500/20 rounded-md flex items-center justify-center flex-shrink-0"><span className="text-purple-400 font-bold text-[10px]">DS</span></div>
+                <span className="text-white/70 group-hover:text-white text-sm font-medium">DexScreener</span>
+              </div>
+            </SafeLink>
+            <SafeLink href="https://dexcheck.ai/app" className="p-2.5 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] hover:border-yellow-500/40 rounded-lg transition-all duration-200 group">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 bg-yellow-500/20 rounded-md flex items-center justify-center flex-shrink-0"><span className="text-yellow-400 font-bold text-xs">D</span></div>
+                <span className="text-white/70 group-hover:text-white text-sm font-medium">DexCheck</span>
+              </div>
+            </SafeLink>
+            <SafeLink href="https://dapp.velvet.capital/" className="p-2.5 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] hover:border-pink-500/40 rounded-lg transition-all duration-200 group">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 bg-pink-500/20 rounded-md flex items-center justify-center flex-shrink-0"><span className="text-pink-400 font-bold text-xs">V</span></div>
+                <span className="text-white/70 group-hover:text-white text-sm font-medium">Velvet Capital</span>
+              </div>
+            </SafeLink>
+            <SafeLink href="https://www.binance.com/en/markets/alpha-all" className="p-2.5 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] hover:border-yellow-500/40 rounded-lg transition-all duration-200 group">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 bg-yellow-500/20 rounded-md flex items-center justify-center flex-shrink-0"><span className="text-yellow-400 font-bold text-xs">B</span></div>
+                <span className="text-white/70 group-hover:text-white text-sm font-medium">Binance Alpha</span>
+              </div>
+            </SafeLink>
+            <SafeLink href="https://web3.binance.com/en/markets/alpha?chain=bsc" className="p-2.5 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] hover:border-orange-500/40 rounded-lg transition-all duration-200 group">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 bg-orange-500/20 rounded-md flex items-center justify-center flex-shrink-0"><span className="text-orange-400 font-bold text-[10px]">W3</span></div>
+                <span className="text-white/70 group-hover:text-white text-sm font-medium">Web3 Alpha</span>
+              </div>
+            </SafeLink>
+          </div>
+
+          {/* AI Agents */}
+          <div className="mb-6">
+            <h4 className="text-xs font-semibold text-crypto-silver/60 uppercase tracking-widest mb-3 px-1">AI Agents</h4>
+            <div className="flex flex-wrap gap-2">
+              <SafeLink href="https://agents.cookie.fun/" className="p-2.5 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] hover:border-green-500/40 rounded-lg transition-all duration-200 group">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 bg-green-500/20 rounded-md flex items-center justify-center flex-shrink-0"><span className="text-green-400 font-bold text-xs">C</span></div>
+                  <span className="text-white/70 group-hover:text-white text-sm font-medium">Cookie Agents</span>
+                </div>
+              </SafeLink>
+              <SafeLink href="https://ayaoracle.xyz/#agents_data" className="p-2.5 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] hover:border-indigo-500/40 rounded-lg transition-all duration-200 group">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 bg-indigo-500/20 rounded-md flex items-center justify-center flex-shrink-0"><span className="text-indigo-400 font-bold text-xs">A</span></div>
+                  <span className="text-white/70 group-hover:text-white text-sm font-medium">Aya AI</span>
+                </div>
+              </SafeLink>
             </div>
           </div>
         </GlassCard>
