@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { BarChart3, ExternalLink, TrendingUp, Link2, Star, Wallet, TrendingDown, Globe, Layers, Activity, Brain } from 'lucide-react';
@@ -58,6 +59,35 @@ export default function AlphaSection() {
     openSecureLink(url);
   };
 
+  useEffect(() => {
+    const scriptId = 'altfins-market-data-script';
+    if (!document.getElementById(scriptId)) {
+      const script = document.createElement('script');
+      script.id = scriptId;
+      script.type = 'module';
+      script.src = 'https://cdn.altfins.com/js/altfins-market-data-component.js';
+      document.body.appendChild(script);
+    }
+
+    const style = document.createElement('style');
+    style.id = 'altfins-market-clip-style';
+    style.textContent = `
+      .altfins-market-clip {
+        position: relative;
+        overflow: hidden;
+      }
+      .altfins-market-clip altfins-market-data-component {
+        display: block;
+        margin-bottom: -30px;
+      }
+    `;
+    document.head.appendChild(style);
+    return () => {
+      const el = document.getElementById('altfins-market-clip-style');
+      if (el) el.remove();
+    };
+  }, []);
+
   return (
     <div className="space-y-4">
       <div className="space-y-8">
@@ -77,6 +107,42 @@ export default function AlphaSection() {
               <div className="w-full">
                 <TopTrendingCMC />
               </div>
+            </div>
+          </div>
+
+          {/* AltFins Market Data Widgets */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-8 mb-6">
+            <div className="bg-black/40 backdrop-blur-lg border border-white/10 rounded-xl p-3 sm:p-4">
+              <h3 className="text-sm font-bold text-emerald-400 mb-3 tracking-wide uppercase">Bullish Pattern Breakouts</h3>
+              <div className="altfins-market-clip w-full" dangerouslySetInnerHTML={{
+                __html: `<altfins-market-data-component theme='no-border compact dark' type='BULLISH_PATTERN_BREAKOUTS' valueids='["COIN", "LAST_PRICE", "PRICE_CHANGE_1D", "PATTERN_SUBTYPE"]' affiliateid='test_id'></altfins-market-data-component>`
+              }} />
+            </div>
+            <div className="bg-black/40 backdrop-blur-lg border border-white/10 rounded-xl p-3 sm:p-4">
+              <h3 className="text-sm font-bold text-emerald-400 mb-3 tracking-wide uppercase">Bullish Emerging Patterns</h3>
+              <div className="altfins-market-clip w-full" dangerouslySetInnerHTML={{
+                __html: `<altfins-market-data-component theme='no-border compact dark' type='BULLISH_EMERGING_PATTERNS' valueids='["COIN", "LAST_PRICE", "PRICE_CHANGE_1D"]' affiliateid='test_id'></altfins-market-data-component>`
+              }} />
+            </div>
+            <div className="bg-black/40 backdrop-blur-lg border border-white/10 rounded-xl p-3 sm:p-4">
+              <h3 className="text-sm font-bold text-emerald-400 mb-3 tracking-wide uppercase">Bollinger Band Breakout Above</h3>
+              <div className="altfins-market-clip w-full" dangerouslySetInnerHTML={{
+                __html: `<altfins-market-data-component theme='no-border compact dark' type='BOLLINGER_BAND_BREAKOUT_ABOVE' valueids='["COIN", "LAST_PRICE", "PRICE_CHANGE_1D"]' affiliateid='test_id'></altfins-market-data-component>`
+              }} />
+            </div>
+            <div className="bg-black/40 backdrop-blur-lg border border-white/10 rounded-xl p-3 sm:p-4">
+              <h3 className="text-sm font-bold text-emerald-400 mb-3 tracking-wide uppercase">Early Bullish Momentum Inflection</h3>
+              <div className="altfins-market-clip w-full" dangerouslySetInnerHTML={{
+                __html: `<altfins-market-data-component theme='no-border compact dark' type='EARLY_BULLISH_MOMENTUM_INFLECTION' valueids='["COIN", "LAST_PRICE", "PRICE_CHANGE_1D", "MACD_HISTOGRAM_H2"]' affiliateid='test_id'></altfins-market-data-component>`
+              }} />
+            </div>
+          </div>
+          <div className="mb-6">
+            <div className="bg-black/40 backdrop-blur-lg border border-white/10 rounded-xl p-3 sm:p-4">
+              <h3 className="text-sm font-bold text-emerald-400 mb-3 tracking-wide uppercase">Fresh Bullish EMA Crossover</h3>
+              <div className="altfins-market-clip w-full" dangerouslySetInnerHTML={{
+                __html: `<altfins-market-data-component theme='no-border compact dark' type='FRESH_BULLISH_EMA_CROSSOVER' valueids='["COIN", "LAST_PRICE", "PRICE_CHANGE_1D"]' affiliateid='test_id'></altfins-market-data-component>`
+              }} />
             </div>
           </div>
 
