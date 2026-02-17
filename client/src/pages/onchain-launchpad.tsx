@@ -44,9 +44,10 @@ export default function OnchainLaunchpadPage() {
                   className="w-full h-full object-cover"
                 />
               </div>
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-white drop-shadow-lg">
-                CryptoHippo
-              </h1>
+              <div>
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white drop-shadow-lg">Launchpad</h1>
+                <p className="text-sm sm:text-base text-white/70 font-medium mt-1">Token Launches & IDOs</p>
+              </div>
             </div>
             {/* Top-right crypto image */}
             <div className="hidden sm:flex items-center">
