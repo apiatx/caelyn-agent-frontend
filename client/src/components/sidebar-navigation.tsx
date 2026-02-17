@@ -63,7 +63,7 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
     },
     {
       id: 'stocks-portfolio',
-      label: 'Portfolio',
+      label: 'Portfolio Dashboard',
       icon: <Wallet className="w-4 h-4" />,
       path: '/app/stocks/portfolio'
     },
