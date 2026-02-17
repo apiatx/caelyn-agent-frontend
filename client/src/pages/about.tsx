@@ -16,19 +16,26 @@ export default function AboutPage() {
           <div className="text-center space-y-8">
             <div className="space-y-6">
               <h1 className="text-3xl sm:text-4xl font-bold text-white mb-4">
-                What is CryptoHippo?
+                Most trading setups are a mess.
               </h1>
-              
+
               <p className="text-lg text-crypto-silver leading-relaxed">
-                CryptoHippo is an all-in-one trading dashboard designed to put everything you need in one place — market data, technical analysis, on-chain flows, sentiment, DeFi tools, and portfolio tracking. No more juggling tabs, apps, and bookmarks.
+                You've got twenty tabs open, three different terminal apps running, and a Twitter feed that's 90% noise. By the time you've checked the on-chain flows, looked at the 4-hour chart on TradingView, and scanned the latest macro data, the trade has already moved.
               </p>
-              
-              {/* First Hippo Image - Between "What is CryptoHippo" and "Why It Exists" */}
+
+              <p className="text-lg text-crypto-silver leading-relaxed">
+                We started as CryptoHippo, focused strictly on the blockchain. But the world moved on. The lines between crypto, stocks, commodities, and prediction markets have blurred. If you're only looking at one, you're missing the bigger picture.
+              </p>
+
+              <p className="text-lg text-crypto-silver leading-relaxed">
+                So, we built <span className="text-white font-semibold">HippoAI</span>. It's the dashboard we actually wanted to use — a single command center for everything that moves the needle.
+              </p>
+
               <div className="flex justify-center my-8">
                 <div className="w-48 h-48 rounded-full overflow-hidden shadow-lg border-2 border-yellow-400">
-                  <img 
-                    src={hippoDownload1} 
-                    alt="DeFi Hub" 
+                  <img
+                    src={hippoDownload1}
+                    alt="HippoAI"
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -37,168 +44,109 @@ export default function AboutPage() {
 
             <div className="space-y-6 text-center">
               <div>
-                <h2 className="text-2xl font-semibold text-white mb-4 text-center">Why It Exists</h2>
+                <h2 className="text-2xl font-semibold text-white mb-4 text-center">The "Two-Brain" Advantage</h2>
                 <div className="text-crypto-silver space-y-4">
-                  <p>Crypto trading moves fast. Every second you spend switching between different sites is a second you might miss an opportunity. Traders often have:</p>
-                  
-                  <div className="space-y-1">
-                    <p>• CMC open for token stats.</p>
-                    <p>• TradingView for charting.</p>
-                    <p>• Separate dashboards for DeFi positions.</p>
-                    <p>• Multiple tabs for on-chain analytics.</p>
-                    <p>• Twitter or news feeds for sentiment.</p>
+                  <p>Most "AI trading tools" are just glorified search bars. HippoAI is different. We built a <span className="text-white font-medium">Dual-Engine AI Agent</span> that acts like a high-level research team working 24/7.</p>
+
+                  <p>Think of it as having two distinct specialists in your ear:</p>
+
+                  <div className="text-left max-w-2xl mx-auto space-y-4 mt-4">
+                    <div className="bg-blue-500/5 border border-blue-500/20 rounded-lg p-4">
+                      <h3 className="text-lg font-medium text-blue-400 mb-2">The Quant</h3>
+                      <p className="text-crypto-silver">This side of the AI lives in the data. It digests government filings, official financial reports, and complex technical analysis with cold, hard logic.</p>
+                    </div>
+
+                    <div className="bg-purple-500/5 border border-purple-500/20 rounded-lg p-4">
+                      <h3 className="text-lg font-medium text-purple-400 mb-2">The Hunter</h3>
+                      <p className="text-crypto-silver">This side lives on the street. It monitors social sentiment and breaking news in real-time, catching the "vibe" of the market before it shows up on a candle chart.</p>
+                    </div>
                   </div>
-                  
-                  <p>This scattered workflow slows you down. CryptoHippo solves that.</p>
+
+                  <p className="mt-4">By letting these two "minds" reason together, HippoAI filters out the garbage and gives you actual clarity on what's happening — and why.</p>
                 </div>
               </div>
 
-              <div>
-                <h2 className="text-2xl font-semibold text-white mb-4 text-center">What You Get</h2>
-                <div className="space-y-4 text-crypto-silver">
-                  <div>
-                    <h3 className="text-lg font-medium text-white mb-2">Market Overview</h3>
-                    <div className="space-y-1 ml-4">
-                      <p>• Fear & Greed Index</p>
-                      <p>• BTC/ETH dominance</p>
-                      <p>• Curated news feed</p>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h3 className="text-lg font-medium text-white mb-2">Top Majors Analysis</h3>
-                    <div className="space-y-1 ml-4">
-                      <p>• TradingView charts for instant TA</p>
-                      <p>• CoinMarketCap data without leaving the page</p>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h3 className="text-lg font-medium text-white mb-2">On-Chain Intelligence</h3>
-                    <div className="space-y-1 ml-4">
-                      <p>• Live net flows</p>
-                      <p>• Trending tokens</p>
-                      <p>• AI-powered sentiment feeds</p>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h3 className="text-lg font-medium text-white mb-2">Chain-Specific Hubs</h3>
-                    <div className="space-y-1 ml-4">
-                      <p>• ETH, SOL, BASE, Bittensor, Abstract, HyperLiquid</p>
-                      <p>• Chain-specific DeFi tools, trending tokens, and social analytics</p>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h3 className="text-lg font-medium text-white mb-2">DeFi Central</h3>
-                    <div className="space-y-1 ml-4">
-                      <p>• Farming, liquidity pools, perpetuals — all in one spot</p>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h3 className="text-lg font-medium text-white mb-2">Stocks & Macro</h3>
-                    <div className="space-y-1 ml-4">
-                      <p>• Favorite equity watchlists</p>
-                      <p>• Crypto treasury holdings</p>
-                      <p>• Market context for macro trends</p>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h3 className="text-lg font-medium text-white mb-2">Portfolio Tracking</h3>
-                    <div className="space-y-1 ml-4">
-                      <p>• Multi-chain wallet integration</p>
-                      <p>• Real-time performance updates</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Second Hippo Image - Above "Who It's For" */}
               <div className="flex justify-center my-10">
                 <div className="w-40 h-40 rounded-xl overflow-hidden shadow-xl border-2 border-yellow-400">
-                  <img 
-                    src={cuteHippo} 
-                    alt="Cute Hippo" 
+                  <img
+                    src={cuteHippo}
+                    alt="HippoAI"
                     className="w-full h-full object-cover"
                   />
                 </div>
               </div>
 
               <div>
-                <h2 className="text-2xl font-semibold text-white mb-4 text-center">Who It's For</h2>
-                <div className="space-y-1 text-crypto-silver">
-                  <p>• Day traders who need speed and clarity</p>
-                  <p>• DeFi farmers and liquidity providers</p>
-                  <p>• On-chain analysts chasing alpha</p>
-                  <p>• Swing traders who mix crypto and equities</p>
+                <h2 className="text-2xl font-semibold text-white mb-4 text-center">Everything in One View</h2>
+                <div className="text-crypto-silver space-y-4">
+                  <p>We didn't just add a few stock tickers and call it a day. HippoAI is a full-spectrum terminal:</p>
+
+                  <div className="text-left max-w-2xl mx-auto space-y-3 mt-4">
+                    <div className="flex items-start gap-3">
+                      <span className="text-white font-medium whitespace-nowrap">Stocks & Crypto:</span>
+                      <span>High-speed data and charting for both worlds.</span>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <span className="text-white font-medium whitespace-nowrap">On-Chain & DeFi:</span>
+                      <span>Real-time net flows, liquidity pools, and trending tokens on ETH, SOL, BASE, and beyond.</span>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <span className="text-white font-medium whitespace-nowrap">RWA & Commodities:</span>
+                      <span>Track the tokenization of the real world — from Gold and Oil to Real-World Assets.</span>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <span className="text-white font-medium whitespace-nowrap">Prediction Markets:</span>
+                      <span>See where the actual money is betting on global events and politics.</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <h2 className="text-2xl font-semibold text-white mb-4 text-center">Why Traders Use It</h2>
-                <div className="space-y-1 text-crypto-silver">
-                  <p>• <span className="text-white font-medium">Save Time:</span> Skip the endless tab-switching.</p>
-                  <p>• <span className="text-white font-medium">Control the Context:</span> Market, on-chain, and sentiment data together.</p>
-                  <p>• <span className="text-white font-medium">React Faster:</span> Spot setups before the crowd moves.</p>
-                  <p>• <span className="text-white font-medium">Trade Smarter:</span> One hub for your entire workflow.</p>
-                </div>
-              </div>
-
-              {/* Third Hippo Image - Above "Why This Matters" */}
               <div className="flex justify-center my-10">
                 <div className="w-36 h-36 rounded-lg overflow-hidden shadow-lg border-2 border-yellow-400">
-                  <img 
-                    src={hippoImages1} 
-                    alt="Social Intelligence" 
+                  <img
+                    src={hippoImages1}
+                    alt="Full Spectrum"
                     className="w-full h-full object-cover"
                   />
                 </div>
               </div>
 
               <div>
-                <h2 className="text-2xl font-semibold text-white mb-4 text-center">Why This Matters</h2>
+                <h2 className="text-2xl font-semibold text-white mb-4 text-center">Why We Care</h2>
                 <div className="text-crypto-silver space-y-4">
-                  <p>Crypto is still early. The tools, data, and opportunities are out there — but for newcomers, the learning curve can be steep. Finding the right charts, understanding on-chain activity, navigating DeFi platforms... it can take months (or years) to piece it all together.</p>
-                  <p>CryptoHippo is built to shorten that curve.</p>
-                  <p>By putting market data, on-chain analytics, sentiment, DeFi tools, and portfolio tracking into one clear, accessible hub, we make it easier for anyone to see the bigger picture and start making informed moves.</p>
-                  <p>Our mission is simple: <span className="text-white font-medium">help more people go on-chain, faster.</span></p>
-                  <p>When everything you need is in front of you, you can focus on learning, experimenting, and growing — instead of wasting time searching for the right tool or source.</p>
-                  <p>Whether you're here to trade, farm, analyze, or just understand the market, CryptoHippo gives you the same clarity and speed the pros have — without the complexity.</p>
+                  <p>The current financial system is basically a game of musical chairs where the music is controlled by central banks. Fiat is debt. Inflation is a slow-motion heist.</p>
+
+                  <p>We believe the only way to win is through <span className="text-white font-medium">sovereignty</span>. That means owning your assets, your data, and your identity. It's why we use a <span className="text-white font-medium">.locker domain</span> — anchoring our identity to the Bitcoin Naming System (BNS). It's not just a URL; it's a commitment to a decentralized web where you aren't the product.</p>
+
+                  <p>HippoAI exists to give you the same speed and "alpha" that the pros have, without the gatekeepers.</p>
                 </div>
               </div>
 
-              {/* Fourth Hippo Image - Above "The Bigger Picture" */}
               <div className="flex justify-center my-12">
                 <div className="w-40 h-40 rounded-2xl overflow-hidden shadow-xl border-2 border-yellow-400">
-                  <img 
-                    src={hippoDownload2} 
-                    alt="Hippo" 
+                  <img
+                    src={hippoDownload2}
+                    alt="Sovereignty"
                     className="w-full h-full object-cover"
                   />
                 </div>
               </div>
 
               <div>
-                <h2 className="text-2xl font-semibold text-white mb-4 text-center">The Bigger Picture</h2>
+                <h2 className="text-2xl font-semibold text-white mb-4 text-center">Stop Chasing. Start Leading.</h2>
                 <div className="text-crypto-silver space-y-4">
-                  <p>Bitcoin isn't just code — it's a declaration of independence from a system designed to keep you playing a game you can never win. Fiat is debt. Inflation is theft. And the central banking model ensures you're always running just to stay in place.</p>
-                  <p>The future belongs to those who think in satoshis, not cents.</p>
-                  <p>It belongs to people who understand that real financial freedom comes from owning assets that no government can print, freeze, or seize.</p>
-                  <p>Going on-chain isn't just about making trades — it's about reclaiming sovereignty over your wealth and moving beyond a centralized system that's stacked against you.</p>
-                  <p>Every position you take, every move you make is a vote for decentralization, transparency, and wealth that can't be inflated away.</p>
-                  <p>CryptoHippo exists to help you take that step with clarity, speed, and confidence.</p>
+                  <p>The old system is designed to keep you a step behind, reacting to headlines that are already priced in. HippoAI was built to flip the script. We give you the tools, the data, and the AI-driven edge to see the move before the crowd does.</p>
+
+                  <p className="text-white font-medium text-lg">The board is set. It's time to take control of your wealth and trade with total clarity.</p>
                 </div>
               </div>
 
-              {/* Fifth Hippo Image - Above "Recommended Reading" */}
               <div className="flex justify-center my-10">
                 <div className="w-44 h-44 rounded-full overflow-hidden shadow-2xl border-2 border-yellow-400">
-                  <img 
-                    src={hippoMouthOpen} 
-                    alt="Hippo" 
+                  <img
+                    src={hippoMouthOpen}
+                    alt="HippoAI"
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -226,21 +174,6 @@ export default function AboutPage() {
 
             </div>
 
-            {/* About .locker Section */}
-            <div className="space-y-6 text-center">
-              <div>
-                <h2 className="text-2xl font-semibold text-white mb-4 text-center">About .locker</h2>
-                <div className="text-crypto-silver space-y-4">
-                  <p>CryptoHippo uses a .locker domain — a new kind of web address that's both a traditional domain and a blockchain-secured identity. When you register a .locker, it's linked to the Bitcoin Naming System (BNS), meaning your Web3 identity is anchored to the most secure and decentralized blockchain in existence.</p>
-                  
-                  <p>This isn't just about a cooler domain name — it's about preparing for a future where online identity, ownership, and interaction all live on-chain. As crypto adoption grows, .locker domains bridge the gap between the familiar Web2 internet and the trustless, decentralized Web3 ecosystem.</p>
-                  
-                  <p>By using .locker, CryptoHippo signals its commitment to that future — one where traders, investors, and everyday users can control their own identity, data, and assets without relying on centralized gatekeepers.</p>
-                </div>
-              </div>
-            </div>
-
-            {/* The Case for Bitcoin */}
             <div className="mt-12 pt-8 border-t border-crypto-silver/20">
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-6">
                 <div className="flex items-center gap-2">
@@ -268,18 +201,16 @@ export default function AboutPage() {
               </button>
             </div>
 
-            {/* Centered Hippo Image - Between VanEck and Support */}
             <div className="flex justify-center my-12">
               <div className="w-48 h-48 rounded-2xl overflow-hidden shadow-xl border-2 border-yellow-400">
-                <img 
-                  src={hippoLaserEyes} 
-                  alt="Market Overview" 
+                <img
+                  src={hippoLaserEyes}
+                  alt="HippoAI"
                   className="w-full h-full object-cover"
                 />
               </div>
             </div>
 
-            {/* Support Section */}
             <div className="mt-12 pt-8 border-t border-crypto-silver/20">
               <h2 className="text-2xl font-semibold text-white mb-6 text-center">Support CryptoHippo</h2>
               <a
