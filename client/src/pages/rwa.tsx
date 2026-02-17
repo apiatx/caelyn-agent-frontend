@@ -82,28 +82,28 @@ export default function RWAPage() {
 
           {/* The World Onchain ASSETS */}
           <GlassCard className="p-6">
-            <div className="flex items-center gap-2 mb-6">
-              <div className="w-6 h-6 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full flex items-center justify-center">
-                <TrendingUp className="w-4 h-4 text-white" />
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full flex items-center justify-center">
+                  <TrendingUp className="w-4 h-4 text-white" />
+                </div>
+                <h3 className="text-xl font-semibold text-white">The World Onchain</h3>
+                <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-xs">
+                  ASSETS
+                </Badge>
               </div>
-              <h3 className="text-xl font-semibold text-white">The World Onchain</h3>
-              <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-xs">
-                ASSETS
-              </Badge>
+              <a
+                href="https://jup.ag/pro?tab=stocks"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
+              >
+                Open Full View <ExternalLink className="w-3 h-3" />
+              </a>
             </div>
 
             {/* Jupiter Pro - Stocks Iframe */}
             <div className="mb-6">
-              <div className="flex justify-end items-center mb-3">
-                <a
-                  href="https://jup.ag/pro?tab=stocks"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
-                >
-                  Open Full View <ExternalLink className="w-3 h-3" />
-                </a>
-              </div>
               <div className="bg-black/20 border border-crypto-silver/20 rounded-lg overflow-hidden">
                 <SafeIframe
                   src="https://jup.ag/pro?tab=stocks"
