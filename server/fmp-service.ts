@@ -268,4 +268,17 @@ export const fmpService = {
     );
     return results.filter(Boolean);
   },
+
+  async searchTickers(query: string): Promise<Array<{symbol: string; name: string; type: string; exchange: string}>> {
+    if (!query || query.length < 1) return [];
+    try {
+      const results = await fetchFMP<Array<{symbol: string; name: string; type: string; exchangeShortName: string}>>('/search', { query, limit: '10' });
+      return (Array.isArray(results) ? results : []).map(r => ({
+        symbol: r.symbol || '',
+        name: r.name || '',
+        type: r.type || 'stock',
+        exchange: r.exchangeShortName || '',
+      }));
+    } catch { return []; }
+  },
 };

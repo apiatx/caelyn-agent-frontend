@@ -28,17 +28,17 @@
     "addedAt": "2026-02-16T18:30:16.195Z"
   },
   {
-    "id": "mlpif6am8gy0n",
-    "ticker": "HYPEUSD",
-    "shares": 10,
-    "avgCost": 30,
-    "addedAt": "2026-02-16T18:30:34.654Z"
-  },
-  {
     "id": "mlpilm85zrtfp",
     "ticker": "SPAI",
     "shares": 10,
     "avgCost": 3,
     "addedAt": "2026-02-16T18:35:35.237Z"
+  },
+  {
+    "id": "mlpypea5pg4cq",
+    "ticker": "HYPE",
+    "shares": 10,
+    "avgCost": 20,
+    "addedAt": "2026-02-17T02:06:25.421Z"
   }
 ]

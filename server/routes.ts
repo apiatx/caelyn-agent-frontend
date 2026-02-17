@@ -25,6 +25,7 @@ interface StockHolding {
   shares: number;
   avgCost: number;
   addedAt: string;
+  assetType?: string;
 }
 
 function ensureDataDir() {
@@ -920,7 +921,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/stock-holdings', (req, res) => {
     try {
-      const { ticker, shares, avgCost } = req.body;
+      const { ticker, shares, avgCost, assetType } = req.body;
       if (!ticker || !shares || !avgCost) {
         return res.status(400).json({ error: 'ticker, shares, and avgCost are required' });
       }
@@ -931,6 +932,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         shares: Number(shares),
         avgCost: Number(avgCost),
         addedAt: new Date().toISOString(),
+        assetType: assetType || 'stock',
       };
       holdings.push(newHolding);
       writeHoldings(holdings);
@@ -1005,6 +1007,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('FMP events error:', error);
       res.status(500).json({ error: 'Failed to fetch events' });
+    }
+  });
+
+  app.get('/api/fmp/search', async (req, res) => {
+    try {
+      const query = (req.query.q as string || '').trim();
+      if (!query) return res.json([]);
+      const results = await fmpService.searchTickers(query);
+      res.json(results);
+    } catch (error) {
+      console.error('FMP search error:', error);
+      res.status(500).json({ error: 'Failed to search tickers' });
     }
   });
 

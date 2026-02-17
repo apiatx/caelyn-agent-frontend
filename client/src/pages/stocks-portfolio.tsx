@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Fragment, useState, useEffect, useCallback, useMemo, type ReactNode } from 'react';
 import { Card } from "@/components/ui/card";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { Plus, Trash2, ArrowUpDown, ChevronDown, ChevronRight, Bot, Calendar, TrendingUp, TrendingDown, ExternalLink, RefreshCw, Briefcase } from 'lucide-react';
@@ -10,6 +10,7 @@ interface Holding {
   shares: number;
   avgCost: number;
   addedAt: string;
+  assetType?: string;
 }
 
 interface QuoteData {
@@ -53,7 +54,7 @@ interface DividendEvent {
   paymentDate: string;
 }
 
-const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+const GlassCard = ({ children, className = "" }: { children: ReactNode; className?: string }) => (
   <Card className={`bg-black/40 backdrop-blur-lg border-crypto-silver/20 ${className}`}>
     {children}
   </Card>
@@ -72,6 +73,8 @@ const SECTOR_COLORS: Record<string, string> = {
   'Utilities': '#06b6d4',
   'Basic Materials': '#d97706',
   'Unknown': '#4b5563',
+  'Crypto': '#f97316',
+  'Commodities': '#78716c',
 };
 
 const PIE_COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#ec4899', '#8b5cf6', '#14b8a6', '#ef4444', '#06b6d4', '#a78bfa', '#d97706', '#6366f1', '#f97316'];
@@ -96,6 +99,24 @@ export default function StocksPortfolioPage() {
   const [loadingQuotes, setLoadingQuotes] = useState(false);
   const [quotesError, setQuotesError] = useState(false);
   const [addingHolding, setAddingHolding] = useState(false);
+  const [tickerSuggestions, setTickerSuggestions] = useState<Array<{symbol: string; name: string; type: string; exchange: string}>>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [selectedAssetType, setSelectedAssetType] = useState('');
+
+  const searchTickers = useCallback(async (query: string) => {
+    if (query.length < 1) { setTickerSuggestions([]); return; }
+    setSearchLoading(true);
+    try {
+      const res = await fetch(`/api/fmp/search?q=${encodeURIComponent(query)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setTickerSuggestions(data);
+        setShowSuggestions(true);
+      }
+    } catch (err) { console.error('Search failed:', err); }
+    finally { setSearchLoading(false); }
+  }, []);
 
   const fetchHoldings = useCallback(async () => {
     try {
@@ -183,6 +204,14 @@ export default function StocksPortfolioPage() {
     return () => clearInterval(interval);
   }, [holdings, fetchQuotes]);
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (newTicker.trim().length >= 1) searchTickers(newTicker.trim());
+      else { setTickerSuggestions([]); setShowSuggestions(false); }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [newTicker, searchTickers]);
+
   const addHolding = async () => {
     if (!newTicker.trim() || !newShares || !newAvgCost) return;
     setAddingHolding(true);
@@ -190,12 +219,13 @@ export default function StocksPortfolioPage() {
       const res = await fetch('/api/stock-holdings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ticker: newTicker.trim(), shares: parseFloat(newShares), avgCost: parseFloat(newAvgCost) }),
+        body: JSON.stringify({ ticker: newTicker.trim(), shares: parseFloat(newShares), avgCost: parseFloat(newAvgCost), assetType: selectedAssetType || 'stock' }),
       });
       if (res.ok) {
         setNewTicker('');
         setNewShares('');
         setNewAvgCost('');
+        setSelectedAssetType('');
         await fetchHoldings();
       }
     } catch (err) {
@@ -258,7 +288,10 @@ export default function StocksPortfolioPage() {
   const sectorData = useMemo(() => {
     const sectors: Record<string, number> = {};
     enrichedHoldings.forEach(h => {
-      const sector = h.quote?.sector || 'Unknown';
+      let sector = h.quote?.sector || 'Unknown';
+      if (h.assetType === 'crypto') sector = 'Crypto';
+      else if (h.assetType === 'commodity') sector = 'Commodities';
+      else if (sector === 'Unknown' || !sector) sector = 'Unknown';
       sectors[sector] = (sectors[sector] || 0) + h.totalValue;
     });
     return Object.entries(sectors)
@@ -416,7 +449,26 @@ export default function StocksPortfolioPage() {
               <h3 className="text-sm font-semibold text-white">Add Holding</h3>
             </div>
             <div className="flex flex-col sm:flex-row gap-2">
-              <input type="text" placeholder="Ticker (e.g. NVDA)" value={newTicker} onChange={e => setNewTicker(e.target.value.toUpperCase())} onKeyDown={e => e.key === 'Enter' && addHolding()} className="bg-white/5 border border-crypto-silver/20 rounded-lg px-3 py-2 text-sm text-white placeholder-crypto-silver/50 focus:outline-none focus:border-blue-500/50 w-full sm:w-36" />
+              <div className="relative w-full sm:w-56">
+                <input type="text" placeholder="Search ticker..." value={newTicker} onChange={e => setNewTicker(e.target.value)} onFocus={() => { if (tickerSuggestions.length > 0) setShowSuggestions(true); }} onBlur={() => setTimeout(() => setShowSuggestions(false), 200)} onKeyDown={e => e.key === 'Enter' && addHolding()} className="bg-white/5 border border-crypto-silver/20 rounded-lg px-3 py-2 text-sm text-white placeholder-crypto-silver/50 focus:outline-none focus:border-blue-500/50 w-full" />
+                {searchLoading && <div className="absolute right-2 top-2.5 w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />}
+                {showSuggestions && tickerSuggestions.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-black/90 backdrop-blur-lg border border-crypto-silver/20 rounded-lg overflow-hidden z-50 max-h-64 overflow-y-auto shadow-xl">
+                    {tickerSuggestions.map((s, i) => (
+                      <button key={i} onMouseDown={e => e.preventDefault()} onClick={() => { setNewTicker(s.symbol); setSelectedAssetType(s.type); setShowSuggestions(false); setTickerSuggestions([]); }} className="w-full text-left px-3 py-2 hover:bg-white/10 transition-colors flex items-center justify-between gap-2 border-b border-crypto-silver/5 last:border-0">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-white text-sm">{s.symbol}</span>
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded uppercase font-medium ${s.type === 'stock' ? 'bg-blue-500/20 text-blue-400' : s.type === 'etf' ? 'bg-green-500/20 text-green-400' : s.type === 'crypto' ? 'bg-orange-500/20 text-orange-400' : 'bg-purple-500/20 text-purple-400'}`}>{s.type}</span>
+                          </div>
+                          <div className="text-[11px] text-crypto-silver truncate">{s.name}</div>
+                        </div>
+                        <span className="text-[10px] text-crypto-silver/60 shrink-0">{s.exchange}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <input type="number" placeholder="Shares" value={newShares} onChange={e => setNewShares(e.target.value)} onKeyDown={e => e.key === 'Enter' && addHolding()} className="bg-white/5 border border-crypto-silver/20 rounded-lg px-3 py-2 text-sm text-white placeholder-crypto-silver/50 focus:outline-none focus:border-blue-500/50 w-full sm:w-28" />
               <input type="number" placeholder="Avg Cost ($)" value={newAvgCost} onChange={e => setNewAvgCost(e.target.value)} onKeyDown={e => e.key === 'Enter' && addHolding()} className="bg-white/5 border border-crypto-silver/20 rounded-lg px-3 py-2 text-sm text-white placeholder-crypto-silver/50 focus:outline-none focus:border-blue-500/50 w-full sm:w-32" />
               <button onClick={addHolding} disabled={addingHolding || !newTicker.trim() || !newShares || !newAvgCost} className="flex items-center justify-center gap-1.5 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 rounded-lg text-sm font-medium text-white transition-all disabled:opacity-40">
@@ -433,6 +485,7 @@ export default function StocksPortfolioPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-crypto-silver/10">
+                      <th className="pb-2 pr-1 w-6"></th>
                       <th className="text-left pb-2 pr-3"><SortHeader label="Ticker" keyName="ticker" /></th>
                       <th className="text-right pb-2 px-3"><SortHeader label="Shares" keyName="shares" /></th>
                       <th className="text-right pb-2 px-3"><SortHeader label="Avg Cost" keyName="avgCost" /></th>
@@ -444,37 +497,118 @@ export default function StocksPortfolioPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {sortedHoldings.map(h => (
-                      <tr key={h.id} className="border-b border-crypto-silver/5 hover:bg-white/5 transition-colors">
-                        <td className="py-2.5 pr-3">
-                          <div className="font-semibold text-white">{h.ticker}</div>
-                          <div className="text-[10px] text-crypto-silver truncate max-w-[120px]">{h.quote?.companyName || h.quote?.name || ''}</div>
-                        </td>
-                        <td className="text-right py-2.5 px-3 text-crypto-silver">{h.shares}</td>
-                        <td className="text-right py-2.5 px-3 text-crypto-silver">{fmt(h.avgCost)}</td>
-                        <td className="text-right py-2.5 px-3 text-white font-medium">
-                          {loadingQuotes && !h.currentPrice ? <span className="animate-pulse text-crypto-silver">Loading...</span> : quotesError && !h.currentPrice ? <span className="text-yellow-500 text-xs">Unavailable</span> : h.currentPrice > 0 ? fmt(h.currentPrice) : <span className="text-crypto-silver/50">—</span>}
-                        </td>
-                        <td className={`text-right py-2.5 px-3 font-medium ${h.dailyPL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                          {loadingQuotes && !h.currentPrice ? <span className="animate-pulse text-crypto-silver">...</span> : quotesError && !h.currentPrice ? <span className="text-yellow-500 text-xs">—</span> : h.currentPrice > 0 ? fmtPL(h.dailyPL) : <span className="text-crypto-silver/50">—</span>}
-                        </td>
-                        <td className={`text-right py-2.5 px-3 font-medium ${h.totalPL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                          {loadingQuotes && !h.currentPrice ? <span className="animate-pulse text-crypto-silver">...</span> : quotesError && !h.currentPrice ? <span className="text-yellow-500 text-xs">—</span> : h.currentPrice > 0 ? <><div>{fmtPL(h.totalPL)}</div><div className="text-[10px] opacity-70">{pctPL(h.totalPL, h.avgCost * h.shares)}</div></> : <span className="text-crypto-silver/50">—</span>}
-                        </td>
-                        <td className="text-right py-2.5 px-3 text-crypto-silver">
-                          {totalPortfolioValue > 0 ? ((h.totalValue / totalPortfolioValue) * 100).toFixed(1) + '%' : <span className="text-crypto-silver/50">—</span>}
-                        </td>
-                        <td className="text-right py-2.5 pl-3">
-                          <button onClick={() => deleteHolding(h.id)} className="text-red-400/50 hover:text-red-400 transition-colors p-1">
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                    {sortedHoldings.map(h => {
+                      const isExpanded = expandedCard === h.id;
+                      const target = priceTargets[h.ticker];
+                      const q = h.quote;
+                      return (
+                        <Fragment key={h.id}>
+                          <tr onClick={() => setExpandedCard(isExpanded ? null : h.id)} className="border-b border-crypto-silver/5 hover:bg-white/5 transition-colors cursor-pointer">
+                            <td className="py-2.5 pr-1 w-6">
+                              {isExpanded ? <ChevronDown className="w-3.5 h-3.5 text-crypto-silver" /> : <ChevronRight className="w-3.5 h-3.5 text-crypto-silver" />}
+                            </td>
+                            <td className="py-2.5 pr-3">
+                              <div className="font-semibold text-white">{h.ticker}</div>
+                              <div className="text-[10px] text-crypto-silver truncate max-w-[120px]">{h.quote?.companyName || h.quote?.name || ''}</div>
+                            </td>
+                            <td className="text-right py-2.5 px-3 text-crypto-silver">{h.shares}</td>
+                            <td className="text-right py-2.5 px-3 text-crypto-silver">{fmt(h.avgCost)}</td>
+                            <td className="text-right py-2.5 px-3 text-white font-medium">
+                              {loadingQuotes && !h.currentPrice ? <span className="animate-pulse text-crypto-silver">Loading...</span> : quotesError && !h.currentPrice ? <span className="text-yellow-500 text-xs">Unavailable</span> : h.currentPrice > 0 ? fmt(h.currentPrice) : <span className="text-crypto-silver/50">—</span>}
+                            </td>
+                            <td className={`text-right py-2.5 px-3 font-medium ${h.dailyPL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                              {loadingQuotes && !h.currentPrice ? <span className="animate-pulse text-crypto-silver">...</span> : quotesError && !h.currentPrice ? <span className="text-yellow-500 text-xs">—</span> : h.currentPrice > 0 ? fmtPL(h.dailyPL) : <span className="text-crypto-silver/50">—</span>}
+                            </td>
+                            <td className={`text-right py-2.5 px-3 font-medium ${h.totalPL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                              {loadingQuotes && !h.currentPrice ? <span className="animate-pulse text-crypto-silver">...</span> : quotesError && !h.currentPrice ? <span className="text-yellow-500 text-xs">—</span> : h.currentPrice > 0 ? <><div>{fmtPL(h.totalPL)}</div><div className="text-[10px] opacity-70">{pctPL(h.totalPL, h.avgCost * h.shares)}</div></> : <span className="text-crypto-silver/50">—</span>}
+                            </td>
+                            <td className="text-right py-2.5 px-3 text-crypto-silver">
+                              {totalPortfolioValue > 0 ? ((h.totalValue / totalPortfolioValue) * 100).toFixed(1) + '%' : <span className="text-crypto-silver/50">—</span>}
+                            </td>
+                            <td className="text-right py-2.5 pl-3">
+                              <button onClick={(e) => { e.stopPropagation(); deleteHolding(h.id); }} className="text-red-400/50 hover:text-red-400 transition-colors p-1">
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </td>
+                          </tr>
+                          {isExpanded && (
+                            <tr className="border-b border-crypto-silver/5">
+                              <td colSpan={9} className="p-0">
+                                <div className="px-3 pb-3 pt-1 bg-white/[0.02]">
+                                  <div className="rounded-lg overflow-hidden border border-crypto-silver/10 my-2">
+                                    <iframe
+                                      src={`https://s.tradingview.com/widgetembed/?symbol=${h.ticker}&interval=D&theme=dark&style=1&locale=en&hide_top_toolbar=1&hide_side_toolbar=1&allow_symbol_change=0&save_image=0&width=100%25&height=220`}
+                                      style={{ width: '100%', height: 220, border: 'none', display: 'block' }}
+                                      title={`${h.ticker} chart`}
+                                    />
+                                  </div>
+                                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
+                                    {q?.pe && (
+                                      <div className="bg-white/5 rounded-lg p-2.5">
+                                        <div className="text-[10px] text-crypto-silver uppercase tracking-wider">P/E Ratio</div>
+                                        <div className="text-sm font-semibold text-white">{q.pe.toFixed(1)}</div>
+                                      </div>
+                                    )}
+                                    {q?.eps && (
+                                      <div className="bg-white/5 rounded-lg p-2.5">
+                                        <div className="text-[10px] text-crypto-silver uppercase tracking-wider">EPS</div>
+                                        <div className="text-sm font-semibold text-white">${q.eps.toFixed(2)}</div>
+                                      </div>
+                                    )}
+                                    {q?.marketCap && (
+                                      <div className="bg-white/5 rounded-lg p-2.5">
+                                        <div className="text-[10px] text-crypto-silver uppercase tracking-wider">Market Cap</div>
+                                        <div className="text-sm font-semibold text-white">{q.marketCap >= 1e12 ? (q.marketCap / 1e12).toFixed(1) + 'T' : q.marketCap >= 1e9 ? (q.marketCap / 1e9).toFixed(1) + 'B' : (q.marketCap / 1e6).toFixed(0) + 'M'}</div>
+                                      </div>
+                                    )}
+                                    {q?.volume && (
+                                      <div className="bg-white/5 rounded-lg p-2.5">
+                                        <div className="text-[10px] text-crypto-silver uppercase tracking-wider">Volume</div>
+                                        <div className="text-sm font-semibold text-white">{q.volume >= 1e6 ? (q.volume / 1e6).toFixed(1) + 'M' : (q.volume / 1e3).toFixed(0) + 'K'}</div>
+                                      </div>
+                                    )}
+                                    {target && (
+                                      <>
+                                        <div className="bg-white/5 rounded-lg p-2.5">
+                                          <div className="text-[10px] text-crypto-silver uppercase tracking-wider">Target Consensus</div>
+                                          <div className={`text-sm font-semibold ${target.targetConsensus > h.currentPrice ? 'text-green-400' : 'text-red-400'}`}>
+                                            ${target.targetConsensus?.toFixed(2)}
+                                          </div>
+                                          <div className="text-[10px] text-crypto-silver">
+                                            {h.currentPrice > 0 ? ((((target.targetConsensus - h.currentPrice) / h.currentPrice) * 100).toFixed(1) + '% upside') : ''}
+                                          </div>
+                                        </div>
+                                        <div className="bg-white/5 rounded-lg p-2.5">
+                                          <div className="text-[10px] text-crypto-silver uppercase tracking-wider">Target Range</div>
+                                          <div className="text-sm font-semibold text-white">${target.targetLow?.toFixed(0)} – ${target.targetHigh?.toFixed(0)}</div>
+                                        </div>
+                                      </>
+                                    )}
+                                    {q?.sector && q.sector !== 'Unknown' && (
+                                      <div className="bg-white/5 rounded-lg p-2.5">
+                                        <div className="text-[10px] text-crypto-silver uppercase tracking-wider">Sector</div>
+                                        <div className="text-sm font-semibold text-white">{q.sector}</div>
+                                      </div>
+                                    )}
+                                    {q?.industry && q.industry !== 'Unknown' && (
+                                      <div className="bg-white/5 rounded-lg p-2.5">
+                                        <div className="text-[10px] text-crypto-silver uppercase tracking-wider">Industry</div>
+                                        <div className="text-sm font-semibold text-white">{q.industry}</div>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </Fragment>
+                      );
+                    })}
                   </tbody>
                   {totalPortfolioValue > 0 && (
                     <tfoot>
                       <tr className="border-t border-crypto-silver/20">
+                        <td></td>
                         <td colSpan={3} className="py-3 text-right text-xs text-crypto-silver font-medium">TOTAL</td>
                         <td className="text-right py-3 px-3 text-white font-bold">{fmt(totalPortfolioValue)}</td>
                         <td className={`text-right py-3 px-3 font-bold ${totalDailyPL >= 0 ? 'text-green-400' : 'text-red-400'}`}>{fmtPL(totalDailyPL)}</td>
@@ -529,111 +663,7 @@ export default function StocksPortfolioPage() {
             </div>
           )}
 
-          {/* Section 3: Position Health Cards */}
-          {holdings.length > 0 && (
-            <GlassCard className="p-3 sm:p-4">
-              <h3 className="text-sm font-semibold text-white mb-3">Position Details</h3>
-              <div className="space-y-2">
-                {sortedHoldings.map(h => {
-                  const isExpanded = expandedCard === h.id;
-                  const target = priceTargets[h.ticker];
-                  const q = h.quote;
-                  return (
-                    <div key={h.id} className="border border-crypto-silver/10 rounded-lg overflow-hidden hover:border-crypto-silver/20 transition-colors">
-                      <button onClick={() => setExpandedCard(isExpanded ? null : h.id)} className="w-full flex items-center justify-between p-3 text-left hover:bg-white/5 transition-colors">
-                        <div className="flex items-center gap-3">
-                          {isExpanded ? <ChevronDown className="w-4 h-4 text-crypto-silver" /> : <ChevronRight className="w-4 h-4 text-crypto-silver" />}
-                          <div>
-                            <span className="font-semibold text-white text-sm">{h.ticker}</span>
-                            <span className="text-crypto-silver text-xs ml-2">{q?.companyName || q?.name || ''}</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <span className="text-white font-medium text-sm">{h.currentPrice > 0 ? fmt(h.currentPrice) : '—'}</span>
-                          <span className={`text-sm font-medium ${h.dailyPL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                            {h.currentPrice > 0 ? fmtPL(h.dailyPL) : '—'}
-                          </span>
-                          <span className={`text-sm font-medium ${h.totalPL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                            {h.currentPrice > 0 ? fmtPL(h.totalPL) : '—'}
-                          </span>
-                        </div>
-                      </button>
-
-                      {isExpanded && (
-                        <div className="px-3 pb-3 border-t border-crypto-silver/10">
-                          <div className="rounded-lg overflow-hidden border border-crypto-silver/10 my-3">
-                            <iframe
-                              src={`https://s.tradingview.com/widgetembed/?symbol=${h.ticker}&interval=D&theme=dark&style=1&locale=en&hide_top_toolbar=1&hide_side_toolbar=1&allow_symbol_change=0&save_image=0&width=100%25&height=220`}
-                              style={{ width: '100%', height: 220, border: 'none', display: 'block' }}
-                              title={`${h.ticker} chart`}
-                            />
-                          </div>
-
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
-                            {q?.pe && (
-                              <div className="bg-white/5 rounded-lg p-2.5">
-                                <div className="text-[10px] text-crypto-silver uppercase tracking-wider">P/E Ratio</div>
-                                <div className="text-sm font-semibold text-white">{q.pe.toFixed(1)}</div>
-                              </div>
-                            )}
-                            {q?.eps && (
-                              <div className="bg-white/5 rounded-lg p-2.5">
-                                <div className="text-[10px] text-crypto-silver uppercase tracking-wider">EPS</div>
-                                <div className="text-sm font-semibold text-white">${q.eps.toFixed(2)}</div>
-                              </div>
-                            )}
-                            {q?.marketCap && (
-                              <div className="bg-white/5 rounded-lg p-2.5">
-                                <div className="text-[10px] text-crypto-silver uppercase tracking-wider">Market Cap</div>
-                                <div className="text-sm font-semibold text-white">{q.marketCap >= 1e12 ? (q.marketCap / 1e12).toFixed(1) + 'T' : q.marketCap >= 1e9 ? (q.marketCap / 1e9).toFixed(1) + 'B' : (q.marketCap / 1e6).toFixed(0) + 'M'}</div>
-                              </div>
-                            )}
-                            {q?.volume && (
-                              <div className="bg-white/5 rounded-lg p-2.5">
-                                <div className="text-[10px] text-crypto-silver uppercase tracking-wider">Volume</div>
-                                <div className="text-sm font-semibold text-white">{q.volume >= 1e6 ? (q.volume / 1e6).toFixed(1) + 'M' : (q.volume / 1e3).toFixed(0) + 'K'}</div>
-                              </div>
-                            )}
-                            {target && (
-                              <>
-                                <div className="bg-white/5 rounded-lg p-2.5">
-                                  <div className="text-[10px] text-crypto-silver uppercase tracking-wider">Target Consensus</div>
-                                  <div className={`text-sm font-semibold ${target.targetConsensus > h.currentPrice ? 'text-green-400' : 'text-red-400'}`}>
-                                    ${target.targetConsensus?.toFixed(2)}
-                                  </div>
-                                  <div className="text-[10px] text-crypto-silver">
-                                    {h.currentPrice > 0 ? ((((target.targetConsensus - h.currentPrice) / h.currentPrice) * 100).toFixed(1) + '% upside') : ''}
-                                  </div>
-                                </div>
-                                <div className="bg-white/5 rounded-lg p-2.5">
-                                  <div className="text-[10px] text-crypto-silver uppercase tracking-wider">Target Range</div>
-                                  <div className="text-sm font-semibold text-white">${target.targetLow?.toFixed(0)} – ${target.targetHigh?.toFixed(0)}</div>
-                                </div>
-                              </>
-                            )}
-                            {q?.sector && q.sector !== 'Unknown' && (
-                              <div className="bg-white/5 rounded-lg p-2.5">
-                                <div className="text-[10px] text-crypto-silver uppercase tracking-wider">Sector</div>
-                                <div className="text-sm font-semibold text-white">{q.sector}</div>
-                              </div>
-                            )}
-                            {q?.industry && q.industry !== 'Unknown' && (
-                              <div className="bg-white/5 rounded-lg p-2.5">
-                                <div className="text-[10px] text-crypto-silver uppercase tracking-wider">Industry</div>
-                                <div className="text-sm font-semibold text-white">{q.industry}</div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </GlassCard>
-          )}
-
-          {/* Section 5: Upcoming Events */}
+          {/* Section 3: Upcoming Events */}
           {allEvents.length > 0 && (
             <GlassCard className="p-3 sm:p-4">
               <div className="flex items-center gap-2 mb-3">
