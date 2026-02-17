@@ -3,7 +3,7 @@ import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
 import newHeaderBackground from "@assets/photo-1504333638930-c8787321eee0_1757208194192.avif";
 import criptomonedas from "@assets/Criptomonedas-r3pu02e09qriw0f9pyqx2rtyhwsri4es6sdgff2ebk_1757225856373.png";
 import { useScrollFade } from "@/hooks/useScrollFade";
-import { Zap, ExternalLink } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 
 export default function OnchainAirdropPage() {
   const headerOpacity = useScrollFade(30, 120);
@@ -55,15 +55,6 @@ export default function OnchainAirdropPage() {
       {/* Main Content */}
       <main className="max-w-[95vw] mx-auto px-2 sm:px-3 py-4">
         <GlassCard className="p-6">
-          <div className="flex flex-col items-center text-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
-              <Zap className="text-white text-xl" />
-            </div>
-            <div>
-              <h3 className="text-2xl font-bold text-white">Airdrop</h3>
-              <p className="text-crypto-silver">Track and discover crypto airdrops</p>
-            </div>
-          </div>
 
           <div className="flex justify-end mb-3">
             <a

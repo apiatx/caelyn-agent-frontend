@@ -82,19 +82,6 @@ export default function OnchainMemesPage() {
       {/* Main Content */}
       <main className="max-w-[95vw] mx-auto px-2 sm:px-3 py-4">
         <div className="space-y-8">
-          <div className="text-center mb-8">
-            <div className="flex items-center justify-center gap-4 mb-4">
-              <div className="relative">
-                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-orange-500/20 to-red-500/20 border-2 border-orange-400/50 flex items-center justify-center shadow-lg shadow-orange-500/30">
-                  <span className="text-4xl">🐸</span>
-                </div>
-                <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-orange-400/20 to-red-400/20"></div>
-              </div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-orange-100 to-red-100 bg-clip-text text-transparent drop-shadow-lg">Memes</h1>
-            </div>
-            <p className="text-lg text-gray-300 font-medium tracking-wide">Memecoin analytics and discovery platforms</p>
-          </div>
-
           {/* Memecoins */}
           <div className="space-y-8">
             <GlassCard className="p-6">

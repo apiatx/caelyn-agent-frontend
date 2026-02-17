@@ -2,7 +2,6 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Wallet, Shield, Bot, ExternalLink, Zap, Lock, Users, ArrowUpRight } from "lucide-react";
 import { openSecureLink } from '@/utils/security';
-import smartWalletsImage from "@assets/download (1)_1757198511747.png";
 import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
 import newHeaderBackground from "@assets/photo-1504333638930-c8787321eee0_1757208194192.avif";
 import criptomonedas from "@assets/Criptomonedas-r3pu02e09qriw0f9pyqx2rtyhwsri4es6sdgff2ebk_1757225856373.png";
@@ -86,18 +85,6 @@ export default function OnchainSmartWalletsPage() {
       {/* Main Content */}
       <main className="max-w-[95vw] mx-auto px-2 sm:px-3 py-4">
         <div className="space-y-8">
-          <div className="text-center mb-6">
-            <div className="flex items-center justify-center gap-3 mb-3">
-              <img 
-                src={smartWalletsImage} 
-                alt="Smart Wallets" 
-                className="w-16 h-16 rounded-xl object-cover border-2 border-yellow-400"
-              />
-              <h1 className="text-3xl font-bold text-white">Smart Wallets</h1>
-            </div>
-            <p className="text-crypto-silver">Smart wallet analytics and whale tracking</p>
-          </div>
-
           {/* Smart Wallets */}
           <GlassCard className="p-6">
             <div className="mb-8">

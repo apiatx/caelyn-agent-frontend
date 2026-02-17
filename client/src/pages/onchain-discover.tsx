@@ -87,14 +87,6 @@ export default function OnchainDiscoverPage() {
       {/* Main Content */}
       <main className="max-w-[95vw] mx-auto px-2 sm:px-3 py-4">
         <div className="space-y-8">
-          {/* Page Title */}
-          <div className="text-center mb-8">
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-white via-emerald-100 to-cyan-100 bg-clip-text text-transparent drop-shadow-lg mb-4">
-              Discover Web3
-            </h2>
-            <p className="text-lg text-gray-300 font-medium tracking-wide">Explore ecosystems, DApps, and Web3 platforms</p>
-          </div>
-
           {/* Discover Web3 Content */}
           <div className="space-y-8 mt-12">
             <GlassCard className="p-6">
