@@ -55,6 +55,7 @@ interface DividendEvent {
 
 const cache = new Map<string, { data: any; timestamp: number }>();
 const CACHE_TTL = 60_000;
+const CRYPTO_CACHE_TTL = 300_000;
 
 function getCached<T>(key: string): T | null {
   const cached = cache.get(key);
@@ -181,6 +182,63 @@ async function fetchYahooChartFallback(symbols: string[]): Promise<StockQuote[]>
   return results;
 }
 
+const PROFILE_CACHE_TTL = 3600_000;
+const profileCache = new Map<string, { data: any; timestamp: number }>();
+
+async function enrichWithFMPProfile(quotes: StockQuote[]): Promise<StockQuote[]> {
+  const needsEnrichment = quotes.filter(q => {
+    const cached = profileCache.get(q.symbol.toUpperCase());
+    if (cached && Date.now() - cached.timestamp < PROFILE_CACHE_TTL) {
+      return false;
+    }
+    return (!q.sector || q.sector === 'Unknown') && (!q.marketCap || q.marketCap === 0);
+  });
+
+  const enrichedFromCache = quotes.map(q => {
+    const cached = profileCache.get(q.symbol.toUpperCase());
+    if (cached && Date.now() - cached.timestamp < PROFILE_CACHE_TTL && cached.data) {
+      const p = cached.data;
+      return { ...q, sector: p.sector || q.sector, industry: p.industry || q.industry, marketCap: p.mktCap || p.marketCap || q.marketCap, companyName: p.companyName || q.companyName };
+    }
+    return q;
+  });
+
+  if (needsEnrichment.length === 0 || !FMP_API_KEY) return enrichedFromCache;
+
+  const symbols = needsEnrichment.map(q => q.symbol);
+  console.log(`[PORTFOLIO] Fetching FMP profile for: ${symbols.join(',')}`);
+
+  try {
+    const url = `${FMP_BASE}/profile?symbol=${symbols.join(',')}&apikey=${FMP_API_KEY}`;
+    const res = await fetch(url);
+    if (!res.ok) {
+      console.error(`[PORTFOLIO] FMP profile returned ${res.status}`);
+      symbols.forEach(s => profileCache.set(s.toUpperCase(), { data: null, timestamp: Date.now() }));
+      return enrichedFromCache;
+    }
+    const profiles: any[] = await res.json();
+    if (!Array.isArray(profiles)) return enrichedFromCache;
+
+    const profileMap = new Map<string, any>();
+    profiles.forEach(p => {
+      if (p.symbol) {
+        profileMap.set(p.symbol.toUpperCase(), p);
+        profileCache.set(p.symbol.toUpperCase(), { data: p, timestamp: Date.now() });
+      }
+    });
+
+    return enrichedFromCache.map(q => {
+      const p = profileMap.get(q.symbol.toUpperCase());
+      if (!p) return q;
+      console.log(`[PORTFOLIO] ${q.symbol} enriched: sector=${p.sector}, mktCap=${p.mktCap}`);
+      return { ...q, sector: p.sector || q.sector, industry: p.industry || q.industry, marketCap: p.mktCap || p.marketCap || q.marketCap, companyName: p.companyName || q.companyName };
+    });
+  } catch (err) {
+    console.error('[PORTFOLIO] FMP profile fetch failed:', err);
+    return enrichedFromCache;
+  }
+}
+
 async function fetchFMP<T>(endpoint: string, params: Record<string, string> = {}): Promise<T> {
   const queryParams = new URLSearchParams({ ...params, apikey: FMP_API_KEY });
   const url = `${FMP_BASE}${endpoint}?${queryParams}`;
@@ -217,8 +275,8 @@ const COMMODITY_YAHOO_SYMBOLS: Record<string, string> = {
 
 async function fetchCryptoQuotes(symbols: string[], retryCount = 0): Promise<StockQuote[]> {
   const cacheKey = `crypto:${symbols.join(',')}`;
-  const cached = getCached<StockQuote[]>(cacheKey);
-  if (cached) return cached;
+  const cached = cache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CRYPTO_CACHE_TTL) return cached.data as StockQuote[];
 
   const ids = symbols.map(s => CRYPTO_COINGECKO_IDS[s.toUpperCase()] || s.toLowerCase()).filter(Boolean);
   if (ids.length === 0) return [];
@@ -275,10 +333,16 @@ async function fetchCryptoQuotes(symbols: string[], retryCount = 0): Promise<Sto
   }
 }
 
+const YAHOO_CRYPTO_SKIP = new Set(['HYPE', 'TAO', 'WIF', 'TIA', 'SEI', 'PEPE', 'ARB', 'OP', 'APT', 'SUI', 'RENDER', 'FET', 'INJ', 'NEAR']);
+
 async function fetchCryptoFromYahoo(symbols: string[]): Promise<StockQuote[]> {
   console.log(`[PORTFOLIO] Falling back to Yahoo for crypto: ${symbols.join(',')}`);
   const results: StockQuote[] = [];
   for (const sym of symbols) {
+    if (YAHOO_CRYPTO_SKIP.has(sym.toUpperCase())) {
+      console.log(`[PORTFOLIO] Skipping Yahoo for ${sym} (no reliable Yahoo symbol)`);
+      continue;
+    }
     try {
       const yahooSym = `${sym.toUpperCase()}-USD`;
       const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSym)}?interval=1d&range=5d&includePrePost=false`;
@@ -391,11 +455,13 @@ export const fmpService = {
 
     console.log(`[PORTFOLIO] Routing: stocks=${stockSymbols.join(',')}, crypto=${cryptoSymbols.join(',')}, commodities=${commoditySymbols.join(',')}`);
 
-    const [stockQuotes, cryptoQuotes, commodityQuotes] = await Promise.all([
+    const [rawStockQuotes, cryptoQuotes, commodityQuotes] = await Promise.all([
       stockSymbols.length > 0 ? fetchYahooQuotes(stockSymbols) : Promise.resolve([]),
       cryptoSymbols.length > 0 ? fetchCryptoQuotes(cryptoSymbols) : Promise.resolve([]),
       commoditySymbols.length > 0 ? fetchCommodityQuotes(commoditySymbols) : Promise.resolve([]),
     ]);
+
+    const stockQuotes = await enrichWithFMPProfile(rawStockQuotes);
 
     return [...stockQuotes, ...cryptoQuotes, ...commodityQuotes];
   },

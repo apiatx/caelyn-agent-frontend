@@ -15,6 +15,7 @@ export class RealTimePriceService {
   private priceCache = new Map<string, TokenPrice>();
   private updateInterval: NodeJS.Timeout | null = null;
   private readonly UPDATE_FREQUENCY = 5000; // Update every 5 seconds
+  private _cgLastCall: number | null = null;
   
   // Base network token list with contract addresses for CoinGecko API
   private readonly BASE_TOKENS = [
@@ -110,18 +111,20 @@ export class RealTimePriceService {
         }
       }
       
-      // Try CoinGecko with error handling
-      try {
-        const cgResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
-        if (cgResponse.ok) {
-          const cgData = await cgResponse.json();
-          if (cgData.ethereum?.usd) {
-            realETHPrice = cgData.ethereum.usd;
-            console.log(`💎 Real ETH price from CoinGecko: $${realETHPrice}`);
+      if (!this._cgLastCall || Date.now() - this._cgLastCall > 60000) {
+        try {
+          const cgResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
+          if (cgResponse.ok) {
+            const cgData = await cgResponse.json();
+            if (cgData.ethereum?.usd) {
+              realETHPrice = cgData.ethereum.usd;
+              console.log(`💎 Real ETH price from CoinGecko: $${realETHPrice}`);
+            }
+            this._cgLastCall = Date.now();
           }
+        } catch (error) {
+          console.log('⚠️ CoinGecko rate limited, using DexScreener data');
         }
-      } catch (error) {
-        console.log('⚠️ CoinGecko rate limited, using DexScreener data');
       }
       
       // Update ETH with real price

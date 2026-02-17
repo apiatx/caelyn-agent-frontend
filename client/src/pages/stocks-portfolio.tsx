@@ -104,8 +104,8 @@ const COMMODITY_TV_SYMBOLS: Record<string, string> = {
 };
 
 const INDEX_TV_SYMBOLS: Record<string, string> = {
-  "SPX": "SP:SPX", "SPY": "AMEX:SPY", "DJI": "FOREXCOM:DJI",
-  "IXIC": "NASDAQ:IXIC", "NDX": "NASDAQ:NDX", "QQQ": "NASDAQ:QQQ",
+  "SPX": "FOREXCOM:SPX500", "SPY": "AMEX:SPY", "DJI": "FOREXCOM:DJI",
+  "IXIC": "FOREXCOM:USNAS100", "NDX": "FOREXCOM:USNAS100", "QQQ": "NASDAQ:QQQ",
   "RUT": "TVC:RUT", "VIX": "TVC:VIX", "DXY": "TVC:DXY",
 };
 
