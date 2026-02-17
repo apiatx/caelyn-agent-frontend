@@ -72,9 +72,11 @@ const SECTOR_COLORS: Record<string, string> = {
   'Real Estate': '#a78bfa',
   'Utilities': '#06b6d4',
   'Basic Materials': '#d97706',
-  'Unknown': '#4b5563',
   'Crypto': '#f97316',
   'Commodities': '#78716c',
+  'ETFs': '#06b6d4',
+  'Indices': '#a78bfa',
+  'Other': '#4b5563',
 };
 
 const PIE_COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#ec4899', '#8b5cf6', '#14b8a6', '#ef4444', '#06b6d4', '#a78bfa', '#d97706', '#6366f1', '#f97316'];
@@ -99,24 +101,7 @@ export default function StocksPortfolioPage() {
   const [loadingQuotes, setLoadingQuotes] = useState(false);
   const [quotesError, setQuotesError] = useState(false);
   const [addingHolding, setAddingHolding] = useState(false);
-  const [tickerSuggestions, setTickerSuggestions] = useState<Array<{symbol: string; name: string; type: string; exchange: string}>>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [searchLoading, setSearchLoading] = useState(false);
-  const [selectedAssetType, setSelectedAssetType] = useState('');
-
-  const searchTickers = useCallback(async (query: string) => {
-    if (query.length < 1) { setTickerSuggestions([]); return; }
-    setSearchLoading(true);
-    try {
-      const res = await fetch(`/api/fmp/search?q=${encodeURIComponent(query)}`);
-      if (res.ok) {
-        const data = await res.json();
-        setTickerSuggestions(data);
-        setShowSuggestions(true);
-      }
-    } catch (err) { console.error('Search failed:', err); }
-    finally { setSearchLoading(false); }
-  }, []);
+  const [selectedAssetType, setSelectedAssetType] = useState('stock');
 
   const fetchHoldings = useCallback(async () => {
     try {
@@ -204,14 +189,6 @@ export default function StocksPortfolioPage() {
     return () => clearInterval(interval);
   }, [holdings, fetchQuotes]);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (newTicker.trim().length >= 1) searchTickers(newTicker.trim());
-      else { setTickerSuggestions([]); setShowSuggestions(false); }
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [newTicker, searchTickers]);
-
   const addHolding = async () => {
     if (!newTicker.trim() || !newShares || !newAvgCost) return;
     setAddingHolding(true);
@@ -225,7 +202,7 @@ export default function StocksPortfolioPage() {
         setNewTicker('');
         setNewShares('');
         setNewAvgCost('');
-        setSelectedAssetType('');
+        setSelectedAssetType('stock');
         await fetchHoldings();
       }
     } catch (err) {
@@ -288,10 +265,12 @@ export default function StocksPortfolioPage() {
   const sectorData = useMemo(() => {
     const sectors: Record<string, number> = {};
     enrichedHoldings.forEach(h => {
-      let sector = h.quote?.sector || 'Unknown';
-      if (h.assetType === 'crypto') sector = 'Crypto';
-      else if (h.assetType === 'commodity') sector = 'Commodities';
-      else if (sector === 'Unknown' || !sector) sector = 'Unknown';
+      let sector = h.quote?.sector || '';
+      if (h.assetType === 'crypto' && (!sector || sector === 'Unknown')) sector = 'Crypto';
+      else if (h.assetType === 'commodity' && (!sector || sector === 'Unknown')) sector = 'Commodities';
+      else if (h.assetType === 'etf' && (!sector || sector === 'Unknown')) sector = 'ETFs';
+      else if (h.assetType === 'index' && (!sector || sector === 'Unknown')) sector = 'Indices';
+      else if (!sector || sector === 'Unknown') sector = 'Other';
       sectors[sector] = (sectors[sector] || 0) + h.totalValue;
     });
     return Object.entries(sectors)
@@ -449,26 +428,14 @@ export default function StocksPortfolioPage() {
               <h3 className="text-sm font-semibold text-white">Add Holding</h3>
             </div>
             <div className="flex flex-col sm:flex-row gap-2">
-              <div className="relative w-full sm:w-56">
-                <input type="text" placeholder="Search ticker..." value={newTicker} onChange={e => setNewTicker(e.target.value)} onFocus={() => { if (tickerSuggestions.length > 0) setShowSuggestions(true); }} onBlur={() => setTimeout(() => setShowSuggestions(false), 200)} onKeyDown={e => e.key === 'Enter' && addHolding()} className="bg-white/5 border border-crypto-silver/20 rounded-lg px-3 py-2 text-sm text-white placeholder-crypto-silver/50 focus:outline-none focus:border-blue-500/50 w-full" />
-                {searchLoading && <div className="absolute right-2 top-2.5 w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />}
-                {showSuggestions && tickerSuggestions.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-black/90 backdrop-blur-lg border border-crypto-silver/20 rounded-lg overflow-hidden z-50 max-h-64 overflow-y-auto shadow-xl">
-                    {tickerSuggestions.map((s, i) => (
-                      <button key={i} onMouseDown={e => e.preventDefault()} onClick={() => { setNewTicker(s.symbol); setSelectedAssetType(s.type); setShowSuggestions(false); setTickerSuggestions([]); }} className="w-full text-left px-3 py-2 hover:bg-white/10 transition-colors flex items-center justify-between gap-2 border-b border-crypto-silver/5 last:border-0">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-white text-sm">{s.symbol}</span>
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded uppercase font-medium ${s.type === 'stock' ? 'bg-blue-500/20 text-blue-400' : s.type === 'etf' ? 'bg-green-500/20 text-green-400' : s.type === 'crypto' ? 'bg-orange-500/20 text-orange-400' : 'bg-purple-500/20 text-purple-400'}`}>{s.type}</span>
-                          </div>
-                          <div className="text-[11px] text-crypto-silver truncate">{s.name}</div>
-                        </div>
-                        <span className="text-[10px] text-crypto-silver/60 shrink-0">{s.exchange}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <input type="text" placeholder="Ticker (e.g. NVDA)" value={newTicker} onChange={e => setNewTicker(e.target.value.toUpperCase())} onKeyDown={e => e.key === 'Enter' && addHolding()} className="bg-white/5 border border-crypto-silver/20 rounded-lg px-3 py-2 text-sm text-white placeholder-crypto-silver/50 focus:outline-none focus:border-blue-500/50 w-full sm:w-36" />
+              <select value={selectedAssetType} onChange={e => setSelectedAssetType(e.target.value)} className="bg-white/5 border border-crypto-silver/20 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500/50 w-full sm:w-32 appearance-none cursor-pointer" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E\")", backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center' }}>
+                <option value="stock" className="bg-gray-900">Stock</option>
+                <option value="etf" className="bg-gray-900">ETF</option>
+                <option value="index" className="bg-gray-900">Index</option>
+                <option value="crypto" className="bg-gray-900">Crypto</option>
+                <option value="commodity" className="bg-gray-900">Commodity</option>
+              </select>
               <input type="number" placeholder="Shares" value={newShares} onChange={e => setNewShares(e.target.value)} onKeyDown={e => e.key === 'Enter' && addHolding()} className="bg-white/5 border border-crypto-silver/20 rounded-lg px-3 py-2 text-sm text-white placeholder-crypto-silver/50 focus:outline-none focus:border-blue-500/50 w-full sm:w-28" />
               <input type="number" placeholder="Avg Cost ($)" value={newAvgCost} onChange={e => setNewAvgCost(e.target.value)} onKeyDown={e => e.key === 'Enter' && addHolding()} className="bg-white/5 border border-crypto-silver/20 rounded-lg px-3 py-2 text-sm text-white placeholder-crypto-silver/50 focus:outline-none focus:border-blue-500/50 w-full sm:w-32" />
               <button onClick={addHolding} disabled={addingHolding || !newTicker.trim() || !newShares || !newAvgCost} className="flex items-center justify-center gap-1.5 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 rounded-lg text-sm font-medium text-white transition-all disabled:opacity-40">
