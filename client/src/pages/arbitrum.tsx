@@ -1,5 +1,5 @@
 import ArbitrumContent from "@/components/arbitrum-content";
-import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
+import arbitrumLogo from "@assets/image_1771293557192.png";
 import newHeaderBackground from "@assets/photo-1504333638930-c8787321eee0_1757208194192.avif";
 import criptomonedas from "@assets/Criptomonedas-r3pu02e09qriw0f9pyqx2rtyhwsri4es6sdgff2ebk_1757225856373.png";
 import { useScrollFade } from "@/hooks/useScrollFade";
@@ -28,11 +28,11 @@ export default function ArbitrumPage() {
         <div className="relative z-10 max-w-[95vw] mx-auto px-2 sm:px-3">
           <div className="flex justify-between items-center py-3 lg:py-4">
             <div className="flex items-center space-x-3 sm:space-x-4">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-full overflow-hidden border-2 border-blue-400 shadow-lg bg-black/50 flex items-center justify-center">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-full overflow-hidden border-2 border-blue-400 shadow-lg">
                 <img 
-                  src={cryptoHippoImage}
+                  src={arbitrumLogo}
                   alt="Arbitrum"
-                  className="w-10 h-10 sm:w-14 sm:h-14 lg:w-16 lg:h-16 object-contain"
+                  className="w-full h-full object-cover"
                 />
               </div>
               <div>
