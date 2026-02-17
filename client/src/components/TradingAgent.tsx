@@ -14,7 +14,7 @@ export default function TradingAgent() {
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState<Array<{role: string, content: string, parsed?: any}>>([]);
   const [error, setError] = useState<string | null>(null);
-  const [chatHistory, setChatHistory] = useState<Array<{role: string, content: string}>>([]);
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const [loadingStage, setLoadingStage] = useState('');
   const [expandedTicker, setExpandedTicker] = useState<string | null>(null);
   const [showScreener, setShowScreener] = useState(false);
@@ -25,7 +25,7 @@ export default function TradingAgent() {
   const [showScansExpanded, setShowScansExpanded] = useState(false);
   const [groupExpanded, setGroupExpanded] = useState<Record<string, boolean>>({ g1: true, g2: true, g3: true, g4: true, g5: true });
   const [allGroupsVisible, setAllGroupsVisible] = useState(true);
-  const [savedChats, setSavedChats] = useState<Array<{id: number, title: string, messages: Array<{role: string, content: string, parsed?: any}>, history: Array<{role: string, content: string}>}>>([]);
+  const [savedChats, setSavedChats] = useState<Array<{id: number, title: string, messages: Array<{role: string, content: string, parsed?: any}>, conversationId: string | null}>>([]);
   const [showChatHistory, setShowChatHistory] = useState(false);
   const scrollAnchorRef = useRef<HTMLDivElement>(null);
 
@@ -37,10 +37,10 @@ export default function TradingAgent() {
     if (messages.length > 0) {
       const firstUserMsg = messages.find(m => m.role === 'user');
       const title = firstUserMsg ? (firstUserMsg.content.length > 60 ? firstUserMsg.content.slice(0, 60) + '...' : firstUserMsg.content) : 'Chat';
-      setSavedChats(prev => [{id: Date.now(), title, messages: [...messages], history: [...chatHistory]}, ...prev].slice(0, 20));
+      setSavedChats(prev => [{id: Date.now(), title, messages: [...messages], conversationId}, ...prev].slice(0, 20));
     }
     setMessages([]);
-    setChatHistory([]);
+    setConversationId(null);
     setShowPrompts(true);
     setShowScansExpanded(false);
     setShowChatHistory(false);
@@ -50,7 +50,7 @@ export default function TradingAgent() {
 
   function loadChat(chat: typeof savedChats[0]) {
     setMessages(chat.messages);
-    setChatHistory(chat.history);
+    setConversationId(chat.conversationId);
     setShowPrompts(false);
     setShowChatHistory(false);
     setExpandedTicker(null);
@@ -62,33 +62,23 @@ export default function TradingAgent() {
   }
 
   async function askAgent(customPrompt?: string, freshChat?: boolean, presetIntent?: string | null) {
-    const q = customPrompt || prompt;
+    const queryText = (customPrompt || prompt).trim();
 
-    if (!q.trim() && !presetIntent) return;
+    if (!queryText && !presetIntent) return;
 
-    const tickerPattern = /^(review|analyze|check|watchlist|rate|my)?\s*[A-Z]{1,5}(\s*[,\s]\s*[A-Z]{1,5}){2,}/i;
-    const cleanedQuery = q.trim();
-    if (!presetIntent && tickerPattern.test(cleanedQuery)) {
-      const tickers = cleanedQuery
-        .replace(/^(review|analyze|check|watchlist|rate|my)\s*/i, '')
-        .split(/[,\s]+/)
-        .map(t => t.trim().toUpperCase())
-        .filter(t => /^[A-Z]{1,5}$/.test(t))
-        .slice(0, 25);
-      if (tickers.length >= 3) {
-        setPrompt('');
-        await sendWatchlistReview(tickers);
-        return;
-      }
+    if (presetIntent) {
+      console.log('Sending preset:', presetIntent);
+    } else {
+      console.log('Sending query:', queryText);
     }
 
     setLoading(true); setError(null); setExpandedTicker(null);
     setPrompt('');
     setShowPrompts(false);
-    const displayText = q.trim() || presetIntent || '';
+    const displayText = queryText || presetIntent || '';
     setMessages(prev => [...prev, {role: 'user', content: displayText}]);
 
-    const historyToSend = freshChat ? [] : chatHistory.slice(-20);
+    if (freshChat) setConversationId(null);
 
     setLoadingStage('Classifying query...');
     const stages = ['Scanning market data...','Pulling technicals & volume...','Checking social sentiment...','Analyzing insider activity...','Fetching options flow...','Reading macro indicators...','Generating analysis...'];
@@ -97,9 +87,9 @@ export default function TradingAgent() {
 
     try {
       const body: any = {
-        query: presetIntent ? '' : q.trim(),
+        query: presetIntent ? '' : queryText,
         preset_intent: presetIntent || null,
-        history: historyToSend,
+        conversation_id: freshChat ? null : conversationId,
       };
       const res = await fetch(`${AGENT_BACKEND_URL}/api/query`, {
         method: 'POST',
@@ -109,38 +99,9 @@ export default function TradingAgent() {
       if (!res.ok) throw new Error(`Status ${res.status}`);
       const data = await res.json();
       if (data.error) throw new Error(data.error);
+      if (data.conversation_id) setConversationId(data.conversation_id);
       const responseText = data.analysis || data.structured?.message || data.message || '';
       setMessages(prev => [...prev, {role: 'assistant', content: responseText, parsed: data}]);
-      setChatHistory(prev => [...prev, {role:'user', content:displayText, query: presetIntent ? '' : q.trim(), preset_intent: presetIntent || null, timestamp: Date.now()}, {role:'assistant', content:responseText, query:'', preset_intent:null, timestamp: Date.now()}]);
-    } catch (err: any) {
-      const errMsg = err.message.includes('429') ? 'Rate limit reached. Wait a moment.' : err.message.includes('403') ? 'Auth failed.' : err.message;
-      setError(errMsg);
-      setMessages(prev => [...prev, {role: 'assistant', content: errMsg}]);
-    } finally { clearInterval(iv); setLoadingStage(''); setLoading(false); }
-  }
-
-  async function sendWatchlistReview(tickers: string[]) {
-    setLoading(true); setError(null); setExpandedTicker(null);
-    setShowPrompts(false);
-    setMessages(prev => [...prev, {role: 'user', content: `Review my watchlist: ${tickers.join(', ')}`}]);
-
-    setLoadingStage('Analyzing watchlist...');
-    const stages = ['Pulling price data...','Scanning technicals...','Checking fundamentals...','Reading sentiment...','Analyzing insider activity...','Building portfolio view...','Generating ratings...'];
-    let idx = 0;
-    const iv = setInterval(() => { if (idx < stages.length) { setLoadingStage(stages[idx]); idx++; } }, 1800);
-
-    try {
-      const res = await fetch(`${AGENT_BACKEND_URL}/api/watchlist`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-API-Key': AGENT_API_KEY },
-        body: JSON.stringify({ tickers }),
-      });
-      if (!res.ok) throw new Error(`Status ${res.status}`);
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-      const responseText = data.analysis || data.structured?.message || data.message || '';
-      setMessages(prev => [...prev, {role: 'assistant', content: responseText, parsed: data}]);
-      setChatHistory(prev => [...prev, {role:'user', content:`Review my watchlist: ${tickers.join(', ')}`}, {role:'assistant', content: responseText}]);
     } catch (err: any) {
       const errMsg = err.message.includes('429') ? 'Rate limit reached. Wait a moment.' : err.message.includes('403') ? 'Auth failed.' : err.message;
       setError(errMsg);
@@ -1277,7 +1238,7 @@ export default function TradingAgent() {
             {groupExpanded[group.id] && (
               <div style={{ display:'flex', flexWrap:'wrap', gap:6, paddingLeft:6, marginTop:4 }}>
                 {group.buttons.map(q => (
-                  <button key={q.l} onClick={() => { newChat(); askAgent(q.l, true, q.intent); }} disabled={loading} style={{ padding:'8px 14px', background:C.card, border:`1px solid ${C.border}`, borderRadius:8, color:C.dim, fontSize:11, cursor:loading?'not-allowed':'pointer', fontFamily:font, transition:'all 0.15s', whiteSpace:'nowrap', flex:'0 0 auto' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; }}>{q.l}</button>
+                  <button key={q.l} onClick={() => { newChat(); askAgent('', true, q.intent); }} disabled={loading} style={{ padding:'8px 14px', background:C.card, border:`1px solid ${C.border}`, borderRadius:8, color:C.dim, fontSize:11, cursor:loading?'not-allowed':'pointer', fontFamily:font, transition:'all 0.15s', whiteSpace:'nowrap', flex:'0 0 auto' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; }}>{q.l}</button>
                 ))}
               </div>
             )}
