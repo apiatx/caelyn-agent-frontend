@@ -6,7 +6,6 @@ import { openSecureLink, getSecureIframeProps, getSecureLinkProps } from "@/util
 import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
 import newHeaderBackground from "@assets/photo-1504333638930-c8787321eee0_1757208194192.avif";
 import criptomonedas from "@assets/Criptomonedas-r3pu02e09qriw0f9pyqx2rtyhwsri4es6sdgff2ebk_1757225856373.png";
-import tradeIcon from "@assets/3676668_1757212085729.png";
 import hyperliquidLogo from "@assets/hyperliquid-logo_1755977414943.png";
 import { useScrollFade } from "@/hooks/useScrollFade";
 
@@ -89,23 +88,6 @@ export default function TradePerpsPage() {
       {/* Main Content */}
       <main className="max-w-[95vw] mx-auto px-2 sm:px-3 py-4">
         <div className="space-y-12 p-6">
-          {/* PERPS Section - Enhanced Header */}
-          <div className="text-center relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-orange-500/20 via-red-500/20 to-pink-500/20 blur-3xl -z-10"></div>
-            <div className="flex justify-center items-center gap-4 mb-6">
-              <div className="w-20 h-20 rounded-full flex items-center justify-center border-2 border-orange-400 shadow-2xl hover:scale-110 transition-transform duration-300 overflow-hidden">
-                <img 
-                  src={tradeIcon} 
-                  alt="Trade Icon" 
-                  className="w-16 h-16 object-contain filter invert"
-                />
-              </div>
-              <h2 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-white via-orange-200 to-red-200 bg-clip-text text-transparent">Perpetual Futures</h2>
-            </div>
-            <p className="text-lg text-white/80 font-medium tracking-wide">Advanced Perpetual Futures Trading Platforms</p>
-            <div className="w-32 h-1 bg-gradient-to-r from-orange-500 to-red-500 mx-auto mt-4 rounded-full"></div>
-          </div>
-
           {/* Perps Section */}
           <GlassCard className="p-8">
             <div className="space-y-6">

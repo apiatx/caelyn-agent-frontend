@@ -18,15 +18,6 @@ export default function DeFAIContent() {
     <div className="space-y-8">
       {/* DeFAI Glass Card */}
       <GlassCard className="p-6">
-        <div className="flex flex-col items-center text-center gap-3 mb-6">
-          <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
-            <Brain className="text-white text-xl" />
-          </div>
-          <div>
-            <h3 className="text-2xl font-bold text-white">DeFAI</h3>
-            <p className="text-crypto-silver">AI-Powered DeFi Analytics & Protocols</p>
-          </div>
-        </div>
 
         {/* Trading & Analysis Subsection */}
         <div className="space-y-4 mb-8">

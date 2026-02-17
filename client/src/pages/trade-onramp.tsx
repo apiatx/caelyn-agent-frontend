@@ -70,30 +70,8 @@ export default function TradeOnRampPage() {
       {/* Main Content */}
       <main className="max-w-[95vw] mx-auto px-2 sm:px-3 py-4">
         <div className="space-y-8">
-          {/* On Ramp - Enhanced Header */}
-          <div className="text-center relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-blue-500/20 blur-3xl -z-10"></div>
-            <div className="flex justify-center items-center gap-4 mb-6">
-              <div className="w-28 h-28 rounded-full flex items-center justify-center border-2 border-blue-400 shadow-2xl hover:scale-110 transition-transform duration-300 overflow-hidden bg-gradient-to-r from-blue-500 to-purple-500">
-                <Wallet className="w-14 h-14 text-white" />
-              </div>
-              <h2 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-white via-blue-200 to-purple-200 bg-clip-text text-transparent">On Ramp</h2>
-            </div>
-            <p className="text-lg text-white/80 font-medium tracking-wide">Fiat to crypto onboarding platforms</p>
-            <div className="w-32 h-1 bg-gradient-to-r from-blue-500 to-purple-500 mx-auto mt-4 rounded-full"></div>
-          </div>
-
           {/* On Ramp Glass Card */}
           <GlassCard className="p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
-                <Wallet className="text-white text-xl" />
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold text-white">On Ramp</h3>
-                <p className="text-crypto-silver">Fiat to crypto onboarding platforms</p>
-              </div>
-            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <Button

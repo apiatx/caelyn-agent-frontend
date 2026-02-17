@@ -4,7 +4,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DollarSign, TrendingUp, BarChart3, Brain, ArrowLeftRight, Wallet, ExternalLink, Layers, Shield, Database, Zap } from "lucide-react";
 import { openSecureLink, getSecureIframeProps } from "@/utils/security";
-import cryptoHippoDefi from "@assets/CryptoHippo_1757212757402.png";
 
 // Safe components for external links and iframes
 const SafeLink = ({ href, children, className = "", ...props }: { 
@@ -58,24 +57,6 @@ const openInNewTab = (url: string) => {
 export default function DeFiSection() {
   return (
     <div className="space-y-8">
-      {/* DeFi Hub - Enhanced Header */}
-      <div className="text-center relative">
-        <div className="absolute inset-0 bg-gradient-to-r from-green-500/20 via-emerald-500/20 to-teal-500/20 blur-3xl -z-10"></div>
-        <div className="flex justify-center items-center gap-4 mb-6">
-          <div className="w-28 h-28 rounded-full flex items-center justify-center border-2 border-yellow-400 shadow-2xl hover:scale-110 transition-transform duration-300 overflow-hidden">
-            <img 
-              src={cryptoHippoDefi} 
-              alt="Crypto Hippo DeFi" 
-              className="w-28 h-28 object-cover"
-            />
-          </div>
-          <h2 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-white via-green-200 to-emerald-200 bg-clip-text text-transparent">DeFi Hub</h2>
-        </div>
-        <p className="text-lg text-white/80 font-medium tracking-wide">Comprehensive Decentralized Finance access and analytics</p>
-        <div className="w-32 h-1 bg-gradient-to-r from-green-500 to-emerald-500 mx-auto mt-4 rounded-full"></div>
-      </div>
-
-
       {/* Analytics Glass Card */}
       <GlassCard className="p-6">
         <div className="flex flex-col items-center text-center gap-3 mb-6">

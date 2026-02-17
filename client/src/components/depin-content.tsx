@@ -18,15 +18,6 @@ export default function DePINContent() {
     <div className="space-y-8">
       {/* DePIN Section */}
       <GlassCard className="p-6">
-        <div className="flex flex-col items-center text-center gap-3 mb-6">
-          <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/30">
-            <Zap className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h4 className="text-xl font-bold text-white">DePIN</h4>
-            <p className="text-crypto-silver">Decentralized Physical Infrastructure Networks</p>
-          </div>
-        </div>
 
         {/* Pinlink Marketplace Button */}
         <div className="mb-8">

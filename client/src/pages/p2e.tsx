@@ -63,19 +63,6 @@ export default function P2EPage() {
       {/* Main Content */}
       <main className="max-w-[95vw] mx-auto px-2 sm:px-3 py-4">
         <div className="space-y-8">
-          <div className="text-center mb-8">
-            <div className="flex items-center justify-center gap-4 mb-4">
-              <div className="relative">
-                <div className="w-20 h-20 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/30 border-2 border-purple-400/50">
-                  <Gamepad2 className="w-10 h-10 text-white" />
-                </div>
-                <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-purple-400/20 to-pink-400/20"></div>
-              </div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-purple-100 to-pink-100 bg-clip-text text-transparent drop-shadow-lg">Play-to-Earn Gaming</h1>
-            </div>
-            <p className="text-lg text-gray-300 font-medium tracking-wide">Discover trending blockchain games and P2E opportunities</p>
-          </div>
-
           {/* Play-to-Earn Gaming Hub */}
           <GlassCard className="p-6">
             <div className="flex items-center gap-3 mb-6">

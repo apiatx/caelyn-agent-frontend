@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, ExternalLink, Zap, Activity } from "lucide-react";
+import { TrendingUp, ExternalLink, Activity } from "lucide-react";
 import { openSecureLink, getSecureIframeProps } from "@/utils/security";
 import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
 import newHeaderBackground from "@assets/photo-1504333638930-c8787321eee0_1757208194192.avif";
@@ -111,19 +111,6 @@ export default function TradeOptionsPage() {
       {/* Main Content */}
       <main className="max-w-[95vw] mx-auto px-2 sm:px-3 py-4">
         <div className="space-y-12 p-6">
-          {/* OPTIONS Section - Enhanced Header */}
-          <div className="text-center relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/20 via-orange-500/20 to-red-500/20 blur-3xl -z-10"></div>
-            <div className="flex justify-center items-center gap-4 mb-6">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 flex items-center justify-center border-2 border-yellow-400 shadow-2xl hover:scale-110 transition-transform duration-300">
-                <Zap className="w-10 h-10 text-black" />
-              </div>
-              <h2 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-white via-yellow-200 to-orange-200 bg-clip-text text-transparent">Options Trading</h2>
-            </div>
-            <p className="text-lg text-white/80 font-medium tracking-wide">Advanced Options Trading Platforms & Tools</p>
-            <div className="w-32 h-1 bg-gradient-to-r from-yellow-500 to-orange-500 mx-auto mt-4 rounded-full"></div>
-          </div>
-
           {/* Options Section */}
           <GlassCard className="p-8">
             {/* Options Subsection */}
