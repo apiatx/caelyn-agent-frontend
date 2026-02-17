@@ -21,13 +21,14 @@ export default function AltsPage() {
               <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-full overflow-hidden">
                 <img 
                   src={hippoImage}
-                  alt="CryptoHippo"
+                  alt="TradeBlade"
                   className="w-full h-full object-cover"
                 />
               </div>
               <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold bg-gradient-to-r from-white to-crypto-silver bg-clip-text text-transparent">
-                CryptoHippo
+                Altcoins
               </h1>
+              <p className="text-sm sm:text-base text-white/70 font-medium tracking-wide mt-1">Altcoin Analytics</p>
             </div>
             <div className="flex items-center space-x-2 sm:space-x-4">
               <GlassCard className="px-2 py-1 sm:px-3 sm:py-2 hidden sm:block">
