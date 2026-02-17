@@ -103,8 +103,9 @@ export default function TradingAgent() {
       if (!res.ok) throw new Error(`Status ${res.status}`);
       const data = await res.json();
       if (data.error) throw new Error(data.error);
-      setMessages(prev => [...prev, {role: 'assistant', content: data.analysis || '', parsed: data}]);
-      setChatHistory(prev => [...prev, {role:'user',content:q.trim()}, {role:'assistant',content:data.analysis||''}]);
+      const responseText = data.analysis || data.structured?.message || data.message || '';
+      setMessages(prev => [...prev, {role: 'assistant', content: responseText, parsed: data}]);
+      setChatHistory(prev => [...prev, {role:'user',content:q.trim()}, {role:'assistant',content:responseText}]);
     } catch (err: any) {
       const errMsg = err.message.includes('429') ? 'Rate limit reached. Wait a moment.' : err.message.includes('403') ? 'Auth failed.' : err.message;
       setError(errMsg);
@@ -131,8 +132,9 @@ export default function TradingAgent() {
       if (!res.ok) throw new Error(`Status ${res.status}`);
       const data = await res.json();
       if (data.error) throw new Error(data.error);
-      setMessages(prev => [...prev, {role: 'assistant', content: data.analysis || data.message || '', parsed: data}]);
-      setChatHistory(prev => [...prev, {role:'user', content:`Review my watchlist: ${tickers.join(', ')}`}, {role:'assistant', content: data.analysis || data.message || ''}]);
+      const responseText = data.analysis || data.structured?.message || data.message || '';
+      setMessages(prev => [...prev, {role: 'assistant', content: responseText, parsed: data}]);
+      setChatHistory(prev => [...prev, {role:'user', content:`Review my watchlist: ${tickers.join(', ')}`}, {role:'assistant', content: responseText}]);
     } catch (err: any) {
       const errMsg = err.message.includes('429') ? 'Rate limit reached. Wait a moment.' : err.message.includes('403') ? 'Auth failed.' : err.message;
       setError(errMsg);
@@ -1172,7 +1174,7 @@ export default function TradingAgent() {
   function renderAssistantMessage(msg: {role: string, content: string, parsed?: any}) {
     const s = msg.parsed?.structured || (msg.parsed?.display_type ? msg.parsed : {});
     const displayType = s.display_type;
-    const analysisText = msg.parsed?.analysis || msg.parsed?.message || msg.content;
+    const analysisText = msg.parsed?.analysis || msg.parsed?.structured?.message || msg.parsed?.message || msg.content;
     return <div>
       {displayType === 'trades' && renderTrades(s)}
       {displayType === 'investments' && renderInvestments(s)}
