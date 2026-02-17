@@ -21,33 +21,10 @@
     "addedAt": "2026-02-16T18:23:28.570Z"
   },
   {
-    "id": "mlpies1vnyqwi",
-    "ticker": "SILVER",
-    "shares": 10,
-    "avgCost": 50,
-    "addedAt": "2026-02-16T18:30:16.195Z"
-  },
-  {
     "id": "mlpilm85zrtfp",
     "ticker": "SPAI",
     "shares": 10,
     "avgCost": 3,
     "addedAt": "2026-02-16T18:35:35.237Z"
-  },
-  {
-    "id": "mlpzucohazscd",
-    "ticker": "HYPE",
-    "shares": 10,
-    "avgCost": 20,
-    "addedAt": "2026-02-17T02:38:16.241Z",
-    "assetType": "etf"
-  },
-  {
-    "id": "mlpzuu5butf9c",
-    "ticker": "HYPE",
-    "shares": 30,
-    "avgCost": 30,
-    "addedAt": "2026-02-17T02:38:38.879Z",
-    "assetType": "crypto"
   }
 ]
