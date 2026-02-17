@@ -97,9 +97,10 @@ const CRYPTO_TV_SYMBOLS: Record<string, string> = {
 
 const COMMODITY_TV_SYMBOLS: Record<string, string> = {
   "SILVER": "TVC:SILVER", "GOLD": "TVC:GOLD", "OIL": "TVC:USOIL",
-  "CRUDE": "TVC:USOIL", "NATGAS": "NYMEX:NG1!", "COPPER": "COMEX:HG1!",
-  "PLATINUM": "NYMEX:PL1!", "PALLADIUM": "NYMEX:PA1!",
-  "WHEAT": "CBOT:ZW1!", "CORN": "CBOT:ZC1!",
+  "CRUDE": "TVC:USOIL", "NATGAS": "PEPPERSTONE:NATGAS",
+  "COPPER": "PEPPERSTONE:COPPER", "PLATINUM": "TVC:PLATINUM",
+  "PALLADIUM": "TVC:PALLADIUM", "WHEAT": "PEPPERSTONE:WHEAT",
+  "CORN": "PEPPERSTONE:CORN",
 };
 
 function getTradingViewSymbol(ticker: string, assetType?: string): string {
@@ -546,34 +547,55 @@ export default function StocksPortfolioPage() {
                                       title={`${h.ticker} chart`}
                                     />
                                   </div>
-                                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
-                                    {q?.pe && (
-                                      <div className="bg-white/5 rounded-lg p-2.5">
+                                  <div className="flex flex-wrap gap-2.5 mt-3">
+                                    {q?.changesPercentage != null && (
+                                      <div className="bg-white/5 rounded-lg px-3 py-2">
+                                        <div className="text-[10px] text-crypto-silver uppercase tracking-wider">Price Change</div>
+                                        <div className={`text-sm font-semibold ${q.changesPercentage >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                          {q.changesPercentage >= 0 ? '+' : ''}{q.changesPercentage.toFixed(2)}%
+                                        </div>
+                                      </div>
+                                    )}
+                                    {(h.assetType === 'stock' || h.assetType === 'crypto' || !h.assetType) && q?.marketCap != null && q.marketCap > 0 && (
+                                      <div className="bg-white/5 rounded-lg px-3 py-2">
+                                        <div className="text-[10px] text-crypto-silver uppercase tracking-wider">Market Cap</div>
+                                        <div className="text-sm font-semibold text-white">
+                                          ${q.marketCap >= 1e12 ? (q.marketCap / 1e12).toFixed(1) + 'T' : q.marketCap >= 1e9 ? (q.marketCap / 1e9).toFixed(1) + 'B' : q.marketCap >= 1e6 ? (q.marketCap / 1e6).toFixed(1) + 'M' : q.marketCap.toLocaleString()}
+                                        </div>
+                                      </div>
+                                    )}
+                                    {h.assetType !== 'index' && q?.volume != null && q.volume > 0 && (
+                                      <div className="bg-white/5 rounded-lg px-3 py-2">
+                                        <div className="text-[10px] text-crypto-silver uppercase tracking-wider">Volume</div>
+                                        <div className="text-sm font-semibold text-white">
+                                          {q.volume >= 1e9 ? (q.volume / 1e9).toFixed(1) + 'B' : q.volume >= 1e6 ? (q.volume / 1e6).toFixed(1) + 'M' : q.volume >= 1e3 ? (q.volume / 1e3).toFixed(1) + 'K' : q.volume.toLocaleString()}
+                                        </div>
+                                      </div>
+                                    )}
+                                    {(() => {
+                                      const sectorLabel = h.assetType === 'crypto' ? 'Crypto' : h.assetType === 'commodity' ? 'Commodities' : h.assetType === 'etf' ? (q?.sector && q.sector !== 'Unknown' ? q.sector : 'ETFs') : h.assetType === 'index' ? 'Indices' : (q?.sector && q.sector !== 'Unknown' ? q.sector : null);
+                                      return sectorLabel ? (
+                                        <div className="bg-white/5 rounded-lg px-3 py-2">
+                                          <div className="text-[10px] text-crypto-silver uppercase tracking-wider">Sector</div>
+                                          <div className="text-sm font-semibold text-white">{sectorLabel}</div>
+                                        </div>
+                                      ) : null;
+                                    })()}
+                                    {(h.assetType === 'stock' || !h.assetType) && q?.pe != null && q.pe > 0 && (
+                                      <div className="bg-white/5 rounded-lg px-3 py-2">
                                         <div className="text-[10px] text-crypto-silver uppercase tracking-wider">P/E Ratio</div>
                                         <div className="text-sm font-semibold text-white">{q.pe.toFixed(1)}</div>
                                       </div>
                                     )}
-                                    {q?.eps && (
-                                      <div className="bg-white/5 rounded-lg p-2.5">
+                                    {(h.assetType === 'stock' || !h.assetType) && q?.eps != null && q.eps !== 0 && (
+                                      <div className="bg-white/5 rounded-lg px-3 py-2">
                                         <div className="text-[10px] text-crypto-silver uppercase tracking-wider">EPS</div>
                                         <div className="text-sm font-semibold text-white">${q.eps.toFixed(2)}</div>
                                       </div>
                                     )}
-                                    {q?.marketCap && (
-                                      <div className="bg-white/5 rounded-lg p-2.5">
-                                        <div className="text-[10px] text-crypto-silver uppercase tracking-wider">Market Cap</div>
-                                        <div className="text-sm font-semibold text-white">{q.marketCap >= 1e12 ? (q.marketCap / 1e12).toFixed(1) + 'T' : q.marketCap >= 1e9 ? (q.marketCap / 1e9).toFixed(1) + 'B' : (q.marketCap / 1e6).toFixed(0) + 'M'}</div>
-                                      </div>
-                                    )}
-                                    {q?.volume && (
-                                      <div className="bg-white/5 rounded-lg p-2.5">
-                                        <div className="text-[10px] text-crypto-silver uppercase tracking-wider">Volume</div>
-                                        <div className="text-sm font-semibold text-white">{q.volume >= 1e6 ? (q.volume / 1e6).toFixed(1) + 'M' : (q.volume / 1e3).toFixed(0) + 'K'}</div>
-                                      </div>
-                                    )}
-                                    {target && (
+                                    {(h.assetType === 'stock' || !h.assetType) && target && (
                                       <>
-                                        <div className="bg-white/5 rounded-lg p-2.5">
+                                        <div className="bg-white/5 rounded-lg px-3 py-2">
                                           <div className="text-[10px] text-crypto-silver uppercase tracking-wider">Target Consensus</div>
                                           <div className={`text-sm font-semibold ${target.targetConsensus > h.currentPrice ? 'text-green-400' : 'text-red-400'}`}>
                                             ${target.targetConsensus?.toFixed(2)}
@@ -582,23 +604,11 @@ export default function StocksPortfolioPage() {
                                             {h.currentPrice > 0 ? ((((target.targetConsensus - h.currentPrice) / h.currentPrice) * 100).toFixed(1) + '% upside') : ''}
                                           </div>
                                         </div>
-                                        <div className="bg-white/5 rounded-lg p-2.5">
+                                        <div className="bg-white/5 rounded-lg px-3 py-2">
                                           <div className="text-[10px] text-crypto-silver uppercase tracking-wider">Target Range</div>
                                           <div className="text-sm font-semibold text-white">${target.targetLow?.toFixed(0)} – ${target.targetHigh?.toFixed(0)}</div>
                                         </div>
                                       </>
-                                    )}
-                                    {q?.sector && q.sector !== 'Unknown' && (
-                                      <div className="bg-white/5 rounded-lg p-2.5">
-                                        <div className="text-[10px] text-crypto-silver uppercase tracking-wider">Sector</div>
-                                        <div className="text-sm font-semibold text-white">{q.sector}</div>
-                                      </div>
-                                    )}
-                                    {q?.industry && q.industry !== 'Unknown' && (
-                                      <div className="bg-white/5 rounded-lg p-2.5">
-                                        <div className="text-[10px] text-crypto-silver uppercase tracking-wider">Industry</div>
-                                        <div className="text-sm font-semibold text-white">{q.industry}</div>
-                                      </div>
                                     )}
                                   </div>
                                 </div>
