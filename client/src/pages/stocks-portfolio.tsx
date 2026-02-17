@@ -242,14 +242,6 @@ export default function StocksPortfolioPage() {
     }
   }, [holdings, fetchQuotes, fetchPriceTargets, fetchEvents]);
 
-  useEffect(() => {
-    if (holdings.length === 0) return;
-    const interval = setInterval(() => {
-      fetchQuotes(holdings);
-    }, 60000);
-    return () => clearInterval(interval);
-  }, [holdings, fetchQuotes]);
-
   const addHolding = async () => {
     if (!newTicker.trim() || !newShares || !newAvgCost) return;
     setAddingHolding(true);
