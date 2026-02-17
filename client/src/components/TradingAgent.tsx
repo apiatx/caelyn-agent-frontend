@@ -1387,28 +1387,36 @@ export default function TradingAgent() {
 
       <div>
         <div style={{ display:'flex', gap:8 }}>
-          {messages.length > 0 && <button onClick={newChat} style={{ padding:'12px 14px', background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.dim, fontSize:11, cursor:'pointer', fontFamily:font, transition:'all 0.15s', whiteSpace:'nowrap' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; }}>+ New</button>}
           <input type="text" value={prompt} onChange={e => setPrompt(e.target.value)} onKeyDown={e => e.key === 'Enter' && askAgent()} placeholder={messages.length > 0 ? "Ask a follow-up..." : "Best trades today... Review NVDA, AMD, PLTR... Analyze SMCI... Screen for small caps..."} style={{ flex:1, padding:'14px 18px', border:`1px solid ${C.border}`, borderRadius:10, background:C.bg, color:C.bright, fontSize:16, fontFamily:sansFont, outline:'none' }} />
           <button onClick={() => askAgent()} disabled={loading} style={{ padding:'12px 28px', background:loading ? C.card : `linear-gradient(135deg, ${C.blue}, #2563eb)`, color:loading ? C.dim : 'white', border:'none', borderRadius:10, cursor:loading?'not-allowed':'pointer', fontWeight:700, fontSize:14, fontFamily:sansFont }}>
             {loading ? 'Scanning...' : 'Analyze'}
           </button>
         </div>
-        <div style={{ display:'flex', justifyContent:'flex-start', marginTop:4 }}>
-          <button onClick={() => setShowChatHistory(!showChatHistory)} style={{ padding:'3px 8px', background:'transparent', border:'none', color: showChatHistory ? C.text : C.dim, fontSize:9, cursor:'pointer', fontFamily:font, transition:'color 0.15s', display:'flex', alignItems:'center', gap:4 }} onMouseEnter={e => { e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.color = showChatHistory ? C.text : C.dim; }}>
-            <span style={{ fontSize:7, transform: showChatHistory ? 'rotate(180deg)' : 'rotate(0deg)', transition:'transform 0.2s', display:'inline-block' }}>▼</span>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:6 }}>
+          <button onClick={() => setShowChatHistory(!showChatHistory)} style={{ padding:'4px 10px', background:'transparent', border:`1px solid ${showChatHistory ? C.blue + '40' : 'transparent'}`, borderRadius:6, color: showChatHistory ? C.text : C.dim, fontSize:10, cursor:'pointer', fontFamily:font, transition:'all 0.15s', display:'flex', alignItems:'center', gap:5 }} onMouseEnter={e => { e.currentTarget.style.color = C.bright; e.currentTarget.style.borderColor = C.blue + '40'; }} onMouseLeave={e => { e.currentTarget.style.color = showChatHistory ? C.text : C.dim; e.currentTarget.style.borderColor = showChatHistory ? C.blue + '40' : 'transparent'; }}>
+            <span style={{ fontSize:8, transform: showChatHistory ? 'rotate(180deg)' : 'rotate(0deg)', transition:'transform 0.2s', display:'inline-block' }}>▼</span>
             Chat History{savedChats.length > 0 ? ` (${savedChats.length})` : ''}
           </button>
+          {messages.length > 0 && <button onClick={newChat} style={{ padding:'5px 14px', background:`${C.blue}12`, border:`1px solid ${C.blue}30`, borderRadius:6, color:C.blue, fontSize:10, cursor:'pointer', fontFamily:font, fontWeight:600, transition:'all 0.15s', display:'flex', alignItems:'center', gap:5 }} onMouseEnter={e => { e.currentTarget.style.background = `${C.blue}22`; e.currentTarget.style.borderColor = C.blue; }} onMouseLeave={e => { e.currentTarget.style.background = `${C.blue}12`; e.currentTarget.style.borderColor = `${C.blue}30`; }}>
+            <span style={{ fontSize:13, lineHeight:1 }}>+</span> New Chat
+          </button>}
         </div>
         {showChatHistory && (
-          <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:'0 0 10px 10px', borderTop:'none', maxHeight:200, overflowY:'auto' }}>
+          <div style={{ marginTop:6, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, maxHeight:250, overflowY:'auto' }}>
+            <div style={{ padding:'8px 14px', borderBottom:`1px solid ${C.border}`, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+              <span style={{ color:C.bright, fontSize:11, fontWeight:700, fontFamily:font }}>Saved Chats</span>
+              {savedChats.length > 0 && <span style={{ color:C.dim, fontSize:9, fontFamily:font }}>{savedChats.length} conversation{savedChats.length !== 1 ? 's' : ''}</span>}
+            </div>
             {savedChats.length === 0 ? (
-              <div style={{ padding:'12px 14px', color:C.dim, fontSize:10, fontFamily:font, textAlign:'center' }}>No previous chats</div>
+              <div style={{ padding:'20px 14px', color:C.dim, fontSize:11, fontFamily:font, textAlign:'center' }}>No saved chats yet. Start a conversation and click "New Chat" to save it and start fresh.</div>
             ) : (
               savedChats.map(chat => (
-                <div key={chat.id} style={{ display:'flex', alignItems:'center', padding:'8px 12px', borderBottom:`1px solid ${C.border}`, cursor:'pointer', transition:'background 0.1s' }} onMouseEnter={e => { e.currentTarget.style.background = `${C.blue}08`; }} onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
-                  <div onClick={() => loadChat(chat)} style={{ flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', color:C.text, fontSize:10, fontFamily:font }}>{chat.title}</div>
-                  <span style={{ color:C.dim, fontSize:8, fontFamily:font, marginLeft:8, flexShrink:0 }}>{Math.floor(chat.messages.length / 2)} msg</span>
-                  <button onClick={(e) => { e.stopPropagation(); deleteChat(chat.id); }} style={{ marginLeft:8, padding:'2px 6px', background:'transparent', border:'none', color:C.dim, fontSize:9, cursor:'pointer', fontFamily:font, flexShrink:0 }} onMouseEnter={e => { e.currentTarget.style.color = C.red; }} onMouseLeave={e => { e.currentTarget.style.color = C.dim; }}>✕</button>
+                <div key={chat.id} style={{ display:'flex', alignItems:'center', padding:'10px 14px', borderBottom:`1px solid ${C.border}`, cursor:'pointer', transition:'background 0.1s' }} onMouseEnter={e => { e.currentTarget.style.background = `${C.blue}08`; }} onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
+                  <div onClick={() => loadChat(chat)} style={{ flex:1, minWidth:0 }}>
+                    <div style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', color:C.text, fontSize:11, fontFamily:font, fontWeight:500 }}>{chat.title}</div>
+                    <div style={{ color:C.dim, fontSize:9, fontFamily:font, marginTop:2 }}>{Math.floor(chat.messages.length / 2)} message{Math.floor(chat.messages.length / 2) !== 1 ? 's' : ''} · {new Date(chat.id).toLocaleDateString(undefined, { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' })}</div>
+                  </div>
+                  <button onClick={(e) => { e.stopPropagation(); deleteChat(chat.id); }} style={{ marginLeft:10, padding:'4px 8px', background:'transparent', border:`1px solid transparent`, borderRadius:4, color:C.dim, fontSize:10, cursor:'pointer', fontFamily:font, flexShrink:0, transition:'all 0.15s' }} onMouseEnter={e => { e.currentTarget.style.color = C.red; e.currentTarget.style.borderColor = C.red + '30'; }} onMouseLeave={e => { e.currentTarget.style.color = C.dim; e.currentTarget.style.borderColor = 'transparent'; }}>✕</button>
                 </div>
               ))
             )}
