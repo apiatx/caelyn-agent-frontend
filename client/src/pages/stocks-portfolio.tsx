@@ -103,10 +103,33 @@ const COMMODITY_TV_SYMBOLS: Record<string, string> = {
   "CORN": "PEPPERSTONE:CORN",
 };
 
+const INDEX_TV_SYMBOLS: Record<string, string> = {
+  "SPX": "SP:SPX", "SPY": "AMEX:SPY", "DJI": "FOREXCOM:DJI",
+  "IXIC": "NASDAQ:IXIC", "NDX": "NASDAQ:NDX", "QQQ": "NASDAQ:QQQ",
+  "RUT": "TVC:RUT", "VIX": "TVC:VIX", "DXY": "TVC:DXY",
+};
+
+const CRYPTO_DISPLAY_NAMES: Record<string, string> = {
+  "BTC": "Bitcoin", "ETH": "Ethereum", "SOL": "Solana", "HYPE": "Hyperliquid",
+  "DOGE": "Dogecoin", "XRP": "Ripple", "ADA": "Cardano", "AVAX": "Avalanche",
+  "LINK": "Chainlink", "DOT": "Polkadot", "UNI": "Uniswap", "SHIB": "Shiba Inu",
+  "NEAR": "NEAR Protocol", "SUI": "Sui", "APT": "Aptos", "ARB": "Arbitrum",
+  "OP": "Optimism", "PEPE": "Pepe", "WIF": "dogwifhat", "RENDER": "Render",
+  "FET": "Fetch.ai", "TAO": "Bittensor", "FIL": "Filecoin", "INJ": "Injective",
+  "TIA": "Celestia", "SEI": "Sei", "LTC": "Litecoin", "AAVE": "Aave",
+  "MATIC": "Polygon", "BCH": "Bitcoin Cash",
+};
+
 function getTradingViewSymbol(ticker: string, assetType?: string): string {
   if (assetType === 'crypto') return CRYPTO_TV_SYMBOLS[ticker] || `CRYPTO:${ticker}USD`;
   if (assetType === 'commodity') return COMMODITY_TV_SYMBOLS[ticker] || ticker;
+  if (assetType === 'index') return INDEX_TV_SYMBOLS[ticker] || ticker;
   return ticker;
+}
+
+function getDisplayName(ticker: string, assetType: string | undefined, quoteName?: string): string {
+  if (assetType === 'crypto') return CRYPTO_DISPLAY_NAMES[ticker.toUpperCase()] || quoteName || ticker;
+  return quoteName || ticker;
 }
 
 const SHARES_LABEL: Record<string, string> = {
@@ -514,7 +537,7 @@ export default function StocksPortfolioPage() {
                             </td>
                             <td className="py-2.5 pr-3">
                               <div className="font-semibold text-white">{h.ticker}</div>
-                              <div className="text-[10px] text-crypto-silver truncate max-w-[120px]">{h.quote?.companyName || h.quote?.name || ''}</div>
+                              <div className="text-[10px] text-crypto-silver truncate max-w-[120px]">{getDisplayName(h.ticker, h.assetType, h.quote?.companyName || h.quote?.name)}</div>
                             </td>
                             <td className="text-right py-2.5 px-3 text-crypto-silver">{h.shares}</td>
                             <td className="text-right py-2.5 px-3 text-crypto-silver">{fmt(h.avgCost)}</td>

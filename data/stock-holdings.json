@@ -59,5 +59,37 @@
     "avgCost": 20,
     "addedAt": "2026-02-17T02:55:23.676Z",
     "assetType": "commodity"
+  },
+  {
+    "id": "mlq2g8r6u9vc4",
+    "ticker": "BUZZ",
+    "shares": 10,
+    "avgCost": 10,
+    "addedAt": "2026-02-17T03:51:16.818Z",
+    "assetType": "etf"
+  },
+  {
+    "id": "mlq2gnxmlk122",
+    "ticker": "SPX",
+    "shares": 10,
+    "avgCost": 5000,
+    "addedAt": "2026-02-17T03:51:36.490Z",
+    "assetType": "index"
+  },
+  {
+    "id": "mlq2ieo2obvs3",
+    "ticker": "DJI",
+    "shares": 10,
+    "avgCost": 50000,
+    "addedAt": "2026-02-17T03:52:57.794Z",
+    "assetType": "index"
+  },
+  {
+    "id": "mlq2to0cii3zv",
+    "ticker": "NVDA",
+    "shares": 10,
+    "avgCost": 20,
+    "addedAt": "2026-02-17T04:01:43.116Z",
+    "assetType": "stock"
   }
 ]
