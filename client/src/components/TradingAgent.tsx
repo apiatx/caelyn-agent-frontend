@@ -61,7 +61,7 @@ export default function TradingAgent() {
     setSavedChats(prev => prev.filter(c => c.id !== id));
   }
 
-  async function askAgent(customPrompt?: string, freshChat?: boolean, presetIntent?: string) {
+  async function askAgent(customPrompt?: string, freshChat?: boolean, presetConfig?: { preset_intent: string; subtype?: string; sector?: string }) {
     const q = customPrompt || prompt;
 
     if (!q.trim()) return;
@@ -96,8 +96,10 @@ export default function TradingAgent() {
 
     try {
       const body: any = { prompt: q.trim(), history: historyToSend };
-      if (presetIntent) {
-        body.preset_intent = presetIntent;
+      if (presetConfig) {
+        body.preset_intent = presetConfig.preset_intent;
+        if (presetConfig.subtype) body.subtype = presetConfig.subtype;
+        if (presetConfig.sector) body.sector = presetConfig.sector;
       }
       const res = await fetch(`${AGENT_BACKEND_URL}/api/query`, {
         method: 'POST',
@@ -1198,53 +1200,53 @@ export default function TradingAgent() {
     </div>;
   }
 
-  const promptGroups = [
+  const promptGroups: { id: string; title: string; buttons: { l: string; p: string; intent: string; subtype?: string; sector?: string }[] }[] = [
     { id: 'g1', title: '🎯 All-Encompassing', buttons: [
-      {l:'🔥 Trending Now', p:'Trending now', intent:'trending_now'},
+      {l:'🔥 Trending Now', p:'Trending now', intent:'cross_asset_trending'},
       {l:'✦ Daily Briefing', p:'Daily briefing', intent:'daily_briefing'},
-      {l:'🔥 Best Trades', p:'Best trades', intent:'best_trades'},
+      {l:'🔥 Best Trades', p:'Best trades', intent:'tactical_trades'},
       {l:'💎 Best Investments', p:'Best investments', intent:'long_term_conviction'},
-      {l:'🌍 Macro Overview', p:'Macro overview', intent:'macro_overview'},
+      {l:'🌍 Macro Overview', p:'Macro overview', intent:'macro_outlook'},
     ]},
     { id: 'g2', title: '🏛 Sectors', buttons: [
       {l:'🔄 Sector Rotation', p:'Sector rotation', intent:'sector_rotation'},
-      {l:'🪙 Crypto', p:'Crypto scan', intent:'crypto_scan'},
-      {l:'⚡ Energy', p:'Energy sector', intent:'sector_energy'},
-      {l:'🤖 AI/Compute', p:'AI and compute sector', intent:'sector_ai_compute'},
-      {l:'🏗 Materials', p:'Materials sector', intent:'sector_materials'},
-      {l:'🔬 Quantum', p:'Quantum computing', intent:'sector_quantum'},
-      {l:'🛡 Aerospace/Defense', p:'Aerospace and defense', intent:'sector_aerospace_defense'},
-      {l:'💻 Tech', p:'Technology sector', intent:'sector_tech'},
-      {l:'🏦 Finance', p:'Financial sector', intent:'sector_finance'},
-      {l:'🛢 Commodities', p:'Commodities scan', intent:'commodities_scan'},
-      {l:'💊 Healthcare', p:'Healthcare sector', intent:'sector_healthcare'},
-      {l:'🏠 Real Estate', p:'Real estate sector', intent:'sector_real_estate'},
-      {l:'☢️ Uranium/Nuclear', p:'Uranium and nuclear', intent:'sector_uranium_nuclear'},
+      {l:'🪙 Crypto', p:'Crypto scan', intent:'crypto_focus'},
+      {l:'⚡ Energy', p:'Energy sector', intent:'sector_focus', sector:'energy'},
+      {l:'🤖 AI/Compute', p:'AI and compute sector', intent:'sector_focus', sector:'ai_compute'},
+      {l:'🏗 Materials', p:'Materials sector', intent:'sector_focus', sector:'materials'},
+      {l:'🔬 Quantum', p:'Quantum computing', intent:'sector_focus', sector:'quantum'},
+      {l:'🛡 Aerospace/Defense', p:'Aerospace and defense', intent:'sector_focus', sector:'aerospace_defense'},
+      {l:'💻 Tech', p:'Technology sector', intent:'sector_focus', sector:'technology'},
+      {l:'🏦 Finance', p:'Financial sector', intent:'sector_focus', sector:'financials'},
+      {l:'🛢 Commodities', p:'Commodities scan', intent:'sector_focus', sector:'commodities'},
+      {l:'💊 Healthcare', p:'Healthcare sector', intent:'sector_focus', sector:'healthcare'},
+      {l:'🏠 Real Estate', p:'Real estate sector', intent:'sector_focus', sector:'real_estate'},
+      {l:'☢️ Uranium/Nuclear', p:'Uranium and nuclear', intent:'sector_focus', sector:'uranium_nuclear'},
     ]},
     { id: 'g3', title: '📊 Technical Analysis', buttons: [
-      {l:'📈 Stage 2 Breakouts', p:'Stage 2 breakouts', intent:'stage2_breakouts'},
-      {l:'🔻 Bearish Setups', p:'Bearish setups', intent:'bearish_setups'},
-      {l:'⚡ Asymmetric Only', p:'Asymmetric setups', intent:'asymmetric_setups'},
-      {l:'🐣 Small Cap Spec', p:'Small cap speculative', intent:'small_cap_spec'},
-      {l:'💥 Short Squeeze', p:'Short squeeze candidates', intent:'short_squeeze'},
-      {l:'🟢 Bullish Breakouts', p:'Bullish breakouts', intent:'bullish_breakouts'},
-      {l:'🔴 Bearish Breakdowns', p:'Bearish breakdowns', intent:'bearish_breakdowns'},
-      {l:'📉 Oversold Bounces', p:'Oversold bounces', intent:'oversold_bounces'},
-      {l:'📈 Overbought Warnings', p:'Overbought warnings', intent:'overbought_warnings'},
-      {l:'🔀 Crossover Signals', p:'Crossover signals', intent:'crossover_signals'},
-      {l:'🚀 Momentum Shifts', p:'Momentum shifts', intent:'momentum_shifts'},
-      {l:'📏 Trend Status', p:'Trend status', intent:'trend_status'},
-      {l:'🔊 Volume & Movers', p:'Volume and movers', intent:'volume_movers'},
+      {l:'📈 Stage 2 Breakouts', p:'Stage 2 breakouts', intent:'technical_scan', subtype:'stage2'},
+      {l:'🔻 Bearish Setups', p:'Bearish setups', intent:'technical_scan', subtype:'bearish_setup'},
+      {l:'⚡ Asymmetric Only', p:'Asymmetric setups', intent:'microcap_asymmetry'},
+      {l:'🐣 Small Cap Spec', p:'Small cap speculative', intent:'microcap_asymmetry'},
+      {l:'💥 Short Squeeze', p:'Short squeeze candidates', intent:'technical_scan', subtype:'short_squeeze'},
+      {l:'🟢 Bullish Breakouts', p:'Bullish breakouts', intent:'technical_scan', subtype:'bullish_breakout'},
+      {l:'🔴 Bearish Breakdowns', p:'Bearish breakdowns', intent:'technical_scan', subtype:'bearish_breakdown'},
+      {l:'📉 Oversold Bounces', p:'Oversold bounces', intent:'technical_scan', subtype:'oversold'},
+      {l:'📈 Overbought Warnings', p:'Overbought warnings', intent:'technical_scan', subtype:'overbought'},
+      {l:'🔀 Crossover Signals', p:'Crossover signals', intent:'technical_scan', subtype:'crossover'},
+      {l:'🚀 Momentum Shifts', p:'Momentum shifts', intent:'technical_scan', subtype:'momentum_shift'},
+      {l:'📏 Trend Status', p:'Trend status', intent:'technical_scan', subtype:'trend_status'},
+      {l:'🔊 Volume & Movers', p:'Volume and movers', intent:'tactical_trades'},
     ]},
     { id: 'g4', title: '📋 Fundamental Analysis', buttons: [
-      {l:'🏆 Fundamental Leaders', p:'Fundamental leaders', intent:'fundamental_leaders'},
-      {l:'📈 Rapidly Improving Fundamentals', p:'Rapidly improving fundamentals', intent:'improving_fundamentals'},
-      {l:'📅 Earnings Watch', p:'Earnings watch', intent:'earnings_catalyst'},
+      {l:'🏆 Fundamental Leaders', p:'Fundamental leaders', intent:'fundamental_scan', subtype:'leaders'},
+      {l:'📈 Rapidly Improving Fundamentals', p:'Rapidly improving fundamentals', intent:'fundamental_scan', subtype:'improving'},
+      {l:'📅 Earnings Watch', p:'Earnings watch', intent:'fundamental_scan', subtype:'earnings_watch'},
     ]},
     { id: 'g5', title: '📡 Buzz', buttons: [
-      {l:'🚀 Social Momentum', p:'Social momentum', intent:'social_momentum'},
-      {l:'📰 News Headline Leaders', p:'News headlines', intent:'news_leaders'},
-      {l:'🎯 Upcoming Catalysts', p:'Upcoming catalysts', intent:'upcoming_catalysts'},
+      {l:'🚀 Social Momentum', p:'Social momentum', intent:'sentiment_scan'},
+      {l:'📰 News Headline Leaders', p:'News headlines', intent:'sentiment_scan', subtype:'news_weighted'},
+      {l:'🎯 Upcoming Catalysts', p:'Upcoming catalysts', intent:'fundamental_scan', subtype:'catalyst_watch'},
     ]},
   ];
 
@@ -1275,7 +1277,7 @@ export default function TradingAgent() {
             {groupExpanded[group.id] && (
               <div style={{ display:'flex', flexWrap:'wrap', gap:6, paddingLeft:6, marginTop:4 }}>
                 {group.buttons.map(q => (
-                  <button key={q.l} onClick={() => { newChat(); askAgent(q.p, true, q.intent); }} disabled={loading} style={{ padding:'8px 14px', background:C.card, border:`1px solid ${C.border}`, borderRadius:8, color:C.dim, fontSize:11, cursor:loading?'not-allowed':'pointer', fontFamily:font, transition:'all 0.15s', whiteSpace:'nowrap', flex:'0 0 auto' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; }}>{q.l}</button>
+                  <button key={q.l} onClick={() => { newChat(); askAgent(q.p, true, { preset_intent: q.intent, subtype: q.subtype, sector: q.sector }); }} disabled={loading} style={{ padding:'8px 14px', background:C.card, border:`1px solid ${C.border}`, borderRadius:8, color:C.dim, fontSize:11, cursor:loading?'not-allowed':'pointer', fontFamily:font, transition:'all 0.15s', whiteSpace:'nowrap', flex:'0 0 auto' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; }}>{q.l}</button>
                 ))}
               </div>
             )}
