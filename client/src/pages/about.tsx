@@ -152,25 +152,6 @@ export default function AboutPage() {
                 </div>
               </div>
 
-              <div>
-                <h2 className="text-2xl font-semibold text-white mb-4 text-center">Recommended Reading</h2>
-                <div className="text-crypto-silver space-y-4">
-                  <p>
-                    🔗{' '}
-                    <a
-                      href="https://substack.com/@thebetterpath"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-400 hover:text-blue-300 underline transition-colors"
-                    >
-                      The Better Path
-                    </a>
-                  </p>
-                  <p>
-                    If you're curious why now is the time to get into Bitcoin and crypto, this blog is a must-read. It breaks down — in plain language — how our current financial system is broken and why digital assets represent the future of money, ownership, and freedom.
-                  </p>
-                </div>
-              </div>
 
             </div>
 
