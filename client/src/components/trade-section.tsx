@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeftRight, TrendingUp, ExternalLink, Wallet, ArrowUpDown } from "lucide-react";
 import { openSecureLink, getSecureIframeProps } from "@/utils/security";
-import tradeIcon from "@assets/3676668_1757212085729.png";
+
 
 // Safe components for external links and iframes
 const SafeLink = ({ href, children, className = "", ...props }: { 
@@ -57,23 +57,6 @@ const openInNewTab = (url: string) => {
 export default function TradeSection() {
   return (
     <div className="space-y-12 p-6">
-      {/* TRADE Section - Enhanced Header */}
-      <div className="text-center relative">
-        <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 via-blue-500/20 to-cyan-500/20 blur-3xl -z-10"></div>
-        <div className="flex justify-center items-center gap-4 mb-6">
-          <div className="w-20 h-20 rounded-full flex items-center justify-center border-2 border-yellow-400 shadow-2xl hover:scale-110 transition-transform duration-300 overflow-hidden">
-            <img 
-              src={tradeIcon} 
-              alt="Trade Icon" 
-              className="w-16 h-16 object-contain filter invert"
-            />
-          </div>
-          <h2 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-white via-blue-200 to-purple-200 bg-clip-text text-transparent">Trade</h2>
-        </div>
-        <p className="text-lg text-white/80 font-medium tracking-wide">Premium Cross-Chain Trading & Exchange Platforms</p>
-        <div className="w-32 h-1 bg-gradient-to-r from-blue-500 to-purple-500 mx-auto mt-4 rounded-full"></div>
-      </div>
-
       {/* Swidge Section */}
       <GlassCard className="p-8">
         {/* Swidge Subsection */}
