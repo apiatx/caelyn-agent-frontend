@@ -3,8 +3,6 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BarChart3, Activity, Zap, TrendingDown, TrendingUp, ExternalLink, Star } from "lucide-react";
 import { openSecureLink, getSecureIframeProps } from "@/utils/security";
-import solanaLogo from "@assets/solana_1755977414939.png";
-
 // Glass card component for Solana section
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
   <Card className={`bg-black/40 backdrop-blur-lg border-crypto-silver/20 ${className}`}>
@@ -15,16 +13,6 @@ const GlassCard = ({ children, className = "" }: { children: React.ReactNode; cl
 export default function SolanaSection() {
   return (
     <div className="space-y-8">
-      <div className="text-center">
-        <div className="flex items-center justify-center gap-3 mb-3">
-          <div className="w-12 h-12 bg-black rounded-xl flex items-center justify-center">
-            <img src={solanaLogo} alt="Solana" className="w-8 h-8 rounded-lg" />
-          </div>
-          <h1 className="text-3xl font-bold text-white">Solana Network</h1>
-        </div>
-        <p className="text-crypto-silver">Live Solana network analytics with DexScreener, Jupiter, and Moby Screener</p>
-      </div>
-
       {/* Solana Price Chart */}
       <div className="space-y-3">
         <div className="flex items-center justify-end gap-4">

@@ -3,7 +3,6 @@ import { Loader2, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { openSecureLink } from "@/utils/security";
-import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
 import newHeaderBackground from "@assets/photo-1504333638930-c8787321eee0_1757208194192.avif";
 import criptomonedas from "@assets/Criptomonedas-r3pu02e09qriw0f9pyqx2rtyhwsri4es6sdgff2ebk_1757225856373.png";
 import suiLogo from "@assets/images (2)_1757139042170.jpeg";
@@ -40,16 +39,17 @@ export default function SUIPage() {
         <div className="relative z-10 max-w-[95vw] mx-auto px-2 sm:px-3">
           <div className="flex justify-between items-center py-3 lg:py-4">
             <div className="flex items-center space-x-3 sm:space-x-4">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-full overflow-hidden border-2 border-yellow-400 shadow-lg">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-full overflow-hidden border-2 border-blue-400 shadow-lg bg-black/50 flex items-center justify-center">
                 <img 
-                  src={cryptoHippoImage}
-                  alt="CryptoHippo"
-                  className="w-full h-full object-cover"
+                  src={suiLogo}
+                  alt="Sui"
+                  className="w-10 h-10 sm:w-14 sm:h-14 lg:w-16 lg:h-16 object-contain"
                 />
               </div>
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-white drop-shadow-lg">
-                CryptoHippo
-              </h1>
+              <div>
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white drop-shadow-lg">Sui Network</h1>
+                <p className="text-sm sm:text-base text-white/70 font-medium mt-1">Live Sui network analytics with DexScreener and ecosystem discovery</p>
+              </div>
             </div>
             {/* Top-right crypto image */}
             <div className="hidden sm:flex items-center">
@@ -65,21 +65,6 @@ export default function SUIPage() {
 
       {/* Content */}
       <div className="max-w-[95vw] mx-auto px-2 sm:px-3 mt-4 pb-8">
-        {/* SUI Header */}
-        <div className="text-center mb-6">
-          <div className="flex items-center justify-center gap-3 mb-3">
-            <div className="w-12 h-12 rounded-full overflow-hidden shadow-lg">
-              <img 
-                src={suiLogo}
-                alt="SUI Logo"
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <h1 className="text-3xl font-bold text-white">Sui Network</h1>
-          </div>
-          <p className="text-crypto-silver">Live Sui network analytics with DexScreener and ecosystem discovery</p>
-        </div>
-
         {/* SUI Chart */}
         <div className="mb-6">
           <Suspense fallback={<div className="flex items-center justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-blue-500" /><span className="ml-2 text-white">Loading SUI Chart...</span></div>}>

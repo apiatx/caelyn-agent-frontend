@@ -2,7 +2,6 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Brain, ExternalLink } from "lucide-react";
 import { getSecureIframeProps, getSecureLinkProps } from "@/utils/security";
-import bittensorLogo from "@assets/bittensor_1755977414942.png";
 import { openSecureLink } from '@/utils/security';
 
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
@@ -14,16 +13,6 @@ const GlassCard = ({ children, className = "" }: { children: React.ReactNode; cl
 export default function BittensorDashboardSection() {
   return (
     <div className="space-y-6">
-      <div className="text-center">
-        <div className="flex items-center justify-center gap-3 mb-3">
-          <div className="w-12 h-12 bg-black rounded-xl flex items-center justify-center">
-            <img src={bittensorLogo} alt="Bittensor" className="w-8 h-8 rounded-lg" />
-          </div>
-          <h1 className="text-3xl font-bold text-white">Bittensor Network</h1>
-        </div>
-        <p className="text-crypto-silver">Comprehensive Bittensor subnet analytics and live data</p>
-      </div>
-
       <div className="grid grid-cols-1 gap-6">
         {/* TaoBot */}
         <div>

@@ -1,5 +1,5 @@
 import BittensorDashboardSection from "@/components/bittensor-dashboard-section";
-import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
+import bittensorLogo from "@assets/bittensor_1755977414942.png";
 import newHeaderBackground from "@assets/photo-1504333638930-c8787321eee0_1757208194192.avif";
 import criptomonedas from "@assets/Criptomonedas-r3pu02e09qriw0f9pyqx2rtyhwsri4es6sdgff2ebk_1757225856373.png";
 import { useScrollFade } from "@/hooks/useScrollFade";
@@ -28,16 +28,17 @@ export default function BittensorPage() {
         <div className="relative z-10 max-w-[95vw] mx-auto px-2 sm:px-3">
           <div className="flex justify-between items-center py-3 lg:py-4">
             <div className="flex items-center space-x-3 sm:space-x-4">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-full overflow-hidden border-2 border-yellow-400 shadow-lg">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-full overflow-hidden border-2 border-green-400 shadow-lg bg-black/50 flex items-center justify-center">
                 <img 
-                  src={cryptoHippoImage}
-                  alt="CryptoHippo"
-                  className="w-full h-full object-cover"
+                  src={bittensorLogo}
+                  alt="Bittensor"
+                  className="w-10 h-10 sm:w-14 sm:h-14 lg:w-16 lg:h-16 object-contain"
                 />
               </div>
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-white drop-shadow-lg">
-                CryptoHippo
-              </h1>
+              <div>
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white drop-shadow-lg">Bittensor Network</h1>
+                <p className="text-sm sm:text-base text-white/70 font-medium mt-1">Comprehensive Bittensor subnet analytics and live data</p>
+              </div>
             </div>
             {/* Top-right crypto image */}
             <div className="hidden sm:flex items-center">

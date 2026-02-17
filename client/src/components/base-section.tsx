@@ -3,8 +3,6 @@ import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { Globe, ArrowLeftRight, TrendingUp, ExternalLink, Star } from "lucide-react";
 import { openSecureLink } from "@/utils/security";
-import baseLogo from "@assets/base logo_1755977414942.webp";
-
 
 interface DashboardData {
   portfolioValue: number;
@@ -133,15 +131,6 @@ export default function BaseSection() {
   if (isLoading && !dashboardData) {
     return (
       <div className="space-y-6">
-        <div className="text-center">
-          <div className="flex items-center justify-center gap-3 mb-3">
-            <div className="w-12 h-12 bg-black rounded-xl flex items-center justify-center">
-              <img src={baseLogo} alt="Base" className="w-8 h-8 rounded-lg" />
-            </div>
-            <h1 className="text-3xl font-bold text-white">Base Network</h1>
-          </div>
-          <p className="text-crypto-silver">Loading BASE network overview...</p>
-        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[...Array(6)].map((_, i) => (
             <GlassCard key={i} className="p-6 animate-pulse">
@@ -156,16 +145,6 @@ export default function BaseSection() {
   if (error) {
     return (
       <div className="space-y-8">
-        <div className="text-center">
-          <div className="flex items-center justify-center gap-3 mb-3">
-            <div className="w-12 h-12 bg-black rounded-xl flex items-center justify-center">
-              <img src={baseLogo} alt="Base" className="w-8 h-8 rounded-lg" />
-            </div>
-            <h1 className="text-3xl font-bold text-white">Base Network</h1>
-          </div>
-          <p className="text-crypto-silver">Live BASE network analytics and DexScreener integration</p>
-        </div>
-
         {/* Show full Base content even when API fails */}
         <GlassCard className="p-6">
           <div className="flex items-center justify-between mb-4">
@@ -370,16 +349,6 @@ export default function BaseSection() {
 
   return (
     <div className="space-y-8">
-      <div className="text-center">
-        <div className="flex items-center justify-center gap-3 mb-3">
-          <div className="w-12 h-12 bg-black rounded-xl flex items-center justify-center">
-            <img src={baseLogo} alt="Base" className="w-8 h-8 rounded-lg" />
-          </div>
-          <h1 className="text-3xl font-bold text-white">Base Network</h1>
-        </div>
-        <p className="text-crypto-silver">Live BASE network analytics and DexScreener integration</p>
-      </div>
-
       {/* DexScreener Base Network iframe */}
       <GlassCard className="p-6">
         <div className="flex items-center justify-between mb-4">
