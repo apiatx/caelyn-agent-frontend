@@ -87,22 +87,23 @@ const CRYPTO_TV_SYMBOLS: Record<string, string> = {
   "AVAX": "BINANCE:AVAXUSDT", "LINK": "BINANCE:LINKUSDT", "DOT": "BINANCE:DOTUSDT",
   "UNI": "BINANCE:UNIUSDT", "SHIB": "BINANCE:SHIBUSDT", "NEAR": "BINANCE:NEARUSDT",
   "SUI": "BINANCE:SUIUSDT", "APT": "BINANCE:APTUSDT", "ARB": "BINANCE:ARBUSDT",
-  "OP": "BINANCE:OPUSDT", "PEPE": "BINANCE:PEPEUSDT", "WIF": "BINANCE:WIFUSDT",
-  "RENDER": "BINANCE:RENDERUSDT", "FET": "BINANCE:FETUSDT", "INJ": "BINANCE:INJUSDT",
-  "TIA": "BINANCE:TIAUSDT", "SEI": "BINANCE:SEIUSDT", "HYPE": "BINANCE:HYPEUSDT",
+  "OP": "BINANCE:OPUSDT", "PEPE": "BINANCE:PEPEUSDT", "FET": "BINANCE:FETUSDT",
+  "INJ": "BINANCE:INJUSDT", "RENDER": "BINANCE:RENDERUSDT",
   "FIL": "BINANCE:FILUSDT", "LTC": "BINANCE:LTCUSDT", "BCH": "BINANCE:BCHUSDT",
-  "AAVE": "BINANCE:AAVEUSDT", "TAO": "BINANCE:TAOUSDT", "MATIC": "BINANCE:MATICUSDT",
+  "AAVE": "BINANCE:AAVEUSDT", "MATIC": "BINANCE:MATICUSDT",
+  "HYPE": "BYBIT:HYPEUSDT", "TAO": "BYBIT:TAOUSDT", "WIF": "BYBIT:WIFUSDT",
+  "TIA": "BYBIT:TIAUSDT", "SEI": "BYBIT:SEIUSDT",
 };
 
 const COMMODITY_TV_SYMBOLS: Record<string, string> = {
   "SILVER": "TVC:SILVER", "GOLD": "TVC:GOLD", "OIL": "TVC:USOIL",
-  "CRUDE": "TVC:USOIL", "NATGAS": "TVC:NATURALGAS", "COPPER": "TVC:COPPER",
-  "PLATINUM": "TVC:PLATINUM", "PALLADIUM": "TVC:PALLADIUM",
+  "CRUDE": "TVC:USOIL", "NATGAS": "NYMEX:NG1!", "COPPER": "COMEX:HG1!",
+  "PLATINUM": "NYMEX:PL1!", "PALLADIUM": "NYMEX:PA1!",
   "WHEAT": "CBOT:ZW1!", "CORN": "CBOT:ZC1!",
 };
 
 function getTradingViewSymbol(ticker: string, assetType?: string): string {
-  if (assetType === 'crypto') return CRYPTO_TV_SYMBOLS[ticker] || `BINANCE:${ticker}USDT`;
+  if (assetType === 'crypto') return CRYPTO_TV_SYMBOLS[ticker] || `CRYPTO:${ticker}USD`;
   if (assetType === 'commodity') return COMMODITY_TV_SYMBOLS[ticker] || ticker;
   return ticker;
 }
@@ -150,15 +151,19 @@ export default function StocksPortfolioPage() {
     setLoadingQuotes(true);
     setQuotesError(false);
     try {
-      const tickers = holdingsList.map(h => h.ticker);
+      const tickers = holdingsList.map(h => h.ticker.toUpperCase());
       const assetTypes: Record<string, string> = {};
-      holdingsList.forEach(h => { assetTypes[h.ticker] = h.assetType || 'stock'; });
+      holdingsList.forEach(h => { assetTypes[h.ticker.toUpperCase()] = h.assetType || 'stock'; });
       const res = await fetch(`/api/fmp/quotes?symbols=${tickers.join(',')}&asset_types=${encodeURIComponent(JSON.stringify(assetTypes))}`);
       if (res.ok) {
         const data: QuoteData[] = await res.json();
+        console.log("[PORTFOLIO] Quotes response:", JSON.stringify(data));
         if (Array.isArray(data) && data.length > 0) {
           const map: Record<string, QuoteData> = {};
-          data.forEach(q => { map[q.symbol] = q; });
+          data.forEach(q => {
+            map[q.symbol] = q;
+            map[q.symbol.toUpperCase()] = q;
+          });
           setQuotes(map);
         } else {
           setQuotesError(true);
@@ -255,7 +260,7 @@ export default function StocksPortfolioPage() {
 
   const enrichedHoldings = useMemo(() => {
     return holdings.map(h => {
-      const q = quotes[h.ticker];
+      const q = quotes[h.ticker] || quotes[h.ticker.toUpperCase()];
       const currentPrice = q?.price || 0;
       const dailyChange = q?.change || 0;
       const dailyPL = dailyChange * h.shares;

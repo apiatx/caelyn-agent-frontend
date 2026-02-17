@@ -978,7 +978,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const symbols = (req.query.symbols as string || '').split(',').filter(Boolean);
       if (symbols.length === 0) return res.json([]);
-      const quotes = await fmpService.getStockDetails(symbols);
+      let assetTypes: Record<string, string> = {};
+      try {
+        const atParam = req.query.asset_types as string;
+        if (atParam) assetTypes = JSON.parse(atParam);
+      } catch {}
+      const quotes = await fmpService.getStockDetails(symbols, assetTypes);
       res.json(quotes);
     } catch (error) {
       console.error('FMP quotes error:', error);

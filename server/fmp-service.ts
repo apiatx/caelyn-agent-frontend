@@ -198,15 +198,206 @@ async function fetchFMP<T>(endpoint: string, params: Record<string, string> = {}
   return data as T;
 }
 
+const CRYPTO_COINGECKO_IDS: Record<string, string> = {
+  'BTC': 'bitcoin', 'ETH': 'ethereum', 'SOL': 'solana', 'DOGE': 'dogecoin',
+  'XRP': 'ripple', 'ADA': 'cardano', 'AVAX': 'avalanche-2', 'LINK': 'chainlink',
+  'DOT': 'polkadot', 'UNI': 'uniswap', 'SHIB': 'shiba-inu', 'NEAR': 'near',
+  'SUI': 'sui', 'APT': 'aptos', 'ARB': 'arbitrum', 'OP': 'optimism',
+  'PEPE': 'pepe', 'WIF': 'dogwifcoin', 'FET': 'artificial-superintelligence-alliance',
+  'INJ': 'injective-protocol', 'RENDER': 'render-token', 'FIL': 'filecoin',
+  'LTC': 'litecoin', 'BCH': 'bitcoin-cash', 'AAVE': 'aave', 'MATIC': 'matic-network',
+  'HYPE': 'hyperliquid', 'TAO': 'bittensor', 'TIA': 'celestia', 'SEI': 'sei-network',
+};
+
+const COMMODITY_YAHOO_SYMBOLS: Record<string, string> = {
+  'GOLD': 'GC=F', 'SILVER': 'SI=F', 'OIL': 'CL=F', 'CRUDE': 'CL=F',
+  'NATGAS': 'NG=F', 'COPPER': 'HG=F', 'PLATINUM': 'PL=F', 'PALLADIUM': 'PA=F',
+  'WHEAT': 'ZW=F', 'CORN': 'ZC=F',
+};
+
+async function fetchCryptoQuotes(symbols: string[], retryCount = 0): Promise<StockQuote[]> {
+  const cacheKey = `crypto:${symbols.join(',')}`;
+  const cached = getCached<StockQuote[]>(cacheKey);
+  if (cached) return cached;
+
+  const ids = symbols.map(s => CRYPTO_COINGECKO_IDS[s.toUpperCase()] || s.toLowerCase()).filter(Boolean);
+  if (ids.length === 0) return [];
+
+  try {
+    const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${ids.join(',')}&order=market_cap_desc&sparkline=false&price_change_percentage=24h`;
+    console.log(`[PORTFOLIO] CoinGecko fetching: ${ids.join(',')}`);
+    const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    if (res.status === 429 && retryCount < 2) {
+      const delay = (retryCount + 1) * 3000;
+      console.log(`[PORTFOLIO] CoinGecko rate limited, retrying in ${delay}ms...`);
+      await new Promise(r => setTimeout(r, delay));
+      return fetchCryptoQuotes(symbols, retryCount + 1);
+    }
+    if (!res.ok) {
+      console.error(`[PORTFOLIO] CoinGecko returned ${res.status}`);
+      return fetchCryptoFromYahoo(symbols);
+    }
+    const data = await res.json();
+    const idToTicker = new Map<string, string>();
+    symbols.forEach(s => { idToTicker.set(CRYPTO_COINGECKO_IDS[s.toUpperCase()] || s.toLowerCase(), s.toUpperCase()); });
+
+    const quotes: StockQuote[] = (Array.isArray(data) ? data : []).map((c: any) => {
+      const ticker = idToTicker.get(c.id) || c.symbol?.toUpperCase() || c.id;
+      const price = c.current_price || 0;
+      const prevPrice = price / (1 + (c.price_change_percentage_24h || 0) / 100);
+      console.log(`[PORTFOLIO] CoinGecko: ${ticker} = $${price}`);
+      return {
+        symbol: ticker,
+        name: c.name || ticker,
+        companyName: c.name || ticker,
+        price,
+        change: c.price_change_24h || 0,
+        changesPercentage: c.price_change_percentage_24h || 0,
+        dayHigh: c.high_24h || 0,
+        dayLow: c.low_24h || 0,
+        yearHigh: c.ath || 0,
+        yearLow: c.atl || 0,
+        marketCap: c.market_cap || 0,
+        volume: c.total_volume || 0,
+        avgVolume: 0,
+        open: prevPrice,
+        previousClose: prevPrice,
+        eps: 0, pe: 0, earningsAnnouncement: '',
+        sector: 'Crypto', industry: 'Cryptocurrency',
+      };
+    });
+
+    if (quotes.length > 0) setCache(cacheKey, quotes);
+    return quotes;
+  } catch (err) {
+    console.error('[PORTFOLIO] CoinGecko fetch failed:', err);
+    return fetchCryptoFromYahoo(symbols);
+  }
+}
+
+async function fetchCryptoFromYahoo(symbols: string[]): Promise<StockQuote[]> {
+  console.log(`[PORTFOLIO] Falling back to Yahoo for crypto: ${symbols.join(',')}`);
+  const results: StockQuote[] = [];
+  for (const sym of symbols) {
+    try {
+      const yahooSym = `${sym.toUpperCase()}-USD`;
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSym)}?interval=1d&range=5d&includePrePost=false`;
+      const res = await fetch(url, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
+      });
+      if (!res.ok) continue;
+      const data = await res.json();
+      const meta = data?.chart?.result?.[0]?.meta;
+      if (!meta) continue;
+      const indicators = data?.chart?.result?.[0]?.indicators?.quote?.[0];
+      const closes = indicators?.close || [];
+      const prevClose = closes.length >= 2 ? closes[closes.length - 2] : meta.chartPreviousClose || meta.previousClose || 0;
+      const currentPrice = meta.regularMarketPrice || 0;
+      const change = currentPrice - prevClose;
+      const changePct = prevClose > 0 ? (change / prevClose) * 100 : 0;
+      console.log(`[PORTFOLIO] Yahoo crypto: ${sym} = $${currentPrice}`);
+      results.push({
+        symbol: sym.toUpperCase(),
+        name: meta.shortName || sym, companyName: meta.longName || sym,
+        price: currentPrice, change, changesPercentage: changePct,
+        dayHigh: meta.regularMarketDayHigh || 0, dayLow: meta.regularMarketDayLow || 0,
+        yearHigh: meta.fiftyTwoWeekHigh || 0, yearLow: meta.fiftyTwoWeekLow || 0,
+        marketCap: 0, volume: meta.regularMarketVolume || 0, avgVolume: 0,
+        open: meta.regularMarketOpen || 0, previousClose: prevClose,
+        eps: 0, pe: 0, earningsAnnouncement: '',
+        sector: 'Crypto', industry: 'Cryptocurrency',
+      });
+    } catch (err) {
+      console.error(`[PORTFOLIO] Yahoo crypto fallback failed for ${sym}:`, err);
+    }
+  }
+  if (results.length > 0) {
+    setCache(`crypto:${symbols.join(',')}`, results);
+  }
+  return results;
+}
+
+async function fetchCommodityQuotes(symbols: string[]): Promise<StockQuote[]> {
+  const yahooSymbols = symbols.map(s => COMMODITY_YAHOO_SYMBOLS[s.toUpperCase()] || `${s}=F`);
+  const results: StockQuote[] = [];
+
+  for (let i = 0; i < symbols.length; i++) {
+    const ticker = symbols[i].toUpperCase();
+    const yahooSym = yahooSymbols[i];
+    try {
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSym)}?interval=1d&range=5d&includePrePost=false`;
+      const res = await fetch(url, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
+      });
+      if (!res.ok) {
+        console.error(`[PORTFOLIO] Commodity Yahoo chart failed for ${ticker} (${yahooSym}): ${res.status}`);
+        continue;
+      }
+      const data = await res.json();
+      const meta = data?.chart?.result?.[0]?.meta;
+      if (!meta) continue;
+
+      const indicators = data?.chart?.result?.[0]?.indicators?.quote?.[0];
+      const closes = indicators?.close || [];
+      const prevClose = closes.length >= 2 ? closes[closes.length - 2] : meta.chartPreviousClose || meta.previousClose || 0;
+      const currentPrice = meta.regularMarketPrice || 0;
+      const change = currentPrice - prevClose;
+      const changePct = prevClose > 0 ? (change / prevClose) * 100 : 0;
+
+      console.log(`[PORTFOLIO] Commodity: ${ticker} = $${currentPrice}`);
+      results.push({
+        symbol: ticker,
+        name: meta.shortName || ticker,
+        companyName: meta.longName || meta.shortName || ticker,
+        price: currentPrice,
+        change, changesPercentage: changePct,
+        dayHigh: meta.regularMarketDayHigh || 0, dayLow: meta.regularMarketDayLow || 0,
+        yearHigh: meta.fiftyTwoWeekHigh || 0, yearLow: meta.fiftyTwoWeekLow || 0,
+        marketCap: 0, volume: meta.regularMarketVolume || 0, avgVolume: 0,
+        open: meta.regularMarketOpen || 0, previousClose: prevClose,
+        eps: 0, pe: 0, earningsAnnouncement: '',
+        sector: 'Commodities', industry: 'Commodity',
+      });
+    } catch (err) {
+      console.error(`[PORTFOLIO] Commodity fetch failed for ${ticker}:`, err);
+    }
+  }
+  return results;
+}
+
 export const fmpService = {
   async getQuotes(symbols: string[]): Promise<StockQuote[]> {
     if (symbols.length === 0) return [];
     return fetchYahooQuotes(symbols);
   },
 
-  async getStockDetails(symbols: string[]): Promise<StockQuote[]> {
+  async getStockDetails(symbols: string[], assetTypes?: Record<string, string>): Promise<StockQuote[]> {
     if (symbols.length === 0) return [];
-    return fetchYahooQuotes(symbols);
+
+    if (!assetTypes || Object.keys(assetTypes).length === 0) {
+      return fetchYahooQuotes(symbols);
+    }
+
+    const stockSymbols: string[] = [];
+    const cryptoSymbols: string[] = [];
+    const commoditySymbols: string[] = [];
+
+    for (const sym of symbols) {
+      const type = assetTypes[sym] || assetTypes[sym.toUpperCase()] || 'stock';
+      if (type === 'crypto') cryptoSymbols.push(sym);
+      else if (type === 'commodity') commoditySymbols.push(sym);
+      else stockSymbols.push(sym);
+    }
+
+    console.log(`[PORTFOLIO] Routing: stocks=${stockSymbols.join(',')}, crypto=${cryptoSymbols.join(',')}, commodities=${commoditySymbols.join(',')}`);
+
+    const [stockQuotes, cryptoQuotes, commodityQuotes] = await Promise.all([
+      stockSymbols.length > 0 ? fetchYahooQuotes(stockSymbols) : Promise.resolve([]),
+      cryptoSymbols.length > 0 ? fetchCryptoQuotes(cryptoSymbols) : Promise.resolve([]),
+      commoditySymbols.length > 0 ? fetchCommodityQuotes(commoditySymbols) : Promise.resolve([]),
+    ]);
+
+    return [...stockQuotes, ...cryptoQuotes, ...commodityQuotes];
   },
 
   async getPriceTarget(symbol: string): Promise<PriceTarget[]> {
