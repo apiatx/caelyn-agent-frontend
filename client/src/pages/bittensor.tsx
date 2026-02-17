@@ -28,11 +28,11 @@ export default function BittensorPage() {
         <div className="relative z-10 max-w-[95vw] mx-auto px-2 sm:px-3">
           <div className="flex justify-between items-center py-3 lg:py-4">
             <div className="flex items-center space-x-3 sm:space-x-4">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-full overflow-hidden border-2 border-green-400 shadow-lg bg-black/50 flex items-center justify-center">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-full overflow-hidden border-2 border-green-400 shadow-lg">
                 <img 
                   src={bittensorLogo}
                   alt="Bittensor"
-                  className="w-10 h-10 sm:w-14 sm:h-14 lg:w-16 lg:h-16 object-contain"
+                  className="w-full h-full object-cover"
                 />
               </div>
               <div>
