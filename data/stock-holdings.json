@@ -35,10 +35,19 @@
     "addedAt": "2026-02-16T18:35:35.237Z"
   },
   {
-    "id": "mlpypea5pg4cq",
+    "id": "mlpzucohazscd",
     "ticker": "HYPE",
     "shares": 10,
     "avgCost": 20,
-    "addedAt": "2026-02-17T02:06:25.421Z"
+    "addedAt": "2026-02-17T02:38:16.241Z",
+    "assetType": "etf"
+  },
+  {
+    "id": "mlpzuu5butf9c",
+    "ticker": "HYPE",
+    "shares": 30,
+    "avgCost": 30,
+    "addedAt": "2026-02-17T02:38:38.879Z",
+    "assetType": "crypto"
   }
 ]

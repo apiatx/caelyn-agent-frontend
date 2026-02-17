@@ -352,6 +352,7 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
     const isExpanded = !isCollapsed && expandedItems.includes(item.id);
     const itemIsActive = item.path ? isActive(item.path) : false;
     const hasActiveChild = hasActiveDescendant(item);
+    const indent = !isCollapsed && level > 0 ? level * 12 : 0;
 
     return (
       <div key={item.id} className="w-full">
@@ -359,11 +360,12 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
           <button
             onClick={() => !isCollapsed && toggleExpanded(item.id)}
             title={isCollapsed ? item.label : undefined}
+            style={indent > 0 ? { marginLeft: indent } : undefined}
             className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} px-3 ${isMobile ? 'py-3' : 'py-2'} text-left text-sm font-medium transition-all duration-200 rounded-lg group ${
               hasActiveChild
                 ? "bg-gradient-to-r from-crypto-warning/20 to-yellow-400/10 border-l-2 border-crypto-warning text-white"
                 : "text-gray-300 hover:bg-white/5 hover:text-white"
-            } ${level > 0 && !isCollapsed ? 'ml-4' : ''}`}
+            }`}
             data-testid={`nav-${item.id}`}
           >
             <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
@@ -371,22 +373,25 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
               {!isCollapsed && <span>{item.label}</span>}
             </div>
             {!isCollapsed && (
-              isExpanded ? (
-                <ChevronDown className="w-4 h-4 transition-transform duration-200" />
-              ) : (
-                <ChevronRight className="w-4 h-4 transition-transform duration-200" />
-              )
+              <span className="shrink-0 ml-1">
+                {isExpanded ? (
+                  <ChevronDown className="w-3.5 h-3.5 transition-transform duration-200" />
+                ) : (
+                  <ChevronRight className="w-3.5 h-3.5 transition-transform duration-200" />
+                )}
+              </span>
             )}
           </button>
         ) : (
           <button
             onClick={() => item.path && navigateTo(item.path)}
             title={isCollapsed ? item.label : undefined}
+            style={indent > 0 ? { marginLeft: indent } : undefined}
             className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} px-3 ${isMobile ? 'py-3' : 'py-2'} text-left text-sm font-medium transition-all duration-200 rounded-lg group ${
               itemIsActive
                 ? "bg-gradient-to-r from-crypto-warning/20 to-yellow-400/10 border-l-2 border-crypto-warning text-white shadow-md"
                 : "text-gray-300 hover:bg-white/5 hover:text-white"
-            } ${level > 0 && !isCollapsed ? 'ml-4' : ''}`}
+            }`}
             data-testid={`nav-${item.id}`}
           >
             {item.icon}
@@ -395,7 +400,7 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
         )}
 
         {hasChildren && isExpanded && !isCollapsed && (
-          <div className="mt-1 space-y-1">
+          <div className="mt-0.5 space-y-0.5">
             {item.children!.map(child => renderNavItem(child, level + 1))}
           </div>
         )}
@@ -467,7 +472,7 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
       )}
 
       {/* Navigation Items - Scrollable Area */}
-      <div className={`flex-1 min-h-0 overflow-y-auto px-2 py-4 space-y-1 scrollbar-thin scrollbar-thumb-crypto-silver/20 scrollbar-track-transparent ${isMobile ? 'pt-16' : ''}`}>
+      <div className={`flex-1 min-h-0 overflow-y-auto pl-2 pr-3 py-4 space-y-1 scrollbar-thin scrollbar-thumb-crypto-silver/20 scrollbar-track-transparent ${isMobile ? 'pt-16' : ''}`}>
         {navItems.map(item => renderNavItem(item))}
       </div>
 
