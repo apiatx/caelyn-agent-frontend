@@ -81,6 +81,36 @@ const SECTOR_COLORS: Record<string, string> = {
 
 const PIE_COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#ec4899', '#8b5cf6', '#14b8a6', '#ef4444', '#06b6d4', '#a78bfa', '#d97706', '#6366f1', '#f97316'];
 
+const CRYPTO_TV_SYMBOLS: Record<string, string> = {
+  "BTC": "BINANCE:BTCUSDT", "ETH": "BINANCE:ETHUSDT", "SOL": "BINANCE:SOLUSDT",
+  "DOGE": "BINANCE:DOGEUSDT", "XRP": "BINANCE:XRPUSDT", "ADA": "BINANCE:ADAUSDT",
+  "AVAX": "BINANCE:AVAXUSDT", "LINK": "BINANCE:LINKUSDT", "DOT": "BINANCE:DOTUSDT",
+  "UNI": "BINANCE:UNIUSDT", "SHIB": "BINANCE:SHIBUSDT", "NEAR": "BINANCE:NEARUSDT",
+  "SUI": "BINANCE:SUIUSDT", "APT": "BINANCE:APTUSDT", "ARB": "BINANCE:ARBUSDT",
+  "OP": "BINANCE:OPUSDT", "PEPE": "BINANCE:PEPEUSDT", "WIF": "BINANCE:WIFUSDT",
+  "RENDER": "BINANCE:RENDERUSDT", "FET": "BINANCE:FETUSDT", "INJ": "BINANCE:INJUSDT",
+  "TIA": "BINANCE:TIAUSDT", "SEI": "BINANCE:SEIUSDT", "HYPE": "BINANCE:HYPEUSDT",
+  "FIL": "BINANCE:FILUSDT", "LTC": "BINANCE:LTCUSDT", "BCH": "BINANCE:BCHUSDT",
+  "AAVE": "BINANCE:AAVEUSDT", "TAO": "BINANCE:TAOUSDT", "MATIC": "BINANCE:MATICUSDT",
+};
+
+const COMMODITY_TV_SYMBOLS: Record<string, string> = {
+  "SILVER": "TVC:SILVER", "GOLD": "TVC:GOLD", "OIL": "TVC:USOIL",
+  "CRUDE": "TVC:USOIL", "NATGAS": "TVC:NATURALGAS", "COPPER": "TVC:COPPER",
+  "PLATINUM": "TVC:PLATINUM", "PALLADIUM": "TVC:PALLADIUM",
+  "WHEAT": "CBOT:ZW1!", "CORN": "CBOT:ZC1!",
+};
+
+function getTradingViewSymbol(ticker: string, assetType?: string): string {
+  if (assetType === 'crypto') return CRYPTO_TV_SYMBOLS[ticker] || `BINANCE:${ticker}USDT`;
+  if (assetType === 'commodity') return COMMODITY_TV_SYMBOLS[ticker] || ticker;
+  return ticker;
+}
+
+const SHARES_LABEL: Record<string, string> = {
+  stock: 'Shares', etf: 'Shares', index: 'Units', crypto: 'Amount', commodity: 'Units',
+};
+
 type SortKey = 'ticker' | 'shares' | 'avgCost' | 'currentPrice' | 'dailyPL' | 'totalPL' | 'weight';
 
 export default function StocksPortfolioPage() {
@@ -115,12 +145,15 @@ export default function StocksPortfolioPage() {
     }
   }, []);
 
-  const fetchQuotes = useCallback(async (tickers: string[]) => {
-    if (tickers.length === 0) return;
+  const fetchQuotes = useCallback(async (holdingsList: Holding[]) => {
+    if (holdingsList.length === 0) return;
     setLoadingQuotes(true);
     setQuotesError(false);
     try {
-      const res = await fetch(`/api/fmp/quotes?symbols=${tickers.join(',')}`);
+      const tickers = holdingsList.map(h => h.ticker);
+      const assetTypes: Record<string, string> = {};
+      holdingsList.forEach(h => { assetTypes[h.ticker] = h.assetType || 'stock'; });
+      const res = await fetch(`/api/fmp/quotes?symbols=${tickers.join(',')}&asset_types=${encodeURIComponent(JSON.stringify(assetTypes))}`);
       if (res.ok) {
         const data: QuoteData[] = await res.json();
         if (Array.isArray(data) && data.length > 0) {
@@ -173,18 +206,17 @@ export default function StocksPortfolioPage() {
   useEffect(() => { fetchHoldings(); }, [fetchHoldings]);
 
   useEffect(() => {
-    const tickers = holdings.map(h => h.ticker);
-    if (tickers.length > 0) {
-      fetchQuotes(tickers);
-      fetchPriceTargets(tickers);
-      fetchEvents(tickers);
+    if (holdings.length > 0) {
+      fetchQuotes(holdings);
+      fetchPriceTargets(holdings.map(h => h.ticker));
+      fetchEvents(holdings.map(h => h.ticker));
     }
   }, [holdings, fetchQuotes, fetchPriceTargets, fetchEvents]);
 
   useEffect(() => {
     if (holdings.length === 0) return;
     const interval = setInterval(() => {
-      fetchQuotes(holdings.map(h => h.ticker));
+      fetchQuotes(holdings);
     }, 60000);
     return () => clearInterval(interval);
   }, [holdings, fetchQuotes]);
@@ -386,7 +418,7 @@ export default function StocksPortfolioPage() {
             <div className="flex items-center gap-2">
               {holdings.length > 0 && (
                 <>
-                  <button onClick={() => fetchQuotes(holdings.map(h => h.ticker))} disabled={loadingQuotes} className="flex items-center gap-1.5 px-3 py-2 bg-white/5 hover:bg-white/10 border border-crypto-silver/20 rounded-lg text-sm text-crypto-silver hover:text-white transition-all disabled:opacity-50">
+                  <button onClick={() => fetchQuotes(holdings)} disabled={loadingQuotes} className="flex items-center gap-1.5 px-3 py-2 bg-white/5 hover:bg-white/10 border border-crypto-silver/20 rounded-lg text-sm text-crypto-silver hover:text-white transition-all disabled:opacity-50">
                     <RefreshCw className={`w-3.5 h-3.5 ${loadingQuotes ? 'animate-spin' : ''}`} />
                     Refresh
                   </button>
@@ -436,7 +468,7 @@ export default function StocksPortfolioPage() {
                 <option value="crypto" className="bg-gray-900">Crypto</option>
                 <option value="commodity" className="bg-gray-900">Commodity</option>
               </select>
-              <input type="number" placeholder="Shares" value={newShares} onChange={e => setNewShares(e.target.value)} onKeyDown={e => e.key === 'Enter' && addHolding()} className="bg-white/5 border border-crypto-silver/20 rounded-lg px-3 py-2 text-sm text-white placeholder-crypto-silver/50 focus:outline-none focus:border-blue-500/50 w-full sm:w-28" />
+              <input type="number" placeholder={SHARES_LABEL[selectedAssetType] || 'Shares'} value={newShares} onChange={e => setNewShares(e.target.value)} onKeyDown={e => e.key === 'Enter' && addHolding()} className="bg-white/5 border border-crypto-silver/20 rounded-lg px-3 py-2 text-sm text-white placeholder-crypto-silver/50 focus:outline-none focus:border-blue-500/50 w-full sm:w-28" />
               <input type="number" placeholder="Avg Cost ($)" value={newAvgCost} onChange={e => setNewAvgCost(e.target.value)} onKeyDown={e => e.key === 'Enter' && addHolding()} className="bg-white/5 border border-crypto-silver/20 rounded-lg px-3 py-2 text-sm text-white placeholder-crypto-silver/50 focus:outline-none focus:border-blue-500/50 w-full sm:w-32" />
               <button onClick={addHolding} disabled={addingHolding || !newTicker.trim() || !newShares || !newAvgCost} className="flex items-center justify-center gap-1.5 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 rounded-lg text-sm font-medium text-white transition-all disabled:opacity-40">
                 <Plus className="w-4 h-4" />
@@ -504,7 +536,7 @@ export default function StocksPortfolioPage() {
                                 <div className="px-3 pb-3 pt-1 bg-white/[0.02]">
                                   <div className="rounded-lg overflow-hidden border border-crypto-silver/10 my-2">
                                     <iframe
-                                      src={`https://s.tradingview.com/widgetembed/?symbol=${h.ticker}&interval=D&theme=dark&style=1&locale=en&hide_top_toolbar=1&hide_side_toolbar=1&allow_symbol_change=0&save_image=0&width=100%25&height=220`}
+                                      src={`https://s.tradingview.com/widgetembed/?symbol=${encodeURIComponent(getTradingViewSymbol(h.ticker, h.assetType))}&interval=D&theme=dark&style=1&locale=en&hide_top_toolbar=1&hide_side_toolbar=1&allow_symbol_change=0&save_image=0&width=100%25&height=220`}
                                       style={{ width: '100%', height: 220, border: 'none', display: 'block' }}
                                       title={`${h.ticker} chart`}
                                     />

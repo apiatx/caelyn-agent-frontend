@@ -14,17 +14,50 @@
     "addedAt": "2026-02-16T18:11:21.026Z"
   },
   {
-    "id": "mlpi61iyyrhdk",
-    "ticker": "BTC",
-    "shares": 1,
-    "avgCost": 69000,
-    "addedAt": "2026-02-16T18:23:28.570Z"
-  },
-  {
     "id": "mlpilm85zrtfp",
     "ticker": "SPAI",
     "shares": 10,
     "avgCost": 3,
     "addedAt": "2026-02-16T18:35:35.237Z"
+  },
+  {
+    "id": "mlq0a54gihviz",
+    "ticker": "HYPE",
+    "shares": 7,
+    "avgCost": 20,
+    "addedAt": "2026-02-17T02:50:32.944Z",
+    "assetType": "crypto"
+  },
+  {
+    "id": "mlq0aycopmqle",
+    "ticker": "SILVER",
+    "shares": 10,
+    "avgCost": 50,
+    "addedAt": "2026-02-17T02:51:10.824Z",
+    "assetType": "commodity"
+  },
+  {
+    "id": "mlq0d2dcbtsbs",
+    "ticker": "BTC",
+    "shares": 10,
+    "avgCost": 60000,
+    "addedAt": "2026-02-17T02:52:49.344Z",
+    "assetType": "crypto"
+  },
+  {
+    "id": "mlq0dvaeplb9g",
+    "ticker": "ETH",
+    "shares": 10,
+    "avgCost": 1000,
+    "addedAt": "2026-02-17T02:53:26.822Z",
+    "assetType": "crypto"
+  },
+  {
+    "id": "mlq0gdgcys6sb",
+    "ticker": "COPPER",
+    "shares": 10,
+    "avgCost": 20,
+    "addedAt": "2026-02-17T02:55:23.676Z",
+    "assetType": "commodity"
   }
 ]
