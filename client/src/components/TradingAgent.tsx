@@ -61,7 +61,7 @@ export default function TradingAgent() {
     setSavedChats(prev => prev.filter(c => c.id !== id));
   }
 
-  async function askAgent(customPrompt?: string, freshChat?: boolean) {
+  async function askAgent(customPrompt?: string, freshChat?: boolean, presetIntent?: string) {
     const q = customPrompt || prompt;
 
     if (!q.trim()) return;
@@ -95,10 +95,14 @@ export default function TradingAgent() {
     const iv = setInterval(() => { if (idx < stages.length) { setLoadingStage(stages[idx]); idx++; } }, 1600);
 
     try {
+      const body: any = { prompt: q.trim(), history: historyToSend };
+      if (presetIntent) {
+        body.preset_intent = presetIntent;
+      }
       const res = await fetch(`${AGENT_BACKEND_URL}/api/query`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-API-Key': AGENT_API_KEY },
-        body: JSON.stringify({ prompt: q.trim(), history: historyToSend }),
+        body: JSON.stringify(body),
       });
       if (!res.ok) throw new Error(`Status ${res.status}`);
       const data = await res.json();
@@ -1196,51 +1200,51 @@ export default function TradingAgent() {
 
   const promptGroups = [
     { id: 'g1', title: '🎯 All-Encompassing', buttons: [
-      {l:'🔥 Trending Now', p:'What\'s trending across all markets right now? Show me the highest-conviction stocks, crypto, and commodities that are buzzing with real catalysts — not just hype. Apply the full top-down workflow: verify news, check sector alignment, filter for best setups.'},
-      {l:'✦ Daily Briefing', p:'Give me today\'s market intelligence briefing. Cover macro regime, sector positioning, top trade setups, top investment ideas, and key risks. What should I be paying attention to today?'},
-      {l:'🔥 Best Trades', p:'What are the best short-term trade setups right now across stocks, crypto, and commodities? I want high risk/reward setups with clear entry, stop, and targets. Apply the full top-down workflow — only show me trades in sectors with tailwinds.'},
-      {l:'💎 Best Investments', p:'What are the best long-term investment opportunities right now? Find undervalued companies with improving fundamentals, strong moats, and secular tailwinds. SQGLP framework. Apply the top-down workflow — only recommend investments in sectors with macro support.'},
-      {l:'🌍 Macro Overview', p:'Give me a comprehensive macro overview. Fed stance, rate trajectory, inflation data, yield curve, DXY, VIX, credit spreads, Fear & Greed. What regime are we in? What sectors and asset classes benefit from the current environment? What should I avoid?'},
+      {l:'🔥 Trending Now', p:'Trending now', intent:'trending_now'},
+      {l:'✦ Daily Briefing', p:'Daily briefing', intent:'daily_briefing'},
+      {l:'🔥 Best Trades', p:'Best trades', intent:'best_trades'},
+      {l:'💎 Best Investments', p:'Best investments', intent:'long_term_conviction'},
+      {l:'🌍 Macro Overview', p:'Macro overview', intent:'macro_overview'},
     ]},
     { id: 'g2', title: '🏛 Sectors', buttons: [
-      {l:'🔄 Sector Rotation', p:'Run a full sector rotation analysis. Which stock sectors, commodity groups, and crypto segments are seeing the strongest inflows right now? Rank them by momentum. For the top 3 sectors, give me the best individual plays. For the bottom 3, tell me what to avoid. What timeframe does this rotation favor — weeks or months? Use Weinstein stages, volume flows, macro alignment, and sentiment to support your analysis.'},
-      {l:'🪙 Crypto', p:'Scan the crypto market. What\'s the macro setup for crypto right now (BTC dominance, total market cap trend, funding rates, fear/greed)? Which crypto sectors are leading (L1s, DeFi, AI coins, meme coins)? Give me the best trade and investment setups in crypto right now. Apply the full workflow — only recommend coins with real catalysts and favorable technicals.'},
-      {l:'⚡ Energy', p:'Scan the energy sector for the best opportunities. Cover oil & gas, renewables, utilities, nuclear, and energy infrastructure. What\'s driving energy right now (demand growth, AI power needs, geopolitics, regulation)? Find me the best trade setups and investment opportunities in energy. What are the bottleneck plays?'},
-      {l:'🤖 AI/Compute', p:'Scan the AI and compute sector. Cover chip makers, cloud infrastructure, AI software, data centers, cooling, and power infrastructure for AI. What\'s the current demand/supply dynamic? Where is the bottleneck? Find me the best setups — both the obvious leaders and the under-the-radar plays. What\'s overvalued and what\'s still cheap?'},
-      {l:'🏗 Materials', p:'Scan the materials and mining sector. Cover steel, copper, lithium, rare earths, and industrial metals. What\'s driving demand (infrastructure, EVs, AI data centers, defense)? Which materials are in supply deficit? Find me the best trade and investment setups in materials right now.'},
-      {l:'🔬 Quantum', p:'Scan quantum computing and related stocks. Who are the pure-play quantum companies? Who are the adjacent beneficiaries (cryo cooling, specialized chips, defense/intelligence)? Is this sector investable yet or still speculative? What\'s the best way to get exposure with favorable risk/reward?'},
-      {l:'🛡 Aerospace/Defense', p:'Scan the aerospace and defense sector. What\'s driving spending (geopolitics, NATO commitments, space, drones, hypersonics)? Who has the best order backlog? Find me defense stocks with improving fundamentals, strong technicals, and upcoming catalysts. What\'s the best risk/reward in this sector right now?'},
-      {l:'💻 Tech', p:'Scan the broader technology sector beyond AI. Cover cybersecurity, SaaS, fintech, semiconductors, consumer tech. What sub-sectors within tech are showing relative strength? What\'s cheap? What has momentum? Give me the best trade and investment setups in tech right now.'},
-      {l:'🏦 Finance', p:'Scan the financial sector. Cover banks, insurance, asset managers, fintech, and crypto-adjacent financials. How does the rate environment affect each sub-sector? Who benefits from the current yield curve? Find me the best setups in financials — both value plays and momentum plays.'},
-      {l:'🛢 Commodities', p:'Run a full commodities dashboard. Cover oil, natural gas, gold, silver, copper, uranium, lithium, agricultural commodities. Which commodities are in breakout mode? Which are oversold? What\'s the macro backdrop (dollar, rates, supply/demand)? Give me the best commodity trades and the best commodity-producer stocks right now.'},
-      {l:'💊 Healthcare', p:'Scan the healthcare sector. Cover biotech, pharma, medical devices, healthcare services, and health insurance. Any major FDA catalysts coming up? What\'s cheap with improving pipelines? What has technical breakout setups? Find me the best trade and investment opportunities in healthcare.'},
-      {l:'🏠 Real Estate', p:'Scan the real estate sector. Cover REITs (residential, commercial, data center, industrial), homebuilders, and real estate services. How do current rates affect the sector? Who benefits if rates come down? What\'s the best risk/reward setup in real estate right now? Any data center REITs benefiting from AI demand?'},
-      {l:'☢️ Uranium/Nuclear', p:'Deep dive into the uranium and nuclear sector. Cover uranium miners, nuclear utilities, enrichment companies, and SMR plays. What\'s the supply/demand picture for uranium? What contracts are coming up? Give me the best trade and investment setups in the nuclear renaissance theme.'},
+      {l:'🔄 Sector Rotation', p:'Sector rotation', intent:'sector_rotation'},
+      {l:'🪙 Crypto', p:'Crypto scan', intent:'crypto_scan'},
+      {l:'⚡ Energy', p:'Energy sector', intent:'sector_energy'},
+      {l:'🤖 AI/Compute', p:'AI and compute sector', intent:'sector_ai_compute'},
+      {l:'🏗 Materials', p:'Materials sector', intent:'sector_materials'},
+      {l:'🔬 Quantum', p:'Quantum computing', intent:'sector_quantum'},
+      {l:'🛡 Aerospace/Defense', p:'Aerospace and defense', intent:'sector_aerospace_defense'},
+      {l:'💻 Tech', p:'Technology sector', intent:'sector_tech'},
+      {l:'🏦 Finance', p:'Financial sector', intent:'sector_finance'},
+      {l:'🛢 Commodities', p:'Commodities scan', intent:'commodities_scan'},
+      {l:'💊 Healthcare', p:'Healthcare sector', intent:'sector_healthcare'},
+      {l:'🏠 Real Estate', p:'Real estate sector', intent:'sector_real_estate'},
+      {l:'☢️ Uranium/Nuclear', p:'Uranium and nuclear', intent:'sector_uranium_nuclear'},
     ]},
     { id: 'g3', title: '📊 Technical Analysis', buttons: [
-      {l:'📈 Stage 2 Breakouts', p:'Find stocks, crypto, and commodities breaking into Weinstein Stage 2 right now — price moving above a rising 200-day SMA with above-average volume. These are the early-stage uptrends. Only show me setups where fundamentals also support the breakout.'},
-      {l:'🔻 Bearish Setups', p:'Find the weakest stocks, crypto, and commodities right now. Stage 4 breakdowns, death crosses, bearish pattern breakouts, deteriorating fundamentals. What should I be avoiding or shorting? What looks like a value trap?'},
-      {l:'⚡ Asymmetric Only', p:'Find the most asymmetric risk/reward setups across stocks, crypto, and commodities right now. I want compressed valuations with upcoming catalysts — setups where the downside is limited but the upside is 3x or more. Tight stops, big potential.'},
-      {l:'🐣 Small Cap Spec', p:'Find the best speculative small cap and micro cap opportunities right now — stocks under $2B market cap with explosive potential. High risk, high reward. Volume surges, catalyst-driven, momentum plays. What small caps are institutional money starting to notice?'},
-      {l:'💥 Short Squeeze', p:'Find the best short squeeze candidates across stocks and crypto. High short interest (>20%), low float, rising cost to borrow, utilization near 100%, plus a catalyst that could force covering. What\'s set up for a squeeze right now?'},
-      {l:'🟢 Bullish Breakouts', p:'Find stocks, crypto, and commodities with confirmed bullish pattern breakouts — cup and handle, ascending triangle, bull flag, inverse head and shoulders, channel breakout. Only include breakouts confirmed by volume. What\'s breaking out RIGHT NOW with real momentum?'},
-      {l:'🔴 Bearish Breakdowns', p:'Find stocks, crypto, and commodities with confirmed bearish pattern breakdowns — head and shoulders, descending triangle, bear flag, rising wedge breakdown. What\'s breaking down with increasing volume? These are warns or short candidates.'},
-      {l:'📉 Oversold Bounces', p:'Find stocks, crypto, and commodities that are deeply oversold near key support levels — RSI below 30, near 200-day SMA, at major support, but in sectors that still have favorable macro tailwinds. These are dip-buy candidates where the uptrend is intact. Pullbacks in uptrends, not falling knives.'},
-      {l:'📈 Overbought Warnings', p:'Find stocks, crypto, and commodities that are extremely overbought — RSI above 70, extended above Bollinger Bands, far above moving averages. These are candidates for a pullback or mean reversion. What should I take profits on or avoid chasing?'},
-      {l:'🔀 Crossover Signals', p:'Find stocks, crypto, and commodities with fresh moving average crossovers in the last 5 days — golden crosses (50 above 200 SMA), death crosses (50 below 200 SMA), fresh bullish or bearish EMA crossovers, and fresh MACD signal line crossovers. What just triggered a new trend signal?'},
-      {l:'🚀 Momentum Shifts', p:'Find stocks, crypto, and commodities showing early momentum shifts — MACD histogram turning positive after being negative, RSI crossing above 50 from below, early bullish or bearish momentum inflections. What\'s about to start moving before the crowd notices?'},
-      {l:'📏 Trend Status', p:'Give me a trend status report across markets. What stocks, crypto, and commodities are in strong uptrends vs strong downtrends vs trading in range? What just shifted from downtrend to uptrend (trend upgrades)? What\'s losing its uptrend? This is the Weinstein stage map of the market.'},
-      {l:'🔊 Volume & Movers', p:'Find the biggest volume spikes and price movers across stocks, crypto, and commodities today. Unusual volume (2x+ average), new local highs, new local lows, top gainers, top losers. What\'s moving on heavy volume and WHY? Separate the signal from the noise.'},
+      {l:'📈 Stage 2 Breakouts', p:'Stage 2 breakouts', intent:'stage2_breakouts'},
+      {l:'🔻 Bearish Setups', p:'Bearish setups', intent:'bearish_setups'},
+      {l:'⚡ Asymmetric Only', p:'Asymmetric setups', intent:'asymmetric_setups'},
+      {l:'🐣 Small Cap Spec', p:'Small cap speculative', intent:'small_cap_spec'},
+      {l:'💥 Short Squeeze', p:'Short squeeze candidates', intent:'short_squeeze'},
+      {l:'🟢 Bullish Breakouts', p:'Bullish breakouts', intent:'bullish_breakouts'},
+      {l:'🔴 Bearish Breakdowns', p:'Bearish breakdowns', intent:'bearish_breakdowns'},
+      {l:'📉 Oversold Bounces', p:'Oversold bounces', intent:'oversold_bounces'},
+      {l:'📈 Overbought Warnings', p:'Overbought warnings', intent:'overbought_warnings'},
+      {l:'🔀 Crossover Signals', p:'Crossover signals', intent:'crossover_signals'},
+      {l:'🚀 Momentum Shifts', p:'Momentum shifts', intent:'momentum_shifts'},
+      {l:'📏 Trend Status', p:'Trend status', intent:'trend_status'},
+      {l:'🔊 Volume & Movers', p:'Volume and movers', intent:'volume_movers'},
     ]},
     { id: 'g4', title: '📋 Fundamental Analysis', buttons: [
-      {l:'🏆 Fundamental Leaders', p:'Find stocks with the strongest fundamentals across all sectors — highest ROIC, best margins, fastest revenue growth, cleanest balance sheets, strongest free cash flow. These are the highest-quality businesses in the market. Now filter: which of these are also in technically favorable positions and not overvalued?'},
-      {l:'📈 Rapidly Improving Fundamentals', p:'Find stocks where fundamentals are rapidly improving — revenue growth accelerating, margins expanding, EBITDA turning positive, EPS beats increasing, guidance being raised. These are turnaround stories and inflection points. The key is TRAJECTORY, not current absolute numbers. What\'s getting better fastest?'},
-      {l:'📅 Earnings Watch', p:'What are the most important earnings reports coming up in the next 2 weeks? For each, give me: what the market expects, what would be a beat/miss catalyst, how the stock is positioned technically going into earnings, and whether I should hold through or trade around it. Focus on names that could move big.'},
+      {l:'🏆 Fundamental Leaders', p:'Fundamental leaders', intent:'fundamental_leaders'},
+      {l:'📈 Rapidly Improving Fundamentals', p:'Rapidly improving fundamentals', intent:'improving_fundamentals'},
+      {l:'📅 Earnings Watch', p:'Earnings watch', intent:'earnings_catalyst'},
     ]},
     { id: 'g5', title: '📡 Buzz', buttons: [
-      {l:'🚀 Social Momentum', p:'What stocks, crypto, and commodities have the highest social momentum right now? Cross-reference X/Twitter, StockTwits, Reddit, and Finviz. What\'s buzzing across multiple platforms simultaneously? For each, tell me: is the buzz backed by a real catalyst or is it noise? Is this an entry or a trap?'},
-      {l:'📰 News Headline Leaders', p:'What stocks, crypto, and commodities are dominating the news cycle right now? Major headlines, breaking developments, analyst upgrades/downgrades, insider transactions, regulatory actions. For each headline-driven mover, assess: is the move done or just starting? Is this a trade or does it change the long-term thesis?'},
-      {l:'🎯 Upcoming Catalysts', p:'What are the biggest upcoming catalysts across markets in the next 1-4 weeks? Earnings dates, FDA decisions, FOMC meetings, CPI/jobs data, product launches, contract announcements, ex-dividend dates, index rebalancing. For each, which stocks are most affected and how should I position?'},
+      {l:'🚀 Social Momentum', p:'Social momentum', intent:'social_momentum'},
+      {l:'📰 News Headline Leaders', p:'News headlines', intent:'news_leaders'},
+      {l:'🎯 Upcoming Catalysts', p:'Upcoming catalysts', intent:'upcoming_catalysts'},
     ]},
   ];
 
@@ -1271,7 +1275,7 @@ export default function TradingAgent() {
             {groupExpanded[group.id] && (
               <div style={{ display:'flex', flexWrap:'wrap', gap:6, paddingLeft:6, marginTop:4 }}>
                 {group.buttons.map(q => (
-                  <button key={q.l} onClick={() => { newChat(); askAgent(q.p, true); }} disabled={loading} style={{ padding:'8px 14px', background:C.card, border:`1px solid ${C.border}`, borderRadius:8, color:C.dim, fontSize:11, cursor:loading?'not-allowed':'pointer', fontFamily:font, transition:'all 0.15s', whiteSpace:'nowrap', flex:'0 0 auto' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; }}>{q.l}</button>
+                  <button key={q.l} onClick={() => { newChat(); askAgent(q.p, true, q.intent); }} disabled={loading} style={{ padding:'8px 14px', background:C.card, border:`1px solid ${C.border}`, borderRadius:8, color:C.dim, fontSize:11, cursor:loading?'not-allowed':'pointer', fontFamily:font, transition:'all 0.15s', whiteSpace:'nowrap', flex:'0 0 auto' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; }}>{q.l}</button>
                 ))}
               </div>
             )}

@@ -1,95 +1,18 @@
 [
   {
-    "id": "mlphq0sfm9uo2",
-    "ticker": "IREN",
-    "shares": 100,
-    "avgCost": 10,
-    "addedAt": "2026-02-16T18:11:01.119Z"
+    "id": "mlr2z3v1zxqcl",
+    "ticker": "OLB",
+    "shares": 1587,
+    "avgCost": 1.26,
+    "addedAt": "2026-02-17T20:53:43.117Z",
+    "assetType": "stock"
   },
   {
-    "id": "mlphqg5ejxr2d",
-    "ticker": "CIFR",
-    "shares": 100,
-    "avgCost": 2,
-    "addedAt": "2026-02-16T18:11:21.026Z"
-  },
-  {
-    "id": "mlpilm85zrtfp",
-    "ticker": "SPAI",
-    "shares": 10,
-    "avgCost": 3,
-    "addedAt": "2026-02-16T18:35:35.237Z"
-  },
-  {
-    "id": "mlq0a54gihviz",
-    "ticker": "HYPE",
-    "shares": 7,
-    "avgCost": 20,
-    "addedAt": "2026-02-17T02:50:32.944Z",
-    "assetType": "crypto"
-  },
-  {
-    "id": "mlq0aycopmqle",
-    "ticker": "SILVER",
-    "shares": 10,
-    "avgCost": 50,
-    "addedAt": "2026-02-17T02:51:10.824Z",
-    "assetType": "commodity"
-  },
-  {
-    "id": "mlq0d2dcbtsbs",
-    "ticker": "BTC",
-    "shares": 10,
-    "avgCost": 60000,
-    "addedAt": "2026-02-17T02:52:49.344Z",
-    "assetType": "crypto"
-  },
-  {
-    "id": "mlq0dvaeplb9g",
-    "ticker": "ETH",
-    "shares": 10,
-    "avgCost": 1000,
-    "addedAt": "2026-02-17T02:53:26.822Z",
-    "assetType": "crypto"
-  },
-  {
-    "id": "mlq0gdgcys6sb",
-    "ticker": "COPPER",
-    "shares": 10,
-    "avgCost": 20,
-    "addedAt": "2026-02-17T02:55:23.676Z",
-    "assetType": "commodity"
-  },
-  {
-    "id": "mlq2g8r6u9vc4",
-    "ticker": "BUZZ",
-    "shares": 10,
-    "avgCost": 10,
-    "addedAt": "2026-02-17T03:51:16.818Z",
-    "assetType": "etf"
-  },
-  {
-    "id": "mlq2gnxmlk122",
-    "ticker": "SPX",
-    "shares": 10,
-    "avgCost": 5000,
-    "addedAt": "2026-02-17T03:51:36.490Z",
-    "assetType": "index"
-  },
-  {
-    "id": "mlq2ieo2obvs3",
-    "ticker": "DJI",
-    "shares": 10,
-    "avgCost": 50000,
-    "addedAt": "2026-02-17T03:52:57.794Z",
-    "assetType": "index"
-  },
-  {
-    "id": "mlq2to0cii3zv",
-    "ticker": "NVDA",
-    "shares": 10,
-    "avgCost": 20,
-    "addedAt": "2026-02-17T04:01:43.116Z",
+    "id": "mlr2zp9mlz8kv",
+    "ticker": "ATOM",
+    "shares": 341,
+    "avgCost": 5.8,
+    "addedAt": "2026-02-17T20:54:10.858Z",
     "assetType": "stock"
   }
 ]
