@@ -41,14 +41,13 @@ export default function BTCPage() {
               <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-full overflow-hidden border-2 border-yellow-400 shadow-lg">
                 <img 
                   src={hippoImage}
-                  alt="TradeBlade"
+                  alt="CryptoHippo"
                   className="w-full h-full object-cover"
                 />
               </div>
               <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-white drop-shadow-lg">
-                Bitcoin
+                CryptoHippo
               </h1>
-              <p className="text-sm sm:text-base text-white/70 font-medium tracking-wide mt-1">Bitcoin Analytics & Charts</p>
             </div>
             <div className="flex items-center space-x-2 sm:space-x-4">
               <GlassCard className="px-2 py-1 sm:px-3 sm:py-2 hidden sm:block">
