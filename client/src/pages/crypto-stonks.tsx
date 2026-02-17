@@ -2,6 +2,10 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Bitcoin, TrendingUp, Brain, ExternalLink } from "lucide-react";
 import chartIcon from "@assets/images_1757104413238.png";
+import cryptoHippoImage from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
+import newHeaderBackground from "@assets/photo-1504333638930-c8787321eee0_1757208194192.avif";
+import criptomonedas from "@assets/Criptomonedas-r3pu02e09qriw0f9pyqx2rtyhwsri4es6sdgff2ebk_1757225856373.png";
+import { useScrollFade } from "@/hooks/useScrollFade";
 
 // Glass card component
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
@@ -11,37 +15,59 @@ const GlassCard = ({ children, className = "" }: { children: React.ReactNode; cl
 );
 
 export default function CryptoStonksPage() {
+  const headerOpacity = useScrollFade(30, 120);
   const openInNewTab = (url: string) => {
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   return (
     <div className="min-h-screen text-white" style={{background: 'linear-gradient(135deg, hsl(0, 0%, 0%) 0%, hsl(0, 0%, 10%) 50%, hsl(0, 0%, 0%) 100%)'}}>
-      {/* Main Content */}
-      <main className="max-w-[95vw] mx-auto px-2 sm:px-3 py-4">
-        <div className="space-y-6">
-          {/* Page Header */}
-          <div className="text-center relative mb-8">
-            <div className="absolute inset-0 bg-gradient-to-r from-orange-500/20 via-amber-500/20 to-yellow-500/20 blur-3xl -z-10"></div>
-            <div className="flex justify-center items-center gap-4 mb-6">
-              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-2 border-yellow-400 shadow-2xl hover:scale-110 transition-transform duration-300">
+      {/* Header */}
+      <header 
+        className="glass-card-dark border-b border-crypto-silver/20 sticky top-0 z-50 transition-opacity duration-300 relative overflow-hidden" 
+        style={{ opacity: headerOpacity, pointerEvents: headerOpacity < 0.1 ? 'none' : 'auto' }}
+      >
+        {/* Background Image */}
+        <div 
+          className="absolute inset-0 opacity-75"
+          style={{
+            backgroundImage: `url(${newHeaderBackground})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat'
+          }}
+        />
+        {/* Content Layer */}
+        <div className="relative z-10 max-w-[95vw] mx-auto px-2 sm:px-3">
+          <div className="flex justify-between items-center py-3 lg:py-4">
+            <div className="flex items-center space-x-3 sm:space-x-4">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-full overflow-hidden border-2 border-yellow-400 shadow-lg">
                 <img 
-                  src={chartIcon} 
-                  alt="Chart Icon" 
+                  src={cryptoHippoImage}
+                  alt="CryptoHippo"
                   className="w-full h-full object-cover"
                 />
               </div>
-              <div className="text-left">
-                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-white via-orange-100 to-amber-100 bg-clip-text text-transparent">Crypto Treasuries</h1>
-                <Badge className="bg-gradient-to-r from-orange-500/30 to-amber-500/30 text-white border-orange-400/50 text-sm mt-2 px-3 py-1">
-                  CORPORATE HOLDINGS
-                </Badge>
+              <div>
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white drop-shadow-lg">Crypto Treasuries</h1>
+                <p className="text-sm sm:text-base text-white/70 font-medium mt-1">Track corporate Bitcoin treasuries and crypto adoption by public companies</p>
               </div>
             </div>
-            <p className="text-lg text-white/80 font-medium tracking-wide">Track corporate Bitcoin treasuries and crypto adoption by public companies</p>
-            <div className="w-32 h-1 bg-gradient-to-r from-orange-500 to-amber-500 mx-auto mt-4 rounded-full"></div>
+            {/* Top-right crypto image */}
+            <div className="hidden sm:flex items-center">
+              <img 
+                src={criptomonedas}
+                alt="Crypto Coins"
+                className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 object-contain drop-shadow-lg"
+              />
+            </div>
           </div>
+        </div>
+      </header>
 
+      {/* Main Content */}
+      <main className="max-w-[95vw] mx-auto px-2 sm:px-3 py-4">
+        <div className="space-y-6">
           {/* Crypto Treasuries */}
           <GlassCard className="p-3 sm:p-4 lg:p-6">
 
