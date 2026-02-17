@@ -6,6 +6,17 @@ import { openSecureLink } from "@/utils/security";
 import diceImage from "@assets/istockphoto-1252690598-612x612_1756665072306.jpg";
 import predictBaseLogo from "@assets/predictbase-logo.jpg";
 
+const SmallLink = ({ href, label }: { href: string; label: string }) => (
+  <a
+    href={href}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="text-xs text-white/40 hover:text-white/70 transition-colors flex items-center gap-1"
+  >
+    {label} <ExternalLink className="w-3 h-3" />
+  </a>
+);
+
 
 // Safe components for external links
 const openInNewTab = (url: string) => {
@@ -38,112 +49,50 @@ export default function PredictPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Prediction Markets Section */}
         <GlassCard className="p-6">
-          {/* Polymarket */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-yellow-500 rounded-full flex items-center justify-center">
-                  <TrendingUp className="w-4 h-4 text-white" />
-                </div>
-                <h3 className="text-xl font-semibold text-white">Polymarket</h3>
-              </div>
-              <Button
-                onClick={() => openInNewTab('https://polymarket.com/crypto')}
-                className="bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white font-semibold px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2"
-              >
-                <ExternalLink className="w-4 h-4" />
-                Open Polymarket
-              </Button>
-            </div>
-            <iframe
-              src="https://polymarket.com/crypto"
-              className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-              title="Polymarket"
-              sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-            />
+          <div className="flex justify-end mb-1">
+            <SmallLink href="https://polymarket.com/crypto" label="Open Polymarket" />
           </div>
+          <iframe
+            src="https://polymarket.com/crypto"
+            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+            title="Polymarket"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+          />
 
-          {/* PredictBase */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full overflow-hidden border border-cyan-400/50 flex-shrink-0">
-                  <img src={predictBaseLogo} alt="PredictBase" className="w-full h-full object-cover" />
-                </div>
-                <h3 className="text-xl font-semibold text-white">PredictBase</h3>
-              </div>
-              <Button
-                onClick={() => openInNewTab('https://predictbase.app/')}
-                className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2"
-              >
-                <ExternalLink className="w-4 h-4" />
-                Open PredictBase
-              </Button>
-            </div>
-            <iframe
-              src="https://predictbase.app/"
-              className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-              title="PredictBase"
-              frameBorder="0"
-              sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
-              referrerPolicy="no-referrer-when-downgrade"
-            />
+          <div className="flex justify-end mb-1 mt-6">
+            <SmallLink href="https://predictbase.app/" label="Open PredictBase" />
           </div>
+          <iframe
+            src="https://predictbase.app/"
+            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+            title="PredictBase"
+            frameBorder="0"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+            referrerPolicy="no-referrer-when-downgrade"
+          />
 
-          {/* BetBase */}
-          <div className="mt-8">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
-                  <TrendingUp className="w-4 h-4 text-white" />
-                </div>
-                <h3 className="text-xl font-semibold text-white">BetBase</h3>
-              </div>
-              <Button
-                onClick={() => openInNewTab('https://betbase.xyz/')}
-                className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white font-semibold px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2"
-              >
-                <ExternalLink className="w-4 h-4" />
-                Open BetBase
-              </Button>
-            </div>
-            <iframe
-              src="https://betbase.xyz/"
-              className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-              title="BetBase"
-              frameBorder="0"
-              sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
-              referrerPolicy="no-referrer-when-downgrade"
-            />
+          <div className="flex justify-end mb-1 mt-6">
+            <SmallLink href="https://betbase.xyz/" label="Open BetBase" />
           </div>
+          <iframe
+            src="https://betbase.xyz/"
+            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+            title="BetBase"
+            frameBorder="0"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
+            referrerPolicy="no-referrer-when-downgrade"
+          />
 
-          {/* PMX Trading */}
-          <div className="mt-8">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
-                  <TrendingUp className="w-4 h-4 text-white" />
-                </div>
-                <h3 className="text-xl font-semibold text-white">PMX Trading</h3>
-              </div>
-              <Button
-                onClick={() => openInNewTab('https://pmx.trade/markets')}
-                className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2"
-              >
-                <ExternalLink className="w-4 h-4" />
-                Open Full View
-              </Button>
-            </div>
-            <div className="bg-black/40 backdrop-blur-lg border border-crypto-silver/20 rounded-xl overflow-hidden">
-              <iframe
-                src="https://pmx.trade/markets"
-                className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-crypto-silver/20"
-                title="PMX Trading"
-                frameBorder="0"
-                scrolling="yes"
-              />
-            </div>
+          <div className="flex justify-end mb-1 mt-6">
+            <SmallLink href="https://pmx.trade/markets" label="Open PMX Trading" />
           </div>
+          <iframe
+            src="https://pmx.trade/markets"
+            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
+            title="PMX Trading"
+            frameBorder="0"
+            scrolling="yes"
+          />
 
           {/* Kalshi */}
           <div className="mt-6">
