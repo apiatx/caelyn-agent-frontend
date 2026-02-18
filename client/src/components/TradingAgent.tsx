@@ -83,15 +83,21 @@ export default function TradingAgent() {
   }
 
   async function askAgent(customPrompt?: string, freshChat?: boolean, presetIntent?: string | null) {
-    const queryText = (customPrompt || prompt).trim();
+    const queryText = (customPrompt ?? prompt ?? '').trim();
 
     if (!queryText && !presetIntent) return;
 
-    if (presetIntent) {
-      console.log('Sending preset:', presetIntent);
-    } else {
-      console.log('Sending query:', queryText);
-    }
+    const safeQuery: string = presetIntent ? '' : queryText;
+    const safePresetIntent: string | null = typeof presetIntent === 'string' ? presetIntent : null;
+    const safeConversationId: string | null = freshChat ? null : (typeof conversationId === 'string' ? conversationId : null);
+
+    const payload = {
+      query: safeQuery,
+      preset_intent: safePresetIntent,
+      conversation_id: safeConversationId,
+    };
+
+    console.log('[HippoAI] Sending payload:', JSON.stringify(payload));
 
     setLoading(true); setError(null); setExpandedTicker(null);
     setPrompt('');
@@ -105,17 +111,16 @@ export default function TradingAgent() {
     const iv = setInterval(() => { if (idx < stages.length) { setLoadingStage(stages[idx]); idx++; } }, 1600);
 
     try {
-      const body: any = {
-        query: presetIntent ? '' : queryText,
-        preset_intent: presetIntent || null,
-        conversation_id: freshChat ? null : conversationId,
-      };
       const res = await fetch(`${AGENT_BACKEND_URL}/api/query`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-API-Key': AGENT_API_KEY },
-        body: JSON.stringify(body),
+        body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error(`Status ${res.status}`);
+      if (!res.ok) {
+        const errorBody = await res.text();
+        console.error(`[HippoAI] Backend error ${res.status}:`, errorBody);
+        throw new Error(`Status ${res.status}: ${errorBody}`);
+      }
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       if (data.conversation_id) setConversationId(data.conversation_id);
@@ -128,6 +133,7 @@ export default function TradingAgent() {
       };
       setPanels(prev => [newPanel, ...prev]);
     } catch (err: any) {
+      console.error('[HippoAI] Request failed:', err);
       const errMsg = err.message.includes('429') ? 'Rate limit reached. Wait a moment.' : err.message.includes('403') ? 'Auth failed.' : err.message;
       setError(errMsg);
     } finally { clearInterval(iv); setLoadingStage(''); setLoading(false); }
