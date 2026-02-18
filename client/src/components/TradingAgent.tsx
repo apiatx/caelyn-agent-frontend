@@ -336,9 +336,22 @@ export default function TradingAgent() {
       </CardWrap>;
     };
 
+    const dh = s.meta?.data_health;
+    const dhWarnings: string[] = [];
+    if (dh) {
+      if (dh.rate_limited && (Array.isArray(dh.rate_limited) ? dh.rate_limited.length : true)) dhWarnings.push(`Rate-limited: ${Array.isArray(dh.rate_limited) ? dh.rate_limited.join(', ') : dh.rate_limited}`);
+      if (dh.budget_exhausted && (Array.isArray(dh.budget_exhausted) ? dh.budget_exhausted.length : true)) dhWarnings.push(`Budget exhausted: ${Array.isArray(dh.budget_exhausted) ? dh.budget_exhausted.join(', ') : dh.budget_exhausted}`);
+      if (dh.errors && (Array.isArray(dh.errors) ? dh.errors.length : true)) dhWarnings.push(`Errors: ${Array.isArray(dh.errors) ? dh.errors.join(', ') : dh.errors}`);
+    }
+    const dhBanner = dhWarnings.length > 0 ? <div style={{ padding:'8px 14px', background:`${C.gold}10`, border:`1px solid ${C.gold}25`, borderRadius:6, marginBottom:10, display:'flex', alignItems:'flex-start', gap:8 }}>
+      <span style={{ color:C.gold, fontSize:13, lineHeight:1, flexShrink:0 }}>⚠</span>
+      <div style={{ color:C.gold, fontSize:11, fontFamily:sansFont, lineHeight:1.5 }}>{dhWarnings.join(' · ')}<span style={{ color:C.dim, fontSize:10 }}> — Some data sources may be incomplete.</span></div>
+    </div> : null;
+
     if (hasNewFormat) {
       return <div>
         {s.market_context && <div style={{ padding:'14px 18px', background:`${C.blue}08`, border:`1px solid ${C.blue}15`, borderRadius:10, marginBottom:10, color:C.text, fontSize:12, fontFamily:sansFont, lineHeight:1.6 }}>{s.market_context}</div>}
+        {dhBanner}
         {topTrades.length > 0 && <div style={{ marginBottom:12 }}>
           <div style={{ color:C.bright, fontSize:14, fontWeight:800, fontFamily:sansFont, marginBottom:10, display:'flex', alignItems:'center', gap:8 }}>
             <span style={{ color:C.green, fontSize:16 }}>▲</span> Top Trades
