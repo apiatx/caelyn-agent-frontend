@@ -260,69 +260,108 @@ export default function TradingAgent() {
   }
 
   function renderTrades(s: any) {
+    const topTrades = s.top_trades || [];
+    const bearish = s.bearish_setups || [];
     const picks = s.picks || [];
+    const hasNewFormat = topTrades.length > 0 || bearish.length > 0;
+
+    const dirColor = (d?: string) => { if (!d) return C.dim; const l = String(d).toLowerCase(); return l === 'long' ? C.green : l === 'short' ? C.red : C.dim; };
+    const actColor = (a?: string) => { if (!a) return C.dim; const l = String(a).toLowerCase(); return l === 'buy' ? C.green : l === 'sell' ? C.red : l === 'watch' ? C.gold : C.dim; };
+
+    const renderTradeCard = (t: any, prefix: string, i: number) => {
+      const isExp = expandedTicker === `${prefix}-${i}`;
+      const entry = t.entry || t.trade_plan?.entry;
+      const stop = t.stop || t.trade_plan?.stop;
+      const target = t.target || t.target_1 || t.trade_plan?.target_1;
+      const target2 = t.target_2 || t.trade_plan?.target_2;
+      const rr = t.risk_reward || t.trade_plan?.risk_reward;
+      const tf = t.timeframe || t.trade_plan?.timeframe;
+      const risk = t.risk || t.why_could_fail;
+      const signals = t.signals_stacking || [];
+      const tvUrl = t.tv_url || t.tradingview_url;
+      return <CardWrap key={i} onClick={() => setExpandedTicker(isExp ? null : `${prefix}-${i}`)} expanded={isExp} borderColor={actColor(t.action)}>
+        <div style={{ padding:'14px 18px' }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:8 }}>
+            <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
+              <span style={{ width:22, height:22, borderRadius:'50%', background:`${C.blue}15`, display:'inline-flex', alignItems:'center', justifyContent:'center', color:C.blue, fontSize:10, fontWeight:800, fontFamily:font, flexShrink:0 }}>{i+1}</span>
+              <span style={{ color:C.blue, fontWeight:800, fontSize:18, fontFamily:font }}>{t.ticker || t.symbol}</span>
+              {t.name && <span style={{ color:C.dim, fontSize:11, fontFamily:sansFont }}>{t.name}</span>}
+              {t.direction && <Badge color={dirColor(t.direction)}>{String(t.direction).toUpperCase()}</Badge>}
+              {t.action && <Badge color={actColor(t.action)}>{String(t.action).toUpperCase()}</Badge>}
+            </div>
+            <div style={{ display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
+              {t.confidence_score != null && <span style={{ background:`${C.gold}15`, color:C.gold, padding:'2px 10px', borderRadius:4, fontSize:12, fontWeight:700, fontFamily:font }}>{t.confidence_score}</span>}
+              {t.conviction && <Badge color={convColor(t.conviction)}>{t.conviction}</Badge>}
+            </div>
+          </div>
+          {signals.length > 0 && <div style={{ display:'flex', gap:4, flexWrap:'wrap', marginBottom:8 }}>
+            {signals.map((sig: string, j: number) => (
+              <span key={j} style={{ padding:'2px 8px', borderRadius:4, fontSize:9, fontWeight:600, fontFamily:font, color:C.gold, background:`${C.gold}10`, border:`1px solid ${C.gold}20` }}>{String(sig).replace(/_/g, ' ')}</span>
+            ))}
+          </div>}
+          {t.thesis && <div style={{ color:C.text, fontSize:12, lineHeight:1.6, fontFamily:sansFont, marginBottom:8 }}>{t.thesis}</div>}
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(100px, 1fr))', gap:8, marginBottom:8 }}>
+            {[['Entry', entry, C.bright], ['Stop', stop, C.red], ['Target', target, C.green], ['Target 2', target2, C.green], ['R/R', rr, C.gold], ['Timeframe', tf, C.dim]].map(([l, v, c]) => v ? <div key={l as string} style={{ background:C.bg, borderRadius:6, padding:'6px 10px' }}>
+              <div style={{ color:C.dim, fontSize:8, fontFamily:font, textTransform:'uppercase' }}>{l as string}</div>
+              <div style={{ color:c as string, fontSize:13, fontWeight:700, fontFamily:font, marginTop:2 }}>{v as string}</div>
+            </div> : null)}
+          </div>
+          {risk && <div style={{ marginTop:4, color:C.dim, fontSize:10, fontFamily:sansFont, fontStyle:'italic', whiteSpace:'normal', wordBreak:'break-word' }}>Risk: {risk}</div>}
+        </div>
+        {isExp && <div style={{ borderTop:`1px solid ${C.border}`, padding:14 }}>
+          {tvUrl ? <a href={tvUrl} target="_blank" rel="noopener noreferrer" style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'6px 14px', background:`${C.blue}10`, border:`1px solid ${C.blue}30`, borderRadius:6, color:C.blue, fontSize:11, fontWeight:700, fontFamily:font, textDecoration:'none', marginBottom:10, cursor:'pointer' }}>Open TradingView Chart ↗</a> : null}
+          <TradingViewMini ticker={t.ticker || t.symbol} />
+          {t.ta && <div style={{ marginBottom:10 }}>
+            <div style={{ color:C.blue, fontSize:11, fontWeight:700, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:10 }}>Technical Setup — {t.ta.stage || ''}</div>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(140px, 1fr))', gap:8 }}>
+              <IndicatorPill label="RSI" value={t.ta.rsi} signal={t.ta.rsi_signal} />
+              <IndicatorPill label="MACD" value="—" signal={t.ta.macd} />
+              <IndicatorPill label="Volume" value={t.ta.volume} signal={t.ta.volume_vs_avg ? `${t.ta.volume_vs_avg} avg` : undefined} />
+            </div>
+          </div>}
+          {t.sentiment && <div style={{ marginBottom:10 }}>
+            <div style={{ color:C.purple, fontSize:11, fontWeight:700, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:10 }}>Social Sentiment — {t.sentiment.buzz_level} Buzz</div>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+              <div style={{ background:`${C.green}08`, border:`1px solid ${C.green}15`, borderRadius:8, padding:12 }}>
+                <div style={{ color:C.green, fontSize:10, fontWeight:700, fontFamily:font, marginBottom:4 }}>BULL ({t.sentiment.bull_pct}%)</div>
+                <div style={{ color:C.text, fontSize:11, lineHeight:1.5, fontFamily:sansFont }}>{t.sentiment.bull_thesis}</div>
+              </div>
+              <div style={{ background:`${C.red}08`, border:`1px solid ${C.red}15`, borderRadius:8, padding:12 }}>
+                <div style={{ color:C.red, fontSize:10, fontWeight:700, fontFamily:font, marginBottom:4 }}>BEAR</div>
+                <div style={{ color:C.text, fontSize:11, lineHeight:1.5, fontFamily:sansFont }}>{t.sentiment.bear_thesis}</div>
+              </div>
+            </div>
+          </div>}
+        </div>}
+      </CardWrap>;
+    };
+
+    if (hasNewFormat) {
+      return <div>
+        {s.market_context && <div style={{ padding:'14px 18px', background:`${C.blue}08`, border:`1px solid ${C.blue}15`, borderRadius:10, marginBottom:10, color:C.text, fontSize:12, fontFamily:sansFont, lineHeight:1.6 }}>{s.market_context}</div>}
+        {topTrades.length > 0 && <div style={{ marginBottom:12 }}>
+          <div style={{ color:C.bright, fontSize:14, fontWeight:800, fontFamily:sansFont, marginBottom:10, display:'flex', alignItems:'center', gap:8 }}>
+            <span style={{ color:C.green, fontSize:16 }}>▲</span> Top Trades
+          </div>
+          <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+            {topTrades.map((t: any, i: number) => renderTradeCard(t, 'tt', i))}
+          </div>
+        </div>}
+        {bearish.length > 0 && <div style={{ marginBottom:12 }}>
+          <div style={{ color:C.bright, fontSize:14, fontWeight:800, fontFamily:sansFont, marginBottom:10, display:'flex', alignItems:'center', gap:8 }}>
+            <span style={{ color:C.red, fontSize:16 }}>▼</span> Bearish (High Conviction)
+          </div>
+          <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+            {bearish.map((t: any, i: number) => renderTradeCard(t, 'bear', i))}
+          </div>
+        </div>}
+      </div>;
+    }
+
     return <div>
       {s.market_context && <div style={{ padding:'14px 18px', background:`${C.blue}08`, border:`1px solid ${C.blue}15`, borderRadius:10, marginBottom:10, color:C.text, fontSize:12, fontFamily:sansFont, lineHeight:1.6 }}>{s.market_context}</div>}
       <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-        {picks.map((p: any, i: number) => {
-          const isExp = expandedTicker === `t-${i}`;
-          return <CardWrap key={i} onClick={() => setExpandedTicker(isExp ? null : `t-${i}`)} expanded={isExp} borderColor={convColor(p.conviction)}>
-            <div style={{ padding:'14px 18px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-              <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-                <span style={{ width:22, height:22, borderRadius:'50%', background:`${C.blue}15`, display:'inline-flex', alignItems:'center', justifyContent:'center', color:C.blue, fontSize:10, fontWeight:800, fontFamily:font, flexShrink:0 }}>{i+1}</span>
-                <span style={{ color:C.blue, fontWeight:800, fontSize:16, fontFamily:font }}>{p.ticker}</span>
-                <span style={{ color:C.dim, fontSize:12 }}>{p.company}</span>
-                <span style={{ color:changeColor(p.change), fontWeight:600, fontSize:13, fontFamily:font }}>{p.price} <span style={{ fontSize:11 }}>{p.change}</span></span>
-              </div>
-              <div style={{ display:'flex', gap:8, alignItems:'center' }}>
-                <Badge color={C.dim}>{p.market_cap}</Badge>
-                <Badge color={convColor(p.conviction)}>{p.conviction}</Badge>
-              </div>
-            </div>
-            <div style={{ padding:'0 18px 10px', color:C.text, fontSize:12, lineHeight:1.6, fontFamily:sansFont, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.thesis}</div>
-            {p.sources && <div style={{ padding:'0 18px 8px', display:'flex', gap:4, flexWrap:'wrap' }}>
-              {(Array.isArray(p.sources) ? p.sources : [p.sources]).map((src: string, j: number) => (
-                <span key={j} style={{ padding:'2px 8px', borderRadius:10, fontSize:9, fontWeight:600, fontFamily:font, color:C.dim, background:`${C.dim}10`, border:`1px solid ${C.border}` }}>{src}</span>
-              ))}
-            </div>}
-            <div style={{ padding:'4px 14px', background:`${convColor(p.conviction)}08`, borderTop:`1px solid ${C.border}`, color:convColor(p.conviction), fontSize:10, fontWeight:700, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.04em' }}>{p.conviction} CONVICTION{p.why_conviction ? ' — ' + p.why_conviction : ''}</div>
-            {isExp && <div style={{ borderTop:`1px solid ${C.border}`, padding:14 }}>
-              <TradingViewMini ticker={p.ticker} />
-              {p.ta && <div style={{ marginBottom:10 }}>
-                <div style={{ color:C.blue, fontSize:11, fontWeight:700, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:10 }}>Technical Setup — {p.ta.stage || ''}</div>
-                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(140px, 1fr))', gap:8 }}>
-                  <IndicatorPill label="RSI" value={p.ta.rsi} signal={p.ta.rsi_signal} />
-                  <IndicatorPill label="MACD" value="—" signal={p.ta.macd} />
-                  <IndicatorPill label="Volume" value={p.ta.volume} signal={p.ta.volume_vs_avg ? `${p.ta.volume_vs_avg} avg` : undefined} />
-                  <IndicatorPill label="SMA 20" value="—" signal={p.ta.sma_20} />
-                  <IndicatorPill label="SMA 50" value="—" signal={p.ta.sma_50} />
-                  <IndicatorPill label="SMA 200" value="—" signal={p.ta.sma_200} />
-                </div>
-                {p.ta.pattern && <div style={{ marginTop:8, color:C.text, fontSize:11, fontFamily:sansFont }}>Pattern: <span style={{ color:C.bright, fontWeight:600 }}>{p.ta.pattern}</span></div>}
-              </div>}
-              {p.sentiment && <div style={{ marginBottom:10 }}>
-                <div style={{ color:C.purple, fontSize:11, fontWeight:700, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:10 }}>Social Sentiment — {p.sentiment.buzz_level} Buzz</div>
-                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
-                  <div style={{ background:`${C.green}08`, border:`1px solid ${C.green}15`, borderRadius:8, padding:12 }}>
-                    <div style={{ color:C.green, fontSize:10, fontWeight:700, fontFamily:font, marginBottom:4 }}>🐂 BULL ({p.sentiment.bull_pct}%)</div>
-                    <div style={{ color:C.text, fontSize:11, lineHeight:1.5, fontFamily:sansFont }}>{p.sentiment.bull_thesis}</div>
-                  </div>
-                  <div style={{ background:`${C.red}08`, border:`1px solid ${C.red}15`, borderRadius:8, padding:12 }}>
-                    <div style={{ color:C.red, fontSize:10, fontWeight:700, fontFamily:font, marginBottom:4 }}>🐻 BEAR</div>
-                    <div style={{ color:C.text, fontSize:11, lineHeight:1.5, fontFamily:sansFont }}>{p.sentiment.bear_thesis}</div>
-                  </div>
-                </div>
-                {p.sentiment.trending && <div style={{ marginTop:8, color:C.dim, fontSize:10, fontFamily:font }}>{p.sentiment.trending}</div>}
-              </div>}
-              {p.trade_plan && <div style={{ background:`${C.blue}06`, border:`1px solid ${C.blue}15`, borderRadius:8, padding:14 }}>
-                <div style={{ color:C.blue, fontSize:11, fontWeight:700, fontFamily:font, marginBottom:10, textTransform:'uppercase', letterSpacing:'0.06em' }}>Trade Plan</div>
-                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(120px, 1fr))', gap:8 }}>
-                  {[['Entry', p.trade_plan.entry, C.bright], ['Stop Loss', p.trade_plan.stop, C.red], ['Target 1', p.trade_plan.target_1, C.green], ['Target 2', p.trade_plan.target_2, C.green], ['R/R', p.trade_plan.risk_reward, C.gold]].map(([l,v,c]) => v ? <div key={l as string}><div style={{ color:C.dim, fontSize:9, fontFamily:font, textTransform:'uppercase' }}>{l as string}</div><div style={{ color:c as string, fontSize:14, fontWeight:700, fontFamily:font, marginTop:2 }}>{v as string}</div></div> : null)}
-                </div>
-              </div>}
-            </div>}
-          </CardWrap>;
-        })}
+        {picks.map((p: any, i: number) => renderTradeCard(p, 't', i))}
       </div>
     </div>;
   }
@@ -1422,7 +1461,7 @@ export default function TradingAgent() {
       {displayType === 'sector_rotation' && renderSectorRotation(s)}
       {displayType === 'earnings_catalyst' && renderEarningsCatalyst(s)}
       {(displayType === 'chat' || !knownTypes.includes(displayType)) && <div style={{ padding:22, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont }} dangerouslySetInnerHTML={{ __html: formatAnalysis(analysisText) }} />}
-      {displayType && displayType !== 'chat' && displayType !== 'cross_market' && displayType !== 'cross_asset_trending' && knownTypes.includes(displayType) && analysisText && <div style={{ marginTop:16, padding:22, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont }} dangerouslySetInnerHTML={{ __html: formatAnalysis(analysisText) }} />}
+      {displayType && displayType !== 'chat' && displayType !== 'cross_market' && displayType !== 'cross_asset_trending' && displayType !== 'trades' && knownTypes.includes(displayType) && analysisText && <div style={{ marginTop:16, padding:22, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont }} dangerouslySetInnerHTML={{ __html: formatAnalysis(analysisText) }} />}
     </div>;
   }
 
