@@ -1202,7 +1202,159 @@ export default function TradingAgent() {
     </div>;
   }
 
-  const knownTypes = ['trades','investments','fundamentals','technicals','analysis','dashboard','sector_rotation','earnings_catalyst','commodities','portfolio','briefing','crypto','trending','screener'];
+  function renderCrossAssetTrending(s: any) {
+    const meta = s.meta || {};
+    const pulse = s.market_pulse || {};
+    const signal = s.social_trading_signal || null;
+    const buckets = s.buckets || {};
+    const regime = meta.regime || pulse.regime || '';
+    const asOf = meta.as_of_utc || s.as_of || '';
+
+    const ratingColor = (r?: string) => {
+      if (!r) return C.dim;
+      const n = parseFloat(r);
+      if (!isNaN(n)) return n >= 7 ? C.green : n >= 5 ? C.gold : C.red;
+      const l = r.toLowerCase();
+      if (l.includes('strong buy') || l.includes('bullish')) return C.green;
+      if (l.includes('buy') || l.includes('lean')) return '#4ade80';
+      if (l.includes('neutral') || l.includes('hold')) return C.gold;
+      return C.red;
+    };
+
+    const classColor = (c?: string) => {
+      if (!c) return C.dim;
+      return c.toUpperCase().includes('TRADE') ? C.green : C.blue;
+    };
+
+    const confirmIcon = (val?: boolean | string) => {
+      if (val === true || val === 'yes' || val === 'Yes' || val === '✓') return { icon: '✓', color: C.green };
+      return { icon: '—', color: C.dim };
+    };
+
+    const bucketOrder = [
+      { key: 'equities_large', label: 'Equities: Large Caps', icon: '🏛️' },
+      { key: 'equities_mid', label: 'Equities: Mid Caps', icon: '📊' },
+      { key: 'equities_small', label: 'Equities: Small + Micro', icon: '🔬' },
+      { key: 'crypto', label: 'Crypto', icon: '₿' },
+      { key: 'commodities', label: 'Commodities', icon: '🛢️' },
+    ];
+
+    return <div>
+      <div style={{ padding:'18px 22px', background:`linear-gradient(135deg, ${C.card} 0%, ${C.bg} 100%)`, border:`1px solid ${C.border}`, borderRadius:12, marginBottom:10 }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+            <span style={{ fontSize:20 }}>🔥</span>
+            <span style={{ color:C.bright, fontSize:18, fontWeight:800, fontFamily:sansFont }}>Trending Now</span>
+          </div>
+          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+            {regime && <Badge color={regime.toLowerCase().includes('risk-on') ? C.green : regime.toLowerCase().includes('risk-off') ? C.red : C.gold}>{regime}</Badge>}
+            {asOf && <span style={{ color:C.dim, fontSize:9, fontFamily:font }}>{new Date(asOf).toLocaleTimeString()}</span>}
+          </div>
+        </div>
+      </div>
+
+      {signal ? (
+        <div style={{ background:C.card, border:`1px solid ${C.blue}30`, borderRadius:12, marginBottom:12, overflow:'hidden' }}>
+          <div style={{ padding:'16px 20px', borderBottom:`1px solid ${C.border}` }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                <span style={{ color:C.blue, fontSize:20, fontWeight:800, fontFamily:font }}>{signal.symbol || signal.ticker || '—'}</span>
+                {signal.asset_class && <span style={{ color:C.dim, fontSize:10, fontFamily:font, textTransform:'uppercase' }}>{signal.asset_class}</span>}
+                {signal.classification && <Badge color={classColor(signal.classification)}>{signal.classification}</Badge>}
+              </div>
+              <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                {signal.rating && <Badge color={ratingColor(signal.rating)}>{signal.rating}</Badge>}
+                {signal.confidence != null && <span style={{ color:C.gold, fontSize:13, fontWeight:700, fontFamily:font }}>{signal.confidence}%</span>}
+              </div>
+            </div>
+            <div style={{ color:C.dim, fontSize:11, fontWeight:700, fontFamily:sansFont, textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:8 }}>Social Trading Signal</div>
+            {signal.thesis && (
+              <div style={{ marginBottom:12 }}>
+                {(Array.isArray(signal.thesis) ? signal.thesis : [signal.thesis]).map((t: string, i: number) => (
+                  <div key={i} style={{ display:'flex', alignItems:'flex-start', gap:8, marginBottom:4 }}>
+                    <span style={{ color:C.blue, fontSize:10, marginTop:2 }}>▸</span>
+                    <span style={{ color:C.text, fontSize:12, lineHeight:1.6, fontFamily:sansFont }}>{t}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:6, marginBottom:12 }}>
+              {['ta','volume','catalyst','fa'].map(k => {
+                const conf = signal.confirmations || signal.confirmation || {};
+                const { icon, color } = confirmIcon(conf[k]);
+                return <div key={k} style={{ textAlign:'center', padding:'6px 0', background:`${C.bg}`, borderRadius:6, border:`1px solid ${C.border}` }}>
+                  <div style={{ color, fontSize:14, fontWeight:700 }}>{icon}</div>
+                  <div style={{ color:C.dim, fontSize:8, fontFamily:font, textTransform:'uppercase', marginTop:2 }}>{k}</div>
+                </div>;
+              })}
+            </div>
+            {signal.receipts && signal.receipts.length > 0 && (
+              <div style={{ marginBottom:12 }}>
+                {signal.receipts.slice(0, 2).map((r: any, i: number) => (
+                  <div key={i} style={{ padding:'8px 12px', background:`${C.blue}06`, borderLeft:`3px solid ${C.blue}40`, borderRadius:4, marginBottom:6, color:C.text, fontSize:11, fontStyle:'italic', fontFamily:sansFont, lineHeight:1.5 }}>
+                    {typeof r === 'string' ? r : r.text || r.quote || JSON.stringify(r)}
+                  </div>
+                ))}
+              </div>
+            )}
+            {signal.position_size && <div style={{ padding:'8px 12px', background:`${C.gold}08`, border:`1px solid ${C.gold}15`, borderRadius:6, color:C.gold, fontSize:11, fontWeight:600, fontFamily:sansFont }}>{signal.position_size}</div>}
+          </div>
+        </div>
+      ) : (
+        <div style={{ padding:16, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, marginBottom:12, color:C.dim, fontSize:12, fontFamily:sansFont }}>
+          Social signal unavailable, showing best-ranked candidates instead.
+        </div>
+      )}
+
+      {bucketOrder.map(({ key, label, icon }) => {
+        const items = buckets[key] || [];
+        if (!items.length) return null;
+        return <div key={key} style={{ marginBottom:12 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
+            <span style={{ fontSize:14 }}>{icon}</span>
+            <span style={{ color:C.bright, fontSize:13, fontWeight:700, fontFamily:sansFont }}>{label}</span>
+            <span style={{ color:C.dim, fontSize:10, fontFamily:font }}>({items.length})</span>
+          </div>
+          <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+            {items.map((item: any, i: number) => {
+              const isExp = expandedTicker === `trend-${key}-${i}`;
+              return <CardWrap key={i} onClick={() => setExpandedTicker(isExp ? null : `trend-${key}-${i}`)} expanded={isExp}>
+                <div style={{ padding:'12px 16px' }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6 }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                      <span style={{ color:C.blue, fontWeight:800, fontSize:15, fontFamily:font }}>{item.symbol || item.ticker || '—'}</span>
+                      {item.rating && <Badge color={ratingColor(item.rating)}>{item.rating}</Badge>}
+                      {item.confidence != null && <span style={{ color:C.gold, fontSize:11, fontWeight:600, fontFamily:font }}>{item.confidence}%</span>}
+                    </div>
+                    <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                      {item.social_velocity_label && <Badge color={C.purple}>{item.social_velocity_label}</Badge>}
+                      {item.classification && <Badge color={classColor(item.classification)}>{item.classification}</Badge>}
+                      {item.score != null && <span style={{ color:C.dim, fontSize:9, fontFamily:font }}>Score: {item.score}</span>}
+                    </div>
+                  </div>
+                  {item.reason && <div style={{ color:C.text, fontSize:11, lineHeight:1.5, fontFamily:sansFont, marginBottom:6 }}>{item.reason}</div>}
+                  <div style={{ display:'flex', gap:8 }}>
+                    {['ta','volume','catalyst','fa'].map(k => {
+                      const conf = item.confirmations || item.confirmation || {};
+                      const { icon: ic, color } = confirmIcon(conf[k]);
+                      return <span key={k} style={{ color, fontSize:9, fontFamily:font }}>{k.toUpperCase()}:{ic}</span>;
+                    })}
+                  </div>
+                </div>
+                {isExp && item.symbol && <div style={{ borderTop:`1px solid ${C.border}`, padding:14 }}>
+                  <TradingViewMini ticker={item.symbol || item.ticker} />
+                </div>}
+              </CardWrap>;
+            })}
+          </div>
+        </div>;
+      })}
+
+      {!signal && Object.keys(buckets).length === 0 && <Badge color={C.gold}>Limited structured data</Badge>}
+    </div>;
+  }
+
+  const knownTypes = ['trades','investments','fundamentals','technicals','analysis','dashboard','sector_rotation','earnings_catalyst','commodities','portfolio','briefing','crypto','trending','screener','cross_asset_trending'];
 
   function renderAssistantMessage(msg: {role: string, content: string, parsed?: any}) {
     const s = msg.parsed?.structured || (msg.parsed?.display_type ? msg.parsed : {});
@@ -1215,6 +1367,7 @@ export default function TradingAgent() {
       {displayType === 'technicals' && renderTechnicals(s)}
       {displayType === 'analysis' && renderAnalysis(s)}
       {displayType === 'trending' && renderTrades(s)}
+      {displayType === 'cross_asset_trending' && renderCrossAssetTrending(s)}
       {displayType === 'screener' && renderScreener(s)}
       {displayType === 'crypto' && renderCrypto(s)}
       {displayType === 'briefing' && renderBriefing(s)}
