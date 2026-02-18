@@ -1251,21 +1251,8 @@ export default function TradingAgent() {
     ),
   })).filter(group => group.buttons.length > 0);
 
-  const tickerTapeRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!tickerTapeRef.current) return;
-    const existing = tickerTapeRef.current.querySelector('tv-ticker-tape');
-    if (existing) return;
-    const script = document.createElement('script');
-    script.type = 'module';
-    script.src = 'https://widgets.tradingview-widget.com/w/en/tv-ticker-tape.js';
-    tickerTapeRef.current.appendChild(script);
-    const widget = document.createElement('tv-ticker-tape');
-    widget.setAttribute('symbols', 'FOREXCOM:SPXUSD,FOREXCOM:NSXUSD,FOREXCOM:DJI,FX:EURUSD,BITSTAMP:BTCUSD,BITSTAMP:ETHUSD,CMCMARKETS:GOLD,TVC:SILVER,NASDAQ:NVDA,NASDAQ:AAPL,NASDAQ:GOOG,NASDAQ:MSFT,NASDAQ:AMZN');
-    widget.setAttribute('item-size', 'compact');
-    widget.setAttribute('theme', 'dark');
-    tickerTapeRef.current.appendChild(widget);
-  }, []);
+  const tickerTapeHtml = `<!DOCTYPE html><html><head><style>body{margin:0;padding:0;overflow:hidden;background:#0a0b0f}</style></head><body><script type="module" src="https://widgets.tradingview-widget.com/w/en/tv-ticker-tape.js"><\/script><tv-ticker-tape symbols="FOREXCOM:SPXUSD,FOREXCOM:NSXUSD,FOREXCOM:DJI,FX:EURUSD,BITSTAMP:BTCUSD,BITSTAMP:ETHUSD,CMCMARKETS:GOLD,TVC:SILVER,NASDAQ:NVDA,NASDAQ:AAPL,NASDAQ:GOOG,NASDAQ:MSFT,NASDAQ:AMZN" item-size="compact" theme="dark"></tv-ticker-tape></body></html>`;
+  const tickerTapeSrc = `data:text/html;charset=utf-8,${encodeURIComponent(tickerTapeHtml)}`;
 
   return (
     <div style={{ display:'flex', flexDirection:'column', height:'100vh', background:C.bg, fontFamily:sansFont, overflow:'hidden' }}>
@@ -1496,7 +1483,7 @@ export default function TradingAgent() {
       </div>
 
       {/* BOTTOM TICKER TAPE */}
-      <div ref={tickerTapeRef} style={{ flexShrink:0, borderTop:`1px solid ${C.border}` }} />
+      <iframe src={tickerTapeSrc} style={{ flexShrink:0, border:'none', borderTop:`1px solid ${C.border}`, width:'100%', height:46, display:'block' }} title="Ticker Tape" sandbox="allow-scripts allow-same-origin" />
     </div>
   );
 }
