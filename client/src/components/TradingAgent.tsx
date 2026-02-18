@@ -1251,8 +1251,45 @@ export default function TradingAgent() {
     ),
   })).filter(group => group.buttons.length > 0);
 
-  const tickerTapeHtml = `<!DOCTYPE html><html><head><style>body{margin:0;padding:0;overflow:hidden;background:#0a0b0f}</style></head><body><script type="module" src="https://widgets.tradingview-widget.com/w/en/tv-ticker-tape.js"><\/script><tv-ticker-tape symbols="FOREXCOM:SPXUSD,FOREXCOM:NSXUSD,FOREXCOM:DJI,FX:EURUSD,BITSTAMP:BTCUSD,BITSTAMP:ETHUSD,CMCMARKETS:GOLD,TVC:SILVER,NASDAQ:NVDA,NASDAQ:AAPL,NASDAQ:GOOG,NASDAQ:MSFT,NASDAQ:AMZN" item-size="compact" theme="dark"></tv-ticker-tape></body></html>`;
-  const tickerTapeSrc = `data:text/html;charset=utf-8,${encodeURIComponent(tickerTapeHtml)}`;
+  const tickerTapeRef = useRef<HTMLDivElement>(null);
+  const tickerTapeLoaded = useRef(false);
+  useEffect(() => {
+    if (tickerTapeLoaded.current || !tickerTapeRef.current) return;
+    tickerTapeLoaded.current = true;
+    const container = tickerTapeRef.current;
+    const widgetDiv = document.createElement('div');
+    widgetDiv.className = 'tradingview-widget-container';
+    widgetDiv.innerHTML = '<div class="tradingview-widget-container__widget"></div>';
+    const s = document.createElement('script');
+    s.type = 'text/javascript';
+    s.src = 'https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js';
+    s.async = true;
+    s.textContent = JSON.stringify({
+      symbols: [
+        { proName: "FOREXCOM:SPXUSD", title: "S&P 500 Index" },
+        { proName: "FOREXCOM:NSXUSD", title: "US 100 Cash CFD" },
+        { proName: "FOREXCOM:DJI", title: "Dow Jones" },
+        { proName: "FX:EURUSD", title: "EUR to USD" },
+        { proName: "BITSTAMP:BTCUSD", title: "Bitcoin" },
+        { proName: "BITSTAMP:ETHUSD", title: "Ethereum" },
+        { proName: "CMCMARKETS:GOLD", title: "Gold" },
+        { proName: "TVC:SILVER", title: "Silver" },
+        { proName: "NASDAQ:NVDA", title: "NVDA" },
+        { proName: "NASDAQ:AAPL", title: "AAPL" },
+        { proName: "NASDAQ:GOOG", title: "GOOG" },
+        { proName: "NASDAQ:MSFT", title: "MSFT" },
+        { proName: "NASDAQ:AMZN", title: "AMZN" }
+      ],
+      showSymbolLogo: false,
+      isTransparent: true,
+      displayMode: "compact",
+      colorTheme: "dark",
+      locale: "en"
+    });
+    widgetDiv.appendChild(s);
+    container.appendChild(widgetDiv);
+    return () => {};
+  }, []);
 
   return (
     <div style={{ display:'flex', flexDirection:'column', height:'100vh', background:C.bg, fontFamily:sansFont, overflow:'hidden' }}>
@@ -1483,7 +1520,7 @@ export default function TradingAgent() {
       </div>
 
       {/* BOTTOM TICKER TAPE */}
-      <iframe src={tickerTapeSrc} style={{ flexShrink:0, border:'none', borderTop:`1px solid ${C.border}`, width:'100%', height:46, display:'block' }} title="Ticker Tape" sandbox="allow-scripts allow-same-origin" />
+      <div ref={tickerTapeRef} style={{ flexShrink:0, borderTop:`1px solid ${C.border}` }} />
     </div>
   );
 }
