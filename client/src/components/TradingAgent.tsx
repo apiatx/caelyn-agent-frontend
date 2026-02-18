@@ -1263,8 +1263,14 @@ export default function TradingAgent() {
       return <div style={{ padding:22, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont }} dangerouslySetInnerHTML={{ __html: formatAnalysis(fallbackAnalysis || '') }} />;
     }
 
+    const isNum = (v: any): boolean => { if (v == null) return false; const n = typeof v === 'number' ? v : parseFloat(String(v)); return isFinite(n); };
+    const fmtPrice = (item: any): string | null => { const raw = item.price ?? item.last ?? item.last_price; if (!raw || raw === 'N/A') return null; const s = String(raw); if (!isNum(s.replace(/[$,]/g, ''))) return null; return s.startsWith('$') ? s : `$${s}`; };
+    const fmtChange = (item: any): string | null => { const pct = item.change_pct ?? item.changePercent ?? item.pct_change ?? item.pct; if (pct && pct !== 'N/A' && isNum(String(pct).replace(/[%+\-]/g, ''))) return String(pct).includes('%') ? pct : `${pct}%`; const chg = item.change ?? item.change_abs; if (chg && chg !== 'N/A' && isNum(String(chg).replace(/[+\-]/g, ''))) return String(chg); return null; };
+
     const renderItemCard = (item: any, prefix: string, i: number) => {
       const isExp = expandedTicker === `${prefix}-${i}`;
+      const priceStr = fmtPrice(item);
+      const chgStr = fmtChange(item);
       return <CardWrap key={i} onClick={() => setExpandedTicker(isExp ? null : `${prefix}-${i}`)} expanded={isExp} borderColor={ratingColor(item.rating)}>
         <div style={{ padding:'14px 18px' }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:8 }}>
@@ -1279,8 +1285,9 @@ export default function TradingAgent() {
             </div>
           </div>
           <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:8, flexWrap:'wrap' }}>
-            {item.change && <span style={{ color:changeColor(item.change), fontSize:12, fontWeight:600, fontFamily:font }}>{item.change}</span>}
-            {item.market_cap && <span style={{ color:C.dim, fontSize:10, fontFamily:font }}>MCap: {item.market_cap}</span>}
+            {priceStr && <span style={{ color:C.bright, fontSize:12, fontWeight:600, fontFamily:font }}>{priceStr}</span>}
+            {chgStr && <span style={{ color:changeColor(chgStr), fontSize:12, fontWeight:600, fontFamily:font }}>{chgStr}</span>}
+            {item.market_cap && item.market_cap !== 'N/A' && <span style={{ color:C.dim, fontSize:10, fontFamily:font }}>MCap: {item.market_cap}</span>}
             {item.social_velocity_label && <Badge color={C.purple}>{item.social_velocity_label}</Badge>}
             {item.score != null && <span style={{ color:C.dim, fontSize:9, fontFamily:font }}>Score: {item.score}</span>}
           </div>
