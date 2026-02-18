@@ -108,6 +108,20 @@ export default function TradingAgent() {
     const iv = setInterval(() => { if (idx < stages.length) { setLoadingStage(stages[idx]); idx++; } }, 1600);
 
     try {
+      try {
+        const ping = await fetch(`${AGENT_BACKEND_URL}/ping`, { method: 'GET' });
+        console.log('[PING]', ping.status);
+      } catch (pingErr: any) {
+        console.log('[PING_FAIL]', pingErr, pingErr?.message);
+        const unreachPanel: Panel = {
+          id: Date.now(), title: displayText,
+          data: { role: 'assistant', content: `Backend unreachable. Check deploy status.\n\nURL: ${AGENT_BACKEND_URL}\nTime: ${new Date().toISOString()}\nError: ${pingErr?.message || 'Network error'}`, parsed: null },
+          timestamp: Date.now(),
+        };
+        setPanels(prev => [unreachPanel, ...prev]);
+        return;
+      }
+
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-API-Key': AGENT_API_KEY },
@@ -124,7 +138,7 @@ export default function TradingAgent() {
       if (!raw || !raw.trim()) {
         const emptyPanel: Panel = {
           id: Date.now(), title: displayText,
-          data: { role: 'assistant', content: 'Backend returned empty response. Check console logs.', parsed: null },
+          data: { role: 'assistant', content: `Backend returned empty response.\n\nURL: ${url}\nTime: ${new Date().toISOString()}`, parsed: null },
           timestamp: Date.now(),
         };
         setPanels(prev => [emptyPanel, ...prev]);
@@ -176,8 +190,17 @@ export default function TradingAgent() {
       };
       setPanels(prev => [newPanel, ...prev]);
     } catch (err: any) {
-      console.error('[HippoAI] Request failed:', err);
-      const errMsg = err.message.includes('429') ? 'Rate limit reached. Wait a moment.' : err.message.includes('403') ? 'Auth failed.' : err.message;
+      console.log('[FETCH_FAIL]', err, err?.message);
+      const errMsg = err.message?.includes('429') ? 'Rate limit reached. Wait a moment.'
+        : err.message?.includes('403') ? 'Auth failed.'
+        : err.message?.includes('Failed to fetch') ? `Backend unreachable (${AGENT_BACKEND_URL}). Check deploy status.`
+        : err.message || 'Unknown error';
+      const failPanel: Panel = {
+        id: Date.now(), title: displayText,
+        data: { role: 'assistant', content: `Request failed: ${errMsg}\n\nBackend: ${AGENT_BACKEND_URL}\nTime: ${new Date().toISOString()}`, parsed: null },
+        timestamp: Date.now(),
+      };
+      setPanels(prev => [failPanel, ...prev]);
       setError(errMsg);
     } finally { clearInterval(iv); setLoadingStage(''); setLoading(false); }
   }
