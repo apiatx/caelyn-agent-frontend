@@ -113,16 +113,68 @@ export default function TradingAgent() {
         headers: { 'Content-Type': 'application/json', 'X-API-Key': AGENT_API_KEY },
         body: JSON.stringify(payload),
       });
+      const raw = await res.text();
+      console.log('[RECV_RAW]', res.status, raw.slice(0, 800));
+
       if (!res.ok) {
-        const errorText = await res.text();
-        console.log('[ERROR]', res.status, errorText);
-        throw new Error(`Status ${res.status}: ${errorText}`);
+        console.log('[ERROR]', res.status, raw);
+        throw new Error(`Status ${res.status}: ${raw || 'Empty response'}`);
       }
-      const data = await res.json();
+
+      if (!raw || !raw.trim()) {
+        const emptyPanel: Panel = {
+          id: Date.now(), title: displayText,
+          data: { role: 'assistant', content: 'Backend returned empty response. Check console logs.', parsed: null },
+          timestamp: Date.now(),
+        };
+        setPanels(prev => [emptyPanel, ...prev]);
+        return;
+      }
+
+      let data: any;
+      try { data = JSON.parse(raw); } catch (parseErr) {
+        console.error('[JSON_PARSE_ERROR]', parseErr, raw.slice(0, 500));
+        const parsePanel: Panel = {
+          id: Date.now(), title: displayText,
+          data: { role: 'assistant', content: 'Backend returned invalid JSON. Check console logs.\n\nRaw: ' + raw.slice(0, 200), parsed: null },
+          timestamp: Date.now(),
+        };
+        setPanels(prev => [parsePanel, ...prev]);
+        return;
+      }
+
       console.log('[RECV]', res.status, data);
-      if (data.error) throw new Error(data.error);
       if (data.conversation_id) setConversationId(data.conversation_id);
-      const responseText = data.analysis || data.structured?.message || data.message || '';
+
+      if (data.type === 'error' || data.error) {
+        const errContent = data.error || data.structured?.message || data.analysis || 'Unknown error from backend.';
+        const errPanel: Panel = {
+          id: Date.now(), title: displayText,
+          data: { role: 'assistant', content: `Error: ${errContent}${data.request_id ? `\n\nRequest ID: ${data.request_id}` : ''}`, parsed: data },
+          timestamp: Date.now(),
+        };
+        setPanels(prev => [errPanel, ...prev]);
+        return;
+      }
+
+      let responseText = '';
+      if (data.analysis && data.analysis.trim()) {
+        responseText = data.analysis;
+      } else if (data.structured) {
+        if (data.structured.message && data.structured.message.trim()) {
+          responseText = data.structured.message;
+        } else {
+          const keys = Object.keys(data.structured).filter(k => k !== 'display_type');
+          responseText = keys.length > 0
+            ? keys.map(k => `**${k}**: ${typeof data.structured[k] === 'object' ? JSON.stringify(data.structured[k], null, 2) : data.structured[k]}`).join('\n\n')
+            : 'Structured response received. See panel data.';
+        }
+      } else if (data.message) {
+        responseText = data.message;
+      } else {
+        responseText = 'Response received but no displayable content.';
+      }
+
       const newPanel: Panel = {
         id: Date.now(),
         title: displayText,
