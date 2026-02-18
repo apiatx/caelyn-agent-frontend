@@ -87,15 +87,16 @@ export default function TradingAgent() {
 
     if (!queryText && !presetIntent) return;
 
-    const safeQuery: string = presetIntent ? '' : queryText;
+    const safeQuery: string = presetIntent ? presetIntent : queryText;
     const safePresetIntent: string | null = typeof presetIntent === 'string' ? presetIntent : null;
     const safeConversationId: string | null = freshChat ? null : (typeof conversationId === 'string' ? conversationId : null);
 
-    const payload = {
+    const payload: Record<string, string | null> = {
       query: safeQuery,
       preset_intent: safePresetIntent,
       conversation_id: safeConversationId,
     };
+    Object.keys(payload).forEach(k => { if (payload[k] === undefined) payload[k] = null; });
 
     console.log('[HippoAI] Sending payload:', JSON.stringify(payload));
 
