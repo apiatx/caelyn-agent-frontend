@@ -1496,7 +1496,7 @@ export default function TradingAgent() {
       </div>
 
       {/* BOTTOM TICKER TAPE */}
-      <div ref={tickerTapeRef} style={{ flexShrink:0, borderTop:`1px solid ${C.border}`, overflow:'hidden', height:36, maxHeight:36 }} />
+      <div ref={tickerTapeRef} style={{ flexShrink:0, borderTop:`1px solid ${C.border}` }} />
     </div>
   );
 }
