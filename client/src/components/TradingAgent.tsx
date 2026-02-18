@@ -160,19 +160,12 @@ export default function TradingAgent() {
       let responseText = '';
       if (data.analysis && data.analysis.trim()) {
         responseText = data.analysis;
-      } else if (data.structured) {
-        if (data.structured.message && data.structured.message.trim()) {
-          responseText = data.structured.message;
-        } else {
-          const keys = Object.keys(data.structured).filter(k => k !== 'display_type');
-          responseText = keys.length > 0
-            ? keys.map(k => `**${k}**: ${typeof data.structured[k] === 'object' ? JSON.stringify(data.structured[k], null, 2) : data.structured[k]}`).join('\n\n')
-            : 'Structured response received. See panel data.';
-        }
-      } else if (data.message) {
+      } else if (data.structured?.message && data.structured.message.trim()) {
+        responseText = data.structured.message;
+      } else if (data.message && data.message.trim()) {
         responseText = data.message;
       } else {
-        responseText = 'Response received but no displayable content.';
+        responseText = 'Response received. See panel data for details.';
       }
 
       const newPanel: Panel = {
