@@ -87,18 +87,14 @@ export default function TradingAgent() {
 
     if (!queryText && !presetIntent) return;
 
-    const safeQuery: string = presetIntent ? presetIntent : queryText;
-    const safePresetIntent: string | null = typeof presetIntent === 'string' ? presetIntent : null;
-    const safeConversationId: string | null = freshChat ? null : (typeof conversationId === 'string' ? conversationId : null);
-
-    const payload: Record<string, string | null> = {
-      query: safeQuery,
-      preset_intent: safePresetIntent,
-      conversation_id: safeConversationId,
+    const url = `${AGENT_BACKEND_URL}/api/query`;
+    const payload: { query: string; preset_intent: string | null; conversation_id: string | null } = {
+      query: presetIntent ? '' : queryText,
+      preset_intent: typeof presetIntent === 'string' ? presetIntent : null,
+      conversation_id: freshChat ? null : (typeof conversationId === 'string' ? conversationId : null),
     };
-    Object.keys(payload).forEach(k => { if (payload[k] === undefined) payload[k] = null; });
 
-    console.log('[HippoAI] Sending payload:', JSON.stringify(payload));
+    console.log('[SEND]', url, payload);
 
     setLoading(true); setError(null); setExpandedTicker(null);
     setPrompt('');
@@ -112,17 +108,18 @@ export default function TradingAgent() {
     const iv = setInterval(() => { if (idx < stages.length) { setLoadingStage(stages[idx]); idx++; } }, 1600);
 
     try {
-      const res = await fetch(`${AGENT_BACKEND_URL}/api/query`, {
+      const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-API-Key': AGENT_API_KEY },
         body: JSON.stringify(payload),
       });
       if (!res.ok) {
-        const errorBody = await res.text();
-        console.error(`[HippoAI] Backend error ${res.status}:`, errorBody);
-        throw new Error(`Status ${res.status}: ${errorBody}`);
+        const errorText = await res.text();
+        console.log('[ERROR]', res.status, errorText);
+        throw new Error(`Status ${res.status}: ${errorText}`);
       }
       const data = await res.json();
+      console.log('[RECV]', res.status, data);
       if (data.error) throw new Error(data.error);
       if (data.conversation_id) setConversationId(data.conversation_id);
       const responseText = data.analysis || data.structured?.message || data.message || '';
