@@ -1251,27 +1251,27 @@ export default function TradingAgent() {
     ),
   })).filter(group => group.buttons.length > 0);
 
-  const tickerItems = [
-    'BTC $XX,XXX ▲2.1%',
-    'ETH $X,XXX ▼0.8%',
-    'SPY $XXX ▲0.3%',
-    'QQQ $XXX ▲0.5%',
-    'DXY 104.2 ▼0.1%',
-    'Gold $2,350 ▲0.4%',
-    'Oil $78.5 ▼1.2%',
-    'VIX 14.8 ▲3.1%',
-    'Fear & Greed: 65',
-    '10Y: 4.25% ▲2bp',
-    'SOL $XXX ▲4.2%',
-    'NVDA $XXX ▲1.8%',
-  ];
+  const tickerTapeRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!tickerTapeRef.current) return;
+    const existing = tickerTapeRef.current.querySelector('tv-ticker-tape');
+    if (existing) return;
+    const script = document.createElement('script');
+    script.type = 'module';
+    script.src = 'https://widgets.tradingview-widget.com/w/en/tv-ticker-tape.js';
+    tickerTapeRef.current.appendChild(script);
+    const widget = document.createElement('tv-ticker-tape');
+    widget.setAttribute('symbols', 'FOREXCOM:SPXUSD,FOREXCOM:NSXUSD,FOREXCOM:DJI,FX:EURUSD,BITSTAMP:BTCUSD,BITSTAMP:ETHUSD,CMCMARKETS:GOLD,TVC:SILVER,NASDAQ:NVDA,NASDAQ:AAPL,NASDAQ:GOOG,NASDAQ:MSFT,NASDAQ:AMZN');
+    widget.setAttribute('item-size', 'compact');
+    widget.setAttribute('theme', 'dark');
+    tickerTapeRef.current.appendChild(widget);
+  }, []);
 
   return (
     <div style={{ display:'flex', flexDirection:'column', height:'100vh', background:C.bg, fontFamily:sansFont, overflow:'hidden' }}>
       <style>{`
         @keyframes agent-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         @keyframes agent-progress { 0% { width: 0%; } 50% { width: 70%; } 100% { width: 100%; } }
-        @keyframes ticker-scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
         .terminal-input:focus { outline: none; border-color: ${C.blue} !important; }
         .rail-item:hover { background: ${C.blue}10 !important; color: ${C.bright} !important; }
         .panel-btn:hover { background: ${C.blue}15 !important; color: ${C.bright} !important; }
@@ -1496,15 +1496,7 @@ export default function TradingAgent() {
       </div>
 
       {/* BOTTOM TICKER TAPE */}
-      <div style={{ height:28, flexShrink:0, background:C.card, borderTop:`1px solid ${C.border}`, overflow:'hidden', display:'flex', alignItems:'center' }}>
-        <div style={{ display:'flex', whiteSpace:'nowrap', animation:'ticker-scroll 30s linear infinite' }}>
-          {[...tickerItems, ...tickerItems].map((item, i) => (
-            <span key={i} style={{ padding:'0 16px', fontSize:10, fontFamily:font, color:item.includes('▲') ? C.green : item.includes('▼') ? C.red : C.dim, borderRight:`1px solid ${C.border}`, lineHeight:'28px' }}>
-              {item}
-            </span>
-          ))}
-        </div>
-      </div>
+      <div ref={tickerTapeRef} style={{ flexShrink:0, borderTop:`1px solid ${C.border}`, overflow:'hidden' }} />
     </div>
   );
 }
