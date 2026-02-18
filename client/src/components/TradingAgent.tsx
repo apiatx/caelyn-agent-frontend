@@ -1225,42 +1225,93 @@ export default function TradingAgent() {
     </div>;
   }
 
-  function renderCrossAssetTrending(s: any) {
-    const meta = s.meta || {};
-    const pulse = s.market_pulse || {};
-    const signal = s.social_trading_signal || null;
-    const buckets = s.buckets || {};
-    const regime = meta.regime || pulse.regime || '';
-    const asOf = meta.as_of_utc || s.as_of || '';
+  function renderCrossAssetTrending(s: any, fallbackAnalysis?: string) {
+    const mr = s.macro_regime || {};
+    const aca = s.asset_class_assessment || [];
+    const rawSignal = s.social_trading_signal || null;
+    const signal = rawSignal && rawSignal.symbol ? rawSignal : null;
+    const equities = s.equities || {};
+    const cryptoItems = s.crypto || [];
+    const commodityItems = s.commodities || [];
 
     const ratingColor = (r?: string) => {
       if (!r) return C.dim;
-      const n = parseFloat(r);
-      if (!isNaN(n)) return n >= 7 ? C.green : n >= 5 ? C.gold : C.red;
       const l = r.toLowerCase();
-      if (l.includes('strong buy') || l.includes('bullish')) return C.green;
-      if (l.includes('buy') || l.includes('lean')) return '#4ade80';
-      if (l.includes('neutral') || l.includes('hold')) return C.gold;
-      return C.red;
+      if (l.includes('strong buy')) return C.green;
+      if (l.includes('buy')) return '#4ade80';
+      if (l.includes('hold') || l.includes('neutral')) return C.gold;
+      if (l.includes('sell')) return C.red;
+      return C.dim;
     };
+    const classColor = (c?: string) => (!c ? C.dim : c.toUpperCase().includes('TRADE') ? C.green : C.blue);
+    const confirmIcon = (val?: boolean | string) => (val === true || val === 'yes' || val === 'Yes') ? { ic: '✓', cl: C.green } : { ic: '—', cl: C.dim };
+    const regimeColor = (r?: string) => { if (!r) return C.dim; const l = r.toLowerCase(); return l.includes('bullish') || l.includes('risk-on') ? C.green : l.includes('bearish') || l.includes('risk-off') ? C.red : C.gold; };
+    const confBar = (conf: any) => <div style={{ display:'flex', gap:6 }}>
+      {['ta','volume','catalyst','fa'].map(k => { const { ic, cl } = confirmIcon(conf?.[k]); return <span key={k} style={{ padding:'1px 6px', borderRadius:3, fontSize:8, fontWeight:700, fontFamily:font, color:cl, background:`${cl}10`, border:`1px solid ${cl}20` }}>{k.toUpperCase()} {ic}</span>; })}
+    </div>;
 
-    const classColor = (c?: string) => {
-      if (!c) return C.dim;
-      return c.toUpperCase().includes('TRADE') ? C.green : C.blue;
-    };
-
-    const confirmIcon = (val?: boolean | string) => {
-      if (val === true || val === 'yes' || val === 'Yes' || val === '✓') return { icon: '✓', color: C.green };
-      return { icon: '—', color: C.dim };
-    };
-
-    const bucketOrder = [
-      { key: 'equities_large', label: 'Equities: Large Caps', icon: '🏛️' },
-      { key: 'equities_mid', label: 'Equities: Mid Caps', icon: '📊' },
-      { key: 'equities_small', label: 'Equities: Small + Micro', icon: '🔬' },
-      { key: 'crypto', label: 'Crypto', icon: '₿' },
-      { key: 'commodities', label: 'Commodities', icon: '🛢️' },
+    const sections: { key: string; label: string; icon: string; items: any[] }[] = [
+      { key: 'large_caps', label: 'Equities: Large Caps', icon: '🏛️', items: equities.large_caps || [] },
+      { key: 'mid_caps', label: 'Equities: Mid Caps', icon: '📊', items: equities.mid_caps || [] },
+      { key: 'small_micro', label: 'Equities: Small + Micro', icon: '🔬', items: equities.small_micro_caps || [] },
+      { key: 'crypto', label: 'Crypto', icon: '₿', items: cryptoItems },
+      { key: 'commodities', label: 'Commodities', icon: '🛢️', items: commodityItems },
     ];
+    const hasStructured = signal || sections.some(sec => sec.items.length > 0);
+
+    if (!hasStructured && !mr.verdict) {
+      return <div style={{ padding:22, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont }} dangerouslySetInnerHTML={{ __html: formatAnalysis(fallbackAnalysis || '') }} />;
+    }
+
+    const renderItemCard = (item: any, prefix: string, i: number) => {
+      const isExp = expandedTicker === `${prefix}-${i}`;
+      return <CardWrap key={i} onClick={() => setExpandedTicker(isExp ? null : `${prefix}-${i}`)} expanded={isExp} borderColor={ratingColor(item.rating)}>
+        <div style={{ padding:'14px 18px' }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:8 }}>
+            <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
+              <span style={{ color:C.blue, fontWeight:800, fontSize:16, fontFamily:font }}>{item.symbol}</span>
+              {item.company && <span style={{ color:C.dim, fontSize:10, fontFamily:sansFont }}>{item.company}</span>}
+              {item.classification && <Badge color={classColor(item.classification)}>{item.classification}</Badge>}
+            </div>
+            <div style={{ display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
+              {item.rating && <Badge color={ratingColor(item.rating)}>{item.rating}</Badge>}
+              {item.confidence != null && <span style={{ background:`${C.gold}15`, color:C.gold, padding:'2px 8px', borderRadius:4, fontSize:11, fontWeight:700, fontFamily:font }}>{item.confidence}</span>}
+            </div>
+          </div>
+          <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:8, flexWrap:'wrap' }}>
+            {item.change && <span style={{ color:changeColor(item.change), fontSize:12, fontWeight:600, fontFamily:font }}>{item.change}</span>}
+            {item.market_cap && <span style={{ color:C.dim, fontSize:10, fontFamily:font }}>MCap: {item.market_cap}</span>}
+            {item.social_velocity_label && <Badge color={C.purple}>{item.social_velocity_label}</Badge>}
+            {item.score != null && <span style={{ color:C.dim, fontSize:9, fontFamily:font }}>Score: {item.score}</span>}
+          </div>
+          {item.thesis_bullets && item.thesis_bullets.length > 0 && item.thesis_bullets[0] && (
+            <div style={{ marginBottom:8 }}>
+              {item.thesis_bullets.filter((b: string) => b).slice(0, 3).map((b: string, j: number) => (
+                <div key={j} style={{ display:'flex', alignItems:'flex-start', gap:6, marginBottom:3 }}>
+                  <span style={{ color:C.blue, fontSize:9, marginTop:3 }}>▸</span>
+                  <span style={{ color:C.text, fontSize:11, lineHeight:1.5, fontFamily:sansFont }}>{b}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {item.catalyst && <div style={{ color:C.text, fontSize:10, fontFamily:sansFont, marginBottom:6 }}><span style={{ color:C.gold, fontWeight:700 }}>Catalyst:</span> {item.catalyst}</div>}
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+            {confBar(item.confirmations)}
+            {item.position_size && <span style={{ color:C.dim, fontSize:9, fontFamily:font }}>{item.position_size}</span>}
+          </div>
+          {item.why_could_fail && <div style={{ marginTop:6, color:C.dim, fontSize:10, fontFamily:sansFont, fontStyle:'italic' }}>Risk: {item.why_could_fail.length > 100 ? item.why_could_fail.slice(0, 100) + '...' : item.why_could_fail}</div>}
+        </div>
+        {isExp && <div style={{ borderTop:`1px solid ${C.border}` }}>
+          {item.trade_plan && <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(100px, 1fr))', gap:6, padding:14 }}>
+            {item.trade_plan.entry && <div style={{ background:C.bg, borderRadius:6, padding:'6px 10px' }}><div style={{ color:C.dim, fontSize:8, fontFamily:font, textTransform:'uppercase' }}>Entry</div><div style={{ color:C.bright, fontSize:12, fontWeight:700, fontFamily:font }}>{item.trade_plan.entry}</div></div>}
+            {item.trade_plan.stop && <div style={{ background:C.bg, borderRadius:6, padding:'6px 10px' }}><div style={{ color:C.dim, fontSize:8, fontFamily:font, textTransform:'uppercase' }}>Stop</div><div style={{ color:C.red, fontSize:12, fontWeight:700, fontFamily:font }}>{item.trade_plan.stop}</div></div>}
+            {item.trade_plan.target_1 && <div style={{ background:C.bg, borderRadius:6, padding:'6px 10px' }}><div style={{ color:C.dim, fontSize:8, fontFamily:font, textTransform:'uppercase' }}>Target</div><div style={{ color:C.green, fontSize:12, fontWeight:700, fontFamily:font }}>{item.trade_plan.target_1}</div></div>}
+            {item.trade_plan.risk_reward && <div style={{ background:C.bg, borderRadius:6, padding:'6px 10px' }}><div style={{ color:C.dim, fontSize:8, fontFamily:font, textTransform:'uppercase' }}>R:R</div><div style={{ color:C.gold, fontSize:12, fontWeight:700, fontFamily:font }}>{item.trade_plan.risk_reward}</div></div>}
+          </div>}
+          <div style={{ padding:14 }}><TradingViewMini ticker={item.symbol} /></div>
+        </div>}
+      </CardWrap>;
+    };
 
     return <div>
       <div style={{ padding:'18px 22px', background:`linear-gradient(135deg, ${C.card} 0%, ${C.bg} 100%)`, border:`1px solid ${C.border}`, borderRadius:12, marginBottom:10 }}>
@@ -1269,115 +1320,80 @@ export default function TradingAgent() {
             <span style={{ fontSize:20 }}>🔥</span>
             <span style={{ color:C.bright, fontSize:18, fontWeight:800, fontFamily:sansFont }}>Trending Now</span>
           </div>
-          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-            {regime && <Badge color={regime.toLowerCase().includes('risk-on') ? C.green : regime.toLowerCase().includes('risk-off') ? C.red : C.gold}>{regime}</Badge>}
-            {asOf && <span style={{ color:C.dim, fontSize:9, fontFamily:font }}>{new Date(asOf).toLocaleTimeString()}</span>}
-          </div>
+          {mr.verdict && <Badge color={regimeColor(mr.verdict)}>{mr.verdict}</Badge>}
         </div>
       </div>
 
-      {signal ? (
-        <div style={{ background:C.card, border:`1px solid ${C.blue}30`, borderRadius:12, marginBottom:12, overflow:'hidden' }}>
-          <div style={{ padding:'16px 20px', borderBottom:`1px solid ${C.border}` }}>
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
-              <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                <span style={{ color:C.blue, fontSize:20, fontWeight:800, fontFamily:font }}>{signal.symbol || signal.ticker || '—'}</span>
-                {signal.asset_class && <span style={{ color:C.dim, fontSize:10, fontFamily:font, textTransform:'uppercase' }}>{signal.asset_class}</span>}
-                {signal.classification && <Badge color={classColor(signal.classification)}>{signal.classification}</Badge>}
-              </div>
-              <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                {signal.rating && <Badge color={ratingColor(signal.rating)}>{signal.rating}</Badge>}
-                {signal.confidence != null && <span style={{ color:C.gold, fontSize:13, fontWeight:700, fontFamily:font }}>{signal.confidence}%</span>}
-              </div>
-            </div>
-            <div style={{ color:C.dim, fontSize:11, fontWeight:700, fontFamily:sansFont, textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:8 }}>Social Trading Signal</div>
-            {signal.thesis && (
-              <div style={{ marginBottom:12 }}>
-                {(Array.isArray(signal.thesis) ? signal.thesis : [signal.thesis]).map((t: string, i: number) => (
-                  <div key={i} style={{ display:'flex', alignItems:'flex-start', gap:8, marginBottom:4 }}>
-                    <span style={{ color:C.blue, fontSize:10, marginTop:2 }}>▸</span>
-                    <span style={{ color:C.text, fontSize:12, lineHeight:1.6, fontFamily:sansFont }}>{t}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:6, marginBottom:12 }}>
-              {['ta','volume','catalyst','fa'].map(k => {
-                const conf = signal.confirmations || signal.confirmation || {};
-                const { icon, color } = confirmIcon(conf[k]);
-                return <div key={k} style={{ textAlign:'center', padding:'6px 0', background:`${C.bg}`, borderRadius:6, border:`1px solid ${C.border}` }}>
-                  <div style={{ color, fontSize:14, fontWeight:700 }}>{icon}</div>
-                  <div style={{ color:C.dim, fontSize:8, fontFamily:font, textTransform:'uppercase', marginTop:2 }}>{k}</div>
-                </div>;
-              })}
-            </div>
-            {signal.receipts && signal.receipts.length > 0 && (
-              <div style={{ marginBottom:12 }}>
-                {signal.receipts.slice(0, 2).map((r: any, i: number) => (
-                  <div key={i} style={{ padding:'8px 12px', background:`${C.blue}06`, borderLeft:`3px solid ${C.blue}40`, borderRadius:4, marginBottom:6, color:C.text, fontSize:11, fontStyle:'italic', fontFamily:sansFont, lineHeight:1.5 }}>
-                    {typeof r === 'string' ? r : r.text || r.quote || JSON.stringify(r)}
-                  </div>
-                ))}
-              </div>
-            )}
-            {signal.position_size && <div style={{ padding:'8px 12px', background:`${C.gold}08`, border:`1px solid ${C.gold}15`, borderRadius:6, color:C.gold, fontSize:11, fontWeight:600, fontFamily:sansFont }}>{signal.position_size}</div>}
-          </div>
+      {mr.summary && <div style={{ padding:'14px 18px', background:C.card, border:`1px solid ${C.border}`, borderRadius:10, marginBottom:10 }}>
+        <div style={{ color:C.text, fontSize:12, lineHeight:1.7, fontFamily:sansFont, marginBottom:8 }}>{mr.summary}</div>
+        <div style={{ display:'flex', gap:12, flexWrap:'wrap' }}>
+          {mr.fear_greed && <span style={{ color:C.dim, fontSize:10, fontFamily:font }}>F&G: <span style={{ color:C.gold, fontWeight:600 }}>{mr.fear_greed}</span></span>}
+          {mr.vix && <span style={{ color:C.dim, fontSize:10, fontFamily:font }}>VIX: <span style={{ color:C.text, fontWeight:600 }}>{mr.vix}</span></span>}
         </div>
-      ) : (
-        <div style={{ padding:16, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, marginBottom:12, color:C.dim, fontSize:12, fontFamily:sansFont }}>
-          Social signal unavailable, showing best-ranked candidates instead.
-        </div>
-      )}
+      </div>}
 
-      {bucketOrder.map(({ key, label, icon }) => {
-        const items = buckets[key] || [];
+      {aca.length > 0 && <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(200px, 1fr))', gap:8, marginBottom:10 }}>
+        {aca.map((a: any, i: number) => (
+          <div key={i} style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:8, padding:'10px 14px' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:4 }}>
+              <span style={{ color:C.bright, fontSize:12, fontWeight:700, fontFamily:sansFont }}>{a.asset_class}</span>
+              <Badge color={regimeColor(a.regime)}>{a.regime}</Badge>
+            </div>
+            <div style={{ color:C.dim, fontSize:10, lineHeight:1.4, fontFamily:sansFont }}>{a.rationale}</div>
+          </div>
+        ))}
+      </div>}
+
+      {signal && signal.symbol && <div style={{ background:C.card, border:`1px solid ${C.blue}30`, borderRadius:12, marginBottom:12, overflow:'hidden' }}>
+        <div style={{ padding:'16px 20px' }}>
+          <div style={{ color:C.dim, fontSize:10, fontWeight:700, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:10 }}>Social Trading Signal</div>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
+            <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+              <span style={{ color:C.blue, fontSize:20, fontWeight:800, fontFamily:font }}>{signal.symbol}</span>
+              {signal.classification && <Badge color={classColor(signal.classification)}>{signal.classification}</Badge>}
+            </div>
+            <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+              {signal.rating && <Badge color={ratingColor(signal.rating)}>{signal.rating}</Badge>}
+              {signal.confidence > 0 && <span style={{ background:`${C.gold}15`, color:C.gold, padding:'2px 8px', borderRadius:4, fontSize:12, fontWeight:700, fontFamily:font }}>{signal.confidence}</span>}
+            </div>
+          </div>
+          {signal.thesis_bullets && signal.thesis_bullets.filter((b: string) => b).length > 0 && (
+            <div style={{ marginBottom:10 }}>
+              {signal.thesis_bullets.filter((b: string) => b).map((t: string, i: number) => (
+                <div key={i} style={{ display:'flex', alignItems:'flex-start', gap:6, marginBottom:3 }}>
+                  <span style={{ color:C.blue, fontSize:9, marginTop:3 }}>▸</span>
+                  <span style={{ color:C.text, fontSize:11, lineHeight:1.5, fontFamily:sansFont }}>{t}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {confBar(signal.confirmations)}
+          {signal.receipts && signal.receipts.length > 0 && <div style={{ marginTop:10 }}>
+            {signal.receipts.slice(0, 2).map((r: any, i: number) => (
+              <div key={i} style={{ padding:'6px 10px', background:`${C.blue}06`, borderLeft:`3px solid ${C.blue}30`, borderRadius:4, marginBottom:4, color:C.text, fontSize:10, fontStyle:'italic', fontFamily:sansFont }}>{typeof r === 'string' ? r : r.text || r.quote || ''}</div>
+            ))}
+          </div>}
+          {signal.position_size && <div style={{ marginTop:8, color:C.gold, fontSize:10, fontWeight:600, fontFamily:sansFont }}>{signal.position_size}</div>}
+        </div>
+      </div>}
+
+      {sections.map(({ key, label, icon, items }) => {
         if (!items.length) return null;
-        return <div key={key} style={{ marginBottom:12 }}>
+        return <div key={key} style={{ marginBottom:14 }}>
           <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
             <span style={{ fontSize:14 }}>{icon}</span>
             <span style={{ color:C.bright, fontSize:13, fontWeight:700, fontFamily:sansFont }}>{label}</span>
             <span style={{ color:C.dim, fontSize:10, fontFamily:font }}>({items.length})</span>
           </div>
-          <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
-            {items.map((item: any, i: number) => {
-              const isExp = expandedTicker === `trend-${key}-${i}`;
-              return <CardWrap key={i} onClick={() => setExpandedTicker(isExp ? null : `trend-${key}-${i}`)} expanded={isExp}>
-                <div style={{ padding:'12px 16px' }}>
-                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6 }}>
-                    <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                      <span style={{ color:C.blue, fontWeight:800, fontSize:15, fontFamily:font }}>{item.symbol || item.ticker || '—'}</span>
-                      {item.rating && <Badge color={ratingColor(item.rating)}>{item.rating}</Badge>}
-                      {item.confidence != null && <span style={{ color:C.gold, fontSize:11, fontWeight:600, fontFamily:font }}>{item.confidence}%</span>}
-                    </div>
-                    <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-                      {item.social_velocity_label && <Badge color={C.purple}>{item.social_velocity_label}</Badge>}
-                      {item.classification && <Badge color={classColor(item.classification)}>{item.classification}</Badge>}
-                      {item.score != null && <span style={{ color:C.dim, fontSize:9, fontFamily:font }}>Score: {item.score}</span>}
-                    </div>
-                  </div>
-                  {item.reason && <div style={{ color:C.text, fontSize:11, lineHeight:1.5, fontFamily:sansFont, marginBottom:6 }}>{item.reason}</div>}
-                  <div style={{ display:'flex', gap:8 }}>
-                    {['ta','volume','catalyst','fa'].map(k => {
-                      const conf = item.confirmations || item.confirmation || {};
-                      const { icon: ic, color } = confirmIcon(conf[k]);
-                      return <span key={k} style={{ color, fontSize:9, fontFamily:font }}>{k.toUpperCase()}:{ic}</span>;
-                    })}
-                  </div>
-                </div>
-                {isExp && item.symbol && <div style={{ borderTop:`1px solid ${C.border}`, padding:14 }}>
-                  <TradingViewMini ticker={item.symbol || item.ticker} />
-                </div>}
-              </CardWrap>;
-            })}
+          <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+            {items.map((item: any, i: number) => renderItemCard(item, `trend-${key}`, i))}
           </div>
         </div>;
       })}
-
-      {!signal && Object.keys(buckets).length === 0 && <Badge color={C.gold}>Limited structured data</Badge>}
     </div>;
   }
 
-  const knownTypes = ['trades','investments','fundamentals','technicals','analysis','dashboard','sector_rotation','earnings_catalyst','commodities','portfolio','briefing','crypto','trending','screener','cross_asset_trending'];
+  const knownTypes = ['trades','investments','fundamentals','technicals','analysis','dashboard','sector_rotation','earnings_catalyst','commodities','portfolio','briefing','crypto','trending','screener','cross_asset_trending','cross_market'];
 
   function renderAssistantMessage(msg: {role: string, content: string, parsed?: any}) {
     const s = msg.parsed?.structured || (msg.parsed?.display_type ? msg.parsed : {});
@@ -1390,7 +1406,7 @@ export default function TradingAgent() {
       {displayType === 'technicals' && renderTechnicals(s)}
       {displayType === 'analysis' && renderAnalysis(s)}
       {displayType === 'trending' && renderTrades(s)}
-      {displayType === 'cross_asset_trending' && renderCrossAssetTrending(s)}
+      {(displayType === 'cross_asset_trending' || displayType === 'cross_market') && renderCrossAssetTrending(s, analysisText)}
       {displayType === 'screener' && renderScreener(s)}
       {displayType === 'crypto' && renderCrypto(s)}
       {displayType === 'briefing' && renderBriefing(s)}
@@ -1399,7 +1415,7 @@ export default function TradingAgent() {
       {displayType === 'sector_rotation' && renderSectorRotation(s)}
       {displayType === 'earnings_catalyst' && renderEarningsCatalyst(s)}
       {(displayType === 'chat' || !knownTypes.includes(displayType)) && <div style={{ padding:22, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont }} dangerouslySetInnerHTML={{ __html: formatAnalysis(analysisText) }} />}
-      {displayType && displayType !== 'chat' && knownTypes.includes(displayType) && analysisText && <div style={{ marginTop:16, padding:22, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont }} dangerouslySetInnerHTML={{ __html: formatAnalysis(analysisText) }} />}
+      {displayType && displayType !== 'chat' && displayType !== 'cross_market' && displayType !== 'cross_asset_trending' && knownTypes.includes(displayType) && analysisText && <div style={{ marginTop:16, padding:22, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont }} dangerouslySetInnerHTML={{ __html: formatAnalysis(analysisText) }} />}
     </div>;
   }
 
