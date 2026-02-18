@@ -9,56 +9,77 @@ interface AgentResult {
   structured: any;
 }
 
+interface Panel {
+  id: number;
+  title: string;
+  data: any;
+  timestamp: number;
+  pinned?: boolean;
+}
+
+const slashCommands: Record<string, string> = {
+  '/briefing': 'daily_briefing',
+  '/trades': 'tactical_trades',
+  '/macro': 'macro_outlook',
+  '/crypto': 'crypto_focus',
+  '/scan': 'cross_asset_trending',
+  '/sentiment': 'social_momentum_scan',
+  '/news': 'news_leaders',
+};
+
 export default function TradingAgent() {
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
-  const [messages, setMessages] = useState<Array<{role: string, content: string, parsed?: any}>>([]);
+  const [panels, setPanels] = useState<Panel[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [loadingStage, setLoadingStage] = useState('');
   const [expandedTicker, setExpandedTicker] = useState<string | null>(null);
-  const [showScreener, setShowScreener] = useState(false);
   const [screenerInput, setScreenerInput] = useState('');
   const [screenerSortCol, setScreenerSortCol] = useState('');
   const [screenerSortAsc, setScreenerSortAsc] = useState(true);
-  const [showPrompts, setShowPrompts] = useState(true);
-  const [showScansExpanded, setShowScansExpanded] = useState(false);
   const [groupExpanded, setGroupExpanded] = useState<Record<string, boolean>>({ g1: true, g2: true, g3: true, g4: true, g5: true });
-  const [allGroupsVisible, setAllGroupsVisible] = useState(true);
-  const [savedChats, setSavedChats] = useState<Array<{id: number, title: string, messages: Array<{role: string, content: string, parsed?: any}>, conversationId: string | null}>>([]);
-  const [showChatHistory, setShowChatHistory] = useState(false);
+  const [savedChats, setSavedChats] = useState<Array<{id: number, title: string, panels: Panel[], conversationId: string | null}>>([]);
+  const [leftRailSearch, setLeftRailSearch] = useState('');
+  const [leftRailOpen, setLeftRailOpen] = useState(false);
+  const [rightSidebarOpen, setRightSidebarOpen] = useState(false);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const scrollAnchorRef = useRef<HTMLDivElement>(null);
+  const commandInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     scrollAnchorRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, loading]);
+  }, [panels, loading]);
 
   function newChat() {
-    if (messages.length > 0) {
-      const firstUserMsg = messages.find(m => m.role === 'user');
-      const title = firstUserMsg ? (firstUserMsg.content.length > 60 ? firstUserMsg.content.slice(0, 60) + '...' : firstUserMsg.content) : 'Chat';
-      setSavedChats(prev => [{id: Date.now(), title, messages: [...messages], conversationId}, ...prev].slice(0, 20));
+    if (panels.length > 0) {
+      const title = panels[0]?.title || 'Chat';
+      setSavedChats(prev => [{id: Date.now(), title, panels: [...panels], conversationId}, ...prev].slice(0, 20));
     }
-    setMessages([]);
+    setPanels([]);
     setConversationId(null);
-    setShowPrompts(true);
-    setShowScansExpanded(false);
-    setShowChatHistory(false);
     setError(null);
     setExpandedTicker(null);
   }
 
   function loadChat(chat: typeof savedChats[0]) {
-    setMessages(chat.messages);
+    setPanels(chat.panels);
     setConversationId(chat.conversationId);
-    setShowPrompts(false);
-    setShowChatHistory(false);
     setExpandedTicker(null);
     setError(null);
+    setRightSidebarOpen(false);
   }
 
   function deleteChat(id: number) {
     setSavedChats(prev => prev.filter(c => c.id !== id));
+  }
+
+  function closePanel(id: number) {
+    setPanels(prev => prev.filter(p => p.id !== id));
+  }
+
+  function togglePinPanel(id: number) {
+    setPanels(prev => prev.map(p => p.id === id ? { ...p, pinned: !p.pinned } : p));
   }
 
   async function askAgent(customPrompt?: string, freshChat?: boolean, presetIntent?: string | null) {
@@ -74,9 +95,7 @@ export default function TradingAgent() {
 
     setLoading(true); setError(null); setExpandedTicker(null);
     setPrompt('');
-    setShowPrompts(false);
     const displayText = queryText || presetIntent || '';
-    setMessages(prev => [...prev, {role: 'user', content: displayText}]);
 
     if (freshChat) setConversationId(null);
 
@@ -101,11 +120,16 @@ export default function TradingAgent() {
       if (data.error) throw new Error(data.error);
       if (data.conversation_id) setConversationId(data.conversation_id);
       const responseText = data.analysis || data.structured?.message || data.message || '';
-      setMessages(prev => [...prev, {role: 'assistant', content: responseText, parsed: data}]);
+      const newPanel: Panel = {
+        id: Date.now(),
+        title: displayText,
+        data: { role: 'assistant', content: responseText, parsed: data },
+        timestamp: Date.now(),
+      };
+      setPanels(prev => [newPanel, ...prev]);
     } catch (err: any) {
       const errMsg = err.message.includes('429') ? 'Rate limit reached. Wait a moment.' : err.message.includes('403') ? 'Auth failed.' : err.message;
       setError(errMsg);
-      setMessages(prev => [...prev, {role: 'assistant', content: errMsg}]);
     } finally { clearInterval(iv); setLoadingStage(''); setLoading(false); }
   }
 
@@ -976,17 +1000,10 @@ export default function TradingAgent() {
             <div style={{ padding:'0 18px 10px', display:'flex', gap:16, fontSize:11, fontFamily:font }}>
               <span style={{ color:C.dim }}>1W: <span style={{ color:changeColor(c.change_1w), fontWeight:600 }}>{c.change_1w}</span></span>
               <span style={{ color:C.dim }}>1M: <span style={{ color:changeColor(c.change_1m), fontWeight:600 }}>{c.change_1m}</span></span>
-              <span style={{ color:C.dim }}>Short: <span style={{ color:trendColor(c.trend_short) }}>{c.trend_short}</span></span>
-              <span style={{ color:C.dim }}>Long: <span style={{ color:trendColor(c.trend_long) }}>{c.trend_long}</span></span>
+              {c.ytd && <span style={{ color:C.dim }}>YTD: <span style={{ color:changeColor(c.ytd), fontWeight:600 }}>{c.ytd}</span></span>}
             </div>
+            <div style={{ padding:'0 18px 14px', color:C.text, fontSize:12, lineHeight:1.6, fontFamily:sansFont }}>{c.thesis}</div>
             {isExp && <div style={{ borderTop:`1px solid ${C.border}`, padding:14 }}>
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(140px, 1fr))', gap:8, marginBottom:10 }}>
-                <IndicatorPill label="RSI" value={c.rsi} signal={c.rsi > 70 ? 'Overbought ⚠️' : c.rsi < 30 ? 'Oversold' : 'Neutral'} />
-                <IndicatorPill label="50 SMA" value="—" signal={c.above_50_sma ? 'Price Above ↑' : 'Price Below ↓'} />
-                <IndicatorPill label="200 SMA" value="—" signal={c.above_200_sma ? 'Price Above ↑' : 'Price Below ↓'} />
-                <IndicatorPill label="Volume" value="—" signal={c.volume_signal} />
-              </div>
-              {c.key_levels && <div style={{ padding:10, background:C.bg, borderRadius:8, border:`1px solid ${C.border}`, marginBottom:12, color:C.text, fontSize:11, fontFamily:font }}>{c.key_levels}</div>}
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:12 }}>
                 <div style={{ background:`${C.green}06`, border:`1px solid ${C.green}12`, borderRadius:8, padding:12 }}>
                   <div style={{ color:C.green, fontSize:10, fontWeight:700, fontFamily:font, marginBottom:6, textTransform:'uppercase' }}>Drivers</div>
@@ -1162,241 +1179,332 @@ export default function TradingAgent() {
   }
 
   const promptGroups: { id: string; title: string; buttons: { l: string; intent: string }[] }[] = [
-    { id: 'g1', title: '🎯 All-Encompassing', buttons: [
-      {l:'🔥 Trending Now', intent:'cross_asset_trending'},
-      {l:'✦ Daily Briefing', intent:'daily_briefing'},
-      {l:'🔥 Best Trades', intent:'tactical_trades'},
-      {l:'💎 Best Investments', intent:'long_term_conviction'},
-      {l:'🌍 Macro Overview', intent:'macro_outlook'},
+    { id: 'g1', title: 'All-Encompassing', buttons: [
+      {l:'Trending Now', intent:'cross_asset_trending'},
+      {l:'Daily Briefing', intent:'daily_briefing'},
+      {l:'Best Trades', intent:'tactical_trades'},
+      {l:'Best Investments', intent:'long_term_conviction'},
+      {l:'Macro Overview', intent:'macro_outlook'},
     ]},
-    { id: 'g2', title: '🏛 Sectors', buttons: [
-      {l:'🔄 Sector Rotation', intent:'sector_rotation'},
-      {l:'🪙 Crypto', intent:'crypto_focus'},
-      {l:'⚡ Energy', intent:'sector_energy'},
-      {l:'🤖 AI/Compute', intent:'sector_ai'},
-      {l:'🏗 Materials', intent:'sector_materials'},
-      {l:'🔬 Quantum', intent:'sector_quantum'},
-      {l:'🛡 Aerospace/Defense', intent:'sector_defense'},
-      {l:'💻 Tech', intent:'sector_tech'},
-      {l:'🏦 Finance', intent:'sector_financials'},
-      {l:'🛢 Commodities', intent:'commodities_focus'},
-      {l:'💊 Healthcare', intent:'sector_healthcare'},
-      {l:'🏠 Real Estate', intent:'sector_real_estate'},
-      {l:'☢️ Uranium/Nuclear', intent:'sector_uranium'},
+    { id: 'g2', title: 'Sectors', buttons: [
+      {l:'Sector Rotation', intent:'sector_rotation'},
+      {l:'Crypto', intent:'crypto_focus'},
+      {l:'Energy', intent:'sector_energy'},
+      {l:'AI/Compute', intent:'sector_ai'},
+      {l:'Materials', intent:'sector_materials'},
+      {l:'Quantum', intent:'sector_quantum'},
+      {l:'Aerospace/Defense', intent:'sector_defense'},
+      {l:'Tech', intent:'sector_tech'},
+      {l:'Finance', intent:'sector_financials'},
+      {l:'Commodities', intent:'commodities_focus'},
+      {l:'Healthcare', intent:'sector_healthcare'},
+      {l:'Real Estate', intent:'sector_real_estate'},
+      {l:'Uranium/Nuclear', intent:'sector_uranium'},
     ]},
-    { id: 'g3', title: '📊 Technical Analysis', buttons: [
-      {l:'📈 Stage 2 Breakouts', intent:'technical_stage2'},
-      {l:'🔻 Bearish Setups', intent:'technical_bearish_setups'},
-      {l:'⚡ Asymmetric Only', intent:'microcap_asymmetry'},
-      {l:'🐣 Small Cap Spec', intent:'microcap_spec'},
-      {l:'💥 Short Squeeze', intent:'short_squeeze_scan'},
-      {l:'🟢 Bullish Breakouts', intent:'technical_bullish_breakouts'},
-      {l:'🔴 Bearish Breakdowns', intent:'technical_breakdowns'},
-      {l:'📉 Oversold Bounces', intent:'technical_oversold'},
-      {l:'📈 Overbought Warnings', intent:'technical_overbought'},
-      {l:'🔀 Crossover Signals', intent:'technical_crossovers'},
-      {l:'🚀 Momentum Shifts', intent:'momentum_shift_scan'},
-      {l:'📏 Trend Status', intent:'trend_status_scan'},
-      {l:'🔊 Volume & Movers', intent:'volume_movers_scan'},
+    { id: 'g3', title: 'Technical Analysis', buttons: [
+      {l:'Stage 2 Breakouts', intent:'technical_stage2'},
+      {l:'Bearish Setups', intent:'technical_bearish_setups'},
+      {l:'Asymmetric Only', intent:'microcap_asymmetry'},
+      {l:'Small Cap Spec', intent:'microcap_spec'},
+      {l:'Short Squeeze', intent:'short_squeeze_scan'},
+      {l:'Bullish Breakouts', intent:'technical_bullish_breakouts'},
+      {l:'Bearish Breakdowns', intent:'technical_breakdowns'},
+      {l:'Oversold Bounces', intent:'technical_oversold'},
+      {l:'Overbought Warnings', intent:'technical_overbought'},
+      {l:'Crossover Signals', intent:'technical_crossovers'},
+      {l:'Momentum Shifts', intent:'momentum_shift_scan'},
+      {l:'Trend Status', intent:'trend_status_scan'},
+      {l:'Volume & Movers', intent:'volume_movers_scan'},
     ]},
-    { id: 'g4', title: '📋 Fundamental Analysis', buttons: [
-      {l:'🏆 Fundamental Leaders', intent:'fundamental_leaders'},
-      {l:'📈 Rapidly Improving Fundamentals', intent:'fundamental_acceleration'},
-      {l:'📅 Earnings Watch', intent:'earnings_watch'},
+    { id: 'g4', title: 'Fundamental Analysis', buttons: [
+      {l:'Fundamental Leaders', intent:'fundamental_leaders'},
+      {l:'Rapidly Improving', intent:'fundamental_acceleration'},
+      {l:'Earnings Watch', intent:'earnings_watch'},
     ]},
-    { id: 'g5', title: '📡 Buzz', buttons: [
-      {l:'🚀 Social Momentum', intent:'social_momentum_scan'},
-      {l:'📰 News Headline Leaders', intent:'news_leaders'},
-      {l:'🎯 Upcoming Catalysts', intent:'catalyst_scan'},
+    { id: 'g5', title: 'Buzz', buttons: [
+      {l:'Social Momentum', intent:'social_momentum_scan'},
+      {l:'News Leaders', intent:'news_leaders'},
+      {l:'Upcoming Catalysts', intent:'catalyst_scan'},
     ]},
   ];
-
-  function toggleAllGroups() {
-    const newState = !allGroupsVisible;
-    setAllGroupsVisible(newState);
-    setGroupExpanded({ g1: newState, g2: newState, g3: newState, g4: newState, g5: newState });
-  }
 
   function toggleGroup(id: string) {
     setGroupExpanded(prev => ({ ...prev, [id]: !prev[id] }));
   }
 
-  function renderPromptGroups() {
-    return (
-      <div>
-        <div style={{ marginBottom: 10 }}>
-          <button onClick={toggleAllGroups} style={{ padding:'7px 14px', background: allGroupsVisible ? `${C.blue}12` : C.card, border:`1px solid ${allGroupsVisible ? C.blue+'40' : C.border}`, borderRadius:8, color: allGroupsVisible ? C.blue : C.dim, fontSize:11, cursor:'pointer', fontFamily:font, transition:'all 0.15s' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.borderColor = allGroupsVisible ? C.blue+'40' : C.border; e.currentTarget.style.color = allGroupsVisible ? C.blue : C.dim; }}>
-            {allGroupsVisible ? '▾ Hide All Prompts' : '▸ Show All Prompts'}
-          </button>
-        </div>
-        {promptGroups.map(group => (
-          <div key={group.id} style={{ marginBottom: 8 }}>
-            <button onClick={() => toggleGroup(group.id)} style={{ display:'flex', alignItems:'center', gap:6, padding:'6px 10px', background:'transparent', border:'none', color: groupExpanded[group.id] ? C.bright : C.dim, fontSize:12, cursor:'pointer', fontFamily:font, transition:'all 0.15s', fontWeight:700 }} onMouseEnter={e => { e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.color = groupExpanded[group.id] ? C.bright : C.dim; }}>
-              <span style={{ fontSize:8, transform: groupExpanded[group.id] ? 'rotate(90deg)' : 'rotate(0deg)', transition:'transform 0.2s', display:'inline-block' }}>▶</span>
-              {group.title}
-            </button>
-            {groupExpanded[group.id] && (
-              <div style={{ display:'flex', flexWrap:'wrap', gap:6, paddingLeft:6, marginTop:4 }}>
-                {group.buttons.map(q => (
-                  <button key={q.l} onClick={() => { newChat(); askAgent('', true, q.intent); }} disabled={loading} style={{ padding:'8px 14px', background:C.card, border:`1px solid ${C.border}`, borderRadius:8, color:C.dim, fontSize:11, cursor:loading?'not-allowed':'pointer', fontFamily:font, transition:'all 0.15s', whiteSpace:'nowrap', flex:'0 0 auto' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; }}>{q.l}</button>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-    );
+  function handleCommandSubmit() {
+    const text = prompt.trim();
+    if (!text) return;
+    const cmd = text.split(' ')[0].toLowerCase();
+    if (slashCommands[cmd]) {
+      askAgent('', true, slashCommands[cmd]);
+    } else {
+      askAgent();
+    }
+    setCommandPaletteOpen(false);
   }
 
+  const filteredPromptGroups = promptGroups.map(group => ({
+    ...group,
+    buttons: group.buttons.filter(b =>
+      leftRailSearch === '' || b.l.toLowerCase().includes(leftRailSearch.toLowerCase()) || b.intent.toLowerCase().includes(leftRailSearch.toLowerCase())
+    ),
+  })).filter(group => group.buttons.length > 0);
+
+  const tickerItems = [
+    'BTC $XX,XXX ▲2.1%',
+    'ETH $X,XXX ▼0.8%',
+    'SPY $XXX ▲0.3%',
+    'QQQ $XXX ▲0.5%',
+    'DXY 104.2 ▼0.1%',
+    'Gold $2,350 ▲0.4%',
+    'Oil $78.5 ▼1.2%',
+    'VIX 14.8 ▲3.1%',
+    'Fear & Greed: 65',
+    '10Y: 4.25% ▲2bp',
+    'SOL $XXX ▲4.2%',
+    'NVDA $XXX ▲1.8%',
+  ];
+
   return (
-    <div style={{ maxWidth:1000, margin:'0 auto', fontFamily:sansFont, width:'100%', padding:'0 12px', boxSizing:'border-box' as const }}>
-      <div style={{ marginBottom:10 }}>
-        {showPrompts ? (
-          <>
-            {renderPromptGroups()}
-            <div style={{ marginTop:10, padding:14, background:`linear-gradient(135deg, ${C.bg} 0%, #0e0f14 100%)`, border:`1px solid ${C.purple}20`, borderRadius:12, borderTop:`1px solid ${C.purple}30` }}>
-              <div style={{ display:'flex', gap:8, marginBottom:8, flexWrap:'wrap' }}>
-                <textarea
-                  value={screenerInput}
-                  onChange={e => setScreenerInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (screenerInput.trim()) askAgent(screenerInput); setScreenerInput(''); } }}
-                  placeholder="Screen for stocks... e.g. 'Small caps under $2B, revenue growth >30%, positive EBITDA, RSI under 40, insider buying in last 30 days'"
-                  rows={2}
-                  style={{ flex:1, padding:'10px 14px', border:`1px solid ${C.border}`, borderRadius:8, background:C.card, color:C.bright, fontSize:16, fontFamily:sansFont, outline:'none', resize:'none', lineHeight:1.5 }}
-                />
-                <button
-                  onClick={() => { if (screenerInput.trim()) { askAgent(screenerInput); setScreenerInput(''); } }}
-                  disabled={loading || !screenerInput.trim()}
-                  style={{ padding:'10px 20px', background: loading || !screenerInput.trim() ? C.card : `linear-gradient(135deg, ${C.purple}, #7c3aed)`, color: loading || !screenerInput.trim() ? C.dim : 'white', border:'none', borderRadius:8, cursor: loading || !screenerInput.trim() ? 'not-allowed' : 'pointer', fontWeight:700, fontSize:13, fontFamily:sansFont, alignSelf:'flex-end' }}
-                >
-                  Scan
-                </button>
-              </div>
-              <div style={{ display:'flex', gap:6, flexWrap:'wrap', overflowX:'auto', WebkitOverflowScrolling:'touch' }}>
-                {[
-                  {l:'Oversold + Growing', v:'Stocks with RSI under 35, revenue growth >20%, above SMA200, avg volume >300K'},
-                  {l:'Value + Momentum', v:'P/E under 20, revenue growth >15%, above SMA50 and SMA200, relative volume >1.5x'},
-                  {l:'Insider + Breakout', v:'Insider buying last 30 days, above SMA50 and SMA200, unusual volume, market cap under $10B'},
-                  {l:'High Growth Small Cap', v:'Market cap under $2B, revenue growth >30%, EPS growth >25%, positive margins'},
-                  {l:'Dividend Value', v:'Dividend yield >3%, P/E under 20, debt to equity under 0.5, market cap over $2B'},
-                  {l:'Short Squeeze Setup', v:'Short float >15%, RSI under 40, above SMA50, unusual volume, market cap under $5B'},
-                ].map(chip => (
-                  <button key={chip.l} onClick={() => setScreenerInput(chip.v)} style={{ padding:'4px 10px', background:`${C.purple}08`, border:`1px solid ${C.purple}18`, borderRadius:20, color:C.dim, fontSize:9, fontWeight:600, fontFamily:font, cursor:'pointer', transition:'all 0.15s' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.purple; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.borderColor = `${C.purple}18`; e.currentTarget.style.color = C.dim; }}>{chip.l}</button>
-                ))}
-              </div>
-            </div>
-          </>
-        ) : (
-          <div>
-            <button onClick={() => setShowScansExpanded(!showScansExpanded)} style={{ padding:'8px 14px', background: showScansExpanded ? `${C.blue}15` : C.card, border:`1px solid ${showScansExpanded ? C.blue : C.border}`, borderRadius:8, color: showScansExpanded ? C.blue : C.dim, fontSize:11, cursor:'pointer', fontFamily:font, transition:'all 0.15s', whiteSpace:'nowrap' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { if (!showScansExpanded) { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; } }}>{showScansExpanded ? '▾ Hide Scans' : '▸ Show Scans'}</button>
-            {showScansExpanded && <>
-              <div style={{ marginTop:8 }}>{renderPromptGroups()}</div>
-              <div style={{ marginTop:10, padding:14, background:`linear-gradient(135deg, ${C.bg} 0%, #0e0f14 100%)`, border:`1px solid ${C.purple}20`, borderRadius:12, borderTop:`1px solid ${C.purple}30` }}>
-                <div style={{ display:'flex', gap:8, marginBottom:8, flexWrap:'wrap' }}>
-                  <textarea
-                    value={screenerInput}
-                    onChange={e => setScreenerInput(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (screenerInput.trim()) askAgent(screenerInput); setScreenerInput(''); } }}
-                    placeholder="Screen for stocks... e.g. 'Small caps under $2B, revenue growth >30%, positive EBITDA, RSI under 40, insider buying in last 30 days'"
-                    rows={2}
-                    style={{ flex:1, padding:'10px 14px', border:`1px solid ${C.border}`, borderRadius:8, background:C.card, color:C.bright, fontSize:16, fontFamily:sansFont, outline:'none', resize:'none', lineHeight:1.5 }}
-                  />
-                  <button
-                    onClick={() => { if (screenerInput.trim()) { askAgent(screenerInput); setScreenerInput(''); } }}
-                    disabled={loading || !screenerInput.trim()}
-                    style={{ padding:'10px 20px', background: loading || !screenerInput.trim() ? C.card : `linear-gradient(135deg, ${C.purple}, #7c3aed)`, color: loading || !screenerInput.trim() ? C.dim : 'white', border:'none', borderRadius:8, cursor: loading || !screenerInput.trim() ? 'not-allowed' : 'pointer', fontWeight:700, fontSize:13, fontFamily:sansFont, alignSelf:'flex-end' }}
-                  >
-                    Scan
-                  </button>
+    <div style={{ display:'flex', flexDirection:'column', height:'100vh', background:C.bg, fontFamily:sansFont, overflow:'hidden' }}>
+      <style>{`
+        @keyframes agent-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes agent-progress { 0% { width: 0%; } 50% { width: 70%; } 100% { width: 100%; } }
+        @keyframes ticker-scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+        .terminal-input:focus { outline: none; border-color: ${C.blue} !important; }
+        .rail-item:hover { background: ${C.blue}10 !important; color: ${C.bright} !important; }
+        .panel-btn:hover { background: ${C.blue}15 !important; color: ${C.bright} !important; }
+        .sidebar-chip:hover { border-color: ${C.purple} !important; color: ${C.bright} !important; }
+        @media (max-width: 1023px) {
+          .left-rail { display: none !important; }
+          .right-sidebar { display: none !important; }
+          .left-rail.mobile-open { display: flex !important; position: fixed; left: 0; top: 44px; bottom: 32px; z-index: 100; }
+          .right-sidebar.mobile-open { display: flex !important; position: fixed; right: 0; top: 44px; bottom: 32px; z-index: 100; }
+          .mobile-toggle { display: inline-flex !important; }
+        }
+        @media (min-width: 1024px) {
+          .mobile-toggle { display: none !important; }
+        }
+      `}</style>
+
+      {/* TOP COMMAND BAR */}
+      <div style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 10px', background:C.card, borderBottom:`1px solid ${C.border}`, flexShrink:0, position:'sticky', top:0, zIndex:50 }}>
+        <button className="mobile-toggle" onClick={() => setLeftRailOpen(!leftRailOpen)} style={{ display:'none', alignItems:'center', justifyContent:'center', width:28, height:28, background:'transparent', border:`1px solid ${C.border}`, borderRadius:3, color:C.dim, cursor:'pointer', fontSize:14, fontFamily:font }}>☰</button>
+
+        <div style={{ position:'relative', flex:1 }}>
+          <input
+            ref={commandInputRef}
+            className="terminal-input"
+            value={prompt}
+            onChange={e => {
+              setPrompt(e.target.value);
+              setCommandPaletteOpen(e.target.value.startsWith('/'));
+            }}
+            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleCommandSubmit(); } if (e.key === 'Escape') setCommandPaletteOpen(false); }}
+            placeholder="Ask anything or type / for commands..."
+            style={{ width:'100%', padding:'7px 12px', background:C.bg, border:`1px solid ${C.border}`, borderRadius:3, color:C.bright, fontSize:13, fontFamily:font, boxSizing:'border-box' }}
+          />
+          {commandPaletteOpen && (
+            <div style={{ position:'absolute', top:'100%', left:0, right:0, background:C.card, border:`1px solid ${C.border}`, borderRadius:3, marginTop:2, zIndex:60, maxHeight:240, overflowY:'auto' }}>
+              {Object.entries(slashCommands).map(([cmd, intent]) => (
+                <div key={cmd} className="rail-item" onClick={() => { askAgent('', true, intent); setPrompt(''); setCommandPaletteOpen(false); }} style={{ padding:'8px 14px', cursor:'pointer', display:'flex', justifyContent:'space-between', borderBottom:`1px solid ${C.border}` }}>
+                  <span style={{ color:C.blue, fontSize:12, fontWeight:700, fontFamily:font }}>{cmd}</span>
+                  <span style={{ color:C.dim, fontSize:11, fontFamily:font }}>{intent.replace(/_/g, ' ')}</span>
                 </div>
-                <div style={{ display:'flex', gap:6, flexWrap:'wrap', overflowX:'auto', WebkitOverflowScrolling:'touch' }}>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div style={{ display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
+          {loading && <div style={{ display:'flex', alignItems:'center', gap:4 }}>
+            <div style={{ width:10, height:10, border:`2px solid ${C.blue}`, borderTop:'2px solid transparent', borderRadius:'50%', animation:'agent-spin 0.8s linear infinite' }} />
+            <span style={{ color:C.dim, fontSize:9, fontFamily:font, maxWidth:120, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{loadingStage}</span>
+          </div>}
+          {conversationId && <span style={{ color:C.dim, fontSize:8, fontFamily:font, padding:'2px 6px', background:`${C.dim}10`, borderRadius:2, border:`1px solid ${C.border}` }}>ID:{conversationId.slice(0,6)}</span>}
+          <button onClick={newChat} className="panel-btn" style={{ padding:'5px 10px', background:C.bg, border:`1px solid ${C.border}`, borderRadius:3, color:C.dim, fontSize:10, fontWeight:700, fontFamily:font, cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.04em' }}>New</button>
+          <button className="mobile-toggle" onClick={() => setRightSidebarOpen(!rightSidebarOpen)} style={{ display:'none', alignItems:'center', justifyContent:'center', width:28, height:28, background:'transparent', border:`1px solid ${C.border}`, borderRadius:3, color:C.dim, cursor:'pointer', fontSize:12, fontFamily:font }}>⚙</button>
+        </div>
+      </div>
+
+      {/* MAIN BODY */}
+      <div style={{ display:'flex', flex:1, overflow:'hidden' }}>
+        {/* LEFT RAIL */}
+        <div className={`left-rail ${leftRailOpen ? 'mobile-open' : ''}`} style={{ width:220, flexShrink:0, display:'flex', flexDirection:'column', background:C.card, borderRight:`1px solid ${C.border}`, overflow:'hidden' }}>
+          <div style={{ padding:'8px 8px 4px' }}>
+            <input
+              value={leftRailSearch}
+              onChange={e => setLeftRailSearch(e.target.value)}
+              placeholder="Search scans..."
+              className="terminal-input"
+              style={{ width:'100%', padding:'6px 10px', background:C.bg, border:`1px solid ${C.border}`, borderRadius:3, color:C.bright, fontSize:11, fontFamily:font, boxSizing:'border-box' }}
+            />
+          </div>
+          <div style={{ flex:1, overflowY:'auto', padding:'0 4px 8px' }}>
+            {filteredPromptGroups.map(group => (
+              <div key={group.id} style={{ marginBottom:2 }}>
+                <button onClick={() => toggleGroup(group.id)} style={{ display:'flex', alignItems:'center', gap:4, padding:'6px 8px', width:'100%', background:'transparent', border:'none', color:groupExpanded[group.id] ? C.bright : C.dim, fontSize:10, fontWeight:700, fontFamily:font, cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.04em', textAlign:'left' }}>
+                  <span style={{ fontSize:7, transform:groupExpanded[group.id] ? 'rotate(90deg)' : 'rotate(0deg)', transition:'transform 0.15s', display:'inline-block' }}>▶</span>
+                  {group.title}
+                </button>
+                {groupExpanded[group.id] && (
+                  <div style={{ paddingLeft:4 }}>
+                    {group.buttons.map(q => (
+                      <div key={q.intent} className="rail-item" onClick={() => { if (!loading) { newChat(); askAgent('', true, q.intent); setLeftRailOpen(false); } }} style={{ padding:'5px 10px', cursor:loading ? 'not-allowed' : 'pointer', color:C.dim, fontSize:11, fontFamily:sansFont, borderRadius:2, transition:'all 0.1s', opacity:loading ? 0.5 : 1 }}>
+                        {q.l}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* MAIN WORKSPACE */}
+        <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden' }}>
+          <div style={{ flex:1, overflowY:'auto', padding:12 }}>
+            {error && <div style={{ padding:'10px 14px', background:`${C.red}10`, border:`1px solid ${C.red}30`, borderRadius:4, marginBottom:10, color:C.red, fontSize:12, fontFamily:font }}>{error}</div>}
+
+            {loading && (
+              <div style={{ padding:20, background:C.card, border:`1px solid ${C.border}`, borderRadius:4, marginBottom:10 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10 }}>
+                  <div style={{ width:16, height:16, border:`2px solid ${C.blue}`, borderTop:'2px solid transparent', borderRadius:'50%', animation:'agent-spin 0.8s linear infinite' }} />
+                  <span style={{ color:C.blue, fontSize:12, fontWeight:700, fontFamily:font }}>{loadingStage || 'Processing...'}</span>
+                </div>
+                <div style={{ height:3, background:C.border, borderRadius:2, overflow:'hidden' }}>
+                  <div style={{ height:'100%', background:`linear-gradient(90deg, ${C.blue}, ${C.purple})`, animation:'agent-progress 8s ease-in-out infinite', borderRadius:2 }} />
+                </div>
+              </div>
+            )}
+
+            {panels.length === 0 && !loading && (
+              <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', height:'100%', minHeight:300, color:C.dim }}>
+                <div style={{ fontSize:32, marginBottom:16 }}>⚡</div>
+                <div style={{ color:C.bright, fontSize:18, fontWeight:700, fontFamily:sansFont, marginBottom:8 }}>HippoAI Terminal</div>
+                <div style={{ color:C.dim, fontSize:12, fontFamily:font, marginBottom:20, textAlign:'center', maxWidth:400, lineHeight:1.6 }}>
+                  Type a query in the command bar, use /commands, or select a scan from the left rail to begin analysis.
+                </div>
+                <div style={{ display:'flex', gap:8, flexWrap:'wrap', justifyContent:'center' }}>
                   {[
-                    {l:'Oversold + Growing', v:'Stocks with RSI under 35, revenue growth >20%, above SMA200, avg volume >300K'},
-                    {l:'Value + Momentum', v:'P/E under 20, revenue growth >15%, above SMA50 and SMA200, relative volume >1.5x'},
-                    {l:'Insider + Breakout', v:'Insider buying last 30 days, above SMA50 and SMA200, unusual volume, market cap under $10B'},
-                    {l:'High Growth Small Cap', v:'Market cap under $2B, revenue growth >30%, EPS growth >25%, positive margins'},
-                    {l:'Dividend Value', v:'Dividend yield >3%, P/E under 20, debt to equity under 0.5, market cap over $2B'},
-                    {l:'Short Squeeze Setup', v:'Short float >15%, RSI under 40, above SMA50, unusual volume, market cap under $5B'},
-                  ].map(chip => (
-                    <button key={chip.l} onClick={() => setScreenerInput(chip.v)} style={{ padding:'4px 10px', background:`${C.purple}08`, border:`1px solid ${C.purple}18`, borderRadius:20, color:C.dim, fontSize:9, fontWeight:600, fontFamily:font, cursor:'pointer', transition:'all 0.15s' }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.purple; e.currentTarget.style.color = C.bright; }} onMouseLeave={e => { e.currentTarget.style.borderColor = `${C.purple}18`; e.currentTarget.style.color = C.dim; }}>{chip.l}</button>
+                    { l: '/briefing', intent: 'daily_briefing' },
+                    { l: '/trades', intent: 'tactical_trades' },
+                    { l: '/crypto', intent: 'crypto_focus' },
+                    { l: '/scan', intent: 'cross_asset_trending' },
+                  ].map(cmd => (
+                    <button key={cmd.l} className="panel-btn" onClick={() => askAgent('', true, cmd.intent)} style={{ padding:'6px 14px', background:C.card, border:`1px solid ${C.border}`, borderRadius:3, color:C.blue, fontSize:11, fontWeight:600, fontFamily:font, cursor:'pointer' }}>{cmd.l}</button>
                   ))}
                 </div>
               </div>
-            </>}
-          </div>
-        )}
-      </div>
-
-      <div style={{ marginBottom:12 }}>
-        {messages.map((msg, i) => (
-          <div key={i} style={{ marginBottom:12 }}>
-            {msg.role === 'user' ? (
-              <div style={{ display:'flex', justifyContent:'flex-end' }}>
-                <div style={{ maxWidth:'80%', padding:'12px 18px', background:`${C.purple}10`, border:`1px solid ${C.purple}20`, borderRadius:'16px 16px 4px 16px', color:C.bright, fontSize:13, fontFamily:sansFont, lineHeight:1.6 }}>{msg.content}</div>
-              </div>
-            ) : (
-              <div style={{ width:'100%' }}>
-                {renderAssistantMessage(msg)}
-              </div>
             )}
-          </div>
-        ))}
 
-        {loading && <div style={{ textAlign:'center', padding:60, color:C.dim }}>
-          <div style={{ width:32, height:32, margin:'0 auto 16px', border:`3px solid ${C.border}`, borderTopColor:C.blue, borderRadius:'50%', animation:'agent-spin 0.7s linear infinite' }} />
-          <div style={{ fontSize:13, color:C.text, fontFamily:sansFont, marginBottom:4 }}>{loadingStage}</div>
-          <div style={{ fontSize:10, color:C.dim, fontFamily:font }}>Polygon · Finviz · StockTwits · Finnhub · EDGAR · FRED · Alpha Vantage · CNN F&G</div>
-          <div style={{ width:200, height:3, background:C.border, borderRadius:2, margin:'16px auto 0', overflow:'hidden' }}>
-            <div style={{ height:'100%', background:`linear-gradient(90deg, ${C.blue}, ${C.purple})`, borderRadius:2, animation:'agent-progress 14s ease-in-out forwards' }} />
-          </div>
-        </div>}
-
-        <div ref={scrollAnchorRef} />
-      </div>
-
-      <div>
-        <div style={{ display:'flex', gap:8 }}>
-          <input type="text" value={prompt} onChange={e => setPrompt(e.target.value)} onKeyDown={e => e.key === 'Enter' && askAgent()} placeholder={messages.length > 0 ? "Ask a follow-up..." : "Best trades today... Review NVDA, AMD, PLTR... Analyze SMCI... Screen for small caps..."} style={{ flex:1, padding:'14px 18px', border:`1px solid ${C.border}`, borderRadius:10, background:C.bg, color:C.bright, fontSize:16, fontFamily:sansFont, outline:'none' }} />
-          <button onClick={() => askAgent()} disabled={loading} style={{ padding:'12px 28px', background:loading ? C.card : `linear-gradient(135deg, ${C.blue}, #2563eb)`, color:loading ? C.dim : 'white', border:'none', borderRadius:10, cursor:loading?'not-allowed':'pointer', fontWeight:700, fontSize:14, fontFamily:sansFont }}>
-            {loading ? 'Scanning...' : 'Analyze'}
-          </button>
-        </div>
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:6 }}>
-          <button onClick={() => setShowChatHistory(!showChatHistory)} style={{ padding:'4px 10px', background:'transparent', border:`1px solid ${showChatHistory ? C.blue + '40' : 'transparent'}`, borderRadius:6, color: showChatHistory ? C.text : C.dim, fontSize:10, cursor:'pointer', fontFamily:font, transition:'all 0.15s', display:'flex', alignItems:'center', gap:5 }} onMouseEnter={e => { e.currentTarget.style.color = C.bright; e.currentTarget.style.borderColor = C.blue + '40'; }} onMouseLeave={e => { e.currentTarget.style.color = showChatHistory ? C.text : C.dim; e.currentTarget.style.borderColor = showChatHistory ? C.blue + '40' : 'transparent'; }}>
-            <span style={{ fontSize:8, transform: showChatHistory ? 'rotate(180deg)' : 'rotate(0deg)', transition:'transform 0.2s', display:'inline-block' }}>▼</span>
-            Chat History{savedChats.length > 0 ? ` (${savedChats.length})` : ''}
-          </button>
-          {messages.length > 0 && <button onClick={newChat} style={{ padding:'5px 14px', background:`${C.blue}12`, border:`1px solid ${C.blue}30`, borderRadius:6, color:C.blue, fontSize:10, cursor:'pointer', fontFamily:font, fontWeight:600, transition:'all 0.15s', display:'flex', alignItems:'center', gap:5 }} onMouseEnter={e => { e.currentTarget.style.background = `${C.blue}22`; e.currentTarget.style.borderColor = C.blue; }} onMouseLeave={e => { e.currentTarget.style.background = `${C.blue}12`; e.currentTarget.style.borderColor = `${C.blue}30`; }}>
-            <span style={{ fontSize:13, lineHeight:1 }}>+</span> New Chat
-          </button>}
-        </div>
-        {showChatHistory && (
-          <div style={{ marginTop:6, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, maxHeight:250, overflowY:'auto' }}>
-            <div style={{ padding:'8px 14px', borderBottom:`1px solid ${C.border}`, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-              <span style={{ color:C.bright, fontSize:11, fontWeight:700, fontFamily:font }}>Saved Chats</span>
-              {savedChats.length > 0 && <span style={{ color:C.dim, fontSize:9, fontFamily:font }}>{savedChats.length} conversation{savedChats.length !== 1 ? 's' : ''}</span>}
-            </div>
-            {savedChats.length === 0 ? (
-              <div style={{ padding:'20px 14px', color:C.dim, fontSize:11, fontFamily:font, textAlign:'center' }}>No saved chats yet. Start a conversation and click "New Chat" to save it and start fresh.</div>
-            ) : (
-              savedChats.map(chat => (
-                <div key={chat.id} style={{ display:'flex', alignItems:'center', padding:'10px 14px', borderBottom:`1px solid ${C.border}`, cursor:'pointer', transition:'background 0.1s' }} onMouseEnter={e => { e.currentTarget.style.background = `${C.blue}08`; }} onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
-                  <div onClick={() => loadChat(chat)} style={{ flex:1, minWidth:0 }}>
-                    <div style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', color:C.text, fontSize:11, fontFamily:font, fontWeight:500 }}>{chat.title}</div>
-                    <div style={{ color:C.dim, fontSize:9, fontFamily:font, marginTop:2 }}>{Math.floor(chat.messages.length / 2)} message{Math.floor(chat.messages.length / 2) !== 1 ? 's' : ''} · {new Date(chat.id).toLocaleDateString(undefined, { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' })}</div>
+            {panels.map(panel => (
+              <div key={panel.id} style={{ marginBottom:10, border:`1px solid ${panel.pinned ? C.blue+'40' : C.border}`, borderRadius:4, background:C.card, overflow:'hidden' }}>
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px 12px', background:C.bg, borderBottom:`1px solid ${C.border}` }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:8, flex:1, minWidth:0 }}>
+                    <span style={{ color:C.bright, fontSize:12, fontWeight:700, fontFamily:font, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{panel.title || 'Analysis'}</span>
+                    <span style={{ color:C.dim, fontSize:9, fontFamily:font, flexShrink:0 }}>{new Date(panel.timestamp).toLocaleTimeString()}</span>
                   </div>
-                  <button onClick={(e) => { e.stopPropagation(); deleteChat(chat.id); }} style={{ marginLeft:10, padding:'4px 8px', background:'transparent', border:`1px solid transparent`, borderRadius:4, color:C.dim, fontSize:10, cursor:'pointer', fontFamily:font, flexShrink:0, transition:'all 0.15s' }} onMouseEnter={e => { e.currentTarget.style.color = C.red; e.currentTarget.style.borderColor = C.red + '30'; }} onMouseLeave={e => { e.currentTarget.style.color = C.dim; e.currentTarget.style.borderColor = 'transparent'; }}>✕</button>
+                  <div style={{ display:'flex', gap:4, flexShrink:0 }}>
+                    <button className="panel-btn" onClick={(e) => { e.stopPropagation(); togglePinPanel(panel.id); }} style={{ width:24, height:24, display:'flex', alignItems:'center', justifyContent:'center', background:'transparent', border:`1px solid ${panel.pinned ? C.blue : C.border}`, borderRadius:2, color:panel.pinned ? C.blue : C.dim, fontSize:10, cursor:'pointer', fontFamily:font }} title="Pin">{panel.pinned ? '★' : '☆'}</button>
+                    <button className="panel-btn" onClick={(e) => { e.stopPropagation(); closePanel(panel.id); }} style={{ width:24, height:24, display:'flex', alignItems:'center', justifyContent:'center', background:'transparent', border:`1px solid ${C.border}`, borderRadius:2, color:C.dim, fontSize:12, cursor:'pointer', fontFamily:font }} title="Close">×</button>
+                  </div>
                 </div>
-              ))
-            )}
+                <div style={{ padding:14 }}>
+                  {renderAssistantMessage(panel.data)}
+                </div>
+              </div>
+            ))}
+            <div ref={scrollAnchorRef} />
           </div>
-        )}
+        </div>
+
+        {/* RIGHT SIDEBAR */}
+        <div className={`right-sidebar ${rightSidebarOpen ? 'mobile-open' : ''}`} style={{ width:240, flexShrink:0, display:'flex', flexDirection:'column', background:C.card, borderLeft:`1px solid ${C.border}`, overflow:'hidden' }}>
+          <div style={{ flex:1, overflowY:'auto', padding:8 }}>
+            {/* Screener */}
+            <div style={{ marginBottom:12 }}>
+              <div style={{ color:C.bright, fontSize:10, fontWeight:700, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.04em', marginBottom:6, padding:'0 4px' }}>AI Screener</div>
+              <textarea
+                value={screenerInput}
+                onChange={e => setScreenerInput(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (screenerInput.trim()) { askAgent(screenerInput); setScreenerInput(''); setRightSidebarOpen(false); } } }}
+                placeholder="Screen stocks..."
+                rows={3}
+                style={{ width:'100%', padding:'8px 10px', border:`1px solid ${C.border}`, borderRadius:3, background:C.bg, color:C.bright, fontSize:11, fontFamily:sansFont, outline:'none', resize:'none', lineHeight:1.5, boxSizing:'border-box' }}
+              />
+              <button
+                onClick={() => { if (screenerInput.trim()) { askAgent(screenerInput); setScreenerInput(''); setRightSidebarOpen(false); } }}
+                disabled={loading || !screenerInput.trim()}
+                className="panel-btn"
+                style={{ width:'100%', padding:'6px', background:loading || !screenerInput.trim() ? C.bg : C.purple, color:loading || !screenerInput.trim() ? C.dim : 'white', border:'none', borderRadius:3, cursor:loading || !screenerInput.trim() ? 'not-allowed' : 'pointer', fontWeight:700, fontSize:11, fontFamily:font, marginTop:4 }}
+              >
+                SCAN
+              </button>
+              <div style={{ display:'flex', gap:4, flexWrap:'wrap', marginTop:6 }}>
+                {[
+                  {l:'Oversold+Growing', v:'Stocks with RSI under 35, revenue growth >20%, above SMA200, avg volume >300K'},
+                  {l:'Value+Momentum', v:'P/E under 20, revenue growth >15%, above SMA50 and SMA200, relative volume >1.5x'},
+                  {l:'Insider+Breakout', v:'Insider buying last 30 days, above SMA50 and SMA200, unusual volume, market cap under $10B'},
+                  {l:'High Growth SC', v:'Market cap under $2B, revenue growth >30%, EPS growth >25%, positive margins'},
+                  {l:'Dividend Value', v:'Dividend yield >3%, P/E under 20, debt to equity under 0.5, market cap over $2B'},
+                  {l:'Short Squeeze', v:'Short float >15%, RSI under 40, above SMA50, unusual volume, market cap under $5B'},
+                ].map(chip => (
+                  <button key={chip.l} className="sidebar-chip" onClick={() => setScreenerInput(chip.v)} style={{ padding:'3px 7px', background:`${C.purple}08`, border:`1px solid ${C.purple}18`, borderRadius:3, color:C.dim, fontSize:8, fontWeight:600, fontFamily:font, cursor:'pointer', transition:'all 0.15s' }}>{chip.l}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* Chat History */}
+            <div style={{ marginBottom:12 }}>
+              <div style={{ color:C.bright, fontSize:10, fontWeight:700, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.04em', marginBottom:6, padding:'0 4px' }}>History</div>
+              {savedChats.length === 0 ? (
+                <div style={{ color:C.dim, fontSize:10, fontFamily:font, padding:'8px 4px' }}>No saved chats yet</div>
+              ) : (
+                <div style={{ display:'flex', flexDirection:'column', gap:2 }}>
+                  {savedChats.map(chat => (
+                    <div key={chat.id} style={{ display:'flex', alignItems:'center', gap:4, padding:'5px 6px', borderRadius:2, border:`1px solid ${C.border}`, background:C.bg }}>
+                      <div className="rail-item" onClick={() => loadChat(chat)} style={{ flex:1, cursor:'pointer', color:C.dim, fontSize:10, fontFamily:sansFont, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{chat.title}</div>
+                      <button onClick={() => deleteChat(chat.id)} style={{ background:'transparent', border:'none', color:C.dim, cursor:'pointer', fontSize:10, padding:0, lineHeight:1 }}>×</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Context */}
+            <div>
+              <div style={{ color:C.bright, fontSize:10, fontWeight:700, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.04em', marginBottom:6, padding:'0 4px' }}>Context</div>
+              <div style={{ padding:'6px 8px', background:C.bg, borderRadius:3, border:`1px solid ${C.border}` }}>
+                <div style={{ display:'flex', justifyContent:'space-between', marginBottom:4 }}>
+                  <span style={{ color:C.dim, fontSize:9, fontFamily:font }}>CONV_ID</span>
+                  <span style={{ color:C.text, fontSize:9, fontFamily:font }}>{conversationId ? conversationId.slice(0, 12) + '...' : 'None'}</span>
+                </div>
+                <div style={{ display:'flex', justifyContent:'space-between', marginBottom:4 }}>
+                  <span style={{ color:C.dim, fontSize:9, fontFamily:font }}>PANELS</span>
+                  <span style={{ color:C.text, fontSize:9, fontFamily:font }}>{panels.length}</span>
+                </div>
+                <div style={{ display:'flex', justifyContent:'space-between' }}>
+                  <span style={{ color:C.dim, fontSize:9, fontFamily:font }}>STATUS</span>
+                  <span style={{ color:loading ? C.gold : C.green, fontSize:9, fontFamily:font }}>{loading ? 'RUNNING' : 'IDLE'}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <style>{`
-        @keyframes agent-spin { to { transform: rotate(360deg); } }
-        @keyframes agent-progress { 0%{width:0%} 15%{width:15%} 40%{width:45%} 70%{width:70%} 90%{width:85%} 100%{width:95%} }
-      `}</style>
+      {/* BOTTOM TICKER TAPE */}
+      <div style={{ height:28, flexShrink:0, background:C.card, borderTop:`1px solid ${C.border}`, overflow:'hidden', display:'flex', alignItems:'center' }}>
+        <div style={{ display:'flex', whiteSpace:'nowrap', animation:'ticker-scroll 30s linear infinite' }}>
+          {[...tickerItems, ...tickerItems].map((item, i) => (
+            <span key={i} style={{ padding:'0 16px', fontSize:10, fontFamily:font, color:item.includes('▲') ? C.green : item.includes('▼') ? C.red : C.dim, borderRight:`1px solid ${C.border}`, lineHeight:'28px' }}>
+              {item}
+            </span>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
