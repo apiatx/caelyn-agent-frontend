@@ -1306,7 +1306,7 @@ export default function TradingAgent() {
             {confBar(item.confirmations)}
             {item.position_size && <span style={{ color:C.dim, fontSize:9, fontFamily:font }}>{item.position_size}</span>}
           </div>
-          {item.why_could_fail && <div style={{ marginTop:6, color:C.dim, fontSize:10, fontFamily:sansFont, fontStyle:'italic' }}>Risk: {item.why_could_fail.length > 100 ? item.why_could_fail.slice(0, 100) + '...' : item.why_could_fail}</div>}
+          {item.why_could_fail && <div style={{ marginTop:6, color:C.dim, fontSize:10, fontFamily:sansFont, fontStyle:'italic', whiteSpace:'normal', wordBreak:'break-word' }}>Risk: {item.why_could_fail}</div>}
         </div>
         {isExp && <div style={{ borderTop:`1px solid ${C.border}` }}>
           {item.trade_plan && <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(100px, 1fr))', gap:6, padding:14 }}>
