@@ -10,12 +10,22 @@ interface AgentResult {
   structured: any;
 }
 
+interface PanelMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  parsed?: any;
+  timestamp: number;
+}
+
 interface Panel {
   id: number;
   title: string;
+  userQuery: string;
   data: any;
   timestamp: number;
   pinned?: boolean;
+  conversationId?: string | null;
+  thread?: PanelMessage[];
 }
 
 const slashCommands: Record<string, string> = {
@@ -27,6 +37,38 @@ const slashCommands: Record<string, string> = {
   '/sentiment': 'social_momentum_scan',
   '/news': 'news_leaders',
 };
+
+function FollowUpInput({ panelId, onSubmit, C, font, sansFont }: { panelId: number, onSubmit: (id: number, text: string) => void, C: any, font: string, sansFont: string }) {
+  const [text, setText] = useState('');
+  const [sending, setSending] = useState(false);
+  const handleSubmit = async () => {
+    if (!text.trim() || sending) return;
+    setSending(true);
+    await onSubmit(panelId, text.trim());
+    setText('');
+    setSending(false);
+  };
+  return (
+    <div style={{ display:'flex', gap:6, padding:'8px 12px', borderTop:`1px solid ${C.border}`, background:C.bg }}>
+      <input
+        value={text}
+        onChange={e => setText(e.target.value)}
+        onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(); } }}
+        placeholder="Follow up on this analysis..."
+        disabled={sending}
+        style={{ flex:1, padding:'6px 10px', background:'transparent', border:`1px solid ${C.border}`, borderRadius:3, color:C.bright, fontSize:11, fontFamily:sansFont, outline:'none' }}
+      />
+      <button
+        onClick={handleSubmit}
+        disabled={sending || !text.trim()}
+        className="panel-btn"
+        style={{ padding:'6px 12px', background: sending || !text.trim() ? 'transparent' : C.blue, color: sending || !text.trim() ? C.dim : '#fff', border:`1px solid ${sending || !text.trim() ? C.border : C.blue}`, borderRadius:3, fontSize:10, fontWeight:700, fontFamily:font, cursor: sending || !text.trim() ? 'not-allowed' : 'pointer' }}
+      >
+        {sending ? '...' : 'SEND'}
+      </button>
+    </div>
+  );
+}
 
 export default function TradingAgent() {
   const [prompt, setPrompt] = useState('');
@@ -84,6 +126,65 @@ export default function TradingAgent() {
     setPanels(prev => prev.map(p => p.id === id ? { ...p, pinned: !p.pinned } : p));
   }
 
+  function saveToHistory(panelId: number) {
+    const panel = panels.find(p => p.id === panelId);
+    if (!panel) return;
+    const already = savedChats.some(c => c.id === panelId);
+    if (already) return;
+    const title = panel.title || 'Chat';
+    setSavedChats(prev => [{id: panelId, title, panels: [panel], conversationId: panel.conversationId || conversationId}, ...prev].slice(0, 20));
+  }
+
+  async function sendFollowUp(panelId: number, followUpText: string) {
+    const panel = panels.find(p => p.id === panelId);
+    if (!panel || !followUpText.trim()) return;
+
+    const convId = panel.conversationId || conversationId;
+    const history: Array<{role: string, content: string}> = [
+      { role: 'user', content: panel.userQuery || panel.title || '' },
+      { role: 'assistant', content: panel.data?.content || '' },
+    ];
+    if (panel.thread) {
+      for (const msg of panel.thread) {
+        history.push({ role: msg.role, content: msg.content });
+      }
+    }
+
+    const userMsg: PanelMessage = { role: 'user', content: followUpText, timestamp: Date.now() };
+    setPanels(prev => prev.map(p => p.id === panelId ? { ...p, thread: [...(p.thread || []), userMsg] } : p));
+
+    const url = `${AGENT_BACKEND_URL}/api/query`;
+    const payload = {
+      query: followUpText,
+      preset_intent: null,
+      conversation_id: convId || null,
+      history,
+    };
+
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-API-Key': AGENT_API_KEY },
+        body: JSON.stringify(payload),
+      });
+      const raw = await res.text();
+      let data: any;
+      try { data = JSON.parse(raw); } catch { data = { analysis: raw }; }
+
+      if (data.conversation_id) {
+        setPanels(prev => prev.map(p => p.id === panelId ? { ...p, conversationId: data.conversation_id } : p));
+        setConversationId(data.conversation_id);
+      }
+
+      let responseText = data.analysis?.trim() || data.structured?.message?.trim() || data.message?.trim() || 'Response received.';
+      const assistantMsg: PanelMessage = { role: 'assistant', content: responseText, parsed: data, timestamp: Date.now() };
+      setPanels(prev => prev.map(p => p.id === panelId ? { ...p, thread: [...(p.thread || []), assistantMsg] } : p));
+    } catch (err: any) {
+      const errMsg: PanelMessage = { role: 'assistant', content: `Follow-up failed: ${err.message || 'Unknown error'}`, timestamp: Date.now() };
+      setPanels(prev => prev.map(p => p.id === panelId ? { ...p, thread: [...(p.thread || []), errMsg] } : p));
+    }
+  }
+
   async function askAgent(customPrompt?: string, freshChat?: boolean, presetIntent?: string | null) {
     const queryText = (customPrompt ?? prompt ?? '').trim();
 
@@ -116,7 +217,7 @@ export default function TradingAgent() {
       } catch (pingErr: any) {
         console.log('[PING_FAIL]', pingErr, pingErr?.message);
         const unreachPanel: Panel = {
-          id: Date.now(), title: displayText,
+          id: Date.now(), title: displayText, userQuery: queryText,
           data: { role: 'assistant', content: `Backend unreachable. Check deploy status.\n\nURL: ${AGENT_BACKEND_URL}\nTime: ${new Date().toISOString()}\nError: ${pingErr?.message || 'Network error'}`, parsed: null },
           timestamp: Date.now(),
         };
@@ -139,7 +240,7 @@ export default function TradingAgent() {
 
       if (!raw || !raw.trim()) {
         const emptyPanel: Panel = {
-          id: Date.now(), title: displayText,
+          id: Date.now(), title: displayText, userQuery: queryText,
           data: { role: 'assistant', content: `Backend returned empty response.\n\nURL: ${url}\nTime: ${new Date().toISOString()}`, parsed: null },
           timestamp: Date.now(),
         };
@@ -151,7 +252,7 @@ export default function TradingAgent() {
       try { data = JSON.parse(raw); } catch (parseErr) {
         console.error('[JSON_PARSE_ERROR]', parseErr, raw.slice(0, 500));
         const parsePanel: Panel = {
-          id: Date.now(), title: displayText,
+          id: Date.now(), title: displayText, userQuery: queryText,
           data: { role: 'assistant', content: 'Backend returned invalid JSON. Check console logs.\n\nRaw: ' + raw.slice(0, 200), parsed: null },
           timestamp: Date.now(),
         };
@@ -165,7 +266,7 @@ export default function TradingAgent() {
       if (data.type === 'error' || data.error) {
         const errContent = data.error || data.structured?.message || data.analysis || 'Unknown error from backend.';
         const errPanel: Panel = {
-          id: Date.now(), title: displayText,
+          id: Date.now(), title: displayText, userQuery: queryText,
           data: { role: 'assistant', content: `Error: ${errContent}${data.request_id ? `\n\nRequest ID: ${data.request_id}` : ''}`, parsed: data },
           timestamp: Date.now(),
         };
@@ -187,8 +288,11 @@ export default function TradingAgent() {
       const newPanel: Panel = {
         id: Date.now(),
         title: displayText,
+        userQuery: queryText,
         data: { role: 'assistant', content: responseText, parsed: data },
         timestamp: Date.now(),
+        conversationId: data.conversation_id || conversationId,
+        thread: [],
       };
       setPanels(prev => [newPanel, ...prev]);
     } catch (err: any) {
@@ -198,7 +302,7 @@ export default function TradingAgent() {
         : err.message?.includes('Failed to fetch') ? `Backend unreachable (${AGENT_BACKEND_URL}). Check deploy status.`
         : err.message || 'Unknown error';
       const failPanel: Panel = {
-        id: Date.now(), title: displayText,
+        id: Date.now(), title: displayText, userQuery: queryText,
         data: { role: 'assistant', content: `Request failed: ${errMsg}\n\nBackend: ${AGENT_BACKEND_URL}\nTime: ${new Date().toISOString()}`, parsed: null },
         timestamp: Date.now(),
       };
@@ -1688,7 +1792,9 @@ export default function TradingAgent() {
               </div>
             )}
 
-            {panels.map(panel => (
+            {panels.map(panel => {
+              const isSaved = savedChats.some(c => c.id === panel.id);
+              return (
               <div key={panel.id} style={{ marginBottom:10, border:`1px solid ${panel.pinned ? C.blue+'40' : C.border}`, borderRadius:4, background:C.card, overflow:'hidden' }}>
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px 12px', background:C.bg, borderBottom:`1px solid ${C.border}` }}>
                   <div style={{ display:'flex', alignItems:'center', gap:8, flex:1, minWidth:0 }}>
@@ -1696,15 +1802,34 @@ export default function TradingAgent() {
                     <span style={{ color:C.dim, fontSize:9, fontFamily:font, flexShrink:0 }}>{new Date(panel.timestamp).toLocaleTimeString()}</span>
                   </div>
                   <div style={{ display:'flex', gap:4, flexShrink:0 }}>
-                    <button className="panel-btn" onClick={(e) => { e.stopPropagation(); togglePinPanel(panel.id); }} style={{ width:24, height:24, display:'flex', alignItems:'center', justifyContent:'center', background:'transparent', border:`1px solid ${panel.pinned ? C.blue : C.border}`, borderRadius:2, color:panel.pinned ? C.blue : C.dim, fontSize:10, cursor:'pointer', fontFamily:font }} title="Pin">{panel.pinned ? '★' : '☆'}</button>
+                    <button className="panel-btn" onClick={(e) => { e.stopPropagation(); saveToHistory(panel.id); }} style={{ width:24, height:24, display:'flex', alignItems:'center', justifyContent:'center', background:'transparent', border:`1px solid ${isSaved ? C.gold : C.border}`, borderRadius:2, color:isSaved ? C.gold : C.dim, fontSize:10, cursor:'pointer', fontFamily:font }} title={isSaved ? 'Saved' : 'Save to History'}>{isSaved ? '★' : '☆'}</button>
+                    <button className="panel-btn" onClick={(e) => { e.stopPropagation(); togglePinPanel(panel.id); }} style={{ width:24, height:24, display:'flex', alignItems:'center', justifyContent:'center', background:'transparent', border:`1px solid ${panel.pinned ? C.blue : C.border}`, borderRadius:2, color:panel.pinned ? C.blue : C.dim, fontSize:10, cursor:'pointer', fontFamily:font }} title="Pin">📌</button>
                     <button className="panel-btn" onClick={(e) => { e.stopPropagation(); closePanel(panel.id); }} style={{ width:24, height:24, display:'flex', alignItems:'center', justifyContent:'center', background:'transparent', border:`1px solid ${C.border}`, borderRadius:2, color:C.dim, fontSize:12, cursor:'pointer', fontFamily:font }} title="Close">×</button>
                   </div>
                 </div>
                 <div style={{ padding:14 }}>
                   {renderAssistantMessage(panel.data)}
                 </div>
+                {panel.thread && panel.thread.length > 0 && (
+                  <div style={{ borderTop:`1px solid ${C.border}` }}>
+                    {panel.thread.map((msg, idx) => (
+                      <div key={idx} style={{ padding:'10px 14px', borderBottom:`1px solid ${C.border}`, background: msg.role === 'user' ? `${C.blue}06` : 'transparent' }}>
+                        {msg.role === 'user' ? (
+                          <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                            <span style={{ color:C.blue, fontSize:9, fontWeight:700, fontFamily:font }}>YOU</span>
+                            <span style={{ color:C.bright, fontSize:12, fontFamily:sansFont }}>{msg.content}</span>
+                          </div>
+                        ) : (
+                          <div>{msg.parsed ? renderAssistantMessage({ role:'assistant', content: msg.content, parsed: msg.parsed }) : <div style={{ color:C.text, fontSize:12, fontFamily:sansFont, lineHeight:1.7, whiteSpace:'pre-wrap' }}>{msg.content}</div>}</div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <FollowUpInput panelId={panel.id} onSubmit={sendFollowUp} C={C} font={font} sansFont={sansFont} />
               </div>
-            ))}
+              );
+            })}
             <div ref={scrollAnchorRef} />
           </div>
         </div>
