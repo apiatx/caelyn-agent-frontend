@@ -397,12 +397,17 @@ export default function ChatbotWidget() {
           </div>
         ))}
         {isLoading && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', background: C.card, borderRadius: 10, border: `1px solid ${C.border}` }}>
-            <div style={{ display: 'flex', gap: 4 }}>
-              {[0,1,2].map(i => <span key={i} style={{ width:6, height:6, borderRadius:'50%', background:C.purple, animation:`chatbot-dot 1.2s ease-in-out ${i*0.2}s infinite` }} />)}
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', background: C.card, borderRadius: 10, border: `1px solid ${C.border}` }}>
+              <div style={{ display: 'flex', gap: 4 }}>
+                {[0,1,2].map(i => <span key={i} style={{ width:6, height:6, borderRadius:'50%', background:C.purple, animation:`chatbot-dot 1.2s ease-in-out ${i*0.2}s infinite` }} />)}
+              </div>
+              <span style={{ color: C.dim, fontSize: 10, fontFamily: font }}>{loadingStage}</span>
             </div>
-            <span style={{ color: C.dim, fontSize: 10, fontFamily: font }}>{loadingStage}</span>
-          </div>
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <img src={caelynLogo} alt="" style={{ width: 200, height: 200, opacity: 0.25, animation: 'chatbot-dot 2s ease-in-out infinite' }} />
+            </div>
+          </>
         )}
         <div ref={messagesEndRef} />
       </div>
