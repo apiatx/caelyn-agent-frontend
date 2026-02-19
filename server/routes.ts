@@ -891,11 +891,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       const agentUrl = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
       const agentKey = 'hippo_ak_7f3x9k2m4p8q1w5t';
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 75000);
       const response = await fetch(`${agentUrl}/api/portfolio/review`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-API-Key': agentKey },
         body: JSON.stringify({ holdings: holdings.slice(0, 25) }),
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
       if (!response.ok) {
         return res.status(response.status).json({ error: `Agent returned ${response.status}` });
       }

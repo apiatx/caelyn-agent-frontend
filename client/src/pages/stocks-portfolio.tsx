@@ -341,7 +341,7 @@ export default function StocksPortfolioPage() {
     if (holdings.length === 0) return;
     setAiLoading(true);
     setAiReview(null);
-    const stages = ['Analyzing portfolio...', 'Pulling price data...', 'Scanning technicals...', 'Checking fundamentals...', 'Reading sentiment...', 'Building portfolio view...', 'Generating ratings...'];
+    const stages = ['Analyzing portfolio...', 'Pulling price data...', 'Scanning technicals...', 'Checking fundamentals...', 'Reading sentiment...', 'Building portfolio view...', 'Generating ratings...', 'Almost done — this can take up to 30 seconds...'];
     let idx = 0;
     setAiStage(stages[0]);
     const iv = setInterval(() => { idx++; if (idx < stages.length) setAiStage(stages[idx]); }, 2000);
@@ -351,17 +351,28 @@ export default function StocksPortfolioPage() {
         shares: h.shares,
         avg_cost: h.avgCost,
       }));
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 90000);
       const res = await fetch('/api/portfolio-review', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ holdings: holdingsPayload }),
+        signal: controller.signal,
       });
-      if (!res.ok) throw new Error(`Status ${res.status}`);
+      clearTimeout(timeoutId);
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '');
+        throw new Error(`Server returned ${res.status}${errText ? ': ' + errText : ''}`);
+      }
       const data = await res.json();
       const analysisText = data.message || data.text || data.analysis || 'No analysis returned.';
       setAiReview(analysisText);
     } catch (err: any) {
-      setAiReview(`Failed to get portfolio review. Please try again. (${err.message})`);
+      if (err.name === 'AbortError') {
+        setAiReview('Portfolio review timed out. The analysis is taking longer than expected — please try again.');
+      } else {
+        setAiReview(`Failed to get portfolio review. Please try again. (${err.message})`);
+      }
     } finally {
       clearInterval(iv);
       setAiStage('');
