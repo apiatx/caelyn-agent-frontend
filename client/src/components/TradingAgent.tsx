@@ -140,13 +140,32 @@ export default function TradingAgent() {
     if (!panel || !followUpText.trim()) return;
 
     const convId = panel.conversationId || conversationId;
+    const userContent = panel.userQuery || panel.title || 'query';
+    const parsed = panel.data?.parsed;
+    let assistantContent = '';
+    if (typeof panel.data?.content === 'string' && panel.data.content.trim()) {
+      assistantContent = panel.data.content;
+    }
+    if (parsed && (!assistantContent || assistantContent === 'Response received. See panel data for details.')) {
+      const fallback = parsed.analysis || parsed.structured?.message || parsed.message;
+      if (typeof fallback === 'string' && fallback.trim()) {
+        assistantContent = fallback;
+      } else {
+        assistantContent = JSON.stringify(parsed).substring(0, 8000);
+      }
+    }
+    if (!assistantContent) assistantContent = 'No response content available.';
+
     const history: Array<{role: string, content: string}> = [
-      { role: 'user', content: panel.userQuery || panel.title || '' },
-      { role: 'assistant', content: panel.data?.content || '' },
+      { role: 'user', content: userContent },
+      { role: 'assistant', content: assistantContent },
     ];
     if (panel.thread) {
       for (const msg of panel.thread) {
-        history.push({ role: msg.role, content: msg.content });
+        const msgContent = typeof msg.content === 'string' && msg.content.trim()
+          ? msg.content
+          : (msg.parsed ? (msg.parsed.analysis || JSON.stringify(msg.parsed).substring(0, 8000)) : 'No content');
+        history.push({ role: msg.role, content: msgContent });
       }
     }
 
