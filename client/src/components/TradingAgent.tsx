@@ -1834,6 +1834,14 @@ export default function TradingAgent() {
                     <button className="panel-btn" onClick={(e) => { e.stopPropagation(); closePanel(panel.id); }} style={{ width:24, height:24, display:'flex', alignItems:'center', justifyContent:'center', background:'transparent', border:`1px solid ${C.border}`, borderRadius:2, color:C.dim, fontSize:12, cursor:'pointer', fontFamily:font }} title="Close">×</button>
                   </div>
                 </div>
+                {(panel.data?.parsed?.user_query || panel.userQuery) && (
+                  <div style={{ padding:'10px 14px', background:`${C.blue}06`, borderBottom:`1px solid ${C.border}` }}>
+                    <div style={{ display:'flex', alignItems:'flex-start', gap:8 }}>
+                      <span style={{ color:C.blue, fontSize:9, fontWeight:700, fontFamily:font, marginTop:2, flexShrink:0 }}>YOU</span>
+                      <span style={{ color:C.bright, fontSize:12, fontFamily:sansFont, lineHeight:1.5 }}>{panel.data?.parsed?.user_query || panel.userQuery}</span>
+                    </div>
+                  </div>
+                )}
                 <div style={{ padding:14 }}>
                   {renderAssistantMessage(panel.data)}
                 </div>
