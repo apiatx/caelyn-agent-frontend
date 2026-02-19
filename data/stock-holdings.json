@@ -6,5 +6,21 @@
     "avgCost": 5.8,
     "addedAt": "2026-02-17T20:54:10.858Z",
     "assetType": "stock"
+  },
+  {
+    "id": "mltv97dtmiczq",
+    "ticker": "NVDA",
+    "shares": 10,
+    "avgCost": 300,
+    "addedAt": "2026-02-19T19:40:55.841Z",
+    "assetType": "stock"
+  },
+  {
+    "id": "mltvy0agfzc68",
+    "ticker": "OSS",
+    "shares": 60,
+    "avgCost": 9.6,
+    "addedAt": "2026-02-19T20:00:13.048Z",
+    "assetType": "stock"
   }
 ]
