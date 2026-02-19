@@ -62,7 +62,7 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <div className="min-h-screen text-white" style={{background: 'linear-gradient(135deg, hsl(0, 0%, 0%) 0%, hsl(0, 0%, 10%) 50%, hsl(0, 0%, 0%) 100%)'}}>
+    <div className="min-h-screen text-white" style={{background: 'linear-gradient(135deg, #080b14 0%, #0d1117 40%, #111827 70%, #0d1117 100%)'}}>
       <div className="sticky top-0 z-50 border-b border-crypto-silver/20 bg-black/90 backdrop-blur-lg">
         <CryptoTickerTape />
       </div>
