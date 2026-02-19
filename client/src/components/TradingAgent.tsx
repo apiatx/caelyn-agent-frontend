@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import caelynLogo from "@assets/image_1771482973375.png";
+import cryptoHippoLogo from "@assets/image_1771175798315.png";
 
 const AGENT_BACKEND_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
 const AGENT_API_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
@@ -1671,7 +1671,7 @@ export default function TradingAgent() {
 
             {panels.length === 0 && !loading && (
               <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', height:'100%', minHeight:200, color:C.dim }}>
-                <img src={caelynLogo} alt="caelyn.ai" style={{ width:120, height:120, marginBottom:12, filter:'drop-shadow(0 0 30px rgba(80,180,255,0.4))' }} />
+                <img src={cryptoHippoLogo} alt="caelyn.ai" style={{ width:96, height:96, marginBottom:12, filter:'drop-shadow(0 0 24px rgba(120,80,255,0.45))' }} />
                 <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&display=swap" rel="stylesheet" />
                 <div style={{ fontSize:32, fontWeight:400, marginBottom:6, letterSpacing:'0.04em', color:'#ffffff', fontFamily:"'Comfortaa', sans-serif" }}>caelyn<span style={{ color:'rgba(255,255,255,0.5)' }}>.ai</span></div>
                 <div style={{ color:'rgba(255,255,255,0.5)', fontSize:13, fontWeight:300, letterSpacing:'0.04em', marginBottom:20, fontFamily:sansFont }}>Your AI-powered trading assistant</div>
