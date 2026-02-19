@@ -460,7 +460,7 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
 
       {!isMobile && (
       <div className="flex-shrink-0 border-b border-crypto-silver/20 flex items-center justify-center" style={{ aspectRatio:'1/1', width:'100%' }}>
-        <div className={`rounded-full overflow-hidden shadow-lg ${isCollapsed ? 'w-14 h-14' : 'w-28 h-28'}`} style={{ transition: 'all 0.3s ease-in-out' }}>
+        <div className={`rounded-full overflow-hidden shadow-lg ${isCollapsed ? 'w-14 h-14' : 'w-36 h-36'}`} style={{ transition: 'all 0.3s ease-in-out' }}>
           <img 
             src={caelynLogo}
             alt="TradeBlade"
