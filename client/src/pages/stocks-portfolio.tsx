@@ -131,8 +131,6 @@ function getTradingViewSymbol(ticker: string, assetType?: string, tvSymbolFromQu
   const type = (assetType || 'stock').toLowerCase();
   if (type === 'crypto' || type === 'cryptocurrency') return CRYPTO_TV_SYMBOLS[t] || `BINANCE:${t}USDT`;
   if (type === 'commodity' || type === 'commodities') return COMMODITY_TV_SYMBOLS[t] || t;
-  if (type === 'index' || type === 'indices') return INDEX_TV_SYMBOLS[t] || t;
-  if (INDEX_TV_SYMBOLS[t]) return INDEX_TV_SYMBOLS[t];
   return t;
 }
 
@@ -335,16 +333,15 @@ export default function StocksPortfolioPage() {
     else { setSortKey(key); setSortAsc(false); }
   };
 
-  const ASSET_COLORS: Record<string, string> = { Stocks: '#10b981', ETFs: '#3b82f6', Crypto: '#f59e0b', Commodities: '#ef4444', Indices: '#8b5cf6' };
+  const ASSET_COLORS: Record<string, string> = { Stocks: '#10b981', ETFs: '#3b82f6', Crypto: '#f59e0b', Commodities: '#ef4444' };
   const sectorData = useMemo(() => {
     const cats: Record<string, number> = {};
     enrichedHoldings.forEach(h => {
       const t = (h.assetType || 'stock').toLowerCase();
       let cat = 'Stocks';
-      if (t === 'etf') cat = 'ETFs';
+      if (t === 'etf' || t === 'index' || t === 'indices') cat = 'ETFs';
       else if (t === 'crypto' || t === 'cryptocurrency') cat = 'Crypto';
       else if (t === 'commodity' || t === 'commodities') cat = 'Commodities';
-      else if (t === 'index' || t === 'indices') cat = 'Indices';
       cats[cat] = (cats[cat] || 0) + h.totalValue;
     });
     return Object.entries(cats)
@@ -728,7 +725,6 @@ export default function StocksPortfolioPage() {
               <select value={selectedAssetType} onChange={e => setSelectedAssetType(e.target.value)} className="bg-white/5 border border-crypto-silver/20 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500/50 w-full sm:w-32 appearance-none cursor-pointer" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E\")", backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center' }}>
                 <option value="stock" className="bg-gray-900">Stock</option>
                 <option value="etf" className="bg-gray-900">ETF</option>
-                <option value="index" className="bg-gray-900">Index</option>
                 <option value="crypto" className="bg-gray-900">Crypto</option>
                 <option value="commodity" className="bg-gray-900">Commodity</option>
               </select>
@@ -821,9 +817,6 @@ export default function StocksPortfolioPage() {
                                       title={`${h.ticker} chart`}
                                     />
                                   </div>
-                                  {h.assetType === 'index' && INDEX_ETF_LABELS[h.ticker.toUpperCase()] && (
-                                    <div className="text-[10px] text-crypto-silver/60 mt-1 px-1">Chart shows {INDEX_ETF_LABELS[h.ticker.toUpperCase()]} which tracks {h.ticker.toUpperCase()}</div>
-                                  )}
                                   <div className="flex flex-wrap gap-2.5 mt-3">
                                     {q?.changesPercentage != null && (
                                       <div className="bg-white/5 rounded-lg px-3 py-2">
@@ -841,7 +834,7 @@ export default function StocksPortfolioPage() {
                                         </div>
                                       </div>
                                     )}
-                                    {h.assetType !== 'index' && q?.volume != null && q.volume > 0 && (
+                                    {q?.volume != null && q.volume > 0 && (
                                       <div className="bg-white/5 rounded-lg px-3 py-2">
                                         <div className="text-[10px] text-crypto-silver uppercase tracking-wider">Volume</div>
                                         <div className="text-sm font-semibold text-white">
@@ -850,7 +843,7 @@ export default function StocksPortfolioPage() {
                                       </div>
                                     )}
                                     {(() => {
-                                      const sectorLabel = h.assetType === 'crypto' ? 'Crypto' : h.assetType === 'commodity' ? 'Commodities' : h.assetType === 'etf' ? (q?.sector && q.sector !== 'Unknown' ? q.sector : 'ETFs') : h.assetType === 'index' ? 'Indices' : (q?.sector && q.sector !== 'Unknown' ? q.sector : null);
+                                      const sectorLabel = h.assetType === 'crypto' ? 'Crypto' : h.assetType === 'commodity' ? 'Commodities' : h.assetType === 'etf' ? (q?.sector && q.sector !== 'Unknown' ? q.sector : 'ETFs') : (q?.sector && q.sector !== 'Unknown' ? q.sector : null);
                                       return sectorLabel ? (
                                         <div className="bg-white/5 rounded-lg px-3 py-2">
                                           <div className="text-[10px] text-crypto-silver uppercase tracking-wider">Sector</div>
