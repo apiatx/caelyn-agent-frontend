@@ -19,7 +19,7 @@ interface Panel {
 
 const slashCommands: Record<string, string> = {
   '/briefing': 'daily_briefing',
-  '/trades': 'tactical_trades',
+  '/trades': 'best_trades',
   '/macro': 'macro_outlook',
   '/crypto': 'crypto_focus',
   '/scan': 'cross_asset_trending',
@@ -41,6 +41,7 @@ export default function TradingAgent() {
   const [groupExpanded, setGroupExpanded] = useState<Record<string, boolean>>({ g1: true, g2: true, g3: true, g4: true, g5: true });
   const [savedChats, setSavedChats] = useState<Array<{id: number, title: string, panels: Panel[], conversationId: string | null}>>([]);
   const [leftRailSearch, setLeftRailSearch] = useState('');
+  const [expandedRiskIds, setExpandedRiskIds] = useState<Set<string>>(new Set());
   const [leftRailOpen, setLeftRailOpen] = useState(false);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
@@ -260,78 +261,83 @@ export default function TradingAgent() {
   }
 
   function renderTrades(s: any) {
-    const topTrades = s.top_trades || [];
+    const topTrades = s.top_trades || s.picks || [];
     const bearish = s.bearish_setups || [];
-    const picks = s.picks || [];
-    const hasNewFormat = topTrades.length > 0 || bearish.length > 0;
+    const summary = s.summary || s.market_context || '';
 
-    const dirColor = (d?: string) => { if (!d) return C.dim; const l = String(d).toLowerCase(); return l === 'long' ? C.green : l === 'short' ? C.red : C.dim; };
-    const actColor = (a?: string) => { if (!a) return C.dim; const l = String(a).toLowerCase(); return l === 'buy' ? C.green : l === 'sell' ? C.red : l === 'watch' ? C.gold : C.dim; };
+    const actionColor = (a?: string) => { if (!a) return C.dim; const l = String(a).toLowerCase(); if (l.includes('strong buy')) return C.green; if (l.includes('buy')) return '#4ade80'; if (l.includes('hold') || l.includes('neutral') || l.includes('watch')) return C.gold; if (l.includes('sell')) return C.red; return C.dim; };
+    const setupColor = (st?: string) => (!st ? C.dim : C.blue);
+    const toggleRisk = (id: string, e: React.MouseEvent) => { e.stopPropagation(); setExpandedRiskIds(prev => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next; }); };
 
     const renderTradeCard = (t: any, prefix: string, i: number) => {
-      const isExp = expandedTicker === `${prefix}-${i}`;
+      const cardId = `${prefix}-${i}`;
+      const isExp = expandedTicker === cardId;
+      const riskExpanded = expandedRiskIds.has(cardId);
+      const ticker = t.ticker || t.symbol || '';
+      const name = t.name || t.company || '';
+      const action = t.action || t.rating || '';
+      const confidence = t.confidence_score ?? t.confidence;
+      const setupType = t.setup_type || t.classification || '';
       const entry = t.entry || t.trade_plan?.entry;
-      const stop = t.stop || t.trade_plan?.stop;
+      const stop = t.stop || t.stop_loss || t.trade_plan?.stop;
       const target = t.target || t.target_1 || t.trade_plan?.target_1;
       const target2 = t.target_2 || t.trade_plan?.target_2;
       const rr = t.risk_reward || t.trade_plan?.risk_reward;
       const tf = t.timeframe || t.trade_plan?.timeframe;
-      const risk = t.risk || t.why_could_fail;
-      const signals = t.signals_stacking || [];
-      const tvUrl = t.tv_url || t.tradingview_url;
-      return <CardWrap key={i} onClick={() => setExpandedTicker(isExp ? null : `${prefix}-${i}`)} expanded={isExp} borderColor={actColor(t.action)}>
+      const risk = t.risk || t.why_could_fail || '';
+      const signals = t.indicator_signals || t.signals_stacking || [];
+      const tvUrl = t.tradingview_url || t.tv_url;
+      const thesis = t.thesis || '';
+      const thesisBullets = t.thesis_bullets || [];
+
+      return <CardWrap key={i} onClick={() => setExpandedTicker(isExp ? null : cardId)} expanded={isExp} borderColor={actionColor(action)}>
         <div style={{ padding:'14px 18px' }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:8 }}>
             <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
-              <span style={{ width:22, height:22, borderRadius:'50%', background:`${C.blue}15`, display:'inline-flex', alignItems:'center', justifyContent:'center', color:C.blue, fontSize:10, fontWeight:800, fontFamily:font, flexShrink:0 }}>{i+1}</span>
-              <span style={{ color:C.blue, fontWeight:800, fontSize:18, fontFamily:font }}>{t.ticker || t.symbol}</span>
-              {t.name && <span style={{ color:C.dim, fontSize:11, fontFamily:sansFont }}>{t.name}</span>}
-              {t.direction && <Badge color={dirColor(t.direction)}>{String(t.direction).toUpperCase()}</Badge>}
-              {t.action && <Badge color={actColor(t.action)}>{String(t.action).toUpperCase()}</Badge>}
+              <span style={{ color:C.blue, fontWeight:800, fontSize:16, fontFamily:font }}>{ticker}</span>
+              {name && <span style={{ color:C.dim, fontSize:10, fontFamily:sansFont }}>{name}</span>}
+              {action && <Badge color={actionColor(action)}>{String(action).toUpperCase()}</Badge>}
+              {setupType && <Badge color={setupColor(setupType)}>{setupType}</Badge>}
             </div>
             <div style={{ display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
-              {t.confidence_score != null && <span style={{ background:`${C.gold}15`, color:C.gold, padding:'2px 10px', borderRadius:4, fontSize:12, fontWeight:700, fontFamily:font }}>{t.confidence_score}</span>}
+              {confidence != null && <span style={{ background:`${C.gold}15`, color:C.gold, padding:'2px 8px', borderRadius:4, fontSize:11, fontWeight:700, fontFamily:font }}>{confidence}</span>}
               {t.conviction && <Badge color={convColor(t.conviction)}>{t.conviction}</Badge>}
             </div>
           </div>
+
           {signals.length > 0 && <div style={{ display:'flex', gap:4, flexWrap:'wrap', marginBottom:8 }}>
             {signals.map((sig: string, j: number) => (
               <span key={j} style={{ padding:'2px 8px', borderRadius:4, fontSize:9, fontWeight:600, fontFamily:font, color:C.gold, background:`${C.gold}10`, border:`1px solid ${C.gold}20` }}>{String(sig).replace(/_/g, ' ')}</span>
             ))}
           </div>}
-          {t.thesis && <div style={{ color:C.text, fontSize:12, lineHeight:1.6, fontFamily:sansFont, marginBottom:8 }}>{t.thesis}</div>}
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(100px, 1fr))', gap:8, marginBottom:8 }}>
+
+          {thesis && <div style={{ color:C.text, fontSize:11, lineHeight:1.6, fontFamily:sansFont, marginBottom:8 }}>{thesis}</div>}
+          {!thesis && thesisBullets.length > 0 && <div style={{ marginBottom:8 }}>
+            {thesisBullets.filter((b: string) => b).slice(0, 3).map((b: string, j: number) => (
+              <div key={j} style={{ display:'flex', alignItems:'flex-start', gap:6, marginBottom:3 }}>
+                <span style={{ color:C.blue, fontSize:9, marginTop:3 }}>▸</span>
+                <span style={{ color:C.text, fontSize:11, lineHeight:1.5, fontFamily:sansFont }}>{b}</span>
+              </div>
+            ))}
+          </div>}
+
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(100px, 1fr))', gap:6, marginBottom:8 }}>
             {[['Entry', entry, C.bright], ['Stop', stop, C.red], ['Target', target, C.green], ['Target 2', target2, C.green], ['R/R', rr, C.gold], ['Timeframe', tf, C.dim]].map(([l, v, c]) => v ? <div key={l as string} style={{ background:C.bg, borderRadius:6, padding:'6px 10px' }}>
               <div style={{ color:C.dim, fontSize:8, fontFamily:font, textTransform:'uppercase' }}>{l as string}</div>
               <div style={{ color:c as string, fontSize:13, fontWeight:700, fontFamily:font, marginTop:2 }}>{v as string}</div>
             </div> : null)}
           </div>
-          {risk && <div style={{ marginTop:4, color:C.dim, fontSize:10, fontFamily:sansFont, fontStyle:'italic', whiteSpace:'normal', wordBreak:'break-word' }}>Risk: {risk}</div>}
+
+          {risk && <div style={{ marginTop:4 }}>
+            <div style={{ color:C.dim, fontSize:10, fontFamily:sansFont, fontStyle:'italic', whiteSpace:'normal', wordBreak:'break-word', overflow:'hidden', ...(riskExpanded ? {} : { display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical' as const }) }}>Risk: {risk}</div>
+            {risk.length > 120 && <button onClick={(e) => toggleRisk(cardId, e)} style={{ background:'none', border:'none', padding:0, marginTop:2, color:C.blue, fontSize:9, fontFamily:font, cursor:'pointer', fontWeight:600 }}>{riskExpanded ? 'Show less' : 'Show more'}</button>}
+          </div>}
+
+          {tvUrl && <a href={tvUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'5px 12px', marginTop:8, background:`${C.blue}10`, border:`1px solid ${C.blue}30`, borderRadius:4, color:C.blue, fontSize:10, fontWeight:700, fontFamily:font, textDecoration:'none', cursor:'pointer' }}>TradingView ↗</a>}
         </div>
+
         {isExp && <div style={{ borderTop:`1px solid ${C.border}`, padding:14 }}>
-          {tvUrl ? <a href={tvUrl} target="_blank" rel="noopener noreferrer" style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'6px 14px', background:`${C.blue}10`, border:`1px solid ${C.blue}30`, borderRadius:6, color:C.blue, fontSize:11, fontWeight:700, fontFamily:font, textDecoration:'none', marginBottom:10, cursor:'pointer' }}>Open TradingView Chart ↗</a> : null}
-          <TradingViewMini ticker={t.ticker || t.symbol} />
-          {t.ta && <div style={{ marginBottom:10 }}>
-            <div style={{ color:C.blue, fontSize:11, fontWeight:700, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:10 }}>Technical Setup — {t.ta.stage || ''}</div>
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(140px, 1fr))', gap:8 }}>
-              <IndicatorPill label="RSI" value={t.ta.rsi} signal={t.ta.rsi_signal} />
-              <IndicatorPill label="MACD" value="—" signal={t.ta.macd} />
-              <IndicatorPill label="Volume" value={t.ta.volume} signal={t.ta.volume_vs_avg ? `${t.ta.volume_vs_avg} avg` : undefined} />
-            </div>
-          </div>}
-          {t.sentiment && <div style={{ marginBottom:10 }}>
-            <div style={{ color:C.purple, fontSize:11, fontWeight:700, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:10 }}>Social Sentiment — {t.sentiment.buzz_level} Buzz</div>
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
-              <div style={{ background:`${C.green}08`, border:`1px solid ${C.green}15`, borderRadius:8, padding:12 }}>
-                <div style={{ color:C.green, fontSize:10, fontWeight:700, fontFamily:font, marginBottom:4 }}>BULL ({t.sentiment.bull_pct}%)</div>
-                <div style={{ color:C.text, fontSize:11, lineHeight:1.5, fontFamily:sansFont }}>{t.sentiment.bull_thesis}</div>
-              </div>
-              <div style={{ background:`${C.red}08`, border:`1px solid ${C.red}15`, borderRadius:8, padding:12 }}>
-                <div style={{ color:C.red, fontSize:10, fontWeight:700, fontFamily:font, marginBottom:4 }}>BEAR</div>
-                <div style={{ color:C.text, fontSize:11, lineHeight:1.5, fontFamily:sansFont }}>{t.sentiment.bear_thesis}</div>
-              </div>
-            </div>
-          </div>}
+          <TradingViewMini ticker={ticker} />
         </div>}
       </CardWrap>;
     };
@@ -348,34 +354,32 @@ export default function TradingAgent() {
       <div style={{ color:C.gold, fontSize:11, fontFamily:sansFont, lineHeight:1.5 }}>{dhWarnings.join(' · ')}<span style={{ color:C.dim, fontSize:10 }}> — Some data sources may be incomplete.</span></div>
     </div> : null;
 
-    if (hasNewFormat) {
-      return <div>
-        {s.market_context && <div style={{ padding:'14px 18px', background:`${C.blue}08`, border:`1px solid ${C.blue}15`, borderRadius:10, marginBottom:10, color:C.text, fontSize:12, fontFamily:sansFont, lineHeight:1.6 }}>{s.market_context}</div>}
-        {dhBanner}
-        {topTrades.length > 0 && <div style={{ marginBottom:12 }}>
-          <div style={{ color:C.bright, fontSize:14, fontWeight:800, fontFamily:sansFont, marginBottom:10, display:'flex', alignItems:'center', gap:8 }}>
-            <span style={{ color:C.green, fontSize:16 }}>▲</span> Top Trades
-          </div>
-          <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-            {topTrades.map((t: any, i: number) => renderTradeCard(t, 'tt', i))}
-          </div>
-        </div>}
-        {bearish.length > 0 && <div style={{ marginBottom:12 }}>
-          <div style={{ color:C.bright, fontSize:14, fontWeight:800, fontFamily:sansFont, marginBottom:10, display:'flex', alignItems:'center', gap:8 }}>
-            <span style={{ color:C.red, fontSize:16 }}>▼</span> Bearish (High Conviction)
-          </div>
-          <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-            {bearish.map((t: any, i: number) => renderTradeCard(t, 'bear', i))}
-          </div>
-        </div>}
-      </div>;
-    }
-
     return <div>
-      {s.market_context && <div style={{ padding:'14px 18px', background:`${C.blue}08`, border:`1px solid ${C.blue}15`, borderRadius:10, marginBottom:10, color:C.text, fontSize:12, fontFamily:sansFont, lineHeight:1.6 }}>{s.market_context}</div>}
-      <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-        {picks.map((p: any, i: number) => renderTradeCard(p, 't', i))}
+      <div style={{ padding:'16px 20px', background:`linear-gradient(135deg, ${C.card} 0%, ${C.bg} 100%)`, border:`1px solid ${C.border}`, borderRadius:12, marginBottom:10 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:summary ? 8 : 0 }}>
+          <span style={{ fontSize:20 }}>⚔️</span>
+          <span style={{ color:C.bright, fontSize:18, fontWeight:800, fontFamily:sansFont }}>Best Trades</span>
+        </div>
+        {summary && <div style={{ color:C.text, fontSize:12, lineHeight:1.7, fontFamily:sansFont }}>{summary}</div>}
       </div>
+      {dhBanner}
+      {topTrades.length > 0 && <div style={{ marginBottom:12 }}>
+        {bearish.length > 0 && <div style={{ color:C.bright, fontSize:13, fontWeight:700, fontFamily:sansFont, marginBottom:8, display:'flex', alignItems:'center', gap:6 }}>
+          <span style={{ color:C.green, fontSize:14 }}>▲</span> Top Trades
+        </div>}
+        <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+          {topTrades.map((t: any, i: number) => renderTradeCard(t, 'tt', i))}
+        </div>
+      </div>}
+      {bearish.length > 0 && <div style={{ marginBottom:12 }}>
+        <div style={{ color:C.bright, fontSize:13, fontWeight:700, fontFamily:sansFont, marginBottom:8, display:'flex', alignItems:'center', gap:6 }}>
+          <span style={{ color:C.red, fontSize:14 }}>▼</span> Bearish (High Conviction)
+        </div>
+        <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+          {bearish.map((t: any, i: number) => renderTradeCard(t, 'bear', i))}
+        </div>
+      </div>}
+      {topTrades.length === 0 && bearish.length === 0 && <div style={{ padding:20, color:C.dim, fontSize:12, fontFamily:sansFont, textAlign:'center' }}>No trade signals available at this time.</div>}
     </div>;
   }
 
@@ -1482,7 +1486,7 @@ export default function TradingAgent() {
     { id: 'g1', title: 'All-Encompassing', buttons: [
       {l:'Trending Now', intent:'cross_asset_trending'},
       {l:'Daily Briefing', intent:'daily_briefing'},
-      {l:'Best Trades', intent:'tactical_trades'},
+      {l:'Best Trades', intent:'best_trades'},
       {l:'Best Investments', intent:'long_term_conviction'},
       {l:'Macro Overview', intent:'macro_outlook'},
     ]},
@@ -1713,7 +1717,7 @@ export default function TradingAgent() {
                 <div style={{ display:'flex', gap:8, flexWrap:'wrap', justifyContent:'center' }}>
                   {[
                     { l: '/briefing', intent: 'daily_briefing' },
-                    { l: '/trades', intent: 'tactical_trades' },
+                    { l: '/trades', intent: 'best_trades' },
                     { l: '/crypto', intent: 'crypto_focus' },
                     { l: '/scan', intent: 'cross_asset_trending' },
                   ].map(cmd => (

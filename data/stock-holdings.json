@@ -1,13 +1,5 @@
 [
   {
-    "id": "mlr2z3v1zxqcl",
-    "ticker": "OLB",
-    "shares": 1587,
-    "avgCost": 1.26,
-    "addedAt": "2026-02-17T20:53:43.117Z",
-    "assetType": "stock"
-  },
-  {
     "id": "mlr2zp9mlz8kv",
     "ticker": "ATOM",
     "shares": 341,
