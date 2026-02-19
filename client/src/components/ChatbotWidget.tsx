@@ -360,7 +360,6 @@ export default function ChatbotWidget() {
         flexShrink: 0,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <img src={cryptoHippoLogo} alt="" style={{ width: 24, height: 24, borderRadius: '50%' }} />
           <span style={{ color: C.bright, fontSize: 13, fontWeight: 700, fontFamily: sansFont }}>Ask Caelyn</span>
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
@@ -373,7 +372,7 @@ export default function ChatbotWidget() {
       <div style={{ flex: 1, overflowY: 'auto', padding: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
         {messages.length === 0 && !isLoading && (
           <div style={{ textAlign: 'center', padding: '40px 20px', color: C.dim }}>
-            <img src={caelynLogo} alt="" style={{ width: 120, height: 120, margin: '0 auto 16px', opacity: 0.85 }} />
+            <img src={caelynLogo} alt="" style={{ width: 240, height: 240, margin: '0 auto 16px', opacity: 0.85 }} />
             <div style={{ fontSize: 13, fontFamily: sansFont, marginBottom: 4 }}>Ask me anything about markets</div>
             <div style={{ fontSize: 10, fontFamily: font }}>Stocks, crypto, macro, sectors...</div>
           </div>
