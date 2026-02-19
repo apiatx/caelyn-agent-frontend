@@ -235,7 +235,7 @@ export default function TradingAgent() {
   function IndicatorPill({ label, value, signal }: { label: string, value?: string|number, signal?: string }) {
     return <div style={{ background:C.bg, borderRadius:8, padding:'10px 12px', border:`1px solid ${C.border}` }}>
       <div style={{ color:C.dim, fontSize:9, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:4 }}>{label}</div>
-      <div style={{ color:C.bright, fontSize:16, fontWeight:700, fontFamily:font }}>{value ?? 'N/A'}</div>
+      <div style={{ color:C.bright, fontSize:16, fontWeight:700, fontFamily:font }}>{value ?? '—'}</div>
       {signal && <div style={{ color:trendColor(signal), fontSize:10, fontFamily:font, marginTop:2 }}>{signal}</div>}
     </div>;
   }
@@ -661,18 +661,18 @@ export default function TradingAgent() {
           const isTop = topPicks.some((p: any) => p.ticker === row.ticker);
           return <div key={i}>
             <div onClick={() => setExpandedTicker(isExp ? null : `scr-${i}`)} style={{ display:'grid', gridTemplateColumns:cols.map(c => c.w).join(' '), background: isTop ? `${C.purple}06` : (i % 2 === 0 ? C.card : C.bg), borderBottom:`1px solid ${C.border}`, cursor:'pointer', transition:'background 0.1s', borderLeft: isTop ? `2px solid ${C.purple}` : '2px solid transparent' }} onMouseEnter={e => e.currentTarget.style.background = `${C.blue}08`} onMouseLeave={e => e.currentTarget.style.background = isTop ? `${C.purple}06` : (i % 2 === 0 ? C.card : C.bg)}>
-              <div style={{ padding:'8px 6px', color:C.blue, fontSize:12, fontWeight:700, fontFamily:font }}>{row.ticker}</div>
-              <div style={{ padding:'8px 6px', color:C.text, fontSize:11, fontFamily:sansFont, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{row.company}</div>
-              <div style={{ padding:'8px 6px', color:C.bright, fontSize:12, fontWeight:600, fontFamily:font }}>{row.price}</div>
-              <div style={{ padding:'8px 6px', color:changeColor(row.change), fontSize:11, fontWeight:600, fontFamily:font }}>{row.change}</div>
-              <div style={{ padding:'8px 6px', color:C.text, fontSize:11, fontFamily:font }}>{row.market_cap}</div>
-              <div style={{ padding:'8px 6px', color:trendColor(row.rev_growth), fontSize:11, fontWeight:600, fontFamily:font }}>{row.rev_growth}</div>
-              <div style={{ padding:'8px 6px', color:trendColor(row.margin), fontSize:11, fontFamily:font }}>{row.margin}</div>
-              <div style={{ padding:'8px 6px', color:C.text, fontSize:11, fontFamily:font }}>{row.pe}</div>
-              <div style={{ padding:'8px 6px', color: parseFloat(row.rsi||'50') < 35 ? C.green : parseFloat(row.rsi||'50') > 70 ? C.red : C.text, fontSize:11, fontWeight:600, fontFamily:font }}>{row.rsi}</div>
-              <div style={{ padding:'8px 6px', color:C.text, fontSize:11, fontFamily:font }}>{row.volume}</div>
-              <div style={{ padding:'8px 6px', color: row.analyst_rating?.toLowerCase().includes('buy') ? C.green : row.analyst_rating?.toLowerCase().includes('sell') ? C.red : C.text, fontSize:10, fontWeight:600, fontFamily:font }}>{row.analyst_rating}</div>
-              <div style={{ padding:'8px 6px', color:changeColor(row.upside), fontSize:11, fontWeight:600, fontFamily:font }}>{row.upside}</div>
+              <div style={{ padding:'8px 6px', color:C.blue, fontSize:12, fontWeight:700, fontFamily:font }}>{row.ticker ?? '—'}</div>
+              <div style={{ padding:'8px 6px', color:C.text, fontSize:11, fontFamily:sansFont, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{row.company ?? '—'}</div>
+              <div style={{ padding:'8px 6px', color:C.bright, fontSize:12, fontWeight:600, fontFamily:font }}>{row.price ?? '—'}</div>
+              <div style={{ padding:'8px 6px', color:changeColor(row.change), fontSize:11, fontWeight:600, fontFamily:font }}>{row.change ?? '—'}</div>
+              <div style={{ padding:'8px 6px', color:C.text, fontSize:11, fontFamily:font }}>{row.market_cap ?? '—'}</div>
+              <div style={{ padding:'8px 6px', color:trendColor(row.rev_growth), fontSize:11, fontWeight:600, fontFamily:font }}>{row.rev_growth ?? '—'}</div>
+              <div style={{ padding:'8px 6px', color:trendColor(row.margin), fontSize:11, fontFamily:font }}>{row.margin ?? '—'}</div>
+              <div style={{ padding:'8px 6px', color:C.text, fontSize:11, fontFamily:font }}>{row.pe ?? '—'}</div>
+              <div style={{ padding:'8px 6px', color: parseFloat(row.rsi||'50') < 35 ? C.green : parseFloat(row.rsi||'50') > 70 ? C.red : C.text, fontSize:11, fontWeight:600, fontFamily:font }}>{row.rsi ?? '—'}</div>
+              <div style={{ padding:'8px 6px', color:C.text, fontSize:11, fontFamily:font }}>{row.volume ?? '—'}</div>
+              <div style={{ padding:'8px 6px', color: row.analyst_rating?.toLowerCase().includes('buy') ? C.green : row.analyst_rating?.toLowerCase().includes('sell') ? C.red : C.text, fontSize:10, fontWeight:600, fontFamily:font }}>{row.analyst_rating ?? '—'}</div>
+              <div style={{ padding:'8px 6px', color:changeColor(row.upside), fontSize:11, fontWeight:600, fontFamily:font }}>{row.upside ?? '—'}</div>
             </div>
             {isExp && <div style={{ padding:14, background:`${C.card}`, borderBottom:`1px solid ${C.border}` }}>
               <TradingViewMini ticker={row.ticker} />
@@ -881,7 +881,7 @@ export default function TradingAgent() {
           <div key={key} style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:8, padding:'10px 12px' }}>
             <div style={{ color:C.dim, fontSize:9, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:4 }}>{key.replace(/_/g, ' ')}</div>
             <div style={{ display:'flex', alignItems:'baseline', gap:6 }}>
-              <span style={{ color:C.bright, fontSize:15, fontWeight:700, fontFamily:font }}>{val?.price || val?.value || 'N/A'}</span>
+              <span style={{ color:C.bright, fontSize:15, fontWeight:700, fontFamily:font }}>{val?.price || val?.value || '—'}</span>
               {val?.change && <span style={{ color:changeColor(val.change), fontSize:11, fontWeight:600, fontFamily:font }}>{val.change}</span>}
             </div>
             {val?.trend && <div style={{ color:trendColor(val.trend), fontSize:10, fontFamily:font, marginTop:2 }}>{val.trend}</div>}
@@ -920,7 +920,7 @@ export default function TradingAgent() {
                 <span style={{ fontSize:14 }}>{cfg.icon}</span>
                 <span style={{ color:cfg.color, fontSize:10, fontWeight:700, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.04em' }}>{key.replace(/_/g, ' ')}</span>
               </div>
-              <div style={{ color:C.bright, fontSize:14, fontWeight:700, fontFamily:font, marginBottom:4 }}>{val?.ticker || val?.sector || 'N/A'}</div>
+              <div style={{ color:C.bright, fontSize:14, fontWeight:700, fontFamily:font, marginBottom:4 }}>{val?.ticker || '—'}</div>
               <div style={{ color:C.text, fontSize:11, lineHeight:1.5, fontFamily:sansFont }}>{val?.signal || ''}</div>
             </div>;
           })}
