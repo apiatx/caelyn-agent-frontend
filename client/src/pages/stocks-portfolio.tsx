@@ -186,7 +186,7 @@ export default function StocksPortfolioPage() {
     try {
       const tickers = holdingsList.map(h => h.ticker.toUpperCase());
       const assetTypes: Record<string, string> = {};
-      holdingsList.forEach(h => { assetTypes[h.ticker.toUpperCase()] = h.assetType || 'stock'; });
+      holdingsList.forEach(h => { assetTypes[h.ticker.toUpperCase()] = (h.assetType || 'stock').toLowerCase(); });
       const res = await fetch(`/api/fmp/quotes?symbols=${tickers.join(',')}&asset_types=${encodeURIComponent(JSON.stringify(assetTypes))}`);
       if (res.ok) {
         const data: QuoteData[] = await res.json();

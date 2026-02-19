@@ -67,6 +67,82 @@ function setCache(key: string, data: any) {
   cache.set(key, { data, timestamp: Date.now() });
 }
 
+const INDEX_YAHOO_MAP: Record<string, { yahoo: string; name: string }> = {
+  'VIX': { yahoo: '^VIX', name: 'CBOE Volatility Index' },
+  'SPX': { yahoo: '^GSPC', name: 'S&P 500' },
+  'DJI': { yahoo: '^DJI', name: 'Dow Jones Industrial Average' },
+  'IXIC': { yahoo: '^IXIC', name: 'NASDAQ Composite' },
+  'NDX': { yahoo: '^NDX', name: 'NASDAQ 100' },
+  'RUT': { yahoo: '^RUT', name: 'Russell 2000' },
+  'DXY': { yahoo: 'DX-Y.NYB', name: 'US Dollar Index' },
+  'TNX': { yahoo: '^TNX', name: '10-Year Treasury Yield' },
+  'NIFTY': { yahoo: '^NSEI', name: 'NIFTY 50' },
+};
+
+async function fetchIndexQuotes(symbols: string[]): Promise<StockQuote[]> {
+  const yahooSymbols = symbols.map(s => INDEX_YAHOO_MAP[s.toUpperCase()]?.yahoo || `^${s}`);
+  const originalMap: Record<string, string> = {};
+  symbols.forEach((s, i) => { originalMap[yahooSymbols[i]] = s.toUpperCase(); });
+
+  const cacheKey = `index:${symbols.join(',')}`;
+  const cached = getCached<StockQuote[]>(cacheKey);
+  if (cached) return cached;
+
+  try {
+    const symbolStr = yahooSymbols.join(',');
+    const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbolStr)}&fields=symbol,shortName,longName,regularMarketPrice,regularMarketChange,regularMarketChangePercent,regularMarketDayHigh,regularMarketDayLow,fiftyTwoWeekHigh,fiftyTwoWeekLow,regularMarketVolume,regularMarketOpen,regularMarketPreviousClose`;
+
+    console.log(`[Yahoo] Fetching INDEX quotes for: ${symbolStr}`);
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'application/json',
+      }
+    });
+
+    if (!res.ok) {
+      console.error(`[Yahoo] Index quote API returned ${res.status}`);
+      return [];
+    }
+
+    const data = await res.json();
+    const results = data?.quoteResponse?.result || [];
+
+    const quotes: StockQuote[] = results.map((q: any) => {
+      const origSymbol = originalMap[q.symbol] || q.symbol?.replace('^', '') || '';
+      const meta = INDEX_YAHOO_MAP[origSymbol];
+      return {
+        symbol: origSymbol,
+        name: meta?.name || q.shortName || q.longName || origSymbol,
+        companyName: meta?.name || q.longName || q.shortName || origSymbol,
+        price: q.regularMarketPrice || 0,
+        change: q.regularMarketChange || 0,
+        changesPercentage: q.regularMarketChangePercent || 0,
+        dayHigh: q.regularMarketDayHigh || 0,
+        dayLow: q.regularMarketDayLow || 0,
+        yearHigh: q.fiftyTwoWeekHigh || 0,
+        yearLow: q.fiftyTwoWeekLow || 0,
+        marketCap: 0,
+        volume: q.regularMarketVolume || 0,
+        avgVolume: 0,
+        open: q.regularMarketOpen || 0,
+        previousClose: q.regularMarketPreviousClose || 0,
+        eps: 0,
+        pe: 0,
+        earningsAnnouncement: '',
+        sector: 'Indices',
+        industry: 'Index',
+      };
+    });
+
+    if (quotes.length > 0) setCache(cacheKey, quotes);
+    return quotes;
+  } catch (err) {
+    console.error('[Yahoo] Index quote fetch failed:', err);
+    return [];
+  }
+}
+
 async function fetchYahooQuotes(symbols: string[]): Promise<StockQuote[]> {
   const cacheKey = `yahoo:${symbols.join(',')}`;
   const cached = getCached<StockQuote[]>(cacheKey);
@@ -445,25 +521,28 @@ export const fmpService = {
     const stockSymbols: string[] = [];
     const cryptoSymbols: string[] = [];
     const commoditySymbols: string[] = [];
+    const indexSymbols: string[] = [];
 
     for (const sym of symbols) {
-      const type = assetTypes[sym] || assetTypes[sym.toUpperCase()] || 'stock';
+      const type = (assetTypes[sym] || assetTypes[sym.toUpperCase()] || 'stock').toLowerCase();
       if (type === 'crypto') cryptoSymbols.push(sym);
       else if (type === 'commodity') commoditySymbols.push(sym);
+      else if (type === 'index') indexSymbols.push(sym);
       else stockSymbols.push(sym);
     }
 
-    console.log(`[PORTFOLIO] Routing: stocks=${stockSymbols.join(',')}, crypto=${cryptoSymbols.join(',')}, commodities=${commoditySymbols.join(',')}`);
+    console.log(`[PORTFOLIO] Routing: stocks=${stockSymbols.join(',')}, crypto=${cryptoSymbols.join(',')}, commodities=${commoditySymbols.join(',')}, indices=${indexSymbols.join(',')}`);
 
-    const [rawStockQuotes, cryptoQuotes, commodityQuotes] = await Promise.all([
+    const [rawStockQuotes, cryptoQuotes, commodityQuotes, indexQuotes] = await Promise.all([
       stockSymbols.length > 0 ? fetchYahooQuotes(stockSymbols) : Promise.resolve([]),
       cryptoSymbols.length > 0 ? fetchCryptoQuotes(cryptoSymbols) : Promise.resolve([]),
       commoditySymbols.length > 0 ? fetchCommodityQuotes(commoditySymbols) : Promise.resolve([]),
+      indexSymbols.length > 0 ? fetchIndexQuotes(indexSymbols) : Promise.resolve([]),
     ]);
 
     const stockQuotes = await enrichWithFMPProfile(rawStockQuotes);
 
-    return [...stockQuotes, ...cryptoQuotes, ...commodityQuotes];
+    return [...stockQuotes, ...cryptoQuotes, ...commodityQuotes, ...indexQuotes];
   },
 
   async getPriceTarget(symbol: string): Promise<PriceTarget[]> {
