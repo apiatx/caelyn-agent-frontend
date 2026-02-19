@@ -104,9 +104,9 @@ const COMMODITY_TV_SYMBOLS: Record<string, string> = {
 };
 
 const INDEX_TV_SYMBOLS: Record<string, string> = {
-  "SPX": "FOREXCOM:SPX500", "SPY": "AMEX:SPY", "DJI": "FOREXCOM:DJI",
-  "IXIC": "FOREXCOM:USNAS100", "NDX": "FOREXCOM:USNAS100", "QQQ": "NASDAQ:QQQ",
-  "RUT": "TVC:RUT", "VIX": "TVC:VIX", "DXY": "TVC:DXY",
+  "SPX": "FOREXCOM:SPXUSD", "SPY": "AMEX:SPY", "DJI": "FOREXCOM:DJI",
+  "IXIC": "NASDAQ:IXIC", "NDX": "NASDAQ:NDX", "QQQ": "NASDAQ:QQQ",
+  "RUT": "FOREXCOM:RUTUSD", "VIX": "CBOE:VIX", "DXY": "INDEX:DXY", "TNX": "CBOE:TNX",
 };
 
 const CRYPTO_DISPLAY_NAMES: Record<string, string> = {
@@ -120,12 +120,13 @@ const CRYPTO_DISPLAY_NAMES: Record<string, string> = {
   "MATIC": "Polygon", "BCH": "Bitcoin Cash",
 };
 
-function getTradingViewSymbol(ticker: string, assetType?: string): string {
+function getTradingViewSymbol(ticker: string, assetType?: string, tvSymbolFromQuote?: string): string {
+  if (tvSymbolFromQuote) return tvSymbolFromQuote;
   const t = (ticker || '').toUpperCase();
   const type = (assetType || 'stock').toLowerCase();
   if (type === 'crypto' || type === 'cryptocurrency') return CRYPTO_TV_SYMBOLS[t] || `BINANCE:${t}USDT`;
   if (type === 'commodity' || type === 'commodities') return COMMODITY_TV_SYMBOLS[t] || t;
-  if (type === 'index' || type === 'indices') return INDEX_TV_SYMBOLS[t] || `TVC:${t}`;
+  if (type === 'index' || type === 'indices') return INDEX_TV_SYMBOLS[t] || t;
   if (INDEX_TV_SYMBOLS[t]) return INDEX_TV_SYMBOLS[t];
   return t;
 }
@@ -783,7 +784,7 @@ export default function StocksPortfolioPage() {
                                 <div className="px-3 pb-3 pt-1 bg-white/[0.02]">
                                   <div className="rounded-lg overflow-hidden border border-crypto-silver/10 my-2">
                                     <iframe
-                                      src={`https://s.tradingview.com/widgetembed/?symbol=${encodeURIComponent(getTradingViewSymbol(h.ticker, h.assetType))}&interval=D&theme=dark&style=1&locale=en&hide_top_toolbar=1&hide_side_toolbar=1&allow_symbol_change=0&save_image=0&width=100%25&height=220`}
+                                      src={`https://s.tradingview.com/widgetembed/?symbol=${encodeURIComponent(getTradingViewSymbol(h.ticker, h.assetType, h.quote?.tradingview_symbol))}&interval=D&theme=dark&style=1&locale=en&hide_top_toolbar=1&hide_side_toolbar=1&allow_symbol_change=0&save_image=0&width=100%25&height=220`}
                                       style={{ width: '100%', height: 220, border: 'none', display: 'block' }}
                                       title={`${h.ticker} chart`}
                                     />

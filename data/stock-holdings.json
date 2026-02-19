@@ -46,5 +46,13 @@
     "avgCost": 3000,
     "addedAt": "2026-02-19T21:05:25.277Z",
     "assetType": "commodity"
+  },
+  {
+    "id": "mltzinetykyd9",
+    "ticker": "SPX",
+    "shares": 10,
+    "avgCost": 5000,
+    "addedAt": "2026-02-19T21:40:14.981Z",
+    "assetType": "index"
   }
 ]
