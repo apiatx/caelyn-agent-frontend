@@ -367,9 +367,16 @@ export default function TradingAgent() {
     return <div onClick={onClick} style={{ background:C.card, border:`1px solid ${expanded ? C.blue+'40' : C.border}`, borderLeft:`3px solid ${borderColor || C.border}`, borderRadius:10, overflow:'hidden', cursor: onClick ? 'pointer' : 'default', transition:'all 0.2s' }}>{children}</div>;
   }
 
-  function TradingViewMini({ ticker }: { ticker: string }) {
+  function getTVSymbol(ticker: string, pick?: any): string {
+    if (pick?.tradingview_symbol) return pick.tradingview_symbol;
+    if (pick?.asset_class === 'crypto' || pick?.asset_type === 'crypto' || pick?.category === 'crypto') return `BINANCE:${ticker}USDT`;
+    return ticker;
+  }
+
+  function TradingViewMini({ ticker, pick }: { ticker: string; pick?: any }) {
+    const sym = getTVSymbol(ticker, pick);
     return <div style={{ borderRadius:8, overflow:'hidden', border:`1px solid ${C.border}`, margin:'12px 0' }}>
-      <iframe src={`https://s.tradingview.com/widgetembed/?symbol=${ticker}&interval=D&theme=dark&style=1&locale=en&hide_top_toolbar=1&hide_side_toolbar=1&allow_symbol_change=0&save_image=0&width=100%25&height=200`} style={{ width:'100%', height:200, border:'none', display:'block' }} title={`${ticker} chart`} />
+      <iframe src={`https://s.tradingview.com/widgetembed/?symbol=${encodeURIComponent(sym)}&interval=D&theme=dark&style=1&locale=en&hide_top_toolbar=1&hide_side_toolbar=1&allow_symbol_change=0&save_image=0&width=100%25&height=200`} style={{ width:'100%', height:200, border:'none', display:'block' }} title={`${sym} chart`} />
     </div>;
   }
 
@@ -410,7 +417,8 @@ export default function TradingAgent() {
       const tf = t.timeframe || t.trade_plan?.timeframe;
       const risk = t.risk || t.why_could_fail || '';
       const signals = t.indicator_signals || t.signals_stacking || [];
-      const tvUrl = t.tradingview_url || t.tv_url;
+      const tvSym = getTVSymbol(ticker, t);
+      const tvUrl = t.tradingview_url || t.tv_url || `https://www.tradingview.com/chart/?symbol=${encodeURIComponent(tvSym)}`;
       const thesis = t.thesis || '';
       const thesisBullets = t.thesis_bullets || [];
 
@@ -461,7 +469,7 @@ export default function TradingAgent() {
         </div>
 
         {isExp && <div style={{ borderTop:`1px solid ${C.border}`, padding:14 }}>
-          <TradingViewMini ticker={ticker} />
+          <TradingViewMini ticker={ticker} pick={t} />
         </div>}
       </CardWrap>;
     };
@@ -590,7 +598,7 @@ export default function TradingAgent() {
           <div style={{ padding:'0 18px 10px', color:C.gold, fontSize:12, fontWeight:600, fontFamily:sansFont }}>{p.setup_name}</div>
           <div style={{ padding:'4px 14px', background:`${convColor(p.conviction)}08`, borderTop:`1px solid ${C.border}`, color:convColor(p.conviction), fontSize:10, fontWeight:700, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.04em' }}>{p.conviction} CONVICTION{p.why_conviction ? ' — ' + p.why_conviction : ''}</div>
           {isExp && <div style={{ borderTop:`1px solid ${C.border}`, padding:14 }}>
-            <TradingViewMini ticker={p.ticker} />
+            <TradingViewMini ticker={p.ticker} pick={p} />
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(140px, 1fr))', gap:8, marginBottom:10 }}>
               <IndicatorPill label="Stage" value={ind.stage} />
               <IndicatorPill label="RSI (14)" value={ind.rsi_14} signal={ind.rsi_signal} />
@@ -632,7 +640,7 @@ export default function TradingAgent() {
         </div>
       </div>
       {s.verdict && <div style={{ padding:'14px 18px', background:`${C.green}08`, border:`1px solid ${C.green}20`, borderRadius:10, marginBottom:10, color:C.bright, fontSize:13, fontWeight:600, fontFamily:sansFont }}>{s.verdict}</div>}
-      {s.ticker && <TradingViewMini ticker={s.ticker} />}
+      {s.ticker && <TradingViewMini ticker={s.ticker} pick={s} />}
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8, marginBottom:10 }}>
         {s.ta && <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:10, padding:16 }}>
           <div style={{ color:C.blue, fontSize:11, fontWeight:700, fontFamily:font, textTransform:'uppercase', marginBottom:12 }}>Technical</div>
@@ -798,7 +806,7 @@ export default function TradingAgent() {
               <div style={{ padding:'8px 6px', color:changeColor(row.upside), fontSize:11, fontWeight:600, fontFamily:font, display:'flex', alignItems:'center', gap:4 }}>{row.upside ?? '—'}{row.insider?.form4_recent && <span style={{ padding:'1px 5px', borderRadius:3, fontSize:8, fontWeight:700, fontFamily:font, color:C.gold, background:`${C.gold}12`, border:`1px solid ${C.gold}20` }} title={row.insider?.form4_latest_date || ''}>Form 4</span>}{row.catalyst?.recent_8k && <span style={{ padding:'1px 5px', borderRadius:3, fontSize:8, fontWeight:700, fontFamily:font, color:C.purple, background:`${C.purple}12`, border:`1px solid ${C.purple}20` }} title={row.catalyst?.latest_8k_date || ''}>8-K</span>}</div>
             </div>
             {isExp && <div style={{ padding:14, background:`${C.card}`, borderBottom:`1px solid ${C.border}` }}>
-              <TradingViewMini ticker={row.ticker} />
+              <TradingViewMini ticker={row.ticker} pick={row} />
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:10 }}>
                 {row.ta_summary && <div style={{ background:C.bg, borderRadius:8, padding:12, border:`1px solid ${C.border}` }}>
                   <div style={{ color:C.blue, fontSize:10, fontWeight:700, fontFamily:font, textTransform:'uppercase', marginBottom:6 }}>Technical</div>
@@ -1076,7 +1084,7 @@ export default function TradingAgent() {
                 <div style={{ color:C.text, fontSize:12, lineHeight:1.7, fontFamily:sansFont }}>{move.thesis}</div>
               </div>
               {isExp && <div style={{ borderTop:`1px solid ${C.border}`, padding:14 }}>
-                <TradingViewMini ticker={move.ticker} />
+                <TradingViewMini ticker={move.ticker} pick={move} />
                 <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(120px, 1fr))', gap:8, marginTop:12 }}>
                   {[
                     ['Entry', move.entry, C.bright],
@@ -1158,7 +1166,7 @@ export default function TradingAgent() {
             </div>
             <div style={{ padding:'0 18px 14px', color:C.text, fontSize:12, lineHeight:1.6, fontFamily:sansFont }}>{p.thesis}</div>
             {isExp && <div style={{ borderTop:`1px solid ${C.border}`, padding:14 }}>
-              <TradingViewMini ticker={p.ticker} />
+              <TradingViewMini ticker={p.ticker} pick={p} />
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:10 }}>
                 <div style={{ background:C.bg, borderRadius:8, padding:12, border:`1px solid ${C.border}` }}>
                   <div style={{ color:C.blue, fontSize:10, fontWeight:700, fontFamily:font, textTransform:'uppercase', marginBottom:6 }}>Technical</div>
@@ -1495,7 +1503,7 @@ export default function TradingAgent() {
             {item.trade_plan.target_1 && <div style={{ background:C.bg, borderRadius:6, padding:'6px 10px' }}><div style={{ color:C.dim, fontSize:8, fontFamily:font, textTransform:'uppercase' }}>Target</div><div style={{ color:C.green, fontSize:12, fontWeight:700, fontFamily:font }}>{item.trade_plan.target_1}</div></div>}
             {item.trade_plan.risk_reward && <div style={{ background:C.bg, borderRadius:6, padding:'6px 10px' }}><div style={{ color:C.dim, fontSize:8, fontFamily:font, textTransform:'uppercase' }}>R:R</div><div style={{ color:C.gold, fontSize:12, fontWeight:700, fontFamily:font }}>{item.trade_plan.risk_reward}</div></div>}
           </div>}
-          <div style={{ padding:14 }}><TradingViewMini ticker={item.symbol} /></div>
+          <div style={{ padding:14 }}><TradingViewMini ticker={item.symbol} pick={item} /></div>
         </div>}
       </CardWrap>;
     };
