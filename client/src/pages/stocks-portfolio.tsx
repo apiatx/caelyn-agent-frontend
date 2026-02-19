@@ -414,6 +414,215 @@ export default function StocksPortfolioPage() {
       .replace(/\n/g, '<br/>');
   }
 
+  interface ParsedPosition {
+    ticker: string;
+    weight: string;
+    pnl: string;
+    verdict: string;
+    thesis: string;
+    keyRisk: string;
+    catalyst: string;
+    positionSize: string;
+    extra: string[];
+  }
+
+  interface ParsedReview {
+    positions: ParsedPosition[];
+    overallAssessment: string;
+    grade: string;
+    actionItems: string[];
+    newPosition: string;
+    otherSections: { title: string; body: string }[];
+  }
+
+  function parsePortfolioReview(message: string): ParsedReview | null {
+    try {
+      const sections: ParsedReview = { positions: [], overallAssessment: '', grade: '', actionItems: [], newPosition: '', otherSections: [] };
+      const parts = message.split(/^## /gm).filter(Boolean);
+      if (parts.length < 2) return null;
+
+      for (const part of parts) {
+        if (/^INDIVIDUAL\s*POSITIONS?/i.test(part)) {
+          const positionBlocks = part.split(/^### /gm).filter(Boolean).slice(1);
+          for (const block of positionBlocks) {
+            const lines = block.trim().split('\n').filter(l => l.trim());
+            const headerLine = lines[0].replace(/\*\*/g, '');
+            const headerMatch = headerLine.match(/([A-Z0-9.]+)\s*\((.+?)\)\s*[-–—]\s*(.+)/);
+            const position: ParsedPosition = {
+              ticker: headerMatch ? headerMatch[1] : headerLine.split(/\s/)[0],
+              weight: headerMatch ? headerMatch[2].trim() : '',
+              pnl: headerMatch ? headerMatch[3].trim() : '',
+              verdict: '',
+              thesis: '',
+              keyRisk: '',
+              catalyst: '',
+              positionSize: '',
+              extra: [],
+            };
+
+            for (const line of lines.slice(1)) {
+              const clean = line.replace(/\*\*/g, '').trim();
+              if (/^VERDICT:/i.test(clean)) position.verdict = clean.replace(/^VERDICT:\s*/i, '');
+              else if (/^THESIS:/i.test(clean)) position.thesis = clean.replace(/^THESIS:\s*/i, '');
+              else if (/^KEY RISK:/i.test(clean)) position.keyRisk = clean.replace(/^KEY RISK:\s*/i, '');
+              else if (/^CATALYST:/i.test(clean)) position.catalyst = clean.replace(/^CATALYST:\s*/i, '');
+              else if (/^POSITION SIZE:/i.test(clean)) position.positionSize = clean.replace(/^POSITION SIZE:\s*/i, '');
+              else if (clean) position.extra.push(clean);
+            }
+            sections.positions.push(position);
+          }
+        } else if (/^OVERALL/i.test(part)) {
+          sections.overallAssessment = part.replace(/^OVERALL\s*ASSESSMENT\s*/i, '').trim();
+          const gradeMatch = part.match(/PORTFOLIO GRADE:\s*([A-F][+-]?)/i);
+          if (gradeMatch) sections.grade = gradeMatch[1];
+        } else if (/ACTION\s*ITEM/i.test(part)) {
+          sections.actionItems = part.split('\n').filter(l => l.trim() && !/^#|^ACTION\s*ITEM/i.test(l.trim())).map(l => l.replace(/^\d+[\.\)]\s*/, '').replace(/\*\*/g, '').trim());
+        } else if (/NEW\s*POSITION|ADD.*POSITION|SUGGESTED.*ADDITION/i.test(part)) {
+          sections.newPosition = part.replace(/^.*?\n/, '').trim();
+        } else {
+          const titleEnd = part.indexOf('\n');
+          if (titleEnd > 0) {
+            sections.otherSections.push({ title: part.slice(0, titleEnd).trim(), body: part.slice(titleEnd).trim() });
+          }
+        }
+      }
+
+      return sections.positions.length > 0 ? sections : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function getVerdictStyle(verdict: string) {
+    const v = verdict.toUpperCase();
+    if (v.includes('BUY MORE') || v.includes('STRONG BUY') || v === 'BUY') return { bg: '#059669', text: '#fff' };
+    if (v.includes('HOLD')) return { bg: '#475569', text: '#fff' };
+    if (v.includes('TRIM')) return { bg: '#d97706', text: '#000' };
+    if (v.includes('SELL')) return { bg: '#dc2626', text: '#fff' };
+    return { bg: '#475569', text: '#fff' };
+  }
+
+  function getGradeColor(grade: string) {
+    const g = grade.charAt(0).toUpperCase();
+    if (g === 'A') return '#34d399';
+    if (g === 'B') return '#60a5fa';
+    if (g === 'C') return '#fbbf24';
+    if (g === 'D') return '#fb923c';
+    if (g === 'F') return '#f87171';
+    return '#94a3b8';
+  }
+
+  function pnlIsPositive(pnl: string) {
+    return pnl.startsWith('+') || (!pnl.startsWith('-') && !pnl.includes('loss'));
+  }
+
+  function renderStyledReview(review: ParsedReview): ReactNode {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {review.positions.length > 0 && (
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>Individual Positions</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 10 }}>
+              {review.positions.map((pos, i) => {
+                const vs = getVerdictStyle(pos.verdict);
+                const pnlPositive = pnlIsPositive(pos.pnl);
+                return (
+                  <div key={i} style={{ background: '#1a1b2e', border: '1px solid #2a2b3e', borderRadius: 8, overflow: 'hidden' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderBottom: '1px solid #2a2b3e', background: '#14152a' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span style={{ fontSize: 16, fontWeight: 800, color: '#fff', letterSpacing: '0.02em' }}>{pos.ticker}</span>
+                        {pos.weight && <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500 }}>{pos.weight}</span>}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        {pos.pnl && <span style={{ fontSize: 12, fontWeight: 600, color: pnlPositive ? '#34d399' : '#f87171' }}>{pos.pnl}</span>}
+                        {pos.verdict && <span style={{ fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 4, background: vs.bg, color: vs.text, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{pos.verdict}</span>}
+                      </div>
+                    </div>
+                    <div style={{ padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {pos.thesis && (
+                        <div style={{ fontSize: 12, color: '#d1d5db', lineHeight: 1.6 }}>{pos.thesis}</div>
+                      )}
+                      {pos.keyRisk && (
+                        <div style={{ borderLeft: '3px solid #ef4444', paddingLeft: 10, fontSize: 12, color: '#fca5a5', lineHeight: 1.5 }}>
+                          <span style={{ fontWeight: 700, fontSize: 10, color: '#f87171', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Risk: </span>{pos.keyRisk}
+                        </div>
+                      )}
+                      {pos.catalyst && (
+                        <div style={{ borderLeft: '3px solid #10b981', paddingLeft: 10, fontSize: 12, color: '#6ee7b7', lineHeight: 1.5 }}>
+                          <span style={{ fontWeight: 700, fontSize: 10, color: '#34d399', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Catalyst: </span>{pos.catalyst}
+                        </div>
+                      )}
+                      {pos.positionSize && (
+                        <div style={{ borderLeft: '3px solid #3b82f6', paddingLeft: 10, fontSize: 12, color: '#93c5fd', lineHeight: 1.5 }}>
+                          <span style={{ fontWeight: 700, fontSize: 10, color: '#60a5fa', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Size: </span>{pos.positionSize}
+                        </div>
+                      )}
+                      {pos.extra.length > 0 && pos.extra.map((e, j) => (
+                        <div key={j} style={{ fontSize: 12, color: '#9ca3af', lineHeight: 1.5 }}>{e}</div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {review.overallAssessment && (
+          <div style={{ background: '#1a1b2e', border: '1px solid #2a2b3e', borderRadius: 8, padding: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Overall Assessment</span>
+              {review.grade && (
+                <span style={{ fontSize: 22, fontWeight: 900, color: getGradeColor(review.grade), textShadow: `0 0 20px ${getGradeColor(review.grade)}40` }}>{review.grade}</span>
+              )}
+            </div>
+            <div style={{ fontSize: 12, color: '#d1d5db', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+              {review.overallAssessment.split('\n').filter(l => l.trim()).map((line, i) => {
+                const clean = line.replace(/\*\*/g, '');
+                const isGrade = /PORTFOLIO GRADE:/i.test(clean);
+                if (isGrade) return null;
+                const isBullet = /^[-•*]/.test(clean.trim());
+                return (
+                  <div key={i} style={{ padding: isBullet ? '3px 0 3px 8px' : '3px 0', borderLeft: isBullet ? '2px solid #3b82f640' : 'none', marginBottom: 2, marginLeft: isBullet ? 4 : 0 }}>
+                    {clean.replace(/^[-•*]\s*/, '')}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {review.actionItems.length > 0 && (
+          <div style={{ background: '#1a1b2e', border: '1px solid #2a2b3e', borderRadius: 8, padding: 16 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>Action Items</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {review.actionItems.map((item, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '8px 12px', background: '#14152a', borderRadius: 6, border: '1px solid #2a2b3e' }}>
+                  <span style={{ fontSize: 13, fontWeight: 800, color: '#60a5fa', minWidth: 20, flexShrink: 0 }}>{i + 1}</span>
+                  <span style={{ fontSize: 12, color: '#d1d5db', lineHeight: 1.6 }}>{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {review.newPosition && (
+          <div style={{ background: 'linear-gradient(135deg, #1a2e1a, #1a1b2e)', border: '1px solid #22c55e30', borderRadius: 8, padding: 16 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#34d399', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Suggested New Position</div>
+            <div style={{ fontSize: 12, color: '#d1d5db', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{review.newPosition.replace(/\*\*/g, '')}</div>
+          </div>
+        )}
+
+        {review.otherSections.map((sec, i) => (
+          <div key={i} style={{ background: '#1a1b2e', border: '1px solid #2a2b3e', borderRadius: 8, padding: 16 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>{sec.title}</div>
+            <div style={{ fontSize: 12, color: '#d1d5db', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{sec.body.replace(/\*\*/g, '')}</div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   const daysUntil = (dateStr: string) => {
     const diff = Math.ceil((new Date(dateStr).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
     return diff;
@@ -464,26 +673,27 @@ export default function StocksPortfolioPage() {
           </div>
 
           {/* AI Review Result */}
-          {aiReview && (
-            <div style={{
-              background: "rgba(255,255,255,0.03)",
-              border: "1px solid rgba(255,255,255,0.08)",
-              borderRadius: "12px",
-              padding: "24px",
-              marginTop: "16px",
-              lineHeight: "1.7",
-              fontSize: "14px",
-              color: "#ccc",
-              whiteSpace: "pre-wrap",
-            }}>
-              <div className="flex items-center gap-2 mb-3">
-                <Bot className="w-5 h-5 text-purple-400" />
-                <h3 className="text-base font-semibold text-white">AI Portfolio Analysis</h3>
-                <button onClick={() => setAiReview(null)} className="ml-auto text-crypto-silver hover:text-white text-xs">Dismiss</button>
+          {aiReview && (() => {
+            const parsed = parsePortfolioReview(aiReview);
+            return (
+              <div style={{
+                background: "rgba(255,255,255,0.03)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                borderRadius: "12px",
+                padding: "20px",
+                marginTop: "16px",
+              }}>
+                <div className="flex items-center gap-2 mb-4">
+                  <Bot className="w-5 h-5 text-purple-400" />
+                  <h3 className="text-base font-semibold text-white">AI Portfolio Analysis</h3>
+                  <button onClick={() => setAiReview(null)} className="ml-auto text-crypto-silver hover:text-white text-xs">Dismiss</button>
+                </div>
+                {parsed ? renderStyledReview(parsed) : (
+                  <div style={{ lineHeight: 1.7, fontSize: 14, color: '#ccc', whiteSpace: 'pre-wrap' }} dangerouslySetInnerHTML={{ __html: formatAnalysis(aiReview) }} />
+                )}
               </div>
-              <div dangerouslySetInnerHTML={{ __html: formatAnalysis(aiReview) }} />
-            </div>
-          )}
+            );
+          })()}
 
           {/* Section 1: Portfolio Input */}
           <GlassCard className="p-3 sm:p-4">
