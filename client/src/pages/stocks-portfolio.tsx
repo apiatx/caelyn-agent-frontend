@@ -104,9 +104,14 @@ const COMMODITY_TV_SYMBOLS: Record<string, string> = {
 };
 
 const INDEX_TV_SYMBOLS: Record<string, string> = {
-  "SPX": "FOREXCOM:SPXUSD", "SPY": "AMEX:SPY", "DJI": "FOREXCOM:DJI",
-  "IXIC": "NASDAQ:IXIC", "NDX": "NASDAQ:NDX", "QQQ": "NASDAQ:QQQ",
-  "RUT": "FOREXCOM:RUTUSD", "VIX": "CBOE:VIX", "DXY": "INDEX:DXY", "TNX": "CBOE:TNX",
+  "VIX": "AMEX:VIXY", "SPX": "AMEX:SPY", "SPY": "AMEX:SPY", "DJI": "AMEX:DIA",
+  "IXIC": "NASDAQ:QQQ", "NDX": "NASDAQ:QQQ", "QQQ": "NASDAQ:QQQ",
+  "RUT": "AMEX:IWM", "DXY": "AMEX:UUP", "TNX": "AMEX:TLT",
+};
+
+const INDEX_ETF_LABELS: Record<string, string> = {
+  "VIX": "VIXY", "SPX": "SPY", "DJI": "DIA", "IXIC": "QQQ",
+  "NDX": "QQQ", "RUT": "IWM", "DXY": "UUP", "TNX": "TLT",
 };
 
 const CRYPTO_DISPLAY_NAMES: Record<string, string> = {
@@ -789,6 +794,9 @@ export default function StocksPortfolioPage() {
                                       title={`${h.ticker} chart`}
                                     />
                                   </div>
+                                  {h.assetType === 'index' && INDEX_ETF_LABELS[h.ticker.toUpperCase()] && (
+                                    <div className="text-[10px] text-crypto-silver/60 mt-1 px-1">Chart shows {INDEX_ETF_LABELS[h.ticker.toUpperCase()]} which tracks {h.ticker.toUpperCase()}</div>
+                                  )}
                                   <div className="flex flex-wrap gap-2.5 mt-3">
                                     {q?.changesPercentage != null && (
                                       <div className="bg-white/5 rounded-lg px-3 py-2">
