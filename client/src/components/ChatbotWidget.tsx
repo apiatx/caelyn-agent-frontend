@@ -299,7 +299,7 @@ export default function ChatbotWidget() {
     return (
       <button onClick={() => { setMode('small'); setHasUnread(false); }} style={{
         position: 'fixed', bottom: isMobile ? 16 : 24, right: isMobile ? 16 : 24, zIndex: 9999,
-        width: isMobile ? 48 : 56, height: isMobile ? 48 : 56, borderRadius: '50%',
+        width: isMobile ? 56 : 68, height: isMobile ? 56 : 68, borderRadius: '50%',
         background: `linear-gradient(135deg, ${C.card} 0%, #1a1d28 100%)`,
         border: `1px solid ${C.purple}40`,
         boxShadow: `0 4px 20px rgba(0,0,0,0.4), 0 0 20px ${C.purple}20`,
@@ -307,7 +307,7 @@ export default function ChatbotWidget() {
         transition: 'all 0.2s ease-out',
         opacity: isScrolling ? 0.7 : 1,
       }}>
-        <img src={cryptoHippoLogo} alt="Chat" style={{ width: isMobile ? 30 : 36, height: isMobile ? 30 : 36, borderRadius: '50%' }} />
+        <img src={cryptoHippoLogo} alt="Chat" style={{ width: isMobile ? 48 : 60, height: isMobile ? 48 : 60, borderRadius: '50%', objectFit: 'cover' }} />
         {hasUnread && <span style={{ position:'absolute', top:2, right:2, width:12, height:12, borderRadius:'50%', background:C.green, border:`2px solid ${C.bg}` }} />}
       </button>
     );
