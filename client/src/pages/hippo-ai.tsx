@@ -1,5 +1,31 @@
+import { useEffect, useRef } from "react";
 import TradingAgent from "@/components/TradingAgent";
 import TickerTapeWidget from "@/components/TickerTapeWidget";
+
+function BottomTickerTape() {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!ref.current) return;
+    const iframe = document.createElement("iframe");
+    iframe.style.width = "100%";
+    iframe.style.height = "100%";
+    iframe.style.border = "none";
+    iframe.setAttribute("sandbox", "allow-scripts allow-same-origin allow-popups");
+    ref.current.appendChild(iframe);
+    const doc = iframe.contentDocument;
+    if (doc) {
+      doc.open();
+      doc.write(`<!DOCTYPE html><html><head><style>body{margin:0;padding:0;overflow:hidden;background:transparent;}</style></head><body><script type="module" src="https://widgets.tradingview-widget.com/w/en/tv-ticker-tape.js"><\/script><tv-ticker-tape symbols='NASDAQ:NVDA,NASDAQ:MSFT,NASDAQ:GOOG,NASDAQ:AAPL,NASDAQ:META,NASDAQ:TSLA,NASDAQ:AMZN,NASDAQ:PLTR,NASDAQ:AMD,NASDAQ:MU,NASDAQ:AVGO,NYSE:ORCL,NYSE:TSM,NASDAQ:SNDK' hover-type="performance-grid" show-hover theme="dark" transparent></tv-ticker-tape></body></html>`);
+      doc.close();
+    }
+    return () => {
+      if (ref.current && iframe.parentNode === ref.current) {
+        ref.current.removeChild(iframe);
+      }
+    };
+  }, []);
+  return <div ref={ref} className="w-full h-full" />;
+}
 
 export default function HippoAIPage() {
   return (
@@ -38,7 +64,7 @@ export default function HippoAIPage() {
 
       <div className="relative z-50 w-full flex-shrink-0 overflow-hidden border-t border-white/5 backdrop-blur-lg" style={{ height: 78, background: 'rgba(5, 5, 16, 0.85)' }}>
         <div style={{ height: '110px' }}>
-          <TickerTapeWidget />
+          <BottomTickerTape />
         </div>
       </div>
     </div>
