@@ -433,7 +433,7 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
             ? `right-0 w-full transform transition-transform duration-300 ease-in-out ${
                 isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
               }` 
-            : `left-0 ${isCollapsed ? 'w-16' : 'w-48'}`
+            : `left-0 ${isCollapsed ? 'w-16' : 'w-40'}`
         } bg-black/95 backdrop-blur-lg border-r border-crypto-silver/20 ${
           isMobile ? 'z-50' : 'z-40'
         } ${!isMobile ? 'transition-all duration-300 ease-in-out' : ''} flex flex-col ${className}`}
@@ -459,7 +459,7 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
         )}
 
       {!isMobile && (
-      <div className="flex-shrink-0 border-b border-crypto-silver/20 flex items-center justify-center" style={{ height: isCollapsed ? 64 : 120, width: '100%' }}>
+      <div className="flex-shrink-0 border-b border-crypto-silver/20 flex items-center justify-center" style={{ aspectRatio:'1/1', width:'100%' }}>
         <div className={`rounded-full overflow-hidden shadow-lg ${isCollapsed ? 'w-14 h-14' : 'w-28 h-28'}`} style={{ transition: 'all 0.3s ease-in-out' }}>
           <img 
             src={caelynLogo}
