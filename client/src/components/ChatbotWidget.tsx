@@ -299,21 +299,26 @@ export default function ChatbotWidget() {
     return (
       <>
         <style>{`
-          @keyframes chatbot-shine {
-            0% { filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5)) drop-shadow(0 0 20px rgba(139,92,246,0.25)) brightness(1); }
-            15% { filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5)) drop-shadow(0 0 35px rgba(100,180,255,0.7)) brightness(1.4); }
-            30% { filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5)) drop-shadow(0 0 20px rgba(139,92,246,0.25)) brightness(1); }
-            100% { filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5)) drop-shadow(0 0 20px rgba(139,92,246,0.25)) brightness(1); }
+          @keyframes chatbot-entrance {
+            0% { transform: scale(1); opacity: 0.4; }
+            20% { transform: scale(1.25); opacity: 1; }
+            35% { transform: scale(0.95); opacity: 1; }
+            50% { transform: scale(1.15); opacity: 1; }
+            65% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+          }
+          .chatbot-btn-entrance {
+            animation: chatbot-entrance 1.5s ease-out 0.3s 1 both;
+          }
+          .chatbot-btn-entrance:hover {
+            transform: scale(1.1) !important;
           }
         `}</style>
-        <button onClick={() => { setMode('small'); setHasUnread(false); }} style={{
+        <button className="chatbot-btn-entrance" onClick={() => { setMode('small'); setHasUnread(false); }} style={{
           position: 'fixed', bottom: isMobile ? 16 : 24, right: isMobile ? 16 : 24, zIndex: 9999,
           width: isMobile ? 64 : 80, height: isMobile ? 64 : 80,
           background: 'none', border: 'none', padding: 0,
           cursor: 'pointer',
-          transition: 'transform 0.2s ease-out',
-          opacity: isScrolling ? 0.7 : 1,
-          animation: 'chatbot-shine 2s ease-in-out 0.5s 1',
           filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.5)) drop-shadow(0 0 20px rgba(139,92,246,0.25))',
         }}>
           <img src={cryptoHippoLogo} alt="Chat" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
