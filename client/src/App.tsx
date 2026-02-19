@@ -19,7 +19,7 @@ import DePINPage from "@/pages/depin";
 import P2EPage from "@/pages/p2e";
 import BNBPage from "@/pages/bnb";
 import SUIPage from "@/pages/sui";
-import HippoAIPage from "@/pages/hippo-ai";
+import CaelynAIPage from "@/pages/hippo-ai";
 import CryptoStocks from "@/pages/crypto-stocks";
 import StocksDashboardPage from "@/pages/stocks-dashboard";
 import StocksSectorsPage from "@/pages/stocks-sectors";
@@ -55,8 +55,8 @@ import NotFound from "@/pages/not-found";
 function Router() {
   return (
     <Switch>
-      <Route path="/"><Redirect to="/app/hippo-ai" /></Route>
-      <Route path="/app"><Redirect to="/app/hippo-ai" /></Route>
+      <Route path="/"><Redirect to="/app/caelyn-ai" /></Route>
+      <Route path="/app"><Redirect to="/app/caelyn-ai" /></Route>
       <Route path="/app/market-overview" component={Dashboard} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/app/charts/majors" component={TopChartsPage} />
@@ -114,7 +114,8 @@ function Router() {
       <Route path="/p2e" component={P2EPage} />
       <Route path="/app/rwa" component={RWAPage} />
       <Route path="/app/crypto-stocks" component={CryptoStocks} />
-      <Route path="/app/hippo-ai" component={HippoAIPage} />
+      <Route path="/app/caelyn-ai" component={CaelynAIPage} />
+      <Route path="/app/hippo-ai"><Redirect to="/app/caelyn-ai" /></Route>
       <Route path="/app/stocks" component={CryptoStocks} />
       <Route path="/app/stonks" component={CryptoStocks} />
       <Route path="/app/stocks/screening" component={StocksScreeningPage} />

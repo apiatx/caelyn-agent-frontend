@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Activity, BarChart3, TrendingUp, ChartLine, Brain, Zap, DollarSign, Building2, Layers, Coins, ChevronRight, ChevronDown, ChevronLeft, Wallet, Users, MessageSquare, Rocket, Globe, ArrowLeftRight, Search, Menu, X, Gamepad2, Gem } from "lucide-react";
 import { useLocation } from "wouter";
-import caelynLogo from "@assets/image_1771485211616.png";
+import caelynLogo from "@assets/image_1771528728963.png";
 
 interface SidebarNavigationProps {
   className?: string;
@@ -50,10 +50,10 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
 
   const navItems: NavItem[] = [
     {
-      id: 'hippo-ai',
-      label: 'HippoAI',
+      id: 'caelyn-ai',
+      label: 'CaelynAI',
       icon: <Brain className="w-4 h-4" />,
-      path: '/app/hippo-ai'
+      path: '/app/caelyn-ai'
     },
     {
       id: 'macro-dashboard',
