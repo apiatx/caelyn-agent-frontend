@@ -479,8 +479,8 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
       {/* Footer */}
       {(!isCollapsed || isMobile) && (
         <div className="flex-shrink-0 p-4 border-t border-crypto-silver/20">
-          <div className="text-xs text-gray-400 text-center">
-            © 2024 CryptoHippo
+          <div className="text-xs text-center" style={{ color: '#00d4ff' }}>
+            © 2026 CaelynAI
           </div>
         </div>
       )}
