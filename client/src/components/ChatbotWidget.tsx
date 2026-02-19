@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { useChatbot } from '@/contexts/ChatbotContext';
 import cryptoHippoLogo from '@assets/image_1771541162366.png';
+import caelynLogo from '@assets/image_1771543637939.png';
 
 const C = {
   bg: '#0b0c10', card: '#111318', border: '#1a1d25', text: '#c9cdd6', bright: '#e8eaef',
@@ -360,7 +361,7 @@ export default function ChatbotWidget() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <img src={cryptoHippoLogo} alt="" style={{ width: 24, height: 24, borderRadius: '50%' }} />
-          <span style={{ color: C.bright, fontSize: 13, fontWeight: 700, fontFamily: sansFont }}>TradeBlade AI</span>
+          <span style={{ color: C.bright, fontSize: 13, fontWeight: 700, fontFamily: sansFont }}>Ask Caelyn</span>
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
           {isExpanded && <button onClick={clearChat} style={{ padding:'4px 8px', background:'transparent', border:`1px solid ${C.border}`, borderRadius:4, color:C.dim, fontSize:10, cursor:'pointer', fontFamily:font }} onMouseEnter={e => e.currentTarget.style.color = C.bright} onMouseLeave={e => e.currentTarget.style.color = C.dim}>Clear</button>}
@@ -372,7 +373,7 @@ export default function ChatbotWidget() {
       <div style={{ flex: 1, overflowY: 'auto', padding: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
         {messages.length === 0 && !isLoading && (
           <div style={{ textAlign: 'center', padding: '40px 20px', color: C.dim }}>
-            <img src={cryptoHippoLogo} alt="" style={{ width: 48, height: 48, borderRadius: '50%', margin: '0 auto 12px', opacity: 0.6 }} />
+            <img src={caelynLogo} alt="" style={{ width: 120, height: 120, margin: '0 auto 16px', opacity: 0.85 }} />
             <div style={{ fontSize: 13, fontFamily: sansFont, marginBottom: 4 }}>Ask me anything about markets</div>
             <div style={{ fontSize: 10, fontFamily: font }}>Stocks, crypto, macro, sectors...</div>
           </div>
