@@ -413,7 +413,7 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
       {isMobile && (
         <div className="fixed top-0 left-0 right-0 z-50 lg:hidden flex items-center justify-between px-4 h-14 bg-black/95 backdrop-blur-lg border-b border-crypto-silver/20">
           <div className="flex items-center gap-3">
-            <img src={caelynLogo} alt="TradeBlade" className="w-8 h-8 rounded-full" />
+            <img src={caelynLogo} alt="CaelynAI" className="w-10 h-10 rounded-full" />
             <span style={{ fontSize:'0.9rem', fontWeight:800, letterSpacing:'0.1em', textTransform:'uppercase', background:'linear-gradient(135deg, #e8eaef 0%, #a78bfa 40%, #3b82f6 70%, #22c55e 100%)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', fontFamily:"'JetBrains Mono', 'SF Mono', 'Fira Code', monospace" }}>TradeBlade</span>
           </div>
           <button
@@ -460,7 +460,7 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
 
       {!isMobile && (
       <div className="flex-shrink-0 border-b border-crypto-silver/20 flex items-center justify-center" style={{ height: isCollapsed ? 64 : 120, width: '100%' }}>
-        <div className={`rounded-full overflow-hidden shadow-lg ${isCollapsed ? 'w-10 h-10' : 'w-20 h-20'}`} style={{ transition: 'all 0.3s ease-in-out' }}>
+        <div className={`rounded-full overflow-hidden shadow-lg ${isCollapsed ? 'w-12 h-12' : 'w-24 h-24'}`} style={{ transition: 'all 0.3s ease-in-out' }}>
           <img 
             src={caelynLogo}
             alt="TradeBlade"
