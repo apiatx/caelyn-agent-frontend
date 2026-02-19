@@ -145,6 +145,17 @@ const SHARES_LABEL: Record<string, string> = {
   stock: 'Shares', etf: 'Shares', index: 'Units', crypto: 'Amount', commodity: 'Units',
 };
 
+const INDEX_TO_ETF: Record<string, { etf: string; name: string; index: string }> = {
+  'SPX': { etf: 'SPY', name: 'SPDR S&P 500 ETF', index: 'S&P 500' },
+  'GSPC': { etf: 'SPY', name: 'SPDR S&P 500 ETF', index: 'S&P 500' },
+  'DJI': { etf: 'DIA', name: 'SPDR Dow Jones ETF', index: 'Dow Jones' },
+  'DJIA': { etf: 'DIA', name: 'SPDR Dow Jones ETF', index: 'Dow Jones' },
+  'IXIC': { etf: 'QQQ', name: 'Invesco QQQ Trust', index: 'NASDAQ Composite' },
+  'NDX': { etf: 'QQQ', name: 'Invesco QQQ Trust', index: 'NASDAQ 100' },
+  'RUT': { etf: 'IWM', name: 'iShares Russell 2000 ETF', index: 'Russell 2000' },
+  'VIX': { etf: 'UVXY', name: 'ProShares Ultra VIX Short-Term Futures ETF', index: 'VIX' },
+};
+
 type SortKey = 'ticker' | 'shares' | 'avgCost' | 'currentPrice' | 'dailyPL' | 'totalPL' | 'weight';
 
 export default function StocksPortfolioPage() {
@@ -728,6 +739,22 @@ export default function StocksPortfolioPage() {
                 Add
               </button>
             </div>
+            {newTicker.trim() && INDEX_TO_ETF[newTicker.trim()] && (
+              <div className="mt-2 flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-500/10 border border-blue-500/20 text-xs">
+                <span className="text-blue-300">
+                  {newTicker.trim() === 'VIX'
+                    ? <>VIX index data is available but limited. For active trading, consider <strong>{INDEX_TO_ETF[newTicker.trim()].etf}</strong> ({INDEX_TO_ETF[newTicker.trim()].name}) which has full price tracking and charts.</>
+                    : <><strong>{newTicker.trim()}</strong> is an index and can't be directly traded. Consider adding <strong>{INDEX_TO_ETF[newTicker.trim()].etf}</strong> ({INDEX_TO_ETF[newTicker.trim()].name}) instead for accurate price tracking.</>
+                  }
+                </span>
+                <button
+                  onClick={() => { setNewTicker(INDEX_TO_ETF[newTicker.trim()].etf); setSelectedAssetType('etf'); }}
+                  className="ml-auto flex-shrink-0 px-2.5 py-1 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 rounded text-blue-200 font-medium transition-all"
+                >
+                  Use {INDEX_TO_ETF[newTicker.trim()].etf}
+                </button>
+              </div>
+            )}
           </GlassCard>
 
           {/* Holdings Table */}
