@@ -22,5 +22,29 @@
     "avgCost": 9.6,
     "addedAt": "2026-02-19T20:00:13.048Z",
     "assetType": "stock"
+  },
+  {
+    "id": "mlty92mwrarq8",
+    "ticker": "VIX",
+    "shares": 100,
+    "avgCost": 19,
+    "addedAt": "2026-02-19T21:04:48.536Z",
+    "assetType": "index"
+  },
+  {
+    "id": "mlty9ole8lwu8",
+    "ticker": "BUZZ",
+    "shares": 100,
+    "avgCost": 30,
+    "addedAt": "2026-02-19T21:05:16.994Z",
+    "assetType": "etf"
+  },
+  {
+    "id": "mlty9uzhjwakz",
+    "ticker": "GOLD",
+    "shares": 100,
+    "avgCost": 3000,
+    "addedAt": "2026-02-19T21:05:25.277Z",
+    "assetType": "commodity"
   }
 ]

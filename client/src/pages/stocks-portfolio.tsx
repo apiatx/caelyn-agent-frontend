@@ -315,19 +315,21 @@ export default function StocksPortfolioPage() {
     else { setSortKey(key); setSortAsc(false); }
   };
 
+  const ASSET_COLORS: Record<string, string> = { Stocks: '#10b981', ETFs: '#3b82f6', Crypto: '#f59e0b', Commodities: '#ef4444', Indices: '#8b5cf6' };
   const sectorData = useMemo(() => {
-    const sectors: Record<string, number> = {};
+    const cats: Record<string, number> = {};
     enrichedHoldings.forEach(h => {
-      let sector = h.quote?.sector || '';
-      if (h.assetType === 'crypto' && (!sector || sector === 'Unknown')) sector = 'Crypto';
-      else if (h.assetType === 'commodity' && (!sector || sector === 'Unknown')) sector = 'Commodities';
-      else if (h.assetType === 'etf' && (!sector || sector === 'Unknown')) sector = 'ETFs';
-      else if (h.assetType === 'index' && (!sector || sector === 'Unknown')) sector = 'Indices';
-      else if (!sector || sector === 'Unknown') sector = 'Other';
-      sectors[sector] = (sectors[sector] || 0) + h.totalValue;
+      const t = (h.assetType || 'stock').toLowerCase();
+      let cat = 'Stocks';
+      if (t === 'etf') cat = 'ETFs';
+      else if (t === 'crypto' || t === 'cryptocurrency') cat = 'Crypto';
+      else if (t === 'commodity' || t === 'commodities') cat = 'Commodities';
+      else if (t === 'index' || t === 'indices') cat = 'Indices';
+      cats[cat] = (cats[cat] || 0) + h.totalValue;
     });
-    return Object.entries(sectors)
-      .map(([name, value]) => ({ name, value, pct: totalPortfolioValue > 0 ? ((value / totalPortfolioValue) * 100).toFixed(1) : '0' }))
+    return Object.entries(cats)
+      .filter(([, v]) => v > 0)
+      .map(([name, value]) => ({ name, value, pct: totalPortfolioValue > 0 ? ((value / totalPortfolioValue) * 100).toFixed(1) : '0', color: ASSET_COLORS[name] || '#64748b' }))
       .sort((a, b) => b.value - a.value);
   }, [enrichedHoldings, totalPortfolioValue]);
 
@@ -877,13 +879,13 @@ export default function StocksPortfolioPage() {
           {holdings.length > 0 && totalPortfolioValue > 0 && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <GlassCard className="p-3 sm:p-4">
-                <h3 className="text-sm font-semibold text-white mb-3">Sector Allocation</h3>
+                <h3 className="text-sm font-semibold text-white mb-3">Asset Allocation</h3>
                 <div className="h-[280px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie data={sectorData} cx="50%" cy="50%" innerRadius={55} outerRadius={95} paddingAngle={2} dataKey="value" nameKey="name" label={({ name, pct }) => `${name} ${pct}%`} labelLine={false}>
-                        {sectorData.map((entry, i) => (
-                          <Cell key={entry.name} fill={SECTOR_COLORS[entry.name] || PIE_COLORS[i % PIE_COLORS.length]} />
+                        {sectorData.map((entry) => (
+                          <Cell key={entry.name} fill={entry.color} />
                         ))}
                       </Pie>
                       <Tooltip formatter={(value: number) => fmt(value)} contentStyle={{ background: '#111318', border: '1px solid #1a1d25', borderRadius: 8, color: '#c9cdd6', fontSize: 12 }} />
