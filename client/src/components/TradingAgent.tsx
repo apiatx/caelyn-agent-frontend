@@ -1556,48 +1556,9 @@ export default function TradingAgent() {
     ),
   })).filter(group => group.buttons.length > 0);
 
-  const tickerTapeRef = useRef<HTMLDivElement>(null);
-  const tickerTapeLoaded = useRef(false);
-  useEffect(() => {
-    if (tickerTapeLoaded.current || !tickerTapeRef.current) return;
-    tickerTapeLoaded.current = true;
-    const container = tickerTapeRef.current;
-    const widgetDiv = document.createElement('div');
-    widgetDiv.className = 'tradingview-widget-container';
-    widgetDiv.innerHTML = '<div class="tradingview-widget-container__widget"></div>';
-    const s = document.createElement('script');
-    s.type = 'text/javascript';
-    s.src = 'https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js';
-    s.async = true;
-    s.textContent = JSON.stringify({
-      symbols: [
-        { proName: "FOREXCOM:SPXUSD", title: "S&P 500 Index" },
-        { proName: "FOREXCOM:NSXUSD", title: "US 100 Cash CFD" },
-        { proName: "FOREXCOM:DJI", title: "Dow Jones" },
-        { proName: "FX:EURUSD", title: "EUR to USD" },
-        { proName: "BITSTAMP:BTCUSD", title: "Bitcoin" },
-        { proName: "BITSTAMP:ETHUSD", title: "Ethereum" },
-        { proName: "CMCMARKETS:GOLD", title: "Gold" },
-        { proName: "TVC:SILVER", title: "Silver" },
-        { proName: "NASDAQ:NVDA", title: "NVDA" },
-        { proName: "NASDAQ:AAPL", title: "AAPL" },
-        { proName: "NASDAQ:GOOG", title: "GOOG" },
-        { proName: "NASDAQ:MSFT", title: "MSFT" },
-        { proName: "NASDAQ:AMZN", title: "AMZN" }
-      ],
-      showSymbolLogo: false,
-      isTransparent: true,
-      displayMode: "compact",
-      colorTheme: "dark",
-      locale: "en"
-    });
-    widgetDiv.appendChild(s);
-    container.appendChild(widgetDiv);
-    return () => {};
-  }, []);
 
   return (
-    <div style={{ display:'flex', flexDirection:'column', height:'100%', background:C.bg, fontFamily:sansFont, overflow:'hidden', flex:'1 1 auto', minHeight:0 }}>
+    <div style={{ display:'flex', flexDirection:'column', height:'100%', background:'transparent', fontFamily:sansFont, overflow:'hidden', flex:'1 1 auto', minHeight:0 }}>
       <style>{`
         @keyframes agent-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         @keyframes agent-progress { 0% { width: 0%; } 50% { width: 70%; } 100% { width: 100%; } }
@@ -1618,7 +1579,7 @@ export default function TradingAgent() {
       `}</style>
 
       {/* TOP COMMAND BAR */}
-      <div style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 10px', background:C.card, borderBottom:`1px solid ${C.border}`, flexShrink:0, position:'sticky', top:0, zIndex:50 }}>
+      <div style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 10px', background:'rgba(15,15,30,0.6)', borderBottom:'1px solid rgba(255,255,255,0.06)', flexShrink:0, position:'sticky', top:0, zIndex:50, backdropFilter:'blur(12px)' }}>
         <button className="mobile-toggle" onClick={() => setLeftRailOpen(!leftRailOpen)} style={{ display:'none', alignItems:'center', justifyContent:'center', width:28, height:28, background:'transparent', border:`1px solid ${C.border}`, borderRadius:3, color:C.dim, cursor:'pointer', fontSize:14, fontFamily:font }}>☰</button>
 
         <div style={{ position:'relative', flex:1 }}>
@@ -1660,7 +1621,7 @@ export default function TradingAgent() {
       {/* MAIN BODY */}
       <div style={{ display:'flex', flex:1, overflow:'hidden' }}>
         {/* LEFT RAIL */}
-        <div className={`left-rail ${leftRailOpen ? 'mobile-open' : ''}`} style={{ width:220, flexShrink:0, display:'flex', flexDirection:'column', background:C.card, borderRight:`1px solid ${C.border}`, overflow:'hidden' }}>
+        <div className={`left-rail ${leftRailOpen ? 'mobile-open' : ''}`} style={{ width:220, flexShrink:0, display:'flex', flexDirection:'column', background:'rgba(15,15,30,0.5)', borderRight:'1px solid rgba(255,255,255,0.06)', overflow:'hidden', backdropFilter:'blur(12px)' }}>
           <div style={{ padding:'8px 8px 4px' }}>
             <input
               value={leftRailSearch}
@@ -1748,7 +1709,7 @@ export default function TradingAgent() {
         </div>
 
         {/* RIGHT SIDEBAR */}
-        <div className={`right-sidebar ${rightSidebarOpen ? 'mobile-open' : ''}`} style={{ width:240, flexShrink:0, display:'flex', flexDirection:'column', background:C.card, borderLeft:`1px solid ${C.border}`, overflow:'hidden' }}>
+        <div className={`right-sidebar ${rightSidebarOpen ? 'mobile-open' : ''}`} style={{ width:240, flexShrink:0, display:'flex', flexDirection:'column', background:'rgba(15,15,30,0.5)', borderLeft:'1px solid rgba(255,255,255,0.06)', overflow:'hidden', backdropFilter:'blur(12px)' }}>
           <div style={{ flex:1, overflowY:'auto', padding:8 }}>
             {/* Screener */}
             <div style={{ marginBottom:12 }}>
@@ -1822,8 +1783,6 @@ export default function TradingAgent() {
         </div>
       </div>
 
-      {/* BOTTOM TICKER TAPE */}
-      <div ref={tickerTapeRef} style={{ flexShrink:0, borderTop:`1px solid ${C.border}` }} />
     </div>
   );
 }

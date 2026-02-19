@@ -32,30 +32,13 @@ export default function HippoAIPage() {
         </div>
       </div>
 
-      <div className="relative z-10" style={{ flex: '1 1 auto', minHeight: 0, padding: '0 16px 16px 16px' }}>
-        <div className="relative rounded-2xl overflow-hidden" style={{
-          height: '100%',
-          width: '100%',
-          background: 'linear-gradient(135deg, rgba(20, 20, 40, 0.8) 0%, rgba(15, 15, 35, 0.9) 50%, rgba(20, 20, 40, 0.8) 100%)',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
-          backdropFilter: 'blur(20px)',
-          boxShadow: '0 0 60px rgba(80, 40, 160, 0.15), 0 0 120px rgba(40, 60, 180, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
-          display: 'flex',
-          flexDirection: 'column'
-        }}>
-          <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{
-            backgroundImage: `
-              linear-gradient(rgba(100, 180, 255, 0.5) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(100, 180, 255, 0.5) 1px, transparent 1px)
-            `,
-            backgroundSize: '40px 40px'
-          }} />
-          <div className="absolute top-0 left-0 right-0 h-[1px]" style={{
-            background: 'linear-gradient(90deg, transparent 0%, rgba(120, 80, 255, 0.4) 30%, rgba(80, 180, 255, 0.4) 70%, transparent 100%)'
-          }} />
-          <div className="relative z-10 p-4 lg:p-6" style={{ flex: '1 1 auto', minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-            <TradingAgent />
-          </div>
+      <div className="relative z-10" style={{ flex: '1 1 auto', minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <TradingAgent />
+      </div>
+
+      <div className="relative z-50 w-full flex-shrink-0 overflow-hidden border-t border-white/5 backdrop-blur-lg" style={{ height: 78, background: 'rgba(5, 5, 16, 0.85)' }}>
+        <div style={{ height: '110px' }}>
+          <TickerTapeWidget />
         </div>
       </div>
     </div>
