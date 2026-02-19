@@ -672,7 +672,7 @@ export default function TradingAgent() {
               <div style={{ padding:'8px 6px', color: parseFloat(row.rsi||'50') < 35 ? C.green : parseFloat(row.rsi||'50') > 70 ? C.red : C.text, fontSize:11, fontWeight:600, fontFamily:font }}>{row.rsi ?? '—'}</div>
               <div style={{ padding:'8px 6px', color:C.text, fontSize:11, fontFamily:font }}>{row.volume ?? '—'}</div>
               <div style={{ padding:'8px 6px', color: row.analyst_rating?.toLowerCase().includes('buy') ? C.green : row.analyst_rating?.toLowerCase().includes('sell') ? C.red : C.text, fontSize:10, fontWeight:600, fontFamily:font }}>{row.analyst_rating ?? '—'}</div>
-              <div style={{ padding:'8px 6px', color:changeColor(row.upside), fontSize:11, fontWeight:600, fontFamily:font }}>{row.upside ?? '—'}</div>
+              <div style={{ padding:'8px 6px', color:changeColor(row.upside), fontSize:11, fontWeight:600, fontFamily:font, display:'flex', alignItems:'center', gap:4 }}>{row.upside ?? '—'}{row.insider?.form4_recent && <span style={{ padding:'1px 5px', borderRadius:3, fontSize:8, fontWeight:700, fontFamily:font, color:C.gold, background:`${C.gold}12`, border:`1px solid ${C.gold}20` }} title={row.insider?.form4_latest_date || ''}>Form 4</span>}{row.catalyst?.recent_8k && <span style={{ padding:'1px 5px', borderRadius:3, fontSize:8, fontWeight:700, fontFamily:font, color:C.purple, background:`${C.purple}12`, border:`1px solid ${C.purple}20` }} title={row.catalyst?.latest_8k_date || ''}>8-K</span>}</div>
             </div>
             {isExp && <div style={{ padding:14, background:`${C.card}`, borderBottom:`1px solid ${C.border}` }}>
               <TradingViewMini ticker={row.ticker} />
