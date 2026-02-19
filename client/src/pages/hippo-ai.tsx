@@ -1,10 +1,9 @@
-import cryptoHippoLogo from "@assets/image_1771175798315.png";
 import TradingAgent from "@/components/TradingAgent";
 import TickerTapeWidget from "@/components/TickerTapeWidget";
 
 export default function HippoAIPage() {
   return (
-    <div className="min-h-screen text-white relative overflow-hidden">
+    <div className="text-white" style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <div className="fixed inset-0 z-0" style={{
         background: `
           radial-gradient(ellipse 80% 60% at 20% 30%, rgba(120, 40, 200, 0.35) 0%, transparent 60%),
@@ -27,51 +26,38 @@ export default function HippoAIPage() {
         backgroundSize: '200px 200px'
       }} />
 
-      <div className="sticky top-0 z-50 w-full h-[78px] overflow-hidden border-b border-white/5 backdrop-blur-lg" style={{ background: 'rgba(5, 5, 16, 0.85)' }}>
+      <div className="relative z-50 w-full flex-shrink-0 overflow-hidden border-b border-white/5 backdrop-blur-lg" style={{ height: 78, background: 'rgba(5, 5, 16, 0.85)' }}>
         <div style={{ height: '110px' }}>
           <TickerTapeWidget />
         </div>
       </div>
 
-      <main className="relative z-10 flex-1 flex items-center justify-center px-2 sm:px-3 py-4" style={{ minHeight: 'calc(100vh - 78px)' }}>
-        <div className="w-full max-w-[1000px] mx-auto" style={{ marginTop: '-20px' }}>
-          <div className="text-center mb-5" style={{ paddingTop: '20px' }}>
-            <img 
-              src={cryptoHippoLogo}
-              alt="HippoAI Mascot"
-              className="w-32 h-32 sm:w-36 sm:h-36 mx-auto mb-3 drop-shadow-[0_0_30px_rgba(120,80,255,0.5)]"
-            />
-            <h2 className="text-4xl sm:text-5xl font-bold mb-3" style={{
-              background: 'linear-gradient(135deg, #c0c0c0 0%, #ffffff 25%, #e0d0ff 50%, #ffffff 75%, #c0c0c0 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              letterSpacing: '0.02em'
-            }}>HippoAI</h2>
-            <p className="text-base sm:text-lg text-white/60 font-light tracking-wide">Your AI-powered trading assistant</p>
-          </div>
-
-          <div className="relative rounded-2xl overflow-hidden" style={{
-            background: 'linear-gradient(135deg, rgba(20, 20, 40, 0.8) 0%, rgba(15, 15, 35, 0.9) 50%, rgba(20, 20, 40, 0.8) 100%)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            backdropFilter: 'blur(20px)',
-            boxShadow: '0 0 60px rgba(80, 40, 160, 0.15), 0 0 120px rgba(40, 60, 180, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
-          }}>
-            <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{
-              backgroundImage: `
-                linear-gradient(rgba(100, 180, 255, 0.5) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(100, 180, 255, 0.5) 1px, transparent 1px)
-              `,
-              backgroundSize: '40px 40px'
-            }} />
-            <div className="absolute top-0 left-0 right-0 h-[1px]" style={{
-              background: 'linear-gradient(90deg, transparent 0%, rgba(120, 80, 255, 0.4) 30%, rgba(80, 180, 255, 0.4) 70%, transparent 100%)'
-            }} />
-            <div className="relative z-10 p-6 lg:p-8">
-              <TradingAgent />
-            </div>
+      <div className="relative z-10" style={{ flex: '1 1 auto', minHeight: 0, padding: '0 16px 16px 16px' }}>
+        <div className="relative rounded-2xl overflow-hidden" style={{
+          height: '100%',
+          width: '100%',
+          background: 'linear-gradient(135deg, rgba(20, 20, 40, 0.8) 0%, rgba(15, 15, 35, 0.9) 50%, rgba(20, 20, 40, 0.8) 100%)',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          backdropFilter: 'blur(20px)',
+          boxShadow: '0 0 60px rgba(80, 40, 160, 0.15), 0 0 120px rgba(40, 60, 180, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
+          display: 'flex',
+          flexDirection: 'column'
+        }}>
+          <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{
+            backgroundImage: `
+              linear-gradient(rgba(100, 180, 255, 0.5) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(100, 180, 255, 0.5) 1px, transparent 1px)
+            `,
+            backgroundSize: '40px 40px'
+          }} />
+          <div className="absolute top-0 left-0 right-0 h-[1px]" style={{
+            background: 'linear-gradient(90deg, transparent 0%, rgba(120, 80, 255, 0.4) 30%, rgba(80, 180, 255, 0.4) 70%, transparent 100%)'
+          }} />
+          <div className="relative z-10 p-4 lg:p-6" style={{ flex: '1 1 auto', minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <TradingAgent />
           </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

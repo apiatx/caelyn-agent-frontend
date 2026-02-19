@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import cryptoHippoLogo from "@assets/image_1771175798315.png";
 
 const AGENT_BACKEND_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
 const AGENT_API_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
@@ -1596,7 +1597,7 @@ export default function TradingAgent() {
   }, []);
 
   return (
-    <div style={{ display:'flex', flexDirection:'column', height:'100vh', background:C.bg, fontFamily:sansFont, overflow:'hidden' }}>
+    <div style={{ display:'flex', flexDirection:'column', height:'100%', background:C.bg, fontFamily:sansFont, overflow:'hidden', flex:'1 1 auto', minHeight:0 }}>
       <style>{`
         @keyframes agent-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         @keyframes agent-progress { 0% { width: 0%; } 50% { width: 70%; } 100% { width: 100%; } }
@@ -1708,12 +1709,10 @@ export default function TradingAgent() {
             )}
 
             {panels.length === 0 && !loading && (
-              <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', height:'100%', minHeight:300, color:C.dim }}>
-                <div style={{ fontSize:32, marginBottom:16 }}>⚡</div>
-                <div style={{ color:C.bright, fontSize:18, fontWeight:700, fontFamily:sansFont, marginBottom:8 }}>HippoAI Terminal</div>
-                <div style={{ color:C.dim, fontSize:12, fontFamily:font, marginBottom:20, textAlign:'center', maxWidth:400, lineHeight:1.6 }}>
-                  Type a query in the command bar, use /commands, or select a scan from the left rail to begin analysis.
-                </div>
+              <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', height:'100%', minHeight:200, color:C.dim }}>
+                <img src={cryptoHippoLogo} alt="HippoAI" style={{ width:96, height:96, marginBottom:12, filter:'drop-shadow(0 0 24px rgba(120,80,255,0.45))' }} />
+                <div style={{ fontSize:28, fontWeight:800, marginBottom:6, letterSpacing:'0.02em', background:'linear-gradient(135deg, #c0c0c0 0%, #ffffff 25%, #e0d0ff 50%, #ffffff 75%, #c0c0c0 100%)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', fontFamily:sansFont }}>HippoAI</div>
+                <div style={{ color:'rgba(255,255,255,0.5)', fontSize:13, fontWeight:300, letterSpacing:'0.04em', marginBottom:20, fontFamily:sansFont }}>Your AI-powered trading assistant</div>
                 <div style={{ display:'flex', gap:8, flexWrap:'wrap', justifyContent:'center' }}>
                   {[
                     { l: '/briefing', intent: 'daily_briefing' },
