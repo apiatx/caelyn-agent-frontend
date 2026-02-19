@@ -1,10 +1,26 @@
 [
   {
+    "id": "mlr2zp9mlz8kv",
+    "ticker": "ATOM",
+    "shares": 341,
+    "avgCost": 5.8,
+    "addedAt": "2026-02-17T20:54:10.858Z",
+    "assetType": "stock"
+  },
+  {
     "id": "mltv97dtmiczq",
     "ticker": "NVDA",
     "shares": 10,
     "avgCost": 300,
     "addedAt": "2026-02-19T19:40:55.841Z",
+    "assetType": "stock"
+  },
+  {
+    "id": "mltvy0agfzc68",
+    "ticker": "OSS",
+    "shares": 60,
+    "avgCost": 9.6,
+    "addedAt": "2026-02-19T20:00:13.048Z",
     "assetType": "stock"
   },
   {
@@ -24,27 +40,11 @@
     "assetType": "etf"
   },
   {
-    "id": "mltyd4z30klfy",
+    "id": "mlty9uzhjwakz",
     "ticker": "GOLD",
-    "shares": 10,
-    "avgCost": 3500,
-    "addedAt": "2026-02-19T21:07:58.191Z",
+    "shares": 100,
+    "avgCost": 3000,
+    "addedAt": "2026-02-19T21:05:25.277Z",
     "assetType": "commodity"
-  },
-  {
-    "id": "mltydicxcble2",
-    "ticker": "BTC",
-    "shares": 0.1,
-    "avgCost": 60000,
-    "addedAt": "2026-02-19T21:08:15.537Z",
-    "assetType": "crypto"
-  },
-  {
-    "id": "mltyey63rmmiq",
-    "ticker": "SPX",
-    "shares": 1,
-    "avgCost": 5000,
-    "addedAt": "2026-02-19T21:09:22.683Z",
-    "assetType": "index"
   }
 ]

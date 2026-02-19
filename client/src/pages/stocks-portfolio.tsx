@@ -104,9 +104,9 @@ const COMMODITY_TV_SYMBOLS: Record<string, string> = {
 };
 
 const INDEX_TV_SYMBOLS: Record<string, string> = {
-  "SPX": "SP:SPX", "SPY": "AMEX:SPY", "DJI": "TVC:DJI",
-  "IXIC": "NASDAQ:IXIC", "NDX": "NASDAQ:NDX", "QQQ": "NASDAQ:QQQ",
-  "RUT": "TVC:RUT", "VIX": "TVC:VIX", "DXY": "TVC:DXY", "TNX": "TVC:TNX",
+  "SPX": "FOREXCOM:SPX500", "SPY": "AMEX:SPY", "DJI": "FOREXCOM:DJI",
+  "IXIC": "FOREXCOM:USNAS100", "NDX": "FOREXCOM:USNAS100", "QQQ": "NASDAQ:QQQ",
+  "RUT": "TVC:RUT", "VIX": "TVC:VIX", "DXY": "TVC:DXY",
 };
 
 const CRYPTO_DISPLAY_NAMES: Record<string, string> = {
@@ -121,10 +121,9 @@ const CRYPTO_DISPLAY_NAMES: Record<string, string> = {
 };
 
 function getTradingViewSymbol(ticker: string, assetType?: string): string {
-  const t = ticker.toUpperCase();
-  if (assetType === 'crypto') return CRYPTO_TV_SYMBOLS[t] || `BINANCE:${t}USDT`;
-  if (assetType === 'commodity') return COMMODITY_TV_SYMBOLS[t] || ticker;
-  if (assetType === 'index') return INDEX_TV_SYMBOLS[t] || `TVC:${t}`;
+  if (assetType === 'crypto') return CRYPTO_TV_SYMBOLS[ticker] || `CRYPTO:${ticker}USD`;
+  if (assetType === 'commodity') return COMMODITY_TV_SYMBOLS[ticker] || ticker;
+  if (assetType === 'index') return INDEX_TV_SYMBOLS[ticker] || ticker;
   return ticker;
 }
 
