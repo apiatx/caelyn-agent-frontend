@@ -121,10 +121,13 @@ const CRYPTO_DISPLAY_NAMES: Record<string, string> = {
 };
 
 function getTradingViewSymbol(ticker: string, assetType?: string): string {
-  if (assetType === 'crypto') return CRYPTO_TV_SYMBOLS[ticker] || `CRYPTO:${ticker}USD`;
-  if (assetType === 'commodity') return COMMODITY_TV_SYMBOLS[ticker] || ticker;
-  if (assetType === 'index') return INDEX_TV_SYMBOLS[ticker] || ticker;
-  return ticker;
+  const t = (ticker || '').toUpperCase();
+  const type = (assetType || 'stock').toLowerCase();
+  if (type === 'crypto' || type === 'cryptocurrency') return CRYPTO_TV_SYMBOLS[t] || `BINANCE:${t}USDT`;
+  if (type === 'commodity' || type === 'commodities') return COMMODITY_TV_SYMBOLS[t] || t;
+  if (type === 'index' || type === 'indices') return INDEX_TV_SYMBOLS[t] || `TVC:${t}`;
+  if (INDEX_TV_SYMBOLS[t]) return INDEX_TV_SYMBOLS[t];
+  return t;
 }
 
 function getDisplayName(ticker: string, assetType: string | undefined, quoteName?: string): string {
