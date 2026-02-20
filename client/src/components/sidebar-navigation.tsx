@@ -433,7 +433,7 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
             ? `right-0 w-full transform transition-transform duration-300 ease-in-out ${
                 isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
               }` 
-            : `left-0 ${isCollapsed ? 'w-16' : 'w-40'}`
+            : `left-0 ${isCollapsed ? 'w-16' : 'w-48'}`
         } bg-black/95 backdrop-blur-lg border-r border-crypto-silver/20 ${
           isMobile ? 'z-50' : 'z-40'
         } ${!isMobile ? 'transition-all duration-300 ease-in-out' : ''} flex flex-col ${className}`}
