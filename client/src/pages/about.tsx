@@ -126,7 +126,7 @@ export default function AboutPage() {
 
         {/* IMAGE BETWEEN SECTIONS */}
         <div style={{ display: 'flex', justifyContent: 'center', padding: '1rem 0' }}>
-          <img src={caelynFairy1} alt="CaelynAI" style={{ width: 280, height: 280, borderRadius: '50%', objectFit: 'cover' }} />
+          <img src={caelynFairy3} alt="CaelynAI" style={{ width: 280, height: 280, borderRadius: '50%', objectFit: 'cover' }} />
         </div>
 
         {/* VS ALTERNATIVES */}
@@ -184,7 +184,7 @@ export default function AboutPage() {
 
         {/* IMAGE BETWEEN SECTIONS */}
         <div style={{ display: 'flex', justifyContent: 'center', padding: '1rem 0' }}>
-          <img src={caelynFairy3} alt="CaelynAI" style={{ width: 280, height: 280, borderRadius: '50%', objectFit: 'cover' }} />
+          <img src={caelynFairy2} alt="CaelynAI" style={{ width: 280, height: 280, borderRadius: 16, objectFit: 'cover' }} />
         </div>
 
         {/* CAPABILITIES */}
