@@ -55,7 +55,7 @@ export default function AboutPage() {
 
         {/* CAELYN.AI LOGO IMAGE */}
         <div style={{ display: 'flex', justifyContent: 'center', padding: '1rem 0' }}>
-          <div style={{ maxWidth: 480, width: '90%', WebkitMaskImage: 'radial-gradient(ellipse 90% 80% at center, black 40%, transparent 100%)', maskImage: 'radial-gradient(ellipse 90% 80% at center, black 40%, transparent 100%)' }}>
+          <div style={{ maxWidth: 360, width: '80%', WebkitMaskImage: 'radial-gradient(ellipse 90% 80% at center, black 40%, transparent 100%)', maskImage: 'radial-gradient(ellipse 90% 80% at center, black 40%, transparent 100%)' }}>
             <img src={caelynLogo} alt="CaelynAI" style={{ width: '100%', height: 'auto', display: 'block' }} />
           </div>
         </div>
@@ -86,7 +86,7 @@ export default function AboutPage() {
             <DataCell label="Equities" value={<>Large, mid, small, and <span className="ice">micro-cap</span> stocks. Screeners for oversold bounces, value-momentum, insider breakouts, high-growth small caps, dividend value, and short squeezes.</>} />
             <DataCell label="Crypto" value={<>Top 500 coins via CoinGecko and CMC. <span className="ice">HyperLiquid perps</span> with real-time funding rates, squeeze candidates, and open interest. altFINS technical analysis across 2,000+ tokens. Grok-powered X sentiment.</>} />
             <DataCell label="Commodities" value="Gold, oil, silver, copper, natural gas, uranium. Tracked through ETF proxies with the same TA and macro overlay applied to equities." />
-            <DataCell label="Macro" value={<>Fed rate trajectory, CPI, PCE, GDP, unemployment, yield curve, VIX, DXY, and <span className="ice">Fear &amp; Greed</span> — woven into every single recommendation as the decision lens.</>} />
+            <DataCell label="Macro" value={<>Fed rate trajectory, CPI, PCE, GDP, unemployment, yield curve, VIX, DXY, and <span className="ice">Fear &amp; Greed</span> — woven into every single recommendation as the decision lens.</>} fullWidth />
           </DataGrid>
         </Section>
 
@@ -210,6 +210,13 @@ export default function AboutPage() {
           </p>
         </Section>
 
+        {/* BOTTOM CAELYN.AI LOGO IMAGE */}
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '1rem 0' }}>
+          <div style={{ maxWidth: 360, width: '80%', WebkitMaskImage: 'radial-gradient(ellipse 90% 80% at center, black 40%, transparent 100%)', maskImage: 'radial-gradient(ellipse 90% 80% at center, black 40%, transparent 100%)' }}>
+            <img src={caelynLogo} alt="CaelynAI" style={{ width: '100%', height: 'auto', display: 'block' }} />
+          </div>
+        </div>
+
         {/* FOOTER */}
         <footer style={{ borderTop: '1px solid #1e2148', padding: '3rem', textAlign: 'center', color: '#64748b', fontSize: '0.85rem' }}>
           <p><span style={{ background: 'linear-gradient(135deg, #6366f1, #3b82f6, #06b6d4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontWeight: 600 }}>CaelynAI</span> — Signal over noise.</p>
@@ -242,9 +249,9 @@ function DataGrid({ children }: { children: React.ReactNode }) {
   );
 }
 
-function DataCell({ label, value }: { label: string; value: React.ReactNode }) {
+function DataCell({ label, value, fullWidth }: { label: string; value: React.ReactNode; fullWidth?: boolean }) {
   return (
-    <div className="data-cell" style={{ background: '#111228', padding: '1.5rem', transition: 'background 0.2s' }}>
+    <div className="data-cell" style={{ background: '#111228', padding: '1.5rem', transition: 'background 0.2s', ...(fullWidth ? { gridColumn: '1 / -1' } : {}) }}>
       <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.7rem', fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#64748b', marginBottom: '0.5rem' }}>{label}</div>
       <div style={{ fontSize: '1.1rem', fontWeight: 600, color: '#e2e8f0', lineHeight: 1.4 }}>{value}</div>
     </div>
