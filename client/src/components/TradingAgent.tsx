@@ -1079,6 +1079,87 @@ export default function TradingAgent() {
         </div>}
       </div>}
 
+      {xSentiment && <div style={{ marginBottom:10 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:12 }}>
+          <span style={{ color:C.bright, fontSize:13, fontWeight:700, fontFamily:sansFont }}>𝕏 Sentiment — Powered by Grok</span>
+          {xSentiment.market_mood && (() => {
+            const m = (xSentiment.market_mood || '').toLowerCase();
+            const moodColor = m.includes('euphoric') ? '#4ade80' : m.includes('risk-on') ? C.green : m.includes('fearful') ? '#ff4444' : m.includes('risk-off') ? C.red : C.dim;
+            return <Badge color={moodColor}>{xSentiment.market_mood}</Badge>;
+          })()}
+        </div>
+
+        {xSentiment.btc_sentiment && (() => {
+          const bs = xSentiment.btc_sentiment;
+          const sent = (bs.sentiment || bs.direction || '').toLowerCase();
+          const sentColor = sent.includes('bullish') ? C.green : sent.includes('bearish') ? C.red : C.dim;
+          const bgTint = sent.includes('bullish') ? `${C.green}08` : sent.includes('bearish') ? `${C.red}08` : `${C.dim}08`;
+          return <div style={{ background:bgTint, border:`1px solid ${sentColor}20`, borderLeft:`3px solid ${sentColor}`, borderRadius:10, padding:'14px 18px', marginBottom:12 }}>
+            <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:6 }}>
+              <span style={{ color:'#f7931a', fontWeight:800, fontSize:15, fontFamily:font }}>BTC</span>
+              <Badge color={sentColor}>{bs.sentiment || bs.direction || 'N/A'}</Badge>
+              {bs.score != null && <span style={{ color:C.dim, fontSize:11, fontFamily:font }}>Score: <span style={{ color:sentColor, fontWeight:700 }}>{bs.score}</span></span>}
+            </div>
+            {(bs.key_narrative || bs.narrative) && <div style={{ color:C.text, fontSize:12, fontFamily:sansFont, lineHeight:1.6 }}>{bs.key_narrative || bs.narrative}</div>}
+          </div>;
+        })()}
+
+        {socialMovers.length > 0 && <div style={{ marginBottom:12 }}>
+          <div style={{ color:C.bright, fontSize:11, fontWeight:700, fontFamily:font, textTransform:'uppercase', marginBottom:8 }}>Top Social Movers</div>
+          <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+            {socialMovers.slice(0, 8).map((sm: any, i: number) => {
+              const vel = (sm.social_velocity || sm.velocity || '').toLowerCase();
+              const velColor = vel.includes('exploding') ? '#ff4444' : vel.includes('surging') ? '#f97316' : vel.includes('rising') ? C.gold : C.dim;
+              const sentL = (sm.sentiment || '').toLowerCase();
+              const smSentColor = sentL.includes('bullish') ? C.green : sentL.includes('bearish') ? C.red : C.dim;
+              return <div key={i} style={{ background:C.card, border:`1px solid ${C.border}`, borderLeft:`3px solid ${velColor}`, borderRadius:8, padding:'12px 16px' }}>
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:4 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                    <span style={{ color:C.bright, fontWeight:800, fontSize:14, fontFamily:font }}>{sm.symbol || sm.coin || sm.ticker}</span>
+                    <Badge color={velColor}>{sm.social_velocity || sm.velocity || 'active'}</Badge>
+                    <Badge color={smSentColor}>{sm.sentiment || 'mixed'}</Badge>
+                  </div>
+                </div>
+                {(sm.why_trending || sm.reason) && <div style={{ color:C.text, fontSize:11, fontFamily:sansFont, lineHeight:1.5, marginBottom:4 }}>{sm.why_trending || sm.reason}</div>}
+                {sm.catalyst && <div style={{ color:C.gold, fontSize:10, fontFamily:sansFont }}>Catalyst: {sm.catalyst}</div>}
+              </div>;
+            })}
+          </div>
+        </div>}
+
+        {narrativeHeat.length > 0 && <div style={{ marginBottom:12 }}>
+          <div style={{ color:C.bright, fontSize:11, fontWeight:700, fontFamily:font, textTransform:'uppercase', marginBottom:8 }}>Narrative Heat</div>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(200px, 1fr))', gap:10 }}>
+            {narrativeHeat.map((nh: any, i: number) => {
+              const buzz = (nh.buzz_level || nh.heat || '').toLowerCase();
+              const heatColor = buzz.includes('hot') || buzz.includes('high') ? '#f97316' : buzz.includes('warm') || buzz.includes('medium') ? C.gold : '#38bdf8';
+              return <div key={i} style={{ background:C.card, border:`1px solid ${heatColor}25`, borderLeft:`3px solid ${heatColor}`, borderRadius:8, padding:12 }}>
+                <div style={{ color:C.bright, fontWeight:700, fontSize:12, fontFamily:font, marginBottom:4 }}>{nh.narrative || nh.name}</div>
+                <div style={{ display:'flex', gap:8, marginBottom:4 }}>
+                  <Badge color={heatColor}>{nh.buzz_level || nh.heat || 'active'}</Badge>
+                  {nh.direction && <span style={{ color:trendColor(nh.direction), fontSize:10, fontWeight:600, fontFamily:font }}>{nh.direction}</span>}
+                </div>
+                {(nh.top_tokens || nh.tokens) && <div style={{ color:C.dim, fontSize:10, fontFamily:font }}>Top: <span style={{ color:C.text }}>{Array.isArray(nh.top_tokens || nh.tokens) ? (nh.top_tokens || nh.tokens).join(', ') : (nh.top_tokens || nh.tokens)}</span></div>}
+              </div>;
+            })}
+          </div>
+        </div>}
+
+        {contrarianSignals.length > 0 && <div style={{ marginBottom:12 }}>
+          {contrarianSignals.map((cs: any, i: number) => (
+            <div key={i} style={{ padding:'10px 14px', background:`${C.gold}08`, border:`1px solid ${C.gold}25`, borderRadius:8, marginBottom:6, display:'flex', alignItems:'flex-start', gap:8 }}>
+              <span style={{ fontSize:14 }}>⚠️</span>
+              <div>
+                <span style={{ color:C.gold, fontSize:11, fontWeight:700, fontFamily:font }}>Contrarian Signal: </span>
+                <span style={{ color:C.text, fontSize:11, fontFamily:sansFont }}>{typeof cs === 'string' ? cs : cs.signal || cs.text || JSON.stringify(cs)}</span>
+              </div>
+            </div>
+          ))}
+        </div>}
+
+        {xSentiment.summary && <div style={{ padding:'14px 18px', background:`${C.purple}06`, border:`1px solid ${C.purple}15`, borderRadius:10, color:C.text, fontSize:12, fontFamily:sansFont, lineHeight:1.7 }}>{xSentiment.summary}</div>}
+      </div>}
+
       {momentum.length > 0 && <div style={{ marginBottom:10 }}>
         <div style={{ color:C.bright, fontSize:13, fontWeight:700, fontFamily:sansFont, marginBottom:10 }}>Top Momentum Picks</div>
         <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
