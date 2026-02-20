@@ -361,7 +361,7 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
             onClick={() => !isCollapsed && toggleExpanded(item.id)}
             title={isCollapsed ? item.label : undefined}
             style={indent > 0 ? { marginLeft: indent } : undefined}
-            className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} px-3 ${isMobile ? 'py-3' : 'py-2'} text-left text-sm font-medium transition-all duration-200 rounded-lg group ${
+            className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} px-2 ${isMobile ? 'py-3' : 'py-1.5'} text-left text-xs font-medium transition-all duration-200 rounded-lg group ${
               hasActiveChild
                 ? "bg-gradient-to-r from-crypto-warning/20 to-yellow-400/10 border-l-2 border-crypto-warning text-white"
                 : "text-gray-300 hover:bg-white/5 hover:text-white"
@@ -387,7 +387,7 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
             onClick={() => item.path && navigateTo(item.path)}
             title={isCollapsed ? item.label : undefined}
             style={indent > 0 ? { marginLeft: indent } : undefined}
-            className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} px-3 ${isMobile ? 'py-3' : 'py-2'} text-left text-sm font-medium transition-all duration-200 rounded-lg group ${
+            className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-2'} px-2 ${isMobile ? 'py-3' : 'py-1.5'} text-left text-xs font-medium transition-all duration-200 rounded-lg group ${
               itemIsActive
                 ? "bg-gradient-to-r from-crypto-warning/20 to-yellow-400/10 border-l-2 border-crypto-warning text-white shadow-md"
                 : "text-gray-300 hover:bg-white/5 hover:text-white"

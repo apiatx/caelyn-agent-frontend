@@ -29,7 +29,7 @@ export default function AboutPage() {
               </p>
 
               <div className="flex justify-center my-8">
-                <div className="w-48 h-48 rounded-full overflow-hidden shadow-lg border-2 border-yellow-400">
+                <div className="w-48 h-48 rounded-full overflow-hidden shadow-lg">
                   <img
                     src={caelynImg1}
                     alt="CaelynAI"
@@ -64,7 +64,7 @@ export default function AboutPage() {
               </div>
 
               <div className="flex justify-center my-10">
-                <div className="w-40 h-40 rounded-xl overflow-hidden shadow-xl border-2 border-yellow-400">
+                <div className="w-40 h-40 rounded-xl overflow-hidden shadow-xl">
                   <img
                     src={caelynImg2}
                     alt="CaelynAI"
@@ -100,7 +100,7 @@ export default function AboutPage() {
               </div>
 
               <div className="flex justify-center my-10">
-                <div className="w-36 h-36 rounded-lg overflow-hidden shadow-lg border-2 border-yellow-400">
+                <div className="w-36 h-36 rounded-lg overflow-hidden shadow-lg">
                   <img
                     src={caelynImg3}
                     alt="CaelynAI"
@@ -121,7 +121,7 @@ export default function AboutPage() {
               </div>
 
               <div className="flex justify-center my-12">
-                <div className="w-40 h-40 rounded-2xl overflow-hidden shadow-xl border-2 border-yellow-400">
+                <div className="w-40 h-40 rounded-2xl overflow-hidden shadow-xl">
                   <img
                     src={caelynImg1}
                     alt="CaelynAI"
@@ -140,7 +140,7 @@ export default function AboutPage() {
               </div>
 
               <div className="flex justify-center my-10">
-                <div className="w-44 h-44 rounded-full overflow-hidden shadow-2xl border-2 border-yellow-400">
+                <div className="w-44 h-44 rounded-full overflow-hidden shadow-2xl">
                   <img
                     src={caelynImg2}
                     alt="CaelynAI"
@@ -180,7 +180,7 @@ export default function AboutPage() {
             </div>
 
             <div className="flex justify-center my-12">
-              <div className="w-48 h-48 rounded-2xl overflow-hidden shadow-xl border-2 border-yellow-400">
+              <div className="w-48 h-48 rounded-2xl overflow-hidden shadow-xl">
                 <img
                   src={caelynImg3}
                   alt="CaelynAI"
