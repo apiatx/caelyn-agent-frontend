@@ -442,24 +442,9 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
       >
         
         {/* Desktop Toggle Button */}
-        {!isMobile && (
-          <div className="absolute -right-3 top-6 z-50">
-            <button
-              onClick={onToggle}
-              className="bg-black/90 backdrop-blur-lg border border-crypto-silver/20 rounded-full p-1.5 text-gray-300 hover:text-white hover:bg-white/5 transition-all duration-200 shadow-lg"
-              data-testid="toggle-sidebar"
-            >
-              {isCollapsed ? (
-                <ChevronRight className="w-4 h-4" />
-              ) : (
-                <ChevronLeft className="w-4 h-4" />
-              )}
-            </button>
-          </div>
-        )}
 
       {!isMobile && (
-      <div className="flex-shrink-0 border-b border-crypto-silver/20 flex items-center justify-center" style={{ width:'100%', padding: isCollapsed ? '6px' : '4px' }}>
+      <div className="flex-shrink-0 border-b border-crypto-silver/20 flex items-center justify-center relative" style={{ width:'100%', padding: isCollapsed ? '6px' : '4px' }}>
         <div className="overflow-hidden" style={{ transition: 'all 0.3s ease-in-out', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <img 
             src={caelynLogo}
@@ -467,6 +452,19 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
             style={{ width: '100%', height: 'auto', objectFit: 'contain', display: 'block' }}
             data-testid="logo-cryptohippo"
           />
+        </div>
+        <div className="absolute -right-3 -bottom-3 z-50">
+          <button
+            onClick={onToggle}
+            className="bg-black/90 backdrop-blur-lg border border-crypto-silver/20 rounded-full p-1.5 text-gray-300 hover:text-white hover:bg-white/5 transition-all duration-200 shadow-lg"
+            data-testid="toggle-sidebar"
+          >
+            {isCollapsed ? (
+              <ChevronRight className="w-4 h-4" />
+            ) : (
+              <ChevronLeft className="w-4 h-4" />
+            )}
+          </button>
         </div>
       </div>
       )}
