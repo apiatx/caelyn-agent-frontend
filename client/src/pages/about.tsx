@@ -92,7 +92,7 @@ export default function AboutPage() {
 
         {/* IMAGE BETWEEN SECTIONS */}
         <div style={{ display: 'flex', justifyContent: 'center', padding: '1rem 0' }}>
-          <img src={caelynFairy1} alt="CaelynAI" style={{ width: 280, height: 280, borderRadius: '50%', objectFit: 'cover' }} />
+          <img src={caelynFairy2} alt="CaelynAI" style={{ width: 280, height: 280, borderRadius: 16, objectFit: 'cover' }} />
         </div>
 
         {/* ARCHITECTURE */}
@@ -126,7 +126,7 @@ export default function AboutPage() {
 
         {/* IMAGE BETWEEN SECTIONS */}
         <div style={{ display: 'flex', justifyContent: 'center', padding: '1rem 0' }}>
-          <img src={caelynFairy2} alt="CaelynAI" style={{ width: 280, height: 280, borderRadius: 16, objectFit: 'cover' }} />
+          <img src={caelynFairy1} alt="CaelynAI" style={{ width: 280, height: 280, borderRadius: '50%', objectFit: 'cover' }} />
         </div>
 
         {/* VS ALTERNATIVES */}
@@ -182,6 +182,11 @@ export default function AboutPage() {
           </div>
         </Section>
 
+        {/* IMAGE BETWEEN SECTIONS */}
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '1rem 0' }}>
+          <img src={caelynFairy3} alt="CaelynAI" style={{ width: 280, height: 280, borderRadius: '50%', objectFit: 'cover' }} />
+        </div>
+
         {/* CAPABILITIES */}
         <Section>
           <SectionLabel>Capabilities</SectionLabel>
@@ -195,11 +200,6 @@ export default function AboutPage() {
             <DataCell label="Natural Language" value={<>Ask anything. "What's the best squeeze play right now?" "Compare NVDA and AMD." "Is this a good time to buy gold?" The agent routes to the right data automatically.</>} />
           </DataGrid>
         </Section>
-
-        {/* IMAGE BETWEEN SECTIONS */}
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '1rem 0' }}>
-          <img src={caelynFairy3} alt="CaelynAI" style={{ width: 280, height: 280, borderRadius: '50%', objectFit: 'cover' }} />
-        </div>
 
         {/* PORTFOLIO */}
         <Section>
@@ -251,7 +251,7 @@ function DataGrid({ children }: { children: React.ReactNode }) {
 
 function DataCell({ label, value, fullWidth }: { label: string; value: React.ReactNode; fullWidth?: boolean }) {
   return (
-    <div className="data-cell" style={{ background: '#111228', padding: '1.5rem', transition: 'background 0.2s', ...(fullWidth ? { gridColumn: '1 / -1' } : {}) }}>
+    <div className="data-cell" style={{ background: '#111228', padding: '1.5rem', transition: 'background 0.2s', ...(fullWidth ? { gridColumn: '1 / -1', textAlign: 'center' } : {}) }}>
       <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.7rem', fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#64748b', marginBottom: '0.5rem' }}>{label}</div>
       <div style={{ fontSize: '1.1rem', fontWeight: 600, color: '#e2e8f0', lineHeight: 1.4 }}>{value}</div>
     </div>
