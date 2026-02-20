@@ -844,6 +844,40 @@ export default function TradingAgent() {
     const perpsCrowded = s.perps_crowded_longs || [];
     const perpsDivergences = s.perps_divergences || [];
     const perpsTopVol = s.perps_top_volume || [];
+    const perpsTopOi = s.perps_top_oi || [];
+
+    const fmtBig = (n: any): string => {
+      if (n == null) return 'N/A';
+      if (typeof n === 'string') return n;
+      const num = Number(n);
+      if (isNaN(num)) return String(n);
+      if (num >= 1e9) return `$${(num / 1e9).toFixed(2)}B`;
+      if (num >= 1e6) return `$${(num / 1e6).toFixed(1)}M`;
+      if (num >= 1e3) return `$${(num / 1e3).toFixed(1)}K`;
+      return `$${num.toFixed(0)}`;
+    };
+    const fmtFunding = (r: any): string => {
+      if (r == null) return 'N/A';
+      if (typeof r === 'string') return r;
+      return `${(Number(r) * 100).toFixed(4)}%`;
+    };
+    const fmtFundingAnn = (r: any): string => {
+      if (r == null) return '';
+      if (typeof r === 'string') return r;
+      return `${Number(r).toFixed(1)}%`;
+    };
+    const fmtPct = (r: any): string => {
+      if (r == null) return '—';
+      if (typeof r === 'string') return r;
+      return `${Number(r) >= 0 ? '+' : ''}${Number(r).toFixed(1)}%`;
+    };
+    const biasColor = (b: string) => {
+      const l = (b || '').toLowerCase();
+      if (l.includes('long') || l.includes('bullish')) return C.green;
+      if (l.includes('short') || l.includes('bearish')) return C.red;
+      return C.dim;
+    };
+    const oiMap = new Map(perpsTopOi.map((x: any) => [x.coin, x]));
 
     return <div>
       {s.market_overview && <div style={{ padding:'16px 20px', background:`${C.purple}08`, border:`1px solid ${C.purple}20`, borderRadius:10, marginBottom:10, color:C.text, fontSize:12, fontFamily:sansFont, lineHeight:1.7 }}>{s.market_overview}</div>}
@@ -919,13 +953,13 @@ export default function TradingAgent() {
 
         {perpsSummary && <div style={{ display:'flex', gap:0, marginBottom:12, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, padding:'14px 18px', flexWrap:'wrap' }}>
           {[
-            ['Total OI', perpsSummary.total_oi],
-            ['24h Volume', perpsSummary.volume_24h],
-            ['Avg Funding', perpsSummary.avg_funding],
-            ['Bias', perpsSummary.market_bias],
-          ].map(([label, val], i) => val ? <div key={i} style={{ flex:1, minWidth:120, padding:'0 12px', borderRight: i < 3 ? `1px solid ${C.border}` : 'none' }}>
+            ['Total OI', fmtBig(perpsSummary.total_open_interest_usd ?? perpsSummary.total_oi), false],
+            ['24h Vol', fmtBig(perpsSummary.total_volume_24h_usd ?? perpsSummary.volume_24h), false],
+            ['Avg Funding', perpsSummary.avg_funding_annualized != null ? fmtFundingAnn(perpsSummary.avg_funding_annualized) : (perpsSummary.avg_funding ?? 'N/A'), false],
+            ['Bias', perpsSummary.market_bias, true],
+          ].map(([label, val, isBias], i) => val && val !== 'N/A' ? <div key={i} style={{ flex:1, minWidth:120, padding:'0 12px', borderRight: i < 3 ? `1px solid ${C.border}` : 'none' }}>
             <div style={{ color:C.dim, fontSize:9, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:4 }}>{label as string}</div>
-            <div style={{ color: (label === 'Bias') ? trendColor(val as string) : '#38bdf8', fontSize:15, fontWeight:700, fontFamily:font }}>{val as string}</div>
+            <div style={{ color: isBias ? biasColor(val as string) : '#38bdf8', fontSize:15, fontWeight:700, fontFamily:font }}>{val as string}</div>
           </div> : null)}
         </div>}
 
@@ -934,36 +968,43 @@ export default function TradingAgent() {
             <Badge color="#f97316">SQUEEZE</Badge> Squeeze Candidates — High Signal
           </div>
           <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-            {perpsSqueezes.map((sq: any, i: number) => (
-              <div key={i} style={{ background:C.card, border:`1px solid #f9731630`, borderLeft:`3px solid #f97316`, borderRadius:8, padding:'12px 16px' }}>
+            {perpsSqueezes.map((sq: any, i: number) => {
+              const fr = sq.funding_rate;
+              const frDisplay = fmtFunding(fr);
+              const frAnn = sq.funding_annualized != null ? ` (ann: ${fmtFundingAnn(sq.funding_annualized)})` : '';
+              const frNeg = fr != null && Number(fr) < 0;
+              const oi = sq.open_interest_usd ?? sq.oi ?? sq.open_interest;
+              const ch24 = sq.price_change_24h ?? sq.change_24h ?? sq['24h'];
+              return <div key={i} style={{ background:C.card, border:`1px solid #f9731630`, borderLeft:`3px solid #f97316`, borderRadius:8, padding:'12px 16px' }}>
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:4 }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                    <span style={{ color:C.bright, fontWeight:800, fontSize:14, fontFamily:font }}>{sq.symbol || sq.coin}</span>
-                    <span style={{ color:C.dim, fontSize:11, fontFamily:font }}>Funding: <span style={{ color:C.green, fontWeight:600 }}>{sq.funding || sq.funding_rate}</span></span>
-                    <span style={{ color:C.dim, fontSize:11, fontFamily:font }}>OI: <span style={{ color:'#38bdf8', fontWeight:600 }}>{sq.oi || sq.open_interest}</span></span>
-                    {(sq.change_24h || sq['24h']) && <span style={{ color:C.dim, fontSize:11, fontFamily:font }}>24h: <span style={{ color:changeColor(sq.change_24h || sq['24h']), fontWeight:600 }}>{sq.change_24h || sq['24h']}</span></span>}
+                  <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
+                    <span style={{ color:C.bright, fontWeight:800, fontSize:14, fontFamily:font }}>{sq.coin || sq.symbol}</span>
+                    <span style={{ color:C.dim, fontSize:11, fontFamily:font }}>Funding: <span style={{ color: frNeg ? C.red : C.green, fontWeight:600 }}>{frDisplay}{frAnn}</span></span>
+                    {oi != null && <span style={{ color:C.dim, fontSize:11, fontFamily:font }}>OI: <span style={{ color:'#38bdf8', fontWeight:600 }}>{fmtBig(oi)}</span></span>}
+                    {ch24 != null && <span style={{ color:C.dim, fontSize:11, fontFamily:font }}>24h: <span style={{ color:changeColor(fmtPct(ch24)), fontWeight:600 }}>{fmtPct(ch24)}</span></span>}
                   </div>
                   <Badge color="#f97316">SQUEEZE</Badge>
                 </div>
-                {sq.signal && <div style={{ color:C.text, fontSize:11, fontFamily:sansFont, lineHeight:1.5 }}>{sq.signal}</div>}
-              </div>
-            ))}
+                {sq.signal && <div style={{ color:C.text, fontSize:11, fontFamily:sansFont, lineHeight:1.5, fontStyle:'italic' }}>{sq.signal}</div>}
+              </div>;
+            })}
           </div>
         </div>}
 
         {perpsCrowded.length > 0 && <div style={{ marginBottom:12 }}>
           <div style={{ color:C.gold, fontSize:11, fontWeight:700, fontFamily:font, textTransform:'uppercase', marginBottom:8 }}>⚠️ Crowded Longs — Liquidation Risk</div>
           <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
-            {perpsCrowded.map((cl: any, i: number) => (
-              <div key={i} style={{ background:C.card, border:`1px solid ${C.gold}20`, borderLeft:`3px solid ${C.gold}`, borderRadius:8, padding:'10px 14px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                  <span style={{ color:C.bright, fontWeight:700, fontSize:13, fontFamily:font }}>{cl.symbol || cl.coin}</span>
-                  <span style={{ color:C.dim, fontSize:11, fontFamily:font }}>Funding: <span style={{ color:C.red, fontWeight:600 }}>{cl.funding || cl.funding_rate}</span></span>
-                  <span style={{ color:C.dim, fontSize:11, fontFamily:font }}>OI: <span style={{ color:'#38bdf8', fontWeight:600 }}>{cl.oi || cl.open_interest}</span></span>
+            {perpsCrowded.map((cl: any, i: number) => {
+              const oi = cl.open_interest_usd ?? cl.oi ?? cl.open_interest;
+              return <div key={i} style={{ background:C.card, border:`1px solid ${C.gold}20`, borderLeft:`3px solid ${C.gold}`, borderRadius:8, padding:'10px 14px', display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:6 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
+                  <span style={{ color:C.bright, fontWeight:700, fontSize:13, fontFamily:font }}>{cl.coin || cl.symbol}</span>
+                  <span style={{ color:C.dim, fontSize:11, fontFamily:font }}>Funding: <span style={{ color:C.red, fontWeight:600 }}>{fmtFunding(cl.funding_rate)}</span></span>
+                  {oi != null && <span style={{ color:C.dim, fontSize:11, fontFamily:font }}>OI: <span style={{ color:'#38bdf8', fontWeight:600 }}>{fmtBig(oi)}</span></span>}
                 </div>
-                {cl.signal && <span style={{ color:C.gold, fontSize:10, fontFamily:sansFont }}>⚠️ {cl.signal}</span>}
-              </div>
-            ))}
+                {cl.signal && <span style={{ color:C.gold, fontSize:10, fontFamily:sansFont, maxWidth:300 }}>⚠️ {cl.signal}</span>}
+              </div>;
+            })}
           </div>
         </div>}
 
@@ -973,12 +1014,14 @@ export default function TradingAgent() {
             {perpsDivergences.map((dv: any, i: number) => {
               const isBullish = (dv.type || '').toLowerCase().includes('bullish');
               const accentColor = isBullish ? C.green : C.red;
+              const badgeText = isBullish ? 'BULLISH ↑' : 'BEARISH ↓';
+              const ch24 = dv.price_change_24h ?? dv.price_change ?? dv.price;
               return <div key={i} style={{ background:C.card, border:`1px solid ${accentColor}20`, borderLeft:`3px solid ${accentColor}`, borderRadius:8, padding:'10px 14px' }}>
-                <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:4 }}>
-                  <span style={{ color:C.bright, fontWeight:700, fontSize:13, fontFamily:font }}>{dv.symbol || dv.coin}</span>
-                  <Badge color={accentColor}>{(dv.type || 'DIVERGENCE').replace(/_/g, ' ')}</Badge>
-                  <span style={{ color:C.dim, fontSize:11, fontFamily:font }}>Funding: <span style={{ color:accentColor, fontWeight:600 }}>{dv.funding || dv.funding_rate}</span></span>
-                  {(dv.price_change || dv.price) && <span style={{ color:C.dim, fontSize:11, fontFamily:font }}>Price: <span style={{ color:changeColor(dv.price_change || dv.price), fontWeight:600 }}>{dv.price_change || dv.price}</span></span>}
+                <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:4, flexWrap:'wrap' }}>
+                  <span style={{ color:C.bright, fontWeight:700, fontSize:13, fontFamily:font }}>{dv.coin || dv.symbol}</span>
+                  <Badge color={accentColor}>{badgeText}</Badge>
+                  <span style={{ color:C.dim, fontSize:11, fontFamily:font }}>Funding: <span style={{ color:accentColor, fontWeight:600 }}>{fmtFunding(dv.funding_rate)}</span></span>
+                  {ch24 != null && <span style={{ color:C.dim, fontSize:11, fontFamily:font }}>Price: <span style={{ color:changeColor(fmtPct(ch24)), fontWeight:600 }}>{fmtPct(ch24)}</span></span>}
                 </div>
                 {dv.signal && <div style={{ color:C.text, fontSize:11, fontFamily:sansFont, lineHeight:1.5 }}>{dv.signal}</div>}
               </div>;
@@ -989,17 +1032,24 @@ export default function TradingAgent() {
         {perpsTopVol.length > 0 && <div style={{ marginBottom:12 }}>
           <div style={{ color:C.bright, fontSize:11, fontWeight:700, fontFamily:font, textTransform:'uppercase', marginBottom:8 }}>Top Perps by Volume</div>
           <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:8, overflow:'hidden' }}>
-            <div style={{ display:'grid', gridTemplateColumns:'1.2fr 1fr 1fr 1fr', padding:'8px 14px', background:`${C.border}40`, fontSize:9, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.06em', color:C.dim }}>
-              <span>Coin</span><span style={{ textAlign:'right' }}>Volume 24h</span><span style={{ textAlign:'right' }}>Funding</span><span style={{ textAlign:'right' }}>24h Change</span>
+            <div style={{ display:'grid', gridTemplateColumns:'1.2fr 1fr 1fr 1fr 1fr', padding:'8px 14px', background:`${C.border}40`, fontSize:9, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.06em', color:C.dim }}>
+              <span>Coin</span><span style={{ textAlign:'right' }}>Volume 24h</span><span style={{ textAlign:'right' }}>OI</span><span style={{ textAlign:'right' }}>Funding</span><span style={{ textAlign:'right' }}>24h</span>
             </div>
-            {perpsTopVol.slice(0, 10).map((tv: any, i: number) => (
-              <div key={i} style={{ display:'grid', gridTemplateColumns:'1.2fr 1fr 1fr 1fr', padding:'8px 14px', borderBottom: i < Math.min(perpsTopVol.length, 10) - 1 ? `1px solid ${C.border}` : 'none', fontSize:12, fontFamily:font }}>
-                <span style={{ color:C.bright, fontWeight:700 }}>{tv.symbol || tv.coin}</span>
-                <span style={{ textAlign:'right', color:'#38bdf8' }}>{tv.volume || tv.volume_24h}</span>
-                <span style={{ textAlign:'right', color: parseFloat(String(tv.funding || tv.funding_rate || '0')) > 0 ? C.red : C.green, fontWeight:600 }}>{tv.funding || tv.funding_rate}</span>
-                <span style={{ textAlign:'right', color:changeColor(tv.change_24h || tv['24h']), fontWeight:600 }}>{tv.change_24h || tv['24h'] || '—'}</span>
-              </div>
-            ))}
+            {perpsTopVol.slice(0, 10).map((tv: any, i: number) => {
+              const vol = tv.volume_24h_usd ?? tv.volume_24h ?? tv.volume;
+              const fr = tv.funding_rate ?? tv.funding;
+              const ch = tv.price_change_24h ?? tv.change_24h ?? tv['24h'];
+              const oiEntry = oiMap.get(tv.coin) || {};
+              const oi = tv.open_interest_usd ?? oiEntry.open_interest_usd ?? tv.oi;
+              const frNum = typeof fr === 'number' ? fr : parseFloat(String(fr || '0'));
+              return <div key={i} style={{ display:'grid', gridTemplateColumns:'1.2fr 1fr 1fr 1fr 1fr', padding:'8px 14px', borderBottom: i < Math.min(perpsTopVol.length, 10) - 1 ? `1px solid ${C.border}` : 'none', fontSize:12, fontFamily:font }}>
+                <span style={{ color:C.bright, fontWeight:700 }}>{tv.coin || tv.symbol}</span>
+                <span style={{ textAlign:'right', color:'#38bdf8' }}>{fmtBig(vol)}</span>
+                <span style={{ textAlign:'right', color:'#38bdf8' }}>{oi != null ? fmtBig(oi) : '—'}</span>
+                <span style={{ textAlign:'right', color: frNum > 0 ? C.green : C.red, fontWeight:600 }}>{fmtFunding(fr)}</span>
+                <span style={{ textAlign:'right', color:changeColor(fmtPct(ch)), fontWeight:600 }}>{fmtPct(ch)}</span>
+              </div>;
+            })}
           </div>
         </div>}
       </div>}
