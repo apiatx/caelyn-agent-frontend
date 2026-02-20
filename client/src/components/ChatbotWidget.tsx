@@ -92,6 +92,7 @@ function MiniRenderer({ structured, analysis }: { structured: any, analysis: str
   if (dt === 'crypto') {
     const momentum = s.top_momentum || [];
     const btcEth = s.btc_eth_summary || {};
+    const dominance = s.dominance || btcEth.dominance || {};
     return <div>
       {s.market_overview && <div style={{ padding:'8px 10px', background:`${C.purple}08`, border:`1px solid ${C.purple}20`, borderRadius:6, marginBottom:6, color:C.text, fontSize:10, fontFamily:sansFont, lineHeight:1.5 }}>{s.market_overview}</div>}
       {(btcEth.btc || btcEth.eth) && <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:6, marginBottom:6 }}>
@@ -106,6 +107,29 @@ function MiniRenderer({ structured, analysis }: { structured: any, analysis: str
             <span style={{ color:changeColor(d.change_24h), fontSize:10, fontWeight:600, fontFamily:font }}>{d.change_24h}</span>
           </div>;
         })}
+      </div>}
+      {(dominance.usdt != null || dominance.others != null) && <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:6, marginBottom:6 }}>
+        {dominance.usdt != null && (() => {
+          const val = typeof dominance.usdt === 'string' ? parseFloat(dominance.usdt) : dominance.usdt;
+          const display = typeof dominance.usdt === 'string' && dominance.usdt.includes('%') ? dominance.usdt : val.toFixed(2) + '%';
+          const col = val > 5 ? C.red : val > 4 ? C.gold : C.green;
+          return <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:6, padding:8 }}>
+            <div style={{ display:'flex', justifyContent:'space-between', marginBottom:3 }}>
+              <span style={{ color:'#26a17b', fontWeight:800, fontSize:12, fontFamily:font }}>USDT.d</span>
+              <span style={{ color:col, fontSize:13, fontWeight:700, fontFamily:font }}>{display}</span>
+            </div>
+          </div>;
+        })()}
+        {dominance.others != null && (() => {
+          const val = typeof dominance.others === 'string' ? parseFloat(dominance.others) : dominance.others;
+          const display = typeof dominance.others === 'string' && dominance.others.includes('%') ? dominance.others : val.toFixed(2) + '%';
+          return <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:6, padding:8 }}>
+            <div style={{ display:'flex', justifyContent:'space-between', marginBottom:3 }}>
+              <span style={{ color:C.purple, fontWeight:800, fontSize:12, fontFamily:font }}>OTHERS.d</span>
+              <span style={{ color:C.blue, fontSize:13, fontWeight:700, fontFamily:font }}>{display}</span>
+            </div>
+          </div>;
+        })()}
       </div>}
       {momentum.slice(0, 3).map((c: any, i: number) => (
         <CardWrap key={i} borderColor={convColor(c.conviction)}>
