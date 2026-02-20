@@ -73,16 +73,22 @@ function FollowUpInput({ panelId, onSubmit, C, font, sansFont }: { panelId: numb
 export default function TradingAgent() {
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
-  const [panels, setPanels] = useState<Panel[]>([]);
+  const [panels, setPanels] = useState<Panel[]>(() => {
+    try { const s = sessionStorage.getItem('caelyn_panels'); return s ? JSON.parse(s) : []; } catch { return []; }
+  });
   const [error, setError] = useState<string | null>(null);
-  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(() => {
+    try { return sessionStorage.getItem('caelyn_convId') || null; } catch { return null; }
+  });
   const [loadingStage, setLoadingStage] = useState('');
   const [expandedTicker, setExpandedTicker] = useState<string | null>(null);
   const [screenerInput, setScreenerInput] = useState('');
   const [screenerSortCol, setScreenerSortCol] = useState('');
   const [screenerSortAsc, setScreenerSortAsc] = useState(true);
   const [groupExpanded, setGroupExpanded] = useState<Record<string, boolean>>({ g1: true, g2: true, g3: true, g4: true, g5: true });
-  const [savedChats, setSavedChats] = useState<Array<{id: number, title: string, panels: Panel[], conversationId: string | null}>>([]);
+  const [savedChats, setSavedChats] = useState<Array<{id: number, title: string, panels: Panel[], conversationId: string | null}>>(() => {
+    try { const s = sessionStorage.getItem('caelyn_history'); return s ? JSON.parse(s) : []; } catch { return []; }
+  });
   const [leftRailSearch, setLeftRailSearch] = useState('');
   const [expandedRiskIds, setExpandedRiskIds] = useState<Set<string>>(new Set());
   const [leftRailOpen, setLeftRailOpen] = useState(false);
@@ -90,10 +96,23 @@ export default function TradingAgent() {
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const scrollAnchorRef = useRef<HTMLDivElement>(null);
   const commandInputRef = useRef<HTMLInputElement>(null);
+  const loadingRef = useRef(false);
 
   useEffect(() => {
     scrollAnchorRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [panels, loading]);
+
+  useEffect(() => {
+    try { sessionStorage.setItem('caelyn_panels', JSON.stringify(panels)); } catch {}
+  }, [panels]);
+
+  useEffect(() => {
+    try { if (conversationId) sessionStorage.setItem('caelyn_convId', conversationId); else sessionStorage.removeItem('caelyn_convId'); } catch {}
+  }, [conversationId]);
+
+  useEffect(() => {
+    try { sessionStorage.setItem('caelyn_history', JSON.stringify(savedChats)); } catch {}
+  }, [savedChats]);
 
   function newChat() {
     if (panels.length > 0) {
@@ -208,6 +227,7 @@ export default function TradingAgent() {
     const queryText = (customPrompt ?? prompt ?? '').trim();
 
     if (!queryText && !presetIntent) return;
+    if (loadingRef.current) { console.log('[GUARD] Already loading, ignoring duplicate call'); return; }
 
     const url = `${AGENT_BACKEND_URL}/api/query`;
     const payload: { query: string; preset_intent: string | null; conversation_id: string | null } = {
@@ -218,6 +238,7 @@ export default function TradingAgent() {
 
     console.log('[SEND]', url, payload);
 
+    loadingRef.current = true;
     setLoading(true); setError(null); setExpandedTicker(null);
     setPrompt('');
     const displayText = queryText || presetIntent || '';
@@ -327,7 +348,7 @@ export default function TradingAgent() {
       };
       setPanels(prev => [failPanel, ...prev]);
       setError(errMsg);
-    } finally { clearInterval(iv); setLoadingStage(''); setLoading(false); }
+    } finally { clearInterval(iv); setLoadingStage(''); setLoading(false); loadingRef.current = false; }
   }
 
 
