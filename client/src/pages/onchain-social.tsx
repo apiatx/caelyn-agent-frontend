@@ -1,29 +1,20 @@
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { MessageSquare, Users, TrendingUp, Hash, ExternalLink, Bot, Zap, Heart, Star } from "lucide-react";
 import { openSecureLink } from '@/utils/security';
 import socialImage from "@assets/download (4)_1757214892954.png";
-
-// Safe Glass Card component
-const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <Card className={`backdrop-blur-sm bg-gradient-to-br from-black/90 to-black/95 border border-white/20 ${className}`}>
-    {children}
-  </Card>
-);
 
 interface SafeLinkProps {
   href: string;
   children: React.ReactNode;
   className?: string;
+  style?: React.CSSProperties;
 }
 
-const SafeLink: React.FC<SafeLinkProps> = ({ href, children, className = "" }) => {
+const SafeLink: React.FC<SafeLinkProps> = ({ href, children, className = "", style }) => {
   const openInNewTab = (url: string) => {
     openSecureLink(url);
   };
 
   return (
-    <button onClick={() => openInNewTab(href)} className={className}>
+    <button onClick={() => openInNewTab(href)} className={className} style={style}>
       {children}
     </button>
   );
@@ -35,756 +26,452 @@ export default function OnchainSocialPage() {
   };
 
   return (
-    <div className="min-h-screen text-white" style={{background: 'linear-gradient(135deg, hsl(0, 0%, 0%) 0%, hsl(0, 0%, 10%) 50%, hsl(0, 0%, 0%) 100%)'}}>
-      {/* Main Content */}
-      <main className="max-w-[95vw] mx-auto px-2 sm:px-3 py-4">
-        <div className="space-y-8">
-          {/* Social Section - Enhanced Header */}
-          <div className="text-center relative mb-6">
-            <div className="absolute inset-0 bg-gradient-to-r from-pink-500/20 via-purple-500/20 to-blue-500/20 blur-3xl -z-10"></div>
-            <div className="flex justify-center items-center gap-4 mb-6">
-              <div className="w-28 h-28 rounded-full flex items-center justify-center border-2 border-yellow-400 shadow-2xl hover:scale-110 transition-transform duration-300 overflow-hidden">
-                <img 
-                  src={socialImage} 
-                  alt="Social" 
-                  className="w-28 h-28 object-cover"
-                />
-              </div>
-              <h2 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-white via-pink-200 to-purple-200 bg-clip-text text-transparent">Social</h2>
+    <div className="min-h-screen text-white relative" style={{ background: '#050510', fontFamily: "'Outfit', sans-serif", lineHeight: 1.65 }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+        .social-page .ice { color: #38bdf8; }
+        .social-page .gradient-text {
+          background: linear-gradient(135deg, #6366f1 0%, #3b82f6 40%, #06b6d4 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+        }
+        .social-page .profile-cell:hover { background: #161838 !important; }
+        .social-page .section-card:hover { background: #161838 !important; }
+      `}</style>
+
+      <div className="social-page relative" style={{ zIndex: 1 }}>
+        <div style={{
+          position: 'fixed', top: '-40%', left: '-20%', width: '140%', height: '140%',
+          background: 'radial-gradient(ellipse 800px 600px at 20% 15%, rgba(99,102,241,0.06) 0%, transparent 70%), radial-gradient(ellipse 600px 500px at 80% 70%, rgba(6,182,212,0.04) 0%, transparent 70%), radial-gradient(ellipse 900px 400px at 50% 50%, rgba(59,130,246,0.03) 0%, transparent 60%)',
+          pointerEvents: 'none', zIndex: 0
+        }} />
+
+        {/* HERO */}
+        <div style={{ padding: '4rem 3rem 2rem', maxWidth: 900, margin: '0 auto', textAlign: 'center', position: 'relative', zIndex: 1 }}>
+          <div style={{
+            display: 'inline-block', fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', fontWeight: 500,
+            letterSpacing: '0.12em', textTransform: 'uppercase', color: '#38bdf8',
+            border: '1px solid rgba(56,189,248,0.25)', borderRadius: 100, padding: '0.4rem 1.2rem',
+            marginBottom: '2.5rem', background: 'rgba(56,189,248,0.05)'
+          }}>
+            Social Intelligence
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1.5rem', marginBottom: '1.5rem' }}>
+            <div style={{ width: 112, height: 112, borderRadius: '50%', overflow: 'hidden', border: '2px solid #38bdf8', flexShrink: 0 }}>
+              <img src={socialImage} alt="Social" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
-            <p className="text-lg text-white/80 font-medium tracking-wide">Social intelligence and community analytics</p>
-            <div className="w-32 h-1 bg-gradient-to-r from-pink-500 to-purple-500 mx-auto mt-4 rounded-full"></div>
+            <h1 style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: 700, lineHeight: 1.15, letterSpacing: '-0.03em' }}>
+              <span className="gradient-text">Social</span>
+            </h1>
+          </div>
+          <p style={{ fontSize: '1.05rem', color: '#64748b', maxWidth: 680, margin: '0 auto', lineHeight: 1.7 }}>
+            Social intelligence and community analytics
+          </p>
+        </div>
+
+        {/* DIVIDER */}
+        <div style={{ width: 60, height: 2, background: 'linear-gradient(135deg, #6366f1, #3b82f6, #06b6d4)', margin: '0 auto 2rem', borderRadius: 2 }} />
+
+        {/* CryptoX Section */}
+        <section style={{ maxWidth: 880, margin: '0 auto', padding: '2rem 3rem', position: 'relative', zIndex: 1 }}>
+          <h3 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.78rem', fontWeight: 500, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#38bdf8', marginBottom: '0.75rem' }}>CryptoX</h3>
+          <h2 style={{ fontSize: '1.6rem', fontWeight: 600, letterSpacing: '-0.02em', marginBottom: '1.5rem', color: '#e2e8f0' }}>Crypto <span className="ice">X Accounts</span></h2>
+
+          {/* Research and Fundamentals */}
+          <div style={{ background: '#111228', border: '1px solid #1e2148', borderRadius: 12, padding: '1.5rem', marginBottom: '1.5rem' }}>
+            <h3 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.78rem', fontWeight: 500, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#22c55e', marginBottom: '0.75rem' }}>Research and Fundamentals</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.5rem' }}>
+              {[
+                'TechDev_52', 'ofvoice25355', 'CoinGurruu', 'stacy_muur', 
+                'martypartymusic', 'Defi0xJeff', 'altcoinvector', 'DeFi_Paanda', 
+                'cryptorinweb3', 'jkrdoc', 'Agent_rsch', 'OverkillTrading', 
+                'dontbuytops', 'MetaverseRanger', 'aixCB_Vc', 'aixbt_agent',
+                'nansen_ai', 'rogue_says', 'Globalflows', 'crypto_linn'
+              ].map((account) => (
+                <SafeLink
+                  key={account}
+                  href={`https://x.com/${account}`}
+                  style={{ padding: '0.6rem 0.9rem', background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 6, display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'background 0.2s', cursor: 'pointer', textAlign: 'left' }}
+                  className="profile-cell"
+                >
+                  <span style={{ color: '#22c55e', fontWeight: 700, fontSize: '0.85rem' }}>𝕏</span>
+                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', color: '#22c55e', fontWeight: 500 }}>{account}</span>
+                </SafeLink>
+              ))}
+            </div>
           </div>
 
-          {/* Main Social Section */}
-          <GlassCard className="p-6">
+          {/* Traders */}
+          <div style={{ background: '#111228', border: '1px solid #1e2148', borderRadius: 12, padding: '1.5rem', marginBottom: '1.5rem' }}>
+            <h3 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.78rem', fontWeight: 500, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#eab308', marginBottom: '0.75rem' }}>Traders</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.5rem' }}>
+              {[
+                'TheEuroSniper', 'EricCryptoman', 'Whale_AI_net', 'CryptoThannos', 
+                'HolderScan', 'Ethimedes', 'MisterSpread', 'CBATrades', 'DigimonCBA',
+                'MWhalekiller', 'smileycapital', 'thedefivillain', 'doomsdart', 
+                'bitcodyy', 'CryptoDarkSide4', 'DefiSabali', '0xTindorr', 
+                'Chroma_Trading', 'follis_', 'AltcoinSniperTA', 'Bitcoinhabebe', 
+                'sonder_crypto', 'istudycharts', 'Crypto_Tigers1', 'CryptoLimbo_',
+                'cryptoknight890', 'CryptoEmree_', 'spetsnaz_3', 'newzage', 'The__Solstice',
+                'jaydee_757', 'EasyInvests', 'sarper_onder', 'XForceGlobal', 'alecTrading', 'redhairshanks86', 'eliz883'
+              ].map((account) => (
+                <SafeLink
+                  key={account}
+                  href={`https://x.com/${account}`}
+                  style={{ padding: '0.6rem 0.9rem', background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.2)', borderRadius: 6, display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'background 0.2s', cursor: 'pointer', textAlign: 'left' }}
+                  className="profile-cell"
+                >
+                  <span style={{ color: '#eab308', fontWeight: 700, fontSize: '0.85rem' }}>𝕏</span>
+                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', color: '#eab308', fontWeight: 500 }}>{account}</span>
+                </SafeLink>
+              ))}
+              <SafeLink
+                href="https://x.com/sonder_crypto/status/1968059158491767121"
+                style={{ padding: '0.6rem 0.9rem', background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.2)', borderRadius: 6, display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'background 0.2s', cursor: 'pointer', textAlign: 'left' }}
+                className="profile-cell"
+              >
+                <span style={{ color: '#eab308', fontWeight: 700, fontSize: '0.85rem' }}>𝕏</span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', color: '#eab308', fontWeight: 500 }}>sonder_crypto</span>
+              </SafeLink>
+              <SafeLink
+                href="https://x.com/alecTrading/status/1971938635097559333"
+                style={{ padding: '0.6rem 0.9rem', background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.2)', borderRadius: 6, display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'background 0.2s', cursor: 'pointer', textAlign: 'left' }}
+                className="profile-cell"
+              >
+                <span style={{ color: '#eab308', fontWeight: 700, fontSize: '0.85rem' }}>𝕏</span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', color: '#eab308', fontWeight: 500 }}>alecTrading</span>
+              </SafeLink>
+            </div>
+          </div>
 
-            {/* CryptoX Subsection */}
-            <div className="mb-12">
-              <div className="flex items-center justify-center mb-6">
-                <h4 className="text-2xl font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">CryptoX</h4>
-              </div>
+          {/* Thoughts & Opinions */}
+          <div style={{ background: '#111228', border: '1px solid #1e2148', borderRadius: 12, padding: '1.5rem', marginBottom: '1.5rem' }}>
+            <h3 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.78rem', fontWeight: 500, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#3b82f6', marginBottom: '0.75rem' }}>Thoughts & Opinions</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.5rem' }}>
+              {[
+                'CryptoZer0_'
+              ].map((account) => (
+                <SafeLink
+                  key={account}
+                  href={`https://x.com/${account}`}
+                  style={{ padding: '0.6rem 0.9rem', background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: 6, display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'background 0.2s', cursor: 'pointer', textAlign: 'left' }}
+                  className="profile-cell"
+                >
+                  <span style={{ color: '#3b82f6', fontWeight: 700, fontSize: '0.85rem' }}>𝕏</span>
+                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', color: '#3b82f6', fontWeight: 500 }}>{account}</span>
+                </SafeLink>
+              ))}
+            </div>
+          </div>
 
+          {/* Macro */}
+          <div style={{ background: '#111228', border: '1px solid #1e2148', borderRadius: 12, padding: '1.5rem', marginBottom: '1.5rem' }}>
+            <h3 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.78rem', fontWeight: 500, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#06b6d4', marginBottom: '0.75rem' }}>Macro</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.5rem' }}>
+              {[
+                '_The_Prophet__'
+              ].map((account) => (
+                <SafeLink
+                  key={account}
+                  href={`https://x.com/${account}`}
+                  style={{ padding: '0.6rem 0.9rem', background: 'rgba(6,182,212,0.08)', border: '1px solid rgba(6,182,212,0.2)', borderRadius: 6, display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'background 0.2s', cursor: 'pointer', textAlign: 'left' }}
+                  className="profile-cell"
+                >
+                  <span style={{ color: '#06b6d4', fontWeight: 700, fontSize: '0.85rem' }}>𝕏</span>
+                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', color: '#06b6d4', fontWeight: 500 }}>{account}</span>
+                </SafeLink>
+              ))}
+            </div>
+          </div>
 
-              {/* Fundamentalists Subsection */}
-              <GlassCard className="mb-6 p-4">
-                <div className="flex items-center justify-center mb-6">
-                  <h4 className="text-xl font-bold bg-gradient-to-r from-white to-green-100 bg-clip-text text-transparent">Research and Fundamentals</h4>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {/* Market Today */}
+          <div style={{ background: '#111228', border: '1px solid #1e2148', borderRadius: 12, padding: '1.5rem', marginBottom: '1.5rem' }}>
+            <h3 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.78rem', fontWeight: 500, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#f97316', marginBottom: '0.75rem' }}>Market Today</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.5rem' }}>
+              {[
+                'aicryptopattern'
+              ].map((account) => (
+                <SafeLink
+                  key={account}
+                  href={`https://x.com/${account}`}
+                  style={{ padding: '0.6rem 0.9rem', background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.2)', borderRadius: 6, display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'background 0.2s', cursor: 'pointer', textAlign: 'left' }}
+                  className="profile-cell"
+                >
+                  <span style={{ color: '#f97316', fontWeight: 700, fontSize: '0.85rem' }}>𝕏</span>
+                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', color: '#f97316', fontWeight: 500 }}>{account}</span>
+                </SafeLink>
+              ))}
+            </div>
+          </div>
+
+          {/* Chains */}
+          <div style={{ background: '#111228', border: '1px solid #1e2148', borderRadius: 12, padding: '1.5rem', marginBottom: '1.5rem' }}>
+            <h3 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.78rem', fontWeight: 500, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#a855f7', marginBottom: '1.25rem' }}>Chains</h3>
+
+            {/* Base and Solana Ecosystems - Side by Side */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+              {/* Base Ecosystem */}
+              <div style={{ background: '#0c0d1e', border: '1px solid #1e2148', borderRadius: 10, padding: '1.25rem' }}>
+                <h4 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#3b82f6', marginBottom: '0.75rem', textAlign: 'center' }}>Base Ecosystem</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.5rem' }}>
                   {[
-                    'TechDev_52', 'ofvoice25355', 'CoinGurruu', 'stacy_muur', 
-                    'martypartymusic', 'Defi0xJeff', 'altcoinvector', 'DeFi_Paanda', 
-                    'cryptorinweb3', 'jkrdoc', 'Agent_rsch', 'OverkillTrading', 
-                    'dontbuytops', 'MetaverseRanger', 'aixCB_Vc', 'aixbt_agent',
-                    'nansen_ai', 'rogue_says', 'Globalflows', 'crypto_linn'
-                  ].map((account) => {
-                    return (
-                    <SafeLink
-                      key={account}
-                      href={`https://x.com/${account}`}
-                      className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="text-green-400 font-bold text-sm">𝕏</span>
-                        <span className="text-green-400 font-semibold text-sm">{account}</span>
-                      </div>
-                    </SafeLink>
-                    );
-                  })}
-                </div>
-              </GlassCard>
-
-              {/* Traders Subsection */}
-              <GlassCard className="mb-6 p-4">
-                <div className="flex items-center justify-center mb-6">
-                  <h4 className="text-xl font-bold bg-gradient-to-r from-white to-yellow-100 bg-clip-text text-transparent">Traders</h4>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {[
-                    'TheEuroSniper', 'EricCryptoman', 'Whale_AI_net', 'CryptoThannos', 
-                    'HolderScan', 'Ethimedes', 'MisterSpread', 'CBATrades', 'DigimonCBA',
-                    'MWhalekiller', 'smileycapital', 'thedefivillain', 'doomsdart', 
-                    'bitcodyy', 'CryptoDarkSide4', 'DefiSabali', '0xTindorr', 
-                    'Chroma_Trading', 'follis_', 'AltcoinSniperTA', 'Bitcoinhabebe', 
-                    'sonder_crypto', 'istudycharts', 'Crypto_Tigers1', 'CryptoLimbo_',
-                    'cryptoknight890', 'CryptoEmree_', 'spetsnaz_3', 'newzage', 'The__Solstice',
-                    'jaydee_757', 'EasyInvests', 'sarper_onder', 'XForceGlobal', 'alecTrading', 'redhairshanks86', 'eliz883'
-                  ].map((account) => {
-                    return (
-                    <SafeLink
-                      key={account}
-                      href={`https://x.com/${account}`}
-                      className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg hover:bg-yellow-500/20 transition-colors"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="text-yellow-400 font-bold text-sm">𝕏</span>
-                        <span className="text-yellow-400 font-semibold text-sm">{account}</span>
-                      </div>
-                    </SafeLink>
-                    );
-                  })}
-                  
-                  {/* Sonder Crypto Tweet */}
-                  <SafeLink
-                    href="https://x.com/sonder_crypto/status/1968059158491767121"
-                    className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg hover:bg-yellow-500/20 transition-colors"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="text-yellow-400 font-bold text-sm">𝕏</span>
-                      <span className="text-yellow-400 font-semibold text-sm">sonder_crypto</span>
-                    </div>
-                  </SafeLink>
-
-                  {/* AlecTrading Tweet */}
-                  <SafeLink
-                    href="https://x.com/alecTrading/status/1971938635097559333"
-                    className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg hover:bg-yellow-500/20 transition-colors"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="text-yellow-400 font-bold text-sm">𝕏</span>
-                      <span className="text-yellow-400 font-semibold text-sm">alecTrading</span>
-                    </div>
-                  </SafeLink>
-                </div>
-              </GlassCard>
-
-              {/* Thoughts & Opinions Subsection */}
-              <GlassCard className="mb-6 p-4">
-                <div className="flex items-center justify-center mb-6">
-                  <h4 className="text-xl font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">Thoughts & Opinions</h4>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {[
-                    'CryptoZer0_'
-                  ].map((account) => {
-                    return (
-                    <SafeLink
-                      key={account}
-                      href={`https://x.com/${account}`}
-                      className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="text-blue-400 font-bold text-sm">𝕏</span>
-                        <span className="text-blue-400 font-semibold text-sm">{account}</span>
-                      </div>
-                    </SafeLink>
-                    );
-                  })}
-                </div>
-              </GlassCard>
-
-              {/* Macro Subsection */}
-              <GlassCard className="mb-6 p-4">
-                <div className="flex items-center justify-center mb-6">
-                  <h4 className="text-xl font-bold bg-gradient-to-r from-white to-cyan-100 bg-clip-text text-transparent">Macro</h4>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {[
-                    '_The_Prophet__'
-                  ].map((account) => {
-                    return (
-                    <SafeLink
-                      key={account}
-                      href={`https://x.com/${account}`}
-                      className="p-3 bg-cyan-500/10 border border-cyan-500/20 rounded-lg hover:bg-cyan-500/20 transition-colors"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="text-cyan-400 font-bold text-sm">𝕏</span>
-                        <span className="text-cyan-400 font-semibold text-sm">{account}</span>
-                      </div>
-                    </SafeLink>
-                    );
-                  })}
-                </div>
-              </GlassCard>
-
-              {/* Market Today Subsection */}
-              <GlassCard className="mb-6 p-4">
-                <div className="flex items-center justify-center mb-6">
-                  <h4 className="text-xl font-bold bg-gradient-to-r from-white to-orange-100 bg-clip-text text-transparent">Market Today</h4>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {[
-                    'aicryptopattern'
-                  ].map((account) => {
-                    return (
-                    <SafeLink
-                      key={account}
-                      href={`https://x.com/${account}`}
-                      className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="text-orange-400 font-bold text-sm">𝕏</span>
-                        <span className="text-orange-400 font-semibold text-sm">{account}</span>
-                      </div>
-                    </SafeLink>
-                    );
-                  })}
-                </div>
-              </GlassCard>
-
-              {/* Chains Subsection */}
-              <GlassCard className="mb-6 p-4">
-                <div className="flex items-center justify-center mb-6">
-                  <h4 className="text-xl font-bold bg-gradient-to-r from-white to-purple-100 bg-clip-text text-transparent">Chains</h4>
-                </div>
-                
-                {/* Base and Solana Ecosystems - Side by Side */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                  {/* Base Ecosystem */}
-                  <GlassCard className="p-4">
-                    <div className="flex items-center justify-center mb-6">
-                      <h4 className="text-lg font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">Base Ecosystem</h4>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <SafeLink
-                        href='https://x.com/BaseDailyTK'
-                        className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-blue-400 font-bold text-sm">𝕏</span>
-                          <span className="text-blue-400 font-semibold text-sm">Base Daily TK</span>
-                        </div>
-                        <div className="text-xs text-crypto-silver">@BaseDailyTK - Daily BASE network updates and insights</div>
-                      </SafeLink>
-
-                      <SafeLink
-                        href='https://x.com/MemesOnBase'
-                        className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-blue-400 font-bold text-sm">𝕏</span>
-                          <span className="text-blue-400 font-semibold text-sm">Memes On Base</span>
-                        </div>
-                        <div className="text-xs text-crypto-silver">@MemesOnBase - BASE network meme culture and community</div>
-                      </SafeLink>
-
-                      <SafeLink
-                        href='https://x.com/MemesOnBase_'
-                        className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-blue-400 font-bold text-sm">𝕏</span>
-                          <span className="text-blue-400 font-semibold text-sm">Memes On Base</span>
-                        </div>
-                        <div className="text-xs text-crypto-silver">@MemesOnBase_ - BASE network meme culture and trends</div>
-                      </SafeLink>
-
-                      <SafeLink
-                        href='https://x.com/Shake51_'
-                        className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-blue-400 font-bold text-sm">𝕏</span>
-                          <span className="text-blue-400 font-semibold text-sm">Shake51</span>
-                        </div>
-                        <div className="text-xs text-crypto-silver">@Shake51_ - BASE network trading insights</div>
-                      </SafeLink>
-
-                      <SafeLink
-                        href='https://x.com/1CrypticPoet'
-                        className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-blue-400 font-bold text-sm">𝕏</span>
-                          <span className="text-blue-400 font-semibold text-sm">CrypticPoet</span>
-                        </div>
-                        <div className="text-xs text-crypto-silver">@1CrypticPoet - BASE network alpha and trading signals</div>
-                      </SafeLink>
-
-                      <SafeLink
-                        href='https://x.com/jamatto14'
-                        className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-blue-400 font-bold text-sm">𝕏</span>
-                          <span className="text-blue-400 font-semibold text-sm">Jamatto14</span>
-                        </div>
-                        <div className="text-xs text-crypto-silver">@jamatto14 - BASE network insights and updates</div>
-                      </SafeLink>
-
-                      <SafeLink
-                        href='https://x.com/MrGreen_18'
-                        className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-blue-400 font-bold text-sm">𝕏</span>
-                          <span className="text-blue-400 font-semibold text-sm">MrGreen_18</span>
-                        </div>
-                        <div className="text-xs text-crypto-silver">@MrGreen_18 - BASE network trading signals and alpha</div>
-                      </SafeLink>
-
-                      <SafeLink
-                        href='https://x.com/chironchain'
-                        className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-blue-400 font-bold text-sm">𝕏</span>
-                          <span className="text-blue-400 font-semibold text-sm">chironchain</span>
-                        </div>
-                        <div className="text-xs text-crypto-silver">@chironchain - BASE network insights</div>
-                      </SafeLink>
-
-                      <SafeLink
-                        href='https://x.com/goodvimonly'
-                        className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-blue-400 font-bold text-sm">𝕏</span>
-                          <span className="text-blue-400 font-semibold text-sm">goodvimonly</span>
-                        </div>
-                        <div className="text-xs text-crypto-silver">@goodvimonly - BASE network analysis</div>
-                      </SafeLink>
-
-                      <SafeLink
-                        href='https://x.com/0x_tesseract'
-                        className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-blue-400 font-bold text-sm">𝕏</span>
-                          <span className="text-blue-400 font-semibold text-sm">0x_tesseract</span>
-                        </div>
-                        <div className="text-xs text-crypto-silver">@0x_tesseract - BASE network trading</div>
-                      </SafeLink>
-
-                      <SafeLink
-                        href='https://x.com/Prometheus_The1'
-                        className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-blue-400 font-bold text-sm">𝕏</span>
-                          <span className="text-blue-400 font-semibold text-sm">Prometheus_The1</span>
-                        </div>
-                        <div className="text-xs text-crypto-silver">@Prometheus_The1 - BASE network insights</div>
-                      </SafeLink>
-
-                      <SafeLink
-                        href='https://x.com/lil_louieT'
-                        className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-blue-400 font-bold text-sm">𝕏</span>
-                          <span className="text-blue-400 font-semibold text-sm">lil_louieT</span>
-                        </div>
-                        <div className="text-xs text-crypto-silver">@lil_louieT - BASE network trading</div>
-                      </SafeLink>
-                    </div>
-                  </GlassCard>
-
-                  {/* Solana Ecosystem */}
-                  <GlassCard className="p-4">
-                    <div className="flex items-center justify-center mb-6">
-                      <h4 className="text-lg font-bold bg-gradient-to-r from-white to-purple-100 bg-clip-text text-transparent">Solana Ecosystem</h4>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <SafeLink
-                        href='https://x.com/Dior100x'
-                        className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-purple-400 font-bold text-sm">𝕏</span>
-                          <span className="text-purple-400 font-semibold text-sm">Dior100x</span>
-                        </div>
-                        <div className="text-xs text-crypto-silver">@Dior100x - Solana trading insights</div>
-                      </SafeLink>
-
-                      <SafeLink
-                        href='https://x.com/_Shadow36'
-                        className="p-3 bg-gray-500/10 border border-gray-500/20 rounded-lg hover:bg-gray-500/20 transition-colors"
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-gray-400 font-bold text-sm">𝕏</span>
-                          <span className="text-gray-400 font-semibold text-sm">_Shadow36</span>
-                        </div>
-                        <div className="text-xs text-crypto-silver">@_Shadow36 - Solana market analysis</div>
-                      </SafeLink>
-
-                      <SafeLink
-                        href='https://x.com/WolverCrypto'
-                        className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg hover:bg-yellow-500/20 transition-colors"
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-yellow-400 font-bold text-sm">𝕏</span>
-                          <span className="text-yellow-400 font-semibold text-sm">WolverCrypto</span>
-                        </div>
-                        <div className="text-xs text-crypto-silver">@WolverCrypto - Crypto trading insights</div>
-                      </SafeLink>
-
-                      <SafeLink
-                        href='https://x.com/watchingmarkets'
-                        className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-blue-400 font-bold text-sm">𝕏</span>
-                          <span className="text-blue-400 font-semibold text-sm">watchingmarkets</span>
-                        </div>
-                        <div className="text-xs text-crypto-silver">@watchingmarkets - Market watching insights</div>
-                      </SafeLink>
-
-                      <SafeLink
-                        href='https://x.com/Crypto_Alch'
-                        className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-green-400 font-bold text-sm">𝕏</span>
-                          <span className="text-green-400 font-semibold text-sm">Crypto_Alch</span>
-                        </div>
-                        <div className="text-xs text-crypto-silver">@Crypto_Alch - Crypto alchemy insights</div>
-                      </SafeLink>
-
-                      <SafeLink
-                        href='https://x.com/bruhbearr'
-                        className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-purple-400 font-bold text-sm">𝕏</span>
-                          <span className="text-purple-400 font-semibold text-sm">bruhbearr</span>
-                        </div>
-                        <div className="text-xs text-crypto-silver">@bruhbearr - Solana trading insights</div>
-                      </SafeLink>
-
-                      <SafeLink
-                        href='https://x.com/AltcoinMarksman'
-                        className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-purple-400 font-bold text-sm">𝕏</span>
-                          <span className="text-purple-400 font-semibold text-sm">AltcoinMarksman</span>
-                        </div>
-                        <div className="text-xs text-crypto-silver">@AltcoinMarksman - Solana market analysis</div>
-                      </SafeLink>
-                    </div>
-                  </GlassCard>
-                </div>
-
-                {/* Bittensor and BNB Ecosystems - Side by Side */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Bittensor Ecosystem */}
-                  <GlassCard className="p-4">
-                    <div className="flex items-center justify-center mb-6">
-                      <h4 className="text-lg font-bold bg-gradient-to-r from-white to-orange-100 bg-clip-text text-transparent">Bittensor Ecosystem</h4>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <SafeLink
-                        href='https://x.com/tao_agent'
-                        className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-purple-400 font-bold text-sm">𝕏</span>
-                          <span className="text-purple-400 font-semibold text-sm">TAO Agent</span>
-                        </div>
-                        <div className="text-xs text-crypto-silver">@tao_agent - Bittensor Signal Intelligence</div>
-                      </SafeLink>
-
-                      <SafeLink
-                        href='https://x.com/Bitcast_network'
-                        className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-purple-400 font-bold text-sm">𝕏</span>
-                          <span className="text-purple-400 font-semibold text-sm">Bitcast Network</span>
-                        </div>
-                        <div className="text-xs text-crypto-silver">@Bitcast_network - TAO Network Analytics</div>
-                      </SafeLink>
-
-                      <SafeLink
-                        href='https://x.com/TaoStacker'
-                        className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-purple-400 font-bold text-sm">𝕏</span>
-                          <span className="text-purple-400 font-semibold text-sm">TaoStacker</span>
-                        </div>
-                        <div className="text-xs text-crypto-silver">@TaoStacker - TAO Staking Insights</div>
-                      </SafeLink>
-
-                      <SafeLink
-                        href='https://x.com/TaoIsTheKey'
-                        className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-purple-400 font-bold text-sm">𝕏</span>
-                          <span className="text-purple-400 font-semibold text-sm">TaoIsTheKey</span>
-                        </div>
-                        <div className="text-xs text-crypto-silver">@TaoIsTheKey - TAO Market Analysis</div>
-                      </SafeLink>
-
-                      <SafeLink
-                        href='https://x.com/varimotrades'
-                        className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-purple-400 font-bold text-sm">𝕏</span>
-                          <span className="text-purple-400 font-semibold text-sm">VARiMOtrading</span>
-                        </div>
-                        <div className="text-xs text-crypto-silver">@varimotrades - TAO Trading Signals</div>
-                      </SafeLink>
-
-                      <SafeLink
-                        href='https://x.com/_g_x_g'
-                        className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-purple-400 font-bold text-sm">𝕏</span>
-                          <span className="text-purple-400 font-semibold text-sm">GXG</span>
-                        </div>
-                        <div className="text-xs text-crypto-silver">@_g_x_g - Bittensor Intelligence</div>
-                      </SafeLink>
-
-                      <SafeLink
-                        href='https://x.com/TalkingTensor'
-                        className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-purple-400 font-bold text-sm">𝕏</span>
-                          <span className="text-purple-400 font-semibold text-sm">Talking Tensor</span>
-                        </div>
-                        <div className="text-xs text-crypto-silver">@TalkingTensor - Bittensor Insights</div>
-                      </SafeLink>
-
-                      <SafeLink
-                        href='https://x.com/Shogun__base'
-                        className="p-3 bg-gray-500/10 border border-gray-500/20 rounded-lg hover:bg-gray-500/20 transition-colors"
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-gray-400 font-bold text-sm">𝕏</span>
-                          <span className="text-gray-400 font-semibold text-sm">Shogun Base</span>
-                        </div>
-                        <div className="text-xs text-crypto-silver">@Shogun__base - Base Network Trading</div>
-                      </SafeLink>
-
-                      <SafeLink
-                        href='https://x.com/Victor_crypto_2'
-                        className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-green-400 font-bold text-sm">𝕏</span>
-                          <span className="text-green-400 font-semibold text-sm">Victor Crypto</span>
-                        </div>
-                        <div className="text-xs text-crypto-silver">@Victor_crypto_2 - Crypto Market Analysis</div>
-                      </SafeLink>
-
-                      <SafeLink
-                        href='https://x.com/btcrenaissance'
-                        className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-purple-400 font-bold text-sm">𝕏</span>
-                          <span className="text-purple-400 font-semibold text-sm">BTC Renaissance</span>
-                        </div>
-                        <div className="text-xs text-crypto-silver">@btcrenaissance - Bittensor Insights</div>
-                      </SafeLink>
-                    </div>
-                  </GlassCard>
-
-                  {/* BNB Ecosystem */}
-                  <GlassCard className="p-4">
-                    <div className="flex items-center justify-center mb-6">
-                      <h4 className="text-lg font-bold bg-gradient-to-r from-white to-yellow-100 bg-clip-text text-transparent">BNB Ecosystem</h4>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <SafeLink
-                        href='https://x.com/cryptoknight890'
-                        className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg hover:bg-yellow-500/20 transition-colors"
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-yellow-400 font-bold text-sm">𝕏</span>
-                          <span className="text-yellow-400 font-semibold text-sm">CryptoKnight890</span>
-                        </div>
-                        <div className="text-xs text-crypto-silver">@cryptoknight890 - BNB ecosystem insights</div>
-                      </SafeLink>
-
-                      <SafeLink
-                        href='https://x.com/BastilleBtc'
-                        className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg hover:bg-yellow-500/20 transition-colors"
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-yellow-400 font-bold text-sm">𝕏</span>
-                          <span className="text-yellow-400 font-semibold text-sm">BastilleBtc</span>
-                        </div>
-                        <div className="text-xs text-crypto-silver">@BastilleBtc - BNB trading and insights</div>
-                      </SafeLink>
-
-                      <SafeLink
-                        href='https://x.com/JuliusElum'
-                        className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg hover:bg-yellow-500/20 transition-colors"
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-yellow-400 font-bold text-sm">𝕏</span>
-                          <span className="text-yellow-400 font-semibold text-sm">JuliusElum</span>
-                        </div>
-                        <div className="text-xs text-crypto-silver">@JuliusElum - BNB ecosystem analysis</div>
-                      </SafeLink>
-                    </div>
-                  </GlassCard>
-                </div>
-              </GlassCard>
-
-              {/* StocksX */}
-              <GlassCard className="mb-6 p-4">
-                <div className="flex items-center justify-center mb-6">
-                  <h4 className="text-xl font-bold bg-gradient-to-r from-white to-green-100 bg-clip-text text-transparent">StocksX</h4>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                  {[
-                    { name: 'RebellioMarket', handle: '@RebellioMarket' },
-                    { name: 'StocksToTrade', handle: '@StocksToTrade' },
-                    { name: 'Timothy Sykes', handle: '@timothysykes' },
-                    { name: 'Parangiras', handle: '@Parangiras' },
-                    { name: 'Real Sheep Wolf', handle: '@realsheepwolf' },
-                    { name: 'Eric Jackson', handle: '@ericjackson' },
-                    { name: 'The Long Invest', handle: '@TheLongInvest' },
-                    { name: 'Davy', handle: '@davyy888' },
-                    { name: 'PMDiChristina', handle: '@PMDiChristina' },
-                    { name: 'Joel Goes Digital', handle: '@JoelGoesDigital' },
-                    { name: 'Scot1andT', handle: '@Scot1andT' },
-                    { name: 'MACD Master', handle: '@MACDMaster328' },
-                    { name: 'Spartan Trading', handle: '@SpartanTrading' },
-                    { name: 'Planert41', handle: '@planert41' },
-                    { name: 'Maximus Holla', handle: '@Maximus_Holla' },
-                    { name: 'Canton Meow', handle: '@cantonmeow' },
-                    { name: 'Donald J Dean', handle: '@donaldjdean' },
-                    { name: 'AC Investor Blog', handle: '@ACInvestorBlog' },
-                    { name: 'Cestrian Inc', handle: '@CestrianInc' },
-                    { name: 'Invest In Assets', handle: '@InvestInAssets' },
-                    { name: 'Invest Insights', handle: '@investinsights4' },
-                    { name: 'Bits and Bips', handle: '@bitsandbips' },
-                    { name: 'BKnight221', handle: '@BKnight221' },
-                    { name: 'NFT Lunatic', handle: '@NFTLunatic' },
-                    { name: 'AllISeeIs_W', handle: '@alliseeis_W' },
-                    { name: 'HyesGregory', handle: '@HyesGregory' },
-                    { name: 'StockOptionCole', handle: '@StockOptionCole' },
-                    { name: 'newzage', handle: '@newzage' },
-                    { name: 'The__Solstice', handle: '@The__Solstice' },
-                    { name: 'thenewmoney_tnm', handle: '@thenewmoney_tnm' },
-                    { name: 'aleabitoreddit', handle: '@aleabitoreddit' }
-                  ].map((account) => {
-                    const getAccountUrl = (handle: string) => {
-                      return `https://x.com/${handle.replace('@', '')}`;
-                    };
-
-                    return (
+                    { handle: 'BaseDailyTK', name: 'Base Daily TK', desc: '@BaseDailyTK - Daily BASE network updates and insights' },
+                    { handle: 'MemesOnBase', name: 'Memes On Base', desc: '@MemesOnBase - BASE network meme culture and community' },
+                    { handle: 'MemesOnBase_', name: 'Memes On Base', desc: '@MemesOnBase_ - BASE network meme culture and trends' },
+                    { handle: 'Shake51_', name: 'Shake51', desc: '@Shake51_ - BASE network trading insights' },
+                    { handle: '1CrypticPoet', name: 'CrypticPoet', desc: '@1CrypticPoet - BASE network alpha and trading signals' },
+                    { handle: 'jamatto14', name: 'Jamatto14', desc: '@jamatto14 - BASE network insights and updates' },
+                    { handle: 'MrGreen_18', name: 'MrGreen_18', desc: '@MrGreen_18 - BASE network trading signals and alpha' },
+                    { handle: 'chironchain', name: 'chironchain', desc: '@chironchain - BASE network insights' },
+                    { handle: 'goodvimonly', name: 'goodvimonly', desc: '@goodvimonly - BASE network analysis' },
+                    { handle: '0x_tesseract', name: '0x_tesseract', desc: '@0x_tesseract - BASE network trading' },
+                    { handle: 'Prometheus_The1', name: 'Prometheus_The1', desc: '@Prometheus_The1 - BASE network insights' },
+                    { handle: 'lil_louieT', name: 'lil_louieT', desc: '@lil_louieT - BASE network trading' },
+                  ].map((account) => (
                     <SafeLink
                       key={account.handle}
-                      href={getAccountUrl(account.handle)}
-                      className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
+                      href={`https://x.com/${account.handle}`}
+                      style={{ padding: '0.6rem 0.75rem', background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: 6, transition: 'background 0.2s', cursor: 'pointer', textAlign: 'left' }}
+                      className="profile-cell"
                     >
-                      <div className="flex items-center gap-2">
-                        <span className="text-green-400 font-bold text-sm">𝕏</span>
-                        <span className="text-green-400 font-semibold text-sm">{account.name}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.25rem' }}>
+                        <span style={{ color: '#3b82f6', fontWeight: 700, fontSize: '0.85rem' }}>𝕏</span>
+                        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', color: '#3b82f6', fontWeight: 500 }}>{account.name}</span>
                       </div>
+                      <div style={{ fontSize: '0.68rem', color: '#475569' }}>{account.desc}</div>
                     </SafeLink>
-                    );
-                  })}
+                  ))}
                 </div>
-              </GlassCard>
-
-            </div>
-
-          </GlassCard>
-
-          {/* Social Platforms */}
-          <GlassCard className="p-6">
-            <div className="flex items-center gap-2 mb-6">
-              <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                <span className="text-white font-bold text-sm">P</span>
               </div>
-              <h3 className="text-xl font-semibold text-white">Platforms</h3>
-              <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-                SOCIAL MEDIA
-              </Badge>
-            </div>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <SafeLink
-                href='https://substack.com/'
-                className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
-                    <span className="text-white text-sm">📰</span>
-                  </div>
-                  <h4 className="text-orange-400 font-semibold">Substack</h4>
-                </div>
-                <p className="text-gray-400 text-sm">Newsletter Publishing Platform</p>
-              </SafeLink>
 
-              <SafeLink
-                href='https://x.com/home'
-                className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                    <span className="text-white font-bold">𝕏</span>
-                  </div>
-                  <h4 className="text-blue-400 font-semibold">X</h4>
+              {/* Solana Ecosystem */}
+              <div style={{ background: '#0c0d1e', border: '1px solid #1e2148', borderRadius: 10, padding: '1.25rem' }}>
+                <h4 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#a855f7', marginBottom: '0.75rem', textAlign: 'center' }}>Solana Ecosystem</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.5rem' }}>
+                  {[
+                    { handle: 'Dior100x', name: 'Dior100x', desc: '@Dior100x - Solana trading insights', color: '#a855f7' },
+                    { handle: '_Shadow36', name: '_Shadow36', desc: '@_Shadow36 - Solana market analysis', color: '#64748b' },
+                    { handle: 'WolverCrypto', name: 'WolverCrypto', desc: '@WolverCrypto - Crypto trading insights', color: '#eab308' },
+                    { handle: 'watchingmarkets', name: 'watchingmarkets', desc: '@watchingmarkets - Market watching insights', color: '#3b82f6' },
+                    { handle: 'Crypto_Alch', name: 'Crypto_Alch', desc: '@Crypto_Alch - Crypto alchemy insights', color: '#22c55e' },
+                    { handle: 'bruhbearr', name: 'bruhbearr', desc: '@bruhbearr - Solana trading insights', color: '#a855f7' },
+                    { handle: 'AltcoinMarksman', name: 'AltcoinMarksman', desc: '@AltcoinMarksman - Solana market analysis', color: '#a855f7' },
+                  ].map((account) => (
+                    <SafeLink
+                      key={account.handle}
+                      href={`https://x.com/${account.handle}`}
+                      style={{ padding: '0.6rem 0.75rem', background: `${account.color}14`, border: `1px solid ${account.color}33`, borderRadius: 6, transition: 'background 0.2s', cursor: 'pointer', textAlign: 'left' }}
+                      className="profile-cell"
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.25rem' }}>
+                        <span style={{ color: account.color, fontWeight: 700, fontSize: '0.85rem' }}>𝕏</span>
+                        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', color: account.color, fontWeight: 500 }}>{account.name}</span>
+                      </div>
+                      <div style={{ fontSize: '0.68rem', color: '#475569' }}>{account.desc}</div>
+                    </SafeLink>
+                  ))}
                 </div>
-                <p className="text-gray-400 text-sm">Social Media & News Feed</p>
-              </SafeLink>
-
-              <SafeLink
-                href='https://farcaster.xyz/'
-                className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/20 transition-colors"
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
-                    <span className="text-white text-sm">🌐</span>
-                  </div>
-                  <h4 className="text-purple-400 font-semibold">Farcaster</h4>
-                </div>
-                <p className="text-gray-400 text-sm">Decentralized Social Network</p>
-              </SafeLink>
-            </div>
-          </GlassCard>
-
-          {/* Social Analytics */}
-          <GlassCard className="p-6">
-            <div className="flex items-center gap-2 mb-6">
-              <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
-                <span className="text-white font-bold text-sm">A</span>
               </div>
-              <h3 className="text-xl font-semibold text-white">Analytics</h3>
-              <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
-                AI POWERED
-              </Badge>
             </div>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <SafeLink
-                href='https://yaps.kaito.ai/'
-                className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors"
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <h4 className="text-orange-400 font-semibold">Kaito</h4>
-                </div>
-                <p className="text-gray-400 text-sm">AI-Powered Social Intelligence</p>
-              </SafeLink>
 
-              <SafeLink
-                href='https://app.kolytics.pro/leaderboard'
-                className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg hover:bg-red-500/20 transition-colors"
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <h4 className="text-red-400 font-semibold">Kolytics</h4>
+            {/* Bittensor and BNB Ecosystems - Side by Side */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1rem' }}>
+              {/* Bittensor Ecosystem */}
+              <div style={{ background: '#0c0d1e', border: '1px solid #1e2148', borderRadius: 10, padding: '1.25rem' }}>
+                <h4 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#a855f7', marginBottom: '0.75rem', textAlign: 'center' }}>Bittensor Ecosystem</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.5rem' }}>
+                  {[
+                    { handle: 'tao_agent', name: 'TAO Agent', desc: '@tao_agent - Bittensor Signal Intelligence', color: '#a855f7' },
+                    { handle: 'Bitcast_network', name: 'Bitcast Network', desc: '@Bitcast_network - TAO Network Analytics', color: '#a855f7' },
+                    { handle: 'TaoStacker', name: 'TaoStacker', desc: '@TaoStacker - TAO Staking Insights', color: '#a855f7' },
+                    { handle: 'TaoIsTheKey', name: 'TaoIsTheKey', desc: '@TaoIsTheKey - TAO Market Analysis', color: '#a855f7' },
+                    { handle: 'varimotrades', name: 'VARiMOtrading', desc: '@varimotrades - TAO Trading Signals', color: '#a855f7' },
+                    { handle: '_g_x_g', name: 'GXG', desc: '@_g_x_g - Bittensor Intelligence', color: '#a855f7' },
+                    { handle: 'TalkingTensor', name: 'Talking Tensor', desc: '@TalkingTensor - Bittensor Insights', color: '#a855f7' },
+                    { handle: 'Shogun__base', name: 'Shogun Base', desc: '@Shogun__base - Base Network Trading', color: '#64748b' },
+                    { handle: 'Victor_crypto_2', name: 'Victor Crypto', desc: '@Victor_crypto_2 - Crypto Market Analysis', color: '#22c55e' },
+                    { handle: 'btcrenaissance', name: 'BTC Renaissance', desc: '@btcrenaissance - Bittensor Insights', color: '#a855f7' },
+                  ].map((account) => (
+                    <SafeLink
+                      key={account.handle}
+                      href={`https://x.com/${account.handle}`}
+                      style={{ padding: '0.6rem 0.75rem', background: `${account.color}14`, border: `1px solid ${account.color}33`, borderRadius: 6, transition: 'background 0.2s', cursor: 'pointer', textAlign: 'left' }}
+                      className="profile-cell"
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.25rem' }}>
+                        <span style={{ color: account.color, fontWeight: 700, fontSize: '0.85rem' }}>𝕏</span>
+                        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', color: account.color, fontWeight: 500 }}>{account.name}</span>
+                      </div>
+                      <div style={{ fontSize: '0.68rem', color: '#475569' }}>{account.desc}</div>
+                    </SafeLink>
+                  ))}
                 </div>
-                <p className="text-gray-400 text-sm">Social Signal Analytics</p>
-              </SafeLink>
+              </div>
 
-              <SafeLink
-                href='https://www.alphabot.app/pulse'
-                className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <h4 className="text-blue-400 font-semibold">Alphabot</h4>
+              {/* BNB Ecosystem */}
+              <div style={{ background: '#0c0d1e', border: '1px solid #1e2148', borderRadius: 10, padding: '1.25rem' }}>
+                <h4 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#eab308', marginBottom: '0.75rem', textAlign: 'center' }}>BNB Ecosystem</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.5rem' }}>
+                  {[
+                    { handle: 'cryptoknight890', name: 'CryptoKnight890', desc: '@cryptoknight890 - BNB ecosystem insights' },
+                    { handle: 'BastilleBtc', name: 'BastilleBtc', desc: '@BastilleBtc - BNB trading and insights' },
+                    { handle: 'JuliusElum', name: 'JuliusElum', desc: '@JuliusElum - BNB ecosystem analysis' },
+                  ].map((account) => (
+                    <SafeLink
+                      key={account.handle}
+                      href={`https://x.com/${account.handle}`}
+                      style={{ padding: '0.6rem 0.75rem', background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.2)', borderRadius: 6, transition: 'background 0.2s', cursor: 'pointer', textAlign: 'left' }}
+                      className="profile-cell"
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.25rem' }}>
+                        <span style={{ color: '#eab308', fontWeight: 700, fontSize: '0.85rem' }}>𝕏</span>
+                        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', color: '#eab308', fontWeight: 500 }}>{account.name}</span>
+                      </div>
+                      <div style={{ fontSize: '0.68rem', color: '#475569' }}>{account.desc}</div>
+                    </SafeLink>
+                  ))}
                 </div>
-                <p className="text-gray-400 text-sm">Social Sentiment Bot</p>
-              </SafeLink>
+              </div>
             </div>
-          </GlassCard>
+          </div>
 
-        </div>
-      </main>
+          {/* StocksX */}
+          <div style={{ background: '#111228', border: '1px solid #1e2148', borderRadius: 12, padding: '1.5rem', marginBottom: '1.5rem' }}>
+            <h3 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.78rem', fontWeight: 500, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#22c55e', marginBottom: '0.75rem' }}>StocksX</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.5rem' }}>
+              {[
+                { name: 'RebellioMarket', handle: '@RebellioMarket' },
+                { name: 'StocksToTrade', handle: '@StocksToTrade' },
+                { name: 'Timothy Sykes', handle: '@timothysykes' },
+                { name: 'Parangiras', handle: '@Parangiras' },
+                { name: 'Real Sheep Wolf', handle: '@realsheepwolf' },
+                { name: 'Eric Jackson', handle: '@ericjackson' },
+                { name: 'The Long Invest', handle: '@TheLongInvest' },
+                { name: 'Davy', handle: '@davyy888' },
+                { name: 'PMDiChristina', handle: '@PMDiChristina' },
+                { name: 'Joel Goes Digital', handle: '@JoelGoesDigital' },
+                { name: 'Scot1andT', handle: '@Scot1andT' },
+                { name: 'MACD Master', handle: '@MACDMaster328' },
+                { name: 'Spartan Trading', handle: '@SpartanTrading' },
+                { name: 'Planert41', handle: '@planert41' },
+                { name: 'Maximus Holla', handle: '@Maximus_Holla' },
+                { name: 'Canton Meow', handle: '@cantonmeow' },
+                { name: 'Donald J Dean', handle: '@donaldjdean' },
+                { name: 'AC Investor Blog', handle: '@ACInvestorBlog' },
+                { name: 'Cestrian Inc', handle: '@CestrianInc' },
+                { name: 'Invest In Assets', handle: '@InvestInAssets' },
+                { name: 'Invest Insights', handle: '@investinsights4' },
+                { name: 'Bits and Bips', handle: '@bitsandbips' },
+                { name: 'BKnight221', handle: '@BKnight221' },
+                { name: 'NFT Lunatic', handle: '@NFTLunatic' },
+                { name: 'AllISeeIs_W', handle: '@alliseeis_W' },
+                { name: 'HyesGregory', handle: '@HyesGregory' },
+                { name: 'StockOptionCole', handle: '@StockOptionCole' },
+                { name: 'newzage', handle: '@newzage' },
+                { name: 'The__Solstice', handle: '@The__Solstice' },
+                { name: 'thenewmoney_tnm', handle: '@thenewmoney_tnm' },
+                { name: 'aleabitoreddit', handle: '@aleabitoreddit' }
+              ].map((account) => (
+                <SafeLink
+                  key={account.handle}
+                  href={`https://x.com/${account.handle.replace('@', '')}`}
+                  style={{ padding: '0.6rem 0.9rem', background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 6, display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'background 0.2s', cursor: 'pointer', textAlign: 'left' }}
+                  className="profile-cell"
+                >
+                  <span style={{ color: '#22c55e', fontWeight: 700, fontSize: '0.85rem' }}>𝕏</span>
+                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', color: '#22c55e', fontWeight: 500 }}>{account.name}</span>
+                </SafeLink>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Platforms Section */}
+        <section style={{ maxWidth: 880, margin: '0 auto', padding: '2rem 3rem', position: 'relative', zIndex: 1 }}>
+          <h3 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.78rem', fontWeight: 500, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#38bdf8', marginBottom: '0.75rem' }}>Platforms</h3>
+          <h2 style={{ fontSize: '1.6rem', fontWeight: 600, letterSpacing: '-0.02em', marginBottom: '1.5rem', color: '#e2e8f0' }}>Social <span className="ice">Media</span></h2>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1px', background: '#1e2148', border: '1px solid #1e2148', borderRadius: 12, overflow: 'hidden' }}>
+            <SafeLink
+              href='https://substack.com/'
+              style={{ background: '#111228', padding: '1.5rem', transition: 'background 0.2s', cursor: 'pointer', textAlign: 'left' }}
+              className="section-card"
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                <span style={{ fontSize: '1.2rem' }}>📰</span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.7rem', fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#f97316' }}>Substack</span>
+              </div>
+              <div style={{ fontSize: '0.9rem', fontWeight: 500, color: '#e2e8f0' }}>Newsletter Publishing Platform</div>
+            </SafeLink>
+
+            <SafeLink
+              href='https://x.com/home'
+              style={{ background: '#111228', padding: '1.5rem', transition: 'background 0.2s', cursor: 'pointer', textAlign: 'left' }}
+              className="section-card"
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                <span style={{ fontSize: '1.2rem', fontWeight: 700 }}>𝕏</span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.7rem', fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#3b82f6' }}>X</span>
+              </div>
+              <div style={{ fontSize: '0.9rem', fontWeight: 500, color: '#e2e8f0' }}>Social Media & News Feed</div>
+            </SafeLink>
+
+            <SafeLink
+              href='https://farcaster.xyz/'
+              style={{ background: '#111228', padding: '1.5rem', transition: 'background 0.2s', cursor: 'pointer', textAlign: 'left' }}
+              className="section-card"
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                <span style={{ fontSize: '1.2rem' }}>🌐</span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.7rem', fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#a855f7' }}>Farcaster</span>
+              </div>
+              <div style={{ fontSize: '0.9rem', fontWeight: 500, color: '#e2e8f0' }}>Decentralized Social Network</div>
+            </SafeLink>
+          </div>
+        </section>
+
+        {/* Analytics Section */}
+        <section style={{ maxWidth: 880, margin: '0 auto', padding: '2rem 3rem', position: 'relative', zIndex: 1 }}>
+          <h3 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.78rem', fontWeight: 500, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#38bdf8', marginBottom: '0.75rem' }}>Analytics</h3>
+          <h2 style={{ fontSize: '1.6rem', fontWeight: 600, letterSpacing: '-0.02em', marginBottom: '1.5rem', color: '#e2e8f0' }}>AI-Powered <span className="ice">Intelligence</span></h2>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1px', background: '#1e2148', border: '1px solid #1e2148', borderRadius: 12, overflow: 'hidden' }}>
+            <SafeLink
+              href='https://yaps.kaito.ai/'
+              style={{ background: '#111228', padding: '1.5rem', transition: 'background 0.2s', cursor: 'pointer', textAlign: 'left' }}
+              className="section-card"
+            >
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.7rem', fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#f97316', marginBottom: '0.5rem' }}>Kaito</div>
+              <div style={{ fontSize: '0.9rem', fontWeight: 500, color: '#e2e8f0' }}>AI-Powered Social Intelligence</div>
+            </SafeLink>
+
+            <SafeLink
+              href='https://app.kolytics.pro/leaderboard'
+              style={{ background: '#111228', padding: '1.5rem', transition: 'background 0.2s', cursor: 'pointer', textAlign: 'left' }}
+              className="section-card"
+            >
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.7rem', fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#ef4444', marginBottom: '0.5rem' }}>Kolytics</div>
+              <div style={{ fontSize: '0.9rem', fontWeight: 500, color: '#e2e8f0' }}>Social Signal Analytics</div>
+            </SafeLink>
+
+            <SafeLink
+              href='https://www.alphabot.app/pulse'
+              style={{ background: '#111228', padding: '1.5rem', transition: 'background 0.2s', cursor: 'pointer', textAlign: 'left' }}
+              className="section-card"
+            >
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.7rem', fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#3b82f6', marginBottom: '0.5rem' }}>Alphabot</div>
+              <div style={{ fontSize: '0.9rem', fontWeight: 500, color: '#e2e8f0' }}>Social Sentiment Bot</div>
+            </SafeLink>
+          </div>
+        </section>
+
+        {/* FOOTER */}
+        <footer style={{ borderTop: '1px solid #1e2148', padding: '3rem', textAlign: 'center', color: '#64748b', fontSize: '0.85rem', maxWidth: 880, margin: '2rem auto 0' }}>
+          <p style={{ fontSize: '0.75rem', color: '#475569' }}>
+            Social intelligence and community analytics
+          </p>
+        </footer>
+      </div>
     </div>
   );
 }
