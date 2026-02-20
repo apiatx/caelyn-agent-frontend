@@ -13,7 +13,7 @@ export default function TickerTapeWidget() {
     const doc = iframe.contentDocument;
     if (doc) {
       doc.open();
-      doc.write(`<!DOCTYPE html><html><head><style>body{margin:0;padding:0;overflow:hidden;background:transparent;}</style></head><body><script type="module" src="https://widgets.tradingview-widget.com/w/en/tv-ticker-tape.js"><\/script><tv-ticker-tape symbols='FOREXCOM:SPXUSD,FOREXCOM:NSXUSD,FOREXCOM:DJI,CAPITALCOM:DXY,TVC:US10Y,CAPITALCOM:VIX,CAPITALCOM:GOLD,CAPITALCOM:SILVER,BITSTAMP:BTCUSD,BITSTAMP:ETHUSD,NSE:NIFTY50' hover-type="performance-grid" show-hover theme="dark"></tv-ticker-tape></body></html>`);
+      doc.write(`<!DOCTYPE html><html><head><style>body{margin:0;padding:0;overflow:hidden;background:transparent;}</style></head><body><script type="module" src="https://widgets.tradingview-widget.com/w/en/tv-ticker-tape.js"><\/script><tv-ticker-tape symbols='FOREXCOM:SPXUSD,FOREXCOM:NSXUSD,FOREXCOM:DJI,CAPITALCOM:DXY,CAPITALCOM:VIX,CAPITALCOM:GOLD,CAPITALCOM:SILVER,BITSTAMP:BTCUSD,BITSTAMP:ETHUSD' hover-type="performance-grid" show-hover theme="dark"></tv-ticker-tape></body></html>`);
       doc.close();
     }
     return () => {
