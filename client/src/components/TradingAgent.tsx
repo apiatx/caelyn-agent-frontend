@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import caelynLogo from "@assets/Untitled_design_1771564301817.png";
+import caelynLogo from "@assets/image_1771528728963.png";
 
 const AGENT_BACKEND_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
 const AGENT_API_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
