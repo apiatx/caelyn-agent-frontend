@@ -1,5 +1,5 @@
 import { openSecureLink } from '@/utils/security';
-import socialImage from "@assets/download (4)_1757214892954.png";
+import socialImage from "@assets/image_1771574082445.png";
 
 interface SafeLinkProps {
   href: string;
@@ -56,10 +56,8 @@ export default function OnchainSocialPage() {
           }}>
             Social Intelligence
           </div>
-          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1.5rem', marginBottom: '1.5rem' }}>
-            <div style={{ width: 112, height: 112, borderRadius: '50%', overflow: 'hidden', border: '2px solid #38bdf8', flexShrink: 0 }}>
-              <img src={socialImage} alt="Social" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            </div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+            <img src={socialImage} alt="Caelyn.ai" style={{ width: 320, height: 'auto', objectFit: 'contain' }} />
             <h1 style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: 700, lineHeight: 1.15, letterSpacing: '-0.03em' }}>
               <span className="gradient-text">Social</span>
             </h1>
