@@ -35,7 +35,7 @@ export default function AboutPage() {
         }} />
 
         {/* HERO */}
-        <div style={{ padding: '6rem 3rem 5rem', maxWidth: 900, margin: '0 auto', textAlign: 'center', position: 'relative', zIndex: 1 }}>
+        <div style={{ padding: '4rem 3rem 2rem', maxWidth: 900, margin: '0 auto', textAlign: 'center', position: 'relative', zIndex: 1 }}>
           <div style={{
             display: 'inline-block', fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', fontWeight: 500,
             letterSpacing: '0.12em', textTransform: 'uppercase', color: '#38bdf8',
@@ -54,12 +54,14 @@ export default function AboutPage() {
         </div>
 
         {/* CAELYN.AI LOGO IMAGE */}
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem 0' }}>
-          <img src={caelynLogo} alt="CaelynAI" style={{ maxWidth: 420, width: '90%', height: 'auto' }} />
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '1rem 0' }}>
+          <div style={{ maxWidth: 480, width: '90%', WebkitMaskImage: 'radial-gradient(ellipse 90% 80% at center, black 40%, transparent 100%)', maskImage: 'radial-gradient(ellipse 90% 80% at center, black 40%, transparent 100%)' }}>
+            <img src={caelynLogo} alt="CaelynAI" style={{ width: '100%', height: 'auto', display: 'block' }} />
+          </div>
         </div>
 
         {/* DIVIDER */}
-        <div style={{ width: 60, height: 2, background: 'linear-gradient(135deg, #6366f1, #3b82f6, #06b6d4)', margin: '0 auto 4rem', borderRadius: 2 }} />
+        <div style={{ width: 60, height: 2, background: 'linear-gradient(135deg, #6366f1, #3b82f6, #06b6d4)', margin: '0 auto 2rem', borderRadius: 2 }} />
 
         {/* WHAT IT IS */}
         <Section>
@@ -90,7 +92,7 @@ export default function AboutPage() {
 
         {/* IMAGE BETWEEN SECTIONS */}
         <div style={{ display: 'flex', justifyContent: 'center', padding: '1rem 0' }}>
-          <img src={caelynFairy1} alt="CaelynAI" style={{ width: 220, height: 220, borderRadius: '50%', objectFit: 'cover' }} />
+          <img src={caelynFairy1} alt="CaelynAI" style={{ width: 280, height: 280, borderRadius: '50%', objectFit: 'cover' }} />
         </div>
 
         {/* ARCHITECTURE */}
@@ -124,7 +126,7 @@ export default function AboutPage() {
 
         {/* IMAGE BETWEEN SECTIONS */}
         <div style={{ display: 'flex', justifyContent: 'center', padding: '1rem 0' }}>
-          <img src={caelynFairy2} alt="CaelynAI" style={{ width: 220, height: 220, borderRadius: 16, objectFit: 'cover' }} />
+          <img src={caelynFairy2} alt="CaelynAI" style={{ width: 280, height: 280, borderRadius: 16, objectFit: 'cover' }} />
         </div>
 
         {/* VS ALTERNATIVES */}
@@ -196,7 +198,7 @@ export default function AboutPage() {
 
         {/* IMAGE BETWEEN SECTIONS */}
         <div style={{ display: 'flex', justifyContent: 'center', padding: '1rem 0' }}>
-          <img src={caelynFairy3} alt="CaelynAI" style={{ width: 220, height: 220, borderRadius: '50%', objectFit: 'cover' }} />
+          <img src={caelynFairy3} alt="CaelynAI" style={{ width: 280, height: 280, borderRadius: '50%', objectFit: 'cover' }} />
         </div>
 
         {/* PORTFOLIO */}
@@ -225,7 +227,7 @@ const pStyle: React.CSSProperties = { color: '#475569', marginBottom: '1.25rem' 
 const thStyle: React.CSSProperties = { background: '#111228', padding: '1rem 1.25rem', textAlign: 'left', fontFamily: "'JetBrains Mono', monospace", fontSize: '0.7rem', fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#64748b', borderBottom: '1px solid #1e2148' };
 
 function Section({ children }: { children: React.ReactNode }) {
-  return <section style={{ maxWidth: 880, margin: '0 auto', padding: '4rem 3rem', position: 'relative', zIndex: 1 }}>{children}</section>;
+  return <section style={{ maxWidth: 880, margin: '0 auto', padding: '2rem 3rem', position: 'relative', zIndex: 1 }}>{children}</section>;
 }
 
 function SectionLabel({ children }: { children: string }) {
