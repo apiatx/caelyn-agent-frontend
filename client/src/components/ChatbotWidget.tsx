@@ -375,7 +375,7 @@ export default function ChatbotWidget() {
       <div style={{ flex: 1, overflowY: 'auto', padding: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
         {messages.length === 0 && !isLoading && (
           <div style={{ textAlign: 'center', padding: '40px 20px', color: C.dim }}>
-            <img src={caelynLogo} alt="" style={{ width: 240, height: 240, margin: '0 auto 16px', opacity: 0.85 }} />
+            <img src={caelynLogo} alt="" style={{ width: 240, height: 240, margin: '0 auto 16px', opacity: 1, filter: 'brightness(1.3) drop-shadow(0 0 18px rgba(120, 200, 255, 0.45))' }} />
             <div style={{ fontSize: 13, fontFamily: sansFont, marginBottom: 4 }}>Ask me anything about markets</div>
             <div style={{ fontSize: 10, fontFamily: font }}>Stocks, crypto, macro, sectors...</div>
           </div>
@@ -408,7 +408,7 @@ export default function ChatbotWidget() {
               <span style={{ color: C.dim, fontSize: 10, fontFamily: font }}>{loadingStage}</span>
             </div>
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <img src={caelynLogo} alt="" style={{ width: 200, height: 200, opacity: 0.25, animation: 'chatbot-dot 2s ease-in-out infinite' }} />
+              <img src={caelynLogo} alt="" style={{ width: 200, height: 200, opacity: 0.35, filter: 'brightness(1.3) drop-shadow(0 0 14px rgba(120, 200, 255, 0.3))', animation: 'chatbot-dot 2s ease-in-out infinite' }} />
             </div>
           </>
         )}
