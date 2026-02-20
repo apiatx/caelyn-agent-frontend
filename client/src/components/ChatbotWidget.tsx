@@ -315,7 +315,7 @@ export default function ChatbotWidget() {
             animation: chatbot-entrance 1.5s ease-out 0.3s 1 both;
           }
           .chatbot-btn-entrance:hover {
-            transform: scale(1.25) !important;
+            transform: scale(1.6) !important;
           }
         `}</style>
         <button className="chatbot-btn-entrance" onClick={() => { setMode('small'); setHasUnread(false); }} style={{
