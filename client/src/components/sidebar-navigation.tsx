@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Activity, BarChart3, TrendingUp, ChartLine, Brain, Zap, DollarSign, Building2, Layers, Coins, ChevronRight, ChevronDown, ChevronLeft, Wallet, Users, MessageSquare, Rocket, Globe, ArrowLeftRight, Search, Menu, X, Gamepad2, Gem } from "lucide-react";
 import { useLocation } from "wouter";
-import caelynLogo from "@assets/ChatGPT_Image_Feb_20,_2026,_12_49_59_AM_1771570384454.png";
+import caelynLogo from "@assets/ChatGPT_Image_Feb_20,_2026,_01_10_21_AM_1771571543846.png";
 
 interface SidebarNavigationProps {
   className?: string;
