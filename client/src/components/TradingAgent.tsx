@@ -1201,7 +1201,6 @@ export default function TradingAgent() {
                   <div style={{ padding:'0 18px 10px', display:'flex', gap:8, fontSize:11, fontFamily:font, flexWrap:'wrap' }}>
                     {fmt7d && <span style={{ color:C.dim }}>7d: <span style={{ color:changeColor(fmt7d), fontWeight:600 }}>{fmt7d}</span></span>}
                     {fmt30d && <span style={{ color:C.dim }}>30d: <span style={{ color:changeColor(fmt30d), fontWeight:600 }}>{fmt30d}</span></span>}
-                    {fmtFr && <span style={{ color:C.dim }}>Funding: <span style={{ color: frNum > 0.03 ? C.red : frNum < -0.01 ? C.green : C.text, fontWeight:600 }}>{fmtFr}</span></span>}
                     {dispOi && <span style={{ color:C.dim }}>OI: <span style={{ color:C.bright }}>{dispOi}</span></span>}
                   </div>
                 </>;
