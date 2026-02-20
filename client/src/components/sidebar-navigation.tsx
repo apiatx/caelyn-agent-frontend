@@ -433,7 +433,7 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
             ? `right-0 w-full transform transition-transform duration-300 ease-in-out ${
                 isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
               }` 
-            : `left-0 ${isCollapsed ? 'w-16' : 'w-32'}`
+            : `left-0 ${isCollapsed ? 'w-16' : 'w-40'}`
         } bg-black/95 backdrop-blur-lg border-r border-crypto-silver/20 ${
           isMobile ? 'z-50' : 'z-40'
         } ${!isMobile ? 'transition-all duration-300 ease-in-out' : ''} flex flex-col ${className}`}
@@ -459,8 +459,8 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
         )}
 
       {!isMobile && (
-      <div className="flex-shrink-0 border-b border-crypto-silver/20 flex items-center justify-center" style={{ aspectRatio:'1/1', width:'100%', maxHeight: isCollapsed ? 60 : 120 }}>
-        <div className={`rounded-full overflow-hidden shadow-lg ${isCollapsed ? 'w-10 h-10' : 'w-24 h-24'}`} style={{ transition: 'all 0.3s ease-in-out' }}>
+      <div className="flex-shrink-0 border-b border-crypto-silver/20 flex items-center justify-center" style={{ aspectRatio:'1/1', width:'100%', maxHeight: isCollapsed ? 60 : 150 }}>
+        <div className={`rounded-full overflow-hidden shadow-lg ${isCollapsed ? 'w-12 h-12' : 'w-32 h-32'}`} style={{ transition: 'all 0.3s ease-in-out' }}>
           <img 
             src={caelynLogo}
             alt="TradeBlade"
