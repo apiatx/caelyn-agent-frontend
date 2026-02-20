@@ -55,7 +55,7 @@ export default function AboutPage() {
 
         {/* CAELYN.AI LOGO IMAGE */}
         <div style={{ display: 'flex', justifyContent: 'center', padding: '1rem 0' }}>
-          <div style={{ maxWidth: 360, width: '80%', WebkitMaskImage: 'radial-gradient(ellipse 90% 80% at center, black 40%, transparent 100%)', maskImage: 'radial-gradient(ellipse 90% 80% at center, black 40%, transparent 100%)' }}>
+          <div style={{ maxWidth: 550, width: '90%' }}>
             <img src={caelynLogo} alt="CaelynAI" style={{ width: '100%', height: 'auto', display: 'block' }} />
           </div>
         </div>
