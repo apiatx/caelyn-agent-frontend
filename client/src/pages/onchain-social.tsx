@@ -72,6 +72,60 @@ export default function OnchainSocialPage() {
         {/* DIVIDER */}
         <div style={{ width: 60, height: 2, background: 'linear-gradient(135deg, #6366f1, #3b82f6, #06b6d4)', margin: '0 auto 2rem', borderRadius: 2 }} />
 
+        {/* StocksX Section */}
+        <section style={{ maxWidth: 880, margin: '0 auto', padding: '2rem 3rem', position: 'relative', zIndex: 1 }}>
+          <h3 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.78rem', fontWeight: 500, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#38bdf8', marginBottom: '0.75rem' }}>StocksX</h3>
+          <h2 style={{ fontSize: '1.6rem', fontWeight: 600, letterSpacing: '-0.02em', marginBottom: '1.5rem', color: '#e2e8f0' }}>Stocks <span className="ice">X Accounts</span></h2>
+
+          <div style={{ background: '#111228', border: '1px solid #1e2148', borderRadius: 12, padding: '1.5rem', marginBottom: '1.5rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.5rem' }}>
+              {[
+                { name: 'RebellioMarket', handle: '@RebellioMarket' },
+                { name: 'StocksToTrade', handle: '@StocksToTrade' },
+                { name: 'Timothy Sykes', handle: '@timothysykes' },
+                { name: 'Parangiras', handle: '@Parangiras' },
+                { name: 'Real Sheep Wolf', handle: '@realsheepwolf' },
+                { name: 'Eric Jackson', handle: '@ericjackson' },
+                { name: 'The Long Invest', handle: '@TheLongInvest' },
+                { name: 'Davy', handle: '@davyy888' },
+                { name: 'PMDiChristina', handle: '@PMDiChristina' },
+                { name: 'Joel Goes Digital', handle: '@JoelGoesDigital' },
+                { name: 'Scot1andT', handle: '@Scot1andT' },
+                { name: 'MACD Master', handle: '@MACDMaster328' },
+                { name: 'Spartan Trading', handle: '@SpartanTrading' },
+                { name: 'Planert41', handle: '@planert41' },
+                { name: 'Maximus Holla', handle: '@Maximus_Holla' },
+                { name: 'Canton Meow', handle: '@cantonmeow' },
+                { name: 'Donald J Dean', handle: '@donaldjdean' },
+                { name: 'AC Investor Blog', handle: '@ACInvestorBlog' },
+                { name: 'Cestrian Inc', handle: '@CestrianInc' },
+                { name: 'Invest In Assets', handle: '@InvestInAssets' },
+                { name: 'Invest Insights', handle: '@investinsights4' },
+                { name: 'Bits and Bips', handle: '@bitsandbips' },
+                { name: 'BKnight221', handle: '@BKnight221' },
+                { name: 'NFT Lunatic', handle: '@NFTLunatic' },
+                { name: 'AllISeeIs_W', handle: '@alliseeis_W' },
+                { name: 'HyesGregory', handle: '@HyesGregory' },
+                { name: 'StockOptionCole', handle: '@StockOptionCole' },
+                { name: 'newzage', handle: '@newzage' },
+                { name: 'The__Solstice', handle: '@The__Solstice' },
+                { name: 'thenewmoney_tnm', handle: '@thenewmoney_tnm' },
+                { name: 'aleabitoreddit', handle: '@aleabitoreddit' }
+              ].map((account) => (
+                <SafeLink
+                  key={account.handle}
+                  href={`https://x.com/${account.handle.replace('@', '')}`}
+                  style={{ padding: '0.6rem 0.9rem', background: 'rgba(56,189,248,0.08)', border: '1px solid rgba(56,189,248,0.2)', borderRadius: 6, display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'background 0.2s', cursor: 'pointer', textAlign: 'left' }}
+                  className="profile-cell"
+                >
+                  <span style={{ color: '#38bdf8', fontWeight: 700, fontSize: '0.85rem' }}>𝕏</span>
+                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', color: '#38bdf8', fontWeight: 500 }}>{account.name}</span>
+                </SafeLink>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* CryptoX Section */}
         <section style={{ maxWidth: 880, margin: '0 auto', padding: '2rem 3rem', position: 'relative', zIndex: 1 }}>
           <h3 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.78rem', fontWeight: 500, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#38bdf8', marginBottom: '0.75rem' }}>CryptoX</h3>
@@ -335,55 +389,6 @@ export default function OnchainSocialPage() {
             </div>
           </div>
 
-          {/* StocksX */}
-          <div style={{ background: '#111228', border: '1px solid #1e2148', borderRadius: 12, padding: '1.5rem', marginBottom: '1.5rem' }}>
-            <h3 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.78rem', fontWeight: 500, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#38bdf8', marginBottom: '0.75rem' }}>StocksX</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.5rem' }}>
-              {[
-                { name: 'RebellioMarket', handle: '@RebellioMarket' },
-                { name: 'StocksToTrade', handle: '@StocksToTrade' },
-                { name: 'Timothy Sykes', handle: '@timothysykes' },
-                { name: 'Parangiras', handle: '@Parangiras' },
-                { name: 'Real Sheep Wolf', handle: '@realsheepwolf' },
-                { name: 'Eric Jackson', handle: '@ericjackson' },
-                { name: 'The Long Invest', handle: '@TheLongInvest' },
-                { name: 'Davy', handle: '@davyy888' },
-                { name: 'PMDiChristina', handle: '@PMDiChristina' },
-                { name: 'Joel Goes Digital', handle: '@JoelGoesDigital' },
-                { name: 'Scot1andT', handle: '@Scot1andT' },
-                { name: 'MACD Master', handle: '@MACDMaster328' },
-                { name: 'Spartan Trading', handle: '@SpartanTrading' },
-                { name: 'Planert41', handle: '@planert41' },
-                { name: 'Maximus Holla', handle: '@Maximus_Holla' },
-                { name: 'Canton Meow', handle: '@cantonmeow' },
-                { name: 'Donald J Dean', handle: '@donaldjdean' },
-                { name: 'AC Investor Blog', handle: '@ACInvestorBlog' },
-                { name: 'Cestrian Inc', handle: '@CestrianInc' },
-                { name: 'Invest In Assets', handle: '@InvestInAssets' },
-                { name: 'Invest Insights', handle: '@investinsights4' },
-                { name: 'Bits and Bips', handle: '@bitsandbips' },
-                { name: 'BKnight221', handle: '@BKnight221' },
-                { name: 'NFT Lunatic', handle: '@NFTLunatic' },
-                { name: 'AllISeeIs_W', handle: '@alliseeis_W' },
-                { name: 'HyesGregory', handle: '@HyesGregory' },
-                { name: 'StockOptionCole', handle: '@StockOptionCole' },
-                { name: 'newzage', handle: '@newzage' },
-                { name: 'The__Solstice', handle: '@The__Solstice' },
-                { name: 'thenewmoney_tnm', handle: '@thenewmoney_tnm' },
-                { name: 'aleabitoreddit', handle: '@aleabitoreddit' }
-              ].map((account) => (
-                <SafeLink
-                  key={account.handle}
-                  href={`https://x.com/${account.handle.replace('@', '')}`}
-                  style={{ padding: '0.6rem 0.9rem', background: 'rgba(56,189,248,0.08)', border: '1px solid rgba(56,189,248,0.2)', borderRadius: 6, display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'background 0.2s', cursor: 'pointer', textAlign: 'left' }}
-                  className="profile-cell"
-                >
-                  <span style={{ color: '#38bdf8', fontWeight: 700, fontSize: '0.85rem' }}>𝕏</span>
-                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', color: '#38bdf8', fontWeight: 500 }}>{account.name}</span>
-                </SafeLink>
-              ))}
-            </div>
-          </div>
         </section>
 
         {/* Platforms Section */}
