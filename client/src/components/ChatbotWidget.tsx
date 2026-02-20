@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { useChatbot } from '@/contexts/ChatbotContext';
-import cryptoHippoLogo from '@assets/image_1771541162366.png';
-import caelynLogo from '@assets/image_1771549651056.png';
+import cryptoHippoLogo from '@assets/image_1771549651056.png';
+import caelynLogo from '@assets/image_1771541162366.png';
 
 const C = {
   bg: '#0b0c10', card: '#111318', border: '#1a1d25', text: '#c9cdd6', bright: '#e8eaef',
