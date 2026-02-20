@@ -866,6 +866,10 @@ export default function TradingAgent() {
     const perpsDivergences = s.perps_divergences || [];
     const perpsTopVol = s.perps_top_volume || [];
     const perpsTopOi = s.perps_top_oi || [];
+    const xSentiment = s.x_sentiment || null;
+    const socialMovers = xSentiment?.top_social_movers || xSentiment?.trending_tickers || [];
+    const narrativeHeat = xSentiment?.narrative_heat || [];
+    const contrarianSignals = xSentiment?.contrarian_signals || [];
 
     const fmtBig = (n: any): string => {
       if (n == null) return 'N/A';
