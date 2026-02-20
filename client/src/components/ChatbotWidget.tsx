@@ -320,7 +320,7 @@ export default function ChatbotWidget() {
         `}</style>
         <button className="chatbot-btn-entrance" onClick={() => { setMode('small'); setHasUnread(false); }} style={{
           position: 'fixed', bottom: isMobile ? 16 : 24, right: isMobile ? 16 : 24, zIndex: 9999,
-          width: isMobile ? 64 : 80, height: isMobile ? 64 : 80,
+          width: isMobile ? 80 : 100, height: isMobile ? 80 : 100,
           background: 'none', border: 'none', padding: 0,
           cursor: 'pointer',
           filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.5)) drop-shadow(0 0 20px rgba(139,92,246,0.25))',
