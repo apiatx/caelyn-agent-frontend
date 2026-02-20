@@ -57,7 +57,7 @@ export function MainLayout({ children }: MainLayoutProps) {
           ? 'ml-0 pt-14' 
           : isCollapsed 
             ? 'ml-16' 
-            : 'ml-40'
+            : 'ml-32'
       }`}>
         <main className="w-full">
           {children}
