@@ -1,4 +1,4 @@
-import caelynLogo from "@assets/ChatGPT_Image_Feb_20,_2026,_01_10_21_AM_1771571543846.png";
+import caelynLogo from "@assets/image_1771576238262.png";
 import caelynFairy1 from "@assets/image_1771572217667.png";
 import caelynFairy2 from "@assets/ChatGPT_Image_Feb_20,_2026,_12_58_48_AM_1771570952831.png";
 import caelynFairy3 from "@assets/image_1771565690741.png";
