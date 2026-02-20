@@ -664,9 +664,6 @@ export default function StocksPortfolioPage() {
           <div style={{ borderBottom: '1px solid transparent', borderImage: 'linear-gradient(90deg, transparent, #6366f1, #3b82f6, #06b6d4, transparent) 1', paddingBottom: 16, marginBottom: 24 }}>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #6366f1, #3b82f6, #06b6d4)' }}>
-                <Briefcase className="w-5 h-5 text-white" />
-              </div>
               <div>
                 <h1 style={{ fontSize: '1.75rem', fontWeight: 700, background: 'linear-gradient(135deg, #e2e8f0, #38bdf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Portfolio Dashboard</h1>
                 {holdings.length > 0 && totalPortfolioValue > 0 && (
