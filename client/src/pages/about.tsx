@@ -1,3 +1,8 @@
+import caelynLogo from "@assets/ChatGPT_Image_Feb_20,_2026,_01_10_21_AM_1771571543846.png";
+import caelynFairy1 from "@assets/image_1771572217667.png";
+import caelynFairy2 from "@assets/ChatGPT_Image_Feb_20,_2026,_12_58_48_AM_1771570952831.png";
+import caelynFairy3 from "@assets/image_1771565690741.png";
+
 export default function AboutPage() {
   return (
     <div className="min-h-screen text-white relative" style={{ background: '#050510', fontFamily: "'Outfit', sans-serif", lineHeight: 1.65 }}>
@@ -48,6 +53,11 @@ export default function AboutPage() {
           </p>
         </div>
 
+        {/* CAELYN.AI LOGO IMAGE */}
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem 0' }}>
+          <img src={caelynLogo} alt="CaelynAI" style={{ maxWidth: 420, width: '90%', height: 'auto' }} />
+        </div>
+
         {/* DIVIDER */}
         <div style={{ width: 60, height: 2, background: 'linear-gradient(135deg, #6366f1, #3b82f6, #06b6d4)', margin: '0 auto 4rem', borderRadius: 2 }} />
 
@@ -78,6 +88,11 @@ export default function AboutPage() {
           </DataGrid>
         </Section>
 
+        {/* IMAGE BETWEEN SECTIONS */}
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '1rem 0' }}>
+          <img src={caelynFairy1} alt="CaelynAI" style={{ width: 220, height: 220, borderRadius: '50%', objectFit: 'cover' }} />
+        </div>
+
         {/* ARCHITECTURE */}
         <Section>
           <SectionLabel>Architecture</SectionLabel>
@@ -106,6 +121,11 @@ export default function AboutPage() {
           <FeatureRow label="altFINS TA" desc={<><strong>Pre-computed technical analysis across 2,000+ crypto assets.</strong> RSI, MACD, SMA/EMA crossovers, chart patterns, candlestick patterns, support/resistance, and trend scores. CaelynAI never calculates indicators from raw candles — it uses institutional-grade pre-computed signals.</>} />
           <FeatureRow label="Narrative Rotation" desc={<><strong>Hot category tracking</strong> from CoinGecko and CMC. Which sectors (AI, gaming, RWA, meme coins, L2s, DePIN) are gaining market cap? Dual-trending across both platforms is the strongest momentum signal.</>} isLast />
         </Section>
+
+        {/* IMAGE BETWEEN SECTIONS */}
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '1rem 0' }}>
+          <img src={caelynFairy2} alt="CaelynAI" style={{ width: 220, height: 220, borderRadius: 16, objectFit: 'cover' }} />
+        </div>
 
         {/* VS ALTERNATIVES */}
         <Section>
@@ -173,6 +193,11 @@ export default function AboutPage() {
             <DataCell label="Natural Language" value={<>Ask anything. "What's the best squeeze play right now?" "Compare NVDA and AMD." "Is this a good time to buy gold?" The agent routes to the right data automatically.</>} />
           </DataGrid>
         </Section>
+
+        {/* IMAGE BETWEEN SECTIONS */}
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '1rem 0' }}>
+          <img src={caelynFairy3} alt="CaelynAI" style={{ width: 220, height: 220, borderRadius: '50%', objectFit: 'cover' }} />
+        </div>
 
         {/* PORTFOLIO */}
         <Section>
