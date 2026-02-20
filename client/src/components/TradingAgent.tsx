@@ -2056,7 +2056,7 @@ export default function TradingAgent() {
             )}
 
             {panels.length === 0 && !loading && (
-              <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', height:'100%', minHeight:200, color:C.dim, paddingTop:80 }}>
+              <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', flex:1, color:C.dim }}>
                 <img src={caelynLogo} alt="caelyn.ai" style={{ width:400, height:400, marginBottom:8, imageRendering:'auto', WebkitBackfaceVisibility:'hidden' }} />
                 <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&display=swap" rel="stylesheet" />
                 <div style={{ fontSize:32, fontWeight:400, marginBottom:6, letterSpacing:'0.04em', color:'#ffffff', fontFamily:"'Comfortaa', sans-serif" }}>caelyn<span style={{ color:'rgba(255,255,255,0.5)' }}>.ai</span></div>
