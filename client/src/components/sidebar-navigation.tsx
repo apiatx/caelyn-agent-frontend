@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Activity, BarChart3, TrendingUp, ChartLine, Brain, Zap, DollarSign, Building2, Layers, Coins, ChevronRight, ChevronDown, ChevronLeft, Wallet, Users, MessageSquare, Rocket, Globe, ArrowLeftRight, Search, Menu, X, Gamepad2, Gem } from "lucide-react";
 import { useLocation } from "wouter";
-import caelynLogo from "@assets/image_1771569985348.png";
+import caelynLogo from "@assets/4Y9vAZ3j_(1)_1771570136679.png";
 
 interface SidebarNavigationProps {
   className?: string;
