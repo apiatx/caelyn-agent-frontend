@@ -79,7 +79,7 @@ export default function OnchainSocialPage() {
 
           {/* Research and Fundamentals */}
           <div style={{ background: '#111228', border: '1px solid #1e2148', borderRadius: 12, padding: '1.5rem', marginBottom: '1.5rem' }}>
-            <h3 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.78rem', fontWeight: 500, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#22c55e', marginBottom: '0.75rem' }}>Research and Fundamentals</h3>
+            <h3 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.78rem', fontWeight: 500, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#38bdf8', marginBottom: '0.75rem' }}>Research and Fundamentals</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.5rem' }}>
               {[
                 'TechDev_52', 'ofvoice25355', 'CoinGurruu', 'stacy_muur', 
@@ -91,11 +91,11 @@ export default function OnchainSocialPage() {
                 <SafeLink
                   key={account}
                   href={`https://x.com/${account}`}
-                  style={{ padding: '0.6rem 0.9rem', background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 6, display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'background 0.2s', cursor: 'pointer', textAlign: 'left' }}
+                  style={{ padding: '0.6rem 0.9rem', background: 'rgba(56,189,248,0.08)', border: '1px solid rgba(56,189,248,0.2)', borderRadius: 6, display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'background 0.2s', cursor: 'pointer', textAlign: 'left' }}
                   className="profile-cell"
                 >
-                  <span style={{ color: '#22c55e', fontWeight: 700, fontSize: '0.85rem' }}>𝕏</span>
-                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', color: '#22c55e', fontWeight: 500 }}>{account}</span>
+                  <span style={{ color: '#38bdf8', fontWeight: 700, fontSize: '0.85rem' }}>𝕏</span>
+                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', color: '#38bdf8', fontWeight: 500 }}>{account}</span>
                 </SafeLink>
               ))}
             </div>
@@ -103,7 +103,7 @@ export default function OnchainSocialPage() {
 
           {/* Traders */}
           <div style={{ background: '#111228', border: '1px solid #1e2148', borderRadius: 12, padding: '1.5rem', marginBottom: '1.5rem' }}>
-            <h3 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.78rem', fontWeight: 500, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#eab308', marginBottom: '0.75rem' }}>Traders</h3>
+            <h3 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.78rem', fontWeight: 500, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#38bdf8', marginBottom: '0.75rem' }}>Traders</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.5rem' }}>
               {[
                 'TheEuroSniper', 'EricCryptoman', 'Whale_AI_net', 'CryptoThannos', 
@@ -118,35 +118,35 @@ export default function OnchainSocialPage() {
                 <SafeLink
                   key={account}
                   href={`https://x.com/${account}`}
-                  style={{ padding: '0.6rem 0.9rem', background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.2)', borderRadius: 6, display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'background 0.2s', cursor: 'pointer', textAlign: 'left' }}
+                  style={{ padding: '0.6rem 0.9rem', background: 'rgba(56,189,248,0.08)', border: '1px solid rgba(56,189,248,0.2)', borderRadius: 6, display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'background 0.2s', cursor: 'pointer', textAlign: 'left' }}
                   className="profile-cell"
                 >
-                  <span style={{ color: '#eab308', fontWeight: 700, fontSize: '0.85rem' }}>𝕏</span>
-                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', color: '#eab308', fontWeight: 500 }}>{account}</span>
+                  <span style={{ color: '#38bdf8', fontWeight: 700, fontSize: '0.85rem' }}>𝕏</span>
+                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', color: '#38bdf8', fontWeight: 500 }}>{account}</span>
                 </SafeLink>
               ))}
               <SafeLink
                 href="https://x.com/sonder_crypto/status/1968059158491767121"
-                style={{ padding: '0.6rem 0.9rem', background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.2)', borderRadius: 6, display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'background 0.2s', cursor: 'pointer', textAlign: 'left' }}
+                style={{ padding: '0.6rem 0.9rem', background: 'rgba(56,189,248,0.08)', border: '1px solid rgba(56,189,248,0.2)', borderRadius: 6, display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'background 0.2s', cursor: 'pointer', textAlign: 'left' }}
                 className="profile-cell"
               >
-                <span style={{ color: '#eab308', fontWeight: 700, fontSize: '0.85rem' }}>𝕏</span>
-                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', color: '#eab308', fontWeight: 500 }}>sonder_crypto</span>
+                <span style={{ color: '#38bdf8', fontWeight: 700, fontSize: '0.85rem' }}>𝕏</span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', color: '#38bdf8', fontWeight: 500 }}>sonder_crypto</span>
               </SafeLink>
               <SafeLink
                 href="https://x.com/alecTrading/status/1971938635097559333"
-                style={{ padding: '0.6rem 0.9rem', background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.2)', borderRadius: 6, display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'background 0.2s', cursor: 'pointer', textAlign: 'left' }}
+                style={{ padding: '0.6rem 0.9rem', background: 'rgba(56,189,248,0.08)', border: '1px solid rgba(56,189,248,0.2)', borderRadius: 6, display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'background 0.2s', cursor: 'pointer', textAlign: 'left' }}
                 className="profile-cell"
               >
-                <span style={{ color: '#eab308', fontWeight: 700, fontSize: '0.85rem' }}>𝕏</span>
-                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', color: '#eab308', fontWeight: 500 }}>alecTrading</span>
+                <span style={{ color: '#38bdf8', fontWeight: 700, fontSize: '0.85rem' }}>𝕏</span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', color: '#38bdf8', fontWeight: 500 }}>alecTrading</span>
               </SafeLink>
             </div>
           </div>
 
           {/* Thoughts & Opinions */}
           <div style={{ background: '#111228', border: '1px solid #1e2148', borderRadius: 12, padding: '1.5rem', marginBottom: '1.5rem' }}>
-            <h3 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.78rem', fontWeight: 500, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#3b82f6', marginBottom: '0.75rem' }}>Thoughts & Opinions</h3>
+            <h3 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.78rem', fontWeight: 500, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#38bdf8', marginBottom: '0.75rem' }}>Thoughts & Opinions</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.5rem' }}>
               {[
                 'CryptoZer0_'
@@ -154,11 +154,11 @@ export default function OnchainSocialPage() {
                 <SafeLink
                   key={account}
                   href={`https://x.com/${account}`}
-                  style={{ padding: '0.6rem 0.9rem', background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: 6, display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'background 0.2s', cursor: 'pointer', textAlign: 'left' }}
+                  style={{ padding: '0.6rem 0.9rem', background: 'rgba(56,189,248,0.08)', border: '1px solid rgba(56,189,248,0.2)', borderRadius: 6, display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'background 0.2s', cursor: 'pointer', textAlign: 'left' }}
                   className="profile-cell"
                 >
-                  <span style={{ color: '#3b82f6', fontWeight: 700, fontSize: '0.85rem' }}>𝕏</span>
-                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', color: '#3b82f6', fontWeight: 500 }}>{account}</span>
+                  <span style={{ color: '#38bdf8', fontWeight: 700, fontSize: '0.85rem' }}>𝕏</span>
+                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', color: '#38bdf8', fontWeight: 500 }}>{account}</span>
                 </SafeLink>
               ))}
             </div>
@@ -166,7 +166,7 @@ export default function OnchainSocialPage() {
 
           {/* Macro */}
           <div style={{ background: '#111228', border: '1px solid #1e2148', borderRadius: 12, padding: '1.5rem', marginBottom: '1.5rem' }}>
-            <h3 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.78rem', fontWeight: 500, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#06b6d4', marginBottom: '0.75rem' }}>Macro</h3>
+            <h3 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.78rem', fontWeight: 500, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#38bdf8', marginBottom: '0.75rem' }}>Macro</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.5rem' }}>
               {[
                 '_The_Prophet__'
@@ -174,11 +174,11 @@ export default function OnchainSocialPage() {
                 <SafeLink
                   key={account}
                   href={`https://x.com/${account}`}
-                  style={{ padding: '0.6rem 0.9rem', background: 'rgba(6,182,212,0.08)', border: '1px solid rgba(6,182,212,0.2)', borderRadius: 6, display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'background 0.2s', cursor: 'pointer', textAlign: 'left' }}
+                  style={{ padding: '0.6rem 0.9rem', background: 'rgba(56,189,248,0.08)', border: '1px solid rgba(56,189,248,0.2)', borderRadius: 6, display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'background 0.2s', cursor: 'pointer', textAlign: 'left' }}
                   className="profile-cell"
                 >
-                  <span style={{ color: '#06b6d4', fontWeight: 700, fontSize: '0.85rem' }}>𝕏</span>
-                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', color: '#06b6d4', fontWeight: 500 }}>{account}</span>
+                  <span style={{ color: '#38bdf8', fontWeight: 700, fontSize: '0.85rem' }}>𝕏</span>
+                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', color: '#38bdf8', fontWeight: 500 }}>{account}</span>
                 </SafeLink>
               ))}
             </div>
@@ -186,7 +186,7 @@ export default function OnchainSocialPage() {
 
           {/* Market Today */}
           <div style={{ background: '#111228', border: '1px solid #1e2148', borderRadius: 12, padding: '1.5rem', marginBottom: '1.5rem' }}>
-            <h3 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.78rem', fontWeight: 500, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#f97316', marginBottom: '0.75rem' }}>Market Today</h3>
+            <h3 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.78rem', fontWeight: 500, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#38bdf8', marginBottom: '0.75rem' }}>Market Today</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.5rem' }}>
               {[
                 'aicryptopattern'
@@ -194,11 +194,11 @@ export default function OnchainSocialPage() {
                 <SafeLink
                   key={account}
                   href={`https://x.com/${account}`}
-                  style={{ padding: '0.6rem 0.9rem', background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.2)', borderRadius: 6, display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'background 0.2s', cursor: 'pointer', textAlign: 'left' }}
+                  style={{ padding: '0.6rem 0.9rem', background: 'rgba(56,189,248,0.08)', border: '1px solid rgba(56,189,248,0.2)', borderRadius: 6, display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'background 0.2s', cursor: 'pointer', textAlign: 'left' }}
                   className="profile-cell"
                 >
-                  <span style={{ color: '#f97316', fontWeight: 700, fontSize: '0.85rem' }}>𝕏</span>
-                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', color: '#f97316', fontWeight: 500 }}>{account}</span>
+                  <span style={{ color: '#38bdf8', fontWeight: 700, fontSize: '0.85rem' }}>𝕏</span>
+                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', color: '#38bdf8', fontWeight: 500 }}>{account}</span>
                 </SafeLink>
               ))}
             </div>
@@ -206,13 +206,13 @@ export default function OnchainSocialPage() {
 
           {/* Chains */}
           <div style={{ background: '#111228', border: '1px solid #1e2148', borderRadius: 12, padding: '1.5rem', marginBottom: '1.5rem' }}>
-            <h3 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.78rem', fontWeight: 500, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#a855f7', marginBottom: '1.25rem' }}>Chains</h3>
+            <h3 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.78rem', fontWeight: 500, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#38bdf8', marginBottom: '1.25rem' }}>Chains</h3>
 
             {/* Base and Solana Ecosystems - Side by Side */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
               {/* Base Ecosystem */}
               <div style={{ background: '#0c0d1e', border: '1px solid #1e2148', borderRadius: 10, padding: '1.25rem' }}>
-                <h4 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#3b82f6', marginBottom: '0.75rem', textAlign: 'center' }}>Base Ecosystem</h4>
+                <h4 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#38bdf8', marginBottom: '0.75rem', textAlign: 'center' }}>Base Ecosystem</h4>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.5rem' }}>
                   {[
                     { handle: 'BaseDailyTK', name: 'Base Daily TK', desc: '@BaseDailyTK - Daily BASE network updates and insights' },
@@ -231,12 +231,12 @@ export default function OnchainSocialPage() {
                     <SafeLink
                       key={account.handle}
                       href={`https://x.com/${account.handle}`}
-                      style={{ padding: '0.6rem 0.75rem', background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: 6, transition: 'background 0.2s', cursor: 'pointer', textAlign: 'left' }}
+                      style={{ padding: '0.6rem 0.75rem', background: 'rgba(56,189,248,0.08)', border: '1px solid rgba(56,189,248,0.2)', borderRadius: 6, transition: 'background 0.2s', cursor: 'pointer', textAlign: 'left' }}
                       className="profile-cell"
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.25rem' }}>
-                        <span style={{ color: '#3b82f6', fontWeight: 700, fontSize: '0.85rem' }}>𝕏</span>
-                        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', color: '#3b82f6', fontWeight: 500 }}>{account.name}</span>
+                        <span style={{ color: '#38bdf8', fontWeight: 700, fontSize: '0.85rem' }}>𝕏</span>
+                        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', color: '#38bdf8', fontWeight: 500 }}>{account.name}</span>
                       </div>
                       <div style={{ fontSize: '0.68rem', color: '#475569' }}>{account.desc}</div>
                     </SafeLink>
@@ -246,16 +246,16 @@ export default function OnchainSocialPage() {
 
               {/* Solana Ecosystem */}
               <div style={{ background: '#0c0d1e', border: '1px solid #1e2148', borderRadius: 10, padding: '1.25rem' }}>
-                <h4 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#a855f7', marginBottom: '0.75rem', textAlign: 'center' }}>Solana Ecosystem</h4>
+                <h4 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#38bdf8', marginBottom: '0.75rem', textAlign: 'center' }}>Solana Ecosystem</h4>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.5rem' }}>
                   {[
-                    { handle: 'Dior100x', name: 'Dior100x', desc: '@Dior100x - Solana trading insights', color: '#a855f7' },
-                    { handle: '_Shadow36', name: '_Shadow36', desc: '@_Shadow36 - Solana market analysis', color: '#64748b' },
-                    { handle: 'WolverCrypto', name: 'WolverCrypto', desc: '@WolverCrypto - Crypto trading insights', color: '#eab308' },
-                    { handle: 'watchingmarkets', name: 'watchingmarkets', desc: '@watchingmarkets - Market watching insights', color: '#3b82f6' },
-                    { handle: 'Crypto_Alch', name: 'Crypto_Alch', desc: '@Crypto_Alch - Crypto alchemy insights', color: '#22c55e' },
-                    { handle: 'bruhbearr', name: 'bruhbearr', desc: '@bruhbearr - Solana trading insights', color: '#a855f7' },
-                    { handle: 'AltcoinMarksman', name: 'AltcoinMarksman', desc: '@AltcoinMarksman - Solana market analysis', color: '#a855f7' },
+                    { handle: 'Dior100x', name: 'Dior100x', desc: '@Dior100x - Solana trading insights', color: '#38bdf8' },
+                    { handle: '_Shadow36', name: '_Shadow36', desc: '@_Shadow36 - Solana market analysis', color: '#38bdf8' },
+                    { handle: 'WolverCrypto', name: 'WolverCrypto', desc: '@WolverCrypto - Crypto trading insights', color: '#38bdf8' },
+                    { handle: 'watchingmarkets', name: 'watchingmarkets', desc: '@watchingmarkets - Market watching insights', color: '#38bdf8' },
+                    { handle: 'Crypto_Alch', name: 'Crypto_Alch', desc: '@Crypto_Alch - Crypto alchemy insights', color: '#38bdf8' },
+                    { handle: 'bruhbearr', name: 'bruhbearr', desc: '@bruhbearr - Solana trading insights', color: '#38bdf8' },
+                    { handle: 'AltcoinMarksman', name: 'AltcoinMarksman', desc: '@AltcoinMarksman - Solana market analysis', color: '#38bdf8' },
                   ].map((account) => (
                     <SafeLink
                       key={account.handle}
@@ -278,19 +278,19 @@ export default function OnchainSocialPage() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1rem' }}>
               {/* Bittensor Ecosystem */}
               <div style={{ background: '#0c0d1e', border: '1px solid #1e2148', borderRadius: 10, padding: '1.25rem' }}>
-                <h4 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#a855f7', marginBottom: '0.75rem', textAlign: 'center' }}>Bittensor Ecosystem</h4>
+                <h4 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#38bdf8', marginBottom: '0.75rem', textAlign: 'center' }}>Bittensor Ecosystem</h4>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.5rem' }}>
                   {[
-                    { handle: 'tao_agent', name: 'TAO Agent', desc: '@tao_agent - Bittensor Signal Intelligence', color: '#a855f7' },
-                    { handle: 'Bitcast_network', name: 'Bitcast Network', desc: '@Bitcast_network - TAO Network Analytics', color: '#a855f7' },
-                    { handle: 'TaoStacker', name: 'TaoStacker', desc: '@TaoStacker - TAO Staking Insights', color: '#a855f7' },
-                    { handle: 'TaoIsTheKey', name: 'TaoIsTheKey', desc: '@TaoIsTheKey - TAO Market Analysis', color: '#a855f7' },
-                    { handle: 'varimotrades', name: 'VARiMOtrading', desc: '@varimotrades - TAO Trading Signals', color: '#a855f7' },
-                    { handle: '_g_x_g', name: 'GXG', desc: '@_g_x_g - Bittensor Intelligence', color: '#a855f7' },
-                    { handle: 'TalkingTensor', name: 'Talking Tensor', desc: '@TalkingTensor - Bittensor Insights', color: '#a855f7' },
-                    { handle: 'Shogun__base', name: 'Shogun Base', desc: '@Shogun__base - Base Network Trading', color: '#64748b' },
-                    { handle: 'Victor_crypto_2', name: 'Victor Crypto', desc: '@Victor_crypto_2 - Crypto Market Analysis', color: '#22c55e' },
-                    { handle: 'btcrenaissance', name: 'BTC Renaissance', desc: '@btcrenaissance - Bittensor Insights', color: '#a855f7' },
+                    { handle: 'tao_agent', name: 'TAO Agent', desc: '@tao_agent - Bittensor Signal Intelligence', color: '#38bdf8' },
+                    { handle: 'Bitcast_network', name: 'Bitcast Network', desc: '@Bitcast_network - TAO Network Analytics', color: '#38bdf8' },
+                    { handle: 'TaoStacker', name: 'TaoStacker', desc: '@TaoStacker - TAO Staking Insights', color: '#38bdf8' },
+                    { handle: 'TaoIsTheKey', name: 'TaoIsTheKey', desc: '@TaoIsTheKey - TAO Market Analysis', color: '#38bdf8' },
+                    { handle: 'varimotrades', name: 'VARiMOtrading', desc: '@varimotrades - TAO Trading Signals', color: '#38bdf8' },
+                    { handle: '_g_x_g', name: 'GXG', desc: '@_g_x_g - Bittensor Intelligence', color: '#38bdf8' },
+                    { handle: 'TalkingTensor', name: 'Talking Tensor', desc: '@TalkingTensor - Bittensor Insights', color: '#38bdf8' },
+                    { handle: 'Shogun__base', name: 'Shogun Base', desc: '@Shogun__base - Base Network Trading', color: '#38bdf8' },
+                    { handle: 'Victor_crypto_2', name: 'Victor Crypto', desc: '@Victor_crypto_2 - Crypto Market Analysis', color: '#38bdf8' },
+                    { handle: 'btcrenaissance', name: 'BTC Renaissance', desc: '@btcrenaissance - Bittensor Insights', color: '#38bdf8' },
                   ].map((account) => (
                     <SafeLink
                       key={account.handle}
@@ -310,7 +310,7 @@ export default function OnchainSocialPage() {
 
               {/* BNB Ecosystem */}
               <div style={{ background: '#0c0d1e', border: '1px solid #1e2148', borderRadius: 10, padding: '1.25rem' }}>
-                <h4 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#eab308', marginBottom: '0.75rem', textAlign: 'center' }}>BNB Ecosystem</h4>
+                <h4 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#38bdf8', marginBottom: '0.75rem', textAlign: 'center' }}>BNB Ecosystem</h4>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.5rem' }}>
                   {[
                     { handle: 'cryptoknight890', name: 'CryptoKnight890', desc: '@cryptoknight890 - BNB ecosystem insights' },
@@ -320,12 +320,12 @@ export default function OnchainSocialPage() {
                     <SafeLink
                       key={account.handle}
                       href={`https://x.com/${account.handle}`}
-                      style={{ padding: '0.6rem 0.75rem', background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.2)', borderRadius: 6, transition: 'background 0.2s', cursor: 'pointer', textAlign: 'left' }}
+                      style={{ padding: '0.6rem 0.75rem', background: 'rgba(56,189,248,0.08)', border: '1px solid rgba(56,189,248,0.2)', borderRadius: 6, transition: 'background 0.2s', cursor: 'pointer', textAlign: 'left' }}
                       className="profile-cell"
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.25rem' }}>
-                        <span style={{ color: '#eab308', fontWeight: 700, fontSize: '0.85rem' }}>𝕏</span>
-                        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', color: '#eab308', fontWeight: 500 }}>{account.name}</span>
+                        <span style={{ color: '#38bdf8', fontWeight: 700, fontSize: '0.85rem' }}>𝕏</span>
+                        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', color: '#38bdf8', fontWeight: 500 }}>{account.name}</span>
                       </div>
                       <div style={{ fontSize: '0.68rem', color: '#475569' }}>{account.desc}</div>
                     </SafeLink>
@@ -337,7 +337,7 @@ export default function OnchainSocialPage() {
 
           {/* StocksX */}
           <div style={{ background: '#111228', border: '1px solid #1e2148', borderRadius: 12, padding: '1.5rem', marginBottom: '1.5rem' }}>
-            <h3 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.78rem', fontWeight: 500, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#22c55e', marginBottom: '0.75rem' }}>StocksX</h3>
+            <h3 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.78rem', fontWeight: 500, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#38bdf8', marginBottom: '0.75rem' }}>StocksX</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.5rem' }}>
               {[
                 { name: 'RebellioMarket', handle: '@RebellioMarket' },
@@ -375,11 +375,11 @@ export default function OnchainSocialPage() {
                 <SafeLink
                   key={account.handle}
                   href={`https://x.com/${account.handle.replace('@', '')}`}
-                  style={{ padding: '0.6rem 0.9rem', background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 6, display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'background 0.2s', cursor: 'pointer', textAlign: 'left' }}
+                  style={{ padding: '0.6rem 0.9rem', background: 'rgba(56,189,248,0.08)', border: '1px solid rgba(56,189,248,0.2)', borderRadius: 6, display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'background 0.2s', cursor: 'pointer', textAlign: 'left' }}
                   className="profile-cell"
                 >
-                  <span style={{ color: '#22c55e', fontWeight: 700, fontSize: '0.85rem' }}>𝕏</span>
-                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', color: '#22c55e', fontWeight: 500 }}>{account.name}</span>
+                  <span style={{ color: '#38bdf8', fontWeight: 700, fontSize: '0.85rem' }}>𝕏</span>
+                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', color: '#38bdf8', fontWeight: 500 }}>{account.name}</span>
                 </SafeLink>
               ))}
             </div>
@@ -399,7 +399,7 @@ export default function OnchainSocialPage() {
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
                 <span style={{ fontSize: '1.2rem' }}>📰</span>
-                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.7rem', fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#f97316' }}>Substack</span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.7rem', fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#38bdf8' }}>Substack</span>
               </div>
               <div style={{ fontSize: '0.9rem', fontWeight: 500, color: '#e2e8f0' }}>Newsletter Publishing Platform</div>
             </SafeLink>
@@ -411,7 +411,7 @@ export default function OnchainSocialPage() {
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
                 <span style={{ fontSize: '1.2rem', fontWeight: 700 }}>𝕏</span>
-                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.7rem', fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#3b82f6' }}>X</span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.7rem', fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#38bdf8' }}>X</span>
               </div>
               <div style={{ fontSize: '0.9rem', fontWeight: 500, color: '#e2e8f0' }}>Social Media & News Feed</div>
             </SafeLink>
@@ -423,7 +423,7 @@ export default function OnchainSocialPage() {
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
                 <span style={{ fontSize: '1.2rem' }}>🌐</span>
-                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.7rem', fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#a855f7' }}>Farcaster</span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.7rem', fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#38bdf8' }}>Farcaster</span>
               </div>
               <div style={{ fontSize: '0.9rem', fontWeight: 500, color: '#e2e8f0' }}>Decentralized Social Network</div>
             </SafeLink>
@@ -441,7 +441,7 @@ export default function OnchainSocialPage() {
               style={{ background: '#111228', padding: '1.5rem', transition: 'background 0.2s', cursor: 'pointer', textAlign: 'left' }}
               className="section-card"
             >
-              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.7rem', fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#f97316', marginBottom: '0.5rem' }}>Kaito</div>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.7rem', fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#38bdf8', marginBottom: '0.5rem' }}>Kaito</div>
               <div style={{ fontSize: '0.9rem', fontWeight: 500, color: '#e2e8f0' }}>AI-Powered Social Intelligence</div>
             </SafeLink>
 
@@ -450,7 +450,7 @@ export default function OnchainSocialPage() {
               style={{ background: '#111228', padding: '1.5rem', transition: 'background 0.2s', cursor: 'pointer', textAlign: 'left' }}
               className="section-card"
             >
-              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.7rem', fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#ef4444', marginBottom: '0.5rem' }}>Kolytics</div>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.7rem', fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#38bdf8', marginBottom: '0.5rem' }}>Kolytics</div>
               <div style={{ fontSize: '0.9rem', fontWeight: 500, color: '#e2e8f0' }}>Social Signal Analytics</div>
             </SafeLink>
 
@@ -459,14 +459,14 @@ export default function OnchainSocialPage() {
               style={{ background: '#111228', padding: '1.5rem', transition: 'background 0.2s', cursor: 'pointer', textAlign: 'left' }}
               className="section-card"
             >
-              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.7rem', fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#3b82f6', marginBottom: '0.5rem' }}>Alphabot</div>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.7rem', fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#38bdf8', marginBottom: '0.5rem' }}>Alphabot</div>
               <div style={{ fontSize: '0.9rem', fontWeight: 500, color: '#e2e8f0' }}>Social Sentiment Bot</div>
             </SafeLink>
           </div>
         </section>
 
         {/* FOOTER */}
-        <footer style={{ borderTop: '1px solid #1e2148', padding: '3rem', textAlign: 'center', color: '#64748b', fontSize: '0.85rem', maxWidth: 880, margin: '2rem auto 0' }}>
+        <footer style={{ borderTop: '1px solid #1e2148', padding: '3rem', textAlign: 'center', color: '#38bdf8', fontSize: '0.85rem', maxWidth: 880, margin: '2rem auto 0' }}>
           <p style={{ fontSize: '0.75rem', color: '#475569' }}>
             Social intelligence and community analytics
           </p>
