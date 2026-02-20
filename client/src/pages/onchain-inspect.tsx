@@ -90,7 +90,7 @@ export default function OnchainInspectPage() {
               style={{ width: 220, height: 'auto', objectFit: 'contain' }}
             />
             <div className="text-center flex-1">
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-white drop-shadow-lg">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-white via-blue-200 to-cyan-200 bg-clip-text text-transparent">
                 CryptoHippo
               </h1>
             </div>

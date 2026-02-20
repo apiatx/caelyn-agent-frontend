@@ -66,7 +66,7 @@ export default function OnchainDiscoverPage() {
               style={{ width: 220, height: 'auto', objectFit: 'contain' }}
             />
             <div className="text-center flex-1">
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white drop-shadow-lg">Discover Web3</h1>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-white via-blue-200 to-cyan-200 bg-clip-text text-transparent">Discover Web3</h1>
               <p className="text-sm sm:text-base text-white/70 font-medium mt-1">Explore ecosystems, DApps, and Web3 platforms</p>
             </div>
             {/* Top-right crypto image */}
