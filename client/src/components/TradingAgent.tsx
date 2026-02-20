@@ -1091,13 +1091,13 @@ export default function TradingAgent() {
 
         {xSentiment.btc_sentiment && (() => {
           const bs = xSentiment.btc_sentiment;
-          const sent = (bs.sentiment || bs.direction || '').toLowerCase();
+          const sent = (bs.overall || bs.sentiment || bs.direction || '').toLowerCase();
           const sentColor = sent.includes('bullish') ? C.green : sent.includes('bearish') ? C.red : C.dim;
           const bgTint = sent.includes('bullish') ? `${C.green}08` : sent.includes('bearish') ? `${C.red}08` : `${C.dim}08`;
           return <div style={{ background:bgTint, border:`1px solid ${sentColor}20`, borderLeft:`3px solid ${sentColor}`, borderRadius:10, padding:'14px 18px', marginBottom:12 }}>
             <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:6 }}>
               <span style={{ color:'#f7931a', fontWeight:800, fontSize:15, fontFamily:font }}>BTC</span>
-              <Badge color={sentColor}>{bs.sentiment || bs.direction || 'N/A'}</Badge>
+              <Badge color={sentColor}>{bs.overall || bs.sentiment || bs.direction || 'N/A'}</Badge>
               {bs.score != null && <span style={{ color:C.dim, fontSize:11, fontFamily:font }}>Score: <span style={{ color:sentColor, fontWeight:700 }}>{bs.score}</span></span>}
             </div>
             {(bs.key_narrative || bs.narrative) && <div style={{ color:C.text, fontSize:12, fontFamily:sansFont, lineHeight:1.6 }}>{bs.key_narrative || bs.narrative}</div>}
@@ -1166,24 +1166,46 @@ export default function TradingAgent() {
           {momentum.map((c: any, i: number) => {
             const isExp = expandedTicker === `crypto-${i}`;
             return <CardWrap key={i} onClick={() => setExpandedTicker(isExp ? null : `crypto-${i}`)} expanded={isExp}>
-              <div style={{ padding:'14px 18px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                  <span style={{ color:C.purple, fontWeight:800, fontSize:15, fontFamily:font }}>{c.symbol}</span>
-                  <span style={{ color:C.dim, fontSize:11 }}>{c.coin}</span>
-                  <span style={{ color:C.bright, fontSize:15, fontWeight:700, fontFamily:font }}>{c.price}</span>
-                  <span style={{ color:changeColor(c.change_24h), fontWeight:600, fontSize:12, fontFamily:font }}>{c.change_24h}</span>
-                </div>
-                <div style={{ display:'flex', gap:8 }}>
-                  <Badge color={C.dim}>{c.market_cap}</Badge>
-                  <Badge color={convColor(c.conviction)}>{c.conviction}</Badge>
-                </div>
-              </div>
-              <div style={{ padding:'0 18px 10px', display:'flex', gap:8, fontSize:11, fontFamily:font }}>
-                <span style={{ color:C.dim }}>7d: <span style={{ color:changeColor(c.change_7d ?? c['7d'] ?? c.price_change_7d), fontWeight:600 }}>{c.change_7d ?? c['7d'] ?? c.price_change_7d ?? '—'}</span></span>
-                <span style={{ color:C.dim }}>30d: <span style={{ color:changeColor(c.change_30d ?? c['30d'] ?? c.price_change_30d), fontWeight:600 }}>{c.change_30d ?? c['30d'] ?? c.price_change_30d ?? '—'}</span></span>
-                <span style={{ color:C.dim }}>Funding: <span style={{ color:parseFloat(c.funding_rate || '0') > 0.03 ? C.red : parseFloat(c.funding_rate || '0') < -0.01 ? C.green : C.text, fontWeight:600 }}>{c.funding_rate}</span></span>
-                <span style={{ color:C.dim }}>OI: <span style={{ color:C.bright }}>{c.open_interest}</span></span>
-              </div>
+              {(() => {
+                const mPrice = c.price || c.current_price || c.mark_price;
+                const mCh24 = c.change_24h || c.price_change_24h;
+                const mCh7d = c.change_7d ?? c['7d'] ?? c.price_change_7d ?? c['7d_change'] ?? c.change_7d_pct;
+                const mCh30d = c.change_30d ?? c['30d'] ?? c.price_change_30d ?? c['30d_change'] ?? c.change_30d_pct;
+                const mFr = c.funding_rate ?? c.fundingRate;
+                const mOi = c.open_interest ?? c.openInterest ?? c.open_interest_usd;
+                const mMcap = c.market_cap ?? c.marketCap;
+                const dispPrice = mPrice != null && mPrice !== '' && mPrice !== 'N/A' && mPrice !== 0 ? (typeof mPrice === 'number' ? `$${mPrice.toLocaleString()}` : `${mPrice}`) : null;
+                const fmt7d = mCh7d != null && mCh7d !== '' && mCh7d !== 'N/A' ? (typeof mCh7d === 'number' ? `${mCh7d >= 0 ? '+' : ''}${mCh7d.toFixed(2)}%` : String(mCh7d)) : null;
+                const fmt30d = mCh30d != null && mCh30d !== '' && mCh30d !== 'N/A' ? (typeof mCh30d === 'number' ? `${mCh30d >= 0 ? '+' : ''}${mCh30d.toFixed(2)}%` : String(mCh30d)) : null;
+                const fmtFr = (() => {
+                  if (mFr == null || mFr === '' || mFr === 'N/A') return null;
+                  if (typeof mFr === 'string' && mFr.includes('%')) return mFr;
+                  if (typeof mFr === 'number') return Math.abs(mFr) < 1 ? `${(mFr * 100).toFixed(4)}%` : `${mFr.toFixed(4)}%`;
+                  return String(mFr);
+                })();
+                const frNum = typeof mFr === 'number' ? mFr : parseFloat(String(mFr || '0'));
+                const dispOi = mOi != null && mOi !== '' && mOi !== 'N/A' ? (typeof mOi === 'number' ? fmtBig(mOi) : String(mOi)) : null;
+                return <>
+                  <div style={{ padding:'14px 18px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                      <span style={{ color:C.purple, fontWeight:800, fontSize:15, fontFamily:font }}>{c.symbol}</span>
+                      <span style={{ color:C.dim, fontSize:11 }}>{c.coin}</span>
+                      {dispPrice && <span style={{ color:C.bright, fontSize:15, fontWeight:700, fontFamily:font }}>{dispPrice}</span>}
+                      {mCh24 && <span style={{ color:changeColor(mCh24), fontWeight:600, fontSize:12, fontFamily:font }}>{mCh24}</span>}
+                    </div>
+                    <div style={{ display:'flex', gap:8 }}>
+                      {mMcap && <Badge color={C.dim}>{mMcap}</Badge>}
+                      <Badge color={convColor(c.conviction)}>{c.conviction}</Badge>
+                    </div>
+                  </div>
+                  <div style={{ padding:'0 18px 10px', display:'flex', gap:8, fontSize:11, fontFamily:font, flexWrap:'wrap' }}>
+                    {fmt7d && <span style={{ color:C.dim }}>7d: <span style={{ color:changeColor(fmt7d), fontWeight:600 }}>{fmt7d}</span></span>}
+                    {fmt30d && <span style={{ color:C.dim }}>30d: <span style={{ color:changeColor(fmt30d), fontWeight:600 }}>{fmt30d}</span></span>}
+                    {fmtFr && <span style={{ color:C.dim }}>Funding: <span style={{ color: frNum > 0.03 ? C.red : frNum < -0.01 ? C.green : C.text, fontWeight:600 }}>{fmtFr}</span></span>}
+                    {dispOi && <span style={{ color:C.dim }}>OI: <span style={{ color:C.bright }}>{dispOi}</span></span>}
+                  </div>
+                </>;
+              })()}
               <div style={{ padding:'0 18px 14px', color:C.text, fontSize:12, lineHeight:1.6, fontFamily:sansFont }}>{c.thesis}</div>
               {isExp && <div style={{ borderTop:`1px solid ${C.border}`, padding:14 }}>
                 {c.social && <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(130px, 1fr))', gap:8, marginBottom:10 }}>
