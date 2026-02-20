@@ -1,7 +1,7 @@
 import { GlassCard } from "@/components/ui/glass-card";
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink, Bitcoin } from "lucide-react";
-import caelynImg1 from "@assets/image_1771565683605.png";
+import caelynImg1 from "@assets/ChatGPT_Image_Feb_20,_2026,_12_58_48_AM_1771570952831.png";
 import caelynImg2 from "@assets/image_1771565690741.png";
 import caelynImg3 from "@assets/image_1771565696272.png";
 
@@ -29,7 +29,7 @@ export default function AboutPage() {
               </p>
 
               <div className="flex justify-center my-8">
-                <div className="w-48 h-48 rounded-full overflow-hidden shadow-lg">
+                <div className="w-64 h-64 rounded-full overflow-hidden shadow-lg">
                   <img
                     src={caelynImg1}
                     alt="CaelynAI"
@@ -64,7 +64,7 @@ export default function AboutPage() {
               </div>
 
               <div className="flex justify-center my-10">
-                <div className="w-40 h-40 rounded-xl overflow-hidden shadow-xl">
+                <div className="w-56 h-56 rounded-xl overflow-hidden shadow-xl">
                   <img
                     src={caelynImg2}
                     alt="CaelynAI"
@@ -100,7 +100,7 @@ export default function AboutPage() {
               </div>
 
               <div className="flex justify-center my-10">
-                <div className="w-36 h-36 rounded-lg overflow-hidden shadow-lg">
+                <div className="w-56 h-56 rounded-lg overflow-hidden shadow-lg">
                   <img
                     src={caelynImg3}
                     alt="CaelynAI"
@@ -121,7 +121,7 @@ export default function AboutPage() {
               </div>
 
               <div className="flex justify-center my-12">
-                <div className="w-40 h-40 rounded-2xl overflow-hidden shadow-xl">
+                <div className="w-56 h-56 rounded-2xl overflow-hidden shadow-xl">
                   <img
                     src={caelynImg1}
                     alt="CaelynAI"
@@ -140,7 +140,7 @@ export default function AboutPage() {
               </div>
 
               <div className="flex justify-center my-10">
-                <div className="w-44 h-44 rounded-full overflow-hidden shadow-2xl">
+                <div className="w-60 h-60 rounded-full overflow-hidden shadow-2xl">
                   <img
                     src={caelynImg2}
                     alt="CaelynAI"
@@ -180,7 +180,7 @@ export default function AboutPage() {
             </div>
 
             <div className="flex justify-center my-12">
-              <div className="w-48 h-48 rounded-2xl overflow-hidden shadow-xl">
+              <div className="w-64 h-64 rounded-2xl overflow-hidden shadow-xl">
                 <img
                   src={caelynImg3}
                   alt="CaelynAI"
