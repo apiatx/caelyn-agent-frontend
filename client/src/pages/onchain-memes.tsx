@@ -54,17 +54,15 @@ export default function OnchainMemesPage() {
         />
         {/* Content Layer */}
         <div className="relative z-10 max-w-[95vw] mx-auto px-2 sm:px-3">
-          <div className="flex justify-between items-center py-3 lg:py-4">
-            <div className="flex items-center space-x-3 sm:space-x-4">
-              <img 
-                src={caelynLogo}
-                alt="Caelyn.ai"
-                style={{ width: 120, height: 'auto', objectFit: 'contain' }}
-              />
-              <div>
-                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white drop-shadow-lg">Memes</h1>
-                <p className="text-sm sm:text-base text-white/70 font-medium mt-1">Memecoin analytics and discovery platforms</p>
-              </div>
+          <div className="flex items-center justify-center py-3 lg:py-4">
+            <img 
+              src={caelynLogo}
+              alt="Caelyn.ai"
+              style={{ width: 220, height: 'auto', objectFit: 'contain' }}
+            />
+            <div className="text-center flex-1">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white drop-shadow-lg">Memes</h1>
+              <p className="text-sm sm:text-base text-white/70 font-medium mt-1">Memecoin analytics and discovery platforms</p>
             </div>
             {/* Top-right crypto image */}
             <div className="hidden sm:flex items-center">

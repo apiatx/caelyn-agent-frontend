@@ -83,13 +83,13 @@ export default function OnchainInspectPage() {
         />
         {/* Content Layer */}
         <div className="relative z-10 max-w-[95vw] mx-auto px-2 sm:px-3">
-          <div className="flex justify-between items-center py-3 lg:py-4">
-            <div className="flex items-center space-x-3 sm:space-x-4">
-              <img 
-                src={caelynLogo}
-                alt="Caelyn.ai"
-                style={{ width: 120, height: 'auto', objectFit: 'contain' }}
-              />
+          <div className="flex items-center justify-center py-3 lg:py-4">
+            <img 
+              src={caelynLogo}
+              alt="Caelyn.ai"
+              style={{ width: 220, height: 'auto', objectFit: 'contain' }}
+            />
+            <div className="text-center flex-1">
               <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-white drop-shadow-lg">
                 CryptoHippo
               </h1>
