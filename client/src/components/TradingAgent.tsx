@@ -2056,8 +2056,9 @@ export default function TradingAgent() {
             )}
 
             {panels.length === 0 && !loading && (
-              <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', flex:1, color:C.dim }}>
-                <img src={caelynLogo} alt="caelyn.ai" style={{ width:400, height:400, marginBottom:8, imageRendering:'auto', WebkitBackfaceVisibility:'hidden' }} />
+              <div style={{ display:'flex', flexDirection:'column', alignItems:'center', flex:1, color:C.dim, overflow:'hidden' }}>
+                <div style={{ flex:1 }} />
+                <img src={caelynLogo} alt="caelyn.ai" style={{ width:'auto', height:'auto', maxWidth:400, maxHeight:'calc(100vh - 380px)', objectFit:'contain', marginBottom:8, imageRendering:'auto', WebkitBackfaceVisibility:'hidden' }} />
                 <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&display=swap" rel="stylesheet" />
                 <div style={{ fontSize:32, fontWeight:400, marginBottom:6, letterSpacing:'0.04em', color:'#ffffff', fontFamily:"'Comfortaa', sans-serif" }}>caelyn<span style={{ color:'rgba(255,255,255,0.5)' }}>.ai</span></div>
                 <div style={{ color:'rgba(255,255,255,0.5)', fontSize:13, fontWeight:300, letterSpacing:'0.04em', marginBottom:20, fontFamily:sansFont }}>Your AI-powered trading assistant</div>
@@ -2071,6 +2072,7 @@ export default function TradingAgent() {
                     <button key={cmd.l} className="panel-btn" onClick={() => askAgent('', true, cmd.intent)} style={{ padding:'6px 14px', background:C.card, border:`1px solid ${C.border}`, borderRadius:3, color:C.blue, fontSize:11, fontWeight:600, fontFamily:font, cursor:'pointer' }}>{cmd.l}</button>
                   ))}
                 </div>
+                <div style={{ flex:1 }} />
               </div>
             )}
 
