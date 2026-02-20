@@ -838,7 +838,6 @@ export default function TradingAgent() {
     const catalysts = s.upcoming_catalysts || [];
     const onChain = s.on_chain_signals || {};
     const btcEth = s.btc_eth_summary || {};
-    const dominance = s.dominance || btcEth.dominance || {};
 
     return <div>
       {s.market_overview && <div style={{ padding:'16px 20px', background:`${C.purple}08`, border:`1px solid ${C.purple}20`, borderRadius:10, marginBottom:10, color:C.text, fontSize:12, fontFamily:sansFont, lineHeight:1.7 }}>{s.market_overview}</div>}
@@ -861,36 +860,6 @@ export default function TradingAgent() {
             {d.signal && <div style={{ color:trendColor(d.signal), fontSize:11, fontFamily:sansFont }}>{d.signal}</div>}
           </div>;
         })}
-      </div>}
-
-      {(dominance.usdt || dominance.others) && <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:10 }}>
-        {dominance.usdt != null && (() => {
-          const val = typeof dominance.usdt === 'string' ? parseFloat(dominance.usdt) : dominance.usdt;
-          const display = typeof dominance.usdt === 'string' && dominance.usdt.includes('%') ? dominance.usdt : val.toFixed(2) + '%';
-          const usdtColor = val > 5 ? C.red : val > 4 ? C.gold : C.green;
-          const usdtSignal = val > 5 ? 'Rising = risk-off (bearish alts)' : 'Falling = risk-on (bullish alts)';
-          return <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:10, padding:14 }}>
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
-              <span style={{ color:'#26a17b', fontWeight:800, fontSize:16, fontFamily:font }}>USDT.d</span>
-              <span style={{ color:usdtColor, fontSize:18, fontWeight:700, fontFamily:font }}>{display}</span>
-            </div>
-            <div style={{ color:usdtColor, fontSize:11, fontFamily:sansFont }}>{dominance.usdt_signal || usdtSignal}</div>
-          </div>;
-        })()}
-        {dominance.others != null && (() => {
-          const val = typeof dominance.others === 'string' ? parseFloat(dominance.others) : dominance.others;
-          const display = typeof dominance.others === 'string' && dominance.others.includes('%') ? dominance.others : val.toFixed(2) + '%';
-          const sig = (dominance.others_signal || '').toLowerCase();
-          const othersColor = sig.includes('rising') || sig.includes('alt season') ? C.green : sig.includes('falling') || sig.includes('btc season') ? C.gold : C.blue;
-          const othersSignal = sig.includes('rising') ? 'Rising = alt season' : sig.includes('falling') ? 'Falling = BTC season' : dominance.others_signal || (val > 10 ? 'Rising = alt season' : 'Falling = BTC season');
-          return <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:10, padding:14 }}>
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
-              <span style={{ color:C.purple, fontWeight:800, fontSize:16, fontFamily:font }}>OTHERS.d</span>
-              <span style={{ color:othersColor, fontSize:18, fontWeight:700, fontFamily:font }}>{display}</span>
-            </div>
-            <div style={{ color:othersColor, fontSize:11, fontFamily:sansFont }}>{othersSignal}</div>
-          </div>;
-        })()}
       </div>}
 
       {Object.keys(funding).length > 0 && <div style={{ marginBottom:10 }}>
@@ -955,8 +924,8 @@ export default function TradingAgent() {
                 </div>
               </div>
               <div style={{ padding:'0 18px 10px', display:'flex', gap:8, fontSize:11, fontFamily:font }}>
-                <span style={{ color:C.dim }}>7d: <span style={{ color:changeColor(c.change_7d || c.price_change_7d || c['7d_change']), fontWeight:600 }}>{c.change_7d || c.price_change_7d || c['7d_change'] || '—'}</span></span>
-                <span style={{ color:C.dim }}>30d: <span style={{ color:changeColor(c.change_30d || c.price_change_30d || c['30d_change']), fontWeight:600 }}>{c.change_30d || c.price_change_30d || c['30d_change'] || '—'}</span></span>
+                <span style={{ color:C.dim }}>7d: <span style={{ color:changeColor(c.change_7d ?? c['7d'] ?? c.price_change_7d), fontWeight:600 }}>{c.change_7d ?? c['7d'] ?? c.price_change_7d ?? '—'}</span></span>
+                <span style={{ color:C.dim }}>30d: <span style={{ color:changeColor(c.change_30d ?? c['30d'] ?? c.price_change_30d), fontWeight:600 }}>{c.change_30d ?? c['30d'] ?? c.price_change_30d ?? '—'}</span></span>
                 <span style={{ color:C.dim }}>Funding: <span style={{ color:parseFloat(c.funding_rate || '0') > 0.03 ? C.red : parseFloat(c.funding_rate || '0') < -0.01 ? C.green : C.text, fontWeight:600 }}>{c.funding_rate}</span></span>
                 <span style={{ color:C.dim }}>OI: <span style={{ color:C.bright }}>{c.open_interest}</span></span>
               </div>
