@@ -1,12 +1,9 @@
 import { GlassCard } from "@/components/ui/glass-card";
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink, Bitcoin } from "lucide-react";
-import hippoMouthOpen from "@assets/Gls1Y3XG_400x400_1755979622876.jpg";
-import hippoLaserEyes from "@assets/download (3)_1757211707979.png";
-import hippoDownload1 from "@assets/CryptoHippo_1757212757402.png";
-import hippoDownload2 from "@assets/download_1755979612950.jpeg";
-import hippoImages1 from "@assets/download (4)_1757214892954.png";
-import cuteHippo from "@assets/cute-cartoon-hippo-showing-off-butt-vector_1756060620427.jpg";
+import caelynImg1 from "@assets/image_1771565683605.png";
+import caelynImg2 from "@assets/image_1771565690741.png";
+import caelynImg3 from "@assets/image_1771565696272.png";
 
 export default function AboutPage() {
   return (
@@ -34,8 +31,8 @@ export default function AboutPage() {
               <div className="flex justify-center my-8">
                 <div className="w-48 h-48 rounded-full overflow-hidden shadow-lg border-2 border-yellow-400">
                   <img
-                    src={hippoDownload1}
-                    alt="HippoAI"
+                    src={caelynImg1}
+                    alt="CaelynAI"
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -69,8 +66,8 @@ export default function AboutPage() {
               <div className="flex justify-center my-10">
                 <div className="w-40 h-40 rounded-xl overflow-hidden shadow-xl border-2 border-yellow-400">
                   <img
-                    src={cuteHippo}
-                    alt="HippoAI"
+                    src={caelynImg2}
+                    alt="CaelynAI"
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -105,8 +102,8 @@ export default function AboutPage() {
               <div className="flex justify-center my-10">
                 <div className="w-36 h-36 rounded-lg overflow-hidden shadow-lg border-2 border-yellow-400">
                   <img
-                    src={hippoImages1}
-                    alt="Full Spectrum"
+                    src={caelynImg3}
+                    alt="CaelynAI"
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -126,8 +123,8 @@ export default function AboutPage() {
               <div className="flex justify-center my-12">
                 <div className="w-40 h-40 rounded-2xl overflow-hidden shadow-xl border-2 border-yellow-400">
                   <img
-                    src={hippoDownload2}
-                    alt="Sovereignty"
+                    src={caelynImg1}
+                    alt="CaelynAI"
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -145,8 +142,8 @@ export default function AboutPage() {
               <div className="flex justify-center my-10">
                 <div className="w-44 h-44 rounded-full overflow-hidden shadow-2xl border-2 border-yellow-400">
                   <img
-                    src={hippoMouthOpen}
-                    alt="HippoAI"
+                    src={caelynImg2}
+                    alt="CaelynAI"
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -185,8 +182,8 @@ export default function AboutPage() {
             <div className="flex justify-center my-12">
               <div className="w-48 h-48 rounded-2xl overflow-hidden shadow-xl border-2 border-yellow-400">
                 <img
-                  src={hippoLaserEyes}
-                  alt="HippoAI"
+                  src={caelynImg3}
+                  alt="CaelynAI"
                   className="w-full h-full object-cover"
                 />
               </div>
