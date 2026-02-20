@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Activity, BarChart3, TrendingUp, ChartLine, Brain, Zap, DollarSign, Building2, Layers, Coins, ChevronRight, ChevronDown, ChevronLeft, Wallet, Users, MessageSquare, Rocket, Globe, ArrowLeftRight, Search, Menu, X, Gamepad2, Gem } from "lucide-react";
 import { useLocation } from "wouter";
-import caelynLogo from "@assets/Untitled_design_1771564301817.png";
+import caelynLogo from "@assets/image_1771569231949.png";
 
 interface SidebarNavigationProps {
   className?: string;
@@ -459,12 +459,13 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
         )}
 
       {!isMobile && (
-      <div className="flex-shrink-0 border-b border-crypto-silver/20 flex items-center justify-center" style={{ aspectRatio:'1/1', width:'100%', maxHeight: isCollapsed ? 60 : 150 }}>
-        <div className={`rounded-full overflow-hidden shadow-lg ${isCollapsed ? 'w-12 h-12' : 'w-32 h-32'}`} style={{ transition: 'all 0.3s ease-in-out' }}>
+      <div className="flex-shrink-0 border-b border-crypto-silver/20 flex items-center justify-center" style={{ width:'100%', padding: isCollapsed ? '6px' : '8px 4px', maxHeight: isCollapsed ? 50 : 60 }}>
+        <div className="overflow-hidden" style={{ transition: 'all 0.3s ease-in-out', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <img 
             src={caelynLogo}
-            alt="TradeBlade"
-            className="w-full h-full object-cover"
+            alt="CaelynAI"
+            className={isCollapsed ? 'h-8' : 'h-10'}
+            style={{ width: 'auto', objectFit: 'contain' }}
             data-testid="logo-cryptohippo"
           />
         </div>
