@@ -749,7 +749,7 @@ export default function TradingAgent() {
 
   function renderScreener(s: any) {
     const topPicks = s.top_picks || [];
-    const rows = s.results || [];
+    const rows = s.results || s.rows || [];
     const sortedRows = [...rows].sort((a: any, b: any) => {
       if (!screenerSortCol) return 0;
       const av = a[screenerSortCol] ?? '';
