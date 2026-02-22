@@ -72,7 +72,9 @@ function FollowUpInput({ panelId, onSubmit, C, font, sansFont }: { panelId: numb
 
 export default function TradingAgent() {
   const [prompt, setPrompt] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(() => {
+    try { return sessionStorage.getItem('caelyn_loading') === 'true'; } catch { return false; }
+  });
   const [panels, setPanels] = useState<Panel[]>(() => {
     try { const s = sessionStorage.getItem('caelyn_panels'); return s ? JSON.parse(s) : []; } catch { return []; }
   });
@@ -105,6 +107,9 @@ export default function TradingAgent() {
   useEffect(() => {
     try { sessionStorage.setItem('caelyn_panels', JSON.stringify(panels)); } catch {}
   }, [panels]);
+  useEffect(() => {
+    try { sessionStorage.setItem('caelyn_loading', String(loading)); } catch {}
+  }, [loading]);
 
   useEffect(() => {
     try { if (conversationId) sessionStorage.setItem('caelyn_convId', conversationId); else sessionStorage.removeItem('caelyn_convId'); } catch {}
@@ -1968,6 +1973,7 @@ export default function TradingAgent() {
     <div style={{ display:'flex', flexDirection:'column', height:'100%', background:'transparent', fontFamily:sansFont, overflow:'hidden', flex:'1 1 auto', minHeight:0 }}>
       <style>{`
         @keyframes agent-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes caelyn-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         @keyframes agent-progress { 0% { width: 0%; } 50% { width: 70%; } 100% { width: 100%; } }
         .terminal-input:focus { outline: none; border-color: ${C.blue} !important; }
         .rail-item:hover { background: ${C.blue}10 !important; color: ${C.bright} !important; }
@@ -2065,16 +2071,27 @@ export default function TradingAgent() {
             {error && <div style={{ padding:'10px 14px', background:`${C.red}10`, border:`1px solid ${C.red}30`, borderRadius:4, marginBottom:10, color:C.red, fontSize:12, fontFamily:font }}>{error}</div>}
 
             {loading && (
-              <div style={{ padding:20, background:C.card, border:`1px solid ${C.border}`, borderRadius:4, marginBottom:10 }}>
-                <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10 }}>
-                  <div style={{ width:16, height:16, border:`2px solid ${C.blue}`, borderTop:'2px solid transparent', borderRadius:'50%', animation:'agent-spin 0.8s linear infinite' }} />
-                  <span style={{ color:C.blue, fontSize:12, fontWeight:700, fontFamily:font }}>{loadingStage || 'Processing...'}</span>
-                </div>
-                <div style={{ height:3, background:C.border, borderRadius:2, overflow:'hidden' }}>
+              <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'60px 20px', marginBottom:10 }}>
+                <img
+                  src={caelynLogo}
+                  alt="loading"
+                  style={{
+                    width: 220,
+                    height: 220,
+                    objectFit: 'contain',
+                    animation: 'caelyn-spin 3s linear infinite',
+                    filter: 'drop-shadow(0 0 24px #3b82f6cc) drop-shadow(0 0 48px #a78bfa66)',
+                    marginBottom: 28
+                  }}
+                />
+                <span style={{ color:C.blue, fontSize:14, fontWeight:700, fontFamily:font, letterSpacing:'0.08em', marginBottom:8 }}>{loadingStage || 'Processing...'}</span>
+                <span style={{ color:C.dim, fontSize:11, fontFamily:sansFont, marginBottom:24 }}>Analysis in progress — feel free to browse other pages</span>
+                <div style={{ height:3, background:C.border, borderRadius:2, overflow:'hidden', width:'60%', maxWidth:400 }}>
                   <div style={{ height:'100%', background:`linear-gradient(90deg, ${C.blue}, ${C.purple})`, animation:'agent-progress 8s ease-in-out infinite', borderRadius:2 }} />
                 </div>
               </div>
             )}
+            ```
 
             {panels.length === 0 && !loading && (
               <div style={{ display:'flex', flexDirection:'column', alignItems:'center', flex:1, color:C.dim, overflow:'hidden' }}>
