@@ -771,6 +771,7 @@ export default function StocksPortfolioPage() {
                       <th className="text-right pb-2 px-3"><SortHeader label="Shares" keyName="shares" /></th>
                       <th className="text-right pb-2 px-3"><SortHeader label="Avg Cost" keyName="avgCost" /></th>
                       <th className="text-right pb-2 px-3"><SortHeader label="Price" keyName="currentPrice" /></th>
+                      <th className="text-right pb-2 px-3" style={{color:'#94a3b8',fontSize:11}}>Invested</th>
                       <th className="text-right pb-2 px-3"><SortHeader label="Daily P&L" keyName="dailyPL" /></th>
                       <th className="text-right pb-2 px-3"><SortHeader label="Total P&L" keyName="totalPL" /></th>
                       <th className="text-right pb-2 px-3"><SortHeader label="Weight%" keyName="weight" /></th>
@@ -796,6 +797,9 @@ export default function StocksPortfolioPage() {
                             <td className="text-right py-2.5 px-3 text-crypto-silver">{fmt(h.avgCost)}</td>
                             <td className="text-right py-2.5 px-3" style={{ color: '#38bdf8', fontWeight: 600 }}>
                               {loadingQuotes && !h.currentPrice ? <span className="animate-pulse text-crypto-silver">Loading...</span> : quotesError && !h.currentPrice ? <span className="text-yellow-500 text-xs">Unavailable</span> : h.currentPrice > 0 ? fmt(h.currentPrice) : <span className="text-crypto-silver/50">—</span>}
+                            </td>
+                            <td className="text-right py-2.5 px-3 font-medium" style={{ color: '#a78bfa' }}>
+                              {fmt(h.avgCost * h.shares)}
                             </td>
                             <td className={`text-right py-2.5 px-3 font-medium ${h.dailyPL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                               {loadingQuotes && !h.currentPrice ? <span className="animate-pulse text-crypto-silver">...</span> : quotesError && !h.currentPrice ? <span className="text-yellow-500 text-xs">—</span> : h.currentPrice > 0 ? fmtPL(h.dailyPL) : <span className="text-crypto-silver/50">—</span>}
@@ -901,9 +905,10 @@ export default function StocksPortfolioPage() {
                         <td></td>
                         <td colSpan={3} className="py-3 text-right text-xs text-crypto-silver font-medium">TOTAL</td>
                         <td className="text-right py-3 px-3 font-bold" style={{ color: '#38bdf8', textShadow: '0 0 8px rgba(56, 189, 248, 0.2)' }}>{fmt(totalPortfolioValue)}</td>
+                        <td className="text-right py-3 px-3 font-bold" style={{ color: '#a78bfa' }}>{fmt(totalCostBasis)}</td>
                         <td className={`text-right py-3 px-3 font-bold ${totalDailyPL >= 0 ? 'text-green-400' : 'text-red-400'}`}>{fmtPL(totalDailyPL)}</td>
                         <td className={`text-right py-3 px-3 font-bold ${totalOverallPL >= 0 ? 'text-green-400' : 'text-red-400'}`}>{fmtPL(totalOverallPL)}</td>
-                        <td className="text-right py-3 px-3 text-crypto-silver font-medium">100%</td>
+                        <td></td>
                         <td></td>
                       </tr>
                     </tfoot>
