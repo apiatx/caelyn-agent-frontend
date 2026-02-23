@@ -2188,14 +2188,14 @@ export default function TradingAgent() {
               </button>
               <div style={{ display:'flex', gap:4, flexWrap:'wrap', marginTop:6 }}>
                 {[
-                  {l:'Oversold+Growing', v:'Stocks with RSI under 35, revenue growth >20%, above SMA200, avg volume >300K'},
-                  {l:'Value+Momentum', v:'P/E under 20, revenue growth >15%, above SMA50 and SMA200, relative volume >1.5x'},
+                  {l:'Oversold+Growing', intent:'oversold_growing'},
+                  {l:'Value+Momentum', intent:'value_momentum'},
                   {l:'Insider+Breakout', v:'Insider buying last 30 days, above SMA50 and SMA200, unusual volume, market cap under $10B'},
                   {l:'High Growth SC', v:'Market cap under $2B, revenue growth >30%, EPS growth >25%, positive margins'},
                   {l:'Dividend Value', v:'Dividend yield >3%, P/E under 20, debt to equity under 0.5, market cap over $2B'},
                   {l:'Short Squeeze', v:'Short float >15%, RSI under 40, above SMA50, unusual volume, market cap under $5B'},
                 ].map(chip => (
-                  <button key={chip.l} className="sidebar-chip" onClick={() => setScreenerInput(chip.v)} style={{ padding:'3px 7px', background:`${C.purple}08`, border:`1px solid ${C.purple}18`, borderRadius:3, color:C.dim, fontSize:8, fontWeight:600, fontFamily:font, cursor:'pointer', transition:'all 0.15s' }}>{chip.l}</button>
+                  <button key={chip.l} className="sidebar-chip" onClick={() => { if (!loading) { newChat(); askAgent('', true, chip.intent); setRightSidebarOpen(false); } }} disabled={loading} style={{ padding:'3px 7px', background:`${C.purple}08`, border:`1px solid ${C.purple}18`, borderRadius:3, color:C.dim, fontSize:8, fontWeight:600, fontFamily:font, cursor:loading ? 'not-allowed' : 'pointer', transition:'all 0.15s', opacity:loading ? 0.5 : 1 }}>{chip.l}</button>
                 ))}
               </div>
             </div>
