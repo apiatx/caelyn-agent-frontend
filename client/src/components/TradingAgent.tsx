@@ -277,6 +277,7 @@ export default function TradingAgent() {
         return;
       }
 
+      console.log('[CSV_PAYLOAD]', JSON.stringify(payload).substring(0, 500));
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-API-Key': AGENT_API_KEY },
