@@ -248,6 +248,7 @@ export default function TradingAgent() {
     if (csvFileName) setCsvFileName(null);
 
     console.log('[SEND]', url, payload);
+    console.log('[CSV_DEBUG]', 'csvData length:', csvData?.length || 0, 'payload has csv_data:', !!payload.csv_data, 'csv_data length:', payload.csv_data?.length || 0);
 
     loadingRef.current = true;
     setLoading(true); setError(null); setExpandedTicker(null);
