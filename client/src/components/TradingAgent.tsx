@@ -234,7 +234,7 @@ export default function TradingAgent() {
   async function askAgent(customPrompt?: string, freshChat?: boolean, presetIntent?: string | null) {
     const queryText = (customPrompt ?? prompt ?? '').trim();
 
-    if (!queryText && !presetIntent) return;
+    if (!queryText && !presetIntent && !csvData) return;
     if (loadingRef.current) { console.log('[GUARD] Already loading, ignoring duplicate call'); return; }
 
     const url = `${AGENT_BACKEND_URL}/api/query`;
@@ -1957,7 +1957,12 @@ export default function TradingAgent() {
 
   function handleCommandSubmit() {
     const text = prompt.trim();
-    if (!text) return;
+    if (!text && !csvData) return;
+    if (!text && csvData) {
+      askAgent('Analyze this watchlist CSV and give me a buy/hold/sell for every asset, plus the top 2-3 best investments right now based on the data.');
+      setCommandPaletteOpen(false);
+      return;
+    }
     const cmd = text.split(' ')[0].toLowerCase();
     if (slashCommands[cmd]) {
       askAgent('', true, slashCommands[cmd]);
