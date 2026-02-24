@@ -2011,8 +2011,8 @@ export default function TradingAgent() {
           e.target.value = '';
         }} />
         <button onClick={() => csvInputRef.current?.click()} title="Upload CSV watchlist" style={{ width:28, height:28, display:'flex', alignItems:'center', justifyContent:'center', background: csvData ? 'rgba(99,102,241,0.2)' : 'transparent', border: csvData ? '1px solid rgba(99,102,241,0.4)' : '1px solid rgba(255,255,255,0.08)', borderRadius:3, color: csvData ? '#a78bfa' : '#666', cursor:'pointer', fontSize:14, flexShrink:0 }}>+</button>
+        {csvFileName && <div style={{ display:'flex', alignItems:'center', gap:4, padding:'2px 8px', background:'rgba(99,102,241,0.15)', border:'1px solid rgba(99,102,241,0.3)', borderRadius:3, fontSize:10, color:'#a78bfa', fontFamily:'monospace', flexShrink:0, maxWidth:160, overflow:'hidden' }}><span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{csvFileName}</span><span onClick={() => { setCsvData(null); setCsvFileName(null); }} style={{ cursor:'pointer', color:'#ef4444', fontWeight:700, flexShrink:0 }}>x</span></div>}
         <div style={{ position:'relative', flex:1 }}>
-          {csvFileName && <div style={{ position:'absolute', top:-18, left:12, fontSize:9, color:'#a78bfa', fontFamily:'monospace', background:'rgba(15,15,30,0.9)', padding:'1px 6px', borderRadius:2, border:'1px solid rgba(99,102,241,0.2)', display:'flex', alignItems:'center', gap:4, zIndex:51 }}>{csvFileName} <span onClick={() => { setCsvData(null); setCsvFileName(null); }} style={{ cursor:'pointer', color:'#ef4444', fontWeight:700 }}>x</span></div>}
           <input
             ref={commandInputRef}
             className="terminal-input"
