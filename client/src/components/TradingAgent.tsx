@@ -72,6 +72,9 @@ function FollowUpInput({ panelId, onSubmit, C, font, sansFont }: { panelId: numb
 
 export default function TradingAgent() {
   const [prompt, setPrompt] = useState('');
+  const [csvData, setCsvData] = useState<string | null>(null);
+  const [csvFileName, setCsvFileName] = useState<string | null>(null);
+  const csvInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(() => {
     try { return sessionStorage.getItem('caelyn_loading') === 'true'; } catch { return false; }
   });
@@ -235,11 +238,14 @@ export default function TradingAgent() {
     if (loadingRef.current) { console.log('[GUARD] Already loading, ignoring duplicate call'); return; }
 
     const url = `${AGENT_BACKEND_URL}/api/query`;
-    const payload: { query: string; preset_intent: string | null; conversation_id: string | null } = {
+    const payload: { query: string; preset_intent: string | null; conversation_id: string | null; csv_data?: string | null } = {
       query: presetIntent ? '' : queryText,
       preset_intent: typeof presetIntent === 'string' ? presetIntent : null,
       conversation_id: freshChat ? null : (typeof conversationId === 'string' ? conversationId : null),
+      ...(csvData ? { csv_data: csvData } : {}),
     };
+    if (csvData) setCsvData(null);
+    if (csvFileName) setCsvFileName(null);
 
     console.log('[SEND]', url, payload);
 
@@ -1995,7 +2001,18 @@ export default function TradingAgent() {
       <div style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 10px', background:'rgba(15,15,30,0.6)', borderBottom:'1px solid rgba(255,255,255,0.06)', flexShrink:0, position:'sticky', top:0, zIndex:50, backdropFilter:'blur(12px)' }}>
         <button className="mobile-toggle" onClick={() => setLeftRailOpen(!leftRailOpen)} style={{ display:'none', alignItems:'center', justifyContent:'center', width:28, height:28, background:'transparent', border:`1px solid ${C.border}`, borderRadius:3, color:C.dim, cursor:'pointer', fontSize:14, fontFamily:font }}>☰</button>
 
+        <input type="file" ref={csvInputRef} accept=".csv,.tsv,.txt" style={{ display:'none' }} onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          setCsvFileName(file.name);
+          const reader = new FileReader();
+          reader.onload = (ev) => { setCsvData(ev.target?.result as string); };
+          reader.readAsText(file);
+          e.target.value = '';
+        }} />
+        <button onClick={() => csvInputRef.current?.click()} title="Upload CSV watchlist" style={{ width:28, height:28, display:'flex', alignItems:'center', justifyContent:'center', background: csvData ? 'rgba(99,102,241,0.2)' : 'transparent', border: csvData ? '1px solid rgba(99,102,241,0.4)' : '1px solid rgba(255,255,255,0.08)', borderRadius:3, color: csvData ? '#a78bfa' : '#666', cursor:'pointer', fontSize:14, flexShrink:0 }}>+</button>
         <div style={{ position:'relative', flex:1 }}>
+          {csvFileName && <div style={{ position:'absolute', top:-18, left:12, fontSize:9, color:'#a78bfa', fontFamily:'monospace', background:'rgba(15,15,30,0.9)', padding:'1px 6px', borderRadius:2, border:'1px solid rgba(99,102,241,0.2)', display:'flex', alignItems:'center', gap:4, zIndex:51 }}>{csvFileName} <span onClick={() => { setCsvData(null); setCsvFileName(null); }} style={{ cursor:'pointer', color:'#ef4444', fontWeight:700 }}>x</span></div>}
           <input
             ref={commandInputRef}
             className="terminal-input"
