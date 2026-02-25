@@ -278,6 +278,7 @@ export default function TradingAgent() {
       }
 
       console.log('[CSV_PAYLOAD]', JSON.stringify(payload).substring(0, 500));
+      if (payload.csv_data) { alert('CSV DATA FOUND: ' + payload.csv_data.length + ' chars, first 100: ' + payload.csv_data.substring(0, 100)); } else { alert('CSV DATA IS MISSING FROM PAYLOAD'); }
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-API-Key': AGENT_API_KEY },
