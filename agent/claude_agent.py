@@ -394,59 +394,52 @@ class TradingAgent:
             except Exception as e:
                 print(f"[CSV] Parse error: {e}")
 
-        # --- CSV FAST PATH: skip ALL API calls, send spreadsheet directly to Claude ---
+        # --- CSV FAST PATH: lightweight direct Claude call, no heavy system prompt ---
         if csv_parsed:
-            category = "csv_analysis"
-            routing_source = "csv_upload"
-            routing_confidence = "high"
-            market_data = None
-            print(f"[CSV] Fast-path: skipping all API calls, sending {csv_parsed['total_count']} rows directly to Claude")
+            print(f"[CSV] Fast-path: {csv_parsed['total_count']} tickers, calling Claude directly (no APIs, no heavy prompt)")
 
             csv_rows = csv_parsed["rows"]
             csv_cols = csv_parsed["columns"]
-            csv_rows = csv_rows[:30]
-            csv_table = "\n".join([", ".join(f"{k}: {v}" for k, v in row.items() if v) for row in csv_rows])
-            csv_context = (
-                f"[USER UPLOADED SPREADSHEET - {len(csv_rows)} stocks]\n"
+            csv_table = "\n".join([", ".join(f"{k}: {v}" for k, v in row.items() if v) for row in csv_rows[:200]])
+            csv_prompt = (
+                f"You are a concise stock analyst. Analyze this spreadsheet and respond in plain text (NOT JSON).\n\n"
+                f"SPREADSHEET ({len(csv_rows)} stocks):\n"
                 f"Columns: {', '.join(csv_cols)}\n\n"
                 f"{csv_table}\n\n"
-                f"INSTRUCTIONS:\n"
-                f"1. Analyze EVERY ticker in this spreadsheet — do not skip any.\n"
-                f"2. For EACH ticker, provide a clear BUY, HOLD, or SELL rating with a brief justification based on the data provided.\n"
-                f"3. After rating all tickers, identify the TOP 2-3 BEST INVESTMENTS from this list and explain why they stand out.\n"
-                f"4. Do NOT make up numbers. Every data point must come from the spreadsheet above.\n"
-                f"5. Use the data columns provided (e.g. Market Cap, Volume, Revenue Growth, EPS Growth, RSI, Forward PE) to support your ratings."
+                f"For EACH ticker give: TICKER — BUY/HOLD/SELL — one-line reason using the data above.\n"
+                f"Then list your TOP 2-3 BEST picks with a short paragraph each.\n"
+                f"Be concise. Use only data from the spreadsheet. Do not make up numbers.\n\n"
+                f"User request: {user_prompt}"
             )
-            user_prompt = csv_context + "\n\n[USER REQUEST]\n" + user_prompt
-            print(f"[CSV] Injected {len(csv_rows)} rows into prompt ({len(csv_context)} chars)")
+            print(f"[CSV] Prompt size: {len(csv_prompt)} chars")
 
             data_done_time = time.time()
-            data_ms = int((data_done_time - start_time) * 1000)
             try:
-                import anthropic as _anth
-                _client = _anth.Anthropic(api_key=self.api_key)
-                resp = _client.messages.create(
-                    model="claude-sonnet-4-20250514",
-                    max_tokens=6000,
-                    messages=[{"role": "user", "content": user_prompt}],
-                    system="You are a professional quant analyst. Analyze the uploaded spreadsheet data. Be concise but thorough. For each ticker give a 1-2 sentence verdict with BUY/HOLD/SELL rating. Then identify top 2-3 best investments.",
+                response = await asyncio.wait_for(
+                    asyncio.to_thread(
+                        self.client.messages.create,
+                        model="claude-sonnet-4-20250514",
+                        max_tokens=4096,
+                        messages=[{"role": "user", "content": csv_prompt}],
+                    ),
+                    timeout=60.0,
                 )
-                raw_response = resp.content[0].text
-                print(f"[CSV] Direct API call done: {len(raw_response)} chars ({time.time() - data_done_time:.1f}s)")
+                raw_text = response.content[0].text if response.content else ""
+            except asyncio.TimeoutError:
+                raw_text = "CSV analysis timed out after 60s. Try uploading a smaller file."
             except Exception as e:
-                print(f"[CSV] API error: {e}")
-                raw_response = f"CSV analysis error: {str(e)}"
+                raw_text = f"CSV analysis error: {str(e)}"
+
             claude_ms = int((time.time() - data_done_time) * 1000)
+            data_ms = int((data_done_time - start_time) * 1000)
+            print(f"[CSV] Claude responded in {claude_ms}ms ({len(raw_text)} chars)")
+
             return {
-                "type": "chat",
-                "structured": {"display_type": "chat", "message": raw_response},
-                "analysis": raw_response,
+                "analysis": raw_text,
+                "structured": {"display_type": "chat", "message": raw_text},
                 "_timing": {"data": data_ms, "claude": claude_ms, "grok": 0},
-                "_routing": {"source": routing_source, "confidence": routing_confidence, "category": "csv_analysis"},
+                "_routing": {"source": "csv_upload", "confidence": "high", "category": "csv_analysis"},
             }
-            result["_timing"] = {"data": data_ms, "claude": claude_ms, "grok": 0}
-            result["_routing"] = {"source": routing_source, "confidence": routing_confidence, "category": category}
-            return result
 
         if is_followup and not self._needs_fresh_data(user_prompt):
             category = "followup"
