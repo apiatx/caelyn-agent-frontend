@@ -112,13 +112,20 @@ function parsePriceArray(raw: string): number[] {
   }
 }
 
+// All unique category keywords flattened — events matching ANY category pass the gate
+const ALL_CATEGORY_KEYWORDS = Array.from(
+  new Set(Object.values(CATEGORY_KEYWORDS).flat())
+);
+
 function isMacroEvent(ev: PolyEvent): boolean {
   const text = `${ev.title} ${ev.description || ""}`.toLowerCase();
   const tagLabels = (ev.tags || []).map((t) => t.label.toLowerCase()).join(" ");
   const combined = `${text} ${tagLabels}`;
   const excluded = MACRO_EXCLUDE.some((kw) => combined.includes(kw));
   if (excluded) return false;
-  return MACRO_INCLUDE.some((kw) => combined.includes(kw));
+  // Pass if it matches any MACRO_INCLUDE keyword OR any category keyword
+  if (MACRO_INCLUDE.some((kw) => combined.includes(kw))) return true;
+  return ALL_CATEGORY_KEYWORDS.some((kw) => combined.includes(kw));
 }
 
 function matchesCategory(m: ParsedMarket, cat: CategoryTab): boolean {
@@ -405,7 +412,7 @@ function PolymarketDashboard() {
       // Attempt 1: Backend proxy (avoids CORS)
       try {
         console.log("[POLYMARKET] Fetching via proxy:", POLYMARKET_PROXY);
-        const proxyRes = await fetch(`${POLYMARKET_PROXY}?limit=50`);
+        const proxyRes = await fetch(`${POLYMARKET_PROXY}?limit=100`);
         console.log("[POLYMARKET] Proxy response status:", proxyRes.status);
         if (proxyRes.ok) {
           const json = await proxyRes.json();
@@ -426,7 +433,7 @@ function PolymarketDashboard() {
         try {
           console.log("[POLYMARKET] Trying direct API:", GAMMA_API);
           const directRes = await fetch(
-            `${GAMMA_API}?limit=50&active=true&closed=false&order=volume24hr&ascending=false`
+            `${GAMMA_API}?limit=100&active=true&closed=false&order=volume24hr&ascending=false`
           );
           console.log("[POLYMARKET] Direct response status:", directRes.status);
           if (directRes.ok) {
