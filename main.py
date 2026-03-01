@@ -147,17 +147,26 @@ async def polymarket_events_proxy(request: Request):
     params.setdefault("closed", "false")
     params.setdefault("order", "volume24hr")
     params.setdefault("ascending", "false")
+    headers = {
+        "User-Agent": "Mozilla/5.0 (compatible; TradingAgent/1.0)",
+        "Accept": "application/json",
+    }
+    url = "https://gamma-api.polymarket.com/events"
+    print(f"[POLYMARKET_PROXY] Fetching {url} params={params}")
     try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            resp = await client.get(
-                "https://gamma-api.polymarket.com/events",
-                params=params,
-            )
+        async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
+            resp = await client.get(url, params=params, headers=headers)
+            print(f"[POLYMARKET_PROXY] Response status={resp.status_code} len={len(resp.content)}")
             resp.raise_for_status()
-            return JSONResponse(content=resp.json())
+            data = resp.json()
+            # Polymarket returns a JSON array — pass it through directly
+            return JSONResponse(content=data)
+    except httpx.HTTPStatusError as e:
+        print(f"[POLYMARKET_PROXY] HTTP error: {e.response.status_code} {e.response.text[:300]}")
+        return JSONResponse(status_code=502, content={"error": f"Polymarket returned {e.response.status_code}", "detail": e.response.text[:200]})
     except Exception as e:
-        print(f"[POLYMARKET_PROXY] Error: {e}")
-        return JSONResponse(status_code=502, content={"error": f"Polymarket API unavailable: {str(e)[:200]}"})
+        print(f"[POLYMARKET_PROXY] Error: {type(e).__name__}: {e}")
+        return JSONResponse(status_code=502, content={"error": f"Polymarket API unavailable: {type(e).__name__}: {str(e)[:200]}"})
 
 
 async def verify_api_key(x_api_key: Optional[str] = Header(None)):
