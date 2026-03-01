@@ -385,35 +385,57 @@ function PolymarketDashboard() {
     try {
       // Try proxy first, fall back to direct API
       let data: PolyEvent[] | null = null;
+
+      // Attempt 1: Backend proxy (avoids CORS)
       try {
+        console.log("[POLYMARKET] Fetching via proxy:", POLYMARKET_PROXY);
         const proxyRes = await fetch(`${POLYMARKET_PROXY}?limit=50`);
+        console.log("[POLYMARKET] Proxy response status:", proxyRes.status);
         if (proxyRes.ok) {
-          data = await proxyRes.json();
+          const json = await proxyRes.json();
+          // Proxy returns array directly, or error object with { error: ... }
+          if (Array.isArray(json)) {
+            data = json;
+            console.log("[POLYMARKET] Proxy returned", json.length, "events");
+          } else {
+            console.warn("[POLYMARKET] Proxy returned non-array:", json?.error || json);
+          }
         }
-      } catch {
-        // Proxy failed, try direct
+      } catch (proxyErr) {
+        console.warn("[POLYMARKET] Proxy fetch failed:", proxyErr);
       }
+
+      // Attempt 2: Direct API (may fail due to CORS)
       if (!data) {
         try {
+          console.log("[POLYMARKET] Trying direct API:", GAMMA_API);
           const directRes = await fetch(
             `${GAMMA_API}?limit=50&active=true&closed=false&order=volume24hr&ascending=false`
           );
+          console.log("[POLYMARKET] Direct response status:", directRes.status);
           if (directRes.ok) {
-            data = await directRes.json();
+            const json = await directRes.json();
+            if (Array.isArray(json)) {
+              data = json;
+              console.log("[POLYMARKET] Direct returned", json.length, "events");
+            }
           }
-        } catch {
-          // Both failed
+        } catch (directErr) {
+          console.warn("[POLYMARKET] Direct fetch failed (likely CORS):", directErr);
         }
       }
-      if (!data || !Array.isArray(data)) {
+
+      if (!data || !Array.isArray(data) || data.length === 0) {
         setError("Unable to fetch Polymarket data. Markets may be unavailable.");
         return;
       }
       const parsed = parseEvents(data);
+      console.log("[POLYMARKET] Parsed", parsed.length, "macro markets from", data.length, "events");
       setMarkets(parsed);
       setError(null);
       setLastUpdated(new Date());
-    } catch {
+    } catch (err) {
+      console.error("[POLYMARKET] Unexpected error:", err);
       setError("Failed to load prediction markets.");
     } finally {
       setLoading(false);
