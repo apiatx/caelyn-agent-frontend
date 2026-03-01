@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, ExternalLink, Activity, BarChart3, RefreshCw, Users, DollarSign, MessageSquare, Send, Loader2, Sparkles, Calendar } from "lucide-react";
+import { TrendingUp, ExternalLink, Activity, BarChart3, RefreshCw, Users, DollarSign, MessageSquare, Send, Loader2, Sparkles, Calendar, ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
 import { openSecureLink } from "@/utils/security";
 import diceImage from "@assets/istockphoto-1252690598-612x612_1756665072306.jpg";
 
@@ -88,6 +88,7 @@ interface PolyEvent {
   liquidity: number;
   competitive: number;
   commentCount: number;
+  endDate?: string;
   tags: Array<{ id: string; label: string; slug: string }>;
   markets: PolyMarket[];
 }
@@ -98,12 +99,14 @@ interface ParsedMarket {
   eventSlug: string;
   marketId: string;
   question: string;
+  description: string;
   yesPrice: number;
   noPrice: number;
   volume24hr: number;
   totalVolume: number;
   liquidity: number;
   tags: string[];
+  endDate?: string;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────
@@ -164,12 +167,14 @@ function parseEventsCore(events: PolyEvent[], applyMacroFilter: boolean): Parsed
         eventSlug: ev.slug,
         marketId: m.id,
         question: m.question || ev.title,
+        description: ev.description || "",
         yesPrice,
         noPrice,
         volume24hr: m.volume24hr || ev.volume24hr || 0,
         totalVolume: ev.volume || 0,
         liquidity: parseFloat(m.liquidity || "0") || ev.liquidity || 0,
         tags: (ev.tags || []).map((t) => t.label),
+        endDate: ev.endDate,
       });
     }
   }
@@ -412,94 +417,307 @@ function MoversSection({ markets }: { markets: ParsedMarket[] }) {
   );
 }
 
-// ─── Earnings Card ────────────────────────────────────────────────
-
-function extractCompanyName(question: string): string {
-  // "Will X (TICKER) beat quarterly earnings?" -> "X (TICKER)"
-  const match = question.match(/^Will\s+(.+?)\s+beat\b/i)
-    || question.match(/^Will\s+(.+?)\s+miss\b/i)
-    || question.match(/^Will\s+(.+?)\s+report\b/i);
-  if (match) return match[1];
-  // Fallback: try to extract ticker in parens
-  const tickerMatch = question.match(/\(([A-Z]{1,5})\)/);
-  if (tickerMatch) return tickerMatch[1];
-  return question.length > 50 ? question.slice(0, 47) + "..." : question;
-}
+// ─── Earnings Calendar ────────────────────────────────────────────
 
 function extractTicker(question: string): string | null {
   const match = question.match(/\(([A-Z]{1,5})\)/);
   return match ? match[1] : null;
 }
 
-function EarningsCard({ market }: { market: ParsedMarket }) {
-  const company = extractCompanyName(market.question);
-  const ticker = extractTicker(market.question);
-  const beatPct = Math.round(market.yesPrice * 100);
-  const missPct = 100 - beatPct;
-  const isBeatFavored = beatPct >= 50;
+function extractCompanyName(question: string): string {
+  const match = question.match(/^Will\s+(.+?)\s+(?:\(|beat|miss|report)/i);
+  if (match) {
+    let name = match[1].trim();
+    if (name.endsWith("'s")) name = name.slice(0, -2);
+    return name;
+  }
+  const ticker = extractTicker(question);
+  if (ticker) return ticker;
+  return question.length > 30 ? question.slice(0, 27) + "..." : question;
+}
+
+function extractEPS(description: string): string | null {
+  // "consensus estimate of $X.XX" or "EPS estimate of $X.XX" or "$X.XX EPS"
+  const m = description.match(/(?:consensus|EPS|earnings)\s+(?:estimate|forecast)\s+of\s+\$?([\d.]+)/i)
+    || description.match(/\$?([\d.]+)\s+(?:EPS|per share)/i)
+    || description.match(/estimate\s+of\s+\$?([\-\d.]+)/i);
+  return m ? `$${m[1]}` : null;
+}
+
+// Ticker → deterministic background color
+const TICKER_COLORS = [
+  "from-blue-500 to-blue-600",
+  "from-purple-500 to-purple-600",
+  "from-emerald-500 to-emerald-600",
+  "from-orange-500 to-orange-600",
+  "from-rose-500 to-rose-600",
+  "from-cyan-500 to-cyan-600",
+  "from-yellow-500 to-yellow-600",
+  "from-indigo-500 to-indigo-600",
+  "from-pink-500 to-pink-600",
+  "from-teal-500 to-teal-600",
+];
+function tickerColor(ticker: string): string {
+  let h = 0;
+  for (let i = 0; i < ticker.length; i++) h = (h * 31 + ticker.charCodeAt(i)) | 0;
+  return TICKER_COLORS[Math.abs(h) % TICKER_COLORS.length];
+}
+
+function getMonday(d: Date): Date {
+  const dt = new Date(d);
+  const day = dt.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  dt.setDate(dt.getDate() + diff);
+  dt.setHours(0, 0, 0, 0);
+  return dt;
+}
+
+function addDays(d: Date, n: number): Date {
+  const dt = new Date(d);
+  dt.setDate(dt.getDate() + n);
+  return dt;
+}
+
+function dateKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri"];
+
+interface EarningsEntry {
+  market: ParsedMarket;
+  ticker: string;
+  company: string;
+  eps: string | null;
+  beatPct: number;
+}
+
+function EarningsCalendar({ markets }: { markets: ParsedMarket[] }) {
+  const [weekStart, setWeekStart] = useState<Date>(() => getMonday(new Date()));
+
+  // Build date → entries map
+  const dateMap = new Map<string, EarningsEntry[]>();
+  for (const m of markets) {
+    if (!m.endDate) continue;
+    const d = new Date(m.endDate);
+    if (isNaN(d.getTime())) continue;
+    const key = dateKey(d);
+    const entry: EarningsEntry = {
+      market: m,
+      ticker: extractTicker(m.question) || "???",
+      company: extractCompanyName(m.question),
+      eps: extractEPS(m.description),
+      beatPct: Math.round(m.yesPrice * 100),
+    };
+    if (!dateMap.has(key)) dateMap.set(key, []);
+    dateMap.get(key)!.push(entry);
+  }
+
+  // Also collect markets with no endDate into an "undated" bucket
+  const undated: EarningsEntry[] = [];
+  for (const m of markets) {
+    if (m.endDate) continue;
+    undated.push({
+      market: m,
+      ticker: extractTicker(m.question) || "???",
+      company: extractCompanyName(m.question),
+      eps: extractEPS(m.description),
+      beatPct: Math.round(m.yesPrice * 100),
+    });
+  }
+
+  // Sort entries within each day by beat% descending
+  for (const entries of dateMap.values()) {
+    entries.sort((a, b) => b.beatPct - a.beatPct);
+  }
+
+  const weekDays = Array.from({ length: 5 }, (_, i) => addDays(weekStart, i));
+  const weekMonth = MONTH_NAMES[weekStart.getMonth()];
+  const weekYear = weekStart.getFullYear();
+
+  const prevWeek = () => setWeekStart((ws) => addDays(ws, -7));
+  const nextWeek = () => setWeekStart((ws) => addDays(ws, 7));
+  const goToday = () => setWeekStart(getMonday(new Date()));
+
+  const totalThisWeek = weekDays.reduce((sum, d) => sum + (dateMap.get(dateKey(d))?.length || 0), 0);
 
   return (
-    <a
-      href={`https://polymarket.com/event/${market.eventSlug}`}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="block"
-    >
-      <GlassCard className="p-4 hover:bg-white/[0.06] hover:border-white/10 transition-all cursor-pointer h-full">
-        <div className="flex items-start justify-between gap-2 mb-3">
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-white/90 leading-tight truncate">
-              {company}
-            </p>
-            {ticker && (
-              <span className="text-[10px] font-mono text-blue-400/70 mt-0.5 block">${ticker}</span>
-            )}
+    <div>
+      {/* Calendar header */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <CalendarDays className="w-5 h-5 text-yellow-400" />
+          <div>
+            <h3 className="text-sm font-bold text-white/90">
+              {weekMonth} {weekYear}
+              <span className="text-white/30 font-normal ml-2">/ Earnings Calendar</span>
+            </h3>
           </div>
-          <span
-            className={`text-lg font-bold flex-shrink-0 ${
-              isBeatFavored ? "text-emerald-400" : "text-red-400"
-            }`}
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={goToday}
+            className="px-2.5 py-1 rounded-md text-[10px] font-semibold text-white/50 border border-white/[0.08] hover:bg-white/5 hover:text-white/70 transition-all mr-1"
           >
-            {beatPct}%
-          </span>
+            Today
+          </button>
+          <button
+            onClick={prevWeek}
+            className="p-1.5 rounded-md border border-white/[0.08] hover:bg-white/5 transition-all"
+          >
+            <ChevronLeft className="w-3.5 h-3.5 text-white/50" />
+          </button>
+          <button
+            onClick={nextWeek}
+            className="p-1.5 rounded-md border border-white/[0.08] hover:bg-white/5 transition-all"
+          >
+            <ChevronRight className="w-3.5 h-3.5 text-white/50" />
+          </button>
         </div>
+      </div>
 
-        {/* Beat / Miss bar */}
-        <div className="mb-3">
-          <div className="flex justify-between text-[10px] font-bold mb-1">
-            <span className="text-emerald-400">BEAT {beatPct}%</span>
-            <span className="text-red-400">MISS {missPct}%</span>
-          </div>
-          <div className="h-2.5 rounded-full bg-white/5 overflow-hidden flex">
+      {/* Week column grid */}
+      <div className="grid grid-cols-5 gap-2">
+        {weekDays.map((day, i) => {
+          const key = dateKey(day);
+          const entries = dateMap.get(key) || [];
+          const isToday = dateKey(new Date()) === key;
+          return (
             <div
-              className="h-full rounded-l-full transition-all duration-700"
-              style={{
-                width: `${beatPct}%`,
-                background: "linear-gradient(90deg, #22c55e, #4ade80)",
-              }}
-            />
-            <div
-              className="h-full rounded-r-full transition-all duration-700"
-              style={{
-                width: `${missPct}%`,
-                background: "linear-gradient(90deg, #ef4444, #f87171)",
-              }}
-            />
-          </div>
-        </div>
+              key={key}
+              className={`rounded-xl border min-h-[200px] ${
+                isToday
+                  ? "bg-blue-500/[0.04] border-blue-500/20"
+                  : "bg-white/[0.015] border-white/[0.06]"
+              }`}
+            >
+              {/* Day header */}
+              <div className={`px-3 py-2 border-b ${isToday ? "border-blue-500/20" : "border-white/[0.06]"}`}>
+                <div className="flex items-center justify-between">
+                  <span className={`text-[11px] font-semibold ${isToday ? "text-blue-400" : "text-white/50"}`}>
+                    {DAY_NAMES[i]} {day.getDate()}
+                  </span>
+                  {entries.length > 0 && (
+                    <span className="text-[9px] text-white/25 font-mono">{entries.length}</span>
+                  )}
+                </div>
+              </div>
 
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-white/40">
-          <span className="flex items-center gap-1">
-            <BarChart3 className="w-3 h-3" />
-            24h: {formatVolume(market.volume24hr)}
-          </span>
-          <span className="flex items-center gap-1">
-            <DollarSign className="w-3 h-3" />
-            Vol: {formatVolume(market.totalVolume)}
-          </span>
+              {/* Entries */}
+              <div className="p-1.5 space-y-1">
+                {entries.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-6 text-white/15">
+                    <Calendar className="w-4 h-4 mb-1" />
+                    <span className="text-[9px]">No earnings</span>
+                  </div>
+                ) : (
+                  entries.map((e) => {
+                    const isHigh = e.beatPct >= 60;
+                    const isLow = e.beatPct <= 40;
+                    return (
+                      <a
+                        key={e.market.marketId}
+                        href={`https://polymarket.com/event/${e.market.eventSlug}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/[0.05] transition-all cursor-pointer group"
+                      >
+                        {/* Ticker avatar */}
+                        <div className={`w-6 h-6 rounded-md bg-gradient-to-br ${tickerColor(e.ticker)} flex items-center justify-center flex-shrink-0`}>
+                          <span className="text-[8px] font-bold text-white">{e.ticker.slice(0, 2)}</span>
+                        </div>
+
+                        {/* Company + EPS */}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[10px] font-bold text-white/80 truncate group-hover:text-white transition-colors leading-tight">
+                            {e.ticker}
+                          </p>
+                          {e.eps && (
+                            <p className="text-[8px] text-white/30 font-mono leading-tight">{e.eps} EPS</p>
+                          )}
+                        </div>
+
+                        {/* Beat % */}
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full ${
+                              isHigh ? "bg-emerald-400" : isLow ? "bg-red-400" : "bg-yellow-400"
+                            }`}
+                          />
+                          <span className={`text-[10px] font-bold ${
+                            isHigh ? "text-emerald-400" : isLow ? "text-red-400" : "text-yellow-400"
+                          }`}>
+                            {e.beatPct}%
+                          </span>
+                          <span className="text-[8px] text-white/25">beats</span>
+                        </div>
+                      </a>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Summary + undated markets */}
+      <div className="mt-3 flex items-center justify-between">
+        <span className="text-[10px] text-white/25">
+          {totalThisWeek} earnings this week
+          {undated.length > 0 && ` · ${undated.length} with dates TBD`}
+        </span>
+        <a
+          href="https://polymarket.com/earnings"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-[10px] text-blue-400/60 hover:text-blue-400 transition-colors"
+        >
+          View on Polymarket <ExternalLink className="w-2.5 h-2.5" />
+        </a>
+      </div>
+
+      {/* Undated earnings shown below calendar if present */}
+      {undated.length > 0 && (
+        <div className="mt-4">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">Date TBD</span>
+            <span className="text-[9px] text-white/20">{undated.length} markets</span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+            {undated.slice(0, 10).map((e) => {
+              const isHigh = e.beatPct >= 60;
+              const isLow = e.beatPct <= 40;
+              return (
+                <a
+                  key={e.market.marketId}
+                  href={`https://polymarket.com/event/${e.market.eventSlug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.05] transition-all cursor-pointer"
+                >
+                  <div className={`w-6 h-6 rounded-md bg-gradient-to-br ${tickerColor(e.ticker)} flex items-center justify-center flex-shrink-0`}>
+                    <span className="text-[8px] font-bold text-white">{e.ticker.slice(0, 2)}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-bold text-white/70 truncate">{e.ticker}</p>
+                  </div>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <span className={`w-1.5 h-1.5 rounded-full ${
+                      isHigh ? "bg-emerald-400" : isLow ? "bg-red-400" : "bg-yellow-400"
+                    }`} />
+                    <span className={`text-[10px] font-bold ${
+                      isHigh ? "text-emerald-400" : isLow ? "text-red-400" : "text-yellow-400"
+                    }`}>{e.beatPct}%</span>
+                  </div>
+                </a>
+              );
+            })}
+          </div>
         </div>
-      </GlassCard>
-    </a>
+      )}
+    </div>
   );
 }
 
@@ -732,43 +950,14 @@ function PolymarketDashboard() {
               ))}
             </div>
           ) : activeTab === "earnings" ? (
-            /* ═══ Earnings-specific view ═══ */
-            <>
-              <div className="flex items-center gap-2 mb-1">
-                <Calendar className="w-4 h-4 text-yellow-400" />
-                <h3 className="text-sm font-bold text-white/90 tracking-wide uppercase">Upcoming Earnings</h3>
-                <span className="text-[10px] text-white/30">Beat / Miss odds from Polymarket</span>
+            /* ═══ Earnings calendar view ═══ */
+            filtered.length === 0 ? (
+              <div className="text-center py-8 text-sm text-white/30">
+                No earnings markets found. Check back closer to earnings season.
               </div>
-              <p className="text-[10px] text-white/25 mb-4">
-                Live prediction market odds on whether companies will beat or miss their quarterly earnings estimates.
-              </p>
-              {filtered.length === 0 ? (
-                <div className="text-center py-8 text-sm text-white/30">
-                  No earnings markets found. Check back closer to earnings season.
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {filtered.slice(0, 30).map((m) => (
-                    <EarningsCard key={m.marketId} market={m} />
-                  ))}
-                </div>
-              )}
-              {filtered.length > 30 && (
-                <p className="text-center text-[10px] text-white/20 mt-3">
-                  Showing top 30 of {filtered.length} earnings markets
-                </p>
-              )}
-              <div className="mt-4 text-center">
-                <a
-                  href="https://polymarket.com/earnings"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-[11px] text-blue-400/70 hover:text-blue-400 transition-colors"
-                >
-                  View full Earnings Calendar on Polymarket <ExternalLink className="w-3 h-3" />
-                </a>
-              </div>
-            </>
+            ) : (
+              <EarningsCalendar markets={filtered} />
+            )
           ) : (
             /* ═══ Standard markets grid (all, crypto, fed, elections, economy, geopolitics, finance, tech) ═══ */
             <>
