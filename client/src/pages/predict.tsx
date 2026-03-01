@@ -22,6 +22,17 @@ const MACRO_INCLUDE = [
   "geopolitical", "war", "sanctions", "china", "iran", "russia", "ukraine",
   "opec", "regulation", "sec", "etf", "ipo", "ai ", "artificial intelligence",
   "semiconductor", "solana", "xrp", "dogecoin",
+  // Finance
+  "bank", "banking", "jpmorgan", "goldman", "morgan stanley", "credit", "loan",
+  "mortgage", "fintech", "insurance", "hedge fund", "private equity", "venture capital",
+  "ipo", "merger", "acquisition", "m&a", "bankruptcy", "bailout",
+  // Tech
+  "apple", "google", "meta", "microsoft", "amazon", "nvidia", "tesla", "openai",
+  "chatgpt", "tech", "technology", "software", "hardware", "chip", "semiconductor",
+  "cloud", "saas", "startup", "silicon valley", "antitrust",
+  // Earnings
+  "earnings", "revenue", "profit", "eps", "quarterly", "guidance", "forecast",
+  "beat", "miss", "report", "q1", "q2", "q3", "q4", "annual",
 ];
 
 const MACRO_EXCLUDE = [
@@ -35,7 +46,7 @@ const MACRO_EXCLUDE = [
   "paralympics",
 ];
 
-type CategoryTab = "all" | "crypto" | "fed" | "elections" | "economy" | "geopolitics";
+type CategoryTab = "all" | "crypto" | "fed" | "elections" | "economy" | "geopolitics" | "finance" | "tech" | "earnings";
 
 const CATEGORY_KEYWORDS: Record<Exclude<CategoryTab, "all">, string[]> = {
   crypto: ["bitcoin", "btc", "ethereum", "eth", "crypto", "solana", "xrp", "dogecoin", "defi", "nft", "blockchain"],
@@ -43,6 +54,9 @@ const CATEGORY_KEYWORDS: Record<Exclude<CategoryTab, "all">, string[]> = {
   elections: ["election", "president", "congress", "senate", "house", "vote", "governor", "democrat", "republican", "trump", "biden"],
   economy: ["gdp", "recession", "economy", "economic", "jobs", "employment", "housing", "debt", "deficit", "fiscal", "stock", "s&p", "nasdaq", "dow", "market", "tariff", "trade war", "commodity", "commodities", "oil", "gold"],
   geopolitics: ["war", "ukraine", "russia", "china", "iran", "sanctions", "geopolitical", "nato", "opec", "nuclear", "taiwan", "middle east"],
+  finance: ["bank", "banking", "jpmorgan", "goldman", "morgan stanley", "credit", "loan", "mortgage", "fintech", "insurance", "hedge fund", "private equity", "venture capital", "ipo", "merger", "acquisition", "m&a", "bankruptcy", "bailout", "sec", "regulation", "etf", "fund"],
+  tech: ["apple", "google", "meta", "microsoft", "amazon", "nvidia", "tesla", "openai", "chatgpt", "ai ", "artificial intelligence", "tech", "technology", "software", "hardware", "chip", "semiconductor", "cloud", "saas", "startup", "silicon valley", "antitrust"],
+  earnings: ["earnings", "revenue", "profit", "eps", "quarterly", "guidance", "forecast", "beat", "miss", "report", "q1 ", "q2 ", "q3 ", "q4 ", "annual report", "financial results"],
 };
 
 // ─── Types ────────────────────────────────────────────────────────
@@ -464,6 +478,9 @@ function PolymarketDashboard() {
     { key: "elections", label: "Elections" },
     { key: "economy", label: "Economy" },
     { key: "geopolitics", label: "Geopolitics" },
+    { key: "finance", label: "Finance" },
+    { key: "tech", label: "Tech" },
+    { key: "earnings", label: "Earnings" },
   ];
 
   return (
