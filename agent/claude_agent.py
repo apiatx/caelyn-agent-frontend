@@ -492,12 +492,27 @@ class TradingAgent:
                 analysis_parts.append("TOP PICKS: " + ", ".join(t.get("ticker", "?") for t in top))
             analysis_text = "\n".join(analysis_parts)
 
-            return {
+            csv_result = {
                 "analysis": analysis_text,
                 "structured": parsed,
                 "_timing": {"data": data_ms, "claude": claude_ms, "grok": 0},
                 "_routing": {"source": "csv_upload", "confidence": "high", "category": "csv_analysis"},
             }
+
+            # Generate follow-up suggestions for CSV analysis
+            try:
+                if analysis_text and len(analysis_text) > 50:
+                    suggestions = await asyncio.wait_for(
+                        asyncio.to_thread(self._generate_followup_suggestions, analysis_text),
+                        timeout=5.0,
+                    )
+                    if suggestions:
+                        csv_result["suggested_followups"] = suggestions
+                        print(f"[SUGGESTIONS] Generated {len(suggestions)} CSV follow-up suggestions")
+            except Exception as e:
+                print(f"[SUGGESTIONS] CSV suggestion generation failed (non-fatal): {e}")
+
+            return csv_result
 
         # Detect if this is a follow-up to a CSV analysis
         # Check ALL assistant messages in history (not just the last one)
@@ -1022,6 +1037,24 @@ class TradingAgent:
             "data": data_ms,
             "claude": claude_ms,
         }
+
+        # Generate follow-up suggestions (non-blocking, best-effort)
+        try:
+            analysis_text = result.get("analysis", "")
+            if not analysis_text:
+                structured = result.get("structured", {})
+                if isinstance(structured, dict):
+                    analysis_text = structured.get("message", "") or structured.get("summary", "")
+            if analysis_text and len(analysis_text) > 50:
+                suggestions = await asyncio.wait_for(
+                    asyncio.to_thread(self._generate_followup_suggestions, analysis_text),
+                    timeout=5.0,
+                )
+                if suggestions:
+                    result["suggested_followups"] = suggestions
+                    print(f"[SUGGESTIONS] Generated {len(suggestions)} follow-up suggestions")
+        except Exception as e:
+            print(f"[SUGGESTIONS] Generation failed (non-fatal): {e}")
 
         return result
 
@@ -2243,6 +2276,45 @@ class TradingAgent:
         except Exception as e:
             print(f"[REASONING_BRIEF] Generation failed (non-fatal): {e}")
             return None
+
+    def _generate_followup_suggestions(self, analysis_text: str) -> list:
+        """Generate 4 contextual follow-up prompt suggestions based on Claude's response.
+        Uses Claude Haiku for speed. Returns list of 4 short suggestion strings."""
+        try:
+            response = self.client.messages.create(
+                model="claude-haiku-4-5-20251001",
+                max_tokens=200,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": (
+                            "Based on the analysis below, suggest exactly 4 short follow-up questions "
+                            "the user would logically want to ask next. Return ONLY a JSON array of 4 strings. "
+                            "Each must be under 60 characters. Make them specific to the tickers, ratings, "
+                            "and data in the response — not generic. "
+                            "Examples of good follow-ups: "
+                            "'Check social sentiment on the SELL-rated ones', "
+                            "'What are earnings dates for your top picks?', "
+                            "'Run technical analysis on IONQ and CRDO', "
+                            "'Compare LPTH vs FORM on fundamentals'\n\n"
+                            f"ANALYSIS:\n{analysis_text[:2000]}"
+                        ),
+                    }
+                ],
+            )
+            text = response.content[0].text.strip()
+            # Strip markdown fences if present
+            if text.startswith("```"):
+                text = re.sub(r"```json\s*", "", text)
+                text = re.sub(r"```\s*", "", text).strip()
+            suggestions = json.loads(text)
+            if isinstance(suggestions, list) and len(suggestions) >= 2:
+                # Ensure all items are strings and under 60 chars
+                return [s[:60] for s in suggestions[:4] if isinstance(s, str) and s.strip()]
+            return []
+        except Exception as e:
+            print(f"[SUGGESTIONS] Claude call failed: {e}")
+            return []
 
     async def _orchestrate_with_timeout(self, prompt: str, history: list = None, csv_context: str = None) -> dict:
         try:
