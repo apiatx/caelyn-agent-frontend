@@ -22,6 +22,7 @@ class XAISentimentProvider:
     def __init__(self, api_key: str):
         self.api_key = api_key
         self.model = "grok-4-1-fast-non-reasoning"
+        self.deep_model = "grok-4-1-fast-reasoning"  # Reasoning model for deep scans (matches Grok on x.com)
         self.headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {api_key}",
@@ -330,7 +331,17 @@ Be thorough, direct, and opinionated. Provide specific evidence from what you fi
 
 Return your analysis as a clear report. Start with the highest social momentum tickers first, then work down to lower momentum, then list zero-buzz tickers at the end."""
 
-        return await self._call_grok_with_x_search(prompt, timeout=90.0, raw_mode=True)
+        # Use reasoning model for deep analysis + date filter for last 7 days
+        from datetime import datetime, timedelta
+        from_date = (datetime.utcnow() - timedelta(days=7)).strftime("%Y-%m-%d")
+
+        return await self._call_grok_with_x_search(
+            prompt,
+            timeout=120.0,
+            raw_mode=True,
+            use_deep_model=True,
+            x_search_config={"from_date": from_date},
+        )
 
     async def run_x_social_scan(self, mode: str, query: str = "", constraints: dict = None) -> dict:
         """
@@ -559,23 +570,37 @@ Keep it tight. This is a mood check, not a full scan."""
 
         return result
 
-    async def _call_grok_with_x_search(self, prompt: str, timeout: float = 45.0, raw_mode: bool = False) -> dict:
+    async def _call_grok_with_x_search(
+        self,
+        prompt: str,
+        timeout: float = 45.0,
+        raw_mode: bool = False,
+        use_deep_model: bool = False,
+        x_search_config: dict = None,
+    ) -> dict:
         """
         Call the xAI Responses API with x_search enabled.
         If raw_mode=True, returns the raw text analysis instead of trying to parse JSON.
+        If use_deep_model=True, uses the reasoning model for deeper X searching.
+        x_search_config can include from_date, to_date, etc.
         """
+        model = self.deep_model if use_deep_model else self.model
+        x_search_opts = x_search_config or {}
+
         payload = {
-            "model": self.model,
+            "model": model,
             "tools": [
                 {
                     "type": "x_search",
-                    "x_search": {}
+                    "x_search": x_search_opts,
                 }
             ],
             "input": [
                 {"role": "user", "content": prompt}
             ],
         }
+
+        print(f"[XAI] Calling {model} (raw_mode={raw_mode}, x_search_config={x_search_opts})")
 
         try:
             async with httpx.AsyncClient(timeout=timeout) as client:
