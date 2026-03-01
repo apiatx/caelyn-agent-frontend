@@ -476,7 +476,7 @@ function PolymarketDashboard() {
           </div>
           <div>
             <h2 className="text-base font-bold text-white flex items-center gap-2">
-              Polymarket Macro Dashboard
+              Prediction Markets Dashboard
               <LiveBadge />
             </h2>
             <p className="text-[10px] text-white/30">
@@ -487,13 +487,24 @@ function PolymarketDashboard() {
             </p>
           </div>
         </div>
-        <button
-          onClick={handleRefresh}
-          disabled={loading}
-          className="p-2 rounded-lg border border-white/10 hover:bg-white/5 transition-colors disabled:opacity-40"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 text-white/50 ${loading ? "animate-spin" : ""}`} />
-        </button>
+        <div className="flex items-center gap-2">
+          <a
+            href="https://polymarket.com/crypto"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 hover:bg-white/5 transition-colors text-xs text-white/50 hover:text-white/80"
+          >
+            <ExternalLink className="w-3 h-3" />
+            Open Polymarket
+          </a>
+          <button
+            onClick={handleRefresh}
+            disabled={loading}
+            className="p-2 rounded-lg border border-white/10 hover:bg-white/5 transition-colors disabled:opacity-40"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 text-white/50 ${loading ? "animate-spin" : ""}`} />
+          </button>
+        </div>
       </div>
 
       {/* Error state */}
@@ -828,25 +839,15 @@ export default function PredictPage() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-        {/* ═══ Polymarket Macro Dashboard ═══ */}
-        <PolymarketDashboard />
-
         {/* ═══ Prediction Markets Agent ═══ */}
         <PredictionAgent />
 
+        {/* ═══ Prediction Markets Dashboard ═══ */}
+        <PolymarketDashboard />
+
         {/* ═══ Existing iframes & cards ═══ */}
         <GlassCard className="p-6">
-          <div className="flex justify-end mb-1">
-            <SmallLink href="https://polymarket.com/crypto" label="Open Polymarket" />
-          </div>
-          <iframe
-            src="https://polymarket.com/crypto"
-            className="w-full h-[600px] rounded-lg border border-crypto-silver/20"
-            title="Polymarket"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-          />
-
-          <div className="flex justify-end mb-1 mt-6">
+          <div className="flex justify-end mb-1 mt-0">
             <SmallLink href="https://predictbase.app/" label="Open PredictBase" />
           </div>
           <iframe
