@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, ExternalLink, Activity, BarChart3, RefreshCw, Users, DollarSign, MessageSquare, Send, Loader2, Sparkles } from "lucide-react";
+import { TrendingUp, ExternalLink, Activity, BarChart3, RefreshCw, Users, DollarSign, MessageSquare, Send, Loader2, Sparkles, Calendar } from "lucide-react";
 import { openSecureLink } from "@/utils/security";
 import diceImage from "@assets/istockphoto-1252690598-612x612_1756665072306.jpg";
 
@@ -48,15 +48,19 @@ const MACRO_EXCLUDE = [
 
 type CategoryTab = "all" | "crypto" | "fed" | "elections" | "economy" | "geopolitics" | "finance" | "tech" | "earnings";
 
-const CATEGORY_KEYWORDS: Record<Exclude<CategoryTab, "all">, string[]> = {
+// Categories that use Polymarket tag_slug API for direct fetching
+const TAG_SLUG_CATEGORIES: Partial<Record<CategoryTab, string>> = {
+  finance: "finance",
+  tech: "tech",
+  earnings: "earnings",
+};
+
+const CATEGORY_KEYWORDS: Record<Exclude<CategoryTab, "all" | "finance" | "tech" | "earnings">, string[]> = {
   crypto: ["bitcoin", "btc", "ethereum", "eth", "crypto", "solana", "xrp", "dogecoin", "defi", "nft", "blockchain"],
   fed: ["fed", "rate", "rates", "interest", "monetary", "central bank", "fomc", "powell", "inflation", "cpi", "ppi", "yield", "bond"],
   elections: ["election", "president", "congress", "senate", "house", "vote", "governor", "democrat", "republican", "trump", "biden"],
   economy: ["gdp", "recession", "economy", "economic", "jobs", "employment", "housing", "debt", "deficit", "fiscal", "stock", "s&p", "nasdaq", "dow", "market", "tariff", "trade war", "commodity", "commodities", "oil", "gold"],
   geopolitics: ["war", "ukraine", "russia", "china", "iran", "sanctions", "geopolitical", "nato", "opec", "nuclear", "taiwan", "middle east"],
-  finance: ["bank", "banking", "jpmorgan", "goldman", "morgan stanley", "credit", "loan", "mortgage", "fintech", "insurance", "hedge fund", "private equity", "venture capital", "ipo", "merger", "acquisition", "m&a", "bankruptcy", "bailout", "sec", "regulation", "etf", "fund"],
-  tech: ["apple", "google", "meta", "microsoft", "amazon", "nvidia", "tesla", "openai", "chatgpt", "ai ", "artificial intelligence", "tech", "technology", "software", "hardware", "chip", "semiconductor", "cloud", "saas", "startup", "silicon valley", "antitrust"],
-  earnings: ["earnings", "revenue", "profit", "eps", "quarterly", "guidance", "forecast", "beat", "miss", "report", "q1 ", "q2 ", "q3 ", "q4 ", "annual report", "financial results"],
 };
 
 // ─── Types ────────────────────────────────────────────────────────
@@ -130,8 +134,12 @@ function isMacroEvent(ev: PolyEvent): boolean {
 
 function matchesCategory(m: ParsedMarket, cat: CategoryTab): boolean {
   if (cat === "all") return true;
+  // Tag-slug categories are fetched separately; don't keyword-filter them
+  if (cat in TAG_SLUG_CATEGORIES) return true;
+  const keywords = CATEGORY_KEYWORDS[cat as keyof typeof CATEGORY_KEYWORDS];
+  if (!keywords) return true;
   const text = `${m.eventTitle} ${m.question} ${m.tags.join(" ")}`.toLowerCase();
-  return CATEGORY_KEYWORDS[cat].some((kw) => text.includes(kw));
+  return keywords.some((kw) => text.includes(kw));
 }
 
 function formatVolume(v: number): string {
@@ -140,11 +148,11 @@ function formatVolume(v: number): string {
   return `$${v.toFixed(0)}`;
 }
 
-function parseEvents(events: PolyEvent[]): ParsedMarket[] {
+function parseEventsCore(events: PolyEvent[], applyMacroFilter: boolean): ParsedMarket[] {
   const results: ParsedMarket[] = [];
   for (const ev of events) {
     if (!ev.active || ev.closed) continue;
-    if (!isMacroEvent(ev)) continue;
+    if (applyMacroFilter && !isMacroEvent(ev)) continue;
     for (const m of ev.markets || []) {
       if (!m.active || m.closed) continue;
       const prices = parsePriceArray(m.outcomePrices || "[]");
@@ -167,6 +175,15 @@ function parseEvents(events: PolyEvent[]): ParsedMarket[] {
   }
   results.sort((a, b) => b.volume24hr - a.volume24hr);
   return results;
+}
+
+function parseEvents(events: PolyEvent[]): ParsedMarket[] {
+  return parseEventsCore(events, true);
+}
+
+/** Parse events from a tag-specific API call (no macro keyword filter needed) */
+function parseTagEvents(events: PolyEvent[]): ParsedMarket[] {
+  return parseEventsCore(events, false);
 }
 
 // ─── Skeleton Loader ──────────────────────────────────────────────
@@ -395,57 +412,159 @@ function MoversSection({ markets }: { markets: ParsedMarket[] }) {
   );
 }
 
+// ─── Earnings Card ────────────────────────────────────────────────
+
+function extractCompanyName(question: string): string {
+  // "Will X (TICKER) beat quarterly earnings?" -> "X (TICKER)"
+  const match = question.match(/^Will\s+(.+?)\s+beat\b/i)
+    || question.match(/^Will\s+(.+?)\s+miss\b/i)
+    || question.match(/^Will\s+(.+?)\s+report\b/i);
+  if (match) return match[1];
+  // Fallback: try to extract ticker in parens
+  const tickerMatch = question.match(/\(([A-Z]{1,5})\)/);
+  if (tickerMatch) return tickerMatch[1];
+  return question.length > 50 ? question.slice(0, 47) + "..." : question;
+}
+
+function extractTicker(question: string): string | null {
+  const match = question.match(/\(([A-Z]{1,5})\)/);
+  return match ? match[1] : null;
+}
+
+function EarningsCard({ market }: { market: ParsedMarket }) {
+  const company = extractCompanyName(market.question);
+  const ticker = extractTicker(market.question);
+  const beatPct = Math.round(market.yesPrice * 100);
+  const missPct = 100 - beatPct;
+  const isBeatFavored = beatPct >= 50;
+
+  return (
+    <a
+      href={`https://polymarket.com/event/${market.eventSlug}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block"
+    >
+      <GlassCard className="p-4 hover:bg-white/[0.06] hover:border-white/10 transition-all cursor-pointer h-full">
+        <div className="flex items-start justify-between gap-2 mb-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-white/90 leading-tight truncate">
+              {company}
+            </p>
+            {ticker && (
+              <span className="text-[10px] font-mono text-blue-400/70 mt-0.5 block">${ticker}</span>
+            )}
+          </div>
+          <span
+            className={`text-lg font-bold flex-shrink-0 ${
+              isBeatFavored ? "text-emerald-400" : "text-red-400"
+            }`}
+          >
+            {beatPct}%
+          </span>
+        </div>
+
+        {/* Beat / Miss bar */}
+        <div className="mb-3">
+          <div className="flex justify-between text-[10px] font-bold mb-1">
+            <span className="text-emerald-400">BEAT {beatPct}%</span>
+            <span className="text-red-400">MISS {missPct}%</span>
+          </div>
+          <div className="h-2.5 rounded-full bg-white/5 overflow-hidden flex">
+            <div
+              className="h-full rounded-l-full transition-all duration-700"
+              style={{
+                width: `${beatPct}%`,
+                background: "linear-gradient(90deg, #22c55e, #4ade80)",
+              }}
+            />
+            <div
+              className="h-full rounded-r-full transition-all duration-700"
+              style={{
+                width: `${missPct}%`,
+                background: "linear-gradient(90deg, #ef4444, #f87171)",
+              }}
+            />
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-white/40">
+          <span className="flex items-center gap-1">
+            <BarChart3 className="w-3 h-3" />
+            24h: {formatVolume(market.volume24hr)}
+          </span>
+          <span className="flex items-center gap-1">
+            <DollarSign className="w-3 h-3" />
+            Vol: {formatVolume(market.totalVolume)}
+          </span>
+        </div>
+      </GlassCard>
+    </a>
+  );
+}
+
+// ─── Fetch helper for tag-specific Polymarket data ────────────────
+
+async function fetchPolymarketByTag(tagSlug: string): Promise<PolyEvent[] | null> {
+  // Attempt 1: Backend proxy with tag_slug
+  try {
+    const proxyRes = await fetch(
+      `${POLYMARKET_PROXY}?limit=50&tag_slug=${encodeURIComponent(tagSlug)}`
+    );
+    if (proxyRes.ok) {
+      const json = await proxyRes.json();
+      if (Array.isArray(json)) return json;
+    }
+  } catch { /* fall through */ }
+
+  // Attempt 2: Direct Gamma API
+  try {
+    const directRes = await fetch(
+      `${GAMMA_API}?limit=50&active=true&closed=false&order=volume24hr&ascending=false&tag_slug=${encodeURIComponent(tagSlug)}`
+    );
+    if (directRes.ok) {
+      const json = await directRes.json();
+      if (Array.isArray(json)) return json;
+    }
+  } catch { /* fall through */ }
+
+  return null;
+}
+
 // ─── Dashboard Component ──────────────────────────────────────────
 
 function PolymarketDashboard() {
   const [markets, setMarkets] = useState<ParsedMarket[]>([]);
+  const [tagMarkets, setTagMarkets] = useState<ParsedMarket[]>([]);
   const [loading, setLoading] = useState(true);
+  const [tagLoading, setTagLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<CategoryTab>("all");
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
+  // Fetch the main macro markets (for all/crypto/fed/elections/economy/geopolitics)
   const fetchData = useCallback(async () => {
     try {
-      // Try proxy first, fall back to direct API
       let data: PolyEvent[] | null = null;
 
-      // Attempt 1: Backend proxy (avoids CORS)
       try {
-        console.log("[POLYMARKET] Fetching via proxy:", POLYMARKET_PROXY);
         const proxyRes = await fetch(`${POLYMARKET_PROXY}?limit=100`);
-        console.log("[POLYMARKET] Proxy response status:", proxyRes.status);
         if (proxyRes.ok) {
           const json = await proxyRes.json();
-          // Proxy returns array directly, or error object with { error: ... }
-          if (Array.isArray(json)) {
-            data = json;
-            console.log("[POLYMARKET] Proxy returned", json.length, "events");
-          } else {
-            console.warn("[POLYMARKET] Proxy returned non-array:", json?.error || json);
-          }
+          if (Array.isArray(json)) data = json;
         }
-      } catch (proxyErr) {
-        console.warn("[POLYMARKET] Proxy fetch failed:", proxyErr);
-      }
+      } catch { /* fall through */ }
 
-      // Attempt 2: Direct API (may fail due to CORS)
       if (!data) {
         try {
-          console.log("[POLYMARKET] Trying direct API:", GAMMA_API);
           const directRes = await fetch(
             `${GAMMA_API}?limit=100&active=true&closed=false&order=volume24hr&ascending=false`
           );
-          console.log("[POLYMARKET] Direct response status:", directRes.status);
           if (directRes.ok) {
             const json = await directRes.json();
-            if (Array.isArray(json)) {
-              data = json;
-              console.log("[POLYMARKET] Direct returned", json.length, "events");
-            }
+            if (Array.isArray(json)) data = json;
           }
-        } catch (directErr) {
-          console.warn("[POLYMARKET] Direct fetch failed (likely CORS):", directErr);
-        }
+        } catch { /* fall through */ }
       }
 
       if (!data || !Array.isArray(data) || data.length === 0) {
@@ -453,7 +572,6 @@ function PolymarketDashboard() {
         return;
       }
       const parsed = parseEvents(data);
-      console.log("[POLYMARKET] Parsed", parsed.length, "macro markets from", data.length, "events");
       setMarkets(parsed);
       setError(null);
       setLastUpdated(new Date());
@@ -465,18 +583,54 @@ function PolymarketDashboard() {
     }
   }, []);
 
+  // Fetch tag-specific markets when a tag-slug tab is active
+  const fetchTagData = useCallback(async (tab: CategoryTab) => {
+    const tagSlug = TAG_SLUG_CATEGORIES[tab];
+    if (!tagSlug) return;
+    setTagLoading(true);
+    setTagMarkets([]);
+    try {
+      const data = await fetchPolymarketByTag(tagSlug);
+      if (data && data.length > 0) {
+        const parsed = parseTagEvents(data);
+        setTagMarkets(parsed);
+        setError(null);
+      } else {
+        setTagMarkets([]);
+      }
+    } catch {
+      setTagMarkets([]);
+    } finally {
+      setTagLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     fetchData();
     const iv = setInterval(fetchData, REFRESH_INTERVAL);
     return () => clearInterval(iv);
   }, [fetchData]);
 
+  // When switching to a tag-slug category, fetch its data
+  useEffect(() => {
+    if (activeTab in TAG_SLUG_CATEGORIES) {
+      fetchTagData(activeTab);
+    }
+  }, [activeTab, fetchTagData]);
+
   const handleRefresh = () => {
     setLoading(true);
     fetchData();
+    if (activeTab in TAG_SLUG_CATEGORIES) {
+      fetchTagData(activeTab);
+    }
   };
 
-  const filtered = markets.filter((m) => matchesCategory(m, activeTab));
+  // For tag-slug categories, use tagMarkets; for others, filter the main markets
+  const isTagCategory = activeTab in TAG_SLUG_CATEGORIES;
+  const filtered = isTagCategory
+    ? tagMarkets
+    : markets.filter((m) => matchesCategory(m, activeTab));
 
   const tabs: { key: CategoryTab; label: string }[] = [
     { key: "all", label: "All Macro" },
@@ -570,29 +724,80 @@ function PolymarketDashboard() {
             ))}
           </div>
 
-          {/* Top Macro Markets Grid */}
-          <div className="flex items-center gap-2 mb-3">
-            <TrendingUp className="w-4 h-4 text-blue-400" />
-            <h3 className="text-sm font-bold text-white/90 tracking-wide uppercase">Top Macro Markets</h3>
-            <span className="text-[10px] text-white/30">By 24h volume</span>
-          </div>
-
-          {filtered.length === 0 ? (
-            <div className="text-center py-8 text-sm text-white/30">
-              No markets found for this category.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {filtered.slice(0, 15).map((m) => (
-                <MarketCard key={m.marketId} market={m} />
+          {/* Tag category loading state */}
+          {isTagCategory && tagLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-2">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <CardSkeleton key={i} />
               ))}
             </div>
-          )}
+          ) : activeTab === "earnings" ? (
+            /* ═══ Earnings-specific view ═══ */
+            <>
+              <div className="flex items-center gap-2 mb-1">
+                <Calendar className="w-4 h-4 text-yellow-400" />
+                <h3 className="text-sm font-bold text-white/90 tracking-wide uppercase">Upcoming Earnings</h3>
+                <span className="text-[10px] text-white/30">Beat / Miss odds from Polymarket</span>
+              </div>
+              <p className="text-[10px] text-white/25 mb-4">
+                Live prediction market odds on whether companies will beat or miss their quarterly earnings estimates.
+              </p>
+              {filtered.length === 0 ? (
+                <div className="text-center py-8 text-sm text-white/30">
+                  No earnings markets found. Check back closer to earnings season.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {filtered.slice(0, 30).map((m) => (
+                    <EarningsCard key={m.marketId} market={m} />
+                  ))}
+                </div>
+              )}
+              {filtered.length > 30 && (
+                <p className="text-center text-[10px] text-white/20 mt-3">
+                  Showing top 30 of {filtered.length} earnings markets
+                </p>
+              )}
+              <div className="mt-4 text-center">
+                <a
+                  href="https://polymarket.com/earnings"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-[11px] text-blue-400/70 hover:text-blue-400 transition-colors"
+                >
+                  View full Earnings Calendar on Polymarket <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+            </>
+          ) : (
+            /* ═══ Standard markets grid (all, crypto, fed, elections, economy, geopolitics, finance, tech) ═══ */
+            <>
+              <div className="flex items-center gap-2 mb-3">
+                <TrendingUp className="w-4 h-4 text-blue-400" />
+                <h3 className="text-sm font-bold text-white/90 tracking-wide uppercase">
+                  {isTagCategory ? `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Markets` : "Top Macro Markets"}
+                </h3>
+                <span className="text-[10px] text-white/30">By 24h volume</span>
+              </div>
 
-          {filtered.length > 15 && (
-            <p className="text-center text-[10px] text-white/20 mt-3">
-              Showing top 15 of {filtered.length} markets
-            </p>
+              {filtered.length === 0 ? (
+                <div className="text-center py-8 text-sm text-white/30">
+                  No markets found for this category.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {filtered.slice(0, 15).map((m) => (
+                    <MarketCard key={m.marketId} market={m} />
+                  ))}
+                </div>
+              )}
+
+              {filtered.length > 15 && (
+                <p className="text-center text-[10px] text-white/20 mt-3">
+                  Showing top 15 of {filtered.length} markets
+                </p>
+              )}
+            </>
           )}
         </>
       )}
