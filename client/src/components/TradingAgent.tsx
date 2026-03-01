@@ -1878,7 +1878,53 @@ export default function TradingAgent() {
     </div>;
   }
 
-  const knownTypes = ['trades','investments','fundamentals','technicals','analysis','dashboard','sector_rotation','earnings_catalyst','commodities','portfolio','briefing','crypto','trending','screener','cross_asset_trending','cross_market'];
+  function renderCsvWatchlist(s: any) {
+    const sections = [
+      { key: 'strong_buy', label: 'STRONG BUY', color: '#16a34a', bg: '#16a34a10', border: '#16a34a30', items: s.strong_buy || [] },
+      { key: 'buy', label: 'BUY', color: '#4ade80', bg: '#4ade8010', border: '#4ade8030', items: s.buy || [] },
+      { key: 'hold', label: 'HOLD', color: '#f59e0b', bg: '#f59e0b10', border: '#f59e0b30', items: s.hold || [] },
+      { key: 'sell', label: 'SELL', color: '#ef4444', bg: '#ef444410', border: '#ef444430', items: s.sell || [] },
+    ];
+    const topPicks = s.top_picks || [];
+    const totalCount = sections.reduce((sum, sec) => sum + sec.items.length, 0);
+    return <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+      {s.summary && <div style={{ padding:'12px 16px', background:`${C.blue}08`, border:`1px solid ${C.blue}20`, borderRadius:8, color:C.text, fontSize:12, fontFamily:sansFont, lineHeight:1.6 }}>{s.summary}</div>}
+      <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+        {sections.map(sec => sec.items.length > 0 && <span key={sec.key} style={{ padding:'4px 10px', borderRadius:4, fontSize:10, fontWeight:700, fontFamily:font, color:sec.color, background:sec.bg, border:`1px solid ${sec.border}` }}>{sec.label}: {sec.items.length}</span>)}
+        <span style={{ padding:'4px 10px', borderRadius:4, fontSize:10, fontWeight:600, fontFamily:font, color:C.dim, background:C.bg, border:`1px solid ${C.border}` }}>TOTAL: {totalCount}</span>
+      </div>
+      {topPicks.length > 0 && <div style={{ padding:14, background:`${C.gold}08`, border:`1px solid ${C.gold}25`, borderRadius:10 }}>
+        <div style={{ color:C.gold, fontSize:11, fontWeight:700, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:10 }}>TOP PICKS</div>
+        <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+          {topPicks.map((pick: any, i: number) => <div key={i} style={{ display:'flex', gap:10, alignItems:'flex-start' }}>
+            <span style={{ color:C.gold, fontSize:16, fontWeight:800, fontFamily:font, flexShrink:0, width:20 }}>{i+1}.</span>
+            <div>
+              <span style={{ color:C.bright, fontSize:14, fontWeight:700, fontFamily:font }}>{pick.ticker}</span>
+              <div style={{ color:C.text, fontSize:12, fontFamily:sansFont, lineHeight:1.6, marginTop:2 }}>{pick.thesis}</div>
+            </div>
+          </div>)}
+        </div>
+      </div>}
+      {sections.map(sec => {
+        if (!sec.items.length) return null;
+        return <div key={sec.key} style={{ borderRadius:10, border:`1px solid ${sec.border}`, overflow:'hidden' }}>
+          <div style={{ padding:'8px 14px', background:sec.bg, borderBottom:`1px solid ${sec.border}`, display:'flex', alignItems:'center', gap:8 }}>
+            <div style={{ width:8, height:8, borderRadius:'50%', background:sec.color }} />
+            <span style={{ color:sec.color, fontSize:11, fontWeight:700, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.06em' }}>{sec.label}</span>
+            <span style={{ color:C.dim, fontSize:10, fontFamily:font }}>({sec.items.length})</span>
+          </div>
+          <div style={{ display:'flex', flexDirection:'column' }}>
+            {sec.items.map((item: any, i: number) => <div key={i} style={{ padding:'8px 14px', borderBottom: i < sec.items.length - 1 ? `1px solid ${C.border}` : 'none', display:'flex', alignItems:'baseline', gap:10, background: i % 2 === 0 ? 'transparent' : `${C.bg}80` }}>
+              <span style={{ color:sec.color, fontSize:13, fontWeight:700, fontFamily:font, width:70, flexShrink:0 }}>{item.ticker}</span>
+              <span style={{ color:C.text, fontSize:11, fontFamily:sansFont, lineHeight:1.5 }}>{item.reason}</span>
+            </div>)}
+          </div>
+        </div>;
+      })}
+    </div>;
+  }
+
+  const knownTypes = ['trades','investments','fundamentals','technicals','analysis','dashboard','sector_rotation','earnings_catalyst','commodities','portfolio','briefing','crypto','trending','screener','cross_asset_trending','cross_market','csv_watchlist'];
 
   function renderAssistantMessage(msg: {role: string, content: string, parsed?: any}) {
     const s = msg.parsed?.structured || (msg.parsed?.display_type ? msg.parsed : {});
@@ -1899,6 +1945,7 @@ export default function TradingAgent() {
       {displayType === 'commodities' && renderCommodities(s)}
       {displayType === 'sector_rotation' && renderSectorRotation(s)}
       {displayType === 'earnings_catalyst' && renderEarningsCatalyst(s)}
+      {displayType === 'csv_watchlist' && renderCsvWatchlist(s)}
       {(displayType === 'chat' || !knownTypes.includes(displayType)) && <div style={{ padding:22, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont }} dangerouslySetInnerHTML={{ __html: formatAnalysis(analysisText) }} />}
       {displayType && displayType !== 'chat' && displayType !== 'cross_market' && displayType !== 'cross_asset_trending' && displayType !== 'trades' && knownTypes.includes(displayType) && analysisText && <div style={{ marginTop:16, padding:22, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont }} dangerouslySetInnerHTML={{ __html: formatAnalysis(analysisText) }} />}
     </div>;
