@@ -48,11 +48,12 @@ const FOLLOWUP_STAGES = [
   'Finalizing analysis...',
 ];
 
-function FollowUpInput({ panelId, onSubmit, C, font, sansFont }: { panelId: number, onSubmit: (id: number, text: string) => void, C: any, font: string, sansFont: string }) {
+function FollowUpInput({ panelId, onSubmit, C, font, sansFont, suggestions }: { panelId: number, onSubmit: (id: number, text: string) => void, C: any, font: string, sansFont: string, suggestions?: string[] }) {
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const [stage, setStage] = useState(0);
   const [elapsed, setElapsed] = useState(0);
+  const [showSuggestions, setShowSuggestions] = useState(true);
   const stageRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const elapsedRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -78,14 +79,48 @@ function FollowUpInput({ panelId, onSubmit, C, font, sansFont }: { panelId: numb
 
   const handleSubmit = async () => {
     if (!text.trim() || sending) return;
+    setShowSuggestions(false);
     setSending(true);
     await onSubmit(panelId, text.trim());
     setText('');
     setSending(false);
   };
 
+  const handleSuggestionClick = async (suggestion: string) => {
+    if (sending) return;
+    setShowSuggestions(false);
+    setSending(true);
+    await onSubmit(panelId, suggestion);
+    setText('');
+    setSending(false);
+  };
+
+  const visibleSuggestions = showSuggestions && suggestions && suggestions.length > 0 && !sending ? suggestions : null;
+
   return (
     <div style={{ borderTop:`1px solid ${C.border}`, background:C.bg }}>
+      {/* Follow-up suggestion chips */}
+      {visibleSuggestions && (
+        <div style={{
+          display:'flex', gap:6, padding:'8px 12px 0', overflowX:'auto',
+          scrollbarWidth:'none', msOverflowStyle:'none',
+        }}>
+          {visibleSuggestions.map((s, i) => (
+            <button
+              key={i}
+              className="suggestion-chip"
+              onClick={() => handleSuggestionClick(s)}
+              style={{
+                padding:'4px 10px', background:'transparent',
+                border:`1px solid ${C.border}`, borderRadius:12,
+                color:C.dim, fontSize:11, fontFamily:font,
+                cursor:'pointer', whiteSpace:'nowrap', flexShrink:0,
+                transition:'all 0.15s',
+              }}
+            >{s}</button>
+          ))}
+        </div>
+      )}
       {/* Loading indicator — appears above input when generating */}
       {sending && (
         <div className="followup-loading-container" style={{
@@ -2172,6 +2207,8 @@ export default function TradingAgent() {
         .rail-item:hover { background: ${C.blue}10 !important; color: ${C.bright} !important; }
         .panel-btn:hover { background: ${C.blue}15 !important; color: ${C.bright} !important; }
         .sidebar-chip:hover { border-color: ${C.purple} !important; color: ${C.bright} !important; }
+        .suggestion-chip:hover { border-color: ${C.blue} !important; color: ${C.bright} !important; background: ${C.blue}10 !important; }
+        .suggestion-chip::-webkit-scrollbar { display: none; }
 
         /* Follow-up loading animations */
         @keyframes followup-shimmer {
@@ -2432,7 +2469,15 @@ export default function TradingAgent() {
                     ))}
                   </div>
                 )}
-                <FollowUpInput panelId={panel.id} onSubmit={sendFollowUp} C={C} font={font} sansFont={sansFont} />
+                <FollowUpInput panelId={panel.id} onSubmit={sendFollowUp} C={C} font={font} sansFont={sansFont} suggestions={(() => {
+                  const thread = panel.thread || [];
+                  for (let i = thread.length - 1; i >= 0; i--) {
+                    if (thread[i].role === 'assistant' && thread[i].parsed?.suggested_followups) {
+                      return thread[i].parsed.suggested_followups;
+                    }
+                  }
+                  return panel.data?.parsed?.suggested_followups;
+                })()} />
               </div>
               );
             })}
