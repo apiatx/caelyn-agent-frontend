@@ -408,10 +408,10 @@ class TradingAgent:
                 f"{csv_table}\n\n"
                 f"Return this exact JSON structure:\n"
                 f'{{"display_type":"csv_watchlist","summary":"1-2 sentence overview of the watchlist",'
-                f'"strong_buy":[{{"ticker":"SYM","reason":"one-line reason from data"}}],'
-                f'"buy":[{{"ticker":"SYM","reason":"one-line reason from data"}}],'
-                f'"hold":[{{"ticker":"SYM","reason":"one-line reason from data"}}],'
-                f'"sell":[{{"ticker":"SYM","reason":"one-line reason from data"}}],'
+                f'"strong_buy":[{{"ticker":"SYM","market_cap":"e.g. 488M or 7.4B from spreadsheet","reason":"one-line reason from data"}}],'
+                f'"buy":[{{"ticker":"SYM","market_cap":"...","reason":"one-line reason from data"}}],'
+                f'"hold":[{{"ticker":"SYM","market_cap":"...","reason":"one-line reason from data"}}],'
+                f'"sell":[{{"ticker":"SYM","market_cap":"...","reason":"one-line reason from data"}}],'
                 f'"top_picks":[{{"ticker":"SYM","thesis":"2-3 sentence thesis using data from spreadsheet"}}]'
                 f'}}\n\n'
                 f"Rules:\n"
@@ -421,6 +421,7 @@ class TradingAgent:
                 f"- hold = mixed signals or fair value\n"
                 f"- sell = overvalued, negative FCF, or deteriorating fundamentals\n"
                 f"- top_picks = your TOP 2-3 best investments with a detailed thesis\n"
+                f"- market_cap: format the Market Cap value from the spreadsheet as human-readable (e.g. 488M, 7.4B, 1.2T)\n"
                 f"- Use ONLY data from the spreadsheet. Do NOT make up numbers.\n"
                 f"- Be concise. One-line reasons only (except top_picks thesis).\n\n"
                 f"User request: {user_prompt}"
@@ -462,9 +463,21 @@ class TradingAgent:
                 else:
                     parsed = {"display_type": "chat", "message": raw_text}
 
+            # Build a rich text summary for conversation history / follow-ups
             summary = parsed.get("summary", "")
+            analysis_parts = [summary] if summary else []
+            for bucket in ("strong_buy", "buy", "hold", "sell"):
+                items = parsed.get(bucket, [])
+                if items:
+                    tickers_str = ", ".join(it.get("ticker", "?") for it in items)
+                    analysis_parts.append(f"{bucket.upper().replace('_', ' ')}: {tickers_str}")
+            top = parsed.get("top_picks", [])
+            if top:
+                analysis_parts.append("TOP PICKS: " + ", ".join(t.get("ticker", "?") for t in top))
+            analysis_text = "\n".join(analysis_parts)
+
             return {
-                "analysis": summary,
+                "analysis": analysis_text,
                 "structured": parsed,
                 "_timing": {"data": data_ms, "claude": claude_ms, "grok": 0},
                 "_routing": {"source": "csv_upload", "confidence": "high", "category": "csv_analysis"},
