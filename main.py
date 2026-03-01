@@ -132,6 +132,34 @@ async def health():
     }
 
 
+# ============================================================
+# Polymarket Gamma API Proxy
+# ============================================================
+
+@app.get("/api/polymarket/events")
+@limiter.limit("30/minute")
+async def polymarket_events_proxy(request: Request):
+    """Proxy for Polymarket Gamma API — avoids CORS issues on the frontend."""
+    import httpx
+    params = dict(request.query_params)
+    params.setdefault("limit", "50")
+    params.setdefault("active", "true")
+    params.setdefault("closed", "false")
+    params.setdefault("order", "volume24hr")
+    params.setdefault("ascending", "false")
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.get(
+                "https://gamma-api.polymarket.com/events",
+                params=params,
+            )
+            resp.raise_for_status()
+            return JSONResponse(content=resp.json())
+    except Exception as e:
+        print(f"[POLYMARKET_PROXY] Error: {e}")
+        return JSONResponse(status_code=502, content={"error": f"Polymarket API unavailable: {str(e)[:200]}"})
+
+
 async def verify_api_key(x_api_key: Optional[str] = Header(None)):
     """Verify the API key sent in the X-API-Key header."""
     if not x_api_key:
