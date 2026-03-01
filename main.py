@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, Header, HTTPException
+from fastapi import FastAPI, Request, Header, HTTPException, Body
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -632,6 +632,52 @@ def _error_envelope(code: str, message: str, meta: dict, details=None, partial=N
 def _resp_log(req_id: str, status: int, resp_type: str, resp: dict):
     resp_bytes = len(_json.dumps(resp, default=str).encode("utf-8"))
     print(f"[RESP] id={req_id} status={status} type={resp_type} bytes={resp_bytes}")
+
+
+@app.post("/api/social/query")
+@limiter.limit("10/minute")
+async def social_grok_query(
+    request: Request,
+    body: dict = Body(...),
+    api_key: str = Header(None, alias="X-API-Key"),
+):
+    """Direct Grok/X query for the Social page — real-time X search via xAI."""
+    query = body.get("query", "")
+    if not query.strip():
+        return JSONResponse(status_code=400, content={"error": "No query provided"})
+
+    await _wait_for_init()
+    if not data_service or not data_service.xai:
+        return JSONResponse(status_code=503, content={"error": "xAI sentiment provider not initialized"})
+
+    system_prompt = (
+        "You are a financial social media analyst with real-time access to X/Twitter. "
+        "Search X thoroughly for the user's query. Always include: specific @usernames "
+        "and their posts, engagement metrics when available, overall sentiment scoring "
+        "(Bullish/Bearish/Neutral with a 1-10 confidence score), and specific ticker "
+        "mentions with context. Format your response clearly with sections. Be specific "
+        "— cite actual posts and accounts, don't give vague summaries."
+    )
+
+    try:
+        # Build combined prompt with system instructions
+        full_prompt = f"{system_prompt}\n\nUser query: {query}"
+        result = await data_service.xai._call_grok_with_x_search(
+            prompt=full_prompt,
+            raw_mode=True,
+            timeout=45.0,
+        )
+
+        if isinstance(result, dict) and result.get("_raw_analysis"):
+            return JSONResponse(content={"response": result["_raw_analysis"], "query": query})
+        elif isinstance(result, dict) and result.get("error"):
+            return JSONResponse(status_code=502, content={"error": result["error"], "query": query})
+        else:
+            return JSONResponse(content={"response": str(result), "query": query})
+
+    except Exception as e:
+        print(f"[SOCIAL_GROK] Error: {e}")
+        return JSONResponse(status_code=500, content={"error": str(e), "query": query})
 
 
 @app.post("/api/query")
