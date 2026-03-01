@@ -483,12 +483,23 @@ class TradingAgent:
                 "_routing": {"source": "csv_upload", "confidence": "high", "category": "csv_analysis"},
             }
 
-        if is_followup and not self._needs_fresh_data(user_prompt):
+        # Detect if this is a follow-up to a CSV analysis
+        csv_followup = False
+        if is_followup and history:
+            for msg in reversed(history):
+                if msg.get("role") == "assistant":
+                    last_asst = str(msg.get("content", ""))
+                    if any(marker in last_asst for marker in ["STRONG BUY:", "BUY:", "HOLD:", "SELL:", "TOP PICKS:"]):
+                        csv_followup = True
+                        print(f"[AGENT] CSV follow-up detected — forcing conversational follow-up path")
+                    break
+
+        if is_followup and (csv_followup or not self._needs_fresh_data(user_prompt)):
             category = "followup"
             market_data = None
             routing_source = "followup"
             routing_confidence = "high"
-            print(f"[AGENT] Follow-up detected, skipping data gathering ({time.time() - start_time:.1f}s)")
+            print(f"[AGENT] Follow-up detected (csv_followup={csv_followup}), using conversational path ({time.time() - start_time:.1f}s)")
 
             q_lower = user_prompt.lower()
             needs_social = any(w in q_lower for w in ["social", "momentum", "sentiment", "buzz", "hype", "x say", "twitter", "reddit"])
@@ -3866,6 +3877,10 @@ Be direct and opinionated. Tell me what you actually think."""
             for msg in reversed(messages):
                 if msg.get("role") == "assistant":
                     content = msg.get("content", "")
+                    # Check for CSV analysis markers in plain text history
+                    if isinstance(content, str) and any(m in content for m in ["STRONG BUY:", "BUY:", "HOLD:", "SELL:", "TOP PICKS:"]):
+                        original_category = "csv_watchlist"
+                        break
                     try:
                         parsed = json.loads(content) if isinstance(content, str) else content
                         if isinstance(parsed, dict):
@@ -3875,7 +3890,17 @@ Be direct and opinionated. Tell me what you actually think."""
                         pass
 
             category_context = ""
-            if original_category == "crypto":
+            if original_category == "csv_watchlist":
+                category_context = (
+                    "\nIMPORTANT: This conversation started with a CSV WATCHLIST ANALYSIS. The user uploaded a spreadsheet of stocks "
+                    "and you rated each one as Strong Buy, Buy, Hold, or Sell.\n"
+                    "The user is now asking follow-up questions about those stocks. Use your previous ratings and the conversation "
+                    "history as context. You can elaborate on individual picks, reconsider ratings based on new factors the user "
+                    "mentions (like social momentum, insider buying, technical setups, etc.), compare stocks, or provide deeper analysis.\n"
+                    "Be conversational and intelligent — the user wants to discuss their watchlist with you as a knowledgeable trading analyst.\n"
+                    "If social sentiment data is provided below, incorporate it into your analysis of the relevant tickers."
+                )
+            elif original_category == "crypto":
                 category_context = (
                     "\nIMPORTANT: This conversation started with a CRYPTO scan. The user is asking follow-up questions about CRYPTOCURRENCY.\n"
                     "Do NOT reference stocks (NVDA, AMD, AVGO, etc.) unless the user explicitly asks about stocks.\n"
