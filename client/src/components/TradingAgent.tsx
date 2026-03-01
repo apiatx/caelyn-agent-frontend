@@ -38,9 +38,44 @@ const slashCommands: Record<string, string> = {
   '/news': 'news_leaders',
 };
 
+const FOLLOWUP_STAGES = [
+  'Reading context...',
+  'Scanning social data...',
+  'Pulling latest signals...',
+  'Cross-referencing watchlist...',
+  'Analyzing sentiment...',
+  'Building response...',
+  'Finalizing analysis...',
+];
+
 function FollowUpInput({ panelId, onSubmit, C, font, sansFont }: { panelId: number, onSubmit: (id: number, text: string) => void, C: any, font: string, sansFont: string }) {
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
+  const [stage, setStage] = useState(0);
+  const [elapsed, setElapsed] = useState(0);
+  const stageRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const elapsedRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (sending) {
+      setStage(0);
+      setElapsed(0);
+      stageRef.current = setInterval(() => {
+        setStage(prev => (prev + 1) % FOLLOWUP_STAGES.length);
+      }, 2400);
+      elapsedRef.current = setInterval(() => {
+        setElapsed(prev => prev + 1);
+      }, 1000);
+    } else {
+      if (stageRef.current) { clearInterval(stageRef.current); stageRef.current = null; }
+      if (elapsedRef.current) { clearInterval(elapsedRef.current); elapsedRef.current = null; }
+    }
+    return () => {
+      if (stageRef.current) clearInterval(stageRef.current);
+      if (elapsedRef.current) clearInterval(elapsedRef.current);
+    };
+  }, [sending]);
+
   const handleSubmit = async () => {
     if (!text.trim() || sending) return;
     setSending(true);
@@ -48,24 +83,100 @@ function FollowUpInput({ panelId, onSubmit, C, font, sansFont }: { panelId: numb
     setText('');
     setSending(false);
   };
+
   return (
-    <div style={{ display:'flex', gap:6, padding:'8px 12px', borderTop:`1px solid ${C.border}`, background:C.bg }}>
-      <input
-        value={text}
-        onChange={e => setText(e.target.value)}
-        onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(); } }}
-        placeholder="Follow up on this analysis..."
-        disabled={sending}
-        style={{ flex:1, padding:'6px 10px', background:'transparent', border:`1px solid ${C.border}`, borderRadius:3, color:C.bright, fontSize:11, fontFamily:sansFont, outline:'none' }}
-      />
-      <button
-        onClick={handleSubmit}
-        disabled={sending || !text.trim()}
-        className="panel-btn"
-        style={{ padding:'6px 12px', background: sending || !text.trim() ? 'transparent' : C.blue, color: sending || !text.trim() ? C.dim : '#fff', border:`1px solid ${sending || !text.trim() ? C.border : C.blue}`, borderRadius:3, fontSize:10, fontWeight:700, fontFamily:font, cursor: sending || !text.trim() ? 'not-allowed' : 'pointer' }}
-      >
-        {sending ? '...' : 'SEND'}
-      </button>
+    <div style={{ borderTop:`1px solid ${C.border}`, background:C.bg }}>
+      {/* Loading indicator — appears above input when generating */}
+      {sending && (
+        <div className="followup-loading-container" style={{
+          padding: '12px 14px 8px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 8,
+        }}>
+          {/* Top row: icon + stage text + timer */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {/* Pulsing orbital rings */}
+            <div className="followup-orb" style={{
+              width: 28, height: 28, position: 'relative', flexShrink: 0,
+            }}>
+              <div className="followup-ring followup-ring-1" />
+              <div className="followup-ring followup-ring-2" />
+              <div className="followup-core" />
+            </div>
+
+            {/* Stage text with fade transition */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <span className="followup-stage-text" key={stage} style={{
+                color: C.blue,
+                fontSize: 11,
+                fontWeight: 600,
+                fontFamily: font,
+                letterSpacing: '0.04em',
+              }}>
+                {FOLLOWUP_STAGES[stage]}
+              </span>
+            </div>
+
+            {/* Elapsed timer */}
+            <span style={{
+              color: C.dim,
+              fontSize: 9,
+              fontFamily: font,
+              fontVariantNumeric: 'tabular-nums',
+              flexShrink: 0,
+            }}>
+              {elapsed}s
+            </span>
+          </div>
+
+          {/* Shimmer progress bar */}
+          <div style={{
+            height: 2,
+            background: `${C.border}`,
+            borderRadius: 1,
+            overflow: 'hidden',
+          }}>
+            <div className="followup-shimmer" style={{
+              height: '100%',
+              borderRadius: 1,
+            }} />
+          </div>
+        </div>
+      )}
+
+      {/* Input row */}
+      <div style={{ display:'flex', gap:6, padding:'8px 12px' }}>
+        <input
+          value={text}
+          onChange={e => setText(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(); } }}
+          placeholder="Follow up on this analysis..."
+          disabled={sending}
+          style={{
+            flex:1, padding:'6px 10px', background:'transparent',
+            border:`1px solid ${sending ? C.blue + '40' : C.border}`,
+            borderRadius:3, color:C.bright, fontSize:11, fontFamily:sansFont, outline:'none',
+            transition: 'border-color 0.3s',
+          }}
+        />
+        <button
+          onClick={handleSubmit}
+          disabled={sending || !text.trim()}
+          className="panel-btn"
+          style={{
+            padding:'6px 12px',
+            background: sending ? 'transparent' : (!text.trim() ? 'transparent' : C.blue),
+            color: sending ? C.blue : (!text.trim() ? C.dim : '#fff'),
+            border:`1px solid ${sending ? C.blue + '60' : (!text.trim() ? C.border : C.blue)}`,
+            borderRadius:3, fontSize:10, fontWeight:700, fontFamily:font,
+            cursor: sending || !text.trim() ? 'not-allowed' : 'pointer',
+            minWidth: 58,
+          }}
+        >
+          {sending ? 'THINKING' : 'SEND'}
+        </button>
+      </div>
     </div>
   );
 }
@@ -2061,6 +2172,78 @@ export default function TradingAgent() {
         .rail-item:hover { background: ${C.blue}10 !important; color: ${C.bright} !important; }
         .panel-btn:hover { background: ${C.blue}15 !important; color: ${C.bright} !important; }
         .sidebar-chip:hover { border-color: ${C.purple} !important; color: ${C.bright} !important; }
+
+        /* Follow-up loading animations */
+        @keyframes followup-shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(200%); }
+        }
+        .followup-shimmer {
+          background: linear-gradient(90deg, transparent 0%, ${C.blue}90 25%, ${C.purple}90 50%, ${C.blue}90 75%, transparent 100%);
+          width: 50%;
+          animation: followup-shimmer 1.8s ease-in-out infinite;
+        }
+
+        @keyframes followup-stage-fade {
+          0% { opacity: 0; transform: translateY(4px); }
+          15% { opacity: 1; transform: translateY(0); }
+          85% { opacity: 1; transform: translateY(0); }
+          100% { opacity: 0; transform: translateY(-4px); }
+        }
+        .followup-stage-text {
+          display: inline-block;
+          animation: followup-stage-fade 2.4s ease-in-out;
+        }
+
+        @keyframes followup-ring-spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        @keyframes followup-ring-spin-reverse {
+          from { transform: rotate(360deg); }
+          to { transform: rotate(0deg); }
+        }
+        @keyframes followup-core-pulse {
+          0%, 100% { transform: scale(1); opacity: 0.8; }
+          50% { transform: scale(1.3); opacity: 1; }
+        }
+        .followup-orb {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .followup-ring {
+          position: absolute;
+          border-radius: 50%;
+          border: 1.5px solid transparent;
+        }
+        .followup-ring-1 {
+          width: 22px; height: 22px;
+          border-top-color: ${C.blue};
+          border-right-color: ${C.blue}50;
+          animation: followup-ring-spin 1.6s linear infinite;
+        }
+        .followup-ring-2 {
+          width: 16px; height: 16px;
+          border-bottom-color: ${C.purple};
+          border-left-color: ${C.purple}50;
+          animation: followup-ring-spin-reverse 1.2s linear infinite;
+        }
+        .followup-core {
+          width: 5px; height: 5px;
+          border-radius: 50%;
+          background: ${C.blue};
+          box-shadow: 0 0 6px ${C.blue}aa, 0 0 12px ${C.purple}44;
+          animation: followup-core-pulse 2s ease-in-out infinite;
+        }
+
+        .followup-loading-container {
+          animation: followup-container-in 0.3s ease-out;
+        }
+        @keyframes followup-container-in {
+          from { opacity: 0; max-height: 0; padding-top: 0; padding-bottom: 0; }
+          to { opacity: 1; max-height: 80px; }
+        }
         @media (max-width: 1023px) {
           .left-rail { display: none !important; }
           .right-sidebar { display: none !important; }
