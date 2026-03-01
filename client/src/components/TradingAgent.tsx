@@ -273,7 +273,7 @@ export default function TradingAgent() {
           data: { role: 'assistant', content: `Backend unreachable. Check deploy status.\n\nURL: ${AGENT_BACKEND_URL}\nTime: ${new Date().toISOString()}\nError: ${pingErr?.message || 'Network error'}`, parsed: null },
           timestamp: Date.now(),
         };
-        setPanels(prev => [unreachPanel, ...prev]);
+        setPanels(prev => [...prev, unreachPanel]);
         return;
       }
 
@@ -297,7 +297,7 @@ export default function TradingAgent() {
           data: { role: 'assistant', content: `Backend returned empty response.\n\nURL: ${url}\nTime: ${new Date().toISOString()}`, parsed: null },
           timestamp: Date.now(),
         };
-        setPanels(prev => [emptyPanel, ...prev]);
+        setPanels(prev => [...prev, emptyPanel]);
         return;
       }
 
@@ -309,7 +309,7 @@ export default function TradingAgent() {
           data: { role: 'assistant', content: 'Backend returned invalid JSON. Check console logs.\n\nRaw: ' + raw.slice(0, 200), parsed: null },
           timestamp: Date.now(),
         };
-        setPanels(prev => [parsePanel, ...prev]);
+        setPanels(prev => [...prev, parsePanel]);
         return;
       }
 
@@ -323,7 +323,7 @@ export default function TradingAgent() {
           data: { role: 'assistant', content: `Error: ${errContent}${data.request_id ? `\n\nRequest ID: ${data.request_id}` : ''}`, parsed: data },
           timestamp: Date.now(),
         };
-        setPanels(prev => [errPanel, ...prev]);
+        setPanels(prev => [...prev, errPanel]);
         return;
       }
 
@@ -347,7 +347,7 @@ export default function TradingAgent() {
         conversationId: data.conversation_id || conversationId,
         thread: [],
       };
-      setPanels(prev => [newPanel, ...prev]);
+      setPanels(prev => [...prev, newPanel]);
     } catch (err: any) {
       console.log('[FETCH_FAIL]', err, err?.message);
       const errMsg = err.message?.includes('429') ? 'Rate limit reached. Wait a moment.'
@@ -359,7 +359,7 @@ export default function TradingAgent() {
         data: { role: 'assistant', content: `Request failed: ${errMsg}\n\nBackend: ${AGENT_BACKEND_URL}\nTime: ${new Date().toISOString()}`, parsed: null },
         timestamp: Date.now(),
       };
-      setPanels(prev => [failPanel, ...prev]);
+      setPanels(prev => [...prev, failPanel]);
       setError(errMsg);
     } finally { clearInterval(iv); setLoadingStage(''); setLoading(false); loadingRef.current = false; }
   }
