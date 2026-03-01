@@ -1040,11 +1040,21 @@ class TradingAgent:
 
         # Generate follow-up suggestions (non-blocking, best-effort)
         try:
-            analysis_text = result.get("analysis", "")
-            if not analysis_text:
-                structured = result.get("structured", {})
-                if isinstance(structured, dict):
-                    analysis_text = structured.get("message", "") or structured.get("summary", "")
+            analysis_text = result.get("analysis", "") or ""
+            structured = result.get("structured", {})
+            if isinstance(structured, dict) and len(analysis_text) < 80:
+                # Try multiple structured fields to build context for suggestions
+                for key in ("message", "summary", "observations", "briefing", "narrative"):
+                    val = structured.get(key, "")
+                    if isinstance(val, str) and val.strip():
+                        analysis_text = val
+                        break
+                # If still short, serialize top-level structured keys for context
+                if len(analysis_text) < 80:
+                    try:
+                        analysis_text = json.dumps(structured, default=str)[:2000]
+                    except Exception:
+                        pass
             if analysis_text and len(analysis_text) > 50:
                 suggestions = await asyncio.wait_for(
                     asyncio.to_thread(self._generate_followup_suggestions, analysis_text),
@@ -1053,6 +1063,8 @@ class TradingAgent:
                 if suggestions:
                     result["suggested_followups"] = suggestions
                     print(f"[SUGGESTIONS] Generated {len(suggestions)} follow-up suggestions")
+            else:
+                print(f"[SUGGESTIONS] Skipped — analysis_text too short ({len(analysis_text)} chars)")
         except Exception as e:
             print(f"[SUGGESTIONS] Generation failed (non-fatal): {e}")
 
@@ -2279,10 +2291,10 @@ class TradingAgent:
 
     def _generate_followup_suggestions(self, analysis_text: str) -> list:
         """Generate 4 contextual follow-up prompt suggestions based on Claude's response.
-        Uses Claude Haiku for speed. Returns list of 4 short suggestion strings."""
+        Uses Claude Sonnet for speed and reliability. Returns list of 4 short suggestion strings."""
         try:
             response = self.client.messages.create(
-                model="claude-haiku-4-5-20251001",
+                model="claude-sonnet-4-20250514",
                 max_tokens=200,
                 messages=[
                     {
