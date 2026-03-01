@@ -1,12 +1,14 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, ExternalLink, Activity, BarChart3, RefreshCw, Users, DollarSign } from "lucide-react";
+import { TrendingUp, ExternalLink, Activity, BarChart3, RefreshCw, Users, DollarSign, MessageSquare, Send, Loader2, Sparkles } from "lucide-react";
 import { openSecureLink } from "@/utils/security";
 import diceImage from "@assets/istockphoto-1252690598-612x612_1756665072306.jpg";
 
 // ─── Constants ────────────────────────────────────────────────────
-const POLYMARKET_PROXY = "https://fast-api-server-trading-agent-aidanpilon.replit.app/api/polymarket/events";
+const AGENT_BACKEND_URL = "https://fast-api-server-trading-agent-aidanpilon.replit.app";
+const AGENT_API_KEY = "hippo_ak_7f3x9k2m4p8q1w5t";
+const POLYMARKET_PROXY = `${AGENT_BACKEND_URL}/api/polymarket/events`;
 const GAMMA_API = "https://gamma-api.polymarket.com/events";
 const REFRESH_INTERVAL = 60_000;
 
@@ -574,6 +576,214 @@ function PolymarketDashboard() {
   );
 }
 
+// ─── Prediction Markets Agent ─────────────────────────────────────
+
+interface AgentMessage {
+  role: "user" | "assistant";
+  content: string;
+  timestamp: number;
+}
+
+const SUGGESTED_PROMPTS = [
+  "How do the current Fed rate cut odds affect equity sectors?",
+  "If the top crypto events play out, what's the best positioning?",
+  "Which prediction market events have the biggest cross-asset implications?",
+  "What are the most mispriced prediction markets right now?",
+];
+
+function PredictionAgent() {
+  const [messages, setMessages] = useState<AgentMessage[]>([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const sendMessage = useCallback(async (text: string) => {
+    if (!text.trim() || loading) return;
+    const userMsg: AgentMessage = { role: "user", content: text.trim(), timestamp: Date.now() };
+    setMessages((prev) => [...prev, userMsg]);
+    setInput("");
+    setLoading(true);
+
+    try {
+      const history = messages.map((m) => ({ role: m.role, content: m.content }));
+      const payload: Record<string, unknown> = {
+        query: text.trim(),
+        preset_intent: "prediction_markets",
+        history: history.length > 0 ? history : undefined,
+        conversation_id: conversationId,
+      };
+
+      const res = await fetch(`${AGENT_BACKEND_URL}/api/query`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-API-Key": AGENT_API_KEY,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errText = await res.text().catch(() => "");
+        throw new Error(`Backend returned ${res.status}: ${errText.slice(0, 200)}`);
+      }
+
+      const data = await res.json();
+      const convId = data.conversation_id || conversationId;
+      if (convId) setConversationId(convId);
+
+      // Extract the analysis text from the response
+      let analysisText = "";
+      if (data.analysis) {
+        analysisText = data.analysis;
+      } else if (data.structured?.message) {
+        analysisText = data.structured.message;
+      } else if (data.structured?.analysis) {
+        analysisText = data.structured.analysis;
+      } else if (typeof data.message === "string") {
+        analysisText = data.message;
+      } else {
+        analysisText = "Received response but couldn't extract analysis. Raw: " + JSON.stringify(data).slice(0, 500);
+      }
+
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: analysisText, timestamp: Date.now() },
+      ]);
+    } catch (err) {
+      console.error("[PREDICT_AGENT]", err);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: `Error: ${err instanceof Error ? err.message : "Failed to reach agent. Please try again."}`,
+          timestamp: Date.now(),
+        },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  }, [loading, messages, conversationId]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    sendMessage(input);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage(input);
+    }
+  };
+
+  return (
+    <GlassCard className="p-5 mb-8">
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
+          <Sparkles className="w-4 h-4 text-white" />
+        </div>
+        <div>
+          <h2 className="text-base font-bold text-white flex items-center gap-2">
+            Prediction Markets Agent
+          </h2>
+          <p className="text-[10px] text-white/30">
+            Ask how prediction market odds affect investments, sectors, and positioning
+          </p>
+        </div>
+      </div>
+
+      {/* Suggested prompts (only show when no messages) */}
+      {messages.length === 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
+          {SUGGESTED_PROMPTS.map((prompt) => (
+            <button
+              key={prompt}
+              onClick={() => sendMessage(prompt)}
+              disabled={loading}
+              className="text-left text-[11px] text-white/50 bg-white/[0.03] border border-white/[0.06] rounded-lg px-3 py-2.5 hover:bg-white/[0.06] hover:text-white/70 hover:border-white/10 transition-all disabled:opacity-40"
+            >
+              <MessageSquare className="w-3 h-3 inline mr-1.5 opacity-40" />
+              {prompt}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Messages */}
+      {messages.length > 0 && (
+        <div className="mb-4 max-h-[500px] overflow-y-auto space-y-3 scrollbar-hide">
+          {messages.map((msg, i) => (
+            <div
+              key={i}
+              className={`rounded-lg px-4 py-3 text-xs leading-relaxed ${
+                msg.role === "user"
+                  ? "bg-blue-500/10 border border-blue-500/20 text-blue-100"
+                  : "bg-white/[0.03] border border-white/[0.06] text-white/80"
+              }`}
+            >
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <span className={`text-[9px] font-bold uppercase tracking-wider ${
+                  msg.role === "user" ? "text-blue-400" : "text-orange-400"
+                }`}>
+                  {msg.role === "user" ? "You" : "Agent"}
+                </span>
+              </div>
+              <div className="whitespace-pre-wrap">{msg.content}</div>
+            </div>
+          ))}
+          {loading && (
+            <div className="rounded-lg px-4 py-3 bg-white/[0.03] border border-white/[0.06] text-xs text-white/40">
+              <div className="flex items-center gap-2">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                Analyzing prediction markets data with macro context...
+              </div>
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+      )}
+
+      {/* Input */}
+      <form onSubmit={handleSubmit} className="flex gap-2">
+        <textarea
+          ref={inputRef}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Ask about prediction market implications... (e.g., &quot;How do rate cut odds affect tech stocks?&quot;)"
+          disabled={loading}
+          rows={1}
+          className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2.5 text-xs text-white placeholder-white/25 resize-none focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/10 disabled:opacity-40 transition-all"
+        />
+        <Button
+          type="submit"
+          disabled={loading || !input.trim()}
+          className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white px-3 py-2 rounded-lg transition-all disabled:opacity-30 flex-shrink-0"
+        >
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+        </Button>
+      </form>
+
+      {/* Clear conversation */}
+      {messages.length > 0 && (
+        <button
+          onClick={() => { setMessages([]); setConversationId(null); }}
+          className="mt-2 text-[9px] text-white/20 hover:text-white/40 transition-colors"
+        >
+          Clear conversation
+        </button>
+      )}
+    </GlassCard>
+  );
+}
+
 // ─── Existing Components ──────────────────────────────────────────
 
 const SmallLink = ({ href, label }: { href: string; label: string }) => (
@@ -618,8 +828,11 @@ export default function PredictPage() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-        {/* ═══ Polymarket Macro Dashboard (NEW) ═══ */}
+        {/* ═══ Polymarket Macro Dashboard ═══ */}
         <PolymarketDashboard />
+
+        {/* ═══ Prediction Markets Agent ═══ */}
+        <PredictionAgent />
 
         {/* ═══ Existing iframes & cards ═══ */}
         <GlassCard className="p-6">
