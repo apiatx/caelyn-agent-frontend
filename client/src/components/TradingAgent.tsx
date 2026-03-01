@@ -87,6 +87,7 @@ export default function TradingAgent() {
   });
   const [loadingStage, setLoadingStage] = useState('');
   const [expandedTicker, setExpandedTicker] = useState<string | null>(null);
+  const [csvChartInterval, setCsvChartInterval] = useState<string>('D');
   const [screenerInput, setScreenerInput] = useState('');
   const [screenerSortCol, setScreenerSortCol] = useState('');
   const [screenerSortAsc, setScreenerSortAsc] = useState(true);
@@ -1878,6 +1879,7 @@ export default function TradingAgent() {
   }
 
   function renderCsvWatchlist(s: any) {
+    const intervals = [{l:'1H',v:'60'},{l:'4H',v:'240'},{l:'1D',v:'D'},{l:'1W',v:'W'},{l:'1M',v:'M'}];
     const sections = [
       { key: 'strong_buy', label: 'STRONG BUY', color: '#16a34a', bg: '#16a34a10', border: '#16a34a30', items: s.strong_buy || [] },
       { key: 'buy', label: 'BUY', color: '#4ade80', bg: '#4ade8010', border: '#4ade8030', items: s.buy || [] },
@@ -1886,6 +1888,29 @@ export default function TradingAgent() {
     ];
     const topPicks = s.top_picks || [];
     const totalCount = sections.reduce((sum, sec) => sum + sec.items.length, 0);
+
+    const renderTickerRow = (item: any, i: number, sec: {key:string, color:string, border:string, items:any[]}) => {
+      const rowId = `${sec.key}-${item.ticker}`;
+      const isExp = expandedTicker === rowId;
+      const tvSym = item.ticker.includes(':') ? item.ticker : item.ticker;
+      return <div key={i}>
+        <div onClick={() => setExpandedTicker(isExp ? null : rowId)} style={{ padding:'8px 14px', borderBottom: (i < sec.items.length - 1 || isExp) ? `1px solid ${C.border}` : 'none', display:'flex', alignItems:'center', gap:10, background: i % 2 === 0 ? 'transparent' : `${C.bg}80`, cursor:'pointer' }}>
+          <span style={{ color:sec.color, fontSize:13, fontWeight:700, fontFamily:font, width:70, flexShrink:0 }}>{item.ticker}</span>
+          {item.market_cap && <span style={{ color:C.dim, fontSize:10, fontWeight:600, fontFamily:font, background:C.bg, padding:'2px 6px', borderRadius:3, border:`1px solid ${C.border}`, flexShrink:0 }}>{item.market_cap}</span>}
+          <span style={{ color:C.text, fontSize:11, fontFamily:sansFont, lineHeight:1.5, flex:1 }}>{item.reason}</span>
+          <span style={{ color:C.dim, fontSize:9, flexShrink:0, transform: isExp ? 'rotate(180deg)' : 'rotate(0deg)', transition:'transform 0.15s' }}>▼</span>
+        </div>
+        {isExp && <div style={{ padding:'8px 14px', background:C.bg, borderBottom:`1px solid ${C.border}` }}>
+          <div style={{ display:'flex', gap:4, marginBottom:6 }}>
+            {intervals.map(iv => <button key={iv.v} onClick={(e) => { e.stopPropagation(); setCsvChartInterval(iv.v); }} style={{ padding:'2px 8px', fontSize:9, fontWeight:600, fontFamily:font, background: csvChartInterval === iv.v ? C.blue+'20' : 'transparent', color: csvChartInterval === iv.v ? C.blue : C.dim, border:`1px solid ${csvChartInterval === iv.v ? C.blue+'40' : C.border}`, borderRadius:3, cursor:'pointer' }}>{iv.l}</button>)}
+          </div>
+          <div style={{ borderRadius:6, overflow:'hidden', border:`1px solid ${C.border}` }}>
+            <iframe src={`https://s.tradingview.com/widgetembed/?symbol=${encodeURIComponent(tvSym)}&interval=${csvChartInterval}&theme=dark&style=1&locale=en&hide_top_toolbar=1&hide_side_toolbar=1&allow_symbol_change=0&save_image=0&width=100%25&height=200`} style={{ width:'100%', height:200, border:'none', display:'block' }} title={`${tvSym} chart`} />
+          </div>
+        </div>}
+      </div>;
+    };
+
     return <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
       {s.summary && <div style={{ padding:'12px 16px', background:`${C.blue}08`, border:`1px solid ${C.blue}20`, borderRadius:8, color:C.text, fontSize:12, fontFamily:sansFont, lineHeight:1.6 }}>{s.summary}</div>}
       <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
@@ -1913,10 +1938,7 @@ export default function TradingAgent() {
             <span style={{ color:C.dim, fontSize:10, fontFamily:font }}>({sec.items.length})</span>
           </div>
           <div style={{ display:'flex', flexDirection:'column' }}>
-            {sec.items.map((item: any, i: number) => <div key={i} style={{ padding:'8px 14px', borderBottom: i < sec.items.length - 1 ? `1px solid ${C.border}` : 'none', display:'flex', alignItems:'baseline', gap:10, background: i % 2 === 0 ? 'transparent' : `${C.bg}80` }}>
-              <span style={{ color:sec.color, fontSize:13, fontWeight:700, fontFamily:font, width:70, flexShrink:0 }}>{item.ticker}</span>
-              <span style={{ color:C.text, fontSize:11, fontFamily:sansFont, lineHeight:1.5 }}>{item.reason}</span>
-            </div>)}
+            {sec.items.map((item: any, i: number) => renderTickerRow(item, i, sec))}
           </div>
         </div>;
       })}
