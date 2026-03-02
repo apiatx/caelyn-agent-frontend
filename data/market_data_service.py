@@ -2691,23 +2691,72 @@ class MarketDataService:
                 )
 
             fear_greed = {}
-            try:
-                fear_greed = await asyncio.wait_for(
-                    self.fear_greed.get_fear_greed_index(),
-                    timeout=8.0,
-                )
-            except Exception:
-                pass
-
+            etf_quotes = {}
             fmp_sectors = {}
-            if self.fmp:
-                try:
-                    fmp_sectors = await asyncio.wait_for(
-                        self.fmp.get_sector_performance(),
-                        timeout=8.0,
-                    )
-                except Exception:
-                    pass
+
+            # Fetch fear/greed, ETF quotes, and FMP sector performance in parallel
+            async def _fetch_fear_greed():
+                return await asyncio.wait_for(
+                    self.fear_greed.get_fear_greed_index(), timeout=8.0
+                )
+
+            async def _fetch_etf_quotes():
+                if not self.fmp:
+                    return {}
+                etf_symbols = [
+                    "XLK", "XLV", "XLF", "XLE", "XLI", "XLP", "XLY",
+                    "XLB", "XLU", "XLRE", "XLC", "SPY",
+                ]
+                return await asyncio.wait_for(
+                    self.fmp.get_etf_quotes(etf_symbols), timeout=10.0
+                )
+
+            async def _fetch_fmp_sectors():
+                if not self.fmp:
+                    return {}
+                return await asyncio.wait_for(
+                    self.fmp.get_sector_performance(), timeout=8.0
+                )
+
+            fg_result, etf_result, fmp_result = await asyncio.gather(
+                _fetch_fear_greed(), _fetch_etf_quotes(), _fetch_fmp_sectors(),
+                return_exceptions=True,
+            )
+
+            if not isinstance(fg_result, Exception):
+                fear_greed = fg_result or {}
+            if not isinstance(etf_result, Exception):
+                etf_quotes = etf_result or {}
+            else:
+                print(f"[SECTOR] ETF quotes fetch failed: {etf_result}")
+            if not isinstance(fmp_result, Exception):
+                fmp_sectors = fmp_result or {}
+
+            # Enrich sector stages with real ETF quote data
+            spy_data = etf_quotes.get("SPY", {})
+            spy_change = spy_data.get("change_pct", 0) or 0
+
+            for s in sectors:
+                etf_sym = s.get("etf", "")
+                quote = etf_quotes.get(etf_sym, {})
+                if quote:
+                    change_pct = quote.get("change_pct", 0) or 0
+                    s["price"] = quote.get("price")
+                    s["change_today"] = round(change_pct, 2)
+                    s["volume"] = quote.get("volume")
+                    s["avg_volume"] = quote.get("avg_volume")
+                    s["day_high"] = quote.get("day_high")
+                    s["day_low"] = quote.get("day_low")
+                    s["year_high"] = quote.get("year_high")
+                    s["year_low"] = quote.get("year_low")
+                    # vs SPY relative performance
+                    s["vs_spy"] = round(change_pct - spy_change, 2)
+
+            if etf_quotes:
+                print(
+                    f"[SECTOR] Enriched {sum(1 for s in sectors if s.get('price'))} sectors with ETF quotes "
+                    f"(SPY: {spy_data.get('price')} {spy_change:+.2f}%) ({time.time()-start:.1f}s)"
+                )
 
             result = {
                 "sector_stages": sectors,
@@ -2717,6 +2766,11 @@ class MarketDataService:
                 fear_greed if not isinstance(fear_greed, Exception) else {},
                 "fmp_sector_performance":
                 fmp_sectors if not isinstance(fmp_sectors, Exception) else {},
+                "spy_context": {
+                    "price": spy_data.get("price"),
+                    "change_pct": spy_change,
+                    "volume": spy_data.get("volume"),
+                } if spy_data else {},
                 "scan_summary": {
                     "total_stocks_scanned": len(total_stocks),
                     "stage2_total": len(stage2_stocks),

@@ -421,8 +421,8 @@ Ratings: Strong Buy (80-100), Buy (60-79), Hold (40-59), Sell (20-39), Short (0-
 {"display_type":"crypto","market_overview":"","btc_eth_summary":{"btc":{"price":"","change_24h":"","change_7d":"","dominance":"","funding_rate":"","signal":""},"eth":{"price":"","change_24h":"","change_7d":"","dominance":"","funding_rate":"","signal":""},"dominance":{"btc":"","eth":"","signal":""}},"perps_overview":{"source":"Hyperliquid","total_open_interest":"","total_volume_24h":"","avg_funding_rate":"","market_bias":"","btc_funding_trend":"","eth_funding_trend":""},"perps_top_volume":[{"coin":"","volume_24h":"","funding_rate":"","change_24h":""}],"perps_squeezes":[{"coin":"","funding_rate":"","funding_annualized":"","signal":"","open_interest":""}],"perps_crowded_longs":[{"coin":"","funding_rate":"","signal":""}],"perps_divergences":[{"coin":"","type":"","funding_rate":"","price_change":"","signal":""}],"x_sentiment":{"source":"X/Twitter via Grok","btc_sentiment":{"overall":"","score":0,"key_narrative":""},"market_mood":"","top_social_movers":[{"symbol":"","social_velocity":"","sentiment":"","why_trending":"","catalyst":""}],"narrative_heat":[{"narrative":"","buzz_level":"","direction":"","top_tokens":[]}],"contrarian_signals":[""],"summary":""},"funding_rate_analysis":{"market_bias":"","crowded_longs":[{"symbol":"","funding":"","signal":"","action":""}],"squeeze_candidates":[{"symbol":"","funding":"","oi_change":"","signal":"","action":""}]},"hot_categories":[{"name":"","market_cap_change_24h":"","top_coins":"","signal":""}],"top_momentum":[{"coin":"","symbol":"","price":"","change_24h":"","change_7d":"","market_cap":"","funding_rate":"","conviction":"","conviction_score":0,"position_tier":"","thesis":"","why_could_fail":"","trade_plan":{"entry":"","stop":"","target_1":"","risk_reward":""}}],"attention_signals":{"dual_trending":[""],"high_attention":[""],"interpretation":""},"volume_acceleration":[{"symbol":"","volume_change_24h":"","signal":""}],"new_listings_watch":[],"upcoming_catalysts":[""],"portfolio_bias":{"risk_regime":"","asset_class_bias":"","cash_guidance":"","hedge_considerations":""}}
 
 ### "sector_rotation" — Weinstein Stage Sectors
-{"display_type":"sector_rotation","summary":"1-2 sentence overview of today's sector rotation picture","sectors":[{"etf":"XLK","sector":"Technology","change_today":"+1.25%","conviction":"High","rsi":62,"trend":"↑ Stage 2 Advancing","vs_spy":"+0.45%","signal":"STRONG — Fish here for breakouts"}],"rotation_signal":"Money rotating from defensive to cyclical — risk-on regime","macro_context":{"fear_greed":"65 — Greed","vix":"16.2","dxy":"103.5","market_regime":"Risk-On"},"rotation_analysis":"","action_items":[""],"portfolio_bias":{"risk_regime":"","asset_class_bias":"","cash_guidance":"","hedge_considerations":""}}
-Key: Use sector_stages data to populate each sector. Highest stage2_pct = where money flows. NEVER buy in Stage 4 sectors. The "sectors" array MUST use these exact field names: etf, sector, change_today (string with +/- and %), conviction (High/Medium/Low based on stage), rsi (number), trend (include Weinstein stage e.g. "↑ Stage 2 Advancing"), vs_spy (relative performance string), signal (from stage classification). Sort sectors by conviction High first, then by stage2_pct descending. Include ALL 11 GICS sectors.
+{"display_type":"sector_rotation","summary":"1-2 sentence overview of today's sector rotation picture","sectors":[{"etf":"XLK","sector":"Technology","change_today":1.25,"conviction":"High","rsi":62,"trend":"↑ Stage 2 Advancing","vs_spy":0.45,"signal":"STRONG — Fish here for breakouts","stage2_pct":65.3,"stage4_pct":8.2,"price":220.50,"year_high":235.00,"year_low":180.00,"analysis":"Technology leads with 65% of stocks in Stage 2. Strong breadth confirms sector leadership."}],"rotation_signal":"Money rotating from defensive to cyclical — risk-on regime","macro_context":{"fear_greed":"65 — Greed","vix":"16.2","dxy":"103.5","market_regime":"Risk-On"},"rotation_analysis":"2-4 sentences of actionable rotation analysis. Name sectors to target and avoid.","action_items":["Screen Technology for Stage 2 breakouts above 50d MA","Reduce Healthcare exposure — Stage 3 topping","Watch Industrials for emerging Stage 2 confirmation"],"portfolio_bias":{"risk_regime":"Risk-On","asset_class_bias":"Overweight equities, focus on cyclicals","cash_guidance":"10-15% cash for pullback deployment","hedge_considerations":"Light hedges via XLU/XLP if rotation stalls"}}
+Key: The backend now provides real ETF quotes with price, change_today (numeric %), and vs_spy (numeric % relative to SPY). Use these REAL numbers directly — do NOT output "N/A" or make up numbers. change_today and vs_spy are NUMBERS (not strings). The frontend formats them. If a field is missing from the data, omit it rather than writing "N/A". Include stage2_pct and stage4_pct from the data so the UI can show them in the expanded card view. Include an "analysis" string per sector (1 sentence) for the expanded card detail. Sector rotation is a MULTI-WEEK phenomenon — do NOT say "data unavailable due to market hours". The Weinstein stage data is always valid regardless of time of day.
 WEEKEND MODE: If the data contains "weekend_mode": true or sectors_analyzed=0, do NOT apologize, do NOT say "try again", do NOT say data is unavailable. Instead, deliver a full sector rotation analysis using the FMP ETF performance data (XLK, XLF, XLE, XLV etc. 1-week and 1-month % changes). Rank sectors by ETF momentum, identify where money is flowing, and give the same quality output as a weekday scan. The user should never feel they got a degraded response.
 
 ### "trending" — Cross-Platform Trending
@@ -825,29 +825,36 @@ HARD RULES:
 SECTOR_ROTATION_CONTRACT = """SECTOR ROTATION OUTPUT CONTRACT (MANDATORY for sector_rotation scans):
 
 You are receiving Weinstein Stage classification data from Finviz screens (weekdays) or FMP ETF momentum data (weekends).
+The backend now enriches each sector with REAL ETF quote data: price, change_today (% number), vs_spy (% number relative to SPY).
 
 YOUR JOB: Deliver a complete, actionable sector rotation analysis. NEVER return empty, blank, or apologetic responses.
+Sector rotation is a MULTI-WEEK phenomenon. The data is ALWAYS valid regardless of market hours, time of day, or day of week.
+NEVER say "data unavailable", "try again later", or "outside market hours". The Weinstein stage data represents structural positioning.
 
 DATA YOU RECEIVE:
-- sector_stages[]: Each sector with stage2_pct, stage4_pct, total_count, sector_stage, signal, etf
+- sector_stages[]: Each sector with stage2_pct, stage4_pct, total_count, sector_stage, signal, etf, price, change_today, vs_spy, year_high, year_low
 - breakout_candidates[]: Stocks from top Stage 2 sectors with price, volume, sector
 - fear_greed: CNN Fear & Greed index
+- spy_context: SPY price and change for relative performance reference
 - fmp_sector_performance or fmp_sector_data: ETF-level sector returns
 - scan_summary: Counts of stocks scanned
 - weekend_mode (boolean): If true, Finviz was unavailable — use FMP ETF data instead
 
 HARD RULES:
 1. ALWAYS return display_type "sector_rotation" — NEVER "chat" or any other type.
-2. The "sectors" array MUST contain ALL 11 GICS sectors. If a sector is missing from the data, still include it with your best inference from FMP ETF data.
-3. Each sector entry MUST have ALL these fields: etf, sector, change_today, conviction, rsi, trend, vs_spy, signal.
-4. Sort sectors: conviction High first, then by stage2_pct descending.
-5. conviction mapping: Stage 2 Advancing (≥60% stage2) = "High". Early Stage 2 (≥40%) = "Medium". Stage 1 Basing = "Low". Stage 3/4 = "Avoid".
-6. trend field must include Weinstein stage label: "↑ Stage 2 Advancing", "→ Stage 1 Basing", "↓ Stage 4 Declining", etc.
-7. rotation_signal: One sentence describing the current regime rotation (e.g., "Money rotating from defensives to cyclicals — risk-on regime").
-8. rotation_analysis: 2-4 sentences of actionable analysis. Name which sectors to fish for breakouts, which to avoid, and what the rotation pattern suggests about the macro regime.
-9. action_items: 3-5 specific, actionable bullet points (e.g., "Screen Technology and Industrials for Stage 2 breakouts above 50-day MA with volume", "Reduce Healthcare exposure — Stage 3 topping pattern").
-10. macro_context: Include fear_greed, market_regime, and any available macro data.
-11. portfolio_bias: Fill all fields (risk_regime, asset_class_bias, cash_guidance, hedge_considerations).
+2. The "sectors" array MUST contain ALL 11 GICS sectors.
+3. Each sector MUST have: etf, sector, change_today (NUMBER e.g. 1.25 not "+1.25%"), conviction, trend, vs_spy (NUMBER e.g. 0.45), signal.
+4. PASSTHROUGH real data: Copy price, change_today, vs_spy, stage2_pct, stage4_pct, year_high, year_low directly from sector_stages data. Do NOT replace real numbers with "N/A".
+5. Add per-sector "analysis" field: one sentence explaining the sector's positioning (e.g. "65% of Tech stocks in Stage 2 — strongest breadth leadership").
+6. Sort sectors: conviction High first, then by stage2_pct descending.
+7. conviction mapping: Stage 2 Advancing (≥60% stage2) = "High". Early Stage 2 (≥40%) = "Medium". Stage 1 Basing = "Low". Stage 3/4 = "Avoid".
+8. trend: Include Weinstein stage label: "↑ Stage 2 Advancing", "→ Stage 1 Basing", "↓ Stage 4 Declining", etc.
+9. rotation_signal: One sentence describing the current regime rotation.
+10. rotation_analysis: 2-4 sentences of actionable analysis. Name sectors to target vs avoid, and what the rotation pattern means for macro regime.
+11. action_items: 3-5 specific, actionable bullets (e.g., "Screen Technology for Stage 2 breakouts above 50-day MA with volume").
+12. macro_context: Include fear_greed, market_regime, and available macro data.
+13. portfolio_bias: Fill ALL fields (risk_regime, asset_class_bias, cash_guidance, hedge_considerations).
+14. RSI: If rsi data is not available, OMIT the rsi field entirely. Do NOT output rsi: 0 or rsi: null.
 
 WEEKEND MODE: If weekend_mode=true or sector_stages is empty:
 - Use fmp_sector_data or fmp_sector_performance to build the analysis from ETF momentum.

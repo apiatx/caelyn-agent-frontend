@@ -921,6 +921,11 @@ def _compress_sector(data: dict) -> dict:
     if isinstance(macro, dict) and macro:
         compressed["macro_data"] = macro
 
+    # SPY context for relative performance
+    spy = data.get("spy_context", {})
+    if isinstance(spy, dict) and spy:
+        compressed["spy_context"] = spy
+
     # Scan summary — preserve for context
     summary = data.get("scan_summary", {})
     if summary:
