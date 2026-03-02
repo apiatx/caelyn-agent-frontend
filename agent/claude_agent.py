@@ -2648,6 +2648,19 @@ class TradingAgent:
         "crypto", "best_trades", "cross_market", "prediction_markets",
     }
 
+    # Extended thinking budgets (tokens) for Sonnet 4.5 categories.
+    # Adds ~3-8s latency but significantly improves reasoning quality.
+    # Categories not listed here (or using Sonnet 4) get no thinking.
+    THINKING_BUDGETS = {
+        "ticker_analysis": 5000,
+        "investments": 6000,
+        "best_trades": 5000,
+        "cross_market": 6000,
+        "crypto": 5000,
+        "portfolio_review": 5000,
+        "prediction_markets": 4000,
+    }
+
     MEDIUM_DATA_CAP_CATEGORIES = {"cross_market"}
 
     CRYPTO_PHRASE_SIGNALS = [
@@ -4437,19 +4450,45 @@ FOLLOW-UP MODE: The user is continuing a conversation. You have the full convers
         else:
             model = "claude-sonnet-4-5-20250929"
             token_limit = 10000
-        print(f"[Agent] Sending {len(messages)} messages to Claude (model={model}, category={category}, followup={is_followup}, max_tokens={token_limit})")
+        # Extended thinking: enable for Sonnet 4.5 categories with defined budgets
+        thinking_budget = self.THINKING_BUDGETS.get(category, 0)
+        use_thinking = thinking_budget > 0 and "sonnet-4-5" in model
 
-        response = self.client.messages.create(
-            model=model,
-            max_tokens=token_limit,
-            system=system_blocks,
-            messages=messages,
-        )
+        if use_thinking:
+            effective_max_tokens = token_limit + thinking_budget
+            print(f"[Agent] Sending {len(messages)} messages to Claude (model={model}, category={category}, followup={is_followup}, max_tokens={effective_max_tokens}, thinking={thinking_budget})")
+            response = self.client.messages.create(
+                model=model,
+                max_tokens=effective_max_tokens,
+                thinking={"type": "enabled", "budget_tokens": thinking_budget},
+                system=system_blocks,
+                messages=messages,
+            )
+        else:
+            print(f"[Agent] Sending {len(messages)} messages to Claude (model={model}, category={category}, followup={is_followup}, max_tokens={token_limit})")
+            response = self.client.messages.create(
+                model=model,
+                max_tokens=token_limit,
+                system=system_blocks,
+                messages=messages,
+            )
+
+        # Extract text content (skip thinking blocks when extended thinking is enabled)
+        response_text = ""
+        for block in response.content:
+            if block.type == "text":
+                response_text = block.text
+                break
+
         if response.stop_reason == "max_tokens":
-            print(f"[Agent] WARNING: Response was truncated (hit max_tokens). Length: {len(response.content[0].text)}")
-        if not response.content or not response.content[0].text.strip():
+            print(f"[Agent] WARNING: Response was truncated (hit max_tokens). Length: {len(response_text)}")
+        if not response_text or not response_text.strip():
             print(f"[Agent] WARNING: Claude returned empty content (stop_reason={response.stop_reason})")
             return json.dumps({"display_type": "chat", "message": "The AI returned an empty response. Please try again."})
+
+        if use_thinking:
+            thinking_used = sum(len(b.thinking) for b in response.content if b.type == "thinking")
+            print(f"[Agent] Extended thinking used ~{thinking_used} chars before responding")
 
         if category == "crypto" and 'data_str' in dir() and data_str:
             try:
@@ -4459,7 +4498,7 @@ FOLLOW-UP MODE: The user is continuing a conversation. You have the full convers
             except Exception:
                 pass
 
-        return response.content[0].text
+        return response_text
 
     def _slim_cross_market_data(self, data: dict) -> dict:
         """Pre-compress cross-market data. Now prioritizes pre-ranked candidates over raw dumps."""
