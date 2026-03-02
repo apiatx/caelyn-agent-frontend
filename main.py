@@ -8,6 +8,7 @@ from slowapi.errors import RateLimitExceeded
 from pydantic import BaseModel, ConfigDict
 from typing import List, Optional
 
+import asyncio
 import json as _json
 import os
 import uuid as _uuid
@@ -93,10 +94,203 @@ def _do_init():
         traceback.print_exc()
         _init_done = True
 
+async def _briefing_precompute_loop():
+    """
+    Background precomputation for Daily Briefing.
+    Runs every 30 minutes using ONLY free/unlimited APIs (no Tavily).
+    Caches Phase 1 data (screeners, macro, trending) so briefing requests
+    are near-instant — only lightweight on-demand enrichment needed.
+    """
+    # Wait for init to complete
+    for _ in range(120):
+        if _init_done and data_service is not None:
+            break
+        await asyncio.sleep(1)
+
+    if data_service is None:
+        print("[BRIEFING_PRECOMPUTE] data_service not available, aborting background loop")
+        return
+
+    from data.cache import cache, BRIEFING_PRECOMPUTE_TTL
+
+    while True:
+        try:
+            print("[BRIEFING_PRECOMPUTE] Starting background scan...")
+
+            # Phase 1: All free API screener + macro calls (same as get_morning_briefing Phase 1)
+            from data.scoring_engine import score_for_trades, score_for_investments
+
+            briefing_tasks = [
+                data_service.fear_greed.get_fear_greed_index(),
+                asyncio.to_thread(data_service.fred.get_quick_macro),
+                data_service.finviz.get_stage2_breakouts(),
+                data_service.finviz.get_volume_breakouts(),
+                data_service.finviz.get_macd_crossovers(),
+                data_service.finviz.get_unusual_volume(),
+                data_service.finviz.get_new_highs(),
+                data_service.finviz.get_high_short_float(),
+                data_service.finviz.get_insider_buying(),
+                data_service.finviz.get_revenue_growth_leaders(),
+                data_service.finviz.get_rsi_recovery(),
+                data_service.finviz.get_accumulation_stocks(),
+                data_service.stocktwits.get_trending(),
+                asyncio.to_thread(data_service.finnhub.get_upcoming_earnings),
+            ]
+            if data_service.fmp:
+                briefing_tasks.append(data_service.fmp.get_market_news(limit=15))
+            else:
+                briefing_tasks.append(asyncio.sleep(0))
+
+            results = await asyncio.gather(*briefing_tasks, return_exceptions=True)
+
+            def safe(val, default=None):
+                if default is None:
+                    default = []
+                return val if not isinstance(val, Exception) else default
+
+            (fear_greed, fred_macro, stage2_breakouts, volume_breakouts,
+             macd_crossovers, unusual_volume, new_highs, high_short,
+             insider_buying, revenue_leaders, rsi_recovery, accumulation,
+             trending, upcoming_earnings, market_news_raw) = results
+
+            market_news = safe(market_news_raw)
+            fear_greed = safe(fear_greed, {})
+            fred_macro = safe(fred_macro, {})
+            stage2_breakouts = safe(stage2_breakouts)
+            volume_breakouts = safe(volume_breakouts)
+            macd_crossovers = safe(macd_crossovers)
+            unusual_volume = safe(unusual_volume)
+            new_highs = safe(new_highs)
+            high_short = safe(high_short)
+            insider_buying = safe(insider_buying)
+            revenue_leaders = safe(revenue_leaders)
+            rsi_recovery = safe(rsi_recovery)
+            accumulation = safe(accumulation)
+            trending = safe(trending)
+            upcoming_earnings = safe(upcoming_earnings)
+
+            # FMP macro data
+            fmp_data = {}
+            if data_service.fmp:
+                try:
+                    dxy, commodities, treasuries, sector_perf, indices = await asyncio.gather(
+                        data_service.fmp.get_dxy(),
+                        data_service.fmp.get_key_commodities(),
+                        data_service.fmp.get_treasury_rates(),
+                        data_service.fmp.get_sector_performance(),
+                        data_service.fmp.get_market_indices(),
+                        return_exceptions=True,
+                    )
+                    fmp_data = {
+                        "dxy": dxy if not isinstance(dxy, Exception) else {},
+                        "commodities": commodities if not isinstance(commodities, Exception) else {},
+                        "treasury_yields": treasuries if not isinstance(treasuries, Exception) else {},
+                        "sector_performance": sector_perf if not isinstance(sector_perf, Exception) else [],
+                        "indices": indices if not isinstance(indices, Exception) else {},
+                    }
+                except Exception:
+                    pass
+
+            # Macro snapshot
+            try:
+                macro_snapshot = await asyncio.wait_for(
+                    data_service._build_macro_snapshot(), timeout=10.0)
+            except Exception:
+                macro_snapshot = {}
+
+            # Compute priority tickers + screener signals
+            all_tickers = set()
+            screener_sources = {}
+            raw_screener_data = {}
+
+            source_map = {
+                "stage2_breakout": stage2_breakouts,
+                "volume_breakout": volume_breakouts,
+                "macd_crossover": macd_crossovers,
+                "unusual_volume": unusual_volume,
+                "new_high": new_highs,
+                "high_short_float": high_short,
+                "insider_buying": insider_buying,
+                "revenue_growth": revenue_leaders,
+                "rsi_recovery": rsi_recovery,
+                "accumulation": accumulation,
+            }
+
+            for source_name, source_list in source_map.items():
+                if isinstance(source_list, list):
+                    for item in source_list:
+                        if isinstance(item, dict) and item.get("ticker"):
+                            t = item["ticker"].upper().strip()
+                            if len(t) <= 5 and t.isalpha():
+                                all_tickers.add(t)
+                                if t not in screener_sources:
+                                    screener_sources[t] = []
+                                screener_sources[t].append(source_name)
+                                if t not in raw_screener_data:
+                                    raw_screener_data[t] = item
+                                else:
+                                    for k, v in item.items():
+                                        if k != "ticker" and v and not raw_screener_data[t].get(k):
+                                            raw_screener_data[t][k] = v
+
+            for t in (trending or []):
+                if isinstance(t, dict) and t.get("ticker"):
+                    ticker = t["ticker"].upper().strip()
+                    all_tickers.add(ticker)
+                    if ticker not in screener_sources:
+                        screener_sources[ticker] = []
+                    screener_sources[ticker].append("social_trending")
+
+            multi_signal = {t: sources for t, sources in screener_sources.items() if len(sources) >= 2}
+            priority_tickers = list(multi_signal.keys())[:15]
+            remaining_slots = 20 - len(priority_tickers)
+            if remaining_slots > 0:
+                single_signal = {t: sources for t, sources in screener_sources.items() if len(sources) == 1}
+                filler = [t for t in single_signal.keys() if t not in priority_tickers][:remaining_slots]
+                priority_tickers.extend(filler)
+
+            precomputed = {
+                "macro_snapshot": macro_snapshot,
+                "news_context": {"market_news": market_news},
+                "total_tickers_detected": len(all_tickers),
+                "multi_signal_tickers": {t: sources for t, sources in list(multi_signal.items())[:10]},
+                "priority_tickers": priority_tickers,
+                "screener_sources": screener_sources,
+                "raw_screener_data": raw_screener_data,
+                "fear_greed": fear_greed,
+                "fred_macro": fred_macro,
+                "fmp_market_data": fmp_data,
+                "highlights": {
+                    "stage2_breakouts": stage2_breakouts[:3] if isinstance(stage2_breakouts, list) else [],
+                    "volume_breakouts": volume_breakouts[:3] if isinstance(volume_breakouts, list) else [],
+                    "macd_crossovers": macd_crossovers[:3] if isinstance(macd_crossovers, list) else [],
+                    "high_short_float": high_short[:3] if isinstance(high_short, list) else [],
+                    "insider_buying": insider_buying[:3] if isinstance(insider_buying, list) else [],
+                    "revenue_growth": revenue_leaders[:3] if isinstance(revenue_leaders, list) else [],
+                    "rsi_recovery": rsi_recovery[:3] if isinstance(rsi_recovery, list) else [],
+                    "social_trending": [t.get("ticker") for t in trending[:5]] if isinstance(trending, list) else [],
+                },
+                "upcoming_earnings": upcoming_earnings[:5] if isinstance(upcoming_earnings, list) else [],
+                "precomputed_at": _dt.now(_tz.utc).isoformat(),
+            }
+
+            cache.set("briefing_precomputed_v1", precomputed, BRIEFING_PRECOMPUTE_TTL)
+            print(f"[BRIEFING_PRECOMPUTE] Cached {len(all_tickers)} tickers, {len(priority_tickers)} priority. Next run in 30m.")
+
+        except Exception as e:
+            print(f"[BRIEFING_PRECOMPUTE] Error: {e}")
+            import traceback
+            traceback.print_exc()
+
+        await asyncio.sleep(1800)  # 30 minutes
+
+
 @app.on_event("startup")
 async def startup_event():
     import threading
     threading.Thread(target=_do_init, daemon=True).start()
+    # Launch background briefing precomputation (free APIs only)
+    asyncio.create_task(_briefing_precompute_loop())
 
 # ============================================================
 # API Routes
@@ -1994,32 +2188,14 @@ async def review_portfolio(request: Request, api_key: str = Header(None, alias="
                         pass
             else:
                 try:
-                    tasks["overview"] = asyncio.wait_for(
-                        agent.data.stockanalysis.get_overview(ticker), timeout=5.0)
-                except Exception:
-                    pass
-
-                try:
                     tasks["quote"] = asyncio.wait_for(
                         asyncio.to_thread(agent.data.finnhub.get_quote, ticker), timeout=4.0)
                 except Exception:
                     pass
 
                 try:
-                    tasks["sentiment"] = asyncio.wait_for(
-                        agent.data.stocktwits.get_sentiment(ticker), timeout=4.0)
-                except Exception:
-                    pass
-
-                try:
                     tasks["candles"] = asyncio.wait_for(
                         agent.data.get_candles(ticker, days=120), timeout=6.0)
-                except Exception:
-                    pass
-
-                try:
-                    tasks["analyst"] = asyncio.wait_for(
-                        agent.data.stockanalysis.get_analyst_ratings(ticker), timeout=4.0)
                 except Exception:
                     pass
 
@@ -2051,14 +2227,10 @@ async def review_portfolio(request: Request, api_key: str = Header(None, alias="
                             prev = trend[-2]["vix"]
                             result["change_pct"] = round(((res["current_vix"] - prev) / prev) * 100, 2) if prev else 0
                         result["vix_signal"] = res.get("signal", "")
-                elif key == "overview":
-                    result["overview"] = res
                 elif key == "quote":
                     if isinstance(res, dict) and res.get("price"):
                         result["current_price"] = res["price"]
                         result["change_pct"] = res.get("change_pct")
-                elif key == "sentiment":
-                    result["social_sentiment"] = res
                 elif key == "candles":
                     if isinstance(res, list) and len(res) >= 20:
                         try:
@@ -2067,12 +2239,34 @@ async def review_portfolio(request: Request, api_key: str = Header(None, alias="
                         except Exception as ta_err:
                             _log(f"[PORTFOLIO_REVIEW] {ticker}/ta compute failed: {ta_err}")
                         result["current_price"] = result.get("current_price") or res[-1].get("c")
-                elif key == "analyst":
-                    result["analyst_ratings"] = res
                 elif key == "news":
                     result["recent_news"] = res[:3] if isinstance(res, list) else res
 
+            # Inject Tavily enrichment (pre-fetched in batch)
+            if _tavily_prefetch_data and ticker.upper() in _tavily_prefetch_data:
+                t_data = _tavily_prefetch_data[ticker.upper()]
+                result["tavily_enrichment"] = t_data
+                result["overview"] = t_data  # replaces StockAnalysis overview
+                result["analyst_ratings"] = t_data  # replaces StockAnalysis analyst
+
             return result
+
+        # Tavily batch pre-fetch: 1-2 calls replaces 45 StockAnalysis+StockTwits calls
+        _tavily_prefetch_data = {}
+        stock_tickers = [h["ticker"] for h in holdings_context
+                         if h.get("asset_type", "stock") == "stock" and not _is_known_index(h["ticker"])]
+        if agent.data.tavily and stock_tickers:
+            from api_budget import daily_budget
+            if daily_budget.can_spend("tavily", 2):
+                try:
+                    _tavily_prefetch_data = await asyncio.wait_for(
+                        agent.data.tavily.enrich_tickers_batched(stock_tickers[:12]),
+                        timeout=12.0,
+                    )
+                    daily_budget.spend("tavily", min(2, (len(stock_tickers[:12]) + 5) // 6))
+                    _log(f"[PORTFOLIO_REVIEW] Tavily pre-fetched {len([k for k in _tavily_prefetch_data if not k.startswith('_')])} tickers")
+                except Exception as e:
+                    _log(f"[PORTFOLIO_REVIEW] Tavily pre-fetch failed: {e}")
 
         _log(f"[PORTFOLIO_REVIEW] Starting parallel fetch for {len(tickers)} tickers + macro...")
 

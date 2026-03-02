@@ -2572,19 +2572,36 @@ class TradingAgent:
 
         if tickers:
             print(f"[Chat] Fetching quick data for mentioned tickers: {tickers[:3]}")
+
+            # Tavily batched enrichment: 1 call instead of 9 (3 tickers × 3 calls each)
+            if self.data.tavily:
+                from api_budget import daily_budget
+                if daily_budget.can_spend("tavily", 1):
+                    try:
+                        tavily_data = await asyncio.wait_for(
+                            self.data.tavily.enrich_tickers_batched(tickers[:3]),
+                            timeout=10.0,
+                        )
+                        daily_budget.spend("tavily", 1)
+                        for ticker in tickers[:3]:
+                            t_data = tavily_data.get(ticker.upper(), {})
+                            if t_data:
+                                context[f"ticker_{ticker}"] = {
+                                    "ticker": ticker,
+                                    "tavily_enrichment": t_data,
+                                    "headlines": t_data.get("headlines", []),
+                                    "snippets": t_data.get("snippets", []),
+                                }
+                        if tavily_data.get("_summary"):
+                            context["tavily_summary"] = tavily_data["_summary"]
+                    except Exception as e:
+                        print(f"[Chat] Tavily enrichment failed: {e}")
+
+            # Fallback for tickers not enriched by Tavily
             for ticker in tickers[:3]:
+                if f"ticker_{ticker}" in context:
+                    continue
                 ticker_data = {"ticker": ticker}
-
-                try:
-                    overview = await asyncio.wait_for(
-                        self.data.stockanalysis.get_overview(ticker),
-                        timeout=6.0,
-                    )
-                    if overview:
-                        ticker_data.update(overview)
-                except Exception:
-                    pass
-
                 try:
                     sentiment = await asyncio.wait_for(
                         self.data.stocktwits.get_sentiment(ticker),
@@ -2594,26 +2611,19 @@ class TradingAgent:
                         ticker_data["social_sentiment"] = sentiment
                 except Exception:
                     pass
+                context[f"ticker_{ticker}"] = ticker_data
 
-                try:
-                    ratings = await asyncio.wait_for(
-                        self.data.stockanalysis.get_analyst_ratings(ticker),
-                        timeout=6.0,
-                    )
-                    if ratings:
-                        ticker_data["analyst_ratings"] = ratings
-                except Exception:
-                    pass
-
-                CRYPTO_SYMBOLS = {
-                    "BTC", "ETH", "SOL", "DOGE", "XRP", "ADA", "AVAX", "DOT",
-                    "MATIC", "LINK", "UNI", "AAVE", "ATOM", "NEAR", "ARB",
-                    "OP", "SUI", "APT", "SEI", "TIA", "INJ", "FET", "RENDER",
-                    "TAO", "WIF", "PEPE", "BONK", "JUP", "ONDO", "HYPE",
-                    "SHIB", "LTC", "BCH", "FIL", "ICP", "STX", "MKR",
-                    "RUNE", "PENDLE", "ENA", "W", "STRK", "ZRO", "PYTH",
-                }
-                if self.data.xai:
+            # xAI Grok sentiment (kept — independent from Tavily)
+            CRYPTO_SYMBOLS = {
+                "BTC", "ETH", "SOL", "DOGE", "XRP", "ADA", "AVAX", "DOT",
+                "MATIC", "LINK", "UNI", "AAVE", "ATOM", "NEAR", "ARB",
+                "OP", "SUI", "APT", "SEI", "TIA", "INJ", "FET", "RENDER",
+                "TAO", "WIF", "PEPE", "BONK", "JUP", "ONDO", "HYPE",
+                "SHIB", "LTC", "BCH", "FIL", "ICP", "STX", "MKR",
+                "RUNE", "PENDLE", "ENA", "W", "STRK", "ZRO", "PYTH",
+            }
+            if self.data.xai:
+                for ticker in tickers[:3]:
                     try:
                         x_sent = await asyncio.wait_for(
                             self.data.xai.get_ticker_sentiment(
@@ -2623,13 +2633,10 @@ class TradingAgent:
                             timeout=15.0,
                         )
                         if x_sent and "error" not in x_sent:
-                            ticker_data["x_sentiment"] = x_sent
+                            if f"ticker_{ticker}" in context:
+                                context[f"ticker_{ticker}"]["x_sentiment"] = x_sent
                     except Exception:
                         pass
-
-                context[f"ticker_{ticker}"] = ticker_data
-                if len(tickers) > 1:
-                    await asyncio.sleep(0.5)
 
         if not context:
             return None
@@ -3350,19 +3357,38 @@ class TradingAgent:
                 if sym:
                     crypto_symbols.append(sym)
 
-        async def _quick_equity_quote(ticker):
-            try:
-                overview = await asyncio.wait_for(
-                    self.data.stockanalysis.get_overview(ticker),
-                    timeout=6.0,
-                )
-                return (ticker, overview)
-            except Exception:
-                return (ticker, None)
+        # Tavily batched enrichment: 1-2 calls instead of 10 individual scrapes
+        if equity_tickers and self.data.tavily:
+            from api_budget import daily_budget
+            if daily_budget.can_spend("tavily", 2):
+                try:
+                    tavily_data = await asyncio.wait_for(
+                        self.data.tavily.enrich_tickers_batched(equity_tickers[:10]),
+                        timeout=12.0,
+                    )
+                    daily_budget.spend("tavily", min(2, (len(equity_tickers[:10]) + 5) // 6))
+                    for ticker in equity_tickers[:10]:
+                        t_data = tavily_data.get(ticker.upper())
+                        if t_data and not t_data.get("error"):
+                            enriched[ticker] = t_data
+                except Exception as e:
+                    print(f"[LIGHT_ENRICH] Tavily failed, falling back: {e}")
 
-        if equity_tickers:
+        # Fallback: StockAnalysis scraping for any tickers Tavily missed
+        missing = [t for t in equity_tickers[:10] if t not in enriched]
+        if missing:
+            async def _quick_equity_quote(ticker):
+                try:
+                    overview = await asyncio.wait_for(
+                        self.data.stockanalysis.get_overview(ticker),
+                        timeout=6.0,
+                    )
+                    return (ticker, overview)
+                except Exception:
+                    return (ticker, None)
+
             results = await asyncio.gather(
-                *[_quick_equity_quote(t) for t in equity_tickers[:10]],
+                *[_quick_equity_quote(t) for t in missing],
                 return_exceptions=True,
             )
             for r in results:

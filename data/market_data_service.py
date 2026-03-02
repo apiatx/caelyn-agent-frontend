@@ -8,8 +8,9 @@ from data.stocktwits_provider import StockTwitsProvider
 from data.stockanalysis_scraper import StockAnalysisScraper
 from data.options_scraper import OptionsScraper
 from data.finnhub_provider import FinnhubProvider
-from config import FINNHUB_API_KEY, ALPHA_VANTAGE_API_KEY, FRED_API_KEY, FMP_API_KEY, TWELVEDATA_API_KEY
+from config import FINNHUB_API_KEY, ALPHA_VANTAGE_API_KEY, FRED_API_KEY, FMP_API_KEY, TWELVEDATA_API_KEY, TAVILY_API_KEY
 from data.alphavantage_provider import AlphaVantageProvider
+from data.tavily_provider import TavilyProvider
 from data.fred_provider import FredProvider
 from data.edgar_provider import EdgarProvider
 from data.sec_edgar_provider import SecEdgarProvider, EdgarBudget
@@ -372,6 +373,12 @@ class MarketDataService:
             print(
                 "[INIT] xAI Grok X sentiment provider SKIPPED (no XAI_API_KEY)"
             )
+        self.tavily = TavilyProvider(TAVILY_API_KEY) if TAVILY_API_KEY else None
+        if self.tavily:
+            print("[INIT] Tavily search provider initialized (1000/month free)")
+        else:
+            print("[INIT] Tavily provider SKIPPED (no TAVILY_API_KEY)"
+            )
 
     async def get_candles(self,
                           symbol: str,
@@ -524,11 +531,28 @@ class MarketDataService:
         tasks = []
         task_keys = []
 
-        tasks.append(
-            asyncio.wait_for(self.alphavantage.get_news_sentiment(
-                topics="financial_markets"),
-                             timeout=8.0))
-        task_keys.append("market_news")
+        # Tavily replaces AlphaVantage for market news (better quality, no 25/day limit)
+        if self.tavily:
+            from api_budget import daily_budget
+            if daily_budget.can_spend("tavily", 1):
+                tasks.append(
+                    asyncio.wait_for(self.tavily.get_market_news(
+                        topic="stock market today"),
+                                     timeout=10.0))
+                task_keys.append("tavily_news")
+                daily_budget.spend("tavily", 1)
+            else:
+                tasks.append(
+                    asyncio.wait_for(self.alphavantage.get_news_sentiment(
+                        topics="financial_markets"),
+                                     timeout=8.0))
+                task_keys.append("market_news")
+        else:
+            tasks.append(
+                asyncio.wait_for(self.alphavantage.get_news_sentiment(
+                    topics="financial_markets"),
+                                 timeout=8.0))
+            task_keys.append("market_news")
 
         if self.fmp:
             tasks.append(
@@ -566,13 +590,20 @@ class MarketDataService:
             else:
                 news_data[key] = result
 
-        av_news = news_data.get("market_news", {})
-        if isinstance(av_news, dict) and av_news.get("articles"):
-            news_data["market_news"] = av_news["articles"]
-        elif not isinstance(av_news, list):
-            fmp_news = news_data.pop("fmp_news", [])
-            news_data["market_news"] = fmp_news if isinstance(fmp_news,
-                                                              list) else []
+        # Normalize market news from whichever source
+        tavily_news = news_data.pop("tavily_news", None)
+        if tavily_news and isinstance(tavily_news, dict) and tavily_news.get("articles"):
+            news_data["market_news"] = tavily_news["articles"]
+            if tavily_news.get("summary"):
+                news_data["market_news_summary"] = tavily_news["summary"]
+        else:
+            av_news = news_data.get("market_news", {})
+            if isinstance(av_news, dict) and av_news.get("articles"):
+                news_data["market_news"] = av_news["articles"]
+            elif not isinstance(av_news, list):
+                fmp_news = news_data.pop("fmp_news", [])
+                news_data["market_news"] = fmp_news if isinstance(fmp_news,
+                                                                  list) else []
 
         reddit_data = news_data.get("reddit", {})
         if isinstance(reddit_data, dict):
@@ -711,24 +742,28 @@ class MarketDataService:
             "peer_companies": self.finnhub.get_company_peers(ticker),
         }
 
+        # Tavily replaces StockTwits + StockAnalysis + AlphaVantage in single call
         async_tasks = [
-            self.stocktwits.get_sentiment(ticker),
-            self.stockanalysis.get_overview(ticker),
-            self.stockanalysis.get_financials(ticker),
-            self.stockanalysis.get_analyst_ratings(ticker),
             self.options.get_put_call_ratio(ticker),
-            self.alphavantage.get_news_sentiment(ticker),
             self.edgar.get_company_summary(ticker),
         ]
         async_keys = [
-            "sentiment",
-            "fundamentals",
-            "financials",
-            "analyst_ratings",
             "options_put_call",
-            "news_sentiment_ai",
             "sec_filings",
         ]
+
+        # Add Tavily for news + sentiment + analyst data (1 call replaces 4)
+        if self.tavily:
+            async_tasks.append(self.tavily.get_ticker_news_sentiment(ticker))
+            async_keys.append("tavily_enrichment")
+        else:
+            # Fallback to legacy providers
+            async_tasks.extend([
+                self.stocktwits.get_sentiment(ticker),
+                self.stockanalysis.get_overview(ticker),
+                self.alphavantage.get_news_sentiment(ticker),
+            ])
+            async_keys.extend(["sentiment", "fundamentals", "news_sentiment_ai"])
 
         async_results = await asyncio.gather(*async_tasks,
                                              return_exceptions=True)
@@ -739,12 +774,20 @@ class MarketDataService:
             else:
                 sync_data[key] = result
 
-        av_news = sync_data.get("news_sentiment_ai", {})
+        # Extract news articles from whichever source provided them
         news_articles = []
-        if isinstance(av_news, dict) and av_news.get("articles"):
-            news_articles = av_news["articles"]
-        elif isinstance(av_news, list):
-            news_articles = av_news
+        tavily_data = sync_data.get("tavily_enrichment", {})
+        if isinstance(tavily_data, dict) and tavily_data.get("articles"):
+            news_articles = tavily_data["articles"]
+            sync_data["news_sentiment_ai"] = tavily_data
+            sync_data["sentiment"] = {"sentiment_label": tavily_data.get("sentiment_label", "Neutral")}
+            sync_data["fundamentals"] = tavily_data
+        else:
+            av_news = sync_data.get("news_sentiment_ai", {})
+            if isinstance(av_news, dict) and av_news.get("articles"):
+                news_articles = av_news["articles"]
+            elif isinstance(av_news, list):
+                news_articles = av_news
 
         if news_articles:
             news_text = " ".join(
@@ -3269,12 +3312,70 @@ class MarketDataService:
         Combined intelligence briefing pulling the top signal from every data source.
         Designed to give a full market snapshot + top actionable moves in one call.
 
-        Runs ALL major scans in parallel, takes the #1 result from each,
-        and packages everything for Claude to synthesize into a briefing.
+        Uses precomputed background cache when available (Phase 1 from free APIs),
+        then does lightweight Tavily enrichment on-demand (Phase 2).
+        Falls back to full scan if cache is stale.
         """
         import asyncio
         from data.scoring_engine import score_for_trades, score_for_investments, score_for_squeeze
 
+        # Check for precomputed background data (runs every 30 min, free APIs only)
+        precomputed = cache.get("briefing_precomputed_v1")
+        if precomputed:
+            print(f"[Briefing] Using precomputed data from {precomputed.get('precomputed_at', 'unknown')}")
+            priority_tickers = precomputed.get("priority_tickers", [])
+            screener_sources = precomputed.get("screener_sources", {})
+
+            # Phase 2: Lightweight on-demand enrichment via Tavily
+            enriched = {}
+            if self.tavily and priority_tickers:
+                from api_budget import daily_budget
+                if daily_budget.can_spend("tavily", 3):
+                    try:
+                        tavily_data = await asyncio.wait_for(
+                            self.tavily.enrich_tickers_batched(priority_tickers[:12]),
+                            timeout=15.0,
+                        )
+                        daily_budget.spend("tavily", min(3, (len(priority_tickers[:12]) + 5) // 6))
+                        for ticker in priority_tickers:
+                            t_data = tavily_data.get(ticker.upper(), {})
+                            if t_data:
+                                result = {"tavily_enrichment": t_data, "overview": t_data}
+                                trade_score = score_for_trades(result)
+                                invest_score = score_for_investments(result)
+                                result["trade_score"] = trade_score
+                                result["invest_score"] = invest_score
+                                result["signal_count"] = len(screener_sources.get(ticker, []))
+                                result["signal_sources"] = screener_sources.get(ticker, [])
+                                enriched[ticker] = result
+                    except Exception as e:
+                        print(f"[Briefing] Tavily enrichment on precomputed failed: {e}")
+
+            ranked = sorted(
+                enriched.items(),
+                key=lambda x: (x[1].get("signal_count", 0), x[1].get("trade_score", 0)),
+                reverse=True,
+            )
+
+            # Merge enrichment into precomputed result
+            precomputed["ranked_candidates"] = [{
+                "ticker": t,
+                "trade_score": d.get("trade_score", 0),
+                "invest_score": d.get("invest_score", 0),
+                "signal_count": d.get("signal_count", 0),
+                "signal_sources": d.get("signal_sources", []),
+            } for t, d in ranked[:15]]
+            precomputed["enriched_data"] = {t: d for t, d in ranked[:10]}
+
+            # Remove internal fields
+            precomputed.pop("priority_tickers", None)
+            precomputed.pop("screener_sources", None)
+            precomputed.pop("raw_screener_data", None)
+
+            return precomputed
+
+        # Fallback: Full scan (no precomputed cache available)
+        print("[Briefing] No precomputed cache, running full scan...")
         macro_snapshot = await self._build_macro_snapshot()
 
         briefing_tasks = [
@@ -3433,39 +3534,60 @@ class MarketDataService:
             ][:remaining_slots]
             priority_tickers.extend(filler)
 
-        async def enrich_briefing(ticker):
-            try:
-                st_result, overview = await asyncio.gather(
-                    self.stocktwits.get_sentiment(ticker),
-                    self.stockanalysis.get_overview(ticker),
-                    return_exceptions=True,
-                )
-
-                return {
-                    "sentiment":
-                    st_result if not isinstance(st_result, Exception) else {},
-                    "overview":
-                    overview if not isinstance(overview, Exception) else {},
-                }
-            except Exception as e:
-                return {"error": str(e)}
-
-        enrichment_results = await asyncio.gather(
-            *[enrich_briefing(t) for t in priority_tickers],
-            return_exceptions=True,
-        )
-
+        # --- Tavily batched enrichment (2-3 API calls instead of 40) ---
         enriched = {}
-        for ticker, result in zip(priority_tickers, enrichment_results):
-            if not isinstance(result, Exception) and isinstance(
-                    result, dict) and "error" not in result:
-                trade_score = score_for_trades(result)
-                invest_score = score_for_investments(result)
-                result["trade_score"] = trade_score
-                result["invest_score"] = invest_score
-                result["signal_count"] = len(screener_sources.get(ticker, []))
-                result["signal_sources"] = screener_sources.get(ticker, [])
-                enriched[ticker] = result
+        if self.tavily:
+            from api_budget import daily_budget
+            if daily_budget.can_spend("tavily", 3):
+                try:
+                    tavily_data = await asyncio.wait_for(
+                        self.tavily.enrich_tickers_batched(priority_tickers[:12]),
+                        timeout=15.0,
+                    )
+                    daily_budget.spend("tavily", min(3, (len(priority_tickers[:12]) + 5) // 6))
+                    for ticker in priority_tickers:
+                        t_data = tavily_data.get(ticker.upper(), {})
+                        if t_data and not t_data.get("error"):
+                            result = {
+                                "tavily_enrichment": t_data,
+                                "overview": t_data,
+                            }
+                            trade_score = score_for_trades(result)
+                            invest_score = score_for_investments(result)
+                            result["trade_score"] = trade_score
+                            result["invest_score"] = invest_score
+                            result["signal_count"] = len(screener_sources.get(ticker, []))
+                            result["signal_sources"] = screener_sources.get(ticker, [])
+                            enriched[ticker] = result
+                except asyncio.TimeoutError:
+                    print("[Briefing] Tavily enrichment timed out")
+                except Exception as e:
+                    print(f"[Briefing] Tavily enrichment error: {e}")
+
+        # Fallback: use StockTwits for any tickers Tavily missed
+        missing_tickers = [t for t in priority_tickers if t not in enriched]
+        if missing_tickers:
+            async def enrich_briefing_fallback(ticker):
+                try:
+                    st_result = await asyncio.wait_for(
+                        self.stocktwits.get_sentiment(ticker), timeout=5.0)
+                    return {"sentiment": st_result if not isinstance(st_result, Exception) else {}}
+                except Exception:
+                    return {}
+
+            fallback_results = await asyncio.gather(
+                *[enrich_briefing_fallback(t) for t in missing_tickers[:10]],
+                return_exceptions=True,
+            )
+            for ticker, result in zip(missing_tickers[:10], fallback_results):
+                if isinstance(result, dict) and not isinstance(result, Exception):
+                    trade_score = score_for_trades(result)
+                    invest_score = score_for_investments(result)
+                    result["trade_score"] = trade_score
+                    result["invest_score"] = invest_score
+                    result["signal_count"] = len(screener_sources.get(ticker, []))
+                    result["signal_sources"] = screener_sources.get(ticker, [])
+                    enriched[ticker] = result
 
         ranked = sorted(
             enriched.items(),

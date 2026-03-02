@@ -14,6 +14,7 @@ class DailyBudgetTracker:
         "coingecko": 333,
         "cmc": 333,
         "finnhub": 3600,
+        "tavily": 33,  # 1000/month ÷ 30 days — conservative daily cap
     }
 
     WARN_PCT = 0.70
