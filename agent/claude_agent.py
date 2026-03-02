@@ -9,7 +9,7 @@ import openai
 
 from agent.data_compressor import compress_data
 from agent.institutional_scorer import apply_institutional_scoring
-from agent.prompts import SYSTEM_PROMPT, USER_INVESTMENT_PROFILE, QUERY_CLASSIFIER_PROMPT, ORCHESTRATION_PROMPT, REASONING_BRIEF_PROMPT, TRENDING_VALIDATION_PROMPT, CROSS_ASSET_TRENDING_CONTRACT, BEST_TRADES_CONTRACT, DETERMINISTIC_SCREENER_CONTRACT, SMART_ORCHESTRATOR_PROMPT, PREDICTION_MARKETS_CONTRACT
+from agent.prompts import SYSTEM_PROMPT, USER_INVESTMENT_PROFILE, QUERY_CLASSIFIER_PROMPT, ORCHESTRATION_PROMPT, REASONING_BRIEF_PROMPT, TRENDING_VALIDATION_PROMPT, CROSS_ASSET_TRENDING_CONTRACT, BEST_TRADES_CONTRACT, DETERMINISTIC_SCREENER_CONTRACT, SMART_ORCHESTRATOR_PROMPT, PREDICTION_MARKETS_CONTRACT, SECTOR_ROTATION_CONTRACT
 from data.market_data_service import MarketDataService
 
 
@@ -2659,7 +2659,7 @@ class TradingAgent:
     DEEP_ANALYSIS_CATEGORIES = {
         "ticker_analysis", "investments", "portfolio_review", "followup",
         "crypto", "best_trades", "cross_market", "prediction_markets",
-        "chat",
+        "chat", "sector_rotation",
     }
 
     # Extended thinking budgets (tokens) for Sonnet 4.5 categories.
@@ -2674,6 +2674,7 @@ class TradingAgent:
         "portfolio_review": 5000,
         "prediction_markets": 4000,
         "chat": 4000,
+        "sector_rotation": 4000,
     }
 
     MEDIUM_DATA_CAP_CATEGORIES = {"cross_market"}
@@ -4443,6 +4444,12 @@ FOLLOW-UP MODE: The user is continuing a conversation. You have the full convers
                 "text": PREDICTION_MARKETS_CONTRACT,
             })
 
+        if category == "sector_rotation":
+            system_blocks.append({
+                "type": "text",
+                "text": SECTOR_ROTATION_CONTRACT,
+            })
+
         use_fast_model = category not in self.DEEP_ANALYSIS_CATEGORIES
         if category == "crypto":
             model = "claude-sonnet-4-5-20250929"
@@ -4457,6 +4464,9 @@ FOLLOW-UP MODE: The user is continuing a conversation. You have the full convers
             model = "claude-sonnet-4-5-20250929"
             token_limit = 10000
         elif category == "chat":
+            model = "claude-sonnet-4-5-20250929"
+            token_limit = 6000
+        elif category == "sector_rotation":
             model = "claude-sonnet-4-5-20250929"
             token_limit = 6000
         elif category == "followup":

@@ -822,6 +822,41 @@ HARD RULES:
 21. If edgar data is present for a ticker, use it to ground "why now" and flag dilution/offerings/insider activity in the thesis. Reference specific filing types and dates.
 """
 
+SECTOR_ROTATION_CONTRACT = """SECTOR ROTATION OUTPUT CONTRACT (MANDATORY for sector_rotation scans):
+
+You are receiving Weinstein Stage classification data from Finviz screens (weekdays) or FMP ETF momentum data (weekends).
+
+YOUR JOB: Deliver a complete, actionable sector rotation analysis. NEVER return empty, blank, or apologetic responses.
+
+DATA YOU RECEIVE:
+- sector_stages[]: Each sector with stage2_pct, stage4_pct, total_count, sector_stage, signal, etf
+- breakout_candidates[]: Stocks from top Stage 2 sectors with price, volume, sector
+- fear_greed: CNN Fear & Greed index
+- fmp_sector_performance or fmp_sector_data: ETF-level sector returns
+- scan_summary: Counts of stocks scanned
+- weekend_mode (boolean): If true, Finviz was unavailable — use FMP ETF data instead
+
+HARD RULES:
+1. ALWAYS return display_type "sector_rotation" — NEVER "chat" or any other type.
+2. The "sectors" array MUST contain ALL 11 GICS sectors. If a sector is missing from the data, still include it with your best inference from FMP ETF data.
+3. Each sector entry MUST have ALL these fields: etf, sector, change_today, conviction, rsi, trend, vs_spy, signal.
+4. Sort sectors: conviction High first, then by stage2_pct descending.
+5. conviction mapping: Stage 2 Advancing (≥60% stage2) = "High". Early Stage 2 (≥40%) = "Medium". Stage 1 Basing = "Low". Stage 3/4 = "Avoid".
+6. trend field must include Weinstein stage label: "↑ Stage 2 Advancing", "→ Stage 1 Basing", "↓ Stage 4 Declining", etc.
+7. rotation_signal: One sentence describing the current regime rotation (e.g., "Money rotating from defensives to cyclicals — risk-on regime").
+8. rotation_analysis: 2-4 sentences of actionable analysis. Name which sectors to fish for breakouts, which to avoid, and what the rotation pattern suggests about the macro regime.
+9. action_items: 3-5 specific, actionable bullet points (e.g., "Screen Technology and Industrials for Stage 2 breakouts above 50-day MA with volume", "Reduce Healthcare exposure — Stage 3 topping pattern").
+10. macro_context: Include fear_greed, market_regime, and any available macro data.
+11. portfolio_bias: Fill all fields (risk_regime, asset_class_bias, cash_guidance, hedge_considerations).
+
+WEEKEND MODE: If weekend_mode=true or sector_stages is empty:
+- Use fmp_sector_data or fmp_sector_performance to build the analysis from ETF momentum.
+- Rank sectors by 1-week and 1-month ETF returns.
+- Infer Weinstein stages from ETF trends (rising ETF = Stage 2, flat = Stage 1, declining = Stage 4).
+- Deliver the SAME quality output. The user must never feel they got a degraded response.
+
+CRITICAL: You MUST output valid JSON. No markdown wrapping. No empty responses. The user is asking "where is money flowing?" — always give them a clear, opinionated answer with all 11 sectors ranked."""
+
 DETERMINISTIC_SCREENER_CONTRACT = """DETERMINISTIC SCREENER OUTPUT CONTRACT (MANDATORY for screener presets):
 
 You are receiving pre-screened, enriched, and ranked rows from a deterministic screener pipeline. The backend already applied Finviz filters, computed TA indicators, pulled fundamentals, and scored every row.

@@ -885,7 +885,52 @@ def _compress_crypto(data: dict) -> dict:
 
 
 def _compress_sector(data: dict) -> dict:
-    return _compress_generic(data)
+    """Preserve all critical sector rotation fields Claude needs for a complete response."""
+    compressed = {}
+
+    # Sector stages — the core data, always preserve fully
+    sectors = data.get("sector_stages", [])
+    compressed["sector_stages"] = sectors  # All 11 sectors, not truncated
+
+    # Breakout candidates — keep top 10 with essential fields
+    candidates = data.get("breakout_candidates", [])
+    compressed["breakout_candidates"] = [
+        {k: v for k, v in c.items() if k in (
+            "ticker", "company", "sector", "price", "change", "volume",
+            "market_cap", "revenue_growth", "analyst_rating", "pe_ratio"
+        )}
+        for c in candidates[:10]
+    ]
+
+    # Top sectors list
+    compressed["top_sectors"] = data.get("top_sectors", [])
+
+    # Fear & Greed — always preserve
+    fg = data.get("fear_greed", {})
+    if isinstance(fg, dict):
+        compressed["fear_greed"] = fg
+
+    # FMP sector data — preserve for weekend mode or supplementary info
+    for key in ("fmp_sector_performance", "fmp_sector_data"):
+        val = data.get(key)
+        if val and not isinstance(val, Exception):
+            compressed[key] = val
+
+    # Macro data
+    macro = data.get("macro_data", {})
+    if isinstance(macro, dict) and macro:
+        compressed["macro_data"] = macro
+
+    # Scan summary — preserve for context
+    summary = data.get("scan_summary", {})
+    if summary:
+        compressed["scan_summary"] = summary
+
+    # Weekend mode flag
+    if data.get("weekend_mode"):
+        compressed["weekend_mode"] = True
+
+    return compressed
 
 
 def _compress_macro(data: dict) -> dict:
