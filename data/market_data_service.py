@@ -2557,13 +2557,50 @@ class MarketDataService:
 
             if not stage2_stocks and not stage4_stocks and not total_stocks:
                 print(
-                    "[SECTOR] WARNING: All Finviz screens returned empty. Finviz may be blocking requests."
+                    "[SECTOR] WARNING: All Finviz screens returned empty. Falling back to FMP ETF data."
                 )
+                # Fall back to FMP ETF data instead of returning an error
+                fmp_sectors = {}
+                try:
+                    fmp_sectors = await asyncio.wait_for(
+                        self.fmp.get_sector_etf_snapshot(),
+                        timeout=10.0,
+                    )
+                except Exception as e:
+                    print(f"[SECTOR] FMP ETF snapshot fallback failed: {e}")
+                    try:
+                        perf = await asyncio.wait_for(
+                            self.fmp.get_sector_performance(),
+                            timeout=8.0,
+                        )
+                        fmp_sectors = {
+                            "sector_performance": perf,
+                            "etf_quotes": {}
+                        }
+                    except Exception as e2:
+                        print(f"[SECTOR] FMP sector performance also failed: {e2}")
+                        fmp_sectors = {}
+
+                fear_greed = await self.fear_greed.get_fear_greed_index()
+                macro = self.fred.get_quick_macro()
+
                 return {
-                    "error":
-                    "Finviz screener returned no data. The service may be temporarily unavailable.",
-                    "sectors": [],
+                    "sector_stages": [],
                     "breakout_candidates": [],
+                    "top_sectors": [],
+                    "fear_greed":
+                    fear_greed if not isinstance(fear_greed, Exception) else {},
+                    "fmp_sector_data": fmp_sectors,
+                    "macro_data": macro,
+                    "weekend_mode": True,
+                    "scan_summary": {
+                        "total_stocks_scanned": 0,
+                        "stage2_total": 0,
+                        "stage4_total": 0,
+                        "sectors_analyzed": 0,
+                        "note":
+                        "Finviz unavailable — using FMP sector ETF momentum data instead."
+                    }
                 }
 
             sectors_map = {}
@@ -2788,11 +2825,39 @@ class MarketDataService:
             print(f"[SECTOR] Fatal error: {e}")
             import traceback
             traceback.print_exc()
-            return {
-                "error": f"Sector rotation scan failed: {str(e)}",
-                "sectors": [],
-                "breakout_candidates": [],
-            }
+            # Fall back to FMP ETF data instead of returning an error
+            try:
+                fmp_sectors = await asyncio.wait_for(
+                    self.fmp.get_sector_etf_snapshot(),
+                    timeout=10.0,
+                )
+                fear_greed = await self.fear_greed.get_fear_greed_index()
+                macro = self.fred.get_quick_macro()
+                return {
+                    "sector_stages": [],
+                    "breakout_candidates": [],
+                    "top_sectors": [],
+                    "fear_greed":
+                    fear_greed if not isinstance(fear_greed, Exception) else {},
+                    "fmp_sector_data": fmp_sectors,
+                    "macro_data": macro,
+                    "weekend_mode": True,
+                    "scan_summary": {
+                        "total_stocks_scanned": 0,
+                        "stage2_total": 0,
+                        "stage4_total": 0,
+                        "sectors_analyzed": 0,
+                        "note":
+                        f"Finviz scan failed — using FMP sector ETF momentum data instead."
+                    }
+                }
+            except Exception as fmp_err:
+                print(f"[SECTOR] FMP fallback also failed: {fmp_err}")
+                return {
+                    "error": f"Sector rotation scan failed: {str(e)}",
+                    "sectors": [],
+                    "breakout_candidates": [],
+                }
 
     async def get_asymmetric_setups(self) -> dict:
         """
