@@ -2426,6 +2426,29 @@ class MarketDataService:
         day = datetime.datetime.utcnow().weekday()
         return day >= 5  # 5 = Saturday, 6 = Sunday
 
+    def _is_us_market_closed(self) -> bool:
+        """Check if US equity markets are currently closed (weekends + outside 9:30-16:00 ET)."""
+        import datetime
+        from zoneinfo import ZoneInfo
+        now_et = datetime.datetime.now(ZoneInfo("America/New_York"))
+        if now_et.weekday() >= 5:
+            return True
+        market_open = now_et.replace(hour=9, minute=30, second=0, microsecond=0)
+        market_close = now_et.replace(hour=16, minute=0, second=0, microsecond=0)
+        return now_et < market_open or now_et > market_close
+
+    async def get_overnight_derivatives_signal(self) -> dict:
+        """Fetch Hyperliquid equity/commodity perp signal when US markets are closed."""
+        if not self._is_us_market_closed():
+            return {}
+        try:
+            return await asyncio.wait_for(
+                self.hyperliquid.get_overnight_signal(), timeout=8.0
+            )
+        except Exception as e:
+            print(f"[OVERNIGHT] Hyperliquid overnight signal failed: {e}")
+            return {}
+
     async def get_sector_rotation_with_stages(self) -> dict:
         """
         Simplified Weinstein sector rotation.

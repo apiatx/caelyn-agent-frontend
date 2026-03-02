@@ -266,3 +266,121 @@ class HyperliquidProvider:
             "btc_funding_trend": btc_history if not isinstance(btc_history, Exception) else {},
             "eth_funding_trend": eth_history if not isinstance(eth_history, Exception) else {},
         }
+
+    # Known equity and commodity perps on Hyperliquid
+    EQUITY_TICKERS = {
+        "AAPL", "AMZN", "GOOG", "META", "MSFT", "NVDA", "TSLA", "NFLX",
+        "AMD", "COIN", "MSTR", "GME", "AMC", "PLTR", "BA", "DIS", "BABA",
+        "NKE", "PYPL", "SNAP", "UBER", "SQ", "SHOP", "ROKU", "RIVN",
+        "LCID", "F", "GM", "INTC", "MU", "SMCI", "ARM", "AVGO", "CRM",
+        "ORCL", "JPM", "GS", "V", "MA", "WMT", "COST", "HD",
+        "SPY", "QQQ", "IWM", "DIA",  # ETF perps
+    }
+    COMMODITY_TICKERS = {
+        "GOLD", "SILVER", "OIL", "GAS", "COPPER", "PLATINUM",
+        "XAU", "XAG", "WTI", "BRENT",
+    }
+    # Pre-IPO / special tokens that act as equity proxies
+    PRE_IPO_TICKERS = {
+        "SPACEX", "STRIPE", "OPENAI",
+    }
+
+    async def get_overnight_signal(self) -> dict:
+        """Compact risk-on/risk-off signal from equity, commodity, and BTC perps.
+
+        Designed for weekends/after-hours when spot equity markets are closed.
+        Hyperliquid perps trade 24/7 so price moves here predict next open.
+        """
+        perp_data = await self.get_all_perps()
+        assets = perp_data.get("assets", [])
+        if not assets:
+            return {}
+
+        equities = []
+        commodities = []
+        pre_ipo = []
+        btc = None
+        eth = None
+
+        for a in assets:
+            coin = a["coin"].upper()
+            if coin in self.EQUITY_TICKERS:
+                equities.append(a)
+            elif coin in self.COMMODITY_TICKERS:
+                commodities.append(a)
+            elif coin in self.PRE_IPO_TICKERS:
+                pre_ipo.append(a)
+            elif coin == "BTC":
+                btc = a
+            elif coin == "ETH":
+                eth = a
+
+        # Only return if we actually found equity/commodity perps
+        if not equities and not commodities and not btc:
+            return {}
+
+        def _compact(asset_list, top_n=10):
+            """Return top movers by absolute price change, compact format."""
+            sorted_list = sorted(asset_list, key=lambda x: abs(x["price_change_24h_pct"]), reverse=True)
+            return [
+                {
+                    "coin": a["coin"],
+                    "price": a["mark_price"],
+                    "chg_24h": a["price_change_24h_pct"],
+                    "funding": a["funding_rate_annualized"],
+                    "oi_usd": a["open_interest_usd"],
+                    "vol_24h": a["volume_24h_usd"],
+                }
+                for a in sorted_list[:top_n]
+                if a["volume_24h_usd"] > 10000  # filter dust
+            ]
+
+        # Aggregate equity signal
+        equity_movers = _compact(equities, top_n=15)
+        active_equities = [e for e in equities if e["volume_24h_usd"] > 10000]
+        avg_equity_chg = (
+            sum(e["price_change_24h_pct"] for e in active_equities) / len(active_equities)
+            if active_equities else 0
+        )
+
+        if avg_equity_chg > 1.5:
+            equity_bias = "RISK-ON — equity perps broadly higher"
+        elif avg_equity_chg > 0.3:
+            equity_bias = "Mild risk-on — equities drifting higher"
+        elif avg_equity_chg < -1.5:
+            equity_bias = "RISK-OFF — equity perps broadly lower"
+        elif avg_equity_chg < -0.3:
+            equity_bias = "Mild risk-off — equities drifting lower"
+        else:
+            equity_bias = "Neutral — no strong overnight signal"
+
+        result = {
+            "source": "Hyperliquid 24/7 perpetuals (equity & commodity perps)",
+            "signal_type": "overnight_derivatives",
+            "equity_bias": equity_bias,
+            "avg_equity_change_pct": round(avg_equity_chg, 2),
+        }
+
+        if equity_movers:
+            result["equity_movers"] = equity_movers
+        if commodities:
+            result["commodity_movers"] = _compact(commodities, top_n=5)
+        if pre_ipo:
+            result["pre_ipo_movers"] = _compact(pre_ipo, top_n=5)
+
+        # BTC as macro risk barometer
+        if btc:
+            result["btc_proxy"] = {
+                "price": btc["mark_price"],
+                "chg_24h": btc["price_change_24h_pct"],
+                "funding": btc["funding_rate_annualized"],
+                "oi_usd": btc["open_interest_usd"],
+            }
+        if eth:
+            result["eth_proxy"] = {
+                "price": eth["mark_price"],
+                "chg_24h": eth["price_change_24h_pct"],
+                "funding": eth["funding_rate_annualized"],
+            }
+
+        return result

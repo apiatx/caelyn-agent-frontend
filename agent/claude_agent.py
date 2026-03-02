@@ -782,6 +782,19 @@ class TradingAgent:
             claude_data["_reasoning_brief"] = reasoning_brief
             print(f"[AGENT] Reasoning brief injected into Claude context")
 
+        # Inject overnight derivatives signal when US markets are closed (weekends + after-hours).
+        # Hyperliquid equity/commodity perps trade 24/7 — useful risk-on/risk-off proxy for next open.
+        # Skip for crypto category (already has full Hyperliquid data) and followups.
+        if category not in ("crypto", "followup", "csv_analysis") and isinstance(claude_data, dict):
+            try:
+                overnight = await self.data.get_overnight_derivatives_signal()
+                if overnight and overnight.get("equity_movers"):
+                    claude_data["overnight_derivatives_signal"] = overnight
+                    print(f"[OVERNIGHT] Injected Hyperliquid overnight signal: bias={overnight.get('equity_bias')}, "
+                          f"{len(overnight.get('equity_movers', []))} equity movers")
+            except Exception as e:
+                print(f"[OVERNIGHT] Failed to inject overnight signal: {e}")
+
         # If CSV direct data, inject spreadsheet context into the prompt
         if isinstance(claude_data, dict) and claude_data.get("csv_direct"):
             csv_rows = claude_data.get("rows", [])

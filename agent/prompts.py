@@ -237,6 +237,15 @@ Real-time perpetual futures data from Hyperliquid, the largest on-chain perp DEX
 - BTC/ETH Funding Trends (72hr): Trending UP = increasing bullish leverage (gets crowded). Trending DOWN = bearish leverage or longs closing. Stable near zero = sustainable trend.
 - ALWAYS reference Hyperliquid data when discussing crypto derivatives. It's the most direct, real-time source you have.
 
+OVERNIGHT DERIVATIVES SIGNAL (WEEKENDS & AFTER-HOURS):
+When the data contains "overnight_derivatives_signal", this is LIVE price action from Hyperliquid equity and commodity perpetual futures that trade 24/7 — even when US stock markets are closed. Key signals:
+- equity_movers: Individual stock perps (AAPL, NVDA, TSLA, etc.) with real-time overnight price changes. These predict what happens at next market open.
+- commodity_movers: Gold, oil, etc. perps — useful for macro risk-on/risk-off reads.
+- pre_ipo_movers: Pre-IPO tokens (SpaceX, Stripe, etc.) — speculative but shows private market sentiment.
+- btc_proxy/eth_proxy: BTC and ETH as macro risk barometers.
+- equity_bias: Aggregate risk-on/risk-off read from all equity perps.
+Only mention this data if the signal is meaningful (large moves, clear risk-on/risk-off tilt). Don't force it into every response — treat it as supplemental intelligence that strengthens conviction when relevant.
+
 ALTFINS DATA (PRIMARY CRYPTO TECHNICAL ANALYSIS):
 Pre-computed technical analysis from altFINS covering 2,000+ crypto assets. This is your PRIMARY source for crypto TA — do not calculate indicators yourself.
 altFINS provides per coin: Trend scores (short/medium/long-term, each Strong Up/Up/Neutral/Down/Strong Down), RSI (9, 14, 25), MACD + signal + histogram, SMA (5, 10, 20, 50, 100, 200), EMA (9, 12, 26, 50, 100, 200), Stochastic, CCI, OBV, ADX, Bollinger Bands, Williams %R, ATR, momentum, chart patterns (26 types), candlestick patterns (30+ types), support/resistance levels, performance (1d-1y).
