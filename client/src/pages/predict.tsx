@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, ExternalLink, Activity, BarChart3, RefreshCw, Users, DollarSign, MessageSquare, Send, Loader2, Sparkles, Calendar, ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
+import { TrendingUp, ExternalLink, Activity, BarChart3, RefreshCw, Users, DollarSign, MessageSquare, Send, Loader2, Sparkles, Calendar, ChevronLeft, ChevronRight, CalendarDays, X, Clock } from "lucide-react";
 import { openSecureLink } from "@/utils/security";
 import diceImage from "@assets/istockphoto-1252690598-612x612_1756665072306.jpg";
 
@@ -416,7 +416,7 @@ function MoversSection({ markets }: { markets: ParsedMarket[] }) {
   );
 }
 
-// ─── Earnings Calendar ────────────────────────────────────────────
+// ─── Earnings Calendar (Perplexity-style) ─────────────────────────
 
 function extractTicker(question: string): string | null {
   const match = question.match(/\(([A-Z]{1,5})\)/);
@@ -432,15 +432,80 @@ function extractCompanyName(question: string): string {
   }
   const ticker = extractTicker(question);
   if (ticker) return ticker;
-  return question.length > 30 ? question.slice(0, 27) + "..." : question;
+  return question.length > 40 ? question.slice(0, 37) + "..." : question;
 }
 
 function extractEPS(description: string): string | null {
-  // "consensus estimate of $X.XX" or "EPS estimate of $X.XX" or "$X.XX EPS"
-  const m = description.match(/(?:consensus|EPS|earnings)\s+(?:estimate|forecast)\s+of\s+\$?([\d.]+)/i)
-    || description.match(/\$?([\d.]+)\s+(?:EPS|per share)/i)
+  const m = description.match(/(?:consensus|EPS|earnings)\s+(?:estimate|forecast)\s+of\s+\$?([\-\d.]+)/i)
+    || description.match(/\$?([\-\d.]+)\s+(?:EPS|per share)/i)
     || description.match(/estimate\s+of\s+\$?([\-\d.]+)/i);
   return m ? `$${m[1]}` : null;
+}
+
+function extractQuarter(text: string): string | null {
+  const m = text.match(/\b(Q[1-4])\s*(?:FY|CY|)\s*['"]?(\d{4})/i)
+    || text.match(/\b(Q[1-4])\s+(\d{4})/i)
+    || text.match(/\b(Q[1-4])\b/i);
+  if (m) return m[2] ? `${m[1].toUpperCase()} ${m[2]}` : m[1].toUpperCase();
+  return null;
+}
+
+function extractTime(description: string): string | null {
+  if (/before\s+(the\s+)?market\s+open/i.test(description) || /pre[\s-]?market/i.test(description) || /BMO/i.test(description))
+    return "Pre-Market";
+  if (/after\s+(the\s+)?market\s+close/i.test(description) || /post[\s-]?market/i.test(description) || /AMC/i.test(description))
+    return "After Hours";
+  const timeMatch = description.match(/(\d{1,2}:\d{2}\s*(?:AM|PM|am|pm))/);
+  if (timeMatch) return timeMatch[1];
+  return null;
+}
+
+function extractExchange(description: string): string | null {
+  const m = description.match(/\b(NASDAQ|NYSE|AMEX|TSX|LSE)\b/i);
+  return m ? m[1].toUpperCase() : null;
+}
+
+function buildBullets(entry: EarningsEntry): string[] {
+  const bullets: string[] = [];
+  const desc = entry.market.description || "";
+
+  // EPS consensus
+  if (entry.eps) {
+    const q = entry.quarter || "quarterly";
+    bullets.push(`Wall Street consensus EPS estimate of ${entry.eps} for ${q} earnings`);
+  }
+
+  // Beat probability
+  const beatLabel = entry.beatPct >= 70 ? "strongly favored to beat" : entry.beatPct >= 55 ? "favored to beat" : entry.beatPct <= 30 ? "expected to miss" : entry.beatPct <= 45 ? "at risk of missing" : "near a coin flip on beating";
+  bullets.push(`Polymarket crowd: ${beatLabel} estimates (${entry.beatPct}% chance of beat)`);
+
+  // Try to extract revenue or other context from description
+  const revMatch = desc.match(/revenue\s+(?:estimate|forecast|consensus)?\s*(?:of\s+)?\$?([\d.]+\s*(?:B|M|billion|million))/i);
+  if (revMatch) {
+    bullets.push(`Revenue estimate: $${revMatch[1]}`);
+  }
+
+  // Extract any sentence about the company from description that's informative
+  const sentences = desc.split(/[.!]\s+/).filter((s) => s.length > 20 && s.length < 200);
+  for (const s of sentences) {
+    if (bullets.length >= 3) break;
+    const lower = s.toLowerCase();
+    // Skip boilerplate resolution sentences
+    if (lower.includes("resolve to") || lower.includes("this market")) continue;
+    if (lower.includes("reports") || lower.includes("announces") || lower.includes("expects") || lower.includes("growth") || lower.includes("decline") || lower.includes("revenue") || lower.includes("sector")) {
+      const cleaned = s.trim().replace(/^\W+/, "");
+      if (cleaned && !bullets.some((b) => b.includes(cleaned.slice(0, 30)))) {
+        bullets.push(cleaned.endsWith(".") ? cleaned : cleaned + ".");
+      }
+    }
+  }
+
+  // Ensure at least 2 bullets
+  if (bullets.length < 2) {
+    bullets.push(`Trading volume: ${formatVolume(entry.market.totalVolume)} total on Polymarket`);
+  }
+
+  return bullets.slice(0, 3);
 }
 
 // Ticker → deterministic background color
@@ -462,11 +527,10 @@ function tickerColor(ticker: string): string {
   return TICKER_COLORS[Math.abs(h) % TICKER_COLORS.length];
 }
 
-function getMonday(d: Date): Date {
+function getSunday(d: Date): Date {
   const dt = new Date(d);
   const day = dt.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  dt.setDate(dt.getDate() + diff);
+  dt.setDate(dt.getDate() - day);
   dt.setHours(0, 0, 0, 0);
   return dt;
 }
@@ -481,191 +545,432 @@ function dateKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+const MONTH_NAMES_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri"];
+const DAY_NAMES_FULL = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 interface EarningsEntry {
   market: ParsedMarket;
   ticker: string;
   company: string;
   eps: string | null;
+  quarter: string | null;
+  time: string | null;
+  exchange: string | null;
   beatPct: number;
 }
 
+function buildEntry(m: ParsedMarket): EarningsEntry {
+  const combined = `${m.question} ${m.description}`;
+  return {
+    market: m,
+    ticker: extractTicker(m.question) || "???",
+    company: extractCompanyName(m.question),
+    eps: extractEPS(m.description),
+    quarter: extractQuarter(combined),
+    time: extractTime(m.description),
+    exchange: extractExchange(m.description),
+    beatPct: Math.round(m.yesPrice * 100),
+  };
+}
+
+// ─── Earnings Detail Modal ────────────────────────────────────────
+
+function EarningsModal({ entry, onClose }: { entry: EarningsEntry; onClose: () => void }) {
+  const bullets = buildBullets(entry);
+  const beatPct = entry.beatPct;
+  const missPct = 100 - beatPct;
+
+  // Close on Escape
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+
+      {/* Modal */}
+      <div
+        className="relative w-full max-w-lg bg-[#0c0c0f] border border-white/10 rounded-2xl shadow-2xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="px-6 pt-5 pb-4 border-b border-white/[0.06]">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${tickerColor(entry.ticker)} flex items-center justify-center`}>
+                <span className="text-sm font-bold text-white">{entry.ticker.slice(0, 2)}</span>
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white">{entry.company}</h3>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="text-xs font-mono text-white/50">{entry.ticker}</span>
+                  {entry.exchange && (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/[0.06] text-white/30">{entry.exchange}</span>
+                  )}
+                  {entry.quarter && (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400/70">{entry.quarter}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/5 transition-colors">
+              <X className="w-4 h-4 text-white/40" />
+            </button>
+          </div>
+        </div>
+
+        {/* Beat / Miss probability */}
+        <div className="px-6 py-4 border-b border-white/[0.06]">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] font-semibold text-white/50 uppercase tracking-wider">Chance of Beat</span>
+            <span className={`text-lg font-bold ${beatPct >= 50 ? "text-emerald-400" : "text-red-400"}`}>
+              {beatPct}%
+            </span>
+          </div>
+          <div className="h-3 rounded-full bg-white/5 overflow-hidden flex">
+            <div
+              className="h-full rounded-l-full transition-all duration-500"
+              style={{ width: `${beatPct}%`, background: "linear-gradient(90deg, #22c55e, #4ade80)" }}
+            />
+            <div
+              className="h-full rounded-r-full transition-all duration-500"
+              style={{ width: `${missPct}%`, background: "linear-gradient(90deg, #ef4444, #f87171)" }}
+            />
+          </div>
+          <div className="flex justify-between mt-1.5 text-[10px] font-semibold">
+            <span className="text-emerald-400/70">Beat {beatPct}%</span>
+            <span className="text-red-400/70">Miss {missPct}%</span>
+          </div>
+        </div>
+
+        {/* Stats grid */}
+        <div className="px-6 py-4 border-b border-white/[0.06]">
+          <div className="grid grid-cols-3 gap-3">
+            {entry.eps && (
+              <div className="bg-white/[0.03] rounded-lg p-3 text-center">
+                <p className="text-[9px] text-white/30 uppercase tracking-wider mb-1">EPS Est.</p>
+                <p className="text-sm font-bold text-white">{entry.eps}</p>
+              </div>
+            )}
+            <div className="bg-white/[0.03] rounded-lg p-3 text-center">
+              <p className="text-[9px] text-white/30 uppercase tracking-wider mb-1">24h Volume</p>
+              <p className="text-sm font-bold text-white">{formatVolume(entry.market.volume24hr)}</p>
+            </div>
+            <div className="bg-white/[0.03] rounded-lg p-3 text-center">
+              <p className="text-[9px] text-white/30 uppercase tracking-wider mb-1">Total Volume</p>
+              <p className="text-sm font-bold text-white">{formatVolume(entry.market.totalVolume)}</p>
+            </div>
+            {entry.time && (
+              <div className="bg-white/[0.03] rounded-lg p-3 text-center">
+                <p className="text-[9px] text-white/30 uppercase tracking-wider mb-1">Report Time</p>
+                <p className="text-sm font-bold text-white">{entry.time}</p>
+              </div>
+            )}
+            <div className="bg-white/[0.03] rounded-lg p-3 text-center">
+              <p className="text-[9px] text-white/30 uppercase tracking-wider mb-1">Liquidity</p>
+              <p className="text-sm font-bold text-white">{formatVolume(entry.market.liquidity)}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Analysis bullets */}
+        <div className="px-6 py-4 border-b border-white/[0.06]">
+          <h4 className="text-[11px] font-semibold text-white/50 uppercase tracking-wider mb-3">Key Details</h4>
+          <ul className="space-y-2">
+            {bullets.map((b, i) => (
+              <li key={i} className="flex items-start gap-2">
+                <span className="w-1 h-1 rounded-full bg-blue-400 mt-1.5 flex-shrink-0" />
+                <span className="text-xs text-white/70 leading-relaxed">{b}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 flex items-center justify-between">
+          <span className="text-[9px] text-white/20">Data from Polymarket prediction markets</span>
+          <a
+            href={`https://polymarket.com/event/${entry.market.eventSlug}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-blue-400 hover:text-blue-300 transition-colors"
+          >
+            Trade on Polymarket <ExternalLink className="w-3 h-3" />
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Earnings Calendar Component ──────────────────────────────────
+
 function EarningsCalendar({ markets }: { markets: ParsedMarket[] }) {
-  const [weekStart, setWeekStart] = useState<Date>(() => getMonday(new Date()));
+  const [weekStart, setWeekStart] = useState<Date>(() => getSunday(new Date()));
+  const [selectedDayKey, setSelectedDayKey] = useState<string>(dateKey(new Date()));
+  const [modalEntry, setModalEntry] = useState<EarningsEntry | null>(null);
 
   // Build date → entries map
   const dateMap = new Map<string, EarningsEntry[]>();
-  for (const m of markets) {
-    if (!m.endDate) continue;
-    const d = new Date(m.endDate);
-    if (isNaN(d.getTime())) continue;
-    const key = dateKey(d);
-    const entry: EarningsEntry = {
-      market: m,
-      ticker: extractTicker(m.question) || "???",
-      company: extractCompanyName(m.question),
-      eps: extractEPS(m.description),
-      beatPct: Math.round(m.yesPrice * 100),
-    };
-    if (!dateMap.has(key)) dateMap.set(key, []);
-    dateMap.get(key)!.push(entry);
-  }
-
-  // Also collect markets with no endDate into an "undated" bucket
   const undated: EarningsEntry[] = [];
   for (const m of markets) {
-    if (m.endDate) continue;
-    undated.push({
-      market: m,
-      ticker: extractTicker(m.question) || "???",
-      company: extractCompanyName(m.question),
-      eps: extractEPS(m.description),
-      beatPct: Math.round(m.yesPrice * 100),
-    });
+    const entry = buildEntry(m);
+    if (m.endDate) {
+      const d = new Date(m.endDate);
+      if (!isNaN(d.getTime())) {
+        const key = dateKey(d);
+        if (!dateMap.has(key)) dateMap.set(key, []);
+        dateMap.get(key)!.push(entry);
+        continue;
+      }
+    }
+    undated.push(entry);
   }
-
-  // Sort entries within each day by beat% descending
   for (const entries of dateMap.values()) {
     entries.sort((a, b) => b.beatPct - a.beatPct);
   }
 
-  const weekDays = Array.from({ length: 5 }, (_, i) => addDays(weekStart, i));
+  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   const weekMonth = MONTH_NAMES[weekStart.getMonth()];
   const weekYear = weekStart.getFullYear();
 
-  const prevWeek = () => setWeekStart((ws) => addDays(ws, -7));
-  const nextWeek = () => setWeekStart((ws) => addDays(ws, 7));
-  const goToday = () => setWeekStart(getMonday(new Date()));
+  const prevWeek = () => {
+    const newStart = addDays(weekStart, -7);
+    setWeekStart(newStart);
+    setSelectedDayKey(dateKey(newStart));
+  };
+  const nextWeek = () => {
+    const newStart = addDays(weekStart, 7);
+    setWeekStart(newStart);
+    setSelectedDayKey(dateKey(newStart));
+  };
+  const goToday = () => {
+    setWeekStart(getSunday(new Date()));
+    setSelectedDayKey(dateKey(new Date()));
+  };
 
+  const selectedEntries = dateMap.get(selectedDayKey) || [];
+  const selectedDate = weekDays.find((d) => dateKey(d) === selectedDayKey) || new Date();
   const totalThisWeek = weekDays.reduce((sum, d) => sum + (dateMap.get(dateKey(d))?.length || 0), 0);
+
+  // Combine selected + undated for display when viewing undated
+  const showUndated = selectedDayKey === "undated";
+  const displayEntries = showUndated ? undated : selectedEntries;
 
   return (
     <div>
       {/* Calendar header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-3">
           <CalendarDays className="w-5 h-5 text-yellow-400" />
           <div>
-            <h3 className="text-sm font-bold text-white/90">
-              {weekMonth} {weekYear}
-              <span className="text-white/30 font-normal ml-2">/ Earnings Calendar</span>
+            <h3 className="text-base font-bold text-white">
+              Earnings Calendar
             </h3>
+            <p className="text-[10px] text-white/30 mt-0.5">
+              {weekMonth} {weekYear} &middot; {totalThisWeek} earnings call{totalThisWeek !== 1 ? "s" : ""} this week
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-1">
           <button
             onClick={goToday}
-            className="px-2.5 py-1 rounded-md text-[10px] font-semibold text-white/50 border border-white/[0.08] hover:bg-white/5 hover:text-white/70 transition-all mr-1"
+            className="px-3 py-1.5 rounded-lg text-[11px] font-semibold text-white/50 border border-white/[0.08] hover:bg-white/5 hover:text-white/70 transition-all mr-1"
           >
             Today
           </button>
-          <button
-            onClick={prevWeek}
-            className="p-1.5 rounded-md border border-white/[0.08] hover:bg-white/5 transition-all"
-          >
-            <ChevronLeft className="w-3.5 h-3.5 text-white/50" />
+          <button onClick={prevWeek} className="p-1.5 rounded-lg border border-white/[0.08] hover:bg-white/5 transition-all">
+            <ChevronLeft className="w-4 h-4 text-white/50" />
           </button>
-          <button
-            onClick={nextWeek}
-            className="p-1.5 rounded-md border border-white/[0.08] hover:bg-white/5 transition-all"
-          >
-            <ChevronRight className="w-3.5 h-3.5 text-white/50" />
+          <button onClick={nextWeek} className="p-1.5 rounded-lg border border-white/[0.08] hover:bg-white/5 transition-all">
+            <ChevronRight className="w-4 h-4 text-white/50" />
           </button>
         </div>
       </div>
 
-      {/* Week column grid */}
-      <div className="grid grid-cols-5 gap-2">
+      {/* Week day selector row */}
+      <div className="grid grid-cols-7 gap-1.5 mb-5">
         {weekDays.map((day, i) => {
           const key = dateKey(day);
           const entries = dateMap.get(key) || [];
           const isToday = dateKey(new Date()) === key;
+          const isSelected = selectedDayKey === key;
+          const callCount = entries.length;
           return (
-            <div
+            <button
               key={key}
-              className={`rounded-xl border min-h-[200px] ${
-                isToday
-                  ? "bg-blue-500/[0.04] border-blue-500/20"
-                  : "bg-white/[0.015] border-white/[0.06]"
+              onClick={() => setSelectedDayKey(key)}
+              className={`rounded-xl p-2.5 text-center transition-all border ${
+                isSelected
+                  ? "bg-blue-500/10 border-blue-500/30 ring-1 ring-blue-500/20"
+                  : isToday
+                  ? "bg-white/[0.03] border-blue-500/15 hover:bg-white/[0.05]"
+                  : "bg-white/[0.015] border-white/[0.05] hover:bg-white/[0.04] hover:border-white/[0.08]"
               }`}
             >
-              {/* Day header */}
-              <div className={`px-3 py-2 border-b ${isToday ? "border-blue-500/20" : "border-white/[0.06]"}`}>
-                <div className="flex items-center justify-between">
-                  <span className={`text-[11px] font-semibold ${isToday ? "text-blue-400" : "text-white/50"}`}>
-                    {DAY_NAMES[i]} {day.getDate()}
-                  </span>
-                  {entries.length > 0 && (
-                    <span className="text-[9px] text-white/25 font-mono">{entries.length}</span>
+              <p className={`text-[10px] font-semibold mb-0.5 ${isSelected ? "text-blue-400" : "text-white/40"}`}>
+                {DAY_NAMES_FULL[i]}
+              </p>
+              <p className={`text-xs font-bold ${isSelected ? "text-white" : isToday ? "text-blue-400" : "text-white/70"}`}>
+                {MONTH_NAMES_SHORT[day.getMonth()]} {day.getDate()}
+              </p>
+              <p className={`text-[9px] mt-1 ${callCount > 0 ? (isSelected ? "text-blue-400/70" : "text-white/40") : "text-white/20"}`}>
+                {callCount > 0 ? `${callCount} Call${callCount > 1 ? "s" : ""}` : "No Calls"}
+              </p>
+              {/* Mini avatars */}
+              {callCount > 0 && (
+                <div className="flex justify-center gap-0.5 mt-1.5">
+                  {entries.slice(0, 4).map((e) => (
+                    <div key={e.market.marketId} className={`w-4 h-4 rounded-sm bg-gradient-to-br ${tickerColor(e.ticker)} flex items-center justify-center`}>
+                      <span className="text-[6px] font-bold text-white">{e.ticker.slice(0, 1)}</span>
+                    </div>
+                  ))}
+                  {callCount > 4 && (
+                    <div className="w-4 h-4 rounded-sm bg-white/[0.06] flex items-center justify-center">
+                      <span className="text-[6px] font-bold text-white/40">+{callCount - 4}</span>
+                    </div>
                   )}
                 </div>
-              </div>
-
-              {/* Entries */}
-              <div className="p-1.5 space-y-1">
-                {entries.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-6 text-white/15">
-                    <Calendar className="w-4 h-4 mb-1" />
-                    <span className="text-[9px]">No earnings</span>
-                  </div>
-                ) : (
-                  entries.map((e) => {
-                    const isHigh = e.beatPct >= 60;
-                    const isLow = e.beatPct <= 40;
-                    return (
-                      <a
-                        key={e.market.marketId}
-                        href={`https://polymarket.com/event/${e.market.eventSlug}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/[0.05] transition-all cursor-pointer group"
-                      >
-                        {/* Ticker avatar */}
-                        <div className={`w-6 h-6 rounded-md bg-gradient-to-br ${tickerColor(e.ticker)} flex items-center justify-center flex-shrink-0`}>
-                          <span className="text-[8px] font-bold text-white">{e.ticker.slice(0, 2)}</span>
-                        </div>
-
-                        {/* Company + EPS */}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[10px] font-bold text-white/80 truncate group-hover:text-white transition-colors leading-tight">
-                            {e.ticker}
-                          </p>
-                          {e.eps && (
-                            <p className="text-[8px] text-white/30 font-mono leading-tight">{e.eps} EPS</p>
-                          )}
-                        </div>
-
-                        {/* Beat % */}
-                        <div className="flex items-center gap-1 flex-shrink-0">
-                          <span
-                            className={`w-1.5 h-1.5 rounded-full ${
-                              isHigh ? "bg-emerald-400" : isLow ? "bg-red-400" : "bg-yellow-400"
-                            }`}
-                          />
-                          <span className={`text-[10px] font-bold ${
-                            isHigh ? "text-emerald-400" : isLow ? "text-red-400" : "text-yellow-400"
-                          }`}>
-                            {e.beatPct}%
-                          </span>
-                          <span className="text-[8px] text-white/25">beats</span>
-                        </div>
-                      </a>
-                    );
-                  })
-                )}
-              </div>
-            </div>
+              )}
+            </button>
           );
         })}
       </div>
 
-      {/* Summary + undated markets */}
-      <div className="mt-3 flex items-center justify-between">
-        <span className="text-[10px] text-white/25">
-          {totalThisWeek} earnings this week
-          {undated.length > 0 && ` · ${undated.length} with dates TBD`}
+      {/* Selected day header */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <h4 className="text-sm font-bold text-white/90">
+            {showUndated ? "Date TBD" : (
+              <>
+                {DAY_NAMES_FULL[selectedDate.getDay()]}, {MONTH_NAMES[selectedDate.getMonth()]} {selectedDate.getDate()}
+              </>
+            )}
+          </h4>
+          <span className="text-[10px] text-white/30">
+            {displayEntries.length} earning{displayEntries.length !== 1 ? "s" : ""} call{displayEntries.length !== 1 ? "s" : ""}
+          </span>
+        </div>
+        {undated.length > 0 && !showUndated && (
+          <button
+            onClick={() => setSelectedDayKey("undated")}
+            className="text-[10px] text-white/30 hover:text-white/50 transition-colors"
+          >
+            {undated.length} with dates TBD
+          </button>
+        )}
+      </div>
+
+      {/* Company list for selected day */}
+      {displayEntries.length === 0 ? (
+        <div className="text-center py-10 border border-white/[0.04] rounded-xl bg-white/[0.01]">
+          <Calendar className="w-6 h-6 text-white/10 mx-auto mb-2" />
+          <p className="text-sm text-white/25">No earnings calls scheduled</p>
+          <p className="text-[10px] text-white/15 mt-1">Try another day or navigate to a different week</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {displayEntries.map((e) => {
+            const isHigh = e.beatPct >= 60;
+            const isLow = e.beatPct <= 40;
+            const bullets = buildBullets(e);
+            return (
+              <div
+                key={e.market.marketId}
+                className="flex items-start gap-4 p-4 rounded-xl border border-white/[0.06] bg-white/[0.015] hover:bg-white/[0.03] hover:border-white/[0.1] transition-all group"
+              >
+                {/* Avatar */}
+                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${tickerColor(e.ticker)} flex items-center justify-center flex-shrink-0 mt-0.5`}>
+                  <span className="text-xs font-bold text-white">{e.ticker.slice(0, 2)}</span>
+                </div>
+
+                {/* Main content */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      {/* Company name — clickable for modal */}
+                      <button
+                        onClick={() => setModalEntry(e)}
+                        className="text-sm font-bold text-white hover:text-blue-400 transition-colors text-left"
+                      >
+                        {e.company}
+                      </button>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-[11px] font-mono text-white/40">{e.ticker}</span>
+                        {e.quarter && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-white/[0.04] text-white/30">{e.quarter}</span>
+                        )}
+                        {e.time && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-white/[0.04] text-white/30 flex items-center gap-0.5">
+                            <Clock className="w-2.5 h-2.5" /> {e.time}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Beat % badge */}
+                    <div className="flex-shrink-0 text-right">
+                      <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg ${
+                        isHigh ? "bg-emerald-500/10 border border-emerald-500/20" : isLow ? "bg-red-500/10 border border-red-500/20" : "bg-yellow-500/10 border border-yellow-500/20"
+                      }`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${
+                          isHigh ? "bg-emerald-400" : isLow ? "bg-red-400" : "bg-yellow-400"
+                        }`} />
+                        <span className={`text-xs font-bold ${
+                          isHigh ? "text-emerald-400" : isLow ? "text-red-400" : "text-yellow-400"
+                        }`}>
+                          {e.beatPct}%
+                        </span>
+                        <span className={`text-[9px] ${
+                          isHigh ? "text-emerald-400/60" : isLow ? "text-red-400/60" : "text-yellow-400/60"
+                        }`}>chance of beat</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Bullet points */}
+                  <ul className="mt-2.5 space-y-1">
+                    {bullets.map((b, i) => (
+                      <li key={i} className="flex items-start gap-1.5">
+                        <span className="w-1 h-1 rounded-full bg-white/20 mt-1.5 flex-shrink-0" />
+                        <span className="text-[11px] text-white/50 leading-relaxed">{b}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  {/* Quick stats row */}
+                  <div className="flex items-center gap-4 mt-2.5">
+                    {e.eps && (
+                      <span className="text-[10px] text-white/30">
+                        <span className="text-white/50 font-semibold">EPS Est:</span> {e.eps}
+                      </span>
+                    )}
+                    <span className="text-[10px] text-white/30">
+                      <span className="text-white/50 font-semibold">Vol:</span> {formatVolume(e.market.totalVolume)}
+                    </span>
+                    <button
+                      onClick={() => setModalEntry(e)}
+                      className="text-[10px] text-blue-400/60 hover:text-blue-400 transition-colors ml-auto"
+                    >
+                      More details
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Footer */}
+      <div className="mt-4 flex items-center justify-between">
+        <span className="text-[10px] text-white/20">
+          Odds powered by Polymarket prediction markets
         </span>
         <a
           href="https://polymarket.com/earnings"
@@ -677,45 +982,8 @@ function EarningsCalendar({ markets }: { markets: ParsedMarket[] }) {
         </a>
       </div>
 
-      {/* Undated earnings shown below calendar if present */}
-      {undated.length > 0 && (
-        <div className="mt-4">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">Date TBD</span>
-            <span className="text-[9px] text-white/20">{undated.length} markets</span>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
-            {undated.slice(0, 10).map((e) => {
-              const isHigh = e.beatPct >= 60;
-              const isLow = e.beatPct <= 40;
-              return (
-                <a
-                  key={e.market.marketId}
-                  href={`https://polymarket.com/event/${e.market.eventSlug}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.05] transition-all cursor-pointer"
-                >
-                  <div className={`w-6 h-6 rounded-md bg-gradient-to-br ${tickerColor(e.ticker)} flex items-center justify-center flex-shrink-0`}>
-                    <span className="text-[8px] font-bold text-white">{e.ticker.slice(0, 2)}</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[10px] font-bold text-white/70 truncate">{e.ticker}</p>
-                  </div>
-                  <div className="flex items-center gap-1 flex-shrink-0">
-                    <span className={`w-1.5 h-1.5 rounded-full ${
-                      isHigh ? "bg-emerald-400" : isLow ? "bg-red-400" : "bg-yellow-400"
-                    }`} />
-                    <span className={`text-[10px] font-bold ${
-                      isHigh ? "text-emerald-400" : isLow ? "text-red-400" : "text-yellow-400"
-                    }`}>{e.beatPct}%</span>
-                  </div>
-                </a>
-              );
-            })}
-          </div>
-        </div>
-      )}
+      {/* Modal */}
+      {modalEntry && <EarningsModal entry={modalEntry} onClose={() => setModalEntry(null)} />}
     </div>
   );
 }
