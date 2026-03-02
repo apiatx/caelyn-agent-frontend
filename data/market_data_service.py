@@ -21,6 +21,7 @@ from data.coingecko_provider import CoinGeckoProvider
 from data.reddit_provider import RedditSentimentProvider
 from data.altfins_provider import AltFINSProvider
 from data.xai_sentiment_provider import XAISentimentProvider
+from data.polymarket_provider import PolymarketProvider
 from data.cache import cache, MACRO_TTL, SECTOR_ETF_TTL, CANDLE_TTL, REGIME_CANDLE_TTL
 from api_budget import daily_budget
 
@@ -379,6 +380,8 @@ class MarketDataService:
             print("[INIT] Web search provider SKIPPED (no BRAVE_API_KEY or TAVILY_API_KEY)")
         # Keep self.tavily as alias for backward compat in callers
         self.tavily = self.web_search
+        self.polymarket = PolymarketProvider()
+        print("[INIT] Polymarket prediction markets provider initialized")
 
     async def get_candles(self,
                           symbol: str,

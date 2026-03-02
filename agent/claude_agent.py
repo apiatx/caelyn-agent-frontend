@@ -2691,53 +2691,29 @@ class TradingAgent:
             return json.dumps({"display_type": "chat", "message": f"Error reaching AI: {str(e)}"})
 
     async def _gather_polymarket_context(self, query_info: dict) -> dict:
-        """Fetch Polymarket prediction markets data + macro context."""
-        import httpx
+        """Fetch Polymarket prediction markets data + macro context via the dedicated provider."""
         context = {}
 
-        # 1. Fetch Polymarket events
+        # 1. Fetch Polymarket events via the provider (cached, normalised)
         try:
-            async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
-                resp = await client.get(
-                    "https://gamma-api.polymarket.com/events",
-                    params={"limit": "50", "active": "true", "closed": "false",
-                            "order": "volume24hr", "ascending": "false"},
-                    headers={"User-Agent": "Mozilla/5.0 (compatible; TradingAgent/1.0)",
-                             "Accept": "application/json"},
+            poly_ctx = await asyncio.wait_for(
+                self.data.polymarket.get_macro_prediction_context(),
+                timeout=20.0,
+            )
+            if poly_ctx:
+                context.update(poly_ctx)
+                total = len(poly_ctx.get("top_events", []))
+                print(f"[POLYMARKET_GATHER] Fetched {total} active events via PolymarketProvider")
+
+            # If the user query mentions specific topics, also do a targeted search
+            original = query_info.get("original_prompt", "")
+            if original:
+                search_results = await asyncio.wait_for(
+                    self.data.polymarket.search_events(original, limit=10),
+                    timeout=10.0,
                 )
-                resp.raise_for_status()
-                events = resp.json()
-                if isinstance(events, list):
-                    # Slim down to essential fields for token efficiency
-                    slim_events = []
-                    for ev in events[:40]:
-                        slim_ev = {
-                            "title": ev.get("title", ""),
-                            "description": (ev.get("description") or "")[:200],
-                            "volume24hr": ev.get("volume24hr", 0),
-                            "volume": ev.get("volume", 0),
-                            "liquidity": ev.get("liquidity", 0),
-                            "tags": [t.get("label", "") for t in (ev.get("tags") or [])],
-                        }
-                        markets = []
-                        for m in (ev.get("markets") or []):
-                            if not m.get("active") or m.get("closed"):
-                                continue
-                            try:
-                                prices = json.loads(m.get("outcomePrices", "[]"))
-                            except Exception:
-                                prices = []
-                            markets.append({
-                                "question": m.get("question", ev.get("title", "")),
-                                "yes_price": round(float(prices[0]), 3) if prices else 0,
-                                "no_price": round(float(prices[1]), 3) if len(prices) > 1 else 0,
-                                "volume24hr": m.get("volume24hr", 0),
-                            })
-                        if markets:
-                            slim_ev["markets"] = markets
-                            slim_events.append(slim_ev)
-                    context["polymarket_events"] = slim_events
-                    print(f"[POLYMARKET_GATHER] Fetched {len(slim_events)} active events with markets")
+                if search_results:
+                    context["query_matched_events"] = search_results
         except Exception as e:
             print(f"[POLYMARKET_GATHER] Failed to fetch Polymarket data: {e}")
             context["polymarket_events"] = []
