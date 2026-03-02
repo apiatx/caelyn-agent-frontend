@@ -717,14 +717,26 @@ REASONING_BRIEF_PROMPT = """You are generating a REASONING BRIEF for a trading a
 Based on the user's query and the orchestration plan, generate a brief that tells the analyst:
 1. What the user ACTUALLY wants (not just the literal words — the underlying trading intent)
 2. What to prioritize in the analysis (e.g., "focus on momentum confirmation" or "user wants value plays, weight fundamentals heavily")
-3. Any specific lens to apply (e.g., "user mentioned swing trades — think in 2-5 day timeframes" or "user wants contrarian plays — highlight things the crowd is wrong about")
+3. Which specific analytical LENS to apply (see framework options below)
 4. What NOT to waste time on (e.g., "skip macro overview, user just wants setups" or "don't recommend mega-caps, user wants small caps")
+
+ANALYTICAL LENS OPTIONS (pick the most appropriate for the query):
+- "bottleneck-thesis": Find the $200M-$2B company that a $2T mega-trend cannot function without. Weight supply-chain chokepoint positioning over fundamentals. Best for: sector scans, thematic queries, "what's the play in AI/energy/EVs?"
+- "ebitda-inflection": Hunt companies approaching first profitable quarter. Cash burn → cash generation is the single highest-conviction catalyst because algorithmic models reclassify the stock and institutional capital unlocks. Best for: small-cap scans, investment ideas, "what's about to turn around?"
+- "asymmetric-three-legged-stool": Require all three legs: undervalued (low P/S vs peers) + rapid revenue ramp + hot sector tailwind. If any leg is missing, the stool falls over. Best for: best trades, stock scans, "find me the best setup right now."
+- "weinstein-stage-transition": Focus on late Stage 1 → early Stage 2 breakouts. Months of base-building + rising volume + sector tailwind = highest-probability entry. Get AHEAD of breakouts, not chase them. Best for: technical scans, breakout queries, sector rotation.
+- "momentum-first": Catch the repricing before fundamentals look perfect. Social velocity + volume expansion + catalyst = entry signal. Small-caps reprice BEFORE earnings improve. Best for: trending, social momentum, "what's hot?"
+- "value-contrarian": Weight fundamentals and insider buying over social sentiment. Stocks the crowd hates but numbers support. Best for: macro outlook, "what's oversold?", portfolio review.
+- "catalyst-driven": Focus entirely on time-bound, verifiable events (earnings, FDA, contracts, regulatory). Ignore noise. Best for: event-driven queries, "what's the next catalyst?"
+- "technical-breakout": Pure TA lens — pattern quality, volume confirmation, risk/reward math. Best for: trade setups, entries/exits, "give me chart setups."
+- "power-law-candidate": Full SQGLP filter: Small (<$2B) + Quality (ROCE >6%) + Growth (revenue accelerating) + Longevity (moat) + Price (<3x sales). 84% of 350%+ winners had mcap <$2B at entry. Best for: investment ideas, multibagger hunting, long-term positioning.
+- "serial-acquirer-arbitrage": Companies buying assets at 5x EBITDA that the market values at 15x on their platform. M&A as growth engine. Best for: investment ideas, "compounders", "roll-up plays."
 
 Output ONLY a JSON object:
 {
     "user_intent_summary": "1 sentence: what the user actually wants",
     "analysis_focus": ["focus area 1", "focus area 2", "focus area 3"],
-    "lens": "The specific analytical lens to apply (e.g., 'momentum-first', 'value-contrarian', 'catalyst-driven', 'technical-breakout')",
+    "lens": "One of the specific lenses above, or a combination like 'bottleneck-thesis + momentum-first'",
     "avoid": ["thing to skip 1", "thing to skip 2"],
     "timeframe_bias": "intraday | swing | position | long_term | none",
     "conviction_threshold": "high_only | medium_plus | include_speculative",

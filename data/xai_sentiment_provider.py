@@ -67,7 +67,14 @@ Analyze the sentiment and return ONLY a JSON object (no markdown, no backticks):
 Be direct and opinionated. If sentiment is strongly one-directional, say so.
 If posts are mostly noise with no real signal, flag that.
 Focus on posts from accounts with real followers, not bots.
-Flag any sarcasm you detect."""
+Flag any sarcasm you detect.
+
+HIGH-VALUE SIGNAL PRIORITIES (look for these specifically):
+- Supply-chain bottleneck positioning: Is this company discussed as critical infrastructure for a larger trend (e.g., power infra for AI, rare earth processing for EVs, optical interconnects for data centers)?
+- EBITDA inflection chatter: Any discussion about approaching profitability, first profitable quarter, or cash flow turning positive? This is the highest-conviction catalyst for small/mid-caps.
+- Institutional accumulation signals: Posts referencing 13F filings, dark pool activity, unusual block trades, or smart money positioning.
+- Earnings drift: Post-earnings momentum discussion — did the company beat and is the stock still re-rating higher?
+- Stage transition: Is there technical analysis discussion about the stock breaking out of a long base (months of consolidation followed by volume surge)?"""
 
         return await self._call_grok_with_x_search(prompt)
 
@@ -163,7 +170,14 @@ Return ONLY a JSON object (no markdown, no backticks):
 
 Return 10-15 tickers sorted by social velocity (fastest-growing mentions first).
 Flag coordinated pump signals. Include genuine micro-cap momentum if the catalyst is real.
-Always include BTC in trending_tickers even if its velocity is lower."""
+Always include BTC in trending_tickers even if its velocity is lower.
+
+ALPHA SIGNAL PRIORITIES (weight these higher when found):
+- FUNDING RATE DIVERGENCES: Discussion about tokens with price rising but funding negative (shorts getting squeezed — more upside likely) or price falling but funding positive (longs getting liquidated — more downside). These are the highest-conviction derivatives signals.
+- INFRASTRUCTURE BOTTLENECK TOKENS: Tokens tied to critical crypto infrastructure (L1 scaling, cross-chain bridges, oracle networks, decentralized compute) where the token IS the tollbooth for a larger ecosystem. Same logic as equity bottleneck plays.
+- NARRATIVE ROTATION TIMING: When X discussion shifts rapidly from one narrative to another (e.g., meme coins → AI tokens → DePIN), the FIRST tokens mentioned in the new narrative have the highest asymmetry. Flag early narrative rotation.
+- SMART MONEY ON-CHAIN: Any discussion of whale wallets accumulating, VC unlocks, or protocol treasury movements. On-chain evidence > social hype.
+- OI + VOLUME ACCELERATION: Tokens where X discusses surging open interest alongside rising price — this is new money entering, not just spot buying."""
 
             return await self._call_grok_with_x_search(crypto_prompt)
 
@@ -210,7 +224,14 @@ Be ruthless about quality — skip bot-driven noise and focus on real human disc
 If you see signs of coordinated pumping, FLAG IT.
 Don't be risk-averse about small caps — if they're hot and the thesis is real, include them.
 If a low-cap stock has genuine momentum and a real catalyst, say so directly.
-Also flag any tickers seeing surging mainstream retail interest beyond just financial social media — Google search trends, mainstream news coverage, TikTok/YouTube buzz. If a ticker is crossing over from financial Twitter into mainstream public awareness, that's a significant signal worth highlighting. Also note any references to Substack newsletters, research reports, or long-form analysis being widely shared on X — these often contain deeper thesis work that precedes major moves."""
+Also flag any tickers seeing surging mainstream retail interest beyond just financial social media — Google search trends, mainstream news coverage, TikTok/YouTube buzz. If a ticker is crossing over from financial Twitter into mainstream public awareness, that's a significant signal worth highlighting. Also note any references to Substack newsletters, research reports, or long-form analysis being widely shared on X — these often contain deeper thesis work that precedes major moves.
+
+ALPHA SIGNAL PRIORITIES (weight these higher when found):
+- BOTTLENECK COMPANIES: Small/mid-caps ($200M-$5B) discussed as critical supply-chain chokepoints for mega-trends (AI power infrastructure, rare earth processing, optical interconnects, advanced packaging, grid upgrades, battery-grade lithium). The $200M company a $2T trend cannot function without = highest asymmetry.
+- EBITDA INFLECTION: Companies approaching first profitable quarter or cash-flow positive transition. This is the single highest-conviction catalyst — when a company flips from cash burn to cash generation, algorithmic models reclassify it and institutional capital unlocks. Flag ANY discussion of approaching profitability.
+- LATE STAGE 1 ACCUMULATION: Stocks discussed as building long flat bases with rising volume — the pre-breakout setup. Months of consolidation + increasing institutional buying + sector tailwind = highest probability breakout.
+- ASYMMETRIC SETUPS: Tickers where X discusses the "three-legged stool" — undervalued (low P/S vs peers) + rapid revenue ramp + hot sector. All three present = maximum signal.
+- SERIAL ACQUIRERS: Companies buying assets at 5x EBITDA and revalued by market at 15x — the M&A arbitrage play. If X is discussing an active acquisition strategy, flag it."""
 
         return await self._call_grok_with_x_search(prompt)
 
@@ -327,6 +348,13 @@ For each ticker with social activity, report:
 6. SECTOR NARRATIVE: If this ticker is part of a broader narrative being discussed on X (AI power infrastructure, photonics/optics, mining cycle, etc.), name that narrative.
 
 For tickers with ZERO or truly negligible X presence, simply list them at the end.
+
+7. ALPHA SIGNALS (look for these specifically — they are the highest-value signals):
+   - BOTTLENECK POSITIONING: Is this company discussed as a critical supply-chain chokepoint for a mega-trend? (e.g., the only domestic rare earth processor, the sole provider of optical interconnects for AI data centers, the power infrastructure company that AI buildout depends on)
+   - EBITDA INFLECTION: Any discussion of approaching profitability, first profitable quarter, or cash flow turning positive? This is the #1 catalyst for small/mid-caps — when a company flips from cash burn to cash generation, institutional models reclassify it.
+   - INSTITUTIONAL ACCUMULATION: 13F filing discussion, dark pool activity, unusual block trades, smart money moves.
+   - ASYMMETRIC SETUP: Discussion combining undervalued (low P/S vs peers) + revenue acceleration + sector tailwind = three-legged stool with maximum asymmetry.
+   - STAGE TRANSITION: Technical analysis threads about stocks breaking out of long bases with volume confirmation.
 
 Be thorough, direct, and opinionated. Provide specific evidence from what you find on X. Do not be generic — reference actual post themes, engagement levels, and catalysts.
 
@@ -467,6 +495,14 @@ For EACH item you MUST include:
 Also return: sector_focus (3-6), top_traders_view (3-6 summaries, no usernames), market_direction_call (1-3 sentences), your_opinion (2-4 sentences).
 IMPORTANT BIAS: Favor tickers where social velocity is ACCELERATING (new catalysts, breaking news, fresh momentum) over tickers that are ALWAYS discussed (mega-caps with no new catalyst). The user wants to discover what's NEWLY hot, not what's always popular. If you can only find 1 genuine large-cap catalyst, return only 1 large cap. Zero large caps is acceptable if nothing meaningful is happening in mega-cap land.
 If insufficient high-quality data, return fewer items and set data_quality_flag="low".
+
+ALPHA SIGNAL PRIORITIES (weight these higher across ALL asset classes):
+- BOTTLENECK COMPANIES: The $200M-$2B company that a $2T mega-trend literally cannot function without (AI power infrastructure, advanced packaging, optical interconnects, rare earth processing, grid upgrades). These have the highest asymmetry — find X discussion identifying supply-chain chokepoints.
+- EBITDA INFLECTION: Any company approaching first profitable quarter or cash-flow positive transition. When a company flips from cash burn to cash generation, algorithmic models reclassify it and institutional capital unlocks. Flag this catalyst specifically in catalyst_hint.
+- ASYMMETRIC THREE-LEGGED STOOL: Undervalued (low P/S vs peers) + rapid revenue ramp + hot sector tailwind. All three present = maximum setup. If X is discussing this combination for any ticker, it goes to the top.
+- LATE STAGE 1 ACCUMULATION (equities): Stocks building long flat bases (months of consolidation) with rising volume and institutional buying signals. This is the pre-breakout setup with highest probability.
+- COMMODITIES AS MACRO SIGNALS: Rising commodity prices (uranium, copper, rare earths) signal sector rotation into producers/miners. Map commodity moves to their equity beneficiaries.
+- SERIAL ACQUIRER M&A ARBITRAGE: Companies buying assets at 5x EBITDA that the market values at 15x on their platform. If X discusses an active acquisition strategy, flag it.
 
 Return ONLY a JSON object matching this exact schema:
 {
