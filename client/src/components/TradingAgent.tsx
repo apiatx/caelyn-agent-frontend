@@ -1835,10 +1835,12 @@ export default function TradingAgent() {
           const changeStr = sec.change_today != null ? (typeof sec.change_today === 'number' ? `${sec.change_today >= 0 ? '+' : ''}${sec.change_today}%` : sec.change_today) : null;
           const isPos = changeStr ? parseFloat(changeStr) >= 0 : false;
           const vsSpy = sec.vs_spy != null ? (typeof sec.vs_spy === 'number' ? `${sec.vs_spy >= 0 ? '+' : ''}${sec.vs_spy}%` : sec.vs_spy) : null;
-          const isExp = expandedTicker === `sec-${i}`;
           const borderCol = stageBarColor(sec.trend);
 
-          return <CardWrap key={i} onClick={() => setExpandedTicker(isExp ? null : `sec-${i}`)} expanded={isExp} borderColor={borderCol}>
+          return <CardWrap key={i} onClick={() => {
+            setSignalPopup({ ticker: sec.etf, signal: sec.analysis || sec.signal || '', scannerName: sec.sector || '', color: borderCol, icon: '' });
+            setSignalChartInterval('D');
+          }} expanded={false} borderColor={borderCol}>
             <div style={{ padding:14 }}>
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
                 <div style={{ display:'flex', alignItems:'center', gap:8 }}>
@@ -1859,19 +1861,6 @@ export default function TradingAgent() {
 
               {sec.rsi != null && sec.rsi > 0 && <div style={{ marginTop:8 }}><StatRow label="RSI" value={String(sec.rsi)} color={sec.rsi > 70 ? C.red : sec.rsi < 30 ? C.green : C.text} /></div>}
             </div>
-
-            {isExp && <div style={{ borderTop:`1px solid ${C.border}`, padding:14 }}>
-              <TradingViewMini ticker={sec.etf} />
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginTop:10 }}>
-                {sec.stage2_pct != null && <IndicatorPill label="Stage 2 %" value={`${sec.stage2_pct}%`} />}
-                {sec.stage4_pct != null && <IndicatorPill label="Stage 4 %" value={`${sec.stage4_pct}%`} />}
-                {sec.rsi != null && sec.rsi > 0 && <IndicatorPill label="RSI (14)" value={String(sec.rsi)} />}
-                {sec.price && <IndicatorPill label="Price" value={`$${sec.price}`} />}
-                {sec.year_high && <IndicatorPill label="52w High" value={`$${sec.year_high}`} />}
-                {sec.year_low && <IndicatorPill label="52w Low" value={`$${sec.year_low}`} />}
-              </div>
-              {sec.analysis && <div style={{ marginTop:10, padding:12, background:`${C.blue}06`, border:`1px solid ${C.blue}15`, borderRadius:8, color:C.text, fontSize:12, fontFamily:sansFont, lineHeight:1.6 }}>{sec.analysis}</div>}
-            </div>}
           </CardWrap>;
         })}
       </div>
