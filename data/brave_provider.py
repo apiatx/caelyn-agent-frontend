@@ -274,34 +274,47 @@ class BraveProvider:
         if cached is not None:
             return cached
 
-        # Build a targeted query using company name for disambiguation
-        name_part = f'"{company_name}" ' if company_name else ""
+        # Build a highly specific query — company name in quotes to force exact match
+        short_name = ""
+        if company_name:
+            # Extract the core company name (e.g. "Asana" from "Asana, Inc.")
+            short_name = company_name.split(",")[0].split(" Inc")[0].split(" Corp")[0].split(" Ltd")[0].split(" Group")[0].strip()
+        if short_name:
+            query = f'"{short_name}" {ticker} earnings'
+        else:
+            query = f"{ticker} stock earnings report"
+
         data = await self._search(
-            query=f"{name_part}{ticker} stock earnings news analyst outlook",
-            max_results=10,
+            query=query,
+            max_results=8,
             topic="news",
         )
 
-        # Filter: only keep articles that mention the ticker or company name
+        # Strict filter: article must be primarily ABOUT this company
         ticker_lower = ticker.lower()
-        name_lower = company_name.lower() if company_name else ""
-        # Also build short name variants (e.g. "MongoDB" from "MongoDB, Inc.")
-        name_words = [w.lower().strip(",.") for w in (company_name or "").split()
-                      if len(w) > 2 and w.lower() not in ("inc", "inc.", "corp", "corp.", "ltd", "ltd.", "co", "co.", "the", "group", "plc")]
+        short_name_lower = short_name.lower() if short_name else ""
 
         articles = []
         for item in data.get("results", []):
             title = item.get("title", "")
             content = item.get("content", "")
-            text = (title + " " + content).lower()
+            title_lower = title.lower()
+            content_lower = content.lower()
 
-            # Check relevance: must mention ticker symbol or company name
-            is_relevant = (
-                ticker_lower in text
-                or (name_lower and name_lower in text)
-                or any(w in text for w in name_words if len(w) >= 4)
+            # Require ticker or company name in the TITLE for strong relevance
+            in_title = (
+                ticker_lower in title_lower
+                or (short_name_lower and short_name_lower in title_lower)
             )
-            if not is_relevant:
+
+            # Or require multiple mentions in body (article is primarily about this company)
+            body_mentions = 0
+            if ticker_lower in content_lower:
+                body_mentions += content_lower.count(ticker_lower)
+            if short_name_lower and short_name_lower in content_lower:
+                body_mentions += content_lower.count(short_name_lower)
+
+            if not in_title and body_mentions < 2:
                 continue
 
             articles.append({
