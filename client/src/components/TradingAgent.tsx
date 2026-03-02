@@ -380,7 +380,7 @@ export default function TradingAgent() {
         setConversationId(data.conversation_id);
       }
 
-      let responseText = data.analysis?.trim() || data.structured?.message?.trim() || data.message?.trim() || 'Response received.';
+      let responseText = data.analysis?.trim() || data.structured?.message?.trim() || data.message?.trim() || '';
       const assistantMsg: PanelMessage = { role: 'assistant', content: responseText, parsed: data, timestamp: Date.now() };
       setPanels(prev => prev.map(p => p.id === panelId ? { ...p, thread: [...(p.thread || []), assistantMsg] } : p));
     } catch (err: any) {
@@ -2119,7 +2119,8 @@ export default function TradingAgent() {
   function renderAssistantMessage(msg: {role: string, content: string, parsed?: any}) {
     const s = msg.parsed?.structured || (msg.parsed?.display_type ? msg.parsed : {});
     const displayType = s.display_type;
-    const analysisText = msg.parsed?.analysis || msg.parsed?.structured?.message || msg.parsed?.message || msg.content;
+    const rawAnalysis = msg.parsed?.analysis || msg.parsed?.structured?.message || msg.parsed?.message || msg.content;
+    const analysisText = (rawAnalysis && /^Response received\.?\s*(See panel data for details\.?)?$/i.test(rawAnalysis.trim())) ? '' : rawAnalysis;
     return <div>
       {displayType === 'trades' && renderTrades(s)}
       {displayType === 'investments' && renderInvestments(s)}
