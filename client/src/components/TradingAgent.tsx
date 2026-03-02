@@ -1806,30 +1806,95 @@ export default function TradingAgent() {
 
   function renderSectorRotation(s: any) {
     const sectors = s.sectors || [];
+    const stageColor = (sig?: string) => {
+      if (!sig) return C.dim;
+      const l = (sig || '').toLowerCase();
+      if (l.includes('strong') || l.includes('stage 2 advancing') || l.includes('stage 2 —')) return C.green;
+      if (l.includes('emerging') || l.includes('early stage 2')) return '#4ade80';
+      if (l.includes('watch') || l.includes('stage 1') || l.includes('basing')) return C.gold;
+      if (l.includes('caution') || l.includes('stage 3') || l.includes('topping')) return '#f97316';
+      if (l.includes('avoid') || l.includes('stage 4') || l.includes('declining')) return C.red;
+      return C.dim;
+    };
+    const stageBarColor = (trend?: string) => {
+      if (!trend) return C.dim;
+      const l = trend.toLowerCase();
+      if (l.includes('stage 2')) return C.green;
+      if (l.includes('stage 1')) return C.gold;
+      if (l.includes('stage 3')) return '#f97316';
+      if (l.includes('stage 4')) return C.red;
+      return C.dim;
+    };
     return <div>
       {s.summary && <div style={{ padding:'14px 18px', background:`${C.blue}08`, border:`1px solid ${C.blue}15`, borderRadius:10, marginBottom:10, color:C.text, fontSize:12, fontFamily:sansFont, lineHeight:1.6 }}>{s.summary}</div>}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(200px, 1fr))', gap:10, marginBottom:10 }}>
+
+      {s.rotation_signal && <div style={{ padding:'12px 18px', background:`${C.gold}08`, border:`1px solid ${C.gold}15`, borderRadius:10, marginBottom:10, color:C.text, fontSize:12, fontFamily:sansFont, lineHeight:1.6 }}><span style={{ color:C.gold, fontWeight:700 }}>Rotation Signal: </span>{s.rotation_signal}</div>}
+
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(240px, 1fr))', gap:10, marginBottom:10 }}>
         {sectors.map((sec: any, i: number) => {
-          const isPos = parseFloat(sec.change_today) >= 0;
-          return <div key={i} style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:10, padding:14 }}>
-            <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
-              <div>
-                <span style={{ color:C.blue, fontWeight:700, fontSize:13, fontFamily:font }}>{sec.etf}</span>
-                <span style={{ color:C.dim, fontSize:11, marginLeft:8 }}>{sec.sector}</span>
+          const changeStr = sec.change_today != null ? (typeof sec.change_today === 'number' ? `${sec.change_today >= 0 ? '+' : ''}${sec.change_today}%` : sec.change_today) : null;
+          const isPos = changeStr ? parseFloat(changeStr) >= 0 : false;
+          const vsSpy = sec.vs_spy != null ? (typeof sec.vs_spy === 'number' ? `${sec.vs_spy >= 0 ? '+' : ''}${sec.vs_spy}%` : sec.vs_spy) : null;
+          const isExp = expandedTicker === `sec-${i}`;
+          const borderCol = stageBarColor(sec.trend);
+
+          return <CardWrap key={i} onClick={() => setExpandedTicker(isExp ? null : `sec-${i}`)} expanded={isExp} borderColor={borderCol}>
+            <div style={{ padding:14 }}>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                  <span style={{ color:C.blue, fontWeight:700, fontSize:15, fontFamily:font }}>{sec.etf}</span>
+                  <span style={{ color:C.dim, fontSize:11, fontFamily:sansFont }}>{sec.sector}</span>
+                </div>
+                <Badge color={convColor(sec.conviction)}>{sec.conviction}</Badge>
               </div>
-              <Badge color={convColor(sec.conviction)}>{sec.conviction}</Badge>
+
+              <div style={{ display:'flex', alignItems:'baseline', gap:12, marginBottom:8 }}>
+                {changeStr && <div style={{ color:isPos ? C.green : C.red, fontSize:20, fontWeight:700, fontFamily:font }}>{changeStr}</div>}
+                {vsSpy && <div style={{ color: parseFloat(vsSpy) >= 0 ? C.green : C.red, fontSize:12, fontFamily:font, opacity:0.8 }}>vs SPY {vsSpy}</div>}
+              </div>
+
+              {sec.trend && <div style={{ color:stageBarColor(sec.trend), fontSize:12, fontWeight:600, fontFamily:sansFont, marginBottom:4 }}>{sec.trend}</div>}
+
+              <div style={{ marginTop:6, color:stageColor(sec.signal), fontSize:11, fontWeight:600, fontFamily:sansFont, padding:'4px 8px', background:`${stageColor(sec.signal)}10`, borderRadius:4, display:'inline-block' }}>{sec.signal}</div>
+
+              {sec.rsi != null && sec.rsi > 0 && <div style={{ marginTop:8 }}><StatRow label="RSI" value={String(sec.rsi)} color={sec.rsi > 70 ? C.red : sec.rsi < 30 ? C.green : C.text} /></div>}
             </div>
-            <div style={{ color:isPos ? C.green : C.red, fontSize:18, fontWeight:700, fontFamily:font, marginBottom:6 }}>{sec.change_today}</div>
-            <StatRow label="RSI" value={String(sec.rsi)} />
-            <StatRow label="Trend" value={sec.trend} />
-            <StatRow label="vs SPY" value={sec.vs_spy} />
-            <div style={{ marginTop:8, color:trendColor(sec.signal), fontSize:11, fontWeight:600, fontFamily:sansFont }}>{sec.signal}</div>
-          </div>;
+
+            {isExp && <div style={{ borderTop:`1px solid ${C.border}`, padding:14 }}>
+              <TradingViewMini ticker={sec.etf} />
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginTop:10 }}>
+                {sec.stage2_pct != null && <IndicatorPill label="Stage 2 %" value={`${sec.stage2_pct}%`} />}
+                {sec.stage4_pct != null && <IndicatorPill label="Stage 4 %" value={`${sec.stage4_pct}%`} />}
+                {sec.rsi != null && sec.rsi > 0 && <IndicatorPill label="RSI (14)" value={String(sec.rsi)} />}
+                {sec.price && <IndicatorPill label="Price" value={`$${sec.price}`} />}
+                {sec.year_high && <IndicatorPill label="52w High" value={`$${sec.year_high}`} />}
+                {sec.year_low && <IndicatorPill label="52w Low" value={`$${sec.year_low}`} />}
+              </div>
+              {sec.analysis && <div style={{ marginTop:10, padding:12, background:`${C.blue}06`, border:`1px solid ${C.blue}15`, borderRadius:8, color:C.text, fontSize:12, fontFamily:sansFont, lineHeight:1.6 }}>{sec.analysis}</div>}
+            </div>}
+          </CardWrap>;
         })}
       </div>
-      {s.rotation_signal && <div style={{ padding:'14px 18px', background:`${C.gold}08`, border:`1px solid ${C.gold}15`, borderRadius:10, marginBottom:10, color:C.text, fontSize:12, fontFamily:sansFont, lineHeight:1.6 }}><span style={{ color:C.gold, fontWeight:700 }}>Rotation Signal: </span>{s.rotation_signal}</div>}
-      {s.macro_context && <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(140px, 1fr))', gap:8 }}>
+
+      {s.rotation_analysis && <div style={{ padding:'14px 18px', background:C.card, border:`1px solid ${C.border}`, borderRadius:10, marginBottom:10, color:C.text, fontSize:12, fontFamily:sansFont, lineHeight:1.8 }}><div style={{ color:C.bright, fontWeight:700, fontSize:11, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.04em', marginBottom:8 }}>Rotation Analysis</div>{s.rotation_analysis}</div>}
+
+      {s.action_items && s.action_items.length > 0 && s.action_items[0] && <div style={{ padding:'14px 18px', background:`${C.green}06`, border:`1px solid ${C.green}15`, borderRadius:10, marginBottom:10 }}>
+        <div style={{ color:C.green, fontWeight:700, fontSize:11, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.04em', marginBottom:8 }}>Action Items</div>
+        {s.action_items.filter((a: string) => a && a.trim()).map((item: string, i: number) => <div key={i} style={{ color:C.text, fontSize:12, fontFamily:sansFont, lineHeight:1.6, paddingLeft:12, borderLeft:`2px solid ${C.green}30`, marginBottom:6 }}>{item}</div>)}
+      </div>}
+
+      {s.macro_context && <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(140px, 1fr))', gap:8, marginBottom:10 }}>
         {Object.entries(s.macro_context).map(([k, v]) => <IndicatorPill key={k} label={k.replace(/_/g, ' ')} value={v as string} />)}
+      </div>}
+
+      {s.portfolio_bias && <div style={{ padding:'14px 18px', background:C.card, border:`1px solid ${C.border}`, borderRadius:10 }}>
+        <div style={{ color:C.bright, fontWeight:700, fontSize:11, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.04em', marginBottom:8 }}>Portfolio Bias</div>
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
+          {s.portfolio_bias.risk_regime && <StatRow label="Risk Regime" value={s.portfolio_bias.risk_regime} />}
+          {s.portfolio_bias.asset_class_bias && <StatRow label="Asset Bias" value={s.portfolio_bias.asset_class_bias} />}
+          {s.portfolio_bias.cash_guidance && <StatRow label="Cash" value={s.portfolio_bias.cash_guidance} />}
+          {s.portfolio_bias.hedge_considerations && <StatRow label="Hedging" value={s.portfolio_bias.hedge_considerations} />}
+        </div>
       </div>}
     </div>;
   }

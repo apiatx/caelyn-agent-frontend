@@ -128,13 +128,16 @@ function MiniRenderer({ structured, analysis }: { structured: any, analysis: str
     return <div>
       {s.summary && <div style={{ padding:'8px 10px', background:`${C.blue}08`, border:`1px solid ${C.blue}15`, borderRadius:6, marginBottom:6, color:C.text, fontSize:10, fontFamily:sansFont, lineHeight:1.5 }}>{s.summary}</div>}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(110px, 1fr))', gap:4 }}>
-        {sectors.slice(0, 8).map((sec: any, i: number) => (
-          <div key={i} style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:6, padding:8 }}>
+        {sectors.slice(0, 11).map((sec: any, i: number) => {
+          const changeStr = sec.change_today != null ? (typeof sec.change_today === 'number' ? `${sec.change_today >= 0 ? '+' : ''}${sec.change_today}%` : sec.change_today) : '—';
+          const isPos = parseFloat(changeStr) >= 0;
+          return <div key={i} style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:6, padding:8 }}>
             <div style={{ color:C.blue, fontWeight:700, fontSize:10, fontFamily:font }}>{sec.etf}</div>
-            <div style={{ color:parseFloat(sec.change_today) >= 0 ? C.green : C.red, fontSize:14, fontWeight:700, fontFamily:font }}>{sec.change_today}</div>
+            <div style={{ color: isPos ? C.green : C.red, fontSize:14, fontWeight:700, fontFamily:font }}>{changeStr}</div>
             <div style={{ color:C.dim, fontSize:8, fontFamily:font }}>{sec.sector}</div>
-          </div>
-        ))}
+            {sec.trend && <div style={{ color: sec.trend.includes('Stage 2') ? C.green : sec.trend.includes('Stage 4') ? C.red : C.gold, fontSize:7, fontFamily:font, marginTop:2 }}>{sec.trend}</div>}
+          </div>;
+        })}
       </div>
     </div>;
   }
