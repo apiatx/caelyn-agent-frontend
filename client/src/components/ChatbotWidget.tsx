@@ -12,248 +12,62 @@ const C = {
 const font = "'JetBrains Mono', 'SF Mono', 'Fira Code', monospace";
 const sansFont = "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
 
-function convColor(c?: string) { return c === 'High' ? C.green : c === 'Medium' ? C.gold : C.red; }
-function changeColor(s?: string) { return (parseFloat(s || '0') >= 0) ? C.green : C.red; }
-function trendColor(s?: string) { if (!s) return C.dim; if (s.includes('↑') || s.toLowerCase().includes('bullish') || s.toLowerCase().includes('above')) return C.green; if (s.includes('↓') || s.toLowerCase().includes('bearish') || s.toLowerCase().includes('below')) return C.red; return C.text; }
+const CRYPTO_TICKERS = new Set(['BTC', 'ETH', 'SOL', 'BNB', 'XRP', 'ADA', 'AVAX', 'DOT', 'MATIC', 'LINK', 'DOGE', 'SHIB', 'UNI', 'AAVE', 'LTC', 'NEAR', 'FTM', 'ATOM', 'APT', 'SUI', 'ARB', 'OP', 'INJ', 'TIA', 'SEI', 'JUP', 'WIF', 'PEPE', 'BONK', 'RENDER', 'FET', 'TAO', 'ONDO', 'PENDLE', 'RUNE', 'STX', 'MKR', 'CRV', 'SNX', 'COMP', 'IMX', 'GALA', 'AXS', 'SAND', 'MANA', 'FIL', 'ICP', 'HBAR', 'VET', 'ALGO', 'EGLD', 'MINA', 'KAVA', 'ROSE', 'ZEC', 'EOS', 'XLM', 'TRX', 'TON', 'WLD', 'PYTH', 'JTO', 'STRK', 'BLUR', 'ENA', 'W', 'ETHFI', 'DYM', 'ALT', 'PIXEL', 'PORTAL', 'PAXG']);
 
-function formatAnalysis(text: string) {
+function getTVSymbol(ticker: string): string {
+  const t = ticker.toUpperCase();
+  if (CRYPTO_TICKERS.has(t)) return `BINANCE:${t}USDT`;
+  return t;
+}
+
+function ChatboxChart({ ticker }: { ticker: string }) {
+  const sym = getTVSymbol(ticker);
+  const [ivl, setIvl] = useState('D');
+  const intervals = [{ l: '1H', v: '60' }, { l: '4H', v: '240' }, { l: '1D', v: 'D' }, { l: '1W', v: 'W' }, { l: '1M', v: 'M' }];
+  return <div style={{ margin: '8px 0' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
+      <span style={{ color: C.blue, fontWeight: 700, fontSize: 11, fontFamily: font, marginRight: 4 }}>{ticker}</span>
+      {intervals.map(iv => <button key={iv.v} onClick={(e) => { e.stopPropagation(); setIvl(iv.v); }} style={{ padding: '1px 6px', fontSize: 8, fontWeight: 600, fontFamily: font, background: ivl === iv.v ? C.blue + '20' : 'transparent', color: ivl === iv.v ? C.blue : C.dim, border: `1px solid ${ivl === iv.v ? C.blue + '40' : C.border}`, borderRadius: 3, cursor: 'pointer' }}>{iv.l}</button>)}
+    </div>
+    <div style={{ borderRadius: 6, overflow: 'hidden', border: `1px solid ${C.border}` }}>
+      <iframe src={`https://s.tradingview.com/widgetembed/?symbol=${encodeURIComponent(sym)}&interval=${ivl}&theme=dark&style=1&locale=en&hide_top_toolbar=1&hide_side_toolbar=1&allow_symbol_change=0&save_image=0&width=100%25&height=180`} style={{ width: '100%', height: 180, border: 'none', display: 'block' }} title={`${sym} chart`} />
+    </div>
+  </div>;
+}
+
+function formatChatMarkdown(text: string) {
   if (!text) return '';
-  return text.replace(/^---+$/gm, '').replace(/^# (.*?)$/gm, `<div style="color:${C.bright};font-weight:800;font-size:15px;margin:12px 0 6px;font-family:${sansFont}">$1</div>`).replace(/^## (.*?)$/gm, `<div style="color:${C.bright};font-weight:700;font-size:14px;margin:10px 0 5px;font-family:${sansFont}">$1</div>`).replace(/^### (.*?)$/gm, `<div style="color:${C.blue};font-weight:700;font-size:12px;margin:8px 0 4px;font-family:${sansFont}">$1</div>`).replace(/\*\*(.*?)\*\*/g, `<span style="color:${C.bright};font-weight:700">$1</span>`).replace(/\n/g, '<br/>');
+  return text
+    .replace(/^> (.*?)$/gm, `<div style="border-left:3px solid ${C.blue};padding:4px 10px;margin:6px 0;background:${C.blue}08;color:${C.text};font-size:11px;border-radius:0 4px 4px 0">$1</div>`)
+    .replace(/^---+$/gm, `<hr style="border:none;border-top:1px solid ${C.border};margin:8px 0"/>`)
+    .replace(/^### (.*?)$/gm, `<div style="color:${C.blue};font-weight:700;font-size:12px;margin:8px 0 4px;font-family:${sansFont}">$1</div>`)
+    .replace(/^## (.*?)$/gm, `<div style="color:${C.bright};font-weight:700;font-size:13px;margin:10px 0 5px;font-family:${sansFont}">$1</div>`)
+    .replace(/^# (.*?)$/gm, `<div style="color:${C.bright};font-weight:800;font-size:14px;margin:12px 0 6px;font-family:${sansFont}">$1</div>`)
+    .replace(/\*\*(.*?)\*\*/g, `<span style="color:${C.bright};font-weight:700">$1</span>`)
+    .replace(/\*(.*?)\*/g, `<em style="color:${C.text}">$1</em>`)
+    .replace(/^- (.*?)$/gm, `<div style="padding-left:12px;margin:2px 0"><span style="color:${C.dim};margin-right:6px">•</span>$1</div>`)
+    .replace(/\n\n/g, '<div style="height:8px"></div>')
+    .replace(/\n/g, '<br/>');
 }
 
-function Badge({ children, color }: { children: React.ReactNode, color: string }) {
-  return <span style={{ display:'inline-block', padding:'2px 7px', borderRadius:4, fontSize:9, fontWeight:700, fontFamily:font, color, background:`${color}12`, border:`1px solid ${color}25`, letterSpacing:'0.04em', textTransform:'uppercase' }}>{children}</span>;
-}
+function ChatboxMessage({ content, structured }: { content: string, structured?: any }) {
+  const isChatbox = structured?.display_type === 'chatbox';
+  const tickers: string[] = isChatbox ? (structured?.tickers || []) : [];
 
-function StatRow({ label, value, color }: { label: string, value?: string, color?: string }) {
-  if (!value) return null;
-  return <div style={{ display:'flex', justifyContent:'space-between', padding:'4px 0', borderBottom:`1px solid ${C.border}` }}>
-    <span style={{ color:C.dim, fontSize:10, fontFamily:font }}>{label}</span>
-    <span style={{ color: color || trendColor(value), fontSize:11, fontWeight:600, fontFamily:font }}>{value}</span>
-  </div>;
-}
-
-function IndicatorPill({ label, value, signal }: { label: string, value?: string|number, signal?: string }) {
-  return <div style={{ background:C.bg, borderRadius:6, padding:'7px 9px', border:`1px solid ${C.border}` }}>
-    <div style={{ color:C.dim, fontSize:8, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:2 }}>{label}</div>
-    <div style={{ color:C.bright, fontSize:13, fontWeight:700, fontFamily:font }}>{value ?? 'N/A'}</div>
-    {signal && <div style={{ color:trendColor(signal), fontSize:9, fontFamily:font, marginTop:1 }}>{signal}</div>}
-  </div>;
-}
-
-function CardWrap({ children, borderColor }: { children: React.ReactNode, borderColor?: string }) {
-  return <div style={{ background:C.card, border:`1px solid ${C.border}`, borderLeft:`3px solid ${borderColor || C.border}`, borderRadius:8, overflow:'hidden' }}>{children}</div>;
-}
-
-function MiniRenderer({ structured, analysis }: { structured: any, analysis: string }) {
-  const s = structured || {};
-  const dt = s.display_type;
-
-  if (dt === 'trades' || dt === 'trending' || dt === 'investments') {
-    const picks = s.picks || [];
-    return <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
-      {s.market_context && <div style={{ padding:'8px 10px', background:`${C.blue}08`, border:`1px solid ${C.blue}15`, borderRadius:6, color:C.text, fontSize:10, fontFamily:sansFont, lineHeight:1.5 }}>{s.market_context}</div>}
-      {picks.slice(0, 5).map((p: any, i: number) => (
-        <CardWrap key={i} borderColor={convColor(p.conviction)}>
-          <div style={{ padding:'8px 10px' }}>
-            <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:3 }}>
-              <span style={{ width:18, height:18, borderRadius:'50%', background:`${C.blue}15`, display:'inline-flex', alignItems:'center', justifyContent:'center', color:C.blue, fontSize:8, fontWeight:800, fontFamily:font, flexShrink:0 }}>{i+1}</span>
-              <span style={{ color:C.blue, fontWeight:800, fontSize:13, fontFamily:font }}>{p.ticker}</span>
-              <span style={{ color:C.dim, fontSize:10 }}>{p.company}</span>
-              <span style={{ color:changeColor(p.change), fontWeight:600, fontSize:11, fontFamily:font }}>{p.price} {p.change}</span>
-            </div>
-            <div style={{ color:C.text, fontSize:10, lineHeight:1.4, fontFamily:sansFont, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.thesis || p.investment_thesis}</div>
-          </div>
-          <div style={{ padding:'3px 10px', background:`${convColor(p.conviction)}08`, borderTop:`1px solid ${C.border}`, color:convColor(p.conviction), fontSize:8, fontWeight:700, fontFamily:font, textTransform:'uppercase' }}>{p.conviction} CONVICTION</div>
-        </CardWrap>
-      ))}
-    </div>;
-  }
-
-  if (dt === 'briefing') {
-    const pulse = s.market_pulse || {};
-    const numbers = s.key_numbers || {};
+  if (isChatbox || !structured) {
+    const displayText = isChatbox ? (structured?.message || content) : content;
     return <div>
-      <div style={{ padding:'10px 12px', background:C.card, border:`1px solid ${C.border}`, borderRadius:8, marginBottom:6 }}>
-        <div style={{ color:C.green, fontSize:14, fontWeight:800, fontFamily:sansFont, marginBottom:4 }}>{pulse.verdict}</div>
-        {pulse.summary && <div style={{ color:C.text, fontSize:10, lineHeight:1.5, fontFamily:sansFont }}>{pulse.summary}</div>}
-      </div>
-      {Object.keys(numbers).length > 0 && <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(100px, 1fr))', gap:4 }}>
-        {Object.entries(numbers).slice(0, 8).map(([key, val]: [string, any]) => (
-          <div key={key} style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:6, padding:'6px 8px' }}>
-            <div style={{ color:C.dim, fontSize:7, fontFamily:font, textTransform:'uppercase', marginBottom:2 }}>{key.replace(/_/g, ' ')}</div>
-            <div style={{ color:C.bright, fontSize:12, fontWeight:700, fontFamily:font }}>{val?.price || val?.value || 'N/A'}</div>
-          </div>
-        ))}
-      </div>}
-    </div>;
-  }
-
-  if (dt === 'crypto') {
-    const momentum = s.top_momentum || [];
-    const btcEth = s.btc_eth_summary || {};
-    return <div>
-      {s.market_overview && <div style={{ padding:'8px 10px', background:`${C.purple}08`, border:`1px solid ${C.purple}20`, borderRadius:6, marginBottom:6, color:C.text, fontSize:10, fontFamily:sansFont, lineHeight:1.5 }}>{s.market_overview}</div>}
-      {(btcEth.btc || btcEth.eth) && <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:6, marginBottom:6 }}>
-        {['btc', 'eth'].map(key => {
-          const d = btcEth[key];
-          if (!d) return null;
-          return <div key={key} style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:6, padding:8 }}>
-            <div style={{ display:'flex', justifyContent:'space-between', marginBottom:3 }}>
-              <span style={{ color:key === 'btc' ? '#f7931a' : '#627eea', fontWeight:800, fontSize:12, fontFamily:font }}>{key.toUpperCase()}</span>
-              <span style={{ color:C.bright, fontSize:13, fontWeight:700, fontFamily:font }}>{d.price}</span>
-            </div>
-            <div style={{ display:'flex', gap:6, fontSize:10, fontFamily:font }}>
-              <span style={{ color:changeColor(d.change_24h), fontWeight:600 }}>{d.change_24h}</span>
-              {d.dominance && <span style={{ color:C.dim }}>Dom: <span style={{ color:C.bright }}>{d.dominance}</span></span>}
-            </div>
-          </div>;
-        })}
-      </div>}
-      {momentum.slice(0, 3).map((c: any, i: number) => (
-        <CardWrap key={i} borderColor={convColor(c.conviction)}>
-          <div style={{ padding:'8px 10px', display:'flex', alignItems:'center', gap:6 }}>
-            <span style={{ color:C.purple, fontWeight:800, fontSize:12, fontFamily:font }}>{c.symbol}</span>
-            <span style={{ color:C.bright, fontSize:12, fontWeight:700, fontFamily:font }}>{c.price}</span>
-            <span style={{ color:changeColor(c.change_24h), fontWeight:600, fontSize:10, fontFamily:font }}>{c.change_24h}</span>
-            <Badge color={convColor(c.conviction)}>{c.conviction}</Badge>
-          </div>
-        </CardWrap>
-      ))}
-    </div>;
-  }
-
-  if (dt === 'sector_rotation') {
-    const sectors = s.sectors || [];
-    return <div>
-      {s.summary && <div style={{ padding:'8px 10px', background:`${C.blue}08`, border:`1px solid ${C.blue}15`, borderRadius:6, marginBottom:6, color:C.text, fontSize:10, fontFamily:sansFont, lineHeight:1.5 }}>{s.summary}</div>}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(110px, 1fr))', gap:4 }}>
-        {sectors.slice(0, 11).map((sec: any, i: number) => {
-          const changeStr = sec.change_today != null ? (typeof sec.change_today === 'number' ? `${sec.change_today >= 0 ? '+' : ''}${sec.change_today}%` : sec.change_today) : '—';
-          const isPos = parseFloat(changeStr) >= 0;
-          return <div key={i} style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:6, padding:8 }}>
-            <div style={{ color:C.blue, fontWeight:700, fontSize:10, fontFamily:font }}>{sec.etf}</div>
-            <div style={{ color: isPos ? C.green : C.red, fontSize:14, fontWeight:700, fontFamily:font }}>{changeStr}</div>
-            <div style={{ color:C.dim, fontSize:8, fontFamily:font }}>{sec.sector}</div>
-            {sec.trend && <div style={{ color: sec.trend.includes('Stage 2') ? C.green : sec.trend.includes('Stage 4') ? C.red : C.gold, fontSize:7, fontFamily:font, marginTop:2 }}>{sec.trend}</div>}
-          </div>;
-        })}
-      </div>
-    </div>;
-  }
-
-  if (dt === 'analysis') {
-    return <div>
-      <div style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 10px', background:C.card, border:`1px solid ${C.border}`, borderRadius:6, marginBottom:6 }}>
-        <span style={{ color:C.blue, fontWeight:800, fontSize:16, fontFamily:font }}>{s.ticker}</span>
-        <span style={{ color:C.dim, fontSize:10 }}>{s.company}</span>
-        <span style={{ color:changeColor(s.change), fontWeight:700, fontSize:12, fontFamily:font }}>{s.price} {s.change}</span>
-      </div>
-      {s.verdict && <div style={{ padding:'6px 10px', background:`${C.green}08`, borderRadius:6, marginBottom:6, color:C.bright, fontSize:11, fontWeight:600, fontFamily:sansFont }}>{s.verdict}</div>}
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:4 }}>
-        {s.ta && <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:6, padding:8 }}>
-          <div style={{ color:C.blue, fontSize:9, fontWeight:700, fontFamily:font, textTransform:'uppercase', marginBottom:4 }}>Technical</div>
-          {Object.entries(s.ta).slice(0, 4).map(([k,v]) => <StatRow key={k} label={k.replace(/_/g,' ')} value={v as string} />)}
-        </div>}
-        {s.fundamentals && <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:6, padding:8 }}>
-          <div style={{ color:C.green, fontSize:9, fontWeight:700, fontFamily:font, textTransform:'uppercase', marginBottom:4 }}>Fundamentals</div>
-          {Object.entries(s.fundamentals).slice(0, 4).map(([k,v]) => <StatRow key={k} label={k.replace(/_/g,' ')} value={v as string} />)}
-        </div>}
-      </div>
-    </div>;
-  }
-
-  if (dt === 'fundamentals' || dt === 'technicals') {
-    const picks = s.picks || [];
-    return <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
-      {picks.slice(0, 5).map((p: any, i: number) => (
-        <CardWrap key={i} borderColor={convColor(p.conviction)}>
-          <div style={{ padding:'8px 10px' }}>
-            <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:3 }}>
-              <span style={{ width:18, height:18, borderRadius:'50%', background:`${C.blue}15`, display:'inline-flex', alignItems:'center', justifyContent:'center', color:C.blue, fontSize:8, fontWeight:800, fontFamily:font, flexShrink:0 }}>{i+1}</span>
-              <span style={{ color:C.blue, fontWeight:800, fontSize:13, fontFamily:font }}>{p.ticker}</span>
-              <span style={{ color:C.dim, fontSize:10 }}>{p.company}</span>
-              <span style={{ color:changeColor(p.change), fontWeight:600, fontSize:11, fontFamily:font }}>{p.price} {p.change}</span>
-            </div>
-            {p.headline && <div style={{ color:C.gold, fontSize:10, fontWeight:600, fontFamily:sansFont }}>{p.headline}</div>}
-            {p.setup_name && <div style={{ color:C.gold, fontSize:10, fontWeight:600, fontFamily:sansFont }}>{p.setup_name}</div>}
-          </div>
-          <div style={{ padding:'3px 10px', background:`${convColor(p.conviction)}08`, borderTop:`1px solid ${C.border}`, color:convColor(p.conviction), fontSize:8, fontWeight:700, fontFamily:font, textTransform:'uppercase' }}>{p.conviction} CONVICTION</div>
-        </CardWrap>
-      ))}
-    </div>;
-  }
-
-  if (dt === 'earnings_catalyst') {
-    const upcoming = s.upcoming || [];
-    return <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
-      {upcoming.slice(0, 5).map((e: any, i: number) => (
-        <CardWrap key={i}>
-          <div style={{ padding:'8px 10px', display:'flex', alignItems:'center', gap:6 }}>
-            <span style={{ color:C.blue, fontWeight:800, fontSize:12, fontFamily:font }}>{e.ticker}</span>
-            <span style={{ color:C.dim, fontSize:10 }}>{e.company}</span>
-            <Badge color={C.gold}>{e.earnings_date} ({e.days_away}d)</Badge>
-          </div>
-        </CardWrap>
-      ))}
-    </div>;
-  }
-
-  if (dt === 'screener') {
-    const topPicks = s.top_picks || [];
-    return <div>
-      {s.summary && <div style={{ padding:'8px 10px', background:`${C.purple}08`, borderRadius:6, marginBottom:6, color:C.text, fontSize:10, fontFamily:sansFont, lineHeight:1.5 }}>{s.summary}</div>}
-      {topPicks.slice(0, 4).map((pick: any, i: number) => (
-        <div key={i} style={{ padding:'8px 10px', background:C.card, border:`1px solid ${C.purple}25`, borderRadius:6, borderLeft:`3px solid ${C.purple}`, marginBottom:4 }}>
-          <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:3 }}>
-            <span style={{ color:C.gold, fontWeight:800, fontSize:12, fontFamily:font }}>#{i+1}</span>
-            <span style={{ color:C.blue, fontWeight:800, fontSize:12, fontFamily:font }}>{pick.ticker}</span>
-            <span style={{ color:C.bright, fontSize:12, fontWeight:700, fontFamily:font }}>{pick.price}</span>
-            <span style={{ color:changeColor(pick.change), fontSize:10, fontWeight:600, fontFamily:font }}>{pick.change}</span>
-          </div>
-          <div style={{ color:C.text, fontSize:10, lineHeight:1.4, fontFamily:sansFont, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{pick.analysis || pick.thesis}</div>
+      <div style={{ color: C.text, fontSize: 11, lineHeight: 1.6, fontFamily: sansFont }} dangerouslySetInnerHTML={{ __html: formatChatMarkdown(displayText) }} />
+      {tickers.length > 0 && (
+        <div style={{ marginTop: 8 }}>
+          {tickers.slice(0, 3).map(t => <ChatboxChart key={t} ticker={t} />)}
         </div>
-      ))}
+      )}
     </div>;
   }
 
-  if (dt === 'portfolio') {
-    const holdings = s.holdings || [];
-    return <div>
-      {holdings.slice(0, 5).map((h: any, i: number) => (
-        <CardWrap key={i} borderColor={h.rating?.includes('Buy') ? C.green : h.rating?.includes('Sell') ? C.red : C.gold}>
-          <div style={{ padding:'8px 10px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-            <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-              <span style={{ color:C.blue, fontWeight:800, fontSize:12, fontFamily:font }}>{h.ticker}</span>
-              <span style={{ color:changeColor(h.change), fontSize:10, fontWeight:600, fontFamily:font }}>{h.price} {h.change}</span>
-            </div>
-            <Badge color={h.rating?.includes('Buy') ? C.green : h.rating?.includes('Sell') ? C.red : C.gold}>{h.rating}</Badge>
-          </div>
-        </CardWrap>
-      ))}
-    </div>;
-  }
-
-  if (dt === 'commodities') {
-    const commodities = s.commodities || [];
-    return <div>
-      {s.market_overview && <div style={{ padding:'8px 10px', background:`${C.gold}08`, borderRadius:6, marginBottom:6, color:C.text, fontSize:10, fontFamily:sansFont }}>{s.market_overview}</div>}
-      {commodities.slice(0, 4).map((c: any, i: number) => (
-        <CardWrap key={i} borderColor={convColor(c.conviction)}>
-          <div style={{ padding:'8px 10px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-            <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-              <span style={{ color:C.gold, fontWeight:800, fontSize:12, fontFamily:font }}>{c.name}</span>
-              <span style={{ color:C.bright, fontSize:12, fontWeight:700, fontFamily:font }}>{c.price}</span>
-              <span style={{ color:changeColor(c.change_today), fontWeight:600, fontSize:10, fontFamily:font }}>{c.change_today}</span>
-            </div>
-            <Badge color={convColor(c.conviction)}>{c.conviction}</Badge>
-          </div>
-        </CardWrap>
-      ))}
-    </div>;
-  }
-
-  return <div style={{ color:C.text, fontSize:11, lineHeight:1.6, fontFamily:sansFont }} dangerouslySetInnerHTML={{ __html: formatAnalysis(analysis) }} />;
+  // Fallback: legacy structured response (shouldn't happen with chatbox_mode, but safe)
+  return <div style={{ color: C.text, fontSize: 11, lineHeight: 1.6, fontFamily: sansFont }} dangerouslySetInnerHTML={{ __html: formatChatMarkdown(content) }} />;
 }
 
 const QUICK_PROMPTS = [
@@ -397,7 +211,7 @@ export default function ChatbotWidget() {
               fontFamily: sansFont,
             }}>
               {msg.role === 'user' ? msg.content : (
-                msg.structured ? <MiniRenderer structured={msg.structured} analysis={msg.content} /> : <div dangerouslySetInnerHTML={{ __html: formatAnalysis(msg.content) }} />
+                <ChatboxMessage content={msg.content} structured={msg.structured} />
               )}
             </div>
           </div>

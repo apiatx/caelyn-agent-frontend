@@ -50,7 +50,7 @@ export function ChatbotProvider({ children }: { children: React.ReactNode }) {
       const res = await fetch(`${AGENT_BACKEND_URL}/api/query`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-API-Key': AGENT_API_KEY },
-        body: JSON.stringify({ prompt: prompt.trim(), history: chatHistory.slice(-20) }),
+        body: JSON.stringify({ prompt: prompt.trim(), history: chatHistory.slice(-20), chatbox_mode: true }),
       });
       if (!res.ok) throw new Error(`Status ${res.status}`);
       const data = await res.json();
