@@ -940,7 +940,7 @@ export default function StocksPortfolioPage() {
                           <Cell key={entry.name} fill={entry.color} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(value: number) => fmt(value)} contentStyle={{ background: '#141632', border: '1px solid #1e2148', borderRadius: 8, color: '#e2e8f0', fontSize: 12 }} />
+                      <Tooltip formatter={(value: number) => fmt(value)} contentStyle={{ background: '#141632', border: '1px solid #1e2148', borderRadius: 8, color: '#e2e8f0', fontSize: 12 }} itemStyle={{ color: '#e2e8f0' }} labelStyle={{ color: '#e2e8f0' }} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
@@ -954,7 +954,7 @@ export default function StocksPortfolioPage() {
                       <CartesianGrid strokeDasharray="3 3" stroke="#1e2148" />
                       <XAxis type="number" tick={{ fill: '#64748b', fontSize: 11 }} tickFormatter={(v) => `$${v}`} />
                       <YAxis type="category" dataKey="ticker" tick={{ fill: '#e2e8f0', fontSize: 11, fontWeight: 600 }} width={50} />
-                      <Tooltip formatter={(value: number) => fmt(value)} contentStyle={{ background: '#141632', border: '1px solid #1e2148', borderRadius: 8, color: '#e2e8f0', fontSize: 12 }} />
+                      <Tooltip formatter={(value: number) => fmt(value)} contentStyle={{ background: '#141632', border: '1px solid #1e2148', borderRadius: 8, color: '#e2e8f0', fontSize: 12 }} itemStyle={{ color: '#e2e8f0' }} labelStyle={{ color: '#e2e8f0' }} />
                       <Bar dataKey="dailyPL" radius={[0, 4, 4, 0]}>
                         {plBarData.map((entry, i) => (
                           <Cell key={i} fill={entry.fill} />
