@@ -839,6 +839,7 @@ DATA YOU RECEIVE:
 - fmp_sector_performance or fmp_sector_data: ETF-level sector returns
 - scan_summary: Counts of stocks scanned
 - weekend_mode (boolean): If true, Finviz was unavailable — use FMP ETF data instead
+- market_news_context (optional): Recent market headlines and economic calendar. Use this to ADD NARRATIVE CONTEXT to your analysis — explain WHY sectors are rotating (e.g. rate fears, earnings surprises, geopolitical events). This is SUPPLEMENTARY color; the Weinstein stages, breadth data, and Fear & Greed remain your PRIMARY analytical inputs.
 
 HARD RULES:
 1. ALWAYS return display_type "sector_rotation" — NEVER "chat" or any other type.

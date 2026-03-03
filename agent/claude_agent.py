@@ -2860,7 +2860,23 @@ class TradingAgent:
             return await self.data.get_earnings_catalyst_watch()
 
         elif category == "sector_rotation":
-            return await self.data.get_sector_rotation_with_stages()
+            rotation_data, news_ctx = await asyncio.gather(
+                self.data.get_sector_rotation_with_stages(),
+                self.data.get_market_news_context(
+                    modules={"social_sentiment": False, "macro_context": True}
+                ),
+            )
+            # Slim the news context — headlines + economic calendar only
+            slim_news: dict = {}
+            if news_ctx.get("market_news"):
+                slim_news["market_news"] = news_ctx["market_news"][:8]
+            if news_ctx.get("market_news_summary"):
+                slim_news["market_news_summary"] = news_ctx["market_news_summary"]
+            if news_ctx.get("economic_calendar"):
+                slim_news["economic_calendar"] = news_ctx["economic_calendar"]
+            if slim_news:
+                rotation_data["market_news_context"] = slim_news
+            return rotation_data
 
         elif category == "asymmetric":
             return await self.data.wide_scan_and_rank("asymmetric", filters)
