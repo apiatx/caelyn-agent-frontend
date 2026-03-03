@@ -726,12 +726,17 @@ function EarningsCalendarWidget({ markets }: { markets: ParsedMarket[] }) {
       {/* Calendar header */}
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-3">
-          <CalendarDays className="w-5 h-5 text-yellow-400" />
+          <div className="w-9 h-9 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
+            <CalendarDays className="w-5 h-5 text-white" />
+          </div>
           <div>
             <h3 className="text-base font-bold text-white">
               Earnings Calendar
             </h3>
-            <p className="text-[10px] text-white/30 mt-0.5">
+            <p className="text-[10px] text-white/30 mt-0.5 leading-tight">
+              Polymarket-powered earnings predictions with Finnhub fundamentals &amp; AI news context
+            </p>
+            <p className="text-[10px] text-white/20 mt-0.5">
               {weekMonth} {weekYear} &middot; {totalThisWeek} earnings call{totalThisWeek !== 1 ? "s" : ""} this week
             </p>
           </div>
@@ -1028,30 +1033,21 @@ export default function StocksEarningsCalendarPage() {
 
   return (
     <div className="min-h-screen text-white" style={{background: 'linear-gradient(135deg, hsl(0, 0%, 0%) 0%, hsl(0, 0%, 10%) 50%, hsl(0, 0%, 0%) 100%)'}}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center relative mb-8">
-          <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/20 via-orange-500/20 to-red-500/20 blur-3xl -z-10"></div>
-          <div className="flex justify-center items-center gap-4 mb-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center">
-              <CalendarDays className="w-6 h-6 text-white" />
-            </div>
-            <h2 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-white via-yellow-200 to-orange-200 bg-clip-text text-transparent">Earnings Calendar</h2>
-          </div>
-          <p className="text-sm text-white/50">Polymarket-powered earnings predictions with Finnhub fundamentals &amp; AI news context</p>
-          <div className="w-32 h-1 bg-gradient-to-r from-yellow-500 to-orange-500 mx-auto mt-4 rounded-full"></div>
-        </div>
-      </div>
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-12">
         <GlassCard className="p-5">
           {earningsLoading && earningsMarkets.length === 0 ? (
             <div>
-              <div className="flex items-center gap-3 mb-4">
-                <CalendarDays className="w-5 h-5 text-yellow-400" />
-                <h3 className="text-sm font-bold text-white/90">
-                  Earnings Calendar
-                  <span className="text-white/30 font-normal ml-2">/ Loading...</span>
-                </h3>
+              <div className="flex items-center gap-3 mb-1">
+                <div className="w-9 h-9 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <CalendarDays className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">
+                    Earnings Calendar
+                    <span className="text-white/30 font-normal text-xs ml-2">/ Loading...</span>
+                  </h3>
+                  <p className="text-[10px] text-white/30 leading-tight">Polymarket-powered earnings predictions with Finnhub fundamentals &amp; AI news context</p>
+                </div>
               </div>
               <div className="grid grid-cols-5 gap-2">
                 {Array.from({ length: 5 }).map((_, i) => (
@@ -1060,10 +1056,17 @@ export default function StocksEarningsCalendarPage() {
               </div>
             </div>
           ) : earningsMarkets.length === 0 ? (
-            <div className="flex items-center gap-3">
-              <CalendarDays className="w-5 h-5 text-yellow-400" />
-              <h3 className="text-sm font-bold text-white/90">Earnings Calendar</h3>
-              <span className="text-[10px] text-white/30 ml-2">No earnings markets found. Check back closer to earnings season.</span>
+            <div>
+              <div className="flex items-center gap-3 mb-1">
+                <div className="w-9 h-9 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <CalendarDays className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">Earnings Calendar</h3>
+                  <p className="text-[10px] text-white/30 leading-tight">Polymarket-powered earnings predictions with Finnhub fundamentals &amp; AI news context</p>
+                </div>
+              </div>
+              <p className="text-xs text-white/30 mt-3">No earnings markets found. Check back closer to earnings season.</p>
             </div>
           ) : (
             <EarningsCalendarWidget markets={earningsMarkets} />
