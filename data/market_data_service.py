@@ -8,7 +8,7 @@ from data.stocktwits_provider import StockTwitsProvider
 from data.stockanalysis_scraper import StockAnalysisScraper
 from data.options_scraper import OptionsScraper
 from data.finnhub_provider import FinnhubProvider
-from config import FINNHUB_API_KEY, ALPHA_VANTAGE_API_KEY, FRED_API_KEY, FMP_API_KEY, TWELVEDATA_API_KEY, TAVILY_API_KEY, BRAVE_API_KEY
+from config import FINNHUB_API_KEY, ALPHA_VANTAGE_API_KEY, FRED_API_KEY, FMP_API_KEY, TWELVEDATA_API_KEY, TAVILY_API_KEY, BRAVE_API_KEY, PERPLEXITY_API_KEY
 from data.alphavantage_provider import AlphaVantageProvider
 from data.tavily_provider import TavilyProvider
 from data.web_search_provider import WebSearchProvider
@@ -375,9 +375,9 @@ class MarketDataService:
             print(
                 "[INIT] xAI Grok X sentiment provider SKIPPED (no XAI_API_KEY)"
             )
-        self.web_search = WebSearchProvider(BRAVE_API_KEY, TAVILY_API_KEY) if (BRAVE_API_KEY or TAVILY_API_KEY) else None
+        self.web_search = WebSearchProvider(BRAVE_API_KEY, TAVILY_API_KEY, PERPLEXITY_API_KEY) if (PERPLEXITY_API_KEY or BRAVE_API_KEY or TAVILY_API_KEY) else None
         if not self.web_search:
-            print("[INIT] Web search provider SKIPPED (no BRAVE_API_KEY or TAVILY_API_KEY)")
+            print("[INIT] Web search provider SKIPPED (no PERPLEXITY_API_KEY, BRAVE_API_KEY, or TAVILY_API_KEY)")
         # Keep self.tavily as alias for backward compat in callers
         self.tavily = self.web_search
         self.polymarket = PolymarketProvider()

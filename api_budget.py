@@ -14,7 +14,7 @@ class DailyBudgetTracker:
         "coingecko": 333,
         "cmc": 333,
         "finnhub": 3600,
-        "web_search": 33,  # Combined Brave+Tavily daily cap (monthly cap in WebSearchProvider)
+        "web_search": 100,  # Perplexity primary (pay-as-you-go) — raised from 33 (free-tier cap)
     }
 
     WARN_PCT = 0.70
