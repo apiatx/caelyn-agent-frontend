@@ -2776,6 +2776,33 @@ class TradingAgent:
         except Exception as e:
             print(f"[POLYMARKET_GATHER] Macro fetch failed: {e}")
 
+        # 3. Web search enrichment: news context for top prediction market events
+        if self.data.web_search:
+            from api_budget import daily_budget
+            top_events = context.get("top_events", [])
+            if top_events and daily_budget.can_spend("web_search", 1):
+                # Build a search query from the top 3 event titles
+                event_titles = []
+                for event in top_events[:3]:
+                    title = event.get("title", event.get("question", ""))
+                    if title:
+                        event_titles.append(title[:80])
+                if event_titles:
+                    search_query = " OR ".join(event_titles)
+                    try:
+                        news_ctx = await asyncio.wait_for(
+                            self.data.web_search.get_market_news(
+                                topic=search_query[:200]
+                            ),
+                            timeout=10.0,
+                        )
+                        daily_budget.spend("web_search", 1)
+                        if news_ctx and not news_ctx.get("error"):
+                            context["event_news_context"] = news_ctx
+                            print(f"[POLYMARKET_GATHER] Web enrichment: {news_ctx.get('article_count', 0)} articles for top events")
+                    except Exception as e:
+                        print(f"[POLYMARKET_GATHER] Web search enrichment failed: {e}")
+
         return context
 
     async def _gather_data(self, query_info: dict) -> dict:
@@ -3097,6 +3124,27 @@ class TradingAgent:
             result["fundamental_criteria"] = fund_criteria
             result["technical_criteria"] = tech_criteria
             result["finviz_filters_used"] = finviz_filter_str
+
+            # Web search enrichment: recent news for top screener results
+            enriched_data = result.get("enriched_data", {})
+            top_screen_tickers = list(enriched_data.keys())[:10]
+            if top_screen_tickers and self.data.web_search:
+                from api_budget import daily_budget
+                if daily_budget.can_spend("web_search", 2):
+                    try:
+                        search_data = await asyncio.wait_for(
+                            self.data.web_search.enrich_tickers_batched(top_screen_tickers),
+                            timeout=12.0,
+                        )
+                        daily_budget.spend("web_search", min(2, (len(top_screen_tickers) + 5) // 6))
+                        for ticker in top_screen_tickers:
+                            t_data = search_data.get(ticker.upper(), {})
+                            if t_data and ticker in enriched_data:
+                                enriched_data[ticker]["web_context"] = t_data
+                        print(f"[CUSTOM_SCREEN] Web enriched {len([t for t in top_screen_tickers if search_data.get(t.upper())])} tickers")
+                    except Exception as e:
+                        print(f"[CUSTOM_SCREEN] Web search enrichment failed: {e}")
+
             return result
         finally:
             if original_filters:

@@ -957,11 +957,28 @@ class MarketDataService:
 
         macro_snapshot = await self._build_macro_snapshot()
 
+        # Web search: macro narrative context (why markets are moving today)
+        macro_news = {}
+        if self.web_search:
+            if daily_budget.can_spend("web_search", 1):
+                try:
+                    macro_news = await asyncio.wait_for(
+                        self.web_search.get_market_news(
+                            topic="federal reserve economy inflation interest rates macro"
+                        ),
+                        timeout=10.0,
+                    )
+                    daily_budget.spend("web_search", 1)
+                except Exception as e:
+                    print(f"[MACRO] Web search enrichment failed: {e}")
+                    macro_news = {}
+
         result = {
             "macro_snapshot": macro_snapshot,
             "fred_economic_data": fred_macro,
             "market_data": fmp_data,
             "fear_greed_index": fear_greed,
+            "macro_news_context": macro_news,
         }
         cache.set("macro_overview_full", result, MACRO_TTL)
         return result
@@ -2389,6 +2406,26 @@ class MarketDataService:
             if t in enriched:
                 earnings_dates[t] = e
 
+        # Web search enrichment: analyst previews and recent news for top earnings tickers
+        earnings_news = []
+        top_earnings_tickers = [t for t, _, _ in scored[:10]]
+        if self.web_search and top_earnings_tickers:
+            if daily_budget.can_spend("web_search", 2):
+                try:
+                    search_data = await asyncio.wait_for(
+                        self.web_search.enrich_tickers_batched(top_earnings_tickers),
+                        timeout=12.0,
+                    )
+                    daily_budget.spend("web_search", min(2, (len(top_earnings_tickers) + 5) // 6))
+                    for ticker in top_earnings_tickers:
+                        t_data = search_data.get(ticker.upper(), {})
+                        if t_data and ticker in enriched:
+                            enriched[ticker]["web_context"] = t_data
+                    if search_data.get("_summary"):
+                        earnings_news.append({"summary": search_data["_summary"]})
+                except Exception as e:
+                    print(f"[EARNINGS_CATALYST] Web search enrichment failed: {e}")
+
         return {
             "total_earnings_scanned":
             len(earnings_tickers),
@@ -2400,7 +2437,7 @@ class MarketDataService:
             enriched,
             "earnings_dates":
             earnings_dates,
-            "market_news": [],
+            "market_news": earnings_news,
         }
 
         async def get_sector_rotation(self) -> dict:

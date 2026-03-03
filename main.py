@@ -97,9 +97,9 @@ def _do_init():
 async def _briefing_precompute_loop():
     """
     Background precomputation for Daily Briefing.
-    Runs every 30 minutes using ONLY free/unlimited APIs (no web search).
-    Caches Phase 1 data (screeners, macro, trending) so briefing requests
-    are near-instant — only lightweight on-demand enrichment needed.
+    Runs every 30 minutes using free/unlimited APIs + one Perplexity web search
+    for market news context. Caches Phase 1 data (screeners, macro, trending,
+    news) so briefing requests are near-instant.
     """
     # Wait for init to complete
     for _ in range(120):
@@ -249,9 +249,27 @@ async def _briefing_precompute_loop():
                 filler = [t for t in single_signal.keys() if t not in priority_tickers][:remaining_slots]
                 priority_tickers.extend(filler)
 
+            # Pre-cache market news via Perplexity (1 API call per 30-min cycle)
+            web_news = {}
+            if data_service.web_search:
+                from api_budget import daily_budget
+                if daily_budget.can_spend("web_search", 1):
+                    try:
+                        web_news = await asyncio.wait_for(
+                            data_service.web_search.get_market_news(
+                                topic="stock market today breaking news"
+                            ),
+                            timeout=12.0,
+                        )
+                        daily_budget.spend("web_search", 1)
+                        print(f"[BRIEFING_PRECOMPUTE] Web search: {web_news.get('article_count', 0)} articles cached")
+                    except Exception as e:
+                        print(f"[BRIEFING_PRECOMPUTE] Web search failed: {e}")
+                        web_news = {}
+
             precomputed = {
                 "macro_snapshot": macro_snapshot,
-                "news_context": {"market_news": market_news},
+                "news_context": {"market_news": market_news, "web_news": web_news},
                 "total_tickers_detected": len(all_tickers),
                 "multi_signal_tickers": {t: sources for t, sources in list(multi_signal.items())[:10]},
                 "priority_tickers": priority_tickers,
