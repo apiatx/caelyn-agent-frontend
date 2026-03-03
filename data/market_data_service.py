@@ -745,17 +745,19 @@ class MarketDataService:
             "peer_companies": self.finnhub.get_company_peers(ticker),
         }
 
-        # Web search replaces StockTwits + StockAnalysis + AlphaVantage in single call
+        # Finnhub company_news for relevant ticker-specific news (replaces web search)
         async_tasks = [
             self.options.get_put_call_ratio(ticker),
             self.edgar.get_company_summary(ticker),
+            asyncio.to_thread(self.finnhub.get_company_news, ticker),
         ]
         async_keys = [
             "options_put_call",
             "sec_filings",
+            "finnhub_company_news",
         ]
 
-        # Add web search for news + sentiment + analyst data (1 call replaces 4)
+        # Web search for batch enrichment (background AI context, not user-facing)
         if self.web_search:
             async_tasks.append(self.web_search.get_ticker_news_sentiment(ticker))
             async_keys.append("tavily_enrichment")
@@ -777,15 +779,34 @@ class MarketDataService:
             else:
                 sync_data[key] = result
 
-        # Extract news articles from whichever source provided them
+        # Extract news articles — prefer Finnhub company_news (guaranteed relevant),
+        # fall back to web search enrichment for sentiment context
         news_articles = []
+        finnhub_news = sync_data.get("finnhub_company_news", [])
+        if isinstance(finnhub_news, list) and finnhub_news:
+            news_articles = finnhub_news
+            # Derive sentiment from Finnhub article titles
+            all_titles = " ".join(a.get("title", "") for a in finnhub_news).lower()
+            bull_words = ["beat", "surge", "rally", "upgrade", "outperform", "strong", "record", "growth"]
+            bear_words = ["miss", "decline", "downgrade", "underperform", "cut", "warning", "loss", "weak"]
+            bull = sum(1 for w in bull_words if w in all_titles)
+            bear = sum(1 for w in bear_words if w in all_titles)
+            sentiment_label = "Bullish" if bull > bear else "Bearish" if bear > bull else "Neutral"
+            sync_data["news_sentiment_ai"] = {
+                "ticker": ticker, "article_count": len(finnhub_news),
+                "sentiment_label": sentiment_label, "articles": finnhub_news,
+            }
+            sync_data["sentiment"] = {"sentiment_label": sentiment_label}
+
+        # Also absorb web search enrichment as supplemental AI context
         tavily_data = sync_data.get("tavily_enrichment", {})
         if isinstance(tavily_data, dict) and tavily_data.get("articles"):
-            news_articles = tavily_data["articles"]
-            sync_data["news_sentiment_ai"] = tavily_data
-            sync_data["sentiment"] = {"sentiment_label": tavily_data.get("sentiment_label", "Neutral")}
+            if not news_articles:
+                news_articles = tavily_data["articles"]
+            sync_data.setdefault("news_sentiment_ai", tavily_data)
+            sync_data.setdefault("sentiment", {"sentiment_label": tavily_data.get("sentiment_label", "Neutral")})
             sync_data["fundamentals"] = tavily_data
-        else:
+        elif not news_articles:
             av_news = sync_data.get("news_sentiment_ai", {})
             if isinstance(av_news, dict) and av_news.get("articles"):
                 news_articles = av_news["articles"]
