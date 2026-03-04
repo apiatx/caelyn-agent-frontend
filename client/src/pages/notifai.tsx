@@ -86,15 +86,25 @@ function NewsFeed() {
     setLoading(true);
     setError('');
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 20000);
       const res = await fetch(`${AGENT_BACKEND_URL}/api/news/feed?category=${cat}`, {
         headers: { 'X-API-Key': AGENT_API_KEY },
+        signal: controller.signal,
       });
+      clearTimeout(timeout);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      setArticles(data.articles || []);
-    } catch (err) {
+      const arts = data.articles || [];
+      setArticles(arts);
+      if (arts.length === 0) setError('No articles found. News sources may be loading — try refreshing.');
+    } catch (err: any) {
       console.error('[NOTIFAI] Fetch error:', err);
-      setError('Failed to load news. Please try again.');
+      if (err.name === 'AbortError') {
+        setError('Request timed out. Please try again.');
+      } else {
+        setError('Failed to load news. Please try again.');
+      }
       setArticles([]);
     } finally {
       setLoading(false);
