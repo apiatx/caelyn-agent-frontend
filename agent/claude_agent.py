@@ -119,6 +119,12 @@ class TradingAgent:
         "prediction": "prediction_markets",
         "odds": "prediction_markets",
         "probabilities": "prediction_markets",
+        # --- News Intelligence ---
+        "news_intelligence": "news_intelligence",
+        "notifai": "news_intelligence",
+        "news": "news_intelligence",
+        "news_analysis": "news_intelligence",
+        "news_markets": "news_intelligence",
     }
 
     def _resolve_preset(self, preset_intent: str) -> str:
@@ -2110,6 +2116,23 @@ class TradingAgent:
             "response_style": "full_thesis",
             "priority_depth": "deep",
         },
+        "news_intelligence": {
+            "intent": "news_intelligence",
+            "asset_classes": ["equities", "crypto", "commodities", "macro"],
+            "modules": {
+                "x_sentiment": True,
+                "social_sentiment": True,
+                "technical_scan": False,
+                "fundamental_validation": False,
+                "macro_context": True,
+                "liquidity_filter": False,
+                "earnings_data": False,
+                "ticker_research": False,
+            },
+            "risk_framework": "neutral",
+            "response_style": "full_thesis",
+            "priority_depth": "deep",
+        },
     }
 
     INTENT_TO_CATEGORY = {
@@ -2130,6 +2153,7 @@ class TradingAgent:
         "deterministic_screener": "deterministic_screener",
         "chat": "chat",
         "prediction_markets": "prediction_markets",
+        "news_intelligence": "news_intelligence",
     }
 
     ASSET_CLASS_CATEGORY_MAP = {

@@ -382,6 +382,181 @@ async def polymarket_events_proxy(request: Request):
 
 
 # ============================================================
+# News Feed Endpoint — Categorized news for NotifAI page
+# ============================================================
+
+@app.get("/api/news/feed")
+@limiter.limit("15/minute")
+async def news_feed(request: Request, category: str = "finance"):
+    """
+    Returns categorized news articles for the NotifAI page.
+    Categories: finance, crypto, politics, world
+    """
+    import httpx
+    from data.cache import cache
+
+    await _wait_for_init()
+
+    cache_key = f"news_feed:{category}"
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return JSONResponse(content=cached)
+
+    articles = []
+
+    try:
+        if category == "finance":
+            # FMP general stock news
+            raw = await asyncio.wait_for(
+                agent.data.fmp.get_market_news(limit=30), timeout=8.0
+            )
+            for item in (raw or []):
+                articles.append({
+                    "title": item.get("title", ""),
+                    "description": item.get("text", ""),
+                    "source": item.get("source", item.get("site", "")),
+                    "url": item.get("url", ""),
+                    "published": item.get("published", item.get("publishedDate", "")),
+                    "image": item.get("image", ""),
+                    "symbol": item.get("symbol", ""),
+                })
+        elif category == "crypto":
+            # FMP crypto news via fmp_provider + finnhub
+            raw = await asyncio.wait_for(
+                agent.data.fmp._get("stock_news", {"tickers": "BTC,ETH,SOL,DOGE,XRP", "limit": 30}),
+                timeout=8.0
+            )
+            if isinstance(raw, list):
+                for item in raw[:30]:
+                    if isinstance(item, dict):
+                        articles.append({
+                            "title": item.get("title", ""),
+                            "description": (item.get("text", "") or "")[:200],
+                            "source": item.get("site", ""),
+                            "url": item.get("url", ""),
+                            "published": item.get("publishedDate", ""),
+                            "image": item.get("image", ""),
+                            "symbol": item.get("symbol", ""),
+                        })
+            # Supplement with Finnhub crypto news
+            try:
+                finnhub_news = await asyncio.wait_for(
+                    asyncio.to_thread(agent.data.finnhub.client.general_news, "crypto", min_id=0),
+                    timeout=6.0
+                )
+                for item in (finnhub_news or [])[:15]:
+                    if isinstance(item, dict):
+                        articles.append({
+                            "title": item.get("headline", ""),
+                            "description": item.get("summary", "")[:200],
+                            "source": item.get("source", ""),
+                            "url": item.get("url", ""),
+                            "published": item.get("datetime", ""),
+                            "image": item.get("image", ""),
+                            "symbol": "",
+                        })
+            except Exception:
+                pass
+        elif category == "politics":
+            # Finnhub general news
+            try:
+                finnhub_news = await asyncio.wait_for(
+                    asyncio.to_thread(agent.data.finnhub.client.general_news, "general", min_id=0),
+                    timeout=8.0
+                )
+                for item in (finnhub_news or [])[:30]:
+                    if isinstance(item, dict):
+                        headline = (item.get("headline", "") or "").lower()
+                        summary = (item.get("summary", "") or "").lower()
+                        text = headline + " " + summary
+                        # Filter for politics-related content
+                        pol_keywords = ["trump", "biden", "congress", "senate", "election", "policy", "tariff",
+                                        "regulation", "geopolitical", "sanction", "government", "white house",
+                                        "political", "democrat", "republican", "legislation", "executive order",
+                                        "fed ", "federal reserve", "treasury", "trade war", "diplomat"]
+                        if any(kw in text for kw in pol_keywords):
+                            articles.append({
+                                "title": item.get("headline", ""),
+                                "description": (item.get("summary", "") or "")[:200],
+                                "source": item.get("source", ""),
+                                "url": item.get("url", ""),
+                                "published": item.get("datetime", ""),
+                                "image": item.get("image", ""),
+                                "symbol": "",
+                            })
+            except Exception:
+                pass
+            # Also FMP general news filtered
+            try:
+                raw = await asyncio.wait_for(
+                    agent.data.fmp._get("stock_news", {"limit": 50}), timeout=6.0
+                )
+                if isinstance(raw, list):
+                    for item in raw:
+                        title = (item.get("title", "") or "").lower()
+                        text_snippet = (item.get("text", "") or "").lower()
+                        combined = title + " " + text_snippet
+                        pol_keywords = ["trump", "biden", "congress", "senate", "election", "policy", "tariff",
+                                        "regulation", "geopolitical", "sanction", "government", "white house",
+                                        "political", "trade war", "fed ", "federal reserve"]
+                        if any(kw in combined for kw in pol_keywords):
+                            articles.append({
+                                "title": item.get("title", ""),
+                                "description": (item.get("text", "") or "")[:200],
+                                "source": item.get("site", ""),
+                                "url": item.get("url", ""),
+                                "published": item.get("publishedDate", ""),
+                                "image": item.get("image", ""),
+                                "symbol": item.get("symbol", ""),
+                            })
+            except Exception:
+                pass
+        elif category == "world":
+            # Finnhub general news
+            try:
+                finnhub_news = await asyncio.wait_for(
+                    asyncio.to_thread(agent.data.finnhub.client.general_news, "general", min_id=0),
+                    timeout=8.0
+                )
+                for item in (finnhub_news or [])[:30]:
+                    if isinstance(item, dict):
+                        articles.append({
+                            "title": item.get("headline", ""),
+                            "description": (item.get("summary", "") or "")[:200],
+                            "source": item.get("source", ""),
+                            "url": item.get("url", ""),
+                            "published": item.get("datetime", ""),
+                            "image": item.get("image", ""),
+                            "symbol": "",
+                        })
+            except Exception:
+                pass
+        else:
+            return JSONResponse(content={"articles": [], "error": "Unknown category"})
+
+        # Deduplicate by title
+        seen = set()
+        unique = []
+        for a in articles:
+            key = (a.get("title", "") or "").strip().lower()
+            if key and key not in seen:
+                seen.add(key)
+                unique.append(a)
+        articles = unique[:30]
+
+        result = {"articles": articles, "category": category, "count": len(articles)}
+        cache.set(cache_key, result, ttl=300)  # Cache for 5 minutes
+        return JSONResponse(content=result)
+
+    except Exception as e:
+        print(f"[NEWS_FEED] Error for category '{category}': {type(e).__name__}: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"articles": [], "error": str(e)[:200]}
+        )
+
+
+# ============================================================
 # Earnings Calendar Endpoint — Full Finnhub calendar by date range
 # ============================================================
 
