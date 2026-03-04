@@ -438,78 +438,44 @@ async def _fetch_brave_news(query: str, api_key: str) -> list:
 
 
 async def _fetch_perplexity_news(query: str, api_key: str) -> list:
-    """Perplexity Sonar API — chat/completions with web search grounding."""
-    import httpx, json
+    """Perplexity Search API — POST https://api.perplexity.ai/search
+    Returns raw ranked web results with title, url, snippet, date."""
+    import httpx
     try:
         async with httpx.AsyncClient() as client:
             resp = await client.post(
-                "https://api.perplexity.ai/chat/completions",
+                "https://api.perplexity.ai/search",
                 headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
                 json={
-                    "model": "sonar",
-                    "messages": [
-                        {"role": "system", "content": "You are a news aggregator. Return ONLY a JSON array of news articles. Each article must have: title, description (2-3 sentences), source (domain name), url. No markdown, no explanation, just the JSON array."},
-                        {"role": "user", "content": f"Find the 10 most important {query} from today. Return as a JSON array."}
-                    ],
-                    "temperature": 0.1,
-                    "max_tokens": 2000,
-                    "return_citations": True,
+                    "query": query,
+                    "max_results": 15,
                     "search_recency_filter": "day",
+                    "search_domain_filter": [
+                        "reuters.com", "cnbc.com", "bloomberg.com",
+                        "finance.yahoo.com", "marketwatch.com", "wsj.com",
+                        "seekingalpha.com", "benzinga.com", "fool.com",
+                        "investing.com", "barrons.com", "thestreet.com",
+                    ],
                 },
-                timeout=15.0,
+                timeout=12.0,
             )
         if resp.status_code != 200:
             print(f"[NEWS_FEED][Perplexity] HTTP {resp.status_code}: {resp.text[:300]}")
             return []
         raw = resp.json()
-
-        # Extract articles from citations (structured source data)
         articles = []
-        citations = raw.get("citations", [])
-        content = raw.get("choices", [{}])[0].get("message", {}).get("content", "")
-
-        # Try parsing the content as JSON array of articles
-        try:
-            # Strip markdown code fences if present
-            clean = content.strip()
-            if clean.startswith("```"):
-                clean = clean.split("\n", 1)[1] if "\n" in clean else clean[3:]
-                if clean.endswith("```"):
-                    clean = clean[:-3]
-                clean = clean.strip()
-                if clean.startswith("json"):
-                    clean = clean[4:].strip()
-            parsed = json.loads(clean)
-            if isinstance(parsed, list):
-                for item in parsed[:15]:
-                    if isinstance(item, dict) and item.get("title"):
-                        articles.append({
-                            "title": item.get("title", ""),
-                            "description": (item.get("description", "") or item.get("summary", "") or "")[:300],
-                            "source": item.get("source", ""),
-                            "url": item.get("url", ""),
-                            "published": item.get("published", item.get("date", "")),
-                            "image": "",
-                            "symbol": "",
-                        })
-        except (json.JSONDecodeError, ValueError):
-            pass
-
-        # If JSON parsing failed, build articles from citations
-        if not articles and citations:
-            for url in citations[:15]:
-                if isinstance(url, str) and url.startswith("http"):
-                    domain = url.split("/")[2].replace("www.", "") if "/" in url else ""
-                    articles.append({
-                        "title": domain,
-                        "description": "",
-                        "source": domain,
-                        "url": url,
-                        "published": "",
-                        "image": "",
-                        "symbol": "",
-                    })
-
+        for item in raw.get("results", []):
+            url = item.get("url", "")
+            domain = url.split("/")[2].replace("www.", "") if url and "/" in url else ""
+            articles.append({
+                "title": item.get("title", ""),
+                "description": (item.get("snippet", "") or "")[:300],
+                "source": domain,
+                "url": url,
+                "published": item.get("date", item.get("last_updated", "")),
+                "image": "",
+                "symbol": "",
+            })
         print(f"[NEWS_FEED][Perplexity] {len(articles)} articles for '{query[:40]}'")
         return articles
     except Exception as e:
@@ -632,8 +598,18 @@ async def news_feed(request: Request, category: str = "finance"):
     task_keys = list(tasks.keys())
     results = await asyncio.gather(*tasks.values(), return_exceptions=True)
 
-    # Prefer providers in order: Brave → Perplexity → Tavily → FMP
-    provider_priority = ["brave", "perplexity", "tavily", "fmp"]
+    # Log what each provider returned
+    for i, key in enumerate(task_keys):
+        r = results[i]
+        if isinstance(r, Exception):
+            print(f"[NEWS_FEED] {key}: EXCEPTION {type(r).__name__}: {r}")
+        elif isinstance(r, list):
+            print(f"[NEWS_FEED] {key}: {len(r)} articles")
+        else:
+            print(f"[NEWS_FEED] {key}: unexpected type {type(r)}: {str(r)[:100]}")
+
+    # Prefer providers in order: Perplexity → Brave → Tavily → FMP
+    provider_priority = ["perplexity", "brave", "tavily", "fmp"]
     best_articles = []
     for provider in provider_priority:
         if provider in task_keys:
@@ -661,6 +637,51 @@ async def news_feed(request: Request, category: str = "finance"):
         cache.set(cache_key, result, ttl=300)
     print(f"[NEWS_FEED] Returning {len(articles)} articles for '{category}'")
     return JSONResponse(content=result)
+
+
+@app.get("/api/news/debug")
+async def news_debug(request: Request):
+    """Debug endpoint: test each news provider individually and return status."""
+    from config import BRAVE_API_KEY, PERPLEXITY_API_KEY, TAVILY_API_KEY, FMP_API_KEY
+    import traceback
+
+    debug = {
+        "keys": {
+            "PERPLEXITY_API_KEY": f"{'SET (' + PERPLEXITY_API_KEY[:8] + '...)' if PERPLEXITY_API_KEY else 'NOT SET'}",
+            "BRAVE_API_KEY": f"{'SET (' + BRAVE_API_KEY[:8] + '...)' if BRAVE_API_KEY else 'NOT SET'}",
+            "TAVILY_API_KEY": f"{'SET (' + TAVILY_API_KEY[:8] + '...)' if TAVILY_API_KEY else 'NOT SET'}",
+            "FMP_API_KEY": f"{'SET (' + FMP_API_KEY[:8] + '...)' if FMP_API_KEY else 'NOT SET'}",
+        },
+        "providers": {},
+    }
+
+    query = "stock market financial news today"
+
+    # Test each provider
+    for name, key, func in [
+        ("perplexity", PERPLEXITY_API_KEY, _fetch_perplexity_news),
+        ("brave", BRAVE_API_KEY, _fetch_brave_news),
+        ("tavily", TAVILY_API_KEY, _fetch_tavily_news),
+        ("fmp", FMP_API_KEY, lambda q, k: _fetch_fmp_news("finance", k)),
+    ]:
+        if not key:
+            debug["providers"][name] = {"status": "SKIPPED", "reason": "no API key"}
+            continue
+        try:
+            result = await asyncio.wait_for(func(query, key), timeout=15.0)
+            debug["providers"][name] = {
+                "status": "OK" if result else "EMPTY",
+                "article_count": len(result) if isinstance(result, list) else 0,
+                "first_title": result[0].get("title", "")[:80] if result else None,
+            }
+        except Exception as e:
+            debug["providers"][name] = {
+                "status": "ERROR",
+                "error": f"{type(e).__name__}: {e}",
+                "traceback": traceback.format_exc()[-500:],
+            }
+
+    return JSONResponse(content=debug)
 
 
 # ============================================================

@@ -1,16 +1,18 @@
 """
-Perplexity Sonar API provider for market intelligence.
+Perplexity Search API provider for market intelligence.
 Drop-in replacement for BraveProvider/TavilyProvider -- same 4-method interface.
 
-Endpoint: POST https://api.perplexity.ai/chat/completions
-Model: sonar (web-search grounded)
-Pricing: $5 per 1,000 requests (flat, no token cost).
+Endpoint: POST https://api.perplexity.ai/search
+Pricing:  $5 per 1,000 requests (flat, no token cost).
 
 Features:
-  - Web search grounded responses with citations
-  - Domain allowlists (search_domain_filter)
-  - Recency filters (day, week, month, year)
-  - Returns citations as URLs
+  - Domain allowlists/denylists (up to 20 domains)
+  - Multi-query (up to 5 queries per request)
+  - Recency filters (search_recency_filter: day, week, month, year)
+  - Content extraction control (max_tokens_per_page)
+
+Response format:
+  {"results": [{"title", "url", "snippet", "date", "last_updated"}], "id": "..."}
 """
 import asyncio
 import httpx
@@ -39,9 +41,9 @@ FINANCIAL_DOMAIN_ALLOWLIST = [
 
 
 class PerplexityProvider:
-    """Web search via Perplexity Sonar API -- same interface as BraveProvider/TavilyProvider."""
+    """Web search via Perplexity Search API -- same interface as BraveProvider/TavilyProvider."""
 
-    SONAR_URL = "https://api.perplexity.ai/chat/completions"
+    SEARCH_URL = "https://api.perplexity.ai/search"
 
     def __init__(self, api_key: str):
         self.api_key = api_key
@@ -55,19 +57,16 @@ class PerplexityProvider:
                       domain_filter: list = None,
                       recency: str = None) -> dict:
         """
-        Execute a Perplexity Sonar chat/completions call with web search grounding.
+        Execute a Perplexity Search API call.
         Returns a Brave/Tavily-compatible response format:
-          {"answer": "...", "results": [{"title", "content", "url", "age"}]}
+          {"answer": "", "results": [{"title", "content", "url", "age"}]}
+
+        Perplexity Search API response:
+          {"results": [{"title", "url", "snippet", "date", "last_updated"}]}
         """
         body = {
-            "model": "sonar",
-            "messages": [
-                {"role": "system", "content": "You are a financial research assistant. Provide detailed, sourced answers about markets, stocks, and economic news."},
-                {"role": "user", "content": str(query) if isinstance(query, str) else " | ".join(query)},
-            ],
-            "temperature": 0.1,
-            "max_tokens": 1500,
-            "return_citations": True,
+            "query": query if isinstance(query, str) else query,
+            "max_results": min(max_results, 20),
         }
 
         if recency:
@@ -81,10 +80,10 @@ class PerplexityProvider:
         try:
             async with httpx.AsyncClient() as client:
                 resp = await client.post(
-                    self.SONAR_URL,
+                    self.SEARCH_URL,
                     headers=self._headers,
                     json=body,
-                    timeout=15.0,
+                    timeout=12.0,
                 )
             if resp.status_code == 429:
                 print(f"[Perplexity] Rate limited for query: {str(query)[:60]}")
@@ -105,30 +104,25 @@ class PerplexityProvider:
 
     def _normalize_response(self, raw: dict) -> dict:
         """
-        Convert Perplexity Sonar response to the Brave/Tavily-compatible format.
+        Convert Perplexity Search API response to Brave/Tavily-compatible format.
 
-        Sonar format:
-          {"choices": [{"message": {"content": "..."}}], "citations": ["url1", ...]}
+        Perplexity Search response:
+          {"results": [{"title", "url", "snippet", "date", "last_updated"}]}
 
         Normalized format:
-          {"answer": "...", "results": [{"title", "content", "url", "age"}]}
+          {"answer": "", "results": [{"title", "content", "url", "age"}]}
         """
-        content = raw.get("choices", [{}])[0].get("message", {}).get("content", "")
-        citations = raw.get("citations", [])
-
         results = []
-        for url in citations:
-            if isinstance(url, str) and url.startswith("http"):
-                domain = url.split("/")[2].replace("www.", "") if len(url.split("/")) > 2 else ""
-                results.append({
-                    "title": domain,
-                    "content": "",
-                    "url": url,
-                    "age": "",
-                })
+        for item in raw.get("results", []):
+            results.append({
+                "title": item.get("title", ""),
+                "content": item.get("snippet", ""),
+                "url": item.get("url", ""),
+                "age": item.get("date", item.get("last_updated", "")),
+            })
 
         return {
-            "answer": content,
+            "answer": "",
             "results": results,
         }
 
