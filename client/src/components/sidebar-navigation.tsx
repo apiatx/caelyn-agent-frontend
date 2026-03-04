@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Activity, BarChart3, TrendingUp, ChartLine, Brain, Zap, DollarSign, Building2, Layers, Coins, ChevronRight, ChevronDown, ChevronLeft, Wallet, Users, MessageSquare, Rocket, Globe, ArrowLeftRight, Search, Menu, X, Gamepad2, Gem, CalendarDays, Settings } from "lucide-react";
+import { Activity, BarChart3, TrendingUp, ChartLine, Brain, Zap, DollarSign, Building2, Layers, Coins, ChevronRight, ChevronDown, ChevronLeft, Wallet, Users, MessageSquare, Rocket, Globe, ArrowLeftRight, Search, Menu, X, Gamepad2, Gem, CalendarDays, Settings, Info } from "lucide-react";
 import { useLocation } from "wouter";
 import caelynLogo from "@assets/ChatGPT_Image_Feb_20,_2026,_01_10_21_AM_1771571543846.png";
+import { SettingsModal } from "@/pages/settings";
 
 interface SidebarNavigationProps {
   className?: string;
@@ -23,6 +24,7 @@ interface NavItem {
 export function SidebarNavigation({ className = "", isCollapsed, isMobile = false, isMobileMenuOpen = false, onToggle, onCloseMobile }: SidebarNavigationProps) {
   const [location, setLocation] = useLocation();
   const [expandedItems, setExpandedItems] = useState<string[]>(['crypto-stocks']);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const navigateTo = (url: string) => {
     setLocation(url);
@@ -338,18 +340,6 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
       icon: <MessageSquare className="w-4 h-4" />,
       path: '/app/onchain/social'
     },
-    {
-      id: 'settings',
-      label: 'Settings',
-      icon: <Settings className="w-4 h-4" />,
-      path: '/app/settings'
-    },
-    {
-      id: 'about',
-      label: 'About',
-      icon: <Activity className="w-4 h-4" />,
-      path: '/app/about'
-    }
   ];
 
   const hasActiveDescendant = (item: NavItem): boolean => {
@@ -486,15 +476,44 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
         {navItems.map(item => renderNavItem(item))}
       </div>
 
+      {/* Pinned Bottom: Settings + About */}
+      <div className="flex-shrink-0 border-t border-crypto-silver/20 px-2 py-2 space-y-0.5">
+        <button
+          onClick={() => setSettingsOpen(true)}
+          title={isCollapsed ? "Settings" : undefined}
+          className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-2'} px-2 ${isMobile ? 'py-3' : 'py-1.5'} text-left text-xs font-medium transition-all duration-200 rounded-lg text-gray-300 hover:bg-white/5 hover:text-white`}
+          data-testid="nav-settings"
+        >
+          <Settings className="w-4 h-4" />
+          {!isCollapsed && <span>Settings</span>}
+        </button>
+        <button
+          onClick={() => navigateTo('/app/about')}
+          title={isCollapsed ? "About" : undefined}
+          className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-2'} px-2 ${isMobile ? 'py-3' : 'py-1.5'} text-left text-xs font-medium transition-all duration-200 rounded-lg ${
+            isActive('/app/about')
+              ? "bg-gradient-to-r from-crypto-warning/20 to-yellow-400/10 border-l-2 border-crypto-warning text-white shadow-md"
+              : "text-gray-300 hover:bg-white/5 hover:text-white"
+          }`}
+          data-testid="nav-about"
+        >
+          <Info className="w-4 h-4" />
+          {!isCollapsed && <span>About</span>}
+        </button>
+      </div>
+
       {/* Footer */}
       {(!isCollapsed || isMobile) && (
-        <div className="flex-shrink-0 p-4 border-t border-crypto-silver/20">
-          <div className="text-xs text-center" style={{ color: '#cce8ff' }}>
+        <div className="flex-shrink-0 px-4 py-2 border-t border-crypto-silver/20">
+          <div className="text-[10px] text-center" style={{ color: '#cce8ff' }}>
             © 2026 CaelynAI
           </div>
         </div>
       )}
     </div>
+
+    {/* Settings Modal */}
+    <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </>
   );
 }
