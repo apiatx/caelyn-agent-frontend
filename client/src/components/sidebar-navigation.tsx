@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Activity, BarChart3, TrendingUp, ChartLine, Brain, Zap, DollarSign, Building2, Layers, Coins, ChevronRight, ChevronDown, ChevronLeft, Wallet, Users, MessageSquare, Rocket, Globe, ArrowLeftRight, Search, Menu, X, Gamepad2, Gem, CalendarDays, Settings, Info } from "lucide-react";
+import { Activity, BarChart3, TrendingUp, ChartLine, Brain, Zap, DollarSign, Building2, Layers, Coins, ChevronRight, ChevronDown, ChevronLeft, Wallet, Users, MessageSquare, Rocket, Globe, ArrowLeftRight, Search, Menu, X, Gamepad2, Gem, CalendarDays, Settings, Info, Newspaper } from "lucide-react";
 import { useLocation } from "wouter";
 import caelynLogo from "@assets/ChatGPT_Image_Feb_20,_2026,_01_10_21_AM_1771571543846.png";
 import { SettingsModal } from "@/pages/settings";
@@ -56,6 +56,12 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
       label: 'CaelynAI',
       icon: <Brain className="w-4 h-4" />,
       path: '/app/caelyn-ai'
+    },
+    {
+      id: 'notifai',
+      label: 'NotifAI',
+      icon: <Newspaper className="w-4 h-4" />,
+      path: '/app/notifai'
     },
     {
       id: 'macro-dashboard',

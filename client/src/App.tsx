@@ -49,6 +49,7 @@ import OnchainAnalyzePage from "@/pages/onchain-analyze";
 import BasePage from "@/pages/base";
 import PortfolioPage from "@/pages/portfolio";
 import PredictPage from "@/pages/predict";
+import NotifAIPage from "@/pages/notifai";
 import AboutPage from "@/pages/about";
 
 import NotFound from "@/pages/not-found";
@@ -128,6 +129,8 @@ function Router() {
       <Route path="/app/crypto-stonks" component={CryptoStonks} />
       <Route path="/app/commodities" component={CommoditiesPage} />
       <Route path="/commodities" component={CommoditiesPage} />
+      <Route path="/app/notifai" component={NotifAIPage} />
+      <Route path="/notifai" component={NotifAIPage} />
       <Route path="/app/predict" component={PredictPage} />
       <Route path="/predict" component={PredictPage} />
       <Route path="/app/portfolio" component={PortfolioPage} />
