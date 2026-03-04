@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { GlassCard } from "@/components/ui/glass-card";
-import { ExternalLink, Loader2, Sparkles, Calendar, ChevronLeft, ChevronRight, CalendarDays, X, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ExternalLink, Loader2, Sparkles, Calendar, ChevronLeft, ChevronRight, CalendarDays, X, Clock, Send, MessageSquare } from "lucide-react";
 
 // ─── Constants ────────────────────────────────────────────────────
 const AGENT_BACKEND_URL = "https://fast-api-server-trading-agent-aidanpilon.replit.app";
+const AGENT_API_KEY = "hippo_ak_7f3x9k2m4p8q1w5t";
 const POLYMARKET_PROXY = `${AGENT_BACKEND_URL}/api/polymarket/events`;
 const GAMMA_API = "https://gamma-api.polymarket.com/events";
 const REFRESH_INTERVAL = 60_000;
@@ -1006,6 +1008,213 @@ function EarningsCalendarWidget({ markets }: { markets: ParsedMarket[] }) {
   );
 }
 
+// ─── Earnings Agent Chatbar ───────────────────────────────────────
+
+interface EarningsAgentMessage {
+  role: "user" | "assistant";
+  content: string;
+  timestamp: number;
+}
+
+const EARNINGS_SUGGESTED_PROMPTS = [
+  "Which upcoming earnings have the highest beat probability?",
+  "What are the best earnings plays this week based on sentiment and technicals?",
+  "Which earnings could cause the biggest surprise moves?",
+  "Analyze the highest-volume earnings bets on Polymarket right now",
+];
+
+function EarningsAgent() {
+  const [messages, setMessages] = useState<EarningsAgentMessage[]>([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const sendMessage = useCallback(async (text: string) => {
+    if (!text.trim() || loading) return;
+    const userMsg: EarningsAgentMessage = { role: "user", content: text.trim(), timestamp: Date.now() };
+    setMessages((prev) => [...prev, userMsg]);
+    setInput("");
+    setLoading(true);
+
+    try {
+      const history = messages.map((m) => ({ role: m.role, content: m.content }));
+      const payload: Record<string, unknown> = {
+        query: text.trim(),
+        preset_intent: "earnings_catalyst",
+        history: history.length > 0 ? history : undefined,
+        conversation_id: conversationId,
+      };
+
+      const res = await fetch(`${AGENT_BACKEND_URL}/api/query`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-API-Key": AGENT_API_KEY,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errText = await res.text().catch(() => "");
+        throw new Error(`Backend returned ${res.status}: ${errText.slice(0, 200)}`);
+      }
+
+      const data = await res.json();
+      const convId = data.conversation_id || conversationId;
+      if (convId) setConversationId(convId);
+
+      let analysisText = "";
+      if (data.analysis) {
+        analysisText = data.analysis;
+      } else if (data.structured?.message) {
+        analysisText = data.structured.message;
+      } else if (data.structured?.analysis) {
+        analysisText = data.structured.analysis;
+      } else if (typeof data.message === "string") {
+        analysisText = data.message;
+      } else {
+        analysisText = "Received response but couldn't extract analysis. Raw: " + JSON.stringify(data).slice(0, 500);
+      }
+
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: analysisText, timestamp: Date.now() },
+      ]);
+    } catch (err) {
+      console.error("[EARNINGS_AGENT]", err);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: `Error: ${err instanceof Error ? err.message : "Failed to reach agent. Please try again."}`,
+          timestamp: Date.now(),
+        },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  }, [loading, messages, conversationId]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    sendMessage(input);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage(input);
+    }
+  };
+
+  return (
+    <GlassCard className="p-5 mb-6">
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #f59e0b 0%, #f97316 50%, #ef4444 100%)' }}>
+          <Sparkles className="w-4 h-4 text-white" />
+        </div>
+        <div>
+          <h2 className="text-base font-bold text-white flex items-center gap-2">
+            Caelyn Earnings
+          </h2>
+          <p className="text-[10px] text-white/30">
+            Ask about upcoming earnings, beat odds, sentiment, and trading setups
+          </p>
+        </div>
+      </div>
+
+      {/* Suggested prompts (only show when no messages) */}
+      {messages.length === 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
+          {EARNINGS_SUGGESTED_PROMPTS.map((prompt) => (
+            <button
+              key={prompt}
+              onClick={() => sendMessage(prompt)}
+              disabled={loading}
+              className="text-left text-[11px] text-white/50 bg-white/[0.03] border border-white/[0.06] rounded-lg px-3 py-2.5 hover:bg-white/[0.06] hover:text-white/70 hover:border-white/10 transition-all disabled:opacity-40"
+            >
+              <MessageSquare className="w-3 h-3 inline mr-1.5 opacity-40" />
+              {prompt}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Messages */}
+      {messages.length > 0 && (
+        <div className="mb-4 max-h-[500px] overflow-y-auto space-y-3 scrollbar-hide">
+          {messages.map((msg, i) => (
+            <div
+              key={i}
+              className={`rounded-lg px-4 py-3 text-xs leading-relaxed ${
+                msg.role === "user"
+                  ? "bg-orange-500/10 border border-orange-500/20 text-orange-100"
+                  : "bg-white/[0.03] border border-white/[0.06] text-white/80"
+              }`}
+            >
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <span className={`text-[9px] font-bold uppercase tracking-wider ${
+                  msg.role === "user" ? "text-orange-400" : "text-yellow-400"
+                }`}>
+                  {msg.role === "user" ? "You" : "Agent"}
+                </span>
+              </div>
+              <div className="whitespace-pre-wrap">{msg.content}</div>
+            </div>
+          ))}
+          {loading && (
+            <div className="rounded-lg px-4 py-3 bg-white/[0.03] border border-white/[0.06] text-xs text-white/40">
+              <div className="flex items-center gap-2">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                Analyzing earnings data with sentiment and technicals...
+              </div>
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+      )}
+
+      {/* Input */}
+      <form onSubmit={handleSubmit} className="flex gap-2">
+        <textarea
+          ref={inputRef}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Ask about earnings... (e.g., &quot;Which stocks have the best beat odds this week?&quot;)"
+          disabled={loading}
+          rows={1}
+          className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2.5 text-xs text-white placeholder-white/25 resize-none focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/10 disabled:opacity-40 transition-all"
+        />
+        <Button
+          type="submit"
+          disabled={loading || !input.trim()}
+          className="text-white px-3 py-2 rounded-lg transition-all disabled:opacity-30 flex-shrink-0" style={{ background: 'linear-gradient(135deg, #f59e0b, #f97316, #ef4444)' }}
+        >
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+        </Button>
+      </form>
+
+      {/* Clear conversation */}
+      {messages.length > 0 && (
+        <button
+          onClick={() => { setMessages([]); setConversationId(null); }}
+          className="mt-2 text-[9px] text-white/20 hover:text-white/40 transition-colors"
+        >
+          Clear conversation
+        </button>
+      )}
+    </GlassCard>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────
 
 export default function StocksEarningsCalendarPage() {
@@ -1048,6 +1257,7 @@ export default function StocksEarningsCalendarPage() {
       </div>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+        <EarningsAgent />
         <GlassCard className="p-5">
           {earningsLoading && earningsMarkets.length === 0 ? (
             <div>
