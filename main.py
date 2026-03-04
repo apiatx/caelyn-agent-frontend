@@ -136,8 +136,15 @@ async def _briefing_precompute_loop():
                 data_service.stocktwits.get_trending(),
                 asyncio.to_thread(data_service.finnhub.get_upcoming_earnings),
             ]
-            if data_service.fmp:
-                briefing_tasks.append(data_service.fmp.get_market_news(limit=15))
+            # News: prefer web_search (Perplexity→Brave→Tavily), FMP free tier is slow/unreliable
+            if data_service.web_search:
+                briefing_tasks.append(
+                    asyncio.wait_for(
+                        data_service.web_search.get_market_news(topic="stock market financial news today"),
+                        timeout=10.0))
+            elif data_service.fmp:
+                briefing_tasks.append(
+                    asyncio.wait_for(data_service.fmp.get_market_news(limit=15), timeout=8.0))
             else:
                 briefing_tasks.append(asyncio.sleep(0))
 
@@ -153,7 +160,12 @@ async def _briefing_precompute_loop():
              insider_buying, revenue_leaders, rsi_recovery, accumulation,
              trending, upcoming_earnings, market_news_raw) = results
 
-            market_news = safe(market_news_raw)
+            market_news_val = safe(market_news_raw)
+            # Normalize: web_search returns dict with 'articles', FMP returns list
+            if isinstance(market_news_val, dict):
+                market_news = market_news_val.get("articles", [])
+            else:
+                market_news = market_news_val if isinstance(market_news_val, list) else []
             fear_greed = safe(fear_greed, {})
             fred_macro = safe(fred_macro, {})
             stage2_breakouts = safe(stage2_breakouts)
