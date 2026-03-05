@@ -1881,7 +1881,7 @@ class MarketDataService:
                         break
 
         shortlist = sorted(shortlist_set, key=_pre_rank_score, reverse=True)
-        candle_targets = shortlist[:20]
+        candle_targets = shortlist[:12]  # Top-N narrowing: pre_rank_score already sorted, fetch candles only for top 12 (Phase 2b broadens if <8 succeed)
         print(
             f"[BEST_TRADES] Phase 1: Shortlisted {len(shortlist)} (buckets: vol={len(bucket_volume)} brk={len(bucket_breakout)} gain={len(bucket_gainer)} score={len(bucket_score)}), fetching candles for top {len(candle_targets)}"
         )

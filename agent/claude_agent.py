@@ -3253,6 +3253,31 @@ class TradingAgent:
                 query_info,
             ) or {}
 
+        elif category == "general":
+            # Fast path: lightweight context only — fear/greed + macro snapshot
+            # No heavy scans, no candles, no enrichment
+            fast_ctx = {}
+            try:
+                fg = await asyncio.wait_for(
+                    self.data.fear_greed.get_fear_greed_index(),
+                    timeout=4.0,
+                )
+                if fg:
+                    fast_ctx["fear_greed"] = fg
+            except Exception:
+                pass
+            try:
+                macro = await asyncio.wait_for(
+                    self.data._build_macro_snapshot(),
+                    timeout=5.0,
+                )
+                if macro:
+                    slim = {k: macro[k] for k in ("vix", "fed_funds_rate", "treasury_10y", "regime", "spy", "qqq") if k in macro}
+                    fast_ctx["macro_snapshot"] = slim
+            except Exception:
+                pass
+            return fast_ctx
+
         else:
             return {}
 
