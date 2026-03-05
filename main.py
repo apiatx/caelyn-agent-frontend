@@ -723,6 +723,23 @@ async def earnings_detail(request: Request, ticker: str = ""):
         result["news_sentiment"] = "Neutral"
         result["news_summary"] = ""
 
+    # Phase 3: EDGAR XBRL — revenue trend (free, no key needed)
+    # Adds last 4 quarters of revenue to show growth/decline context for earnings
+    try:
+        cik = await agent.data.sec_edgar.resolve_cik(ticker)
+        if cik:
+            from data.sec_edgar_provider import EdgarBudget
+            edgar_budget = EdgarBudget(max_requests=2)
+            edgar_financials = await asyncio.wait_for(
+                agent.data.sec_edgar.get_company_financials(cik, budget=edgar_budget),
+                timeout=6.0,
+            )
+            if edgar_financials:
+                result["edgar_financials"] = edgar_financials
+                print(f"[EARNINGS_DETAIL] EDGAR enriched {ticker}: {list(edgar_financials.keys())}")
+    except Exception as e:
+        print(f"[EARNINGS_DETAIL] EDGAR enrichment failed for {ticker}: {e}")
+
     # Cache for 10 minutes
     cache.set(cache_key, result, 600)
     return JSONResponse(content=result)
