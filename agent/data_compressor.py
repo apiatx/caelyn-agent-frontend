@@ -971,7 +971,9 @@ def _trim_news(news_context: dict) -> dict:
                 if isinstance(a, dict):
                     trimmed[key].append({
                         "title": a.get("title", a.get("headline", "")),
+                        "url": a.get("url", ""),
                         "source": a.get("source", ""),
+                        "published": a.get("published", a.get("age", "")),
                         "sentiment": a.get("overall_sentiment_label", a.get("sentiment", "")),
                         "tickers": a.get("ticker_sentiment", a.get("tickers", [])),
                     })
