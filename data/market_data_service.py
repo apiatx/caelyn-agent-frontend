@@ -5205,6 +5205,13 @@ class MarketDataService:
                 except Exception as e:
                     print(f"[EDGAR] Catalysts error for {ticker}: {e}")
 
+                try:
+                    entry["financials"] = await self.sec_edgar.get_company_financials(
+                        cik, budget=budget
+                    )
+                except Exception as e:
+                    print(f"[EDGAR] Financials error for {ticker}: {e}")
+
             if mode == "insider_focus":
                 try:
                     entry[

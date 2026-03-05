@@ -335,6 +335,96 @@ class SecEdgarProvider:
         cache.set(cache_key, catalysts, EDGAR_CATALYST_TTL)
         return catalysts
 
+
+    async def get_company_financials(
+        self,
+        cik: str,
+        budget: "EdgarBudget | None" = None,
+    ) -> dict:
+        """
+        Fetch key financials from XBRL companyfacts API.
+        Returns revenue, net income, EPS, assets, and debt — free, no key needed.
+        Cached 6 hours (financials don't change intraday).
+        """
+        cache_key = f"edgar:financials:{cik}"
+        cached = cache.get(cache_key)
+        if cached is not None:
+            if budget:
+                budget.record_cache_hit()
+            return cached
+
+        url = f"{self.DATA_URL}/api/xbrl/companyfacts/CIK{cik}.json"
+        data = await self._fetch(url, budget=budget)
+        if not data:
+            return {}
+
+        facts = data.get("facts", {}).get("us-gaap", {})
+
+        def latest_annual(concept: str) -> float | None:
+            """Get the most recent annual value for a concept."""
+            entries = facts.get(concept, {}).get("units", {})
+            usd = entries.get("USD", entries.get("shares", []))
+            annual = [
+                e for e in usd
+                if e.get("form") in ("10-K", "20-F")
+                and e.get("val") is not None
+            ]
+            if not annual:
+                return None
+            annual.sort(key=lambda x: x.get("end", ""), reverse=True)
+            return annual[0].get("val")
+
+        def latest_quarterly(concept: str) -> float | None:
+            """Get most recent quarterly value."""
+            entries = facts.get(concept, {}).get("units", {})
+            usd = entries.get("USD", entries.get("shares", []))
+            qtrs = [
+                e for e in usd
+                if e.get("form") in ("10-Q",)
+                and e.get("val") is not None
+            ]
+            if not qtrs:
+                return None
+            qtrs.sort(key=lambda x: x.get("end", ""), reverse=True)
+            return qtrs[0].get("val")
+
+        revenue = latest_annual("Revenues") or latest_annual("RevenueFromContractWithCustomerExcludingAssessedTax")
+        net_income = latest_annual("NetIncomeLoss")
+        eps = latest_annual("EarningsPerShareBasic")
+        assets = latest_annual("Assets")
+        debt = latest_annual("LongTermDebt")
+        revenue_qtr = latest_quarterly("Revenues") or latest_quarterly("RevenueFromContractWithCustomerExcludingAssessedTax")
+
+        # Calculate revenue growth YoY if we have 2 years
+        rev_entries = facts.get("Revenues", facts.get("RevenueFromContractWithCustomerExcludingAssessedTax", {}))
+        rev_annual = sorted(
+            [e for e in rev_entries.get("units", {}).get("USD", [])
+             if e.get("form") in ("10-K", "20-F") and e.get("val")],
+            key=lambda x: x.get("end", ""), reverse=True
+        )
+        rev_growth_yoy = None
+        if len(rev_annual) >= 2:
+            curr = rev_annual[0].get("val", 0)
+            prev = rev_annual[1].get("val", 0)
+            if prev and prev != 0:
+                rev_growth_yoy = round((curr - prev) / abs(prev) * 100, 1)
+
+        result = {
+            "revenue_annual": revenue,
+            "revenue_qtr": revenue_qtr,
+            "revenue_growth_yoy_pct": rev_growth_yoy,
+            "net_income": net_income,
+            "eps_basic": eps,
+            "total_assets": assets,
+            "long_term_debt": debt,
+            "source": "sec_edgar_xbrl",
+        }
+
+        # Remove None values
+        result = {k: v for k, v in result.items() if v is not None}
+        cache.set(cache_key, result, 21600)  # 6 hour cache
+        return result
+
     def get_health(self) -> dict:
         return {
             "enabled": True,
