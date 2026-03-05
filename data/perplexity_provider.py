@@ -352,3 +352,163 @@ class PerplexityProvider:
 
         cache.set(cache_key, result, PERPLEXITY_TTL)
         return result
+
+    # ── Sonar API for structured commodity data ──────────────────
+
+    SONAR_URL = "https://api.perplexity.ai/chat/completions"
+
+    # TradingView-compatible symbols for commodity ETF proxies
+    COMMODITY_TV_MAP = {
+        "gold": {"proxy": "GLD", "tv_symbol": "AMEX:GLD", "type": "metals"},
+        "silver": {"proxy": "SLV", "tv_symbol": "AMEX:SLV", "type": "metals"},
+        "oil": {"proxy": "USO", "tv_symbol": "AMEX:USO", "type": "energy"},
+        "crude oil": {"proxy": "USO", "tv_symbol": "AMEX:USO", "type": "energy"},
+        "natural gas": {"proxy": "UNG", "tv_symbol": "AMEX:UNG", "type": "energy"},
+        "copper": {"proxy": "COPX", "tv_symbol": "AMEX:COPX", "type": "metals"},
+        "uranium": {"proxy": "URA", "tv_symbol": "AMEX:URA", "type": "energy"},
+        "platinum": {"proxy": "PPLT", "tv_symbol": "AMEX:PPLT", "type": "metals"},
+        "palladium": {"proxy": "PALL", "tv_symbol": "AMEX:PALL", "type": "metals"},
+        "lithium": {"proxy": "LIT", "tv_symbol": "AMEX:LIT", "type": "metals"},
+        "wheat": {"proxy": "WEAT", "tv_symbol": "AMEX:WEAT", "type": "agriculture"},
+        "corn": {"proxy": "CORN", "tv_symbol": "AMEX:CORN", "type": "agriculture"},
+        "agriculture": {"proxy": "DBA", "tv_symbol": "AMEX:DBA", "type": "agriculture"},
+    }
+
+    async def get_trending_commodities(self) -> list:
+        """
+        Use Perplexity Sonar to get current trending commodities with prices/moves,
+        then map to TradingView-compatible ETF proxy symbols.
+        Returns list of commodity dicts compatible with cross_asset_trending pipeline.
+        """
+        cache_key = "pplx:sonar_commodities"
+        cached = cache.get(cache_key)
+        if cached is not None:
+            print(f"[Perplexity] Sonar commodities cache hit: {len(cached)} items")
+            return cached
+
+        prompt = (
+            "List the top 5 most trending/moving commodities and futures right now. "
+            "For each one, provide: name, current price, daily % change, and a brief "
+            "1-sentence reason why it's moving. Focus on: crude oil, gold, silver, "
+            "natural gas, copper, uranium, platinum, palladium, lithium, wheat, corn. "
+            "Format each as: NAME | PRICE | CHANGE% | REASON"
+        )
+
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.post(
+                    self.SONAR_URL,
+                    headers=self._headers,
+                    json={
+                        "model": "sonar",
+                        "messages": [
+                            {"role": "system", "content": "You are a commodities market analyst. Provide current, accurate market data. Always include the daily percentage change with a + or - sign."},
+                            {"role": "user", "content": prompt},
+                        ],
+                        "temperature": 0.1,
+                        "max_tokens": 800,
+                    },
+                    timeout=15.0,
+                )
+
+            if resp.status_code != 200:
+                print(f"[Perplexity] Sonar commodities HTTP {resp.status_code}: {resp.text[:200]}")
+                return []
+
+            raw = resp.json()
+            content = ""
+            choices = raw.get("choices", [])
+            if choices:
+                content = choices[0].get("message", {}).get("content", "")
+            citations = raw.get("citations", [])
+
+            if not content:
+                print("[Perplexity] Sonar commodities: empty response")
+                return []
+
+            commodities = self._parse_commodity_response(content, citations)
+            if commodities:
+                cache.set(cache_key, commodities, PERPLEXITY_TTL)
+                print(f"[Perplexity] Sonar commodities: {len(commodities)} items parsed")
+            return commodities
+
+        except Exception as e:
+            print(f"[Perplexity] Sonar commodities error: {e}")
+            return []
+
+    def _parse_commodity_response(self, content: str, citations: list = None) -> list:
+        """Parse Sonar response into structured commodity data with TradingView symbols."""
+        import re
+        results = []
+
+        lines = content.strip().split("\n")
+        for line in lines:
+            line = line.strip().lstrip("0123456789.-)*] ")
+            if not line or len(line) < 5:
+                continue
+
+            # Try to parse "NAME | PRICE | CHANGE% | REASON" format
+            parts = [p.strip() for p in line.split("|")]
+            if len(parts) >= 3:
+                name = parts[0].strip().lstrip("*#- ").rstrip("*")
+                price_str = parts[1].strip()
+                change_str = parts[2].strip()
+                reason = parts[3].strip() if len(parts) >= 4 else ""
+            else:
+                # Try free-form: look for price ($xxx) and change (+/-x.x%)
+                name_match = re.match(r'^[*#\-\s]*([A-Za-z\s]+)', line)
+                if not name_match:
+                    continue
+                name = name_match.group(1).strip()
+                price_match = re.search(r'\$?([\d,]+\.?\d*)', line)
+                change_match = re.search(r'([+-]?\d+\.?\d*)\s*%', line)
+                price_str = price_match.group(1) if price_match else ""
+                change_str = change_match.group(0) if change_match else ""
+                reason_match = re.search(r'(?:due to|because|amid|as|driven by|on)\s+(.+)', line, re.IGNORECASE)
+                reason = reason_match.group(1).strip() if reason_match else ""
+
+            # Parse price
+            try:
+                price = float(price_str.replace("$", "").replace(",", ""))
+            except (ValueError, AttributeError):
+                price = None
+
+            # Parse change %
+            try:
+                change_pct = float(re.search(r'([+-]?\d+\.?\d*)', change_str).group(1))
+            except (ValueError, AttributeError):
+                change_pct = 0.0
+
+            # Match to TradingView symbol
+            name_lower = name.lower().strip()
+            tv_info = None
+            for key, info in self.COMMODITY_TV_MAP.items():
+                if key in name_lower or name_lower in key:
+                    tv_info = info
+                    break
+
+            if not tv_info:
+                # Default fallback
+                tv_info = {"proxy": name[:4].upper(), "tv_symbol": "", "type": "commodity"}
+
+            results.append({
+                "symbol": tv_info["proxy"],
+                "name": name,
+                "theme": name_lower.replace(" ", "_"),
+                "type": tv_info["type"],
+                "price": price,
+                "change": round(price * change_pct / 100, 2) if price and change_pct else None,
+                "change_pct": change_pct,
+                "abs_change_pct": abs(change_pct),
+                "volume": None,
+                "avg_volume": None,
+                "year_high": None,
+                "year_low": None,
+                "grok_theme_match": False,
+                "tradingview_symbol": tv_info["tv_symbol"],
+                "source": "perplexity_sonar",
+                "reason": reason[:200] if reason else "",
+                "citations": citations[:3] if citations else [],
+            })
+
+        return results[:5]

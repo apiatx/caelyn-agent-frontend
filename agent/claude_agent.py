@@ -2846,7 +2846,16 @@ class TradingAgent:
             tickers = query_info.get("tickers", [])
             results = {}
             for ticker in tickers[:5]:
-                results[ticker] = await self.data.research_ticker(ticker)
+                try:
+                    results[ticker] = await asyncio.wait_for(
+                        self.data.research_ticker(ticker), timeout=30.0
+                    )
+                except asyncio.TimeoutError:
+                    print(f"[TICKER_ANALYSIS] research_ticker({ticker}) timed out after 30s")
+                    results[ticker] = {"error": "timeout"}
+                except Exception as e:
+                    print(f"[TICKER_ANALYSIS] research_ticker({ticker}) failed: {e}")
+                    results[ticker] = {"error": str(e)}
             original = query_info.get("original_prompt", "").lower()
             edgar_keywords = ["catalyst", "why now", "insider", "filings", "s-1", "8-k",
                               "offering", "dilution", "secondary", "lockup", "guidance", "sec"]

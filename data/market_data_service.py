@@ -759,7 +759,7 @@ class MarketDataService:
 
         # Web search for batch enrichment (background AI context, not user-facing)
         if self.web_search:
-            async_tasks.append(self.web_search.get_ticker_news_sentiment(ticker))
+            async_tasks.append(asyncio.wait_for(self.web_search.get_ticker_news_sentiment(ticker), timeout=10.0))
             async_keys.append("tavily_enrichment")
         else:
             # Fallback to legacy providers
@@ -4874,14 +4874,29 @@ class MarketDataService:
                 p.get("theme", "") in force_include_themes,
             })
 
+        # Perplexity Sonar fallback: if FMP returned no commodity data, use Sonar
+        sonar_used = False
+        if len(commodity_proxies) == 0 and self.web_search and hasattr(self.web_search, 'perplexity') and self.web_search.perplexity:
+            try:
+                sonar_commodities = await asyncio.wait_for(
+                    self.web_search.perplexity.get_trending_commodities(),
+                    timeout=15.0,
+                )
+                if sonar_commodities:
+                    commodity_proxies = sonar_commodities
+                    sonar_used = True
+                    print(f"[COMMODITIES] FMP empty, Perplexity Sonar returned {len(sonar_commodities)} commodities")
+            except Exception as e:
+                print(f"[COMMODITIES] Perplexity Sonar fallback failed: {e}")
+
         commodity_proxies.sort(key=lambda x:
-                               (x["grok_theme_match"], x["abs_change_pct"]),
+                               (x.get("grok_theme_match", False), x.get("abs_change_pct", 0)),
                                reverse=True)
 
         selected = []
         selected_themes = set()
         for cp in commodity_proxies:
-            if cp["grok_theme_match"] and cp["theme"] not in selected_themes:
+            if cp.get("grok_theme_match") and cp.get("theme", "") not in selected_themes:
                 selected.append(cp)
                 selected_themes.add(cp["theme"])
                 if len(selected) >= 4:
@@ -4894,8 +4909,9 @@ class MarketDataService:
 
         grok_theme_names = list(
             force_include_themes) if force_include_themes else []
+        source_label = "perplexity_sonar" if sonar_used else "fmp"
         print(
-            f"[COMMODITIES] universe={len(all_proxies)} fetched={len(commodity_proxies)} selected={len(selected)} grok_themes={grok_theme_names} missing={missing[:5]}"
+            f"[COMMODITIES] source={source_label} universe={len(all_proxies)} fetched={len(commodity_proxies)} selected={len(selected)} grok_themes={grok_theme_names} missing={missing[:5]}"
         )
 
         result = {
