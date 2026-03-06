@@ -607,6 +607,73 @@ Keep it tight. This is a mood check, not a full scan."""
 
         return result
 
+    async def get_thematic_conviction_ideas(self) -> dict:
+        """
+        Ask Grok to identify the highest-conviction long-term investment ideas
+        being discussed by serious investors on X right now.
+        Returns structured list of tickers with thesis and sector context.
+        This is the DISCOVERY layer for Best Investments — thematic first, not Finviz first.
+        """
+        prompt = """Search X/Twitter right now for what serious long-term investors, fund managers, 
+and well-followed analysts are discussing as their highest conviction multi-year holdings.
+
+Focus specifically on these sectors where decade-defining companies are being built:
+- AI infrastructure: compute, data centers, power, cooling, optical interconnects, semiconductors
+- Defense & Aerospace: next-gen weapons, drones, autonomous systems, space
+- Quantum computing: hardware, software, cryptography applications
+- Energy infrastructure: grid buildout, nuclear revival, LNG, critical power bottlenecks
+- Critical materials & mining: rare earths, copper, lithium, uranium — the physical bottlenecks
+- Cybersecurity: infrastructure protection, zero-trust, AI-driven security
+- Biotech: late-stage clinical breakthroughs, cancer treatments, GLP-1 adjacents
+- Financial infrastructure: payments rails, alternative asset managers benefiting from rate environment
+
+Look for tickers being mentioned by respected investors as:
+- "the next Microsoft / Google / Lockheed" type compounders
+- Bottleneck monopolies: companies that trillion-dollar trends CANNOT function without
+- Companies with visionary respected leadership (Jensen Huang, Palantir founders, etc.)
+- Names that Congress members are consistently buying (insider confidence signal)
+- Companies with genuine competitive moats that will widen over time
+
+Return ONLY a JSON object (no markdown, no backticks):
+{
+    "thematic_leaders": [
+        {
+            "ticker": "SYMBOL",
+            "company": "Full Company Name",
+            "sector": "AI Infrastructure / Defense / Quantum / Energy / Materials / Cybersecurity / Biotech / Finance",
+            "thesis_one_liner": "Why this is a decade-defining company in one sentence",
+            "bottleneck_factor": "What critical chokepoint does this company control, if any",
+            "leadership_signal": "Notable leadership strength or respected founder/CEO if applicable",
+            "x_sentiment": "bullish / very_bullish / mixed",
+            "mention_quality": "institutional / retail / mixed",
+            "why_now": "What specific catalyst or trend is accelerating this company right now",
+            "conviction_tier": 1 to 3 (1=highest conviction, 3=watchlist)
+        }
+    ],
+    "dominant_themes": ["theme1", "theme2", "theme3"],
+    "sectors_with_most_conviction": ["sector1", "sector2"],
+    "summary": "2-3 sentence summary of where serious long-term capital is positioning right now"
+}
+
+Return 8-12 tickers. Prioritize Tier 1 conviction. Include at least one from each major sector if genuine conviction exists.
+Be specific and opinionated — generic blue chips like AAPL or MSFT only if there is a specific fresh thesis."""
+
+        result = await self._call_grok_with_x_search(prompt, raw_mode=False)
+        if isinstance(result, dict) and "thematic_leaders" in result:
+            return result
+        # If Grok returned raw text, try to extract JSON
+        if isinstance(result, dict) and "raw" in result:
+            import re as _re
+            raw = result["raw"]
+            match = _re.search(r'\{.*\}', raw, _re.DOTALL)
+            if match:
+                import json as _json
+                try:
+                    return _json.loads(match.group())
+                except Exception:
+                    pass
+        return {"thematic_leaders": [], "summary": "Grok thematic scan unavailable", "error": True}
+
     async def _call_grok_with_x_search(
         self,
         prompt: str,

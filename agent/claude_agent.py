@@ -3005,16 +3005,54 @@ class TradingAgent:
             return await self.data.get_dashboard()
 
         elif category == "investments":
+            # Phase 1: Grok thematic discovery (parallel with Finviz scan)
+            # Grok finds decade-defining companies — Finviz validates what's moving now
+            grok_thematic_task = None
+            if self.data.xai:
+                try:
+                    grok_thematic_task = asyncio.create_task(
+                        asyncio.wait_for(
+                            self.data.xai.get_thematic_conviction_ideas(),
+                            timeout=18.0,
+                        )
+                    )
+                except Exception as e:
+                    print(f"[INVESTMENTS] Grok thematic task failed to create: {e}")
+
+            # Phase 2: Finviz fundamental scan (runs in parallel)
             invest_data = await self.data.wide_scan_and_rank("investments", filters)
+
+            # Phase 3: Collect Grok thematic results
+            grok_thematic = {}
+            if grok_thematic_task:
+                try:
+                    grok_thematic = await grok_thematic_task
+                    leaders = grok_thematic.get("thematic_leaders", [])
+                    print(f"[INVESTMENTS] Grok thematic: {len(leaders)} leaders found, themes: {grok_thematic.get('dominant_themes', [])}")
+                except Exception as e:
+                    print(f"[INVESTMENTS] Grok thematic failed: {e}")
+
             if isinstance(invest_data, dict):
-                top_tickers = [
-                    c.get("ticker") for c in invest_data.get("candidates", invest_data.get("picks", []))[:8]
+                # Attach Grok thematic data so Claude can reason about decade-defining leaders
+                if grok_thematic and not grok_thematic.get("error"):
+                    invest_data["grok_thematic"] = grok_thematic
+
+                # Phase 4: EDGAR enrichment on top candidates
+                # Merge Grok tickers + Finviz tickers for enrichment
+                finviz_tickers = [
+                    c.get("ticker") for c in invest_data.get("candidates", invest_data.get("picks", []))[:6]
                     if c.get("ticker")
                 ]
-                if top_tickers:
+                grok_tickers = [
+                    t.get("ticker") for t in grok_thematic.get("thematic_leaders", [])
+                    if t.get("ticker") and t.get("conviction_tier", 3) <= 2
+                ][:6]
+                all_enrich_tickers = list(dict.fromkeys(grok_tickers + finviz_tickers))[:8]
+
+                if all_enrich_tickers:
                     try:
                         edgar_data = await asyncio.wait_for(
-                            self.data.enrich_with_edgar(top_tickers, mode="standard"),
+                            self.data.enrich_with_edgar(all_enrich_tickers, mode="standard"),
                             timeout=10.0,
                         )
                         if edgar_data:
@@ -3022,6 +3060,7 @@ class TradingAgent:
                             print(f"[EDGAR] Investments enriched: {list(edgar_data.keys())}")
                     except Exception as e:
                         print(f"[EDGAR] Investments enrichment error: {e}")
+
             return invest_data
 
         elif category == "fundamentals_scan":
