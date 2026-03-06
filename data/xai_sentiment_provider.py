@@ -658,7 +658,7 @@ Return ONLY a JSON object (no markdown, no backticks):
 Return 8-12 tickers. Prioritize Tier 1 conviction. Include at least one from each major sector if genuine conviction exists.
 Be specific and opinionated — generic blue chips like AAPL or MSFT only if there is a specific fresh thesis."""
 
-        result = await self._call_grok_with_x_search(prompt, raw_mode=False)
+        result = await self._call_grok_with_x_search(prompt, raw_mode=False, timeout=12.0)
         if isinstance(result, dict) and "thematic_leaders" in result:
             return result
         # If Grok returned raw text, try to extract JSON

@@ -3005,32 +3005,32 @@ class TradingAgent:
             return await self.data.get_dashboard()
 
         elif category == "investments":
-            # Phase 1: Grok thematic discovery (parallel with Finviz scan)
-            # Grok finds decade-defining companies — Finviz validates what's moving now
-            grok_thematic_task = None
-            if self.data.xai:
+            # Run Grok thematic discovery + Finviz scan truly in parallel
+            # Hard 12s cap on Grok — if it misses, Finviz results still flow through
+            async def _safe_grok_thematic():
+                if not self.data.xai:
+                    return {}
                 try:
-                    grok_thematic_task = asyncio.create_task(
-                        asyncio.wait_for(
-                            self.data.xai.get_thematic_conviction_ideas(),
-                            timeout=18.0,
-                        )
+                    return await asyncio.wait_for(
+                        self.data.xai.get_thematic_conviction_ideas(),
+                        timeout=12.0,
                     )
                 except Exception as e:
-                    print(f"[INVESTMENTS] Grok thematic task failed to create: {e}")
+                    print(f"[INVESTMENTS] Grok thematic failed/timed out: {e}")
+                    return {}
 
-            # Phase 2: Finviz fundamental scan (runs in parallel)
-            invest_data = await self.data.wide_scan_and_rank("investments", filters)
+            grok_result, invest_data = await asyncio.gather(
+                _safe_grok_thematic(),
+                self.data.wide_scan_and_rank("investments", filters),
+                return_exceptions=True,
+            )
 
-            # Phase 3: Collect Grok thematic results
-            grok_thematic = {}
-            if grok_thematic_task:
-                try:
-                    grok_thematic = await grok_thematic_task
-                    leaders = grok_thematic.get("thematic_leaders", [])
-                    print(f"[INVESTMENTS] Grok thematic: {len(leaders)} leaders found, themes: {grok_thematic.get('dominant_themes', [])}")
-                except Exception as e:
-                    print(f"[INVESTMENTS] Grok thematic failed: {e}")
+            grok_thematic = grok_result if isinstance(grok_result, dict) else {}
+            if not isinstance(invest_data, dict):
+                invest_data = {}
+
+            leaders = grok_thematic.get("thematic_leaders", [])
+            print(f"[INVESTMENTS] Grok thematic: {len(leaders)} leaders | Finviz candidates: {len(invest_data.get('candidates', invest_data.get('picks', [])))}")
 
             if isinstance(invest_data, dict):
                 # Attach Grok thematic data so Claude can reason about decade-defining leaders
