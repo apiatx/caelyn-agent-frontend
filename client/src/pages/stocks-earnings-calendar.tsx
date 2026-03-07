@@ -816,6 +816,8 @@ function EarningsCalendarWidget({ markets }: { markets: ParsedMarket[] }) {
   const [viewMode, setViewMode] = useState<"smart" | "all">("smart");
   const [smartData, setSmartData] = useState<Record<string, SmartDayData>>({});
   const [smartLoading, setSmartLoading] = useState(false);
+  const [smartOverflowCount, setSmartOverflowCount] = useState(0);
+  const SMART_MORE_BATCH = 10;
 
   // Build Polymarket date map
   const polyDateMap = new Map<string, EarningsEntry[]>();
@@ -973,9 +975,10 @@ function EarningsCalendarWidget({ markets }: { markets: ParsedMarket[] }) {
   const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
-  // Reset visible count when day changes
+  // Reset visible count and smart show-more when day changes
   useEffect(() => {
     setVisibleCount(BATCH_SIZE);
+    setSmartOverflowCount(0);
   }, [selectedDayKey]);
 
   // IntersectionObserver to load more entries as user scrolls
@@ -1199,6 +1202,9 @@ function EarningsCalendarWidget({ markets }: { markets: ParsedMarket[] }) {
               const timeStr = st.hour === "bmo" ? "Pre-Market" : st.hour === "amc" ? "After Hours" : null;
               const sentimentEmoji = st.sentiment === "bullish" ? "\uD83D\uDFE2" : st.sentiment === "bearish" ? "\uD83D\uDD34" : "\uD83D\uDFE1";
               const buzzIcon = st.buzz_level >= 7 ? "\uD83D\uDD25" : st.buzz_level >= 4 ? "\u3030\uFE0F" : "";
+              // Look up Polymarket beat probability from the already-fetched full day list
+              const polyEntry = displayEntries.find(e => e.ticker.toUpperCase() === st.ticker.toUpperCase());
+              const polyBeatPct = polyEntry && polyEntry.beatPct >= 0 ? polyEntry.beatPct : null;
 
               return (
                 <div
@@ -1206,7 +1212,7 @@ function EarningsCalendarWidget({ markets }: { markets: ParsedMarket[] }) {
                   className="rounded-xl border border-white/[0.06] bg-white/[0.015] hover:bg-white/[0.03] hover:border-white/[0.1] transition-all group cursor-pointer"
                   onClick={() => {
                     // Build a minimal EarningsEntry for the modal
-                    const entry: EarningsEntry = {
+                    const entry: EarningsEntry = polyEntry || {
                       market: null,
                       ticker: st.ticker,
                       company: enrich?.company_name || st.ticker,
@@ -1269,6 +1275,16 @@ function EarningsCalendarWidget({ markets }: { markets: ParsedMarket[] }) {
                             <span>{sentimentEmoji}</span>
                             <span className="capitalize">{st.sentiment}</span>
                           </div>
+                          {/* Polymarket beat probability badge */}
+                          {polyBeatPct != null && (
+                            <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold ${
+                              polyBeatPct >= 60 ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400" :
+                              polyBeatPct <= 40 ? "bg-red-500/10 border border-red-500/20 text-red-400" :
+                              "bg-yellow-500/10 border border-yellow-500/20 text-yellow-400"
+                            }`}>
+                              <span className="text-white/50">PM:</span> {polyBeatPct}% beat
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -1326,6 +1342,67 @@ function EarningsCalendarWidget({ markets }: { markets: ParsedMarket[] }) {
                 </div>
               );
             })}
+            {/* Show more earnings — non-curated tickers from the full day list */}
+            {(() => {
+              const smartTickerSet = new Set(smartTickers.map(s => s.ticker.toUpperCase()));
+              const overflowEntries = displayEntries.filter(e => !smartTickerSet.has(e.ticker.toUpperCase()));
+              if (overflowEntries.length === 0) return null;
+              const visibleOverflow = overflowEntries.slice(0, smartOverflowCount);
+              const hasMore = smartOverflowCount < overflowEntries.length;
+              return (
+                <>
+                  {visibleOverflow.map((e) => (
+                    <div
+                      key={`overflow-${e.market?.marketId || `fh-${e.ticker}`}`}
+                      className="rounded-xl border border-white/[0.04] bg-white/[0.01] hover:bg-white/[0.02] hover:border-white/[0.06] transition-all group cursor-pointer opacity-60"
+                      onClick={() => handleEntryClick(e)}
+                    >
+                      <div className="flex items-center gap-3 px-4 py-3">
+                        <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${tickerColor(e.ticker)} flex items-center justify-center flex-shrink-0`}>
+                          <span className="text-[9px] font-bold text-white">{e.ticker.slice(0, 2)}</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-white/70 group-hover:text-blue-400/70 transition-colors">{e.company}</span>
+                            <span className="text-[10px] font-mono text-white/30">{e.ticker}</span>
+                            {e.quarter && <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-blue-500/10 text-blue-400/50">{e.quarter}</span>}
+                            {e.time && <span className="text-[9px] text-white/20">{e.time}</span>}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {e.eps && <span className="text-[10px] text-white/25">EPS: {e.eps}</span>}
+                          {e.beatPct >= 0 && (
+                            <span className={`text-[9px] px-1.5 py-0.5 rounded-md font-semibold ${
+                              e.beatPct >= 60 ? "bg-emerald-500/8 text-emerald-400/60" :
+                              e.beatPct <= 40 ? "bg-red-500/8 text-red-400/60" :
+                              "bg-yellow-500/8 text-yellow-400/60"
+                            }`}>
+                              PM: {e.beatPct}%
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {smartOverflowCount > 0 && (
+                    <button
+                      onClick={() => setSmartOverflowCount(0)}
+                      className="w-full py-2.5 rounded-xl border border-white/[0.06] bg-white/[0.015] hover:bg-white/[0.03] hover:border-white/[0.1] transition-all text-[11px] font-semibold text-white/40 hover:text-white/60"
+                    >
+                      Show less
+                    </button>
+                  )}
+                  {hasMore && (
+                    <button
+                      onClick={() => setSmartOverflowCount(prev => prev + SMART_MORE_BATCH)}
+                      className="w-full py-2.5 rounded-xl border border-white/[0.06] bg-white/[0.015] hover:bg-white/[0.03] hover:border-white/[0.1] transition-all text-[11px] font-semibold text-white/40 hover:text-white/60"
+                    >
+                      Show more earnings ({overflowEntries.length - smartOverflowCount} more)
+                    </button>
+                  )}
+                </>
+              );
+            })()}
           </div>
         );
       })()}
