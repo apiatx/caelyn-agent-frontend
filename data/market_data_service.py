@@ -1057,9 +1057,9 @@ class MarketDataService:
             "filters":
             "sh_avgvol_o300,fa_salesqoq_o20,fa_opermargin_pos,ta_sma50_pa,sh_price_o5",
             "limit":
-            50,
+            30,
             "enrich_top":
-            15,
+            12,
             "market_cap_floor": 300e6,  # $300M floor — no nano/microcap turnarounds in investments scan
             "market_cap_ceiling": 70e9,  # $70B ceiling — focus on compounders not mega caps
             "extra_screens": [
@@ -1416,10 +1416,11 @@ class MarketDataService:
             except Exception as e:
                 result = {"error": str(e)}
             deep_results.append(result)
-            if i < len(deep_tickers) - 1:
-                await asyncio.sleep(0.8)
 
-        if self.xai and deep_tickers:
+        # Skip xAI batch sentiment for investments — the investments pipeline
+        # already runs a separate Grok thematic call in parallel. Adding another
+        # 30s Grok call here is redundant and blows the time budget.
+        if self.xai and deep_tickers and category != "investments":
             try:
                 x_batch = await asyncio.wait_for(
                     self.xai.get_batch_sentiment(deep_tickers[:10]),
