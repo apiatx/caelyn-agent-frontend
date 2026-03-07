@@ -3,6 +3,17 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 const AGENT_BACKEND_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
 const AGENT_API_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
 
+function getToken(): string | null {
+  return localStorage.getItem('caelyn_token') || sessionStorage.getItem('caelyn_token');
+}
+
+function authHeaders(): Record<string, string> {
+  const h: Record<string, string> = { 'Content-Type': 'application/json', 'X-API-Key': AGENT_API_KEY };
+  const t = getToken();
+  if (t) h['Authorization'] = `Bearer ${t}`;
+  return h;
+}
+
 // Human-readable category title map (used for both predefined and dynamic categories)
 const CATEGORY_TITLE_MAP: Record<string, string> = {
   overview: 'Overview', trades: 'Trades & Ideas', fundamental: 'Fundamental',
@@ -198,7 +209,7 @@ export function HistoryPanel({ isOpen, onClose }: { isOpen: boolean; onClose: ()
   const fetchHistory = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${AGENT_BACKEND_URL}/api/history`);
+      const res = await fetch(`${AGENT_BACKEND_URL}/api/history`, { headers: authHeaders() });
       if (res.ok) {
         const data = await res.json();
         setHistory(data);

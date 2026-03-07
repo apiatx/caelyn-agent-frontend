@@ -6,6 +6,17 @@ import { Settings, Save, Plus, RotateCcw, ChevronDown, ChevronUp, Check, Loader2
 const AGENT_BACKEND_URL = "https://fast-api-server-trading-agent-aidanpilon.replit.app";
 const AGENT_API_KEY = "hippo_ak_7f3x9k2m4p8q1w5t";
 
+function getToken(): string | null {
+  return localStorage.getItem('caelyn_token') || sessionStorage.getItem('caelyn_token');
+}
+
+function authHeaders(extra: Record<string, string> = {}): Record<string, string> {
+  const h: Record<string, string> = { 'Content-Type': 'application/json', 'X-API-Key': AGENT_API_KEY, ...extra };
+  const t = getToken();
+  if (t) h['Authorization'] = `Bearer ${t}`;
+  return h;
+}
+
 // ─── Preset Options ─────────────────────────────────────────────
 
 const SECTOR_OPTIONS = [
@@ -81,7 +92,7 @@ const EMPTY_PROFILE_PRESETS: ProfilePresets = {
 
 async function fetchSettings(): Promise<SettingsData | null> {
   try {
-    const res = await fetch(`${AGENT_BACKEND_URL}/api/settings`);
+    const res = await fetch(`${AGENT_BACKEND_URL}/api/settings`, { headers: authHeaders() });
     if (res.ok) return res.json();
   } catch {}
   return null;
@@ -91,7 +102,7 @@ async function updateSettings(data: Record<string, unknown>): Promise<SettingsDa
   try {
     const res = await fetch(`${AGENT_BACKEND_URL}/api/settings`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json", "X-API-Key": AGENT_API_KEY },
+      headers: authHeaders(),
       body: JSON.stringify(data),
     });
     if (res.ok) return res.json();
@@ -103,7 +114,7 @@ async function saveTemplateApi(type: string, name: string, content: string): Pro
   try {
     const res = await fetch(`${AGENT_BACKEND_URL}/api/settings/templates`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "X-API-Key": AGENT_API_KEY },
+      headers: authHeaders(),
       body: JSON.stringify({ type, name, content }),
     });
     if (res.ok) return res.json();
@@ -115,7 +126,7 @@ async function deleteTemplateApi(type: string, name: string): Promise<SettingsDa
   try {
     const res = await fetch(
       `${AGENT_BACKEND_URL}/api/settings/templates?template_type=${encodeURIComponent(type)}&name=${encodeURIComponent(name)}`,
-      { method: "DELETE", headers: { "X-API-Key": AGENT_API_KEY } },
+      { method: "DELETE", headers: authHeaders({ 'Content-Type': '' }) },
     );
     if (res.ok) return res.json();
   } catch {}

@@ -8,6 +8,17 @@ import diceImage from "@assets/istockphoto-1252690598-612x612_1756665072306.jpg"
 // ─── Constants ────────────────────────────────────────────────────
 const AGENT_BACKEND_URL = "https://fast-api-server-trading-agent-aidanpilon.replit.app";
 const AGENT_API_KEY = "hippo_ak_7f3x9k2m4p8q1w5t";
+
+function getToken(): string | null {
+  return localStorage.getItem('caelyn_token') || sessionStorage.getItem('caelyn_token');
+}
+
+function authHeaders(extra: Record<string, string> = {}): Record<string, string> {
+  const h: Record<string, string> = { 'Content-Type': 'application/json', 'X-API-Key': AGENT_API_KEY, ...extra };
+  const t = getToken();
+  if (t) h['Authorization'] = `Bearer ${t}`;
+  return h;
+}
 const POLYMARKET_PROXY = `${AGENT_BACKEND_URL}/api/polymarket/events`;
 const GAMMA_API = "https://gamma-api.polymarket.com/events";
 const REFRESH_INTERVAL = 60_000;
@@ -737,10 +748,7 @@ function PredictionAgent() {
 
       const res = await fetch(`${AGENT_BACKEND_URL}/api/query`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-API-Key": AGENT_API_KEY,
-        },
+        headers: authHeaders(),
         body: JSON.stringify(payload),
       });
 
@@ -775,7 +783,7 @@ function PredictionAgent() {
       // Auto-save to history (fire-and-forget)
       fetch(`${AGENT_BACKEND_URL}/api/history`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "X-API-Key": AGENT_API_KEY },
+        headers: authHeaders(),
         body: JSON.stringify({ category: "prediction_markets", intent: "prediction_markets", content: analysisText }),
       }).catch(() => {});
     } catch (err) {

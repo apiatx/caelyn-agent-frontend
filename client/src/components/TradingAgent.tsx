@@ -1,8 +1,20 @@
 import { useState, useEffect, useRef } from 'react';
 import caelynLogo from "@assets/image_1771528728963.png";
+import { useAuth } from '@/contexts/AuthContext';
 
 const AGENT_BACKEND_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
 const AGENT_API_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+
+function getToken(): string | null {
+  return localStorage.getItem('caelyn_token') || sessionStorage.getItem('caelyn_token');
+}
+
+function authHeaders(extra: Record<string, string> = {}): Record<string, string> {
+  const h: Record<string, string> = { 'Content-Type': 'application/json', 'X-API-Key': AGENT_API_KEY, ...extra };
+  const t = getToken();
+  if (t) h['Authorization'] = `Bearer ${t}`;
+  return h;
+}
 
 // Map preset_intent → history category for automatic saving
 const INTENT_TO_HISTORY_CATEGORY: Record<string, string> = {
@@ -34,7 +46,7 @@ function saveToPromptHistory(intent: string, rawResponse: string, displayType?: 
   if (!category) return;
   fetch(`${AGENT_BACKEND_URL}/api/history`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-API-Key': AGENT_API_KEY },
+    headers: authHeaders(),
     body: JSON.stringify({ category, intent, content: rawResponse, display_type: displayType }),
   }).catch(e => console.error('[HISTORY_SAVE]', e));
 }
@@ -261,6 +273,7 @@ function FollowUpInput({ panelId, onSubmit, C, font, sansFont, suggestions }: { 
 }
 
 export default function TradingAgent() {
+  const { logout } = useAuth();
   const [prompt, setPrompt] = useState('');
   const [csvData, setCsvData] = useState<string | null>(null);
   const [csvFileName, setCsvFileName] = useState<string | null>(null);
@@ -315,7 +328,7 @@ export default function TradingAgent() {
   }, []);
 
   function fetchRecentHistory() {
-    fetch(`${AGENT_BACKEND_URL}/api/history`)
+    fetch(`${AGENT_BACKEND_URL}/api/history`, { headers: authHeaders() })
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (!data) return;
@@ -434,7 +447,7 @@ export default function TradingAgent() {
     try {
       const res = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-API-Key': AGENT_API_KEY },
+        headers: authHeaders(),
         body: JSON.stringify(payload),
       });
       const raw = await res.text();
@@ -506,7 +519,7 @@ export default function TradingAgent() {
       abortControllerRef.current = controller;
       const res = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-API-Key': AGENT_API_KEY },
+        headers: authHeaders(),
         body: JSON.stringify(payload),
         signal: controller.signal,
       });
@@ -583,7 +596,7 @@ export default function TradingAgent() {
       } else if (queryText) {
         let contentToSave: string;
         try { const p = JSON.parse(raw); contentToSave = JSON.stringify({ _user_query: queryText, ...p }); } catch { contentToSave = raw; }
-        fetch(`${AGENT_BACKEND_URL}/api/history`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-API-Key': AGENT_API_KEY }, body: JSON.stringify({ category: 'terminal', intent: 'freeform_query', content: contentToSave }) }).catch(e => console.error('[HISTORY_SAVE]', e));
+        fetch(`${AGENT_BACKEND_URL}/api/history`, { method: 'POST', headers: authHeaders(), body: JSON.stringify({ category: 'terminal', intent: 'freeform_query', content: contentToSave }) }).catch(e => console.error('[HISTORY_SAVE]', e));
       }
       setTimeout(fetchRecentHistory, 1500);
     } catch (err: any) {
@@ -2776,6 +2789,18 @@ export default function TradingAgent() {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Logout */}
+          <div style={{ padding:'8px', borderTop:`1px solid ${C.border}` }}>
+            <button
+              onClick={logout}
+              style={{ width:'100%', padding:'6px', background:'transparent', color:C.dim, border:`1px solid ${C.border}`, borderRadius:3, cursor:'pointer', fontWeight:600, fontSize:9, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.05em', transition:'all 0.15s' }}
+              onMouseOver={e => { (e.currentTarget as HTMLButtonElement).style.color = '#ef4444'; (e.currentTarget as HTMLButtonElement).style.borderColor = '#ef444440'; }}
+              onMouseOut={e => { (e.currentTarget as HTMLButtonElement).style.color = C.dim; (e.currentTarget as HTMLButtonElement).style.borderColor = C.border; }}
+            >
+              Sign Out
+            </button>
           </div>
         </div>
       </div>

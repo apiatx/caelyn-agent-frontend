@@ -1,11 +1,13 @@
-import { Switch, Route, Redirect } from "wouter";
+import { Switch, Route, Redirect, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { MainLayout } from "@/components/main-layout";
 import { ChatbotProvider } from "@/contexts/ChatbotContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import ChatbotWidget from "@/components/ChatbotWidget";
+import LoginPage from "@/pages/login";
 import Dashboard from "@/pages/dashboard";
 import TopChartsPage from "@/pages/top-charts";
 import AltcoinsPage from "@/pages/altcoins";
@@ -54,9 +56,30 @@ import AboutPage from "@/pages/about";
 
 import NotFound from "@/pages/not-found";
 
+function AuthGuard({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isLoading } = useAuth();
+  const [location] = useLocation();
+
+  if (isLoading) {
+    // Show minimal loading state while verifying token
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#050608' }}>
+        <div className="w-6 h-6 border-2 border-purple-500/40 border-t-purple-500 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated && location !== '/login') {
+    return <Redirect to="/login" />;
+  }
+
+  return <>{children}</>;
+}
+
 function Router() {
   return (
     <Switch>
+      <Route path="/login" component={LoginPage} />
       <Route path="/"><Redirect to="/app/caelyn-ai" /></Route>
       <Route path="/app"><Redirect to="/app/caelyn-ai" /></Route>
       <Route path="/app/market-overview" component={Dashboard} />
@@ -142,9 +165,21 @@ function Router() {
   );
 }
 
-function App() {
+function AppInner() {
+  const { isAuthenticated, isLoading } = useAuth();
+  const [location] = useLocation();
+
+  if (location === '/login') {
+    return (
+      <>
+        <Toaster />
+        <Router />
+      </>
+    );
+  }
+
   return (
-    <QueryClientProvider client={queryClient}>
+    <AuthGuard>
       <ChatbotProvider>
         <TooltipProvider>
           <Toaster />
@@ -154,6 +189,16 @@ function App() {
           <ChatbotWidget />
         </TooltipProvider>
       </ChatbotProvider>
+    </AuthGuard>
+  );
+}
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <AppInner />
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

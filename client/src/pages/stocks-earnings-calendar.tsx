@@ -47,6 +47,17 @@ import { ExternalLink, Loader2, Sparkles, Calendar, ChevronLeft, ChevronRight, C
 const AGENT_BACKEND_URL = "https://fast-api-server-trading-agent-aidanpilon.replit.app";
 const AGENT_API_KEY = "hippo_ak_7f3x9k2m4p8q1w5t";
 const POLYMARKET_PROXY = `${AGENT_BACKEND_URL}/api/polymarket/events`;
+
+function getToken(): string | null {
+  return localStorage.getItem('caelyn_token') || sessionStorage.getItem('caelyn_token');
+}
+
+function authHeaders(extra: Record<string, string> = {}): Record<string, string> {
+  const h: Record<string, string> = { 'Content-Type': 'application/json', 'X-API-Key': AGENT_API_KEY, ...extra };
+  const t = getToken();
+  if (t) h['Authorization'] = `Bearer ${t}`;
+  return h;
+}
 const GAMMA_API = "https://gamma-api.polymarket.com/events";
 const REFRESH_INTERVAL = 60_000;
 
@@ -430,7 +441,8 @@ async function fetchPolymarketByTag(tagSlug: string): Promise<PolyEvent[] | null
 async function fetchFinnhubCalendar(fromDate: string, toDate: string): Promise<FinnhubEarning[]> {
   try {
     const res = await fetch(
-      `${AGENT_BACKEND_URL}/api/earnings/calendar?from_date=${encodeURIComponent(fromDate)}&to_date=${encodeURIComponent(toDate)}`
+      `${AGENT_BACKEND_URL}/api/earnings/calendar?from_date=${encodeURIComponent(fromDate)}&to_date=${encodeURIComponent(toDate)}`,
+      { headers: authHeaders() }
     );
     if (res.ok) {
       const data = await res.json();
@@ -445,7 +457,8 @@ async function fetchFinnhubCalendar(fromDate: string, toDate: string): Promise<F
 async function fetchSmartEarnings(date: string): Promise<SmartDayData | null> {
   try {
     const res = await fetch(
-      `${AGENT_BACKEND_URL}/api/earnings/smart/${encodeURIComponent(date)}`
+      `${AGENT_BACKEND_URL}/api/earnings/smart/${encodeURIComponent(date)}`,
+      { headers: authHeaders() }
     );
     if (res.ok) {
       return await res.json();
@@ -558,7 +571,7 @@ function EarningsModal({ entry, onClose, prefetchedDetail }: { entry: EarningsEn
 
       const res = await fetch(`${AGENT_BACKEND_URL}/api/query`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "X-API-Key": AGENT_API_KEY },
+        headers: authHeaders(),
         body: JSON.stringify({
           query: parts.join(" "),
           preset_intent: "earnings_catalyst",
@@ -588,7 +601,8 @@ function EarningsModal({ entry, onClose, prefetchedDetail }: { entry: EarningsEn
     (async () => {
       try {
         const res = await fetch(
-          `${AGENT_BACKEND_URL}/api/earnings/detail?ticker=${encodeURIComponent(entry.ticker)}`
+          `${AGENT_BACKEND_URL}/api/earnings/detail?ticker=${encodeURIComponent(entry.ticker)}`,
+          { headers: authHeaders() }
         );
         if (!cancelled) {
           if (res.ok) {
@@ -1121,7 +1135,8 @@ function EarningsCalendarWidget({ markets }: { markets: ParsedMarket[] }) {
     setEnrichLoading(prev => new Set([...prev, ticker]));
     try {
       const res = await fetch(
-        `${AGENT_BACKEND_URL}/api/earnings/detail?ticker=${encodeURIComponent(ticker)}`
+        `${AGENT_BACKEND_URL}/api/earnings/detail?ticker=${encodeURIComponent(ticker)}`,
+        { headers: authHeaders() }
       );
       if (res.ok) {
         const data = await res.json();
@@ -1918,10 +1933,7 @@ function EarningsAgent() {
 
       const res = await fetch(`${AGENT_BACKEND_URL}/api/query`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-API-Key": AGENT_API_KEY,
-        },
+        headers: authHeaders(),
         body: JSON.stringify(payload),
       });
 
@@ -1955,7 +1967,7 @@ function EarningsAgent() {
       // Auto-save to history (fire-and-forget)
       fetch(`${AGENT_BACKEND_URL}/api/history`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "X-API-Key": AGENT_API_KEY },
+        headers: authHeaders(),
         body: JSON.stringify({ category: "earnings_agent", intent: "earnings_agent", content: analysisText }),
       }).catch(() => {});
     } catch (err) {

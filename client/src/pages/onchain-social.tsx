@@ -6,6 +6,17 @@ import socialImage from "@assets/image_1771574082445.png";
 const AGENT_BACKEND_URL = "https://fast-api-server-trading-agent-aidanpilon.replit.app";
 const AGENT_API_KEY = "hippo_ak_7f3x9k2m4p8q1w5t";
 
+function getToken(): string | null {
+  return localStorage.getItem('caelyn_token') || sessionStorage.getItem('caelyn_token');
+}
+
+function authHeaders(): Record<string, string> {
+  const h: Record<string, string> = { 'Content-Type': 'application/json', 'X-API-Key': AGENT_API_KEY };
+  const t = getToken();
+  if (t) h['Authorization'] = `Bearer ${t}`;
+  return h;
+}
+
 const SUGGESTED_PROMPTS = [
   "Top stock tickers trending on X right now",
   "Which tickers have the most bullish sentiment today?",
@@ -79,10 +90,7 @@ function GrokSocialAgent() {
     try {
       const res = await fetch(`${AGENT_BACKEND_URL}/api/social/query`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-API-Key': AGENT_API_KEY,
-        },
+        headers: authHeaders(),
         body: JSON.stringify({ query: text.trim() }),
       });
 
