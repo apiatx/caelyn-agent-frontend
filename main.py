@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request, Header, HTTPException, Body
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -17,6 +18,41 @@ from datetime import datetime as _dt, timezone as _tz
 from pathlib import Path
 
 AGENT_API_KEY = os.getenv("AGENT_API_KEY")
+
+# ── Auth middleware ──────────────────────────────────────────────
+# Public paths that do NOT require a valid JWT token
+_AUTH_PUBLIC_PATHS = {
+    "/api/auth/login",
+    "/api/auth/verify",
+    "/api/auth/logout",
+    "/",
+    "/ping",
+    "/health",
+    "/docs",
+    "/openapi.json",
+    "/redoc",
+}
+
+class JWTAuthMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        path = request.url.path
+        # Allow public paths without auth
+        if path in _AUTH_PUBLIC_PATHS or not path.startswith("/api/"):
+            return await call_next(request)
+        # Extract Bearer token
+        auth_header = request.headers.get("Authorization", "")
+        token = None
+        if auth_header.startswith("Bearer "):
+            token = auth_header[7:]
+        if not token:
+            return JSONResponse(status_code=401, content={"error": "Unauthorized", "detail": "Missing or invalid Authorization header."})
+        try:
+            from auth import verify_token
+            payload = verify_token(token)
+            request.state.user_id = payload.get("sub", "default")
+        except Exception:
+            return JSONResponse(status_code=401, content={"error": "Unauthorized", "detail": "Token expired or invalid."})
+        return await call_next(request)
 
 app = FastAPI(title="Trading Agent API")
 
@@ -73,6 +109,59 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.add_middleware(JWTAuthMiddleware)
+
+# ── Auth Endpoints ───────────────────────────────────────────────
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+    remember_me: bool = False
+
+
+@app.post("/api/auth/login")
+async def auth_login(body: LoginRequest):
+    """Authenticate user and return JWT token."""
+    from auth import validate_credentials, create_token, AUTH_USERNAME
+    if not validate_credentials(body.username, body.password):
+        raise HTTPException(status_code=401, detail="Invalid username or password.")
+    user_id = body.username
+    token = create_token(user_id, remember_me=body.remember_me)
+
+    # Migrate legacy data on first login
+    try:
+        legacy_portfolio = Path("data/portfolio_holdings.json")
+        user_portfolio = Path(f"data/portfolio_holdings_{user_id}.json")
+        if legacy_portfolio.exists() and not user_portfolio.exists():
+            import shutil
+            shutil.copy2(legacy_portfolio, user_portfolio)
+            print(f"[AUTH] Migrated portfolio_holdings.json -> {user_portfolio}")
+    except Exception as e:
+        print(f"[AUTH] Portfolio migration error: {e}")
+
+    try:
+        from data.prompt_history import migrate_legacy_history
+        migrate_legacy_history(user_id)
+    except Exception as e:
+        print(f"[AUTH] History migration error: {e}")
+
+    return {"token": token, "user_id": user_id}
+
+
+@app.get("/api/auth/verify")
+async def auth_verify(request: Request):
+    """Verify the current JWT token and return user info."""
+    user_id = getattr(request.state, "user_id", None)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Not authenticated.")
+    return {"valid": True, "user_id": user_id}
+
+
+@app.post("/api/auth/logout")
+async def auth_logout(request: Request):
+    """Logout — client should delete the token. Server-side is stateless."""
+    return {"success": True, "message": "Logged out. Delete the token client-side."}
 
 data_service = None
 agent = None
@@ -1833,19 +1922,19 @@ async def delete_conv(request: Request, conv_id: str):
 @limiter.limit("30/minute")
 async def get_history(request: Request):
     from data.prompt_history import get_all
-    return get_all()
+    user_id = getattr(request.state, "user_id", "default")
+    return get_all(user_id=user_id)
 
 @app.get("/api/history/{category}/{intent}")
 @limiter.limit("30/minute")
 async def get_history_by_intent(request: Request, category: str, intent: str):
     from data.prompt_history import get_by_intent
-    return {"entries": get_by_intent(category, intent)}
+    user_id = getattr(request.state, "user_id", "default")
+    return {"entries": get_by_intent(category, intent, user_id=user_id)}
 
 @app.post("/api/history")
 @limiter.limit("30/minute")
 async def save_history(request: Request, x_api_key: str = Header(None)):
-    if x_api_key != AGENT_API_KEY:
-        raise HTTPException(status_code=403, detail="Invalid API key")
     body = await request.json()
     category = body.get("category", "")
     intent = body.get("intent", "")
@@ -1853,26 +1942,25 @@ async def save_history(request: Request, x_api_key: str = Header(None)):
     display_type = body.get("display_type")
     if not category or not intent or not content:
         raise HTTPException(status_code=400, detail="category, intent, and content are required")
+    user_id = getattr(request.state, "user_id", "default")
     from data.prompt_history import save_response
-    entry = save_response(category, intent, content, display_type)
+    entry = save_response(category, intent, content, display_type, user_id=user_id)
     return {"success": True, "entry": entry}
 
 @app.delete("/api/history/{category}/{intent}/{entry_id}")
 @limiter.limit("30/minute")
-async def delete_history_entry(request: Request, category: str, intent: str, entry_id: str, x_api_key: str = Header(None)):
-    if x_api_key != AGENT_API_KEY:
-        raise HTTPException(status_code=403, detail="Invalid API key")
+async def delete_history_entry(request: Request, category: str, intent: str, entry_id: str):
+    user_id = getattr(request.state, "user_id", "default")
     from data.prompt_history import delete_entry
-    success = delete_entry(category, intent, entry_id)
+    success = delete_entry(category, intent, entry_id, user_id=user_id)
     return {"success": success}
 
 @app.delete("/api/history/{category}/{intent}")
 @limiter.limit("30/minute")
-async def clear_history_intent(request: Request, category: str, intent: str, x_api_key: str = Header(None)):
-    if x_api_key != AGENT_API_KEY:
-        raise HTTPException(status_code=403, detail="Invalid API key")
+async def clear_history_intent(request: Request, category: str, intent: str):
+    user_id = getattr(request.state, "user_id", "default")
     from data.prompt_history import clear_intent
-    success = clear_intent(category, intent)
+    success = clear_intent(category, intent, user_id=user_id)
     return {"success": success}
 
 @app.get("/api/health")
@@ -1980,18 +2068,19 @@ async def health_budget(request: Request):
 # Portfolio Holdings CRUD
 # ============================================================
 
-PORTFOLIO_FILE = Path("data/portfolio_holdings.json")
+def _portfolio_file(user_id: str) -> Path:
+    return Path(f"data/portfolio_holdings_{user_id}.json")
 
 
 @app.get("/api/portfolio/holdings")
-async def get_holdings(api_key: str = Header(None, alias="X-API-Key")):
-    """Return saved portfolio holdings (JSON file, same approach as chat history)."""
-    if not api_key or api_key != AGENT_API_KEY:
-        raise HTTPException(status_code=403, detail="Invalid or missing API key.")
-    if not PORTFOLIO_FILE.exists():
+async def get_holdings(request: Request, api_key: str = Header(None, alias="X-API-Key")):
+    """Return saved portfolio holdings (JSON file, per-user)."""
+    user_id = getattr(request.state, "user_id", "default")
+    portfolio_file = _portfolio_file(user_id)
+    if not portfolio_file.exists():
         return {"holdings": []}
     try:
-        with open(PORTFOLIO_FILE) as f:
+        with open(portfolio_file) as f:
             data = _json.load(f)
         if isinstance(data, dict) and "holdings" in data:
             return data
@@ -2003,15 +2092,15 @@ async def get_holdings(api_key: str = Header(None, alias="X-API-Key")):
 @app.post("/api/portfolio/holdings")
 async def save_holdings(request: Request, api_key: str = Header(None, alias="X-API-Key")):
     """Save portfolio holdings. Expects {holdings: [{ticker, shares, avg_cost, ...}]}."""
-    if not api_key or api_key != AGENT_API_KEY:
-        raise HTTPException(status_code=403, detail="Invalid or missing API key.")
+    user_id = getattr(request.state, "user_id", "default")
     body = await request.json()
     if not isinstance(body, dict) or "holdings" not in body:
         raise HTTPException(status_code=400, detail="Body must be {holdings: [...]}")
     if not isinstance(body["holdings"], list):
         raise HTTPException(status_code=400, detail="holdings must be a list")
-    PORTFOLIO_FILE.parent.mkdir(parents=True, exist_ok=True)
-    with open(PORTFOLIO_FILE, "w") as f:
+    portfolio_file = _portfolio_file(user_id)
+    portfolio_file.parent.mkdir(parents=True, exist_ok=True)
+    with open(portfolio_file, "w") as f:
         _json.dump(body, f)
     return {"success": True}
 
@@ -2655,18 +2744,17 @@ async def get_portfolio_quotes(request: Request, api_key: str = Header(None, ali
 # ============================================================
 
 @app.get("/api/portfolio/events")
-async def get_portfolio_events(api_key: str = Header(None, alias="X-API-Key")):
+async def get_portfolio_events(request: Request, api_key: str = Header(None, alias="X-API-Key")):
     """Get upcoming earnings and dividend dates for portfolio holdings."""
     import httpx
     from datetime import datetime, timedelta
 
-    if not api_key or api_key != AGENT_API_KEY:
-        raise HTTPException(status_code=403, detail="Invalid or missing API key.")
-
-    if not PORTFOLIO_FILE.exists():
+    user_id = getattr(request.state, "user_id", "default")
+    portfolio_file = _portfolio_file(user_id)
+    if not portfolio_file.exists():
         return {"events": []}
     try:
-        with open(PORTFOLIO_FILE) as f:
+        with open(portfolio_file) as f:
             data = _json.load(f)
     except Exception:
         return {"events": []}
@@ -2744,9 +2832,6 @@ async def review_portfolio(request: Request, api_key: str = Header(None, alias="
 
     def _log(msg):
         print(msg, flush=True)
-
-    if not api_key or api_key != AGENT_API_KEY:
-        raise HTTPException(status_code=403, detail="Invalid or missing API key.")
 
     await _wait_for_init()
     body = await request.json()
