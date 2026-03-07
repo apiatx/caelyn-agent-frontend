@@ -389,6 +389,140 @@ SCREENER_DEFINITIONS = {
             "Best candidates often have upcoming earnings catalyst to realize value",
         ],
     },
+    # ============================================================
+    # New Fundamental screener presets
+    # ============================================================
+    "insider_buying": {
+        "screen_label": "Insider Buying",
+        "finviz_filters": "it_latestbuys,ta_sma50_pa,sh_avgvol_o200,sh_price_o3",
+        "finviz_sort": "-change",
+        "enrichment": ["quote", "fundamentals", "candles"],
+        "ta_rules": {
+            "above_sma50": True,
+            "prefer_positive_change": True,
+            "prefer_rsi_rising": True,
+        },
+        "fundamental_rules": {
+            "market_cap_min_m": 100,
+        },
+        "ranking_weights": {"technical": 0.35, "fundamental": 0.40, "liquidity": 0.25},
+        "explain_template": [
+            "Recent insider purchases in last 30 days — management buying their own stock",
+            "Price above SMA50 — positive price action confirms insider conviction",
+            "Market cap >= $100M — excludes micro-cap manipulation risk",
+            "Positive price momentum preferred — insiders buying into strength, not catching knives",
+            "Insider buying is the strongest legal signal of confidence in future earnings",
+        ],
+    },
+    "revenue_reaccelerating": {
+        "screen_label": "Revenue Reaccelerating",
+        "finviz_filters": "fa_salesqoq_o15,fa_sales5years_o10,sh_avgvol_o200,sh_price_o3",
+        "finviz_sort": "-fa_salesqoq",
+        "enrichment": ["quote", "fundamentals", "candles"],
+        "ta_rules": {
+            "prefer_above_sma20": True,
+            "prefer_rsi_rising": True,
+        },
+        "fundamental_rules": {
+            "rev_growth_yoy_min": 15,
+        },
+        "ranking_weights": {"technical": 0.20, "fundamental": 0.60, "liquidity": 0.20},
+        "explain_template": [
+            "Revenue growth >= 15% QoQ — top-line acceleration",
+            "5-year sales growth >= 10% — sustained growth trajectory, not a one-off",
+            "Screens for companies where revenue growth rate is increasing QoQ",
+            "Price above SMA20 preferred — market beginning to reprice the acceleration",
+            "Revenue reacceleration is the #1 predictor of stock price re-rating",
+        ],
+    },
+    "margin_expansion": {
+        "screen_label": "Margin Expansion",
+        "finviz_filters": "fa_opermargin_pos,fa_salesqoq_o10,fa_epsqoq_o10,sh_avgvol_o200,sh_price_o3",
+        "finviz_sort": "-fa_epsqoq",
+        "enrichment": ["quote", "fundamentals", "candles"],
+        "ta_rules": {
+            "prefer_above_sma50": True,
+            "prefer_positive_change": True,
+        },
+        "fundamental_rules": {
+            "oper_margin_positive": True,
+            "eps_growth_yoy_min": 10,
+        },
+        "ranking_weights": {"technical": 0.20, "fundamental": 0.60, "liquidity": 0.20},
+        "explain_template": [
+            "Positive operating margin AND growing — margins expanding, not just positive",
+            "Revenue growth >= 10% QoQ — top line still growing (not margin from cost cuts alone)",
+            "EPS growth >= 10% QoQ — earnings leverage from expanding margins",
+            "Operating leverage is the most powerful earnings multiplier in growth companies",
+            "Best when combined with revenue acceleration — operating leverage on growing revenue",
+        ],
+    },
+    "undervalued_growth": {
+        "screen_label": "Undervalued Growth",
+        "finviz_filters": "fa_peg_u1.5,fa_salesqoq_o15,fa_opermargin_pos,sh_avgvol_o200,sh_price_o3",
+        "finviz_sort": "-fa_salesqoq",
+        "enrichment": ["quote", "fundamentals", "candles"],
+        "ta_rules": {
+            "prefer_above_sma50": True,
+            "prefer_rsi_above_40": True,
+        },
+        "fundamental_rules": {
+            "rev_growth_yoy_min": 15,
+            "oper_margin_positive": True,
+        },
+        "ranking_weights": {"technical": 0.20, "fundamental": 0.60, "liquidity": 0.20},
+        "explain_template": [
+            "PEG ratio < 1.5 — growth is cheap relative to earnings expansion rate",
+            "Revenue growth >= 15% QoQ — genuine growth, not just cheap-for-a-reason",
+            "Positive operating margin — profitable business model, not speculative cash burn",
+            "Price above SMA50 preferred — market recognizing value",
+            "PEG < 1 = growth at a discount; PEG 1-1.5 = fairly valued growth with upside",
+        ],
+    },
+    "institutional_accumulation": {
+        "screen_label": "Institutional Accumulation",
+        "finviz_filters": "sh_instown_o60,ta_sma50_pa,sh_relvol_o1,sh_avgvol_o300,sh_price_o5",
+        "finviz_sort": "-change",
+        "enrichment": ["quote", "fundamentals", "candles"],
+        "ta_rules": {
+            "above_sma50": True,
+            "prefer_volume_expansion": True,
+            "prefer_rsi_above_50": True,
+        },
+        "fundamental_rules": {
+            "market_cap_min_m": 200,
+        },
+        "ranking_weights": {"technical": 0.35, "fundamental": 0.35, "liquidity": 0.30},
+        "explain_template": [
+            "Institutional ownership > 60% — smart money has significant positions",
+            "Price above SMA50 — positive trend confirming institutional thesis",
+            "Volume expansion preferred — accumulation visible in tape",
+            "Market cap >= $200M — institutional-grade liquidity",
+            "Rising institutional ownership + price confirmation = strongest accumulation signal",
+        ],
+    },
+    "free_cash_flow_leaders": {
+        "screen_label": "Free Cash Flow Leaders",
+        "finviz_filters": "fa_opermargin_o10,fa_debteq_u1,fa_curratio_o1.5,sh_avgvol_o200,sh_price_o5",
+        "finviz_sort": "-fa_opermargin",
+        "enrichment": ["quote", "fundamentals", "candles"],
+        "ta_rules": {
+            "prefer_above_sma200": True,
+            "prefer_positive_change": True,
+        },
+        "fundamental_rules": {
+            "oper_margin_positive": True,
+            "market_cap_min_m": 200,
+        },
+        "ranking_weights": {"technical": 0.20, "fundamental": 0.60, "liquidity": 0.20},
+        "explain_template": [
+            "Operating margin > 10% — strong cash generation from operations",
+            "Debt/equity < 1.0 — low leverage, FCF not consumed by debt service",
+            "Current ratio > 1.5 — healthy balance sheet supports cash flow durability",
+            "Price above SMA200 preferred — long-term trend intact",
+            "FCF leaders compound returns through buybacks, dividends, and reinvestment",
+        ],
+    },
 }
 
 SCREENER_PRESETS = list(SCREENER_DEFINITIONS.keys())
