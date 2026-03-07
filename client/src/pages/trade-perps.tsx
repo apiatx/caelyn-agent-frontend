@@ -203,57 +203,6 @@ export default function TradePerpsPage() {
             </div>
           </GlassCard>
 
-          {/* Memes Section */}
-          <GlassCard className="p-8">
-            <div className="space-y-6">
-              {/* Memes Section Header */}
-              <div className="text-center mb-6">
-                <div className="flex items-center justify-center gap-3 mb-3">
-                  <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
-                    <Activity className="w-6 h-6 text-white" />
-                  </div>
-                  <h1 className="text-3xl font-bold text-white">Memes</h1>
-                </div>
-                <p className="text-crypto-silver">Meme token trading and perpetual futures</p>
-              </div>
-
-              {/* Uranus.ag - Button Link */}
-              <div className="w-full mb-6">
-                <Button
-                  variant="outline"
-                  onClick={() => openInNewTab('https://uranus.ag/trade/?token=BFgdzMkTPdKKJeTipv2njtDEwhKxkgFueJQfJGt1jups')}
-                  className="group w-full bg-gradient-to-br from-purple-600/40 via-violet-500/30 to-purple-500/40 border border-purple-400/50 hover:from-purple-500/50 hover:via-violet-400/40 hover:to-purple-400/50 hover:border-purple-300/70 text-white justify-center p-8 h-auto rounded-lg transition-all duration-500 flex items-center shadow-2xl hover:shadow-purple-500/40 transform hover:scale-[1.02] backdrop-blur-sm"
-                >
-                  <div className="text-center">
-                    <div className="font-bold text-2xl flex items-center justify-center gap-3 mb-2">
-                      <TrendingUp className="w-7 h-7 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-500" />
-                      Uranus.ag
-                    </div>
-                    <div className="text-base text-purple-100/90 font-medium">Decentralized exchange for meme tokens</div>
-                  </div>
-                </Button>
-              </div>
-
-              {/* Quanto - Full Width Enhanced Colored Button */}
-              <div className="w-full mt-6">
-                <Button
-                  variant="outline"
-                  onClick={() => openInNewTab('https://quanto.trade/en/markets/BTC-USD-SWAP-LIN')}
-                  className="group w-full bg-gradient-to-br from-orange-500/40 via-red-500/30 to-pink-500/40 border border-orange-400/50 hover:from-orange-400/50 hover:via-red-400/40 hover:to-pink-400/50 hover:border-orange-300/70 text-white justify-center p-8 h-auto rounded-lg transition-all duration-500 flex items-center shadow-2xl hover:shadow-orange-500/40 transform hover:scale-[1.02] backdrop-blur-sm"
-                  data-testid="button-quanto"
-                >
-                  <div className="text-center">
-                    <div className="font-bold text-2xl flex items-center justify-center gap-3 mb-2">
-                      <TrendingUp className="w-7 h-7 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-500" />
-                      Quanto
-                    </div>
-                    <div className="text-base text-orange-100/90 font-medium">Next-generation perpetual futures trading</div>
-                  </div>
-                </Button>
-              </div>
-            </div>
-          </GlassCard>
-
           {/* Analyze Section */}
           <GlassCard className="p-8">
             <div className="space-y-6">
@@ -268,24 +217,11 @@ export default function TradePerpsPage() {
                 <p className="text-crypto-silver">Advanced market analytics and trading insights</p>
               </div>
 
-              {/* CoinGlass Main Analytics */}
-              <div className="mb-6">
-                <div className="bg-black/40 backdrop-blur-lg border border-white/[0.06] rounded-xl overflow-hidden">
-                  <iframe
-                    src="https://www.coinglass.com/"
-                    className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded-lg border border-white/[0.06]"
-                    title="CoinGlass"
-                    frameBorder="0"
-                    scrolling="yes"
-                  />
-                </div>
-              </div>
-
               {/* HyperDash */}
               <div className="mt-6">
                 <div className="flex justify-end mb-3">
                   <a
-                    href="https://hyperdash.info/analytics"
+                    href="https://hyperdash.com/explore?chart1=HYPE"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1"
@@ -293,10 +229,10 @@ export default function TradePerpsPage() {
                     Open Full View <ExternalLink className="w-3 h-3" />
                   </a>
                 </div>
-                
+
                 <div className="bg-black/20 border border-white/[0.06] rounded-lg overflow-hidden">
                   <iframe
-                    src="https://hyperdash.info/analytics"
+                    src="https://hyperdash.com/explore?chart1=HYPE"
                     className="w-full h-[600px] border-0"
                     title="Hyperdash Analytics"
                     allow="clipboard-read; clipboard-write"
@@ -477,6 +413,57 @@ export default function TradePerpsPage() {
                 </div>
               </div>
 
+            </div>
+          </GlassCard>
+
+          {/* Memes Section */}
+          <GlassCard className="p-8">
+            <div className="space-y-6">
+              {/* Memes Section Header */}
+              <div className="text-center mb-6">
+                <div className="flex items-center justify-center gap-3 mb-3">
+                  <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+                    <Activity className="w-6 h-6 text-white" />
+                  </div>
+                  <h1 className="text-3xl font-bold text-white">Memes</h1>
+                </div>
+                <p className="text-crypto-silver">Meme token trading and perpetual futures</p>
+              </div>
+
+              {/* Uranus.ag - Button Link */}
+              <div className="w-full mb-6">
+                <Button
+                  variant="outline"
+                  onClick={() => openInNewTab('https://uranus.ag/trade/?token=BFgdzMkTPdKKJeTipv2njtDEwhKxkgFueJQfJGt1jups')}
+                  className="group w-full bg-gradient-to-br from-purple-600/40 via-violet-500/30 to-purple-500/40 border border-purple-400/50 hover:from-purple-500/50 hover:via-violet-400/40 hover:to-purple-400/50 hover:border-purple-300/70 text-white justify-center p-8 h-auto rounded-lg transition-all duration-500 flex items-center shadow-2xl hover:shadow-purple-500/40 transform hover:scale-[1.02] backdrop-blur-sm"
+                >
+                  <div className="text-center">
+                    <div className="font-bold text-2xl flex items-center justify-center gap-3 mb-2">
+                      <TrendingUp className="w-7 h-7 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-500" />
+                      Uranus.ag
+                    </div>
+                    <div className="text-base text-purple-100/90 font-medium">Decentralized exchange for meme tokens</div>
+                  </div>
+                </Button>
+              </div>
+
+              {/* Quanto - Full Width Enhanced Colored Button */}
+              <div className="w-full mt-6">
+                <Button
+                  variant="outline"
+                  onClick={() => openInNewTab('https://quanto.trade/en/markets/BTC-USD-SWAP-LIN')}
+                  className="group w-full bg-gradient-to-br from-orange-500/40 via-red-500/30 to-pink-500/40 border border-orange-400/50 hover:from-orange-400/50 hover:via-red-400/40 hover:to-pink-400/50 hover:border-orange-300/70 text-white justify-center p-8 h-auto rounded-lg transition-all duration-500 flex items-center shadow-2xl hover:shadow-orange-500/40 transform hover:scale-[1.02] backdrop-blur-sm"
+                  data-testid="button-quanto"
+                >
+                  <div className="text-center">
+                    <div className="font-bold text-2xl flex items-center justify-center gap-3 mb-2">
+                      <TrendingUp className="w-7 h-7 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-500" />
+                      Quanto
+                    </div>
+                    <div className="text-base text-orange-100/90 font-medium">Next-generation perpetual futures trading</div>
+                  </div>
+                </Button>
+              </div>
             </div>
           </GlassCard>
         </div>
