@@ -5,7 +5,7 @@ Runs twice daily (8am + 12pm EST via scheduler in main.py):
   1. Fetches all earnings tickers for the week from Finnhub (free, one call)
   2. Single Grok x_search call across ALL tickers — social buzz + sentiment
   3. Single Perplexity chat call across ALL tickers — news signals + analyst focus
-  4. Scores, ranks, and caches top 10-30 per day
+  4. Scores, ranks, and caches 10-20 per day (min 10, max 20)
 
 COST PER SCAN:
   - Finnhub: 1 free API call (included in key)
@@ -280,8 +280,12 @@ def _score_and_rank(
     result = {}
     now = time.time()
 
+    MIN_PER_DAY = 10
+    MAX_PER_DAY = 20
+
     for date_str, tickers in by_date.items():
         scored = []
+        remaining = []  # tickers that didn't pass the signal threshold
         for t in tickers:
             sym = t["ticker"].upper()
             grok = grok_map.get(sym, {})
@@ -297,14 +301,10 @@ def _score_and_rank(
             analyst_focus = pplx.get("analyst_focus", False)
             sentiment = grok.get("sentiment", "mixed")
 
-            # Include if: buzz >= 6 OR news_signal == "high" OR in either result set
-            if sym not in all_signal_tickers and buzz < 6 and news_signal != "high":
-                continue
-
             # Merge one-liners (prefer Grok for social, Perplexity for news)
             one_line = grok.get("one_line") or pplx.get("one_line") or ""
 
-            scored.append({
+            entry = {
                 **t,
                 "buzz_level": buzz,
                 "sentiment": sentiment,
@@ -312,11 +312,26 @@ def _score_and_rank(
                 "analyst_focus": analyst_focus,
                 "one_line": one_line,
                 "score": buzz * 2 + (5 if news_signal == "high" else 2 if news_signal == "medium" else 0) + (3 if analyst_focus else 0),
-            })
+            }
 
-        # Sort by score desc, take top 30
+            # Include if: buzz >= 6 OR news_signal == "high" OR in either result set
+            if sym in all_signal_tickers or buzz >= 6 or news_signal == "high":
+                scored.append(entry)
+            else:
+                remaining.append(entry)
+
+        # Sort by score desc
         scored.sort(key=lambda x: x["score"], reverse=True)
-        scored = scored[:30]
+
+        # If fewer than MIN_PER_DAY passed the threshold, backfill from remaining
+        if len(scored) < MIN_PER_DAY:
+            # Sort remaining by revenue estimate desc as proxy for importance
+            remaining.sort(key=lambda x: x.get("revenue_estimate") or 0, reverse=True)
+            need = MIN_PER_DAY - len(scored)
+            scored.extend(remaining[:need])
+
+        # Cap at MAX_PER_DAY
+        scored = scored[:MAX_PER_DAY]
 
         result[date_str] = {
             "tickers": scored,
