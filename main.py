@@ -1342,7 +1342,7 @@ async def query_agent(
         result = None
         timed_out = False
 
-        for _ in range(15):  # max 15 * 8s = 120s
+        for _ in range(22):  # max 22 * 8s = 176s
             try:
                 result = await asyncio.wait_for(asyncio.shield(task), timeout=8.0)
                 break
@@ -1355,7 +1355,7 @@ async def query_agent(
         meta["timing_ms"]["total"] = int((_time.time() - t0) * 1000)
 
         if timed_out:
-            resp = _error_envelope("REQUEST_TIMEOUT", "Request timed out after 120s — please try again.", meta)
+            resp = _error_envelope("REQUEST_TIMEOUT", "Request timed out after 176s — please try again.", meta)
             _resp_log(req_id, 200, "timeout", resp)
             yield _j.dumps(resp).encode()
             return

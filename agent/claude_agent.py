@@ -2646,7 +2646,7 @@ class TradingAgent:
                 print(f"[AGENT] Cross-asset trending data gathering error: {e}")
                 return {"error": f"Data gathering failed: {str(e)}", "scan_type": "cross_asset_trending_error"}
 
-        gather_timeout = 40.0 if category == "cross_market" else 55.0
+        gather_timeout = 40.0 if category == "cross_market" else 65.0 if category == "investments" else 55.0
         if has_plan and query_info.get("orchestration_plan", {}).get("modules", {}).get("macro_context"):
             gather_timeout = min(gather_timeout + 10.0, 65.0)
         try:
@@ -2821,7 +2821,7 @@ class TradingAgent:
     # Categories not listed here (or using Sonnet 4) get no thinking.
     THINKING_BUDGETS = {
         "ticker_analysis": 5000,
-        "investments": 6000,
+        "investments": 3000,
         "best_trades": 5000,
         "cross_market": 6000,
         "crypto": 5000,
@@ -2864,10 +2864,10 @@ class TradingAgent:
         try:
             return await asyncio.wait_for(
                 asyncio.to_thread(self._ask_claude, user_prompt, market_data, history, is_followup, category, chatbox_mode),
-                timeout=90.0,
+                timeout=60.0,
             )
         except asyncio.TimeoutError:
-            print(f"[AGENT] Claude API timed out after 90s (data was {data_size:,} chars)")
+            print(f"[AGENT] Claude API timed out after 60s (data was {data_size:,} chars)")
             return json.dumps({"display_type": "chat", "message": "The AI took too long to respond. Please try again — sometimes the model is under heavy load."})
         except Exception as e:
             print(f"[AGENT] Claude API error: {e}")
