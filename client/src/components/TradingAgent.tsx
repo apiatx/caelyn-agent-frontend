@@ -476,7 +476,8 @@ export default function TradingAgent() {
       if (data.conversation_id) setConversationId(data.conversation_id);
 
       if (data.type === 'error' || data.error) {
-        const errContent = data.error || data.structured?.message || data.analysis || 'Unknown error from backend.';
+        const rawErr = data.error;
+        const errContent = (typeof rawErr === 'object' && rawErr !== null ? rawErr.message || JSON.stringify(rawErr) : rawErr) || data.structured?.message || data.analysis || 'Unknown error from backend.';
         const errPanel: Panel = {
           id: Date.now(), title: displayText, userQuery: queryText,
           data: { role: 'assistant', content: `Error: ${errContent}${data.request_id ? `\n\nRequest ID: ${data.request_id}` : ''}`, parsed: data },

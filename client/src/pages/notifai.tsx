@@ -291,7 +291,8 @@ function NewsAgent() {
         throw new Error(`Backend returned ${res.status}: ${errText.slice(0, 200)}`);
       }
 
-      const data = await res.json();
+      const rawText = (await res.text()).trim();
+      const data = JSON.parse(rawText);
       const convId = data.conversation_id || conversationId;
       if (convId) setConversationId(convId);
 

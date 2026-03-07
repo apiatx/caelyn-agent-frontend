@@ -53,8 +53,12 @@ export function ChatbotProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({ prompt: prompt.trim(), history: chatHistory.slice(-20), chatbox_mode: true }),
       });
       if (!res.ok) throw new Error(`Status ${res.status}`);
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
+      const raw = (await res.text()).trim();
+      const data = JSON.parse(raw);
+      if (data.error) {
+        const errMsg = typeof data.error === 'object' ? data.error.message || JSON.stringify(data.error) : data.error;
+        throw new Error(errMsg);
+      }
 
       setMessages(prev => [...prev, {
         role: 'assistant',
