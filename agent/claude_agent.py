@@ -2864,10 +2864,10 @@ class TradingAgent:
         try:
             return await asyncio.wait_for(
                 asyncio.to_thread(self._ask_claude, user_prompt, market_data, history, is_followup, category, chatbox_mode),
-                timeout=60.0,
+                timeout=80.0,
             )
         except asyncio.TimeoutError:
-            print(f"[AGENT] Claude API timed out after 60s (data was {data_size:,} chars)")
+            print(f"[AGENT] Claude API timed out after 80s (data was {data_size:,} chars)")
             return json.dumps({"display_type": "chat", "message": "The AI took too long to respond. Please try again — sometimes the model is under heavy load."})
         except Exception as e:
             print(f"[AGENT] Claude API error: {e}")
@@ -4458,7 +4458,7 @@ Be direct and opinionated. Tell me what you actually think."""
             is_best_trades = category == "best_trades"
             has_social_followup = "watchlist_social_momentum" in (market_data or {})
             is_fast_scan = category not in self.DEEP_ANALYSIS_CATEGORIES
-            if is_best_trades:
+            if is_best_trades or category == "investments":
                 data_cap = 50000
             elif category in self.MEDIUM_DATA_CAP_CATEGORIES:
                 data_cap = 50000
