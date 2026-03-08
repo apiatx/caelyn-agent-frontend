@@ -3191,8 +3191,11 @@ class TradingAgent:
             except Exception as e:
                 print(f"[AGENT] {reasoning_model} failed ({e}), falling back to Claude")
 
-        # Claude path: use async client + web search for eligible categories
-        if category in self.WEB_SEARCH_CATEGORIES:
+        # Claude path: use async client + web search
+        # In standalone claude mode, always use web search for real-time data
+        # In agent_collab mode, only use web search for specific categories (Grok/Perplexity handle the rest)
+        claude_needs_web_search = (reasoning_model == "claude") or (category in self.WEB_SEARCH_CATEGORIES)
+        if claude_needs_web_search:
             try:
                 return await asyncio.wait_for(
                     self._ask_claude_async_web_search(user_prompt, market_data, history, is_followup, category, chatbox_mode),
@@ -3228,12 +3231,14 @@ class TradingAgent:
         return oai_msgs
 
     async def _call_alt_model(self, reasoning_model: str, user_prompt: str, market_data: dict, history: list = None, is_followup: bool = False, category: str = "", chatbox_mode: bool = False) -> str:
-        """Call a non-Claude model with web search for eligible categories. Returns response text or empty string on failure."""
+        """Call a non-Claude model with web search. When running as the sole model,
+        web search is ALWAYS enabled so the model can access real-time data."""
         system_blocks, messages, _, token_limit, _, _ = self._build_prompt(
             user_prompt, market_data, history, is_followup, category, chatbox_mode
         )
         oai_messages = self._prompt_to_openai_messages(system_blocks, messages)
-        use_web_search = category in self.WEB_SEARCH_CATEGORIES
+        # Individual models always get web search — they're the only LLM and need live data
+        use_web_search = True
 
         if reasoning_model == "gpt-4o":
             api_key = os.environ.get("OPENAI_API_KEY", "")
