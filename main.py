@@ -43,6 +43,9 @@ _AUTH_PUBLIC_PATHS = {
 class JWTAuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
+        # Pass CORS preflight requests through so CORSMiddleware can handle them
+        if request.method == "OPTIONS":
+            return await call_next(request)
         # Allow public paths without auth
         if path in _AUTH_PUBLIC_PATHS or not path.startswith("/api/"):
             return await call_next(request)
