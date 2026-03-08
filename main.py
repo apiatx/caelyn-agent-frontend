@@ -187,11 +187,12 @@ async def auth_logout(request: Request):
 data_service = None
 agent = None
 _init_done = False
+_init_error = None  # stores init failure message for fast 503 responses
 import threading as _threading
 _init_event = _threading.Event()
 
 def _do_init():
-    global data_service, agent, _init_done
+    global data_service, agent, _init_done, _init_error
     try:
         from config import ANTHROPIC_API_KEY, POLYGON_API_KEY, FMP_API_KEY, COINGECKO_API_KEY, CMC_API_KEY, ALTFINS_API_KEY, XAI_API_KEY, OPENAI_API_KEY, TWELVEDATA_API_KEY
         from data.market_data_service import MarketDataService
@@ -202,12 +203,13 @@ def _do_init():
         _init_event.set()
         print("[INIT] All services initialized successfully")
     except Exception as e:
-        print(f"[INIT] ERROR during initialization: {e}")
+        _init_error = str(e)
+        print(f"[INIT] FATAL ERROR during initialization: {e}")
         import traceback
         traceback.print_exc()
-        # Do NOT set _init_done = True here — agent is None and all
-        # endpoints would crash with 'NoneType' has no attribute errors.
-        # Instead, _wait_for_init() will return 503 after its timeout.
+        # Set event so _wait_for_init returns immediately with 503
+        # instead of blocking every request for 60 seconds
+        _init_event.set()
 
 async def _briefing_precompute_loop():
     """
@@ -512,13 +514,16 @@ async def _wait_for_init():
     import asyncio
     if _init_done:
         return
+    if _init_error:
+        raise HTTPException(status_code=503, detail=f"Server init failed: {_init_error}")
     # Use run_in_executor to properly wait on the threading.Event
     # This avoids thread-visibility issues with plain boolean polling
     loop = asyncio.get_event_loop()
     ready = await loop.run_in_executor(None, _init_event.wait, 60)
-    if not ready or not _init_done:
-        print("[INIT] _wait_for_init timed out after 60s — _init_done=%s, agent=%s, data_service=%s" % (_init_done, agent is not None, data_service is not None))
-        raise HTTPException(status_code=503, detail="Server is still starting up. Please try again in a moment.")
+    if not _init_done:
+        err = _init_error or "Init timed out after 60s"
+        print("[INIT] _wait_for_init failed — _init_done=%s, error=%s, agent=%s, data_service=%s" % (_init_done, _init_error, agent is not None, data_service is not None))
+        raise HTTPException(status_code=503, detail=f"Server init failed: {err}")
 
 @app.get("/")
 async def root():
@@ -534,9 +539,10 @@ async def ping():
 @app.get("/health")
 async def health():
     return {
-        "status": "ok",
-        "code_version": "2026-03-08-v3-pure-asgi",
+        "status": "ok" if _init_done else ("init_failed" if _init_error else "starting"),
+        "code_version": "2026-03-08-v4-no-auth",
         "init_complete": _init_done,
+        "init_error": _init_error,
         "agent_loaded": agent is not None,
         "data_service_loaded": data_service is not None,
     }
