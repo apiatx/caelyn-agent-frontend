@@ -3117,7 +3117,7 @@ class TradingAgent:
     DEEP_ANALYSIS_CATEGORIES = {
         "ticker_analysis", "investments", "portfolio_review", "followup",
         "crypto", "best_trades", "cross_market", "prediction_markets",
-        "chat", "sector_rotation", "earnings_catalyst",
+        "chat", "sector_rotation", "earnings_catalyst", "cross_asset_trending",
     }
 
     # Extended thinking budgets (tokens) for Sonnet 4.5 categories.
@@ -5598,7 +5598,7 @@ FOLLOW-UP MODE: The user is continuing a conversation. You have the full convers
         if category == "crypto":
             model = "claude-sonnet-4-5-20250929"
             token_limit = 6000
-        elif category in ("best_trades", "cross_market"):
+        elif category in ("best_trades", "cross_market", "cross_asset_trending"):
             model = "claude-sonnet-4-5-20250929"
             token_limit = 10000
         elif category == "csv_analysis":
