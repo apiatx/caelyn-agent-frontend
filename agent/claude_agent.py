@@ -591,9 +591,9 @@ class TradingAgent:
             try:
                 smart_result = await asyncio.wait_for(
                     asyncio.to_thread(
-                        self._smart_orchestrate, user_prompt, history, followup_csv_context
+                        self._smart_orchestrate, user_prompt, history, followup_csv_context, reasoning_model
                     ),
-                    timeout=5.0,
+                    timeout=8.0,
                 )
                 if "enhanced_prompt" in smart_result:
                     smart_tickers = smart_result.get("tickers", [])
@@ -683,7 +683,7 @@ class TradingAgent:
                 # classifier has something to work with instead of an empty string.
                 fallback_query = user_prompt if user_prompt.strip() else preset_intent.replace("_", " ")
                 print(f"[ROUTING] Unknown preset_intent '{preset_intent}', falling back to classifier with query='{fallback_query[:80]}'")
-                query_info = await self._orchestrate_with_timeout(fallback_query)
+                query_info = await self._orchestrate_with_timeout(fallback_query, reasoning_model=reasoning_model)
                 routing_source = query_info.pop("_routing_source", "heuristic")
                 routing_confidence = query_info.pop("_routing_confidence", "low")
             else:
@@ -757,7 +757,7 @@ class TradingAgent:
                     market_data = {"error": str(market_data)}
                 print(f"[AGENT] Data gathered: {len(json.dumps(market_data, default=str)):,} chars ({time.time() - start_time:.1f}s)")
         else:
-            query_info = await self._orchestrate_with_timeout(user_prompt, history=history)
+            query_info = await self._orchestrate_with_timeout(user_prompt, history=history, reasoning_model=reasoning_model)
             routing_source = query_info.pop("_routing_source", "heuristic")
             routing_confidence = query_info.pop("_routing_confidence", "low")
             query_info["original_prompt"] = user_prompt
@@ -1506,9 +1506,9 @@ class TradingAgent:
             print(f"[AGENT] Claude Haiku classification error: {e}, falling back to keyword classifier")
             return self._keyword_classify(prompt)
 
-    def _smart_orchestrate(self, user_prompt: str, history: list = None, csv_context: str = None) -> dict:
+    def _smart_orchestrate(self, user_prompt: str, history: list = None, csv_context: str = None, reasoning_model: str = "claude") -> dict:
         """
-        Use Claude Sonnet as a Smart Orchestrator + Prompt Engineer.
+        Smart Orchestrator + Prompt Engineer — uses the selected reasoning model.
         Understands full context (prompt + history + CSV), extracts tickers from
         prior analysis, decides which APIs to call, and enhances the prompt.
 
@@ -1516,7 +1516,6 @@ class TradingAgent:
         intent, asset_classes, risk_framework, response_style, priority_depth, filters.
         Falls back to keyword classifier on failure.
         """
-        # Build context parts for Claude (system prompt + conversation history + user query)
         system_prompt = SMART_ORCHESTRATOR_PROMPT + "\n\nReply with ONLY valid JSON. No other text."
 
         messages = []
@@ -1539,13 +1538,7 @@ class TradingAgent:
         messages.append({"role": "user", "content": "\n\n".join(user_parts)})
 
         try:
-            response = self.client.messages.create(
-                model="claude-sonnet-4-20250514",
-                max_tokens=500,
-                system=system_prompt,
-                messages=messages,
-            )
-            text = response.content[0].text.strip()
+            text = self._call_orchestrator_model(reasoning_model, system_prompt, messages)
             text = re.sub(r"```json\s*", "", text)
             text = re.sub(r"```\s*", "", text)
             result = json.loads(text)
@@ -1601,7 +1594,7 @@ class TradingAgent:
             return result
 
         except Exception as e:
-            print(f"[SMART_ORCH] Claude Sonnet call failed: {e}, falling back to keyword classifier")
+            print(f"[SMART_ORCH] {reasoning_model} orchestration failed: {e}, falling back to keyword classifier")
             return self._keyword_classify(user_prompt)
 
     INTENT_PROFILES = {
@@ -2301,11 +2294,95 @@ class TradingAgent:
         "tickers": [],
     }
 
-    def _orchestrate_query(self, prompt: str, history: list = None, csv_context: str = None) -> dict:
-        """Orchestrate query using Smart Orchestrator (Claude Haiku).
+    def _call_orchestrator_model(self, reasoning_model: str, system_prompt: str, messages: list) -> str:
+        """Call the selected model for orchestration (lightweight JSON routing).
+        Returns the raw text response. Uses sync calls since orchestration runs in a thread."""
+        if reasoning_model == "claude" or reasoning_model not in self.VALID_REASONING_MODELS:
+            response = self.client.messages.create(
+                model="claude-sonnet-4-20250514",
+                max_tokens=500,
+                system=system_prompt,
+                messages=messages,
+            )
+            return response.content[0].text.strip()
+
+        # Build OpenAI-compatible messages
+        oai_msgs = [{"role": "system", "content": system_prompt}]
+        for m in messages:
+            oai_msgs.append({"role": m["role"], "content": m["content"]})
+
+        if reasoning_model == "gpt-4o":
+            api_key = os.environ.get("OPENAI_API_KEY", "")
+            if not api_key:
+                raise ValueError("No OPENAI_API_KEY set")
+            from openai import OpenAI
+            client = OpenAI(api_key=api_key)
+            resp = client.chat.completions.create(
+                model="gpt-4o",
+                max_tokens=500,
+                messages=oai_msgs,
+            )
+            return resp.choices[0].message.content.strip()
+
+        if reasoning_model == "grok":
+            api_key = os.environ.get("XAI_API_KEY", "")
+            if not api_key:
+                raise ValueError("No XAI_API_KEY set")
+            import httpx as _httpx
+            resp = _httpx.post(
+                "https://api.x.ai/v1/chat/completions",
+                headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+                json={"model": "grok-3-fast", "max_tokens": 500, "messages": oai_msgs},
+                timeout=15.0,
+            )
+            resp.raise_for_status()
+            return resp.json()["choices"][0]["message"]["content"].strip()
+
+        if reasoning_model == "gemini":
+            api_key = os.environ.get("GEMINI_API_KEY", "")
+            if not api_key:
+                raise ValueError("No GEMINI_API_KEY set")
+            contents = []
+            for m in messages:
+                role = "user" if m["role"] == "user" else "model"
+                contents.append({"role": role, "parts": [{"text": m["content"]}]})
+            import httpx as _httpx
+            resp = _httpx.post(
+                f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}",
+                headers={"Content-Type": "application/json"},
+                json={
+                    "system_instruction": {"parts": [{"text": system_prompt}]},
+                    "contents": contents,
+                    "generationConfig": {"maxOutputTokens": 500},
+                },
+                timeout=15.0,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            parts = data["candidates"][0]["content"]["parts"]
+            return "".join(p.get("text", "") for p in parts if "text" in p).strip()
+
+        if reasoning_model == "perplexity":
+            api_key = os.environ.get("PERPLEXITY_API_KEY", "")
+            if not api_key:
+                raise ValueError("No PERPLEXITY_API_KEY set")
+            import httpx as _httpx
+            resp = _httpx.post(
+                "https://api.perplexity.ai/chat/completions",
+                headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+                json={"model": "sonar-pro", "max_tokens": 500, "messages": oai_msgs},
+                timeout=15.0,
+            )
+            resp.raise_for_status()
+            return resp.json()["choices"][0]["message"]["content"].strip()
+
+        raise ValueError(f"Unknown reasoning model: {reasoning_model}")
+
+    def _orchestrate_query(self, prompt: str, history: list = None, csv_context: str = None, reasoning_model: str = "claude") -> dict:
+        """Orchestrate query using the selected reasoning model.
         Delegates to _smart_orchestrate for context-aware routing + prompt enhancement.
         Falls back to heuristic plan on failure."""
-        result = self._smart_orchestrate(prompt, history=history, csv_context=csv_context)
+        result = self._smart_orchestrate(prompt, history=history, csv_context=csv_context, reasoning_model=reasoning_model)
 
         # If _smart_orchestrate fell back to keyword classifier, convert to plan format
         if "enhanced_prompt" not in result:
@@ -2564,11 +2641,11 @@ class TradingAgent:
             print(f"[SUGGESTIONS] Claude call failed: {e}")
             return []
 
-    async def _orchestrate_with_timeout(self, prompt: str, history: list = None, csv_context: str = None) -> dict:
+    async def _orchestrate_with_timeout(self, prompt: str, history: list = None, csv_context: str = None, reasoning_model: str = "claude") -> dict:
         try:
             plan = await asyncio.wait_for(
-                asyncio.to_thread(self._orchestrate_query, prompt, history, csv_context),
-                timeout=10.0,
+                asyncio.to_thread(self._orchestrate_query, prompt, history, csv_context, reasoning_model),
+                timeout=15.0,
             )
             from_heuristic = plan.pop("_from_heuristic", False)
 
@@ -2960,7 +3037,7 @@ class TradingAgent:
             try:
                 result = await asyncio.wait_for(
                     self._call_alt_model(reasoning_model, user_prompt, market_data, history, is_followup, category, chatbox_mode),
-                    timeout=80.0,
+                    timeout=90.0,
                 )
                 if result:
                     return result
@@ -3005,11 +3082,12 @@ class TradingAgent:
         return oai_msgs
 
     async def _call_alt_model(self, reasoning_model: str, user_prompt: str, market_data: dict, history: list = None, is_followup: bool = False, category: str = "", chatbox_mode: bool = False) -> str:
-        """Call a non-Claude model. Returns response text or empty string on failure."""
+        """Call a non-Claude model with web search for eligible categories. Returns response text or empty string on failure."""
         system_blocks, messages, _, token_limit, _, _ = self._build_prompt(
             user_prompt, market_data, history, is_followup, category, chatbox_mode
         )
         oai_messages = self._prompt_to_openai_messages(system_blocks, messages)
+        use_web_search = category in self.WEB_SEARCH_CATEGORIES
 
         if reasoning_model == "gpt-4o":
             api_key = os.environ.get("OPENAI_API_KEY", "")
@@ -3019,13 +3097,25 @@ class TradingAgent:
             try:
                 from openai import AsyncOpenAI
                 client = AsyncOpenAI(api_key=api_key)
-                resp = await client.chat.completions.create(
-                    model="gpt-4o",
-                    max_tokens=token_limit,
-                    messages=oai_messages,
-                )
-                text = resp.choices[0].message.content or ""
-                print(f"[ALT_MODEL] gpt-4o responded: {len(text):,} chars")
+                if use_web_search:
+                    # Responses API with web search tool
+                    resp = await client.responses.create(
+                        model="gpt-4o",
+                        tools=[{"type": "web_search_preview"}],
+                        input=oai_messages,
+                        max_output_tokens=token_limit,
+                    )
+                    text = resp.output_text or ""
+                    search_calls = sum(1 for item in (resp.output or []) if getattr(item, 'type', '') == 'web_search_call')
+                    print(f"[ALT_MODEL] gpt-4o+web_search responded: {len(text):,} chars, {search_calls} searches")
+                else:
+                    resp = await client.chat.completions.create(
+                        model="gpt-4o",
+                        max_tokens=token_limit,
+                        messages=oai_messages,
+                    )
+                    text = resp.choices[0].message.content or ""
+                    print(f"[ALT_MODEL] gpt-4o responded: {len(text):,} chars")
                 return text
             except Exception as e:
                 print(f"[ALT_MODEL] gpt-4o error: {e}")
@@ -3037,24 +3127,46 @@ class TradingAgent:
                 print("[ALT_MODEL] No XAI_API_KEY set")
                 return ""
             try:
-                async with httpx.AsyncClient(timeout=80.0) as client:
-                    resp = await client.post(
-                        "https://api.x.ai/v1/chat/completions",
-                        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-                        json={
-                            "model": "grok-4-1-fast-non-reasoning",
-                            "max_tokens": token_limit,
-                            "messages": oai_messages,
-                        },
-                    )
-                    resp.raise_for_status()
-                    data = resp.json()
-                    text = data["choices"][0]["message"]["content"] or ""
-                    print(f"[ALT_MODEL] grok responded: {len(text):,} chars")
-                    return text
+                from openai import AsyncOpenAI
+                # xAI Responses API (OpenAI-compatible) with reasoning + live search
+                client = AsyncOpenAI(api_key=api_key, base_url="https://api.x.ai/v1")
+                tools = []
+                if use_web_search:
+                    tools = [{"type": "web_search"}, {"type": "x_search"}]
+                kwargs = {
+                    "model": "grok-3-fast",
+                    "input": oai_messages,
+                    "max_output_tokens": token_limit,
+                }
+                if tools:
+                    kwargs["tools"] = tools
+                resp = await client.responses.create(**kwargs)
+                text = resp.output_text or ""
+                search_tag = "+web_search+x_search" if use_web_search else ""
+                print(f"[ALT_MODEL] grok-3-fast{search_tag} responded: {len(text):,} chars")
+                return text
             except Exception as e:
                 print(f"[ALT_MODEL] grok error: {e}")
-                return ""
+                # Fallback to raw httpx chat completions if Responses API fails
+                try:
+                    async with httpx.AsyncClient(timeout=90.0) as hclient:
+                        resp = await hclient.post(
+                            "https://api.x.ai/v1/chat/completions",
+                            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+                            json={
+                                "model": "grok-3-fast",
+                                "max_tokens": token_limit,
+                                "messages": oai_messages,
+                            },
+                        )
+                        resp.raise_for_status()
+                        data = resp.json()
+                        text = data["choices"][0]["message"]["content"] or ""
+                        print(f"[ALT_MODEL] grok-3-fast (chat fallback) responded: {len(text):,} chars")
+                        return text
+                except Exception as e2:
+                    print(f"[ALT_MODEL] grok chat fallback also failed: {e2}")
+                    return ""
 
         if reasoning_model == "gemini":
             api_key = os.environ.get("GEMINI_API_KEY", "")
@@ -3062,7 +3174,6 @@ class TradingAgent:
                 print("[ALT_MODEL] No GEMINI_API_KEY set")
                 return ""
             try:
-                # Convert to Gemini contents format
                 system_text = "\n\n".join(
                     b["text"] if isinstance(b, dict) else str(b) for b in system_blocks
                 )
@@ -3070,20 +3181,31 @@ class TradingAgent:
                 for m in messages:
                     role = "user" if m["role"] == "user" else "model"
                     contents.append({"role": role, "parts": [{"text": m["content"]}]})
-                async with httpx.AsyncClient(timeout=80.0) as client:
+                body = {
+                    "system_instruction": {"parts": [{"text": system_text}]},
+                    "contents": contents,
+                    "generationConfig": {"maxOutputTokens": token_limit},
+                }
+                # Enable Google Search grounding for eligible categories
+                if use_web_search:
+                    body["tools"] = [{"google_search": {}}]
+                async with httpx.AsyncClient(timeout=90.0) as client:
                     resp = await client.post(
-                        f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}",
+                        f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}",
                         headers={"Content-Type": "application/json"},
-                        json={
-                            "system_instruction": {"parts": [{"text": system_text}]},
-                            "contents": contents,
-                            "generationConfig": {"maxOutputTokens": token_limit},
-                        },
+                        json=body,
                     )
                     resp.raise_for_status()
                     data = resp.json()
-                    text = data["candidates"][0]["content"]["parts"][0]["text"] or ""
-                    print(f"[ALT_MODEL] gemini responded: {len(text):,} chars")
+                    # Gemini may return multiple parts — concatenate text parts
+                    parts = data["candidates"][0]["content"]["parts"]
+                    text = "".join(p.get("text", "") for p in parts if "text" in p) or ""
+                    search_tag = "+google_search" if use_web_search else ""
+                    grounding = data.get("candidates", [{}])[0].get("groundingMetadata")
+                    if grounding:
+                        queries = grounding.get("webSearchQueries", [])
+                        print(f"[ALT_MODEL] gemini-2.5-flash{search_tag} grounded with {len(queries)} searches")
+                    print(f"[ALT_MODEL] gemini-2.5-flash{search_tag} responded: {len(text):,} chars")
                     return text
             except Exception as e:
                 print(f"[ALT_MODEL] gemini error: {e}")
@@ -3095,20 +3217,26 @@ class TradingAgent:
                 print("[ALT_MODEL] No PERPLEXITY_API_KEY set")
                 return ""
             try:
-                async with httpx.AsyncClient(timeout=80.0) as client:
+                body = {
+                    "model": "sonar-pro",
+                    "max_tokens": token_limit,
+                    "messages": oai_messages,
+                }
+                # Perplexity always searches the web — for trending, focus on recent results
+                if use_web_search:
+                    body["search_recency_filter"] = "day"
+                async with httpx.AsyncClient(timeout=90.0) as client:
                     resp = await client.post(
                         "https://api.perplexity.ai/chat/completions",
                         headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-                        json={
-                            "model": "sonar-pro",
-                            "max_tokens": token_limit,
-                            "messages": oai_messages,
-                        },
+                        json=body,
                     )
                     resp.raise_for_status()
                     data = resp.json()
                     text = data["choices"][0]["message"]["content"] or ""
-                    print(f"[ALT_MODEL] perplexity responded: {len(text):,} chars")
+                    citations = data.get("citations", [])
+                    recency_tag = " (recency=day)" if use_web_search else ""
+                    print(f"[ALT_MODEL] perplexity sonar-pro{recency_tag} responded: {len(text):,} chars, {len(citations)} citations")
                     return text
             except Exception as e:
                 print(f"[ALT_MODEL] perplexity error: {e}")
