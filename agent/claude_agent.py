@@ -3691,7 +3691,49 @@ class TradingAgent:
                     self._broaden_candidates(primary_data, needs_broadening),
                     timeout=min(12.0, remaining - 2),
                 )
+                # Merge broadened equities into stock_trending so the ranker sees them
+                if "broadened_equities" in broadened:
+                    broad_eq = broadened["broadened_equities"]
+                    if isinstance(broad_eq, dict):
+                        existing_stock = primary_data.get("stock_trending") or {}
+                        if not isinstance(existing_stock, dict):
+                            existing_stock = {}
+                        # Merge enriched_data from broadened into existing
+                        existing_enriched = existing_stock.get("enriched_data") or {}
+                        broad_enriched = broad_eq.get("enriched_data") or {}
+                        if isinstance(broad_enriched, dict):
+                            for ticker, info in broad_enriched.items():
+                                if ticker not in existing_enriched:
+                                    existing_enriched[ticker] = info
+                        existing_stock["enriched_data"] = existing_enriched
+                        # Merge top_trending
+                        existing_top = existing_stock.get("top_trending") or []
+                        broad_top = broad_eq.get("top_trending") or []
+                        existing_tickers = {item.get("ticker") for item in existing_top if isinstance(item, dict)}
+                        for item in broad_top:
+                            if isinstance(item, dict) and item.get("ticker") not in existing_tickers:
+                                existing_top.append(item)
+                        existing_stock["top_trending"] = existing_top
+                        primary_data["stock_trending"] = existing_stock
+                        print(f"[CROSS_ASSET_TRENDING] Merged {len(broad_enriched)} broadened equities into stock_trending (total enriched: {len(existing_enriched)})")
+
                 primary_data.update(broadened)
+
+                # Re-run the ranker with merged data so broadened candidates get ranked
+                try:
+                    from data.cross_asset_ranker import rank_cross_market
+                    reranked = rank_cross_market(
+                        primary_data.get("stock_trending") or {},
+                        primary_data.get("crypto_scanner") or {},
+                        primary_data.get("commodities") or {},
+                        primary_data.get("macro_context") or {},
+                    )
+                    primary_data["ranked_candidates"] = reranked.get("ranked_candidates", [])
+                    primary_data["ranking_debug"] = reranked.get("ranking_debug", {})
+                    print(f"[CROSS_ASSET_TRENDING] Re-ranked after broadening: {len(primary_data['ranked_candidates'])} candidates")
+                except Exception as e:
+                    print(f"[CROSS_ASSET_TRENDING] Re-ranking after broadening failed: {e}")
+
                 module_status["broadening"] = "ok"
             except asyncio.TimeoutError:
                 module_status["broadening"] = "timeout"

@@ -918,6 +918,7 @@ HARD RULES (violations = broken contract):
 6. Do NOT include an EXCLUDED section. Do not list excluded/filtered-out tickers.
 7. Each item MUST be classified as either "TRADE IDEA" or "WATCHLIST" based on confirmation data.
 8. PRIORITY ORDER: Equities first (fill to 5+), then Commodities (fill to 2+), then Crypto (cap at 3). This reflects the asset class priority for a diversified trading desk.
+9. NEVER invent placeholder tickers like "WATCHLIST_PLACEHOLDER_1" or "MID_CAP_BACKFILL". Only output REAL ticker symbols that exist in the input data. If a bucket is empty, use real tickers from other buckets or from ranked_candidates/enriched_data/grok_shortlist — there are always real stocks available in the data.
 
 SOCIAL TRADING SIGNAL (MANDATORY — populate social_trading_signal object):
 If social_signal.social_spike_primary exists in the data, populate the social_trading_signal JSON object:
