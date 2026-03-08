@@ -36,6 +36,7 @@ _AUTH_PUBLIC_PATHS = {
     "/api/auth/login",
     "/api/auth/verify",
     "/api/auth/logout",
+    "/api/presets",
     "/",
     "/ping",
     "/health",
