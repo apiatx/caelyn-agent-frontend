@@ -166,6 +166,11 @@ def rank_cross_market(stock_data: dict, crypto_data: dict,
 def _cap_tier(candidate: dict) -> str:
     mcap = candidate.get("market_cap")
     if mcap is None:
+        # Try to infer from name or other signals — don't blindly assume small
+        # Well-known tickers with high source counts are likely mid+ caps
+        sc = candidate.get("source_count", 0)
+        if sc >= 3:
+            return "mid"  # Multi-platform trending → probably not a micro-cap
         return "small"
     if mcap >= STOCK_LARGE_CAP:
         return "large"

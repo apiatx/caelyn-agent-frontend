@@ -4598,12 +4598,12 @@ class MarketDataService:
         top_tickers = [t for t, _ in multi_source[:10]]
 
         light_enrichment = await asyncio.gather(
-            *[self.stockanalysis.get_overview(t) for t in top_tickers[:8]],
+            *[self.stockanalysis.get_overview(t) for t in top_tickers[:15]],
             return_exceptions=True,
         )
 
         enriched = {}
-        for ticker, result in zip(top_tickers[:8], light_enrichment):
+        for ticker, result in zip(top_tickers[:15], light_enrichment):
             if isinstance(result, Exception) or not isinstance(result, dict):
                 continue
             result["trending_sources"] = list(ticker_sources.get(ticker, []))
