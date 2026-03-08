@@ -25,18 +25,19 @@ PERPLEXITY_NEWS_TTL = 600  # 10 minutes for broad market news
 FINANCIAL_DOMAIN_ALLOWLIST = [
     "reuters.com",
     "bloomberg.com",
-    "cnbc.com",
     "wsj.com",
-    "finance.yahoo.com",
-    "marketwatch.com",
-    "seekingalpha.com",
-    "barrons.com",
-    "sec.gov",
-    "fool.com",
-    "investing.com",
-    "benzinga.com",
-    "thestreet.com",
     "ft.com",
+    "cnbc.com",
+    "seekingalpha.com",
+    "marketwatch.com",
+    "barrons.com",
+    "benzinga.com",
+    "investors.com",
+    "thestreet.com",
+    "finance.yahoo.com",
+    "sec.gov",
+    "investing.com",
+    "zerohedge.com",
 ]
 
 
@@ -128,19 +129,23 @@ class PerplexityProvider:
         )
 
         try:
+            body = {
+                "model": "sonar-pro",
+                "messages": [
+                    {"role": "system", "content": "You are a web search assistant. Use web results and provide concise factual output."},
+                    {"role": "user", "content": prompt},
+                ],
+                "temperature": 0.1,
+                "max_tokens": 800,
+            }
+            if domain_filter:
+                body["search_domain_filter"] = domain_filter[:20]
+
             async with httpx.AsyncClient() as client:
                 resp = await client.post(
                     self.CHAT_URL,
                     headers=self._headers,
-                    json={
-                        "model": "sonar",
-                        "messages": [
-                            {"role": "system", "content": "You are a web search assistant. Use web results and provide concise factual output."},
-                            {"role": "user", "content": prompt},
-                        ],
-                        "temperature": 0.1,
-                        "max_tokens": 800,
-                    },
+                    json=body,
                     timeout=15.0,
                 )
 
@@ -476,13 +481,20 @@ class PerplexityProvider:
                     self.SONAR_URL,
                     headers=self._headers,
                     json={
-                        "model": "sonar",
+                        "model": "sonar-pro",
                         "messages": [
                             {"role": "system", "content": "You are a commodities market analyst. Provide current, accurate market data. Always include the daily percentage change with a + or - sign."},
                             {"role": "user", "content": prompt},
                         ],
                         "temperature": 0.1,
                         "max_tokens": 800,
+                        "search_domain_filter": [
+                            "reuters.com",
+                            "bloomberg.com",
+                            "investing.com",
+                            "marketwatch.com",
+                            "cnbc.com",
+                        ],
                     },
                     timeout=15.0,
                 )
