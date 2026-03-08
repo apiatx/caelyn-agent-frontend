@@ -1148,6 +1148,7 @@ class QueryRequest(BaseModel):
     preset_intent: Optional[str] = None
     csv_data: Optional[str] = None
     chatbox_mode: Optional[bool] = False
+    reasoning_model: Optional[str] = "claude"
 
 def _build_meta(req_id: str, preset_intent=None, conv_id=None, routing=None, timing_ms=None):
     return {
@@ -1725,6 +1726,7 @@ async def query_agent(
                 request_id=req_id,
                 csv_data=body.csv_data,
                 chatbox_mode=body.chatbox_mode or False,
+                reasoning_model=body.reasoning_model or "claude",
             )
         )
 
