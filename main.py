@@ -252,6 +252,8 @@ async def auth_logout(request: Request):
 data_service = None
 agent = None
 _init_done = False
+import threading as _threading
+_init_event = _threading.Event()
 
 def _do_init():
     global data_service, agent, _init_done
@@ -262,6 +264,7 @@ def _do_init():
         data_service = MarketDataService(polygon_key=POLYGON_API_KEY, fmp_key=FMP_API_KEY, coingecko_key=COINGECKO_API_KEY, cmc_key=CMC_API_KEY, altfins_key=ALTFINS_API_KEY, xai_key=XAI_API_KEY, twelvedata_key=TWELVEDATA_API_KEY)
         agent = TradingAgent(api_key=ANTHROPIC_API_KEY, data_service=data_service, openai_api_key=OPENAI_API_KEY)
         _init_done = True
+        _init_event.set()
         print("[INIT] All services initialized successfully")
     except Exception as e:
         print(f"[INIT] ERROR during initialization: {e}")
@@ -279,10 +282,8 @@ async def _briefing_precompute_loop():
     news) so briefing requests are near-instant.
     """
     # Wait for init to complete
-    for _ in range(120):
-        if _init_done and data_service is not None:
-            break
-        await asyncio.sleep(1)
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(None, _init_event.wait, 120)
 
     if data_service is None:
         print("[BRIEFING_PRECOMPUTE] data_service not available, aborting background loop")
@@ -502,10 +503,8 @@ async def _smart_earnings_loop():
     """Background loop: runs smart earnings scan at 8am + 12pm EST on weekdays."""
     global _smart_scan_running
     # Wait for init
-    for _ in range(120):
-        if _init_done and data_service is not None:
-            break
-        await asyncio.sleep(1)
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(None, _init_event.wait, 120)
 
     if data_service is None:
         print("[SMART_EARNINGS] data_service not available, aborting loop")
@@ -576,11 +575,15 @@ async def _smart_earnings_loop():
 
 async def _wait_for_init():
     import asyncio
-    for _ in range(60):
-        if _init_done:
-            return
-        await asyncio.sleep(0.5)
-    raise HTTPException(status_code=503, detail="Server is still starting up. Please try again in a moment.")
+    if _init_done:
+        return
+    # Use run_in_executor to properly wait on the threading.Event
+    # This avoids thread-visibility issues with plain boolean polling
+    loop = asyncio.get_event_loop()
+    ready = await loop.run_in_executor(None, _init_event.wait, 60)
+    if not ready or not _init_done:
+        print("[INIT] _wait_for_init timed out after 60s — _init_done=%s, agent=%s, data_service=%s" % (_init_done, agent is not None, data_service is not None))
+        raise HTTPException(status_code=503, detail="Server is still starting up. Please try again in a moment.")
 
 @app.get("/")
 async def root():
