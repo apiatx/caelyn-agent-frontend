@@ -5,6 +5,7 @@ import time
 import asyncio
 
 import anthropic
+import httpx
 
 from agent.data_compressor import compress_data
 from agent.institutional_scorer import apply_institutional_scoring
@@ -362,9 +363,9 @@ class TradingAgent:
             "tickers": [],
         }
 
-    async def handle_query(self, user_prompt: str, history: list = None, preset_intent: str = None, request_id: str = "", csv_data: str = None, chatbox_mode: bool = False) -> dict:
+    async def handle_query(self, user_prompt: str, history: list = None, preset_intent: str = None, request_id: str = "", csv_data: str = None, chatbox_mode: bool = False, reasoning_model: str = "claude") -> dict:
         try:
-            return await self._handle_query_inner(user_prompt, history=history, preset_intent=preset_intent, request_id=request_id, csv_data=csv_data, chatbox_mode=chatbox_mode)
+            return await self._handle_query_inner(user_prompt, history=history, preset_intent=preset_intent, request_id=request_id, csv_data=csv_data, chatbox_mode=chatbox_mode, reasoning_model=reasoning_model)
         except Exception as e:
             import traceback
             print(f"[AGENT] FATAL: handle_query crashed with unhandled exception: {e}")
@@ -379,7 +380,7 @@ class TradingAgent:
                 },
             }
 
-    async def _handle_query_inner(self, user_prompt: str, history: list = None, preset_intent: str = None, request_id: str = "", csv_data: str = None, chatbox_mode: bool = False) -> dict:
+    async def _handle_query_inner(self, user_prompt: str, history: list = None, preset_intent: str = None, request_id: str = "", csv_data: str = None, chatbox_mode: bool = False, reasoning_model: str = "claude") -> dict:
         start_time = time.time()
         if history is None:
             history = []
@@ -915,7 +916,7 @@ class TradingAgent:
             except NameError:
                 pass
 
-        raw_response = await self._ask_claude_with_timeout(user_prompt, claude_data, history, is_followup=is_followup, category=category, chatbox_mode=chatbox_mode)
+        raw_response = await self._ask_claude_with_timeout(user_prompt, claude_data, history, is_followup=is_followup, category=category, chatbox_mode=chatbox_mode, reasoning_model=reasoning_model)
         claude_ms = int((time.time() - data_done_time) * 1000)
         print(f"[AGENT] Claude responded: {len(raw_response):,} chars ({time.time() - start_time:.1f}s)")
 
@@ -2941,9 +2942,42 @@ class TradingAgent:
                 return True
         return False
 
-    async def _ask_claude_with_timeout(self, user_prompt: str, market_data: dict, history: list = None, is_followup: bool = False, category: str = "", chatbox_mode: bool = False) -> str:
+    VALID_REASONING_MODELS = {"claude", "gpt-4o", "grok", "gemini", "perplexity"}
+
+    WEB_SEARCH_CATEGORIES = {"cross_asset_trending", "daily_briefing", "best_trades"}
+
+    async def _ask_claude_with_timeout(self, user_prompt: str, market_data: dict, history: list = None, is_followup: bool = False, category: str = "", chatbox_mode: bool = False, reasoning_model: str = "claude") -> str:
         data_size = len(json.dumps(market_data, default=str)) if market_data else 0
-        print(f"[AGENT] Sending to Claude: {data_size:,} chars of market data (category={category}, chatbox_mode={chatbox_mode})")
+        reasoning_model = reasoning_model if reasoning_model in self.VALID_REASONING_MODELS else "claude"
+        print(f"[AGENT] Sending to {reasoning_model}: {data_size:,} chars of market data (category={category}, chatbox_mode={chatbox_mode})")
+
+        # Non-Claude models: try the selected model, fallback to Claude on failure
+        if reasoning_model != "claude":
+            try:
+                result = await asyncio.wait_for(
+                    self._call_alt_model(reasoning_model, user_prompt, market_data, history, is_followup, category, chatbox_mode),
+                    timeout=80.0,
+                )
+                if result:
+                    return result
+                print(f"[AGENT] {reasoning_model} returned empty, falling back to Claude")
+            except Exception as e:
+                print(f"[AGENT] {reasoning_model} failed ({e}), falling back to Claude")
+
+        # Claude path: use async client + web search for eligible categories
+        if category in self.WEB_SEARCH_CATEGORIES:
+            try:
+                return await asyncio.wait_for(
+                    self._ask_claude_async_web_search(user_prompt, market_data, history, is_followup, category, chatbox_mode),
+                    timeout=90.0,
+                )
+            except asyncio.TimeoutError:
+                print(f"[AGENT] Claude async+web_search timed out after 90s (data was {data_size:,} chars)")
+                return json.dumps({"display_type": "chat", "message": "The AI took too long to respond. Please try again — sometimes the model is under heavy load."})
+            except Exception as e:
+                print(f"[AGENT] Claude async+web_search error: {e}, falling back to sync path")
+
+        # Default sync Claude path
         try:
             return await asyncio.wait_for(
                 asyncio.to_thread(self._ask_claude, user_prompt, market_data, history, is_followup, category, chatbox_mode),
@@ -2955,6 +2989,194 @@ class TradingAgent:
         except Exception as e:
             print(f"[AGENT] Claude API error: {e}")
             return json.dumps({"display_type": "chat", "message": f"Error reaching AI: {str(e)}"})
+
+    def _prompt_to_openai_messages(self, system_blocks, messages) -> list:
+        """Convert Anthropic system_blocks + messages into OpenAI-compatible message list."""
+        system_text = "\n\n".join(
+            b["text"] if isinstance(b, dict) else str(b) for b in system_blocks
+        )
+        oai_msgs = [{"role": "system", "content": system_text}]
+        for m in messages:
+            oai_msgs.append({"role": m["role"], "content": m["content"]})
+        return oai_msgs
+
+    async def _call_alt_model(self, reasoning_model: str, user_prompt: str, market_data: dict, history: list = None, is_followup: bool = False, category: str = "", chatbox_mode: bool = False) -> str:
+        """Call a non-Claude model. Returns response text or empty string on failure."""
+        system_blocks, messages, _, token_limit, _, _ = self._build_prompt(
+            user_prompt, market_data, history, is_followup, category, chatbox_mode
+        )
+        oai_messages = self._prompt_to_openai_messages(system_blocks, messages)
+
+        if reasoning_model == "gpt-4o":
+            api_key = os.environ.get("OPENAI_API_KEY", "")
+            if not api_key:
+                print("[ALT_MODEL] No OPENAI_API_KEY set")
+                return ""
+            try:
+                from openai import AsyncOpenAI
+                client = AsyncOpenAI(api_key=api_key)
+                resp = await client.chat.completions.create(
+                    model="gpt-4o",
+                    max_tokens=token_limit,
+                    messages=oai_messages,
+                )
+                text = resp.choices[0].message.content or ""
+                print(f"[ALT_MODEL] gpt-4o responded: {len(text):,} chars")
+                return text
+            except Exception as e:
+                print(f"[ALT_MODEL] gpt-4o error: {e}")
+                return ""
+
+        if reasoning_model == "grok":
+            api_key = os.environ.get("XAI_API_KEY", "")
+            if not api_key:
+                print("[ALT_MODEL] No XAI_API_KEY set")
+                return ""
+            try:
+                async with httpx.AsyncClient(timeout=80.0) as client:
+                    resp = await client.post(
+                        "https://api.x.ai/v1/chat/completions",
+                        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+                        json={
+                            "model": "grok-4-1-fast-non-reasoning",
+                            "max_tokens": token_limit,
+                            "messages": oai_messages,
+                        },
+                    )
+                    resp.raise_for_status()
+                    data = resp.json()
+                    text = data["choices"][0]["message"]["content"] or ""
+                    print(f"[ALT_MODEL] grok responded: {len(text):,} chars")
+                    return text
+            except Exception as e:
+                print(f"[ALT_MODEL] grok error: {e}")
+                return ""
+
+        if reasoning_model == "gemini":
+            api_key = os.environ.get("GEMINI_API_KEY", "")
+            if not api_key:
+                print("[ALT_MODEL] No GEMINI_API_KEY set")
+                return ""
+            try:
+                # Convert to Gemini contents format
+                system_text = "\n\n".join(
+                    b["text"] if isinstance(b, dict) else str(b) for b in system_blocks
+                )
+                contents = []
+                for m in messages:
+                    role = "user" if m["role"] == "user" else "model"
+                    contents.append({"role": role, "parts": [{"text": m["content"]}]})
+                async with httpx.AsyncClient(timeout=80.0) as client:
+                    resp = await client.post(
+                        f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}",
+                        headers={"Content-Type": "application/json"},
+                        json={
+                            "system_instruction": {"parts": [{"text": system_text}]},
+                            "contents": contents,
+                            "generationConfig": {"maxOutputTokens": token_limit},
+                        },
+                    )
+                    resp.raise_for_status()
+                    data = resp.json()
+                    text = data["candidates"][0]["content"]["parts"][0]["text"] or ""
+                    print(f"[ALT_MODEL] gemini responded: {len(text):,} chars")
+                    return text
+            except Exception as e:
+                print(f"[ALT_MODEL] gemini error: {e}")
+                return ""
+
+        if reasoning_model == "perplexity":
+            api_key = os.environ.get("PERPLEXITY_API_KEY", "")
+            if not api_key:
+                print("[ALT_MODEL] No PERPLEXITY_API_KEY set")
+                return ""
+            try:
+                async with httpx.AsyncClient(timeout=80.0) as client:
+                    resp = await client.post(
+                        "https://api.perplexity.ai/chat/completions",
+                        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+                        json={
+                            "model": "sonar-pro",
+                            "max_tokens": token_limit,
+                            "messages": oai_messages,
+                        },
+                    )
+                    resp.raise_for_status()
+                    data = resp.json()
+                    text = data["choices"][0]["message"]["content"] or ""
+                    print(f"[ALT_MODEL] perplexity responded: {len(text):,} chars")
+                    return text
+            except Exception as e:
+                print(f"[ALT_MODEL] perplexity error: {e}")
+                return ""
+
+        return ""
+
+    async def _ask_claude_async_web_search(self, user_prompt: str, market_data: dict, history: list = None, is_followup: bool = False, category: str = "", chatbox_mode: bool = False) -> str:
+        """Async Claude call with web_search tool for eligible categories."""
+        system_blocks, messages, model, token_limit, use_thinking, thinking_budget = self._build_prompt(
+            user_prompt, market_data, history, is_followup, category, chatbox_mode
+        )
+
+        # Flatten system_blocks to plain text for async client (no cache_control needed)
+        system_text = "\n\n".join(
+            b["text"] if isinstance(b, dict) else str(b) for b in system_blocks
+        )
+
+        async_client = anthropic.AsyncAnthropic(
+            api_key=self.client.api_key,
+            timeout=90.0,
+        )
+
+        tools = [{"type": "web_search_20250305", "name": "web_search"}]
+
+        try:
+            if use_thinking:
+                effective_max_tokens = token_limit + thinking_budget
+                print(f"[Agent] Sending {len(messages)} messages to Claude ASYNC+web_search (model={model}, category={category}, max_tokens={effective_max_tokens}, thinking={thinking_budget})")
+                response = await async_client.messages.create(
+                    model=model,
+                    max_tokens=effective_max_tokens,
+                    thinking={"type": "enabled", "budget_tokens": thinking_budget},
+                    system=system_text,
+                    messages=messages,
+                    tools=tools,
+                )
+            else:
+                print(f"[Agent] Sending {len(messages)} messages to Claude ASYNC+web_search (model={model}, category={category}, max_tokens={token_limit})")
+                response = await async_client.messages.create(
+                    model=model,
+                    max_tokens=token_limit,
+                    system=system_text,
+                    messages=messages,
+                    tools=tools,
+                )
+
+            # Find the last text block (tool_use blocks may appear before it)
+            response_text = ""
+            for block in reversed(response.content):
+                if block.type == "text":
+                    response_text = block.text
+                    break
+
+            if response.stop_reason == "max_tokens":
+                print(f"[Agent] WARNING: Async response was truncated (hit max_tokens). Length: {len(response_text)}")
+            if not response_text or not response_text.strip():
+                print(f"[Agent] WARNING: Claude async returned empty content (stop_reason={response.stop_reason})")
+                return json.dumps({"display_type": "chat", "message": "The AI returned an empty response. Please try again."})
+
+            web_search_count = sum(1 for b in response.content if b.type == "web_search_tool_result")
+            if web_search_count:
+                print(f"[Agent] Claude used web_search {web_search_count} time(s) for category={category}")
+
+            if use_thinking:
+                thinking_used = sum(len(b.thinking) for b in response.content if b.type == "thinking")
+                print(f"[Agent] Extended thinking used ~{thinking_used} chars before responding")
+
+            print(f"[Agent] Async+web_search response: {len(response_text):,} chars")
+            return response_text
+        finally:
+            await async_client.close()
 
     async def _gather_polymarket_context(self, query_info: dict) -> dict:
         """Fetch Polymarket prediction markets data + macro context via the dedicated provider."""
@@ -4570,8 +4792,9 @@ Be direct and opinionated. Tell me what you actually think."""
                 print(f"[Agent] Removed oldest message ({content_len:,} chars) to fit context window")
         return messages
 
-    def _ask_claude(self, user_prompt: str, market_data: dict, history: list = None, is_followup: bool = False, category: str = "", chatbox_mode: bool = False) -> str:
-        """Send the user's question + market data to Claude with conversation history."""
+    def _build_prompt(self, user_prompt: str, market_data: dict, history: list = None, is_followup: bool = False, category: str = "", chatbox_mode: bool = False):
+        """Build system_blocks, messages, model selection for a Claude call.
+        Returns (system_blocks, messages, model, token_limit, use_thinking, thinking_budget)."""
 
         data_str = None
         filter_instructions = ""
@@ -5032,9 +5255,16 @@ FOLLOW-UP MODE: The user is continuing a conversation. You have the full convers
         else:
             model = "claude-sonnet-4-5-20250929"
             token_limit = 10000
-        # Extended thinking: enable for Sonnet 4.5 categories with defined budgets
         thinking_budget = self.THINKING_BUDGETS.get(category, 0)
         use_thinking = thinking_budget > 0 and "sonnet-4-5" in model
+
+        return system_blocks, messages, model, token_limit, use_thinking, thinking_budget
+
+    def _ask_claude(self, user_prompt: str, market_data: dict, history: list = None, is_followup: bool = False, category: str = "", chatbox_mode: bool = False) -> str:
+        """Send the user's question + market data to Claude with conversation history."""
+        system_blocks, messages, model, token_limit, use_thinking, thinking_budget = self._build_prompt(
+            user_prompt, market_data, history, is_followup, category, chatbox_mode
+        )
 
         if use_thinking:
             effective_max_tokens = token_limit + thinking_budget
@@ -5071,14 +5301,6 @@ FOLLOW-UP MODE: The user is continuing a conversation. You have the full convers
         if use_thinking:
             thinking_used = sum(len(b.thinking) for b in response.content if b.type == "thinking")
             print(f"[Agent] Extended thinking used ~{thinking_used} chars before responding")
-
-        if category == "crypto" and 'data_str' in dir() and data_str:
-            try:
-                has_x = '"x_sentiment"' in data_str
-                x_size = len(json.dumps(compressed.get("x_sentiment", {}), default=str)) if compressed else 0
-                print(f"[Agent] Crypto data sent to Claude: total={len(data_str):,} chars, has_x_sentiment={has_x}, x_size={x_size}")
-            except Exception:
-                pass
 
         return response_text
 
