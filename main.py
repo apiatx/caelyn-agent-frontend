@@ -59,14 +59,13 @@ class JWTAuthMiddleware:
 @asynccontextmanager
 async def lifespan(app):
     # Diagnostic: confirm storage backends
-    import os as _os
-    _db_url = _os.environ.get("REPLIT_DB_URL", "")
-    print(f"[STARTUP] REPLIT_DB_URL={'SET (' + _db_url[:40] + '...)' if _db_url else 'NOT SET — history will use ephemeral JSON files!'}")
     try:
-        from data.prompt_history import _use_replit_db as _ph_db
-        from data.chat_history import _use_replit_db as _ch_db
-        print(f"[STARTUP] prompt_history backend: {'Replit DB' if _ph_db else 'JSON files (ephemeral!)'}")
-        print(f"[STARTUP] chat_history backend: {'Replit DB' if _ch_db else 'JSON files (ephemeral!)'}")
+        from data.prompt_history import _use_object_storage as _ph_obj, _use_replit_db as _ph_db
+        from data.chat_history import _use_object_storage as _ch_obj, _use_replit_db as _ch_db
+        _ph_backend = "Object Storage (persistent)" if _ph_obj else ("Replit DB (dev)" if _ph_db else "JSON files (EPHEMERAL!)")
+        _ch_backend = "Object Storage (persistent)" if _ch_obj else ("Replit DB (dev)" if _ch_db else "JSON files (EPHEMERAL!)")
+        print(f"[STARTUP] prompt_history backend: {_ph_backend}")
+        print(f"[STARTUP] chat_history backend: {_ch_backend}")
     except Exception as _e:
         print(f"[STARTUP] Storage diagnostic error: {_e}")
 

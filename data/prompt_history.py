@@ -2,7 +2,8 @@
 Persistent storage for prompt response history.
 Stores responses grouped by category and prompt type (intent).
 
-Primary: Replit DB (persists across deploys).
+Primary: Replit Object Storage (persists across deploys AND autoscale).
+Secondary: Replit DB (dev environment only).
 Fallback: JSON files (for local dev outside Replit).
 """
 
@@ -17,16 +18,26 @@ MAX_PER_INTENT = 100
 _locks: dict = {}
 
 # ── Storage backend detection ────────────────────────────────
+# Priority: Object Storage > Replit DB > JSON files
+_use_object_storage = False
+_obj_client = None
 _use_replit_db = False
 _replit_db = None
 
 try:
-    if os.environ.get("REPLIT_DB_URL"):
-        from replit import db as _replit_db
-        _use_replit_db = True
-        print("[HISTORY] Using Replit DB for prompt history (persistent)")
+    from replit.object_storage import Client as _ObjClient
+    _obj_client = _ObjClient()
+    _use_object_storage = True
+    print("[HISTORY] Using Replit Object Storage for prompt history (persistent across deploys)")
 except Exception as e:
-    print(f"[HISTORY] Replit DB unavailable ({e}), falling back to JSON files")
+    print(f"[HISTORY] Object Storage unavailable ({e}), trying Replit DB...")
+    try:
+        if os.environ.get("REPLIT_DB_URL"):
+            from replit import db as _replit_db
+            _use_replit_db = True
+            print("[HISTORY] Using Replit DB for prompt history (dev only)")
+    except Exception as e2:
+        print(f"[HISTORY] Replit DB unavailable ({e2}), falling back to JSON files")
 
 
 def _get_lock(user_id: str) -> Lock:
@@ -35,7 +46,30 @@ def _get_lock(user_id: str) -> Lock:
     return _locks[user_id]
 
 
-# ── Replit DB helpers ────────────────────────────────────────
+# ── Object Storage helpers ───────────────────────────────────
+
+def _obj_key(user_id: str) -> str:
+    return f"ph/{user_id}.json"
+
+
+def _obj_read(user_id: str) -> dict:
+    try:
+        raw = _obj_client.download_as_text(_obj_key(user_id))
+        if not raw:
+            return {}
+        return json.loads(raw)
+    except Exception:
+        return {}
+
+
+def _obj_write(user_id: str, data: dict):
+    try:
+        _obj_client.upload_from_text(_obj_key(user_id), json.dumps(data, default=str))
+    except Exception as e:
+        print(f"[HISTORY] Object Storage write error for {user_id}: {e}")
+
+
+# ── Replit DB helpers (fallback for dev) ─────────────────────
 
 def _db_key(user_id: str) -> str:
     return f"ph:{user_id}"
@@ -48,7 +82,6 @@ def _db_read(user_id: str) -> dict:
             return {}
         if isinstance(raw, str):
             return json.loads(raw)
-        # replit db may return ObservedDict — convert to plain dict
         return json.loads(json.dumps(raw, default=str))
     except Exception as e:
         print(f"[HISTORY] Replit DB read error for {user_id}: {e}")
@@ -94,13 +127,17 @@ def _file_write(user_id: str, data: dict):
 # ── Unified read/write (picks backend automatically) ─────────
 
 def _read(user_id: str) -> dict:
+    if _use_object_storage:
+        return _obj_read(user_id)
     if _use_replit_db:
         return _db_read(user_id)
     return _file_read(user_id)
 
 
 def _write(user_id: str, data: dict):
-    if _use_replit_db:
+    if _use_object_storage:
+        _obj_write(user_id, data)
+    elif _use_replit_db:
         _db_write(user_id, data)
     else:
         _file_write(user_id, data)
@@ -298,50 +335,50 @@ def clear_intent(category: str, intent: str, user_id: str = "default") -> bool:
 
 def migrate_legacy_history(user_id: str):
     """
-    Migrate legacy data into Replit DB (or user-scoped JSON file).
-    Checks both the old prompt_history.json and user-scoped JSON files.
+    Migrate legacy data into the active storage backend.
+    Checks Replit DB, user-scoped JSON files, and legacy JSON files.
     Safe to call multiple times (idempotent).
     """
-    # If on Replit DB, migrate any existing JSON files into it
-    if _use_replit_db:
-        # Check if data already exists in Replit DB
-        existing = _db_read(user_id)
-        if existing:
-            return  # already migrated
+    # Check if data already exists in the current backend
+    existing = _read(user_id)
+    if existing:
+        return  # already have data
 
-        # Try user-scoped JSON file first
-        user_file = Path(f"data/prompt_history_{user_id}.json")
-        if user_file.exists():
-            try:
-                with open(user_file, "r") as f:
-                    data = json.load(f)
-                if data:
-                    _db_write(user_id, data)
-                    print(f"[HISTORY] Migrated {user_file} -> Replit DB")
-                return
-            except Exception as e:
-                print(f"[HISTORY] Failed to migrate {user_file}: {e}")
-
-        # Try legacy file
-        legacy_file = Path("data/prompt_history.json")
-        if legacy_file.exists():
-            try:
-                with open(legacy_file, "r") as f:
-                    data = json.load(f)
-                if data:
-                    _db_write(user_id, data)
-                    print(f"[HISTORY] Migrated legacy prompt_history.json -> Replit DB")
-            except Exception as e:
-                print(f"[HISTORY] Failed to migrate legacy history: {e}")
-        return
-
-    # Fallback: original JSON-to-JSON migration
-    legacy_file = Path("data/prompt_history.json")
-    target_file = _history_file(user_id)
-    if legacy_file.exists() and not target_file.exists():
+    # Source 1: Replit DB (may have data from before Object Storage migration)
+    if _use_object_storage and os.environ.get("REPLIT_DB_URL"):
         try:
-            import shutil
-            shutil.copy2(legacy_file, target_file)
-            print(f"[AUTH] Migrated prompt_history.json -> {target_file}")
+            from replit import db as _tmp_db
+            raw = _tmp_db.get(_db_key(user_id))
+            if raw:
+                data = json.loads(raw) if isinstance(raw, str) else json.loads(json.dumps(raw, default=str))
+                if data:
+                    _write(user_id, data)
+                    print(f"[HISTORY] Migrated Replit DB -> Object Storage for {user_id}")
+                    return
         except Exception as e:
-            print(f"[AUTH] Failed to migrate prompt history: {e}")
+            print(f"[HISTORY] Replit DB migration check failed: {e}")
+
+    # Source 2: User-scoped JSON file
+    user_file = Path(f"data/prompt_history_{user_id}.json")
+    if user_file.exists():
+        try:
+            with open(user_file, "r") as f:
+                data = json.load(f)
+            if data:
+                _write(user_id, data)
+                print(f"[HISTORY] Migrated {user_file} -> active backend")
+                return
+        except Exception as e:
+            print(f"[HISTORY] Failed to migrate {user_file}: {e}")
+
+    # Source 3: Legacy global file
+    legacy_file = Path("data/prompt_history.json")
+    if legacy_file.exists():
+        try:
+            with open(legacy_file, "r") as f:
+                data = json.load(f)
+            if data:
+                _write(user_id, data)
+                print(f"[HISTORY] Migrated legacy prompt_history.json -> active backend")
+        except Exception as e:
+            print(f"[HISTORY] Failed to migrate legacy history: {e}")
