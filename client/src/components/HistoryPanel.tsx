@@ -136,6 +136,12 @@ function formatDate(ts: number): string {
   return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 }
 
+function modelDisplayName(m: string): string {
+  if (m === 'agent_collab') return 'Agent Collab';
+  if (m === 'gpt-4o') return 'GPT-4o';
+  return m.charAt(0).toUpperCase() + m.slice(1);
+}
+
 function buildEntryLabels(entries: HistoryEntry[]): Map<string, string> {
   const labels = new Map<string, string>();
   const dateCounts = new Map<string, number>();
@@ -143,7 +149,8 @@ function buildEntryLabels(entries: HistoryEntry[]): Map<string, string> {
     const dateStr = formatDate(e.timestamp);
     const count = (dateCounts.get(dateStr) || 0) + 1;
     dateCounts.set(dateStr, count);
-    labels.set(e.id, count > 1 ? `${dateStr} \u2014 ${count}` : dateStr);
+    const modelSuffix = e.model_used ? ` \u2014 ${modelDisplayName(e.model_used)}` : '';
+    labels.set(e.id, count > 1 ? `${dateStr} \u2014 ${count}${modelSuffix}` : `${dateStr}${modelSuffix}`);
   }
   // Fix: re-number so first occurrence of a date with duplicates also gets a number
   const dateFirstSeen = new Map<string, string[]>();
@@ -155,7 +162,9 @@ function buildEntryLabels(entries: HistoryEntry[]): Map<string, string> {
   for (const [dateStr, ids] of dateFirstSeen) {
     if (ids.length > 1) {
       ids.forEach((id, i) => {
-        labels.set(id, `${dateStr} \u2014 ${i + 1}`);
+        const entry = entries.find(e => e.id === id);
+        const modelSuffix = entry?.model_used ? ` \u2014 ${modelDisplayName(entry.model_used)}` : '';
+        labels.set(id, `${dateStr} \u2014 ${i + 1}${modelSuffix}`);
       });
     }
   }
@@ -406,20 +415,7 @@ export function HistoryPanel({ isOpen, onClose }: { isOpen: boolean; onClose: ()
           }}
           className="panel-btn"
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, flex: 1 }}>
-            <span style={{ color: C.bright, fontSize: 11, fontFamily: sansFont, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
-            {entry.model_used && (
-              <span style={{
-                fontSize: 7, fontWeight: 700, fontFamily: font, textTransform: 'uppercase',
-                color: entry.model_used === 'agent_collab' ? '#a78bfa' : C.blue,
-                background: entry.model_used === 'agent_collab' ? 'rgba(139,92,246,0.12)' : `${C.blue}12`,
-                border: `1px solid ${entry.model_used === 'agent_collab' ? 'rgba(139,92,246,0.3)' : C.blue + '30'}`,
-                borderRadius: 6, padding: '1px 5px', flexShrink: 0,
-              }}>
-                {entry.model_used === 'agent_collab' ? 'collab' : entry.model_used}
-              </span>
-            )}
-          </div>
+          <span style={{ color: C.bright, fontSize: 11, fontFamily: sansFont, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{label}</span>
           <span style={{ color: C.dim, fontSize: 9, fontFamily: font, flexShrink: 0, marginLeft: 8 }}>
             {new Date(entry.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </span>
