@@ -41,13 +41,13 @@ const INTENT_TO_HISTORY_CATEGORY: Record<string, string> = {
   momentum_shift_scan: 'ta_screener', volume_movers_scan: 'ta_screener',
 };
 
-function saveToPromptHistory(intent: string, rawResponse: string, displayType?: string) {
+function saveToPromptHistory(intent: string, rawResponse: string, displayType?: string, modelUsed?: string, query?: string) {
   const category = INTENT_TO_HISTORY_CATEGORY[intent];
   if (!category) return;
   fetch(`${AGENT_BACKEND_URL}/api/history`, {
     method: 'POST',
     headers: authHeaders(),
-    body: JSON.stringify({ category, intent, content: rawResponse, display_type: displayType }),
+    body: JSON.stringify({ category, intent, content: rawResponse, display_type: displayType, model_used: modelUsed, query }),
   }).catch(e => console.error('[HISTORY_SAVE]', e));
 }
 
@@ -297,7 +297,7 @@ export default function TradingAgent() {
   const [screenerSortCol, setScreenerSortCol] = useState('');
   const [screenerSortAsc, setScreenerSortAsc] = useState(true);
   const [groupExpanded, setGroupExpanded] = useState<Record<string, boolean>>({ g1: true, g2: true, g3: true, g4: true, g5: true });
-  const [recentHistory, setRecentHistory] = useState<Array<{key: string, category: string, intent: string, id: string, timestamp: number, content: string, display_type: string | null}>>([]);
+  const [recentHistory, setRecentHistory] = useState<Array<{key: string, category: string, intent: string, id: string, timestamp: number, content: string, display_type: string | null, model_used?: string, query?: string}>>([]);
   const [leftRailSearch, setLeftRailSearch] = useState('');
   const [expandedRiskIds, setExpandedRiskIds] = useState<Set<string>>(new Set());
   const [leftRailOpen, setLeftRailOpen] = useState(false);
@@ -595,12 +595,13 @@ export default function TradingAgent() {
       };
       setPanels(prev => [...prev, newPanel]);
       // Auto-save ALL successful responses to history
+      const usedModel = data?.meta?.reasoning_model || reasoningModel;
       if (presetIntent) {
-        saveToPromptHistory(presetIntent, raw, data.display_type || data.type);
+        saveToPromptHistory(presetIntent, raw, data.display_type || data.type, usedModel, queryText || presetIntent);
       } else if (queryText) {
         let contentToSave: string;
         try { const p = JSON.parse(raw); contentToSave = JSON.stringify({ _user_query: queryText, ...p }); } catch { contentToSave = raw; }
-        fetch(`${AGENT_BACKEND_URL}/api/history`, { method: 'POST', headers: authHeaders(), body: JSON.stringify({ category: 'terminal', intent: 'freeform_query', content: contentToSave }) }).catch(e => console.error('[HISTORY_SAVE]', e));
+        fetch(`${AGENT_BACKEND_URL}/api/history`, { method: 'POST', headers: authHeaders(), body: JSON.stringify({ category: 'terminal', intent: 'freeform_query', content: contentToSave, model_used: usedModel, query: queryText }) }).catch(e => console.error('[HISTORY_SAVE]', e));
       }
       setTimeout(fetchRecentHistory, 1500);
     } catch (err: any) {
@@ -2775,7 +2776,10 @@ export default function TradingAgent() {
                     const timeStr = new Date(entry.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                     return (
                       <div key={`${entry.key}-${i}`} className="rail-item" onClick={() => loadRecentEntry(entry)} style={{ cursor:'pointer', padding:'5px 6px', borderRadius:2, border:`1px solid ${C.border}`, background:C.bg }}>
-                        <div style={{ color:C.dim, fontSize:10, fontFamily:sansFont, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{truncated}</div>
+                        <div style={{ display:'flex', alignItems:'center', gap:4 }}>
+                          <div style={{ color:C.dim, fontSize:10, fontFamily:sansFont, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', flex:1 }}>{truncated}</div>
+                          {entry.model_used && <span style={{ fontSize:6, fontWeight:700, fontFamily:font, textTransform:'uppercase', color: entry.model_used === 'agent_collab' ? '#a78bfa' : C.blue, background: entry.model_used === 'agent_collab' ? 'rgba(139,92,246,0.12)' : `${C.blue}12`, borderRadius:4, padding:'1px 3px', flexShrink:0 }}>{entry.model_used === 'agent_collab' ? 'collab' : entry.model_used}</span>}
+                        </div>
                         <div style={{ color:C.dim, fontSize:8, fontFamily:font, marginTop:1 }}>{timeStr}</div>
                       </div>
                     );
