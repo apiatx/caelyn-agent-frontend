@@ -46,7 +46,7 @@ def _write(user_id: str, data: dict):
         json.dump(data, f, separators=(",", ":"))
 
 
-def save_response(category: str, intent: str, content: str, display_type: str | None = None, user_id: str = "default") -> dict:
+def save_response(category: str, intent: str, content: str, display_type: str | None = None, user_id: str = "default", model_used: str | None = None, query: str | None = None) -> dict:
     """Save a prompt response. Returns the created entry."""
     entry = {
         "id": str(int(time.time() * 1000)),
@@ -54,6 +54,10 @@ def save_response(category: str, intent: str, content: str, display_type: str | 
         "content": content,
         "display_type": display_type,
     }
+    if model_used:
+        entry["model_used"] = model_used
+    if query:
+        entry["query"] = query[:200]
     with _get_lock(user_id):
         data = _read(user_id)
         key = f"{category}::{intent}"

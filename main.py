@@ -1864,6 +1864,78 @@ async def query_agent(
             meta["timing_ms"]["total"] = int((_time.time() - t0) * 1000)
             resp = _ok_envelope(result, meta)
             _resp_log(req_id, 200, "ok", resp)
+
+            # Auto-save to prompt history for the History page
+            try:
+                from data.prompt_history import save_response as _save_prompt_history
+                _hist_user_id = getattr(request.state, "user_id", "default")
+                _hist_category = ""
+                _hist_intent = ""
+                _hist_display_type = ""
+                _hist_model = body.reasoning_model or "agent_collab"
+
+                # Determine category and intent from the response or preset
+                if isinstance(result, dict):
+                    _s = result.get("structured", {})
+                    if isinstance(_s, dict):
+                        _hist_display_type = _s.get("display_type", "")
+                        _hist_category = _s.get("scan_type", "") or _hist_display_type
+
+                # Map preset_intent to history category
+                _PRESET_TO_HISTORY = {
+                    "daily_briefing": ("daily_briefing", "briefing"),
+                    "morning_briefing": ("daily_briefing", "briefing"),
+                    "briefing": ("daily_briefing", "briefing"),
+                    "macro": ("macro", "overview"),
+                    "macro_outlook": ("macro", "overview"),
+                    "news_intelligence": ("headlines", "news"),
+                    "headlines": ("headlines", "news"),
+                    "earnings_catalyst": ("upcoming_catalysts", "catalysts"),
+                    "cross_asset_trending": ("trending_now", "trending"),
+                    "social_momentum": ("social_momentum", "social"),
+                    "social_momentum_scan": ("social_momentum", "social"),
+                    "sector_rotation": ("sector_rotation", "rotation"),
+                    "best_trades": ("best_trades", "trades"),
+                    "investments": ("investments", "ideas"),
+                    "prediction_markets": ("prediction_markets", "predictions"),
+                    "ticker_analysis": ("ticker_analysis", "analysis"),
+                    "portfolio_review": ("portfolio_review", "review"),
+                    "crypto": ("crypto", "scan"),
+                }
+                _preset = body.preset_intent or ""
+                if _preset and _preset in _PRESET_TO_HISTORY:
+                    _hist_category, _hist_intent = _PRESET_TO_HISTORY[_preset]
+                elif _hist_display_type:
+                    # Fallback: use display_type as category for free-form queries
+                    _hist_category = _hist_display_type
+                    _hist_intent = "freeform"
+                else:
+                    _hist_category = "general"
+                    _hist_intent = "query"
+
+                # Build content snippet for history entry
+                _hist_content = ""
+                if isinstance(result, dict):
+                    _hist_content = result.get("analysis", "")
+                    if not _hist_content and isinstance(result.get("structured"), dict):
+                        _hist_content = result["structured"].get("message", "") or result["structured"].get("summary", "")
+                    if not _hist_content:
+                        _hist_content = _json.dumps(result.get("structured", {}), default=str)[:4000]
+
+                if _hist_content:
+                    _save_prompt_history(
+                        category=_hist_category,
+                        intent=_hist_intent,
+                        content=_hist_content[:8000],
+                        display_type=_hist_display_type or "chat",
+                        user_id=_hist_user_id,
+                        model_used=_hist_model,
+                        query=user_query,
+                    )
+                    print(f"[HISTORY] Saved to prompt_history: category={_hist_category}, intent={_hist_intent}, model={_hist_model}, len={len(_hist_content)}")
+            except Exception as _hist_err:
+                print(f"[HISTORY] Failed to auto-save prompt history: {_hist_err}")
+
             yield _j.dumps(resp).encode()
 
         except asyncio.TimeoutError:
