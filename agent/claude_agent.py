@@ -919,7 +919,7 @@ class TradingAgent:
             except NameError:
                 pass
 
-        raw_response = await self._ask_claude_with_timeout(user_prompt, claude_data, history, is_followup=is_followup, category=category, chatbox_mode=chatbox_mode, reasoning_model=reasoning_model)
+        raw_response = await self._ask_claude_with_timeout(user_prompt, claude_data, history, is_followup=is_followup, category=category, chatbox_mode=chatbox_mode, reasoning_model=reasoning_model, preset_intent=preset_intent)
         # Reset web search gate after request completes
         self.data._skip_llm_web_search = False
         claude_ms = int((time.time() - data_done_time) * 1000)
@@ -3182,7 +3182,7 @@ class TradingAgent:
 
     WEB_SEARCH_CATEGORIES = {"cross_asset_trending", "daily_briefing", "best_trades", "earnings_catalyst"}
 
-    async def _ask_claude_with_timeout(self, user_prompt: str, market_data: dict, history: list = None, is_followup: bool = False, category: str = "", chatbox_mode: bool = False, reasoning_model: str = "claude") -> str:
+    async def _ask_claude_with_timeout(self, user_prompt: str, market_data: dict, history: list = None, is_followup: bool = False, category: str = "", chatbox_mode: bool = False, reasoning_model: str = "claude", preset_intent: str = None) -> str:
         data_size = len(json.dumps(market_data, default=str)) if market_data else 0
         reasoning_model = reasoning_model if reasoning_model in self.VALID_REASONING_MODELS else "claude"
         # agent_collab uses Claude as the reasoning engine (with richer data from Grok/Perplexity data sources)
@@ -3193,7 +3193,7 @@ class TradingAgent:
         if effective_model != "claude":
             try:
                 result = await asyncio.wait_for(
-                    self._call_alt_model(effective_model, user_prompt, market_data, history, is_followup, category, chatbox_mode),
+                    self._call_alt_model(effective_model, user_prompt, market_data, history, is_followup, category, chatbox_mode, preset_intent=preset_intent),
                     timeout=90.0,
                 )
                 if result:
@@ -3211,7 +3211,7 @@ class TradingAgent:
         if claude_needs_web_search:
             try:
                 return await asyncio.wait_for(
-                    self._ask_claude_async_web_search(user_prompt, market_data, history, is_followup, category, chatbox_mode),
+                    self._ask_claude_async_web_search(user_prompt, market_data, history, is_followup, category, chatbox_mode, reasoning_model=reasoning_model, preset_intent=preset_intent),
                     timeout=90.0,
                 )
             except asyncio.TimeoutError:
@@ -3223,7 +3223,7 @@ class TradingAgent:
         # Default sync Claude path
         try:
             return await asyncio.wait_for(
-                asyncio.to_thread(self._ask_claude, user_prompt, market_data, history, is_followup, category, chatbox_mode),
+                asyncio.to_thread(self._ask_claude, user_prompt, market_data, history, is_followup, category, chatbox_mode, reasoning_model=reasoning_model, preset_intent=preset_intent),
                 timeout=80.0,
             )
         except asyncio.TimeoutError:
@@ -3243,11 +3243,11 @@ class TradingAgent:
             oai_msgs.append({"role": m["role"], "content": m["content"]})
         return oai_msgs
 
-    async def _call_alt_model(self, reasoning_model: str, user_prompt: str, market_data: dict, history: list = None, is_followup: bool = False, category: str = "", chatbox_mode: bool = False) -> str:
+    async def _call_alt_model(self, reasoning_model: str, user_prompt: str, market_data: dict, history: list = None, is_followup: bool = False, category: str = "", chatbox_mode: bool = False, preset_intent: str = None) -> str:
         """Call a non-Claude model with web search. When running as the sole model,
         web search is ALWAYS enabled so the model can access real-time data."""
         system_blocks, messages, _, token_limit, _, _ = self._build_prompt(
-            user_prompt, market_data, history, is_followup, category, chatbox_mode
+            user_prompt, market_data, history, is_followup, category, chatbox_mode, reasoning_model=reasoning_model, preset_intent=preset_intent
         )
         oai_messages = self._prompt_to_openai_messages(system_blocks, messages)
         context_size = sum(len(m.get("content", "")) for m in oai_messages)
@@ -3423,10 +3423,10 @@ class TradingAgent:
 
         return ""
 
-    async def _ask_claude_async_web_search(self, user_prompt: str, market_data: dict, history: list = None, is_followup: bool = False, category: str = "", chatbox_mode: bool = False) -> str:
+    async def _ask_claude_async_web_search(self, user_prompt: str, market_data: dict, history: list = None, is_followup: bool = False, category: str = "", chatbox_mode: bool = False, reasoning_model: str = "claude", preset_intent: str = None) -> str:
         """Async Claude call with web_search tool for eligible categories."""
         system_blocks, messages, model, token_limit, use_thinking, thinking_budget = self._build_prompt(
-            user_prompt, market_data, history, is_followup, category, chatbox_mode
+            user_prompt, market_data, history, is_followup, category, chatbox_mode, reasoning_model=reasoning_model, preset_intent=preset_intent
         )
 
         # Flatten system_blocks to plain text for async client (no cache_control needed)
@@ -5324,7 +5324,7 @@ Be direct and opinionated. Tell me what you actually think."""
                 print(f"[Agent] Removed oldest message ({content_len:,} chars) to fit context window")
         return messages
 
-    def _build_prompt(self, user_prompt: str, market_data: dict, history: list = None, is_followup: bool = False, category: str = "", chatbox_mode: bool = False):
+    def _build_prompt(self, user_prompt: str, market_data: dict, history: list = None, is_followup: bool = False, category: str = "", chatbox_mode: bool = False, reasoning_model: str = "claude", preset_intent: str = None):
         """Build system_blocks, messages, model selection for a Claude call.
         Returns (system_blocks, messages, model, token_limit, use_thinking, thinking_budget)."""
 
@@ -5549,6 +5549,12 @@ Be direct and opinionated. Tell me what you actually think."""
             )
         else:
             user_content = f"{crypto_preamble}{user_prompt}" if crypto_preamble else user_prompt
+
+        # Personality flavor: prepend a short tone/style prefix for free-form chat & Agent Collab
+        from agent.personality import get_personality_prefix
+        _personality = get_personality_prefix(reasoning_model, preset_intent, chatbox_mode)
+        if _personality:
+            user_content = f"[PERSONALITY & TONE]\n{_personality}\n\n{user_content}"
 
         messages.append({"role": "user", "content": user_content})
 
@@ -5798,10 +5804,10 @@ FOLLOW-UP MODE: The user is continuing a conversation. You have the full convers
 
         return system_blocks, messages, model, token_limit, use_thinking, thinking_budget
 
-    def _ask_claude(self, user_prompt: str, market_data: dict, history: list = None, is_followup: bool = False, category: str = "", chatbox_mode: bool = False) -> str:
+    def _ask_claude(self, user_prompt: str, market_data: dict, history: list = None, is_followup: bool = False, category: str = "", chatbox_mode: bool = False, reasoning_model: str = "claude", preset_intent: str = None) -> str:
         """Send the user's question + market data to Claude with conversation history."""
         system_blocks, messages, model, token_limit, use_thinking, thinking_budget = self._build_prompt(
-            user_prompt, market_data, history, is_followup, category, chatbox_mode
+            user_prompt, market_data, history, is_followup, category, chatbox_mode, reasoning_model=reasoning_model, preset_intent=preset_intent
         )
 
         if use_thinking:
