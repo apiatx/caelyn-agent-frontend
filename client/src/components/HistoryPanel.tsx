@@ -104,6 +104,8 @@ interface HistoryEntry {
   timestamp: number;
   content: string;
   display_type: string | null;
+  model_used?: string;
+  query?: string;
 }
 
 interface HistoryData {
@@ -404,8 +406,21 @@ export function HistoryPanel({ isOpen, onClose }: { isOpen: boolean; onClose: ()
           }}
           className="panel-btn"
         >
-          <span style={{ color: C.bright, fontSize: 11, fontFamily: sansFont }}>{label}</span>
-          <span style={{ color: C.dim, fontSize: 9, fontFamily: font }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, flex: 1 }}>
+            <span style={{ color: C.bright, fontSize: 11, fontFamily: sansFont, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
+            {entry.model_used && (
+              <span style={{
+                fontSize: 7, fontWeight: 700, fontFamily: font, textTransform: 'uppercase',
+                color: entry.model_used === 'agent_collab' ? '#a78bfa' : C.blue,
+                background: entry.model_used === 'agent_collab' ? 'rgba(139,92,246,0.12)' : `${C.blue}12`,
+                border: `1px solid ${entry.model_used === 'agent_collab' ? 'rgba(139,92,246,0.3)' : C.blue + '30'}`,
+                borderRadius: 6, padding: '1px 5px', flexShrink: 0,
+              }}>
+                {entry.model_used === 'agent_collab' ? 'collab' : entry.model_used}
+              </span>
+            )}
+          </div>
+          <span style={{ color: C.dim, fontSize: 9, fontFamily: font, flexShrink: 0, marginLeft: 8 }}>
             {new Date(entry.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </span>
         </button>
@@ -437,14 +452,37 @@ export function HistoryPanel({ isOpen, onClose }: { isOpen: boolean; onClose: ()
 
     return (
       <div style={{ padding: 16, flex: 1, overflowY: 'auto' }}>
-        <div style={{ color: C.dim, fontSize: 9, fontFamily: font, marginBottom: 12 }}>
-          {new Date(entry.timestamp * 1000).toLocaleString()}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+          <span style={{ color: C.dim, fontSize: 9, fontFamily: font }}>
+            {new Date(entry.timestamp * 1000).toLocaleString()}
+          </span>
+          {entry.model_used && (
+            <span style={{
+              fontSize: 8, fontWeight: 700, fontFamily: font, textTransform: 'uppercase',
+              color: entry.model_used === 'agent_collab' ? '#a78bfa' : C.blue,
+              background: entry.model_used === 'agent_collab' ? 'rgba(139,92,246,0.12)' : `${C.blue}12`,
+              border: `1px solid ${entry.model_used === 'agent_collab' ? 'rgba(139,92,246,0.3)' : C.blue + '30'}`,
+              borderRadius: 6, padding: '2px 6px',
+            }}>
+              {entry.model_used === 'agent_collab' ? 'Agent Collab' : entry.model_used}
+            </span>
+          )}
         </div>
+        {entry.query && (
+          <div style={{
+            color: C.bright, fontSize: 11, fontFamily: font, padding: '8px 12px',
+            background: 'rgba(255,255,255,0.03)', border: `1px solid ${C.border}`,
+            borderRadius: 6, marginBottom: 10,
+          }}>
+            <span style={{ color: C.dim, fontSize: 8, textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}>Query: </span>
+            {entry.query}
+          </div>
+        )}
         <div style={{
           color: C.text, fontSize: 12, fontFamily: sansFont, lineHeight: 1.7,
           whiteSpace: 'pre-wrap', wordBreak: 'break-word',
           padding: 14, background: C.card, border: `1px solid ${C.border}`,
-          borderRadius: 8, maxHeight: 'calc(100vh - 260px)', overflowY: 'auto',
+          borderRadius: 8, maxHeight: 'calc(100vh - 300px)', overflowY: 'auto',
         }}>
           {displayContent}
         </div>
