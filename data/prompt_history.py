@@ -8,6 +8,7 @@ Fallback: JSON files (for local dev outside Replit).
 
 import json
 import os
+import re
 import time
 from pathlib import Path
 from threading import Lock
@@ -105,9 +106,128 @@ def _write(user_id: str, data: dict):
         _file_write(user_id, data)
 
 
-# ── Public API (unchanged signatures) ───────────────────────
+# ── Ticker extraction from structured responses ─────────────
 
-def save_response(category: str, intent: str, content: str, display_type: str | None = None, user_id: str = "default", model_used: str | None = None, query: str | None = None) -> dict:
+def _parse_price(val) -> float | None:
+    """Parse price from string like '$123.45' or float."""
+    if val is None:
+        return None
+    if isinstance(val, (int, float)):
+        return float(val) if val > 0 else None
+    if isinstance(val, str):
+        cleaned = re.sub(r'[^\d.]', '', val)
+        try:
+            p = float(cleaned)
+            return p if p > 0 else None
+        except (ValueError, TypeError):
+            return None
+    return None
+
+
+def extract_tickers_from_structured(structured: dict) -> list[dict]:
+    """
+    Extract {ticker, rec_price} from a structured agent response.
+    Handles all display_type formats: trades, investments, fundamentals,
+    technicals, analysis, briefing, crypto, trending, screener, portfolio, etc.
+    """
+    if not isinstance(structured, dict):
+        return []
+
+    found = []
+    seen = set()
+
+    def _add(ticker: str, price_val):
+        if not ticker or ticker in seen:
+            return
+        t = ticker.upper().strip()
+        if len(t) < 1 or len(t) > 10:
+            return
+        price = _parse_price(price_val)
+        seen.add(t)
+        found.append({"ticker": t, "rec_price": price})
+
+    # picks[] — trades, investments, fundamentals, technicals
+    for pick in structured.get("picks", []):
+        if isinstance(pick, dict):
+            _add(pick.get("ticker", ""), pick.get("price"))
+
+    # top_trades[] — best trades format
+    for trade in structured.get("top_trades", []):
+        if isinstance(trade, dict):
+            _add(trade.get("ticker", ""), trade.get("entry") or trade.get("price"))
+
+    # bearish_setups[]
+    for setup in structured.get("bearish_setups", []):
+        if isinstance(setup, dict):
+            _add(setup.get("ticker", ""), setup.get("entry") or setup.get("price"))
+
+    # top_moves[] — briefing format
+    for move in structured.get("top_moves", []):
+        if isinstance(move, dict):
+            _add(move.get("ticker", ""), move.get("entry") or move.get("price"))
+
+    # signal_highlights — briefing format
+    sh = structured.get("signal_highlights", {})
+    if isinstance(sh, dict):
+        for key, val in sh.items():
+            if isinstance(val, dict) and val.get("ticker"):
+                _add(val["ticker"], None)
+
+    # top_momentum[] — crypto format
+    for coin in structured.get("top_momentum", []):
+        if isinstance(coin, dict):
+            _add(coin.get("symbol", "") or coin.get("coin", ""), coin.get("price"))
+
+    # trending_tickers[]
+    for tt in structured.get("trending_tickers", []):
+        if isinstance(tt, dict):
+            _add(tt.get("ticker", ""), tt.get("price"))
+
+    # results[] — screener format
+    for r in structured.get("results", []):
+        if isinstance(r, dict):
+            _add(r.get("ticker", ""), r.get("price"))
+
+    # top_picks[]
+    for tp in structured.get("top_picks", []):
+        if isinstance(tp, dict):
+            _add(tp.get("ticker", ""), tp.get("price"))
+
+    # positions[] — portfolio format
+    for pos in structured.get("positions", []):
+        if isinstance(pos, dict):
+            _add(pos.get("ticker", ""), pos.get("price"))
+
+    # analysis — single ticker deep dive
+    if structured.get("display_type") == "analysis" and structured.get("ticker"):
+        _add(structured["ticker"], structured.get("price"))
+
+    # cross_market format — equities nested
+    equities = structured.get("equities", {})
+    if isinstance(equities, dict):
+        for bucket in ["large_caps", "mid_caps", "small_micro_caps"]:
+            for item in equities.get(bucket, []):
+                if isinstance(item, dict):
+                    _add(item.get("symbol", "") or item.get("ticker", ""), item.get("price"))
+
+    # cross_market crypto/commodities
+    for section in ["crypto", "commodities"]:
+        for item in structured.get(section, []):
+            if isinstance(item, dict):
+                _add(item.get("symbol", "") or item.get("ticker", ""), item.get("price"))
+
+    # csv_watchlist — strong_buy, buy, hold, sell buckets
+    for bucket in ["strong_buy", "buy", "hold", "sell"]:
+        for item in structured.get(bucket, []):
+            if isinstance(item, dict):
+                _add(item.get("ticker", ""), item.get("price"))
+
+    return found
+
+
+# ── Public API ───────────────────────────────────────────────
+
+def save_response(category: str, intent: str, content: str, display_type: str | None = None, user_id: str = "default", model_used: str | None = None, query: str | None = None, tickers: list | None = None, conversation: list | None = None) -> dict:
     """Save a prompt response. Returns the created entry."""
     entry = {
         "id": str(int(time.time() * 1000)),
@@ -119,6 +239,10 @@ def save_response(category: str, intent: str, content: str, display_type: str | 
         entry["model_used"] = model_used
     if query:
         entry["query"] = query[:200]
+    if tickers:
+        entry["tickers"] = tickers
+    if conversation:
+        entry["conversation"] = conversation
     with _get_lock(user_id):
         data = _read(user_id)
         key = f"{category}::{intent}"

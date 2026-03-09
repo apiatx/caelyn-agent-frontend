@@ -1867,7 +1867,7 @@ async def query_agent(
 
             # Auto-save to prompt history for the History page
             try:
-                from data.prompt_history import save_response as _save_prompt_history
+                from data.prompt_history import save_response as _save_prompt_history, extract_tickers_from_structured
                 _hist_user_id = getattr(request.state, "user_id", "default")
                 _hist_category = ""
                 _hist_intent = ""
@@ -1875,9 +1875,11 @@ async def query_agent(
                 _hist_model = body.reasoning_model or "agent_collab"
 
                 # Determine category and intent from the response or preset
+                _structured_data = {}
                 if isinstance(result, dict):
                     _s = result.get("structured", {})
                     if isinstance(_s, dict):
+                        _structured_data = _s
                         _hist_display_type = _s.get("display_type", "")
                         _hist_category = _s.get("scan_type", "") or _hist_display_type
 
@@ -1922,6 +1924,28 @@ async def query_agent(
                     if not _hist_content:
                         _hist_content = _json.dumps(result.get("structured", {}), default=str)[:4000]
 
+                # Extract tickers + recommended prices from structured response
+                _hist_tickers = extract_tickers_from_structured(_structured_data) if _structured_data else None
+
+                # Build conversation snapshot (user query + full response)
+                _hist_conversation = None
+                try:
+                    _conv_messages = []
+                    if user_query:
+                        _conv_messages.append({"role": "user", "content": user_query})
+                    _asst_resp = {}
+                    if isinstance(result, dict):
+                        if result.get("analysis"):
+                            _asst_resp["analysis"] = result["analysis"]
+                        if result.get("structured"):
+                            _asst_resp["structured"] = result["structured"]
+                    if _asst_resp:
+                        _conv_messages.append({"role": "assistant", "content": _json.dumps(_asst_resp, default=str)[:16000]})
+                    if _conv_messages:
+                        _hist_conversation = _conv_messages
+                except Exception:
+                    pass
+
                 if _hist_content:
                     _save_prompt_history(
                         category=_hist_category,
@@ -1931,8 +1955,11 @@ async def query_agent(
                         user_id=_hist_user_id,
                         model_used=_hist_model,
                         query=user_query,
+                        tickers=_hist_tickers,
+                        conversation=_hist_conversation,
                     )
-                    print(f"[HISTORY] Saved to prompt_history: category={_hist_category}, intent={_hist_intent}, model={_hist_model}, len={len(_hist_content)}")
+                    _ticker_count = len(_hist_tickers) if _hist_tickers else 0
+                    print(f"[HISTORY] Saved to prompt_history: category={_hist_category}, intent={_hist_intent}, model={_hist_model}, tickers={_ticker_count}, len={len(_hist_content)}")
             except Exception as _hist_err:
                 print(f"[HISTORY] Failed to auto-save prompt history: {_hist_err}")
 
@@ -2163,6 +2190,78 @@ async def get_history(request: Request):
     from data.prompt_history import get_all
     user_id = getattr(request.state, "user_id", "default")
     return get_all(user_id=user_id)
+
+@app.get("/api/history/backtest-summary")
+@limiter.limit("10/minute")
+async def history_backtest_summary(request: Request):
+    """
+    For each history entry that has tickers with rec_price,
+    fetch current prices and return cumulative % change per entry_id.
+    No LLM — pure math + Finnhub price lookup.
+    """
+    import asyncio as _aio
+    await _wait_for_init()
+    if not data_service:
+        raise HTTPException(status_code=503, detail="Service not ready")
+
+    from data.prompt_history import get_all
+    user_id = getattr(request.state, "user_id", "default")
+    all_history = get_all(user_id=user_id)
+
+    # Collect all unique tickers that need price lookups
+    ticker_set = set()
+    entries_with_tickers = []  # (entry_id, tickers_list)
+    for key, bucket in all_history.items():
+        for entry in bucket.get("entries", []):
+            tickers = entry.get("tickers", [])
+            priced = [t for t in tickers if t.get("rec_price")]
+            if priced:
+                entries_with_tickers.append((entry["id"], priced))
+                for t in priced:
+                    ticker_set.add(t["ticker"])
+
+    if not ticker_set:
+        return {"backtest": {}, "as_of": _dt.now(_tz.utc).isoformat()}
+
+    # Batch-fetch current prices (in thread to not block)
+    async def _fetch_price(ticker: str) -> tuple:
+        try:
+            quote = await _aio.to_thread(data_service.finnhub.get_quote, ticker)
+            return ticker, quote.get("price")
+        except Exception:
+            return ticker, None
+
+    price_tasks = [_fetch_price(t) for t in ticker_set]
+    price_results = await _aio.gather(*price_tasks)
+    current_prices = {t: p for t, p in price_results if p and p > 0}
+
+    # Compute cumulative % per entry
+    backtest = {}
+    for entry_id, tickers in entries_with_tickers:
+        total_pct = 0.0
+        valid_count = 0
+        ticker_details = []
+        for t in tickers:
+            cur = current_prices.get(t["ticker"])
+            if cur and t["rec_price"]:
+                pct = ((cur - t["rec_price"]) / t["rec_price"]) * 100
+                total_pct += pct
+                valid_count += 1
+                ticker_details.append({
+                    "ticker": t["ticker"],
+                    "rec_price": round(t["rec_price"], 2),
+                    "current_price": round(cur, 2),
+                    "pct_change": round(pct, 2),
+                })
+        if valid_count > 0:
+            avg_pct = round(total_pct / valid_count, 2)
+            backtest[entry_id] = {
+                "cumulative_pct": avg_pct,
+                "ticker_count": valid_count,
+                "details": ticker_details,
+            }
+
+    return {"backtest": backtest, "as_of": _dt.now(_tz.utc).isoformat()}
 
 @app.get("/api/history/{category}/{intent}")
 @limiter.limit("30/minute")
