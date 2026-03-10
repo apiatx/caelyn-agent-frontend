@@ -49,7 +49,7 @@ externalPort = 8081
 [deployment]
 deploymentTarget = "autoscale"
 run = ["bash", "-c", "exec uvicorn main:app --host 0.0.0.0 --port ${PORT:-5000}"]
-build = ["bash", "-c", "pip install anthropic openai httpx fastapi slowapi pydantic uvicorn beautifulsoup4 finnhub-python fredapi bcrypt 'python-jose[cryptography]' pytest pytest-asyncio replit-object-storage && python -c 'import anthropic, openai, httpx, fastapi, slowapi, pydantic, jose, bcrypt'"]
+build = ["bash", "-c", "pip install anthropic openai httpx fastapi slowapi pydantic uvicorn beautifulsoup4 finnhub-python fredapi bcrypt 'python-jose[cryptography]' pytest pytest-asyncio replit-object-storage psycopg2-binary && python -c 'import anthropic, openai, httpx, fastapi, slowapi, pydantic, jose, bcrypt'"]
 
 [userenv]
 

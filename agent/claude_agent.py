@@ -3187,10 +3187,22 @@ class TradingAgent:
         data_size = len(json.dumps(market_data, default=str)) if market_data else 0
         reasoning_model = reasoning_model if reasoning_model in self.VALID_REASONING_MODELS else "claude"
 
-        # ── All-agents collaboration: call multiple LLMs simultaneously, then synthesise with Claude ──
-        if reasoning_model == "all_agents" or (collab_agents and len(collab_agents) > 1):
+        # ── Multi-agent collaboration: call selected LLMs simultaneously, then synthesise ──
+        # ONLY triggers for explicit "all_agents" mode.
+        # "agent_collab" mode uses Grok/Perplexity as DATA SOURCES within the normal
+        # structured scan pipeline — it must NOT be hijacked into multi-agent synthesis.
+        # When preset_intent is set, the synthesis step enforces the preset's structured
+        # JSON format so preset buttons always produce cards/charts/data points even
+        # when multiple agents collaborate.
+        if reasoning_model == "all_agents" and collab_agents and len(collab_agents) >= 1:
             agents_to_call = [a for a in (collab_agents or ["grok", "gpt-4o", "gemini", "perplexity"]) if a in self.VALID_COLLAB_AGENTS]
-            synthesis_model = primary_model if primary_model in ("claude", "gpt-4o", "gemini") else "claude"
+            # Determine synthesis model: explicit primary_model > reasoning_model > default claude
+            if primary_model in ("claude", "gpt-4o", "gemini"):
+                synthesis_model = primary_model
+            elif reasoning_model in ("claude", "gpt-4o", "gemini"):
+                synthesis_model = reasoning_model
+            else:
+                synthesis_model = "claude"
             print(f"[ALL_AGENTS] Multi-agent collab: agents={agents_to_call}, synthesis={synthesis_model}, data={data_size:,} chars")
             return await self._multi_agent_collab(user_prompt, market_data, history, is_followup, category, chatbox_mode, preset_intent, agents_to_call, synthesis_model)
 
@@ -3214,29 +3226,27 @@ class TradingAgent:
                 return json.dumps({"display_type": "chat", "message": f"{reasoning_model} encountered an error: {str(e)}. Please try again."})
 
         # Claude path: use async client + web search
-        # In standalone claude mode, always use web search for real-time data
-        # In agent_collab mode, Grok+Perplexity already provide real-time context — skip web search to avoid timeout
-        claude_needs_web_search = (reasoning_model == "claude") or (reasoning_model == "agent_collab" and category in ("daily_briefing", "briefing", "best_trades"))
-        if claude_needs_web_search:
-            try:
-                return await asyncio.wait_for(
-                    self._ask_claude_async_web_search(user_prompt, market_data, history, is_followup, category, chatbox_mode, reasoning_model=reasoning_model, preset_intent=preset_intent),
-                    timeout=90.0,
-                )
-            except asyncio.TimeoutError:
-                print(f"[AGENT] Claude async+web_search timed out after 90s (data was {data_size:,} chars)")
-                return json.dumps({"display_type": "chat", "message": "The AI took too long to respond. Please try again — sometimes the model is under heavy load."})
-            except Exception as e:
-                print(f"[AGENT] Claude async+web_search error: {e}, falling back to sync path")
+        # Both standalone claude and agent_collab always use the async web-search path —
+        # it handles large payloads better and gives Claude access to real-time data.
+        try:
+            return await asyncio.wait_for(
+                self._ask_claude_async_web_search(user_prompt, market_data, history, is_followup, category, chatbox_mode, reasoning_model=reasoning_model, preset_intent=preset_intent),
+                timeout=120.0,
+            )
+        except asyncio.TimeoutError:
+            print(f"[AGENT] Claude async+web_search timed out after 120s (data was {data_size:,} chars)")
+            return json.dumps({"display_type": "chat", "message": "The AI took too long to respond. Please try again — sometimes the model is under heavy load."})
+        except Exception as e:
+            print(f"[AGENT] Claude async+web_search error: {e}, falling back to sync path")
 
-        # Default sync Claude path
+        # Fallback sync Claude path (if async client fails for non-timeout reasons)
         try:
             return await asyncio.wait_for(
                 asyncio.to_thread(self._ask_claude, user_prompt, market_data, history, is_followup, category, chatbox_mode, reasoning_model=reasoning_model, preset_intent=preset_intent),
-                timeout=80.0,
+                timeout=100.0,
             )
         except asyncio.TimeoutError:
-            print(f"[AGENT] Claude API timed out after 80s (data was {data_size:,} chars)")
+            print(f"[AGENT] Claude sync API timed out after 100s (data was {data_size:,} chars)")
             return json.dumps({"display_type": "chat", "message": "The AI took too long to respond. Please try again — sometimes the model is under heavy load."})
         except Exception as e:
             print(f"[AGENT] Claude API error: {e}")
@@ -3312,6 +3322,36 @@ class TradingAgent:
                 f"{thesis}\n"
             )
 
+        # ── Build format enforcement for preset buttons ──
+        # When a preset is active, the synthesis MUST produce the same structured
+        # JSON output as any other preset response (cards, ranked lists, tables, etc.).
+        # Free-form queries get the generic "same JSON format" instruction.
+        _format_block = ""
+        if preset_intent:
+            _resolved = self._resolve_preset(preset_intent)
+            if _resolved and _resolved in self.INTENT_PROFILES:
+                _profile = self.INTENT_PROFILES[_resolved]
+                _resp_style = _profile.get("response_style", "institutional_brief")
+                _intent = _profile.get("intent", "")
+                _cat = self.INTENT_TO_CATEGORY.get(_intent, category)
+                _format_block = (
+                    f"\n\n⚠️  STRUCTURED OUTPUT REQUIREMENT (PRESET: {_resolved}):\n"
+                    f"This request was triggered by a PRESET BUTTON. You MUST respond with the\n"
+                    f"exact structured JSON format for category='{_cat}', response_style='{_resp_style}'.\n"
+                    f"Your system prompt defines the JSON schema for this category — follow it EXACTLY.\n"
+                    f"Do NOT output free-form narrative. Do NOT deviate from the expected display_type.\n"
+                    f"The agent theses above are INPUT DATA for your reasoning — your OUTPUT must be\n"
+                    f"the same structured JSON you would produce for any '{_resolved}' preset request.\n"
+                )
+            else:
+                _format_block = (
+                    f"\nRespond in the same JSON format you normally use for this category of analysis.\n"
+                )
+        else:
+            _format_block = (
+                f"\nRespond in the same JSON format you normally use for this category of analysis.\n"
+            )
+
         synthesis_prompt = (
             f"{user_prompt}\n\n"
             f"══════════════════════════════════════════════════════════════\n"
@@ -3330,11 +3370,13 @@ class TradingAgent:
             f"5. Identify UNIQUE INSIGHTS — things only one agent caught that others missed.\n"
             f"6. Synthesize everything into YOUR final, authoritative analysis.\n"
             f"7. Your response MUST be your own original synthesis, NOT a summary of each agent.\n"
-            f"   Weave the insights together into a cohesive thesis.\n\n"
-            f"Respond in the same JSON format you normally use for this category of analysis.\n"
+            f"   Weave the insights together into a cohesive thesis.\n"
+            f"{_format_block}\n"
             f"Do NOT mention the individual agents by name in your response — present it as unified analysis.\n"
         )
 
+        if preset_intent:
+            print(f"[ALL_AGENTS] Preset '{preset_intent}' active — synthesis will enforce structured format (category={category})")
         print(f"[ALL_AGENTS] Sending synthesis prompt to {synthesis_model}: {len(synthesis_prompt):,} chars ({len(agent_theses)} theses)")
 
         # Use Claude for synthesis (default path)
@@ -3570,7 +3612,7 @@ class TradingAgent:
 
         async_client = anthropic.AsyncAnthropic(
             api_key=self.client.api_key,
-            timeout=90.0,
+            timeout=120.0,
         )
 
         tools = [{"type": "web_search_20250305", "name": "web_search"}]

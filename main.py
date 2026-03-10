@@ -60,10 +60,10 @@ class JWTAuthMiddleware:
 async def lifespan(app):
     # Diagnostic: confirm storage backends
     try:
-        from data.prompt_history import _use_object_storage as _ph_obj, _use_replit_db as _ph_db
-        from data.chat_history import _use_object_storage as _ch_obj, _use_replit_db as _ch_db
-        _ph_backend = "Object Storage (persistent)" if _ph_obj else ("Replit DB (dev)" if _ph_db else "JSON files (EPHEMERAL!)")
-        _ch_backend = "Object Storage (persistent)" if _ch_obj else ("Replit DB (dev)" if _ch_db else "JSON files (EPHEMERAL!)")
+        from data.prompt_history import _use_postgres as _ph_pg, _use_object_storage as _ph_obj, _use_replit_db as _ph_db
+        from data.chat_history import _use_postgres as _ch_pg, _use_object_storage as _ch_obj, _use_replit_db as _ch_db
+        _ph_backend = "PostgreSQL (persistent)" if _ph_pg else ("Object Storage (persistent)" if _ph_obj else ("Replit DB (dev)" if _ph_db else "JSON files (EPHEMERAL!)"))
+        _ch_backend = "PostgreSQL (persistent)" if _ch_pg else ("Object Storage (persistent)" if _ch_obj else ("Replit DB (dev)" if _ch_db else "JSON files (EPHEMERAL!)"))
         print(f"[STARTUP] prompt_history backend: {_ph_backend}")
         print(f"[STARTUP] chat_history backend: {_ch_backend}")
     except Exception as _e:
@@ -667,16 +667,31 @@ async def list_presets(request: Request):
 
 @app.get("/api/collab-options")
 async def get_collab_options(request: Request):
-    """Return available reasoning models, collaborating agents, and presets
-    for the frontend hover-over dropdown menu on the Agent Collab button."""
+    """Return available solo reasoning models, collaborating agents, and collab presets.
+
+    IMPORTANT — Solo vs Collab semantics:
+    • When a user selects a solo model (e.g. "claude", "gpt-4o"), the frontend
+      must send  reasoning_model=<model_id>  with NO collab_agents.
+      That single model handles the ENTIRE flow: orchestrate → fetch data → reason → respond.
+    • The "Custom Collab" button is ONLY for multi-agent collaboration.
+      It should ALWAYS display "Custom Collab" regardless of which solo model is selected.
+    • Selecting a solo model should NOT change the Custom Collab button label.
+    """
     return {
+        # Solo models — each one runs the complete flow independently.
+        # Frontend sends: { reasoning_model: "<id>" }  (no collab_agents)
         "reasoning_models": [
-            {"id": "claude", "name": "Claude", "description": "Anthropic Claude — deep reasoning & synthesis (default)", "default": True},
-            {"id": "gpt-4o", "name": "ChatGPT", "description": "OpenAI GPT-4o — orchestration, web search, reasoning"},
-            {"id": "gemini", "name": "Gemini", "description": "Google Gemini — Google Search grounding, reasoning"},
-            {"id": "grok", "name": "Grok", "description": "xAI Grok — X/Twitter native search, reasoning"},
-            {"id": "perplexity", "name": "Perplexity", "description": "Perplexity Sonar — citation-heavy web research"},
+            {"id": "claude", "name": "Claude", "description": "Anthropic Claude — deep reasoning & synthesis", "mode": "solo", "default": True},
+            {"id": "gpt-4o", "name": "ChatGPT", "description": "OpenAI GPT-4o — web search & reasoning", "mode": "solo"},
+            {"id": "gemini", "name": "Gemini", "description": "Google Gemini — Google Search grounding & reasoning", "mode": "solo"},
+            {"id": "grok", "name": "Grok", "description": "xAI Grok — X/Twitter native search & reasoning", "mode": "solo"},
+            {"id": "perplexity", "name": "Perplexity", "description": "Perplexity Sonar — citation-heavy web research", "mode": "solo"},
         ],
+        # Collab agents — full list available for multi-agent collaboration.
+        # Frontend sends based on preset:
+        #   Default:            { reasoning_model: "agent_collab" }  (locked — no collab_agents needed, backend knows the combo)
+        #   Full Collaboration: { reasoning_model: "all_agents", collab_agents: [all], primary_model: "<user-chosen>" }
+        #   Custom Collab:      { reasoning_model: "all_agents", collab_agents: [...user-picked], primary_model: "<user-chosen>" }
         "collab_agents": [
             {"id": "claude", "name": "Claude (Anthropic)", "description": "Deep reasoning, analysis & synthesis", "icon": "anthropic"},
             {"id": "grok", "name": "Grok (X/Twitter)", "description": "Real-time X social scanning & sentiment", "icon": "xai"},
@@ -684,21 +699,47 @@ async def get_collab_options(request: Request):
             {"id": "gemini", "name": "Gemini", "description": "Google Search grounding & reasoning", "icon": "gemini"},
             {"id": "perplexity", "name": "Perplexity", "description": "Deep web research with citations", "icon": "perplexity"},
         ],
+        # Collab presets — pre-configured multi-agent collaboration setups.
+        # lock_agents: if true, the collaborator checkboxes are locked (user cannot change them)
+        # lock_reasoning: if true, the reasoning model radio is locked (user cannot change it)
+        #
+        # IMPORTANT — "Default" sends reasoning_model: "agent_collab" with NO collab_agents.
+        # The backend already uses Grok + Perplexity as data sources in the agent_collab pipeline.
+        # Only "Full Collaboration" and "Custom Collab" should send collab_agents + reasoning_model: "all_agents".
         "presets": [
             {
-                "id": "agent_collab",
-                "name": "Default (Agent Collab)",
-                "description": "Grok X scan + Perplexity web search + proprietary data → Claude synthesis",
-                "agents": ["grok", "perplexity"],
+                "id": "default",
+                "name": "Default",
+                "description": "Grok X scan + Perplexity web search + proprietary data → Claude synthesis (locked)",
+                "agents": [],
+                "reasoning_model": "agent_collab",
                 "primary": "claude",
+                "mode": "collab",
                 "default": True,
+                "lock_agents": True,
+                "lock_reasoning": True,
             },
             {
-                "id": "all_agents",
-                "name": "All Agents",
-                "description": "GPT + Gemini + Perplexity + Grok all reason simultaneously → Claude synthesizes all theses",
-                "agents": ["grok", "gpt-4o", "gemini", "perplexity"],
+                "id": "full_collab",
+                "name": "Full Collaboration",
+                "description": "All agents collaborate simultaneously — choose which model reasons",
+                "agents": ["claude", "grok", "gpt-4o", "gemini", "perplexity"],
+                "reasoning_model": "all_agents",
                 "primary": "claude",
+                "mode": "collab",
+                "lock_agents": True,
+                "lock_reasoning": False,
+            },
+            {
+                "id": "custom_collab",
+                "name": "Custom Collaboration",
+                "description": "Mix and match any reasoning model with any combination of collaborators",
+                "agents": ["grok", "perplexity"],
+                "reasoning_model": "all_agents",
+                "primary": "claude",
+                "mode": "collab",
+                "lock_agents": False,
+                "lock_reasoning": False,
             },
         ],
     }
@@ -2284,6 +2325,26 @@ async def get_history(request: Request):
                         t["pct_change"] = round(((cur - rec) / rec) * 100, 2)
 
     return all_history
+
+@app.get("/api/history/storage-info")
+@limiter.limit("10/minute")
+async def history_storage_info(request: Request):
+    """Diagnostic: which storage backend is active and how much data is stored."""
+    from data.prompt_history import _use_postgres as _ph_pg, _use_object_storage as _ph_obj, _use_replit_db as _ph_db
+    from data.chat_history import _use_postgres as _ch_pg, _use_object_storage as _ch_obj, _use_replit_db as _ch_db
+    ph_backend = "PostgreSQL" if _ph_pg else ("Object Storage" if _ph_obj else ("Replit DB" if _ph_db else "JSON files (EPHEMERAL)"))
+    ch_backend = "PostgreSQL" if _ch_pg else ("Object Storage" if _ch_obj else ("Replit DB" if _ch_db else "JSON files (EPHEMERAL)"))
+    info = {
+        "prompt_history_backend": ph_backend,
+        "chat_history_backend": ch_backend,
+    }
+    try:
+        from data.pg_storage import storage_info as _pg_info
+        info["postgresql"] = _pg_info()
+    except Exception:
+        info["postgresql"] = {"available": False}
+    return info
+
 
 @app.get("/api/history/backtest-summary")
 @limiter.limit("10/minute")
