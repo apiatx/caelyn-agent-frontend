@@ -691,7 +691,9 @@ async def get_collab_options(request: Request):
         # Frontend sends based on preset:
         #   Default:            { reasoning_model: "agent_collab" }  (locked — no collab_agents needed, backend knows the combo)
         #   Full Collaboration: { reasoning_model: "all_agents", collab_agents: [all], primary_model: "<user-chosen>" }
-        #   Custom Collab:      { reasoning_model: "all_agents", collab_agents: [...user-picked], primary_model: "<user-chosen>" }
+        #   Custom Collab:      { reasoning_model: "agent_collab", collab_agents: [...user-picked], primary_model: "<user-chosen>" }
+        #                       OR { reasoning_model: "all_agents", collab_agents: [...user-picked], primary_model: "<user-chosen>" }
+        #                       (frontend decides based on user's agent selection — agent_collab for data-source mode, all_agents for full fan-out)
         "collab_agents": [
             {"id": "claude", "name": "Claude (Anthropic)", "description": "Deep reasoning, analysis & synthesis", "icon": "anthropic"},
             {"id": "grok", "name": "Grok (X/Twitter)", "description": "Real-time X social scanning & sentiment", "icon": "xai"},
@@ -703,12 +705,26 @@ async def get_collab_options(request: Request):
         # lock_agents: if true, the collaborator checkboxes are locked (user cannot change them)
         # lock_reasoning: if true, the reasoning model radio is locked (user cannot change it)
         #
-        # IMPORTANT — "Default" sends reasoning_model: "agent_collab" with optional primary_model.
-        # The backend uses Grok + Perplexity as DATA SOURCES (not reasoners) in the agent_collab pipeline.
-        # When primary_model is set (e.g. "gemini"), that model reasons over the collected data.
-        # When primary_model is "claude" or unset, Claude reasons (original behavior).
-        # The reasoner does NOT do its own web search — all live data comes through the pipeline.
-        # Only "Full Collaboration" and "Custom Collab" should send collab_agents + reasoning_model: "all_agents".
+        # THREE DISTINCT MODES (currently implemented):
+        #
+        # 1. DEFAULT COLLAB — reasoning_model: "agent_collab", agents LOCKED (empty).
+        #    Backend pipeline: Grok X scan + Perplexity web search + proprietary data → single
+        #    reasoning model synthesizes. User can change the reasoning model (primary_model)
+        #    but cannot change which data sources run. The reasoner does NOT do its own web
+        #    search — all live data comes through the pipeline.
+        #
+        # 2. FULL COLLAB — reasoning_model: "all_agents", ALL agents LOCKED.
+        #    Every agent (Claude, Grok, GPT-4o, Gemini, Perplexity) runs simultaneously,
+        #    each does its own web search / analysis, then the chosen primary_model synthesizes
+        #    all agent theses into a unified response. User picks only the synthesis model.
+        #
+        # 3. CUSTOM COLLAB — reasoning_model: "agent_collab", agents UNLOCKED, reasoning UNLOCKED.
+        #    Sits between Default and Full. User picks WHICH collaborating agent(s) to include
+        #    AND which reasoning/primary model synthesizes. Highly customizable — NOT a
+        #    one-size-fits-all preset. Defaults to agent_collab (not all_agents) so the user
+        #    builds up their configuration from a clean slate via the frontend dropdowns.
+        #    When the user selects specific collab_agents, the frontend sends the appropriate
+        #    reasoning_model ("agent_collab" for data-source mode, "all_agents" for full fan-out).
         "presets": [
             {
                 "id": "default",
@@ -736,9 +752,9 @@ async def get_collab_options(request: Request):
             {
                 "id": "custom_collab",
                 "name": "Custom Collaboration",
-                "description": "Mix and match any reasoning model with any combination of collaborators",
-                "agents": ["grok", "perplexity"],
-                "reasoning_model": "all_agents",
+                "description": "Pick your collaborating agent(s) and reasoning model — fully customizable",
+                "agents": [],
+                "reasoning_model": "agent_collab",
                 "primary": "claude",
                 "mode": "collab",
                 "lock_agents": False,
