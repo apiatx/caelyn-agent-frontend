@@ -667,16 +667,28 @@ async def list_presets(request: Request):
 
 @app.get("/api/collab-options")
 async def get_collab_options(request: Request):
-    """Return available reasoning models, collaborating agents, and presets
-    for the frontend hover-over dropdown menu on the Agent Collab button."""
+    """Return available solo reasoning models, collaborating agents, and collab presets.
+
+    IMPORTANT — Solo vs Collab semantics:
+    • When a user selects a solo model (e.g. "claude", "gpt-4o"), the frontend
+      must send  reasoning_model=<model_id>  with NO collab_agents.
+      That single model handles the ENTIRE flow: orchestrate → fetch data → reason → respond.
+    • The "Custom Collab" button is ONLY for multi-agent collaboration.
+      It should ALWAYS display "Custom Collab" regardless of which solo model is selected.
+    • Selecting a solo model should NOT change the Custom Collab button label.
+    """
     return {
+        # Solo models — each one runs the complete flow independently.
+        # Frontend sends: { reasoning_model: "<id>" }  (no collab_agents)
         "reasoning_models": [
-            {"id": "claude", "name": "Claude", "description": "Anthropic Claude — deep reasoning & synthesis (default)", "default": True},
-            {"id": "gpt-4o", "name": "ChatGPT", "description": "OpenAI GPT-4o — orchestration, web search, reasoning"},
-            {"id": "gemini", "name": "Gemini", "description": "Google Gemini — Google Search grounding, reasoning"},
-            {"id": "grok", "name": "Grok", "description": "xAI Grok — X/Twitter native search, reasoning"},
-            {"id": "perplexity", "name": "Perplexity", "description": "Perplexity Sonar — citation-heavy web research"},
+            {"id": "claude", "name": "Claude", "description": "Anthropic Claude — deep reasoning & synthesis", "mode": "solo", "default": True},
+            {"id": "gpt-4o", "name": "ChatGPT", "description": "OpenAI GPT-4o — web search & reasoning", "mode": "solo"},
+            {"id": "gemini", "name": "Gemini", "description": "Google Gemini — Google Search grounding & reasoning", "mode": "solo"},
+            {"id": "grok", "name": "Grok", "description": "xAI Grok — X/Twitter native search & reasoning", "mode": "solo"},
+            {"id": "perplexity", "name": "Perplexity", "description": "Perplexity Sonar — citation-heavy web research", "mode": "solo"},
         ],
+        # Collab agents — available for multi-agent collaboration (Custom Collab button).
+        # Frontend sends: { reasoning_model: "all_agents", collab_agents: ["grok", "perplexity", ...], primary_model: "claude" }
         "collab_agents": [
             {"id": "claude", "name": "Claude (Anthropic)", "description": "Deep reasoning, analysis & synthesis", "icon": "anthropic"},
             {"id": "grok", "name": "Grok (X/Twitter)", "description": "Real-time X social scanning & sentiment", "icon": "xai"},
@@ -684,21 +696,25 @@ async def get_collab_options(request: Request):
             {"id": "gemini", "name": "Gemini", "description": "Google Search grounding & reasoning", "icon": "gemini"},
             {"id": "perplexity", "name": "Perplexity", "description": "Deep web research with citations", "icon": "perplexity"},
         ],
+        # Collab presets — pre-configured multi-agent collaboration setups.
+        # These are ONLY used when the "Custom Collab" button is active.
         "presets": [
             {
                 "id": "agent_collab",
-                "name": "Default (Agent Collab)",
+                "name": "Default Collab",
                 "description": "Grok X scan + Perplexity web search + proprietary data → Claude synthesis",
                 "agents": ["grok", "perplexity"],
                 "primary": "claude",
+                "mode": "collab",
                 "default": True,
             },
             {
                 "id": "all_agents",
                 "name": "All Agents",
-                "description": "GPT + Gemini + Perplexity + Grok all reason simultaneously → Claude synthesizes all theses",
+                "description": "GPT + Gemini + Perplexity + Grok all reason simultaneously → Claude synthesizes",
                 "agents": ["grok", "gpt-4o", "gemini", "perplexity"],
                 "primary": "claude",
+                "mode": "collab",
             },
         ],
     }
