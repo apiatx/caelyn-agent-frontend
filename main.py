@@ -702,12 +702,17 @@ async def get_collab_options(request: Request):
         # Collab presets — pre-configured multi-agent collaboration setups.
         # lock_agents: if true, the collaborator checkboxes are locked (user cannot change them)
         # lock_reasoning: if true, the reasoning model radio is locked (user cannot change it)
+        #
+        # IMPORTANT — "Default" sends reasoning_model: "agent_collab" with NO collab_agents.
+        # The backend already uses Grok + Perplexity as data sources in the agent_collab pipeline.
+        # Only "Full Collaboration" and "Custom Collab" should send collab_agents + reasoning_model: "all_agents".
         "presets": [
             {
                 "id": "default",
                 "name": "Default",
                 "description": "Grok X scan + Perplexity web search + proprietary data → Claude synthesis (locked)",
-                "agents": ["grok", "perplexity"],
+                "agents": [],
+                "reasoning_model": "agent_collab",
                 "primary": "claude",
                 "mode": "collab",
                 "default": True,
@@ -719,6 +724,7 @@ async def get_collab_options(request: Request):
                 "name": "Full Collaboration",
                 "description": "All agents collaborate simultaneously — choose which model reasons",
                 "agents": ["claude", "grok", "gpt-4o", "gemini", "perplexity"],
+                "reasoning_model": "all_agents",
                 "primary": "claude",
                 "mode": "collab",
                 "lock_agents": True,
@@ -729,6 +735,7 @@ async def get_collab_options(request: Request):
                 "name": "Custom Collaboration",
                 "description": "Mix and match any reasoning model with any combination of collaborators",
                 "agents": ["grok", "perplexity"],
+                "reasoning_model": "all_agents",
                 "primary": "claude",
                 "mode": "collab",
                 "lock_agents": False,

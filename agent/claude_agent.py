@@ -3188,8 +3188,12 @@ class TradingAgent:
         reasoning_model = reasoning_model if reasoning_model in self.VALID_REASONING_MODELS else "claude"
 
         # ── Multi-agent collaboration: call selected LLMs simultaneously, then synthesise ──
-        # Triggers when: explicit "all_agents" mode OR any collab_agents are specified (even just 1)
-        if reasoning_model == "all_agents" or (collab_agents and len(collab_agents) >= 1):
+        # ONLY triggers for explicit "all_agents" mode.
+        # "agent_collab" mode uses Grok/Perplexity as DATA SOURCES within the normal
+        # structured scan pipeline — it must NOT be hijacked into multi-agent synthesis,
+        # or preset buttons (best_trades, daily_briefing, etc.) lose their structured
+        # response formats (cards, charts, data points).
+        if reasoning_model == "all_agents" and collab_agents and len(collab_agents) >= 1:
             agents_to_call = [a for a in (collab_agents or ["grok", "gpt-4o", "gemini", "perplexity"]) if a in self.VALID_COLLAB_AGENTS]
             # Determine synthesis model: explicit primary_model > reasoning_model > default claude
             if primary_model in ("claude", "gpt-4o", "gemini"):
