@@ -2563,14 +2563,14 @@ export default function TradingAgent() {
         <div style={{ display:'flex', gap:3, alignItems:'center', flexShrink:0 }}>
           <div className="agent-collab-wrapper" style={{ position:'relative', display:'inline-block' }}>
             <button key="custom_collab" onClick={() => { if (!collabConfig) setCollabConfig({ preset: 'agent_collab', agents: ['grok', 'perplexity'], primary: 'claude' }); }} style={{ padding:'3px 8px', borderRadius:10, fontSize:9, fontWeight:700, fontFamily:"'JetBrains Mono', monospace", background: collabConfig ? 'linear-gradient(135deg, #8b5cf6, #3b82f6, #06b6d4)' : 'rgba(139,92,246,0.08)', color: collabConfig ? '#ffffff' : '#a78bfa', border: collabConfig ? 'none' : '1px solid rgba(139,92,246,0.25)', cursor:'pointer', transition:'all 0.15s', textShadow: collabConfig ? '0 1px 2px rgba(0,0,0,0.3)' : 'none', boxShadow: collabConfig ? '0 0 8px rgba(139,92,246,0.4)' : 'none' }}>
-              Custom Collab
+              Caelyn
             </button>
             <div className="agent-collab-dropdown" style={{ position:'absolute', top:'100%', left:0, minWidth:280, background:'rgba(15,15,30,0.98)', border:'1px solid rgba(139,92,246,0.25)', borderRadius:12, boxShadow:'0 8px 32px rgba(0,0,0,0.5)', padding:'8px 0', zIndex:1000, paddingTop:12 }}>
               {/* PRESETS */}
               <div style={{ padding:'6px 14px 8px', borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
                 <div style={{ fontSize:10, textTransform:'uppercase', letterSpacing:'0.5px', color:'#6b7280', marginBottom:6, fontFamily:"'JetBrains Mono', monospace", fontWeight:700 }}>Presets</div>
                 {[
-                  { id: 'agent_collab', label: 'Default (Agent Collab)', primary: 'claude', agents: ['grok', 'perplexity'] },
+                  { id: 'agent_collab', label: 'Default', primary: 'claude', agents: ['grok', 'perplexity'] },
                   { id: 'all_agents', label: 'All Agents', primary: 'claude', agents: ['claude', 'grok', 'gpt-4o', 'gemini', 'perplexity'] },
                   ...(collabOptions?.presets?.filter((p: any) => !['agent_collab','all_agents'].includes(p.id)) || []),
                 ].map((preset: any) => (
@@ -2596,8 +2596,8 @@ export default function TradingAgent() {
                     <div style={{ width:14, height:14, borderRadius:'50%', border: collabConfig?.primary === m.id ? '2px solid #3b82f6' : '2px solid #4b5563', display:'flex', alignItems:'center', justifyContent:'center' }}>
                       {collabConfig?.primary === m.id && <div style={{ width:7, height:7, borderRadius:'50%', background:'#3b82f6' }} />}
                     </div>
-                    <span style={{ fontSize:13, marginRight:2 }}>{m.icon}</span>
-                    <span style={{ fontSize:11, color: collabConfig?.primary === m.id ? '#e0e0e0' : '#9ca3af', fontFamily:"'JetBrains Mono', monospace" }}>{m.label}</span>
+                    <span style={{ fontSize:13, marginRight:2 }}>{m.icon?.length > 2 ? '' : m.icon}</span>
+                    <span style={{ fontSize:11, color: collabConfig?.primary === m.id ? '#e0e0e0' : '#9ca3af', fontFamily:"'JetBrains Mono', monospace" }}>{m.label || m.name || m.id}</span>
                   </div>
                 ))}
               </div>
@@ -2618,8 +2618,8 @@ export default function TradingAgent() {
                     <div style={{ width:14, height:14, borderRadius:3, border: isChecked ? '2px solid #10b981' : '2px solid #4b5563', background: isChecked ? '#10b981' : 'transparent', display:'flex', alignItems:'center', justifyContent:'center' }}>
                       {isChecked && <span style={{ color:'#fff', fontSize:9, fontWeight:700 }}>✓</span>}
                     </div>
-                    <span style={{ fontSize:13, marginRight:2 }}>{a.icon}</span>
-                    <span style={{ fontSize:11, color: isChecked ? '#e0e0e0' : '#9ca3af', fontFamily:"'JetBrains Mono', monospace" }}>{a.label}</span>
+                    <span style={{ fontSize:13, marginRight:2 }}>{a.icon?.length > 2 ? '' : a.icon}</span>
+                    <span style={{ fontSize:11, color: isChecked ? '#e0e0e0' : '#9ca3af', fontFamily:"'JetBrains Mono', monospace" }}>{a.label || a.name || a.id}</span>
                   </div>
                   );
                 })}
