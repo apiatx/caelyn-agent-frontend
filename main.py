@@ -687,8 +687,11 @@ async def get_collab_options(request: Request):
             {"id": "grok", "name": "Grok", "description": "xAI Grok — X/Twitter native search & reasoning", "mode": "solo"},
             {"id": "perplexity", "name": "Perplexity", "description": "Perplexity Sonar — citation-heavy web research", "mode": "solo"},
         ],
-        # Collab agents — available for multi-agent collaboration (Custom Collab button).
-        # Frontend sends: { reasoning_model: "all_agents", collab_agents: ["grok", "perplexity", ...], primary_model: "claude" }
+        # Collab agents — full list available for multi-agent collaboration.
+        # Frontend sends based on preset:
+        #   Default:            { reasoning_model: "agent_collab" }  (locked — no collab_agents needed, backend knows the combo)
+        #   Full Collaboration: { reasoning_model: "all_agents", collab_agents: [all], primary_model: "<user-chosen>" }
+        #   Custom Collab:      { reasoning_model: "all_agents", collab_agents: [...user-picked], primary_model: "<user-chosen>" }
         "collab_agents": [
             {"id": "claude", "name": "Claude (Anthropic)", "description": "Deep reasoning, analysis & synthesis", "icon": "anthropic"},
             {"id": "grok", "name": "Grok (X/Twitter)", "description": "Real-time X social scanning & sentiment", "icon": "xai"},
@@ -697,24 +700,39 @@ async def get_collab_options(request: Request):
             {"id": "perplexity", "name": "Perplexity", "description": "Deep web research with citations", "icon": "perplexity"},
         ],
         # Collab presets — pre-configured multi-agent collaboration setups.
-        # These are ONLY used when the "Custom Collab" button is active.
+        # lock_agents: if true, the collaborator checkboxes are locked (user cannot change them)
+        # lock_reasoning: if true, the reasoning model radio is locked (user cannot change it)
         "presets": [
             {
-                "id": "agent_collab",
-                "name": "Default Collab",
-                "description": "Grok X scan + Perplexity web search + proprietary data → Claude synthesis",
+                "id": "default",
+                "name": "Default",
+                "description": "Grok X scan + Perplexity web search + proprietary data → Claude synthesis (locked)",
                 "agents": ["grok", "perplexity"],
                 "primary": "claude",
                 "mode": "collab",
                 "default": True,
+                "lock_agents": True,
+                "lock_reasoning": True,
             },
             {
-                "id": "all_agents",
-                "name": "All Agents",
-                "description": "GPT + Gemini + Perplexity + Grok all reason simultaneously → Claude synthesizes",
-                "agents": ["grok", "gpt-4o", "gemini", "perplexity"],
+                "id": "full_collab",
+                "name": "Full Collaboration",
+                "description": "All agents collaborate simultaneously — choose which model reasons",
+                "agents": ["claude", "grok", "gpt-4o", "gemini", "perplexity"],
                 "primary": "claude",
                 "mode": "collab",
+                "lock_agents": True,
+                "lock_reasoning": False,
+            },
+            {
+                "id": "custom_collab",
+                "name": "Custom Collaboration",
+                "description": "Mix and match any reasoning model with any combination of collaborators",
+                "agents": ["grok", "perplexity"],
+                "primary": "claude",
+                "mode": "collab",
+                "lock_agents": False,
+                "lock_reasoning": False,
             },
         ],
     }
