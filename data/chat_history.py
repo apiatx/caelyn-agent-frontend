@@ -16,26 +16,41 @@ HISTORY_DIR = Path("data/chat_history_store")
 _VALID_ID_PATTERN = re.compile(r'^[a-f0-9]{8}-[a-f0-9]{3}$')
 
 # ── Storage backend detection ────────────────────────────────
-# Priority: Object Storage > Replit DB > JSON files
+# Priority: PostgreSQL > Object Storage > Replit DB > JSON files
+_use_postgres = False
 _use_object_storage = False
 _obj_client = None
 _use_replit_db = False
 _replit_db = None
 
+# 1. Try PostgreSQL first (most reliable — real database)
 try:
-    from replit.object_storage import Client as _ObjClient
-    _obj_client = _ObjClient()
-    _use_object_storage = True
-    print("[CHAT_HISTORY] Using Replit Object Storage (persistent across deploys)")
+    from data.pg_storage import is_available as _pg_available, init_tables as _pg_init
+    from data.pg_storage import chat_read as _pg_chat_read, chat_write as _pg_chat_write
+    from data.pg_storage import chat_delete as _pg_chat_delete, chat_list as _pg_chat_list
+    if _pg_available():
+        _pg_init()
+        _use_postgres = True
+        print("[CHAT_HISTORY] Using PostgreSQL (persistent across deploys)")
 except Exception as e:
-    print(f"[CHAT_HISTORY] Object Storage unavailable ({e}), trying Replit DB...")
+    print(f"[CHAT_HISTORY] PostgreSQL unavailable ({e}), trying Object Storage...")
+
+# 2. Try Object Storage
+if not _use_postgres:
     try:
-        if os.environ.get("REPLIT_DB_URL"):
-            from replit import db as _replit_db
-            _use_replit_db = True
-            print("[CHAT_HISTORY] Using Replit DB for chat history (dev only)")
-    except Exception as e2:
-        print(f"[CHAT_HISTORY] Replit DB unavailable ({e2}), falling back to JSON files")
+        from replit.object_storage import Client as _ObjClient
+        _obj_client = _ObjClient()
+        _use_object_storage = True
+        print("[CHAT_HISTORY] Using Replit Object Storage (persistent across deploys)")
+    except Exception as e:
+        print(f"[CHAT_HISTORY] Object Storage unavailable ({e}), trying Replit DB...")
+        try:
+            if os.environ.get("REPLIT_DB_URL"):
+                from replit import db as _replit_db
+                _use_replit_db = True
+                print("[CHAT_HISTORY] Using Replit DB for chat history (dev only)")
+        except Exception as e2:
+            print(f"[CHAT_HISTORY] Replit DB unavailable ({e2}), falling back to JSON files")
 
 
 def _validate_id(conv_id: str) -> bool:
@@ -215,7 +230,9 @@ def create_conversation(first_query: str) -> dict:
         "messages": [],
     }
 
-    if _use_object_storage:
+    if _use_postgres:
+        _pg_chat_write(conv_id, conversation)
+    elif _use_object_storage:
         _obj_write_conv(conv_id, conversation)
         _obj_update_index(conversation)
     elif _use_replit_db:
@@ -234,7 +251,20 @@ def save_messages(conv_id: str, messages: list):
     if not _validate_id(conv_id):
         return False
 
-    if _use_object_storage:
+    if _use_postgres:
+        conversation = _pg_chat_read(conv_id)
+        if conversation is None:
+            return False
+        conversation["messages"] = messages
+        conversation["updated_at"] = datetime.now().isoformat()
+        if messages and messages[0].get("role") == "user":
+            title = messages[0]["content"].strip()[:60]
+            if len(messages[0]["content"].strip()) > 60:
+                title += "..."
+            conversation["title"] = title
+        _pg_chat_write(conv_id, conversation)
+        return True
+    elif _use_object_storage:
         conversation = _obj_read_conv(conv_id)
         if conversation is None:
             return False
@@ -289,7 +319,9 @@ def get_conversation(conv_id: str) -> dict:
     if not _validate_id(conv_id):
         return None
 
-    if _use_object_storage:
+    if _use_postgres:
+        return _pg_chat_read(conv_id)
+    elif _use_object_storage:
         return _obj_read_conv(conv_id)
     elif _use_replit_db:
         return _db_read_conv(conv_id)
@@ -306,7 +338,9 @@ def get_conversation(conv_id: str) -> dict:
 
 
 def list_conversations() -> list:
-    if _use_object_storage:
+    if _use_postgres:
+        return _pg_chat_list()
+    elif _use_object_storage:
         index = _obj_read_index()
         index.sort(key=lambda x: x.get("updated_at", ""), reverse=True)
         return index
@@ -338,7 +372,9 @@ def delete_conversation(conv_id: str) -> bool:
     if not _validate_id(conv_id):
         return False
 
-    if _use_object_storage:
+    if _use_postgres:
+        return _pg_chat_delete(conv_id)
+    elif _use_object_storage:
         existing = _obj_read_conv(conv_id)
         if existing is None:
             return False
@@ -363,19 +399,42 @@ def delete_conversation(conv_id: str) -> bool:
 def migrate_file_history_to_db():
     """
     One-time migration: move existing conversations into the active backend.
-    Migrates from JSON files and/or Replit DB into Object Storage.
+    Migrates from Object Storage, JSON files, and/or Replit DB into PostgreSQL.
     Safe to call multiple times (skips already-migrated conversations).
     """
-    if not (_use_object_storage or _use_replit_db):
+    if not (_use_postgres or _use_object_storage or _use_replit_db):
         return
 
     migrated = 0
 
-    # Source 1: Replit DB -> Object Storage
-    if _use_object_storage and os.environ.get("REPLIT_DB_URL"):
+    # Source 0: Object Storage -> PostgreSQL
+    if _use_postgres:
+        try:
+            from replit.object_storage import Client as _tmp_obj
+            _tmp_client = _tmp_obj()
+            raw_idx = _tmp_client.download_as_text("chat/index.json")
+            if raw_idx:
+                obj_index = json.loads(raw_idx)
+                for entry in obj_index:
+                    cid = entry.get("id")
+                    if not cid:
+                        continue
+                    if _pg_chat_read(cid) is not None:
+                        continue
+                    raw_conv = _tmp_client.download_as_text(f"chat/conv/{cid}.json")
+                    if raw_conv:
+                        conv = json.loads(raw_conv)
+                        _pg_chat_write(cid, conv)
+                        migrated += 1
+                if migrated:
+                    print(f"[CHAT_HISTORY] Migrated {migrated} conversations from Object Storage -> PostgreSQL")
+        except Exception as e:
+            print(f"[CHAT_HISTORY] Object Storage -> PostgreSQL migration error: {e}")
+
+    # Source 1: Replit DB -> active backend
+    if (_use_postgres or _use_object_storage) and os.environ.get("REPLIT_DB_URL"):
         try:
             from replit import db as _tmp_db
-            # Migrate index
             raw_idx = _tmp_db.get("chat:__index__")
             if raw_idx:
                 db_index = json.loads(raw_idx) if isinstance(raw_idx, str) else json.loads(json.dumps(raw_idx, default=str))
@@ -383,13 +442,20 @@ def migrate_file_history_to_db():
                     cid = entry.get("id")
                     if not cid:
                         continue
-                    if _obj_read_conv(cid) is not None:
+                    # Check if already exists in active backend
+                    if _use_postgres:
+                        if _pg_chat_read(cid) is not None:
+                            continue
+                    elif _obj_read_conv(cid) is not None:
                         continue
                     raw_conv = _tmp_db.get(f"chat:{cid}")
                     if raw_conv:
                         conv = json.loads(raw_conv) if isinstance(raw_conv, str) else json.loads(json.dumps(raw_conv, default=str))
-                        _obj_write_conv(cid, conv)
-                        _obj_update_index(conv)
+                        if _use_postgres:
+                            _pg_chat_write(cid, conv)
+                        else:
+                            _obj_write_conv(cid, conv)
+                            _obj_update_index(conv)
                         migrated += 1
         except Exception as e:
             print(f"[CHAT_HISTORY] Replit DB -> Object Storage migration error: {e}")
@@ -403,7 +469,11 @@ def migrate_file_history_to_db():
                 conv_id = conv.get("id")
                 if not conv_id:
                     continue
-                if _use_object_storage:
+                if _use_postgres:
+                    if _pg_chat_read(conv_id) is not None:
+                        continue
+                    _pg_chat_write(conv_id, conv)
+                elif _use_object_storage:
                     if _obj_read_conv(conv_id) is not None:
                         continue
                     _obj_write_conv(conv_id, conv)

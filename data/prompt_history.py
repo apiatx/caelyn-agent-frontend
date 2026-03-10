@@ -18,26 +18,40 @@ MAX_PER_INTENT = 100
 _locks: dict = {}
 
 # ── Storage backend detection ────────────────────────────────
-# Priority: Object Storage > Replit DB > JSON files
+# Priority: PostgreSQL > Object Storage > Replit DB > JSON files
+_use_postgres = False
 _use_object_storage = False
 _obj_client = None
 _use_replit_db = False
 _replit_db = None
 
+# 1. Try PostgreSQL first (most reliable — real database)
 try:
-    from replit.object_storage import Client as _ObjClient
-    _obj_client = _ObjClient()
-    _use_object_storage = True
-    print("[HISTORY] Using Replit Object Storage for prompt history (persistent across deploys)")
+    from data.pg_storage import is_available as _pg_available, init_tables as _pg_init
+    from data.pg_storage import ph_read as _pg_read, ph_write as _pg_write
+    if _pg_available():
+        _pg_init()
+        _use_postgres = True
+        print("[HISTORY] Using PostgreSQL for prompt history (persistent across deploys)")
 except Exception as e:
-    print(f"[HISTORY] Object Storage unavailable ({e}), trying Replit DB...")
+    print(f"[HISTORY] PostgreSQL unavailable ({e}), trying Object Storage...")
+
+# 2. Try Object Storage
+if not _use_postgres:
     try:
-        if os.environ.get("REPLIT_DB_URL"):
-            from replit import db as _replit_db
-            _use_replit_db = True
-            print("[HISTORY] Using Replit DB for prompt history (dev only)")
-    except Exception as e2:
-        print(f"[HISTORY] Replit DB unavailable ({e2}), falling back to JSON files")
+        from replit.object_storage import Client as _ObjClient
+        _obj_client = _ObjClient()
+        _use_object_storage = True
+        print("[HISTORY] Using Replit Object Storage for prompt history (persistent across deploys)")
+    except Exception as e:
+        print(f"[HISTORY] Object Storage unavailable ({e}), trying Replit DB...")
+        try:
+            if os.environ.get("REPLIT_DB_URL"):
+                from replit import db as _replit_db
+                _use_replit_db = True
+                print("[HISTORY] Using Replit DB for prompt history (dev only)")
+        except Exception as e2:
+            print(f"[HISTORY] Replit DB unavailable ({e2}), falling back to JSON files")
 
 
 def _get_lock(user_id: str) -> Lock:
@@ -127,6 +141,8 @@ def _file_write(user_id: str, data: dict):
 # ── Unified read/write (picks backend automatically) ─────────
 
 def _read(user_id: str) -> dict:
+    if _use_postgres:
+        return _pg_read(user_id)
     if _use_object_storage:
         return _obj_read(user_id)
     if _use_replit_db:
@@ -135,7 +151,9 @@ def _read(user_id: str) -> dict:
 
 
 def _write(user_id: str, data: dict):
-    if _use_object_storage:
+    if _use_postgres:
+        _pg_write(user_id, data)
+    elif _use_object_storage:
         _obj_write(user_id, data)
     elif _use_replit_db:
         _db_write(user_id, data)
@@ -336,7 +354,7 @@ def clear_intent(category: str, intent: str, user_id: str = "default") -> bool:
 def migrate_legacy_history(user_id: str):
     """
     Migrate legacy data into the active storage backend.
-    Checks Replit DB, user-scoped JSON files, and legacy JSON files.
+    Checks Object Storage, Replit DB, user-scoped JSON files, and legacy JSON files.
     Safe to call multiple times (idempotent).
     """
     # Check if data already exists in the current backend
@@ -344,8 +362,23 @@ def migrate_legacy_history(user_id: str):
     if existing:
         return  # already have data
 
-    # Source 1: Replit DB (may have data from before Object Storage migration)
-    if _use_object_storage and os.environ.get("REPLIT_DB_URL"):
+    # Source 1: Object Storage (may have data from before PostgreSQL migration)
+    if _use_postgres:
+        try:
+            from replit.object_storage import Client as _tmp_obj
+            _tmp_client = _tmp_obj()
+            raw = _tmp_client.download_as_text(f"ph/{user_id}.json")
+            if raw:
+                data = json.loads(raw)
+                if data:
+                    _write(user_id, data)
+                    print(f"[HISTORY] Migrated Object Storage -> PostgreSQL for {user_id}")
+                    return
+        except Exception as e:
+            print(f"[HISTORY] Object Storage migration check failed: {e}")
+
+    # Source 2: Replit DB (may have data from before Object Storage migration)
+    if (_use_object_storage or _use_postgres) and os.environ.get("REPLIT_DB_URL"):
         try:
             from replit import db as _tmp_db
             raw = _tmp_db.get(_db_key(user_id))
@@ -353,12 +386,12 @@ def migrate_legacy_history(user_id: str):
                 data = json.loads(raw) if isinstance(raw, str) else json.loads(json.dumps(raw, default=str))
                 if data:
                     _write(user_id, data)
-                    print(f"[HISTORY] Migrated Replit DB -> Object Storage for {user_id}")
+                    print(f"[HISTORY] Migrated Replit DB -> active backend for {user_id}")
                     return
         except Exception as e:
             print(f"[HISTORY] Replit DB migration check failed: {e}")
 
-    # Source 2: User-scoped JSON file
+    # Source 3: User-scoped JSON file
     user_file = Path(f"data/prompt_history_{user_id}.json")
     if user_file.exists():
         try:
@@ -371,7 +404,7 @@ def migrate_legacy_history(user_id: str):
         except Exception as e:
             print(f"[HISTORY] Failed to migrate {user_file}: {e}")
 
-    # Source 3: Legacy global file
+    # Source 4: Legacy global file
     legacy_file = Path("data/prompt_history.json")
     if legacy_file.exists():
         try:

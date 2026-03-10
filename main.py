@@ -60,10 +60,10 @@ class JWTAuthMiddleware:
 async def lifespan(app):
     # Diagnostic: confirm storage backends
     try:
-        from data.prompt_history import _use_object_storage as _ph_obj, _use_replit_db as _ph_db
-        from data.chat_history import _use_object_storage as _ch_obj, _use_replit_db as _ch_db
-        _ph_backend = "Object Storage (persistent)" if _ph_obj else ("Replit DB (dev)" if _ph_db else "JSON files (EPHEMERAL!)")
-        _ch_backend = "Object Storage (persistent)" if _ch_obj else ("Replit DB (dev)" if _ch_db else "JSON files (EPHEMERAL!)")
+        from data.prompt_history import _use_postgres as _ph_pg, _use_object_storage as _ph_obj, _use_replit_db as _ph_db
+        from data.chat_history import _use_postgres as _ch_pg, _use_object_storage as _ch_obj, _use_replit_db as _ch_db
+        _ph_backend = "PostgreSQL (persistent)" if _ph_pg else ("Object Storage (persistent)" if _ph_obj else ("Replit DB (dev)" if _ph_db else "JSON files (EPHEMERAL!)"))
+        _ch_backend = "PostgreSQL (persistent)" if _ch_pg else ("Object Storage (persistent)" if _ch_obj else ("Replit DB (dev)" if _ch_db else "JSON files (EPHEMERAL!)"))
         print(f"[STARTUP] prompt_history backend: {_ph_backend}")
         print(f"[STARTUP] chat_history backend: {_ch_backend}")
     except Exception as _e:
@@ -2318,6 +2318,26 @@ async def get_history(request: Request):
                         t["pct_change"] = round(((cur - rec) / rec) * 100, 2)
 
     return all_history
+
+@app.get("/api/history/storage-info")
+@limiter.limit("10/minute")
+async def history_storage_info(request: Request):
+    """Diagnostic: which storage backend is active and how much data is stored."""
+    from data.prompt_history import _use_postgres as _ph_pg, _use_object_storage as _ph_obj, _use_replit_db as _ph_db
+    from data.chat_history import _use_postgres as _ch_pg, _use_object_storage as _ch_obj, _use_replit_db as _ch_db
+    ph_backend = "PostgreSQL" if _ph_pg else ("Object Storage" if _ph_obj else ("Replit DB" if _ph_db else "JSON files (EPHEMERAL)"))
+    ch_backend = "PostgreSQL" if _ch_pg else ("Object Storage" if _ch_obj else ("Replit DB" if _ch_db else "JSON files (EPHEMERAL)"))
+    info = {
+        "prompt_history_backend": ph_backend,
+        "chat_history_backend": ch_backend,
+    }
+    try:
+        from data.pg_storage import storage_info as _pg_info
+        info["postgresql"] = _pg_info()
+    except Exception:
+        info["postgresql"] = {"available": False}
+    return info
+
 
 @app.get("/api/history/backtest-summary")
 @limiter.limit("10/minute")
