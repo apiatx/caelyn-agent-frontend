@@ -455,8 +455,8 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
         {/* Desktop Toggle Button */}
 
       {!isMobile && (
-      <div className="flex-shrink-0 flex items-center justify-center relative" style={{ width:'100%', borderBottom: isCollapsed ? 'none' : '1px solid rgba(255,255,255,0.06)' }}>
-        <div className="overflow-hidden" style={{ transition: 'max-height 0.3s ease-in-out, opacity 0.25s ease-in-out, padding 0.3s ease-in-out', maxHeight: isCollapsed ? 0 : 200, opacity: isCollapsed ? 0 : 1, padding: isCollapsed ? '0 4px' : '4px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className="flex-shrink-0 flex flex-col items-center justify-center relative" style={{ width:'100%', minHeight: isCollapsed ? 20 : 'auto', borderBottom: isCollapsed ? 'none' : '1px solid rgba(255,255,255,0.06)' }}>
+        <div className="overflow-hidden" style={{ transition: 'max-height 0.3s ease-in-out, opacity 0.25s ease-in-out, padding 0.3s ease-in-out', maxHeight: isCollapsed ? 0 : 200, opacity: isCollapsed ? 0 : 1, padding: isCollapsed ? '0' : '4px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <img
             src={caelynLogo}
             alt="CaelynAI"
@@ -464,7 +464,7 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
             data-testid="logo-cryptohippo"
           />
         </div>
-        <div className="absolute -right-3 -bottom-3 z-50">
+        <div style={{ position: 'absolute', right: -12, bottom: isCollapsed ? '50%' : -12, transform: isCollapsed ? 'translateY(50%)' : 'none', zIndex: 50, transition: 'bottom 0.3s ease-in-out, transform 0.3s ease-in-out' }}>
           <button
             onClick={onToggle}
             className="border border-white/[0.08] rounded-full p-1.5 text-white/40 hover:text-white hover:border-white/15 transition-all duration-200 shadow-lg"
