@@ -2562,7 +2562,7 @@ export default function TradingAgent() {
         <div style={{ display:'flex', gap:3, alignItems:'center', flexShrink:0 }}>
           <div className="agent-collab-wrapper" style={{ position:'relative', display:'inline-block' }}>
             <button key="agent_collab" onClick={() => { setReasoningModel(selectedPreset === 'custom' ? 'all_agents' : selectedPreset); }} style={{ padding:'3px 8px', borderRadius:10, fontSize:9, fontWeight:700, fontFamily:"'JetBrains Mono', monospace", background: ['agent_collab','all_agents'].includes(reasoningModel) || (selectedPreset === 'custom' && !['claude','gpt-4o','grok','gemini','perplexity'].includes(reasoningModel)) ? 'linear-gradient(135deg, #8b5cf6, #3b82f6, #06b6d4)' : 'rgba(139,92,246,0.08)', color: ['agent_collab','all_agents'].includes(reasoningModel) || (selectedPreset === 'custom' && !['claude','gpt-4o','grok','gemini','perplexity'].includes(reasoningModel)) ? '#ffffff' : '#a78bfa', border: ['agent_collab','all_agents'].includes(reasoningModel) ? 'none' : '1px solid rgba(139,92,246,0.25)', cursor:'pointer', transition:'all 0.15s', textShadow: ['agent_collab','all_agents'].includes(reasoningModel) ? '0 1px 2px rgba(0,0,0,0.3)' : 'none', boxShadow: ['agent_collab','all_agents'].includes(reasoningModel) ? '0 0 8px rgba(139,92,246,0.4)' : 'none' }}>
-              {selectedPreset === 'agent_collab' ? 'Agent Collab' : selectedPreset === 'all_agents' ? 'All Agents' : selectedPreset === 'gpt-4o' ? 'ChatGPT Solo' : selectedPreset === 'gemini' ? 'Gemini Solo' : selectedPreset === 'custom' ? 'Custom Collab' : 'Agent Collab'}
+              {selectedPreset === 'agent_collab' ? 'Agent Collab' : selectedPreset === 'all_agents' ? 'All Agents' : selectedPreset === 'custom' ? 'Custom Collab' : 'Agent Collab'}
             </button>
             <div className="agent-collab-dropdown" style={{ position:'absolute', top:'100%', left:0, minWidth:280, background:'rgba(15,15,30,0.98)', border:'1px solid rgba(139,92,246,0.25)', borderRadius:12, boxShadow:'0 8px 32px rgba(0,0,0,0.5)', padding:'8px 0', zIndex:1000, paddingTop:12 }}>
               {/* PRESETS */}
@@ -2570,10 +2570,8 @@ export default function TradingAgent() {
                 <div style={{ fontSize:10, textTransform:'uppercase', letterSpacing:'0.5px', color:'#6b7280', marginBottom:6, fontFamily:"'JetBrains Mono', monospace", fontWeight:700 }}>Presets</div>
                 {[
                   { id: 'agent_collab', label: 'Default (Agent Collab)', primary: 'claude', agents: ['grok', 'perplexity'] },
-                  { id: 'all_agents', label: 'All Agents', primary: 'claude', agents: ['grok', 'gpt-4o', 'gemini', 'perplexity'] },
-                  { id: 'gpt-4o', label: 'ChatGPT Solo', primary: 'gpt-4o', agents: [] },
-                  { id: 'gemini', label: 'Gemini Solo', primary: 'gemini', agents: [] },
-                  ...(collabOptions?.presets?.filter((p: any) => !['agent_collab','all_agents','gpt-4o','gemini'].includes(p.id)) || []),
+                  { id: 'all_agents', label: 'All Agents', primary: 'claude', agents: ['claude', 'grok', 'gpt-4o', 'gemini', 'perplexity'] },
+                  ...(collabOptions?.presets?.filter((p: any) => !['agent_collab','all_agents'].includes(p.id)) || []),
                 ].map((preset: any) => (
                   <div key={preset.id} onClick={() => { setSelectedPreset(preset.id); setSelectedPrimary(preset.primary); setSelectedAgents(preset.agents); setReasoningModel(preset.id); }} style={{ display:'flex', alignItems:'center', gap:8, padding:'5px 8px', cursor:'pointer', borderRadius:6, background: selectedPreset === preset.id ? 'rgba(139,92,246,0.15)' : 'transparent', transition:'background 0.1s' }}>
                     <div style={{ width:14, height:14, borderRadius:'50%', border: selectedPreset === preset.id ? '2px solid #8b5cf6' : '2px solid #4b5563', display:'flex', alignItems:'center', justifyContent:'center' }}>
@@ -2583,17 +2581,17 @@ export default function TradingAgent() {
                   </div>
                 ))}
               </div>
-              {/* PRIMARY MODEL */}
+              {/* REASONING MODEL */}
               <div style={{ padding:'6px 14px 8px', borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
-                <div style={{ fontSize:10, textTransform:'uppercase', letterSpacing:'0.5px', color:'#6b7280', marginBottom:6, fontFamily:"'JetBrains Mono', monospace", fontWeight:700 }}>Primary Model</div>
-                {(collabOptions?.primary_models || [
+                <div style={{ fontSize:10, textTransform:'uppercase', letterSpacing:'0.5px', color:'#6b7280', marginBottom:6, fontFamily:"'JetBrains Mono', monospace", fontWeight:700 }}>Reasoning Model</div>
+                {(collabOptions?.reasoning_models || [
                   { id: 'claude', label: 'Claude', icon: '🟣' },
                   { id: 'gpt-4o', label: 'ChatGPT', icon: '🟢' },
                   { id: 'gemini', label: 'Gemini', icon: '🔵' },
                   { id: 'grok', label: 'Grok', icon: '⚡' },
                   { id: 'perplexity', label: 'Perplexity', icon: '🌐' },
                 ]).map((m: any) => (
-                  <div key={m.id} onClick={() => { setSelectedPrimary(m.id); setSelectedPreset('custom'); if (selectedAgents.length === 0) setReasoningModel(m.id); else setReasoningModel('all_agents'); }} style={{ display:'flex', alignItems:'center', gap:8, padding:'5px 8px', cursor:'pointer', borderRadius:6, background: selectedPrimary === m.id ? 'rgba(59,130,246,0.15)' : 'transparent', transition:'background 0.1s' }}>
+                  <div key={m.id} onClick={() => { setSelectedPrimary(m.id); setSelectedAgents(prev => prev.filter(a => a !== m.id)); setSelectedPreset('custom'); if (selectedAgents.filter(a => a !== m.id).length === 0) setReasoningModel(m.id); else setReasoningModel('all_agents'); }} style={{ display:'flex', alignItems:'center', gap:8, padding:'5px 8px', cursor:'pointer', borderRadius:6, background: selectedPrimary === m.id ? 'rgba(59,130,246,0.15)' : 'transparent', transition:'background 0.1s' }}>
                     <div style={{ width:14, height:14, borderRadius:'50%', border: selectedPrimary === m.id ? '2px solid #3b82f6' : '2px solid #4b5563', display:'flex', alignItems:'center', justifyContent:'center' }}>
                       {selectedPrimary === m.id && <div style={{ width:7, height:7, borderRadius:'50%', background:'#3b82f6' }} />}
                     </div>
@@ -2606,11 +2604,12 @@ export default function TradingAgent() {
               <div style={{ padding:'6px 14px 8px' }}>
                 <div style={{ fontSize:10, textTransform:'uppercase', letterSpacing:'0.5px', color:'#6b7280', marginBottom:6, fontFamily:"'JetBrains Mono', monospace", fontWeight:700 }}>Collaborating Agents</div>
                 {(collabOptions?.collab_agents || [
+                  { id: 'claude', label: 'Claude (Anthropic)', icon: '🟣' },
                   { id: 'grok', label: 'Grok (X/Twitter)', icon: '⚡' },
                   { id: 'gpt-4o', label: 'ChatGPT/OpenAI', icon: '🟢' },
                   { id: 'gemini', label: 'Gemini', icon: '🔵' },
                   { id: 'perplexity', label: 'Perplexity', icon: '🌐' },
-                ]).map((a: any) => (
+                ]).filter((a: any) => a.id !== selectedPrimary).map((a: any) => (
                   <div key={a.id} onClick={() => { const next = selectedAgents.includes(a.id) ? selectedAgents.filter(x => x !== a.id) : [...selectedAgents, a.id]; setSelectedAgents(next); setSelectedPreset('custom'); if (next.length > 1) setReasoningModel('all_agents'); else if (next.length === 1) setReasoningModel('agent_collab'); else setReasoningModel(selectedPrimary); }} style={{ display:'flex', alignItems:'center', gap:8, padding:'5px 8px', cursor:'pointer', borderRadius:6, background: selectedAgents.includes(a.id) ? 'rgba(16,185,129,0.1)' : 'transparent', transition:'background 0.1s' }}>
                     <div style={{ width:14, height:14, borderRadius:3, border: selectedAgents.includes(a.id) ? '2px solid #10b981' : '2px solid #4b5563', background: selectedAgents.includes(a.id) ? '#10b981' : 'transparent', display:'flex', alignItems:'center', justifyContent:'center' }}>
                       {selectedAgents.includes(a.id) && <span style={{ color:'#fff', fontSize:9, fontWeight:700 }}>✓</span>}
@@ -2623,7 +2622,7 @@ export default function TradingAgent() {
             </div>
           </div>
           {(['claude', 'gpt-4o', 'grok', 'gemini', 'perplexity'] as const).map(m => (
-            <button key={m} onClick={() => { setReasoningModel(m); setSelectedPreset(m === 'gpt-4o' ? 'gpt-4o' : m === 'gemini' ? 'gemini' : 'custom'); setSelectedPrimary(m); setSelectedAgents([]); }} style={{ padding:'3px 8px', borderRadius:10, fontSize:9, fontWeight:600, fontFamily:"'JetBrains Mono', monospace", background: reasoningModel === m ? '#3b82f6' : 'rgba(255,255,255,0.04)', color: reasoningModel === m ? '#ffffff' : '#6b7280', border:'none', cursor:'pointer', transition:'all 0.15s' }}>{m}</button>
+            <button key={m} onClick={() => { setReasoningModel(m); setSelectedPreset('custom'); setSelectedPrimary(m); setSelectedAgents(prev => prev.filter(a => a !== m)); }} style={{ padding:'3px 8px', borderRadius:10, fontSize:9, fontWeight:600, fontFamily:"'JetBrains Mono', monospace", background: reasoningModel === m ? '#3b82f6' : 'rgba(255,255,255,0.04)', color: reasoningModel === m ? '#ffffff' : '#6b7280', border:'none', cursor:'pointer', transition:'all 0.15s' }}>{m}</button>
           ))}
         </div>
         <div style={{ position:'relative', flex:1 }}>
