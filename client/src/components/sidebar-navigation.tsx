@@ -455,9 +455,9 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
         {/* Desktop Toggle Button */}
 
       {!isMobile && (
-      <div className="flex-shrink-0 border-b border-white/[0.06] flex items-center justify-center relative" style={{ width:'100%', padding: isCollapsed ? '6px' : '4px' }}>
-        <div className="overflow-hidden" style={{ transition: 'all 0.3s ease-in-out', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <img 
+      <div className="flex-shrink-0 flex items-center justify-center relative" style={{ width:'100%', borderBottom: isCollapsed ? 'none' : '1px solid rgba(255,255,255,0.06)' }}>
+        <div className="overflow-hidden" style={{ transition: 'max-height 0.3s ease-in-out, opacity 0.25s ease-in-out, padding 0.3s ease-in-out', maxHeight: isCollapsed ? 0 : 200, opacity: isCollapsed ? 0 : 1, padding: isCollapsed ? '0 4px' : '4px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <img
             src={caelynLogo}
             alt="CaelynAI"
             style={{ width: '100%', height: 'auto', objectFit: 'contain', display: 'block' }}
