@@ -59,14 +59,13 @@ class JWTAuthMiddleware:
 @asynccontextmanager
 async def lifespan(app):
     # Diagnostic: confirm storage backends
-    import os as _os
-    _db_url = _os.environ.get("REPLIT_DB_URL", "")
-    print(f"[STARTUP] REPLIT_DB_URL={'SET (' + _db_url[:40] + '...)' if _db_url else 'NOT SET — history will use ephemeral JSON files!'}")
     try:
-        from data.prompt_history import _use_replit_db as _ph_db
-        from data.chat_history import _use_replit_db as _ch_db
-        print(f"[STARTUP] prompt_history backend: {'Replit DB' if _ph_db else 'JSON files (ephemeral!)'}")
-        print(f"[STARTUP] chat_history backend: {'Replit DB' if _ch_db else 'JSON files (ephemeral!)'}")
+        from data.prompt_history import _use_object_storage as _ph_obj, _use_replit_db as _ph_db
+        from data.chat_history import _use_object_storage as _ch_obj, _use_replit_db as _ch_db
+        _ph_backend = "Object Storage (persistent)" if _ph_obj else ("Replit DB (dev)" if _ph_db else "JSON files (EPHEMERAL!)")
+        _ch_backend = "Object Storage (persistent)" if _ch_obj else ("Replit DB (dev)" if _ch_db else "JSON files (EPHEMERAL!)")
+        print(f"[STARTUP] prompt_history backend: {_ph_backend}")
+        print(f"[STARTUP] chat_history backend: {_ch_backend}")
     except Exception as _e:
         print(f"[STARTUP] Storage diagnostic error: {_e}")
 
@@ -663,6 +662,62 @@ async def list_presets(request: Request):
 
 
 # ============================================================
+# Agent Collaboration Options (for dropdown menu)
+# ============================================================
+
+@app.get("/api/collab-options")
+async def get_collab_options(request: Request):
+    """Return available primary models and collaborating agents for the
+    frontend hover-over dropdown menu on the Agent Collab button."""
+    return {
+        "primary_models": [
+            {"id": "claude", "name": "Claude", "description": "Anthropic Claude — deep reasoning & synthesis (default)", "default": True},
+            {"id": "gpt-4o", "name": "ChatGPT", "description": "OpenAI GPT-4o — orchestration, web search, reasoning"},
+            {"id": "gemini", "name": "Gemini", "description": "Google Gemini — Google Search grounding, reasoning"},
+            {"id": "grok", "name": "Grok", "description": "xAI Grok — X/Twitter native search, reasoning"},
+            {"id": "perplexity", "name": "Perplexity", "description": "Perplexity Sonar — citation-heavy web research"},
+        ],
+        "collab_agents": [
+            {"id": "grok", "name": "Grok (X/Twitter)", "description": "Real-time X social scanning & sentiment", "icon": "xai"},
+            {"id": "gpt-4o", "name": "ChatGPT/OpenAI", "description": "Web search, orchestration & reasoning", "icon": "openai"},
+            {"id": "gemini", "name": "Gemini", "description": "Google Search grounding & reasoning", "icon": "gemini"},
+            {"id": "perplexity", "name": "Perplexity", "description": "Deep web research with citations", "icon": "perplexity"},
+        ],
+        "presets": [
+            {
+                "id": "agent_collab",
+                "name": "Default (Agent Collab)",
+                "description": "Grok X scan + Perplexity web search + proprietary data → Claude synthesis",
+                "agents": ["grok", "perplexity"],
+                "primary": "claude",
+                "default": True,
+            },
+            {
+                "id": "all_agents",
+                "name": "All Agents",
+                "description": "GPT + Gemini + Perplexity + Grok all reason simultaneously → Claude synthesizes all theses",
+                "agents": ["grok", "gpt-4o", "gemini", "perplexity"],
+                "primary": "claude",
+            },
+            {
+                "id": "gpt-4o",
+                "name": "ChatGPT Solo",
+                "description": "ChatGPT orchestrates, searches the web, reasons & responds",
+                "agents": [],
+                "primary": "gpt-4o",
+            },
+            {
+                "id": "gemini",
+                "name": "Gemini Solo",
+                "description": "Gemini orchestrates, uses Google Search, reasons & responds",
+                "agents": [],
+                "primary": "gemini",
+            },
+        ],
+    }
+
+
+# ============================================================
 # Polymarket Gamma API Proxy
 # ============================================================
 
@@ -1167,6 +1222,8 @@ class QueryRequest(BaseModel):
     csv_data: Optional[str] = None
     chatbox_mode: Optional[bool] = False
     reasoning_model: Optional[str] = "agent_collab"
+    collab_agents: Optional[List[str]] = None       # e.g. ["grok","gpt-4o","gemini","perplexity"]
+    primary_model: Optional[str] = None              # final synthesis model (default: claude)
 
 def _build_meta(req_id: str, preset_intent=None, conv_id=None, routing=None, timing_ms=None):
     return {
@@ -1745,6 +1802,8 @@ async def query_agent(
                 csv_data=body.csv_data,
                 chatbox_mode=body.chatbox_mode or False,
                 reasoning_model=body.reasoning_model or "agent_collab",
+                collab_agents=body.collab_agents,
+                primary_model=body.primary_model,
             )
         )
 

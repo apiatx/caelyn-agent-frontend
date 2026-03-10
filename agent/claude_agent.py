@@ -363,9 +363,9 @@ class TradingAgent:
             "tickers": [],
         }
 
-    async def handle_query(self, user_prompt: str, history: list = None, preset_intent: str = None, request_id: str = "", csv_data: str = None, chatbox_mode: bool = False, reasoning_model: str = "agent_collab") -> dict:
+    async def handle_query(self, user_prompt: str, history: list = None, preset_intent: str = None, request_id: str = "", csv_data: str = None, chatbox_mode: bool = False, reasoning_model: str = "agent_collab", collab_agents: list = None, primary_model: str = None) -> dict:
         try:
-            return await self._handle_query_inner(user_prompt, history=history, preset_intent=preset_intent, request_id=request_id, csv_data=csv_data, chatbox_mode=chatbox_mode, reasoning_model=reasoning_model)
+            return await self._handle_query_inner(user_prompt, history=history, preset_intent=preset_intent, request_id=request_id, csv_data=csv_data, chatbox_mode=chatbox_mode, reasoning_model=reasoning_model, collab_agents=collab_agents, primary_model=primary_model)
         except Exception as e:
             import traceback
             print(f"[AGENT] FATAL: handle_query crashed with unhandled exception: {e}")
@@ -380,7 +380,7 @@ class TradingAgent:
                 },
             }
 
-    async def _handle_query_inner(self, user_prompt: str, history: list = None, preset_intent: str = None, request_id: str = "", csv_data: str = None, chatbox_mode: bool = False, reasoning_model: str = "agent_collab") -> dict:
+    async def _handle_query_inner(self, user_prompt: str, history: list = None, preset_intent: str = None, request_id: str = "", csv_data: str = None, chatbox_mode: bool = False, reasoning_model: str = "agent_collab", collab_agents: list = None, primary_model: str = None) -> dict:
         start_time = time.time()
         if history is None:
             history = []
@@ -618,7 +618,7 @@ class TradingAgent:
 
             if prior_tickers and (needs_social or needs_price):
                 market_data = {}
-                if needs_social and self.data.xai and reasoning_model == "agent_collab":
+                if needs_social and self.data.xai and reasoning_model in ("agent_collab", "all_agents"):
                     try:
                         if csv_followup:
                             watchlist_context = followup_csv_context or ""
@@ -734,7 +734,7 @@ class TradingAgent:
 
             query_info["reasoning_model"] = reasoning_model
             # Gate LLM-backed web search (Perplexity) in data layer: only allowed in agent_collab mode
-            self.data._skip_llm_web_search = (reasoning_model != "agent_collab")
+            self.data._skip_llm_web_search = (reasoning_model not in ("agent_collab", "all_agents"))
             if category == "chat":
                 market_data = await self._gather_chat_context(user_prompt, query_info)
                 data_size = len(json.dumps(market_data, default=str)) if market_data else 0
@@ -779,7 +779,7 @@ class TradingAgent:
 
             query_info["reasoning_model"] = reasoning_model
             # Gate LLM-backed web search (Perplexity) in data layer: only allowed in agent_collab mode
-            self.data._skip_llm_web_search = (reasoning_model != "agent_collab")
+            self.data._skip_llm_web_search = (reasoning_model not in ("agent_collab", "all_agents"))
             if category == "chat":
                 market_data = await self._gather_chat_context(user_prompt, query_info)
                 data_size = len(json.dumps(market_data, default=str)) if market_data else 0
@@ -826,7 +826,7 @@ class TradingAgent:
 
         plan = query_info.get("orchestration_plan", {}) if 'query_info' in locals() and isinstance(query_info, dict) else {}
         _news_model = reasoning_model if 'reasoning_model' in locals() else "agent_collab"
-        if isinstance(market_data, dict) and plan.get("web_news") and _news_model == "agent_collab":
+        if isinstance(market_data, dict) and plan.get("web_news") and _news_model in ("agent_collab", "all_agents"):
             try:
                 news_context = await self._fetch_web_news_context(plan, user_prompt)
                 market_data["news_context"] = news_context
@@ -919,7 +919,7 @@ class TradingAgent:
             except NameError:
                 pass
 
-        raw_response = await self._ask_claude_with_timeout(user_prompt, claude_data, history, is_followup=is_followup, category=category, chatbox_mode=chatbox_mode, reasoning_model=reasoning_model, preset_intent=preset_intent)
+        raw_response = await self._ask_claude_with_timeout(user_prompt, claude_data, history, is_followup=is_followup, category=category, chatbox_mode=chatbox_mode, reasoning_model=reasoning_model, preset_intent=preset_intent, collab_agents=collab_agents, primary_model=primary_model)
         # Reset web search gate after request completes
         self.data._skip_llm_web_search = False
         claude_ms = int((time.time() - data_done_time) * 1000)
@@ -2886,7 +2886,7 @@ class TradingAgent:
 
         _orch_model = query_info.get("reasoning_model", "agent_collab")
 
-        if modules.get("x_sentiment") and category not in ("trending", "social_momentum", "cross_market") and _orch_model == "agent_collab":
+        if modules.get("x_sentiment") and category not in ("trending", "social_momentum", "cross_market") and _orch_model in ("agent_collab", "all_agents"):
             tickers = plan.get("tickers", [])
             if tickers and self.data.xai:
                 async def fetch_x_sentiment():
@@ -2904,7 +2904,7 @@ class TradingAgent:
                         print(f"[ORCHESTRATOR] X sentiment overlay failed: {e}")
                         return None
                 overlay_tasks.append(("x_sentiment_overlay", fetch_x_sentiment()))
-        if modules.get("x_social_scan") and self.data.xai and _orch_model == "agent_collab":
+        if modules.get("x_social_scan") and self.data.xai and _orch_model in ("agent_collab", "all_agents"):
             scan_mode = plan.get("x_social_scan_mode", "trending")
             scan_query = plan.get("x_social_scan_query", "")
             scan_constraints = {
@@ -3005,7 +3005,7 @@ class TradingAgent:
 
             # Web search batched enrichment (Perplexity-routed): only in agent_collab mode
             _chat_model = query_info.get("reasoning_model", "agent_collab")
-            if self.data.web_search and _chat_model == "agent_collab":
+            if self.data.web_search and _chat_model in ("agent_collab", "all_agents"):
                 from api_budget import daily_budget
                 if daily_budget.can_spend("web_search", 1):
                     try:
@@ -3054,7 +3054,7 @@ class TradingAgent:
                 "RUNE", "PENDLE", "ENA", "W", "STRK", "ZRO", "PYTH",
             }
             _chat_model = query_info.get("reasoning_model", "agent_collab")
-            if self.data.xai and _chat_model == "agent_collab":
+            if self.data.xai and _chat_model in ("agent_collab", "all_agents"):
                 for ticker in tickers[:3]:
                     try:
                         x_sent = await asyncio.wait_for(
@@ -3178,13 +3178,22 @@ class TradingAgent:
                 return True
         return False
 
-    VALID_REASONING_MODELS = {"claude", "gpt-4o", "grok", "gemini", "perplexity", "agent_collab"}
+    VALID_REASONING_MODELS = {"claude", "gpt-4o", "grok", "gemini", "perplexity", "agent_collab", "all_agents"}
+    VALID_COLLAB_AGENTS = {"grok", "gpt-4o", "gemini", "perplexity"}
 
     WEB_SEARCH_CATEGORIES = {"cross_asset_trending", "daily_briefing", "best_trades", "earnings_catalyst"}
 
-    async def _ask_claude_with_timeout(self, user_prompt: str, market_data: dict, history: list = None, is_followup: bool = False, category: str = "", chatbox_mode: bool = False, reasoning_model: str = "claude", preset_intent: str = None) -> str:
+    async def _ask_claude_with_timeout(self, user_prompt: str, market_data: dict, history: list = None, is_followup: bool = False, category: str = "", chatbox_mode: bool = False, reasoning_model: str = "claude", preset_intent: str = None, collab_agents: list = None, primary_model: str = None) -> str:
         data_size = len(json.dumps(market_data, default=str)) if market_data else 0
         reasoning_model = reasoning_model if reasoning_model in self.VALID_REASONING_MODELS else "claude"
+
+        # ── All-agents collaboration: call multiple LLMs simultaneously, then synthesise with Claude ──
+        if reasoning_model == "all_agents" or (collab_agents and len(collab_agents) > 1):
+            agents_to_call = [a for a in (collab_agents or ["grok", "gpt-4o", "gemini", "perplexity"]) if a in self.VALID_COLLAB_AGENTS]
+            synthesis_model = primary_model if primary_model in ("claude", "gpt-4o", "gemini") else "claude"
+            print(f"[ALL_AGENTS] Multi-agent collab: agents={agents_to_call}, synthesis={synthesis_model}, data={data_size:,} chars")
+            return await self._multi_agent_collab(user_prompt, market_data, history, is_followup, category, chatbox_mode, preset_intent, agents_to_call, synthesis_model)
+
         # agent_collab uses Claude as the reasoning engine (with richer data from Grok/Perplexity data sources)
         effective_model = "claude" if reasoning_model == "agent_collab" else reasoning_model
         print(f"[AGENT] Sending to {effective_model} (selected={reasoning_model}): {data_size:,} chars of market data (category={category}, chatbox_mode={chatbox_mode})")
@@ -3232,6 +3241,131 @@ class TradingAgent:
         except Exception as e:
             print(f"[AGENT] Claude API error: {e}")
             return json.dumps({"display_type": "chat", "message": f"Error reaching AI: {str(e)}"})
+
+    # ── Multi-Agent Collaboration ─────────────────────────────────
+    # Calls multiple LLMs simultaneously (each with full web search),
+    # then passes every agent's full thesis + proprietary market data
+    # to the synthesis model (Claude by default) for final reasoning.
+    # ────────────────────────────────────────────────────────────────
+
+    async def _multi_agent_collab(self, user_prompt: str, market_data: dict, history: list = None, is_followup: bool = False, category: str = "", chatbox_mode: bool = False, preset_intent: str = None, agents: list = None, synthesis_model: str = "claude") -> str:
+        """Call multiple agents in parallel, collect full theses, then synthesise."""
+        import time as _t
+        agents = agents or ["grok", "gpt-4o", "gemini", "perplexity"]
+        t0 = _t.time()
+
+        # Build the prompt context that each agent will receive
+        system_blocks, messages, _, token_limit, _, _ = self._build_prompt(
+            user_prompt, market_data, history, is_followup, category, chatbox_mode,
+            reasoning_model="agent_collab", preset_intent=preset_intent
+        )
+        oai_messages = self._prompt_to_openai_messages(system_blocks, messages)
+
+        # ── Fan-out: call every selected agent simultaneously ──
+        async def _call_agent(agent_id: str) -> tuple:
+            """Returns (agent_id, response_text, elapsed_ms)."""
+            a0 = _t.time()
+            try:
+                text = await asyncio.wait_for(
+                    self._call_alt_model(agent_id, user_prompt, market_data, history, is_followup, category, chatbox_mode, preset_intent=preset_intent),
+                    timeout=90.0,
+                )
+                ms = int((_t.time() - a0) * 1000)
+                print(f"[ALL_AGENTS] {agent_id} responded: {len(text or ''):,} chars in {ms}ms")
+                return (agent_id, text or "", ms)
+            except Exception as e:
+                ms = int((_t.time() - a0) * 1000)
+                print(f"[ALL_AGENTS] {agent_id} failed after {ms}ms: {e}")
+                return (agent_id, "", ms)
+
+        results = await asyncio.gather(*[_call_agent(a) for a in agents])
+
+        # Collect successful theses
+        agent_theses = {}
+        agent_timing = {}
+        for agent_id, text, ms in results:
+            agent_timing[agent_id] = ms
+            if text and len(text.strip()) > 50:
+                agent_theses[agent_id] = text
+
+        total_fan_out_ms = int((_t.time() - t0) * 1000)
+        print(f"[ALL_AGENTS] Fan-out complete: {len(agent_theses)}/{len(agents)} agents responded in {total_fan_out_ms}ms")
+
+        if not agent_theses:
+            return json.dumps({"display_type": "chat", "message": "All collaborating agents failed to respond. Please try again."})
+
+        # ── Synthesis: pass all theses + market data to the synthesis model ──
+        agent_label_map = {
+            "gpt-4o": "ChatGPT/OpenAI",
+            "gemini": "Google Gemini",
+            "grok": "Grok (xAI / X-Twitter)",
+            "perplexity": "Perplexity",
+        }
+
+        thesis_sections = []
+        for agent_id, thesis in agent_theses.items():
+            label = agent_label_map.get(agent_id, agent_id)
+            thesis_sections.append(
+                f"═══════════════════════════════════════\n"
+                f"AGENT: {label}\n"
+                f"═══════════════════════════════════════\n"
+                f"{thesis}\n"
+            )
+
+        synthesis_prompt = (
+            f"{user_prompt}\n\n"
+            f"══════════════════════════════════════════════════════════════\n"
+            f"MULTI-AGENT COLLABORATION — SYNTHESIS REQUIRED\n"
+            f"══════════════════════════════════════════════════════════════\n\n"
+            f"You have received independent analyses from {len(agent_theses)} AI agents.\n"
+            f"Each agent independently searched the web, gathered data, and formed their own thesis.\n\n"
+            f"{''.join(thesis_sections)}\n"
+            f"══════════════════════════════════════════════════════════════\n"
+            f"YOUR TASK AS THE SYNTHESIS ENGINE:\n"
+            f"══════════════════════════════════════════════════════════════\n"
+            f"1. Read every agent's full thesis above carefully.\n"
+            f"2. Cross-reference their findings with the proprietary market data provided (finviz, finnhub, fmp, edgar, polygon, coingecko, etc.).\n"
+            f"3. Identify AGREEMENTS across agents — where multiple agents converge, conviction is higher.\n"
+            f"4. Identify DISAGREEMENTS — flag conflicting views and explain which data supports which position.\n"
+            f"5. Identify UNIQUE INSIGHTS — things only one agent caught that others missed.\n"
+            f"6. Synthesize everything into YOUR final, authoritative analysis.\n"
+            f"7. Your response MUST be your own original synthesis, NOT a summary of each agent.\n"
+            f"   Weave the insights together into a cohesive thesis.\n\n"
+            f"Respond in the same JSON format you normally use for this category of analysis.\n"
+            f"Do NOT mention the individual agents by name in your response — present it as unified analysis.\n"
+        )
+
+        print(f"[ALL_AGENTS] Sending synthesis prompt to {synthesis_model}: {len(synthesis_prompt):,} chars ({len(agent_theses)} theses)")
+
+        # Use Claude for synthesis (default path)
+        if synthesis_model == "claude":
+            try:
+                result = await asyncio.wait_for(
+                    self._ask_claude_async_web_search(synthesis_prompt, market_data, history, is_followup, category, chatbox_mode, reasoning_model="agent_collab", preset_intent=preset_intent),
+                    timeout=120.0,
+                )
+                synthesis_ms = int((_t.time() - t0) * 1000) - total_fan_out_ms
+                print(f"[ALL_AGENTS] Claude synthesis complete: {len(result):,} chars in {synthesis_ms}ms (total={int((_t.time()-t0)*1000)}ms)")
+                return result
+            except Exception as e:
+                print(f"[ALL_AGENTS] Claude synthesis failed: {e}")
+                # Fall back to returning the best single agent thesis
+                longest = max(agent_theses.values(), key=len)
+                return longest
+        else:
+            # Non-Claude synthesis (use selected model)
+            try:
+                result = await asyncio.wait_for(
+                    self._call_alt_model(synthesis_model, synthesis_prompt, market_data, history, is_followup, category, chatbox_mode, preset_intent=preset_intent),
+                    timeout=120.0,
+                )
+                if result:
+                    return result
+            except Exception as e:
+                print(f"[ALL_AGENTS] {synthesis_model} synthesis failed: {e}")
+            # Fallback
+            longest = max(agent_theses.values(), key=len)
+            return longest
 
     def _prompt_to_openai_messages(self, system_blocks, messages) -> list:
         """Convert Anthropic system_blocks + messages into OpenAI-compatible message list."""
@@ -3563,7 +3697,7 @@ class TradingAgent:
                     title = event.get("title", event.get("question", ""))
                     if title:
                         event_titles.append(title[:80])
-                if event_titles and _orch_model == "agent_collab":
+                if event_titles and _orch_model in ("agent_collab", "all_agents"):
                     search_query = " OR ".join(event_titles)
                     try:
                         news_ctx = await asyncio.wait_for(
@@ -3740,7 +3874,7 @@ class TradingAgent:
             if not isinstance(earnings_data, dict):
                 earnings_data = {}
             # In agent_collab mode, supplement with Perplexity news + Grok X scan for broader catalysts
-            if _cat_model == "agent_collab":
+            if _cat_model in ("agent_collab", "all_agents"):
                 catalyst_tasks = []
                 # Perplexity: upcoming catalysts beyond just earnings
                 if self.data.web_search and getattr(self.data.web_search, 'perplexity', None):
@@ -3786,7 +3920,7 @@ class TradingAgent:
 
         elif category == "sector_rotation":
             _rot_model = query_info.get("reasoning_model", "agent_collab")
-            if _rot_model == "agent_collab":
+            if _rot_model in ("agent_collab", "all_agents"):
                 rotation_data, news_ctx = await asyncio.gather(
                     self.data.get_sector_rotation_with_stages(),
                     self.data.get_market_news_context(
@@ -4075,7 +4209,7 @@ class TradingAgent:
             enriched_data = result.get("enriched_data", {})
             top_screen_tickers = list(enriched_data.keys())[:10]
             _screen_model = query_info.get("reasoning_model", "agent_collab")
-            if top_screen_tickers and self.data.web_search and _screen_model == "agent_collab":
+            if top_screen_tickers and self.data.web_search and _screen_model in ("agent_collab", "all_agents"):
                 from api_budget import daily_budget
                 if daily_budget.can_spend("web_search", 2):
                     try:
@@ -4120,7 +4254,7 @@ class TradingAgent:
 
         # Only use Grok/Perplexity data sources in agent_collab mode
         _reasoning_model = query_info.get("reasoning_model", "agent_collab")
-        use_multi_model_data = (_reasoning_model == "agent_collab")
+        use_multi_model_data = (_reasoning_model in ("agent_collab", "all_agents"))
         print(f"[SOCIAL_REQUIRED] preset=cross_asset_trending reasoning_model={_reasoning_model} multi_model_data={use_multi_model_data}")
 
         grok_shortlist = None
