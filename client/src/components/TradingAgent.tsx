@@ -2592,7 +2592,7 @@ export default function TradingAgent() {
                   { id: 'grok', label: 'Grok', icon: '⚡' },
                   { id: 'perplexity', label: 'Perplexity', icon: '🌐' },
                 ]).map((m: any) => (
-                  <div key={m.id} onClick={() => { const newAgents = (collabConfig?.agents || []).filter((a: string) => a !== m.id); setCollabConfig({ preset: newAgents.length > 0 ? 'all_agents' : 'agent_collab', agents: newAgents, primary: m.id }); }} style={{ display:'flex', alignItems:'center', gap:8, padding:'5px 8px', cursor:'pointer', borderRadius:6, background: collabConfig?.primary === m.id ? 'rgba(59,130,246,0.15)' : 'transparent', transition:'background 0.1s' }}>
+                  <div key={m.id} onClick={() => { setCollabConfig(prev => prev ? { ...prev, primary: m.id } : { preset: 'agent_collab', agents: ['grok', 'perplexity'], primary: m.id }); }} style={{ display:'flex', alignItems:'center', gap:8, padding:'5px 8px', cursor:'pointer', borderRadius:6, background: collabConfig?.primary === m.id ? 'rgba(59,130,246,0.15)' : 'transparent', transition:'background 0.1s' }}>
                     <div style={{ width:14, height:14, borderRadius:'50%', border: collabConfig?.primary === m.id ? '2px solid #3b82f6' : '2px solid #4b5563', display:'flex', alignItems:'center', justifyContent:'center' }}>
                       {collabConfig?.primary === m.id && <div style={{ width:7, height:7, borderRadius:'50%', background:'#3b82f6' }} />}
                     </div>
@@ -2610,7 +2610,7 @@ export default function TradingAgent() {
                   { id: 'gpt-4o', label: 'ChatGPT/OpenAI', icon: '🟢' },
                   { id: 'gemini', label: 'Gemini', icon: '🔵' },
                   { id: 'perplexity', label: 'Perplexity', icon: '🌐' },
-                ]).filter((a: any) => a.id !== (collabConfig?.primary || 'claude')).map((a: any) => {
+                ]).map((a: any) => {
                   const agents = collabConfig?.agents || [];
                   const isChecked = agents.includes(a.id);
                   return (
