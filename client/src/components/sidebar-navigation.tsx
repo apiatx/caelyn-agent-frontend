@@ -457,7 +457,7 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
         <button
           onClick={onToggle}
           className="border border-white/[0.08] rounded-full p-1.5 text-white/40 hover:text-white hover:border-white/15 transition-all duration-200 shadow-lg"
-          style={{ background: '#0a0b0f', position: 'fixed', top: 95, left: isCollapsed ? 52 : 180, zIndex: 50, transition: 'left 0.3s ease-in-out, border-color 0.2s, color 0.2s' }}
+          style={{ background: '#0a0b0f', position: 'fixed', top: 138, left: isCollapsed ? 52 : 180, zIndex: 50, transition: 'left 0.3s ease-in-out, border-color 0.2s, color 0.2s' }}
           data-testid="toggle-sidebar"
         >
           {isCollapsed ? (
