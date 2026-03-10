@@ -495,6 +495,9 @@ export default function TradingAgent() {
     if (collabConfig) {
       if (collabConfig.preset === 'default') {
         payload.reasoning_model = 'agent_collab';
+        if (collabConfig.primary && collabConfig.primary !== 'claude') {
+          payload.primary_model = collabConfig.primary;
+        }
       } else {
         payload.reasoning_model = 'all_agents';
         payload.collab_agents = collabConfig.agents;
@@ -2571,7 +2574,7 @@ export default function TradingAgent() {
               {/* PRESETS */}
               {(() => {
                 const presetDefs = [
-                  { id: 'default', label: 'Default', primary: 'claude', agents: ['grok', 'perplexity'], lock_agents: true, lock_reasoning: true },
+                  { id: 'default', label: 'Default', primary: 'claude', agents: ['grok', 'perplexity'], lock_agents: true, lock_reasoning: false },
                   { id: 'full_collab', label: 'Full Collaboration', primary: 'claude', agents: ['claude', 'grok', 'gpt-4o', 'gemini', 'perplexity'], lock_agents: true, lock_reasoning: false },
                   { id: 'custom_collab', label: 'Custom Collaboration', primary: 'claude', agents: ['grok', 'perplexity'], lock_agents: false, lock_reasoning: false },
                 ];
@@ -2586,7 +2589,12 @@ export default function TradingAgent() {
                     <div style={{ width:14, height:14, borderRadius:'50%', border: collabConfig?.preset === preset.id ? '2px solid #8b5cf6' : '2px solid #4b5563', display:'flex', alignItems:'center', justifyContent:'center' }}>
                       {collabConfig?.preset === preset.id && <div style={{ width:7, height:7, borderRadius:'50%', background:'#8b5cf6' }} />}
                     </div>
-                    <span style={{ fontSize:11, color: collabConfig?.preset === preset.id ? '#e0e0e0' : '#9ca3af', fontFamily:"'JetBrains Mono', monospace" }}>{preset.label || preset.name}</span>
+                    <div style={{ display:'flex', flexDirection:'column' }}>
+                      <span style={{ fontSize:11, color: collabConfig?.preset === preset.id ? '#e0e0e0' : '#9ca3af', fontFamily:"'JetBrains Mono', monospace" }}>{preset.label || preset.name}</span>
+                      {collabConfig?.preset === preset.id && preset.id === 'default' && <span style={{ fontSize:9, color:'#6b7280', fontFamily:"'JetBrains Mono', monospace", marginTop:2 }}>Data sources (Grok X + Perplexity + proprietary) → {(() => { const models: Record<string, string> = { claude: 'Claude', 'gpt-4o': 'ChatGPT', gemini: 'Gemini', grok: 'Grok', perplexity: 'Perplexity' }; return models[collabConfig?.primary || 'claude'] || collabConfig?.primary || 'Claude'; })()} synthesizes</span>}
+                      {collabConfig?.preset === preset.id && preset.id === 'full_collab' && <span style={{ fontSize:9, color:'#6b7280', fontFamily:"'JetBrains Mono', monospace", marginTop:2 }}>All agents reason independently → synthesis model combines</span>}
+                      {collabConfig?.preset === preset.id && preset.id === 'custom_collab' && <span style={{ fontSize:9, color:'#6b7280', fontFamily:"'JetBrains Mono', monospace", marginTop:2 }}>Custom agent selection → synthesis model combines</span>}
+                    </div>
                   </div>
                 ))}
               </div>
