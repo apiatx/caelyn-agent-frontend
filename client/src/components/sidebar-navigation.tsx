@@ -452,48 +452,12 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
         inert={isMobile && !isMobileMenuOpen ? true : undefined}
       >
         
-        {/* Desktop Toggle Button */}
-
+        {/* Desktop Toggle Button — fixed y position, never moves */}
       {!isMobile && (
-      <div
-        className="flex-shrink-0"
-        style={{
-          position: 'relative',
-          width: '100%',
-          minHeight: '64px',
-          borderBottom: '1px solid rgba(255,255,255,0.06)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        {/* Logo — visible only when expanded */}
-        <div
-          style={{
-            overflow: 'hidden',
-            transition: 'opacity 0.25s ease-in-out',
-            opacity: isCollapsed ? 0 : 1,
-            pointerEvents: isCollapsed ? 'none' : 'auto',
-            padding: '4px',
-            width: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <img
-            src={caelynLogo}
-            alt="CaelynAI"
-            style={{ width: '100%', height: 'auto', objectFit: 'contain', display: 'block' }}
-            data-testid="logo-cryptohippo"
-          />
-        </div>
-
-        {/* Toggle button — anchored to the right edge, vertically centred in the fixed-height header */}
         <button
           onClick={onToggle}
           className="border border-white/[0.08] rounded-full p-1.5 text-white/40 hover:text-white hover:border-white/15 transition-all duration-200 shadow-lg"
-          style={{ background: '#0a0b0f', position: 'absolute', right: -12, zIndex: 50 }}
+          style={{ background: '#0a0b0f', position: 'fixed', top: 148, left: isCollapsed ? 52 : 180, zIndex: 50, transition: 'left 0.3s ease-in-out, border-color 0.2s, color 0.2s' }}
           data-testid="toggle-sidebar"
         >
           {isCollapsed ? (
@@ -502,6 +466,19 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
             <ChevronLeft className="w-4 h-4" />
           )}
         </button>
+      )}
+
+      {/* Logo — collapses when sidebar is collapsed */}
+      {!isMobile && (
+      <div className="flex-shrink-0 flex flex-col items-center justify-center" style={{ width:'100%', borderBottom: isCollapsed ? 'none' : '1px solid rgba(255,255,255,0.06)' }}>
+        <div className="overflow-hidden" style={{ transition: 'max-height 0.3s ease-in-out, opacity 0.25s ease-in-out, padding 0.3s ease-in-out', maxHeight: isCollapsed ? 0 : 200, opacity: isCollapsed ? 0 : 1, padding: isCollapsed ? '0' : '4px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <img
+            src={caelynLogo}
+            alt="CaelynAI"
+            style={{ width: '100%', height: 'auto', objectFit: 'contain', display: 'block' }}
+            data-testid="logo-cryptohippo"
+          />
+        </div>
       </div>
       )}
 
