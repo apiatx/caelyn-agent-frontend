@@ -15,7 +15,7 @@ function BottomTickerTape() {
     const doc = iframe.contentDocument;
     if (doc) {
       doc.open();
-      doc.write(`<!DOCTYPE html><html><head><style>body{margin:0;padding:0;overflow:hidden;background:transparent;}</style></head><body><script type="module" src="https://widgets.tradingview-widget.com/w/en/tv-ticker-tape.js"><\/script><tv-ticker-tape symbols='NASDAQ:NVDA,NASDAQ:MSFT,NASDAQ:GOOG,NASDAQ:AAPL,NASDAQ:META,NASDAQ:TSLA,NASDAQ:AMZN,NASDAQ:PLTR,NASDAQ:AMD,NASDAQ:MU,NASDAQ:AVGO,NYSE:ORCL,NYSE:TSM,NASDAQ:SNDK' hover-type="performance-grid" show-hover theme="dark" transparent></tv-ticker-tape></body></html>`);
+      doc.write(`<!DOCTYPE html><html><head><style>body{margin:0;padding:0;overflow:hidden;background:transparent;}</style></head><body><script type="module" src="https://widgets.tradingview-widget.com/w/en/tv-ticker-tape.js"><\/script><tv-ticker-tape symbols='NASDAQ:NVDA,NASDAQ:MSFT,NASDAQ:GOOG,NASDAQ:AAPL,NASDAQ:META,NASDAQ:TSLA,NASDAQ:AMZN,NASDAQ:PLTR,NASDAQ:AMD,NASDAQ:MU,NASDAQ:AVGO,NYSE:ORCL,NYSE:TSM,NASDAQ:SNDK' hover-type="performance-grid" show-hover theme="dark" transparent direction="left"></tv-ticker-tape></body></html>`);
       doc.close();
     }
     return () => {
