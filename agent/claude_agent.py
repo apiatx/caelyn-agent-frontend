@@ -2329,7 +2329,7 @@ class TradingAgent:
             resp = _httpx.post(
                 "https://api.x.ai/v1/chat/completions",
                 headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-                json={"model": "grok-3-fast", "max_tokens": max_tokens, "messages": oai_msgs},
+                json={"model": "grok-4-1-fast-reasoning", "max_tokens": max_tokens, "messages": oai_msgs},
                 timeout=60.0,
             )
             resp.raise_for_status()
@@ -2405,7 +2405,7 @@ class TradingAgent:
             resp = _httpx.post(
                 "https://api.x.ai/v1/chat/completions",
                 headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-                json={"model": "grok-3-fast", "max_tokens": 500, "messages": oai_msgs},
+                json={"model": "grok-4-1-fast-reasoning", "max_tokens": 500, "messages": oai_msgs},
                 timeout=15.0,
             )
             resp.raise_for_status()
@@ -2494,7 +2494,7 @@ class TradingAgent:
             resp = _httpx.post(
                 "https://api.x.ai/v1/chat/completions",
                 headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-                json={"model": "grok-3-fast", "max_tokens": max_tokens, "messages": oai_msgs},
+                json={"model": "grok-4-1-fast-reasoning", "max_tokens": max_tokens, "messages": oai_msgs},
                 timeout=90.0,
             )
             resp.raise_for_status()
@@ -3304,7 +3304,7 @@ class TradingAgent:
             a0 = _t.time()
             try:
                 text = await asyncio.wait_for(
-                    self._call_alt_model(agent_id, user_prompt, market_data, history, is_followup, category, chatbox_mode, preset_intent=preset_intent),
+                    self._call_alt_model(agent_id, user_prompt, market_data, history, is_followup, category, chatbox_mode, preset_intent=preset_intent, is_collab_agent=True),
                     timeout=90.0,
                 )
                 ms = int((_t.time() - a0) * 1000)
@@ -3446,7 +3446,7 @@ class TradingAgent:
             oai_msgs.append({"role": m["role"], "content": m["content"]})
         return oai_msgs
 
-    async def _call_alt_model(self, reasoning_model: str, user_prompt: str, market_data: dict, history: list = None, is_followup: bool = False, category: str = "", chatbox_mode: bool = False, preset_intent: str = None, skip_web_search: bool = False) -> str:
+    async def _call_alt_model(self, reasoning_model: str, user_prompt: str, market_data: dict, history: list = None, is_followup: bool = False, category: str = "", chatbox_mode: bool = False, preset_intent: str = None, skip_web_search: bool = False, is_collab_agent: bool = False) -> str:
         """Call a non-Claude model. When running solo, web search is enabled.
         When running as the reasoner in agent_collab mode (skip_web_search=True),
         web search is disabled because data sources already provided live data."""
@@ -3500,6 +3500,8 @@ class TradingAgent:
             if not api_key:
                 print("[ALT_MODEL] No XAI_API_KEY set")
                 return ""
+            # Model selection: reasoning for solo/primary, non-reasoning for collaborator
+            grok_model = "grok-4-1-fast-non-reasoning" if is_collab_agent else "grok-4-1-fast-reasoning"
             # Try Responses API first (supports web_search + x_search tools)
             try:
                 from openai import AsyncOpenAI
@@ -3508,7 +3510,7 @@ class TradingAgent:
                 if use_web_search:
                     tools = [{"type": "web_search"}, {"type": "x_search"}]
                 kwargs = {
-                    "model": "grok-3-fast",
+                    "model": grok_model,
                     "input": oai_messages,
                     "max_output_tokens": token_limit,
                 }
@@ -3517,13 +3519,13 @@ class TradingAgent:
                 resp = await client.responses.create(**kwargs)
                 text = resp.output_text or ""
                 search_tag = "+web_search+x_search" if use_web_search else ""
-                print(f"[ALT_MODEL] grok-3-fast{search_tag} responded: {len(text):,} chars")
+                print(f"[ALT_MODEL] {grok_model}{search_tag} responded: {len(text):,} chars")
                 if text:
                     return text
-                print("[ALT_MODEL] grok Responses API returned empty, trying chat completions")
+                print(f"[ALT_MODEL] {grok_model} Responses API returned empty, trying chat completions")
             except Exception as e:
                 import traceback
-                print(f"[ALT_MODEL] grok Responses API error: {e}")
+                print(f"[ALT_MODEL] {grok_model} Responses API error: {e}")
                 traceback.print_exc()
             # Fallback to chat completions (no search tools, but still gets response)
             try:
@@ -3532,7 +3534,7 @@ class TradingAgent:
                         "https://api.x.ai/v1/chat/completions",
                         headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
                         json={
-                            "model": "grok-3-fast",
+                            "model": grok_model,
                             "max_tokens": token_limit,
                             "messages": oai_messages,
                         },
@@ -3540,11 +3542,11 @@ class TradingAgent:
                     resp.raise_for_status()
                     data = resp.json()
                     text = data["choices"][0]["message"]["content"] or ""
-                    print(f"[ALT_MODEL] grok-3-fast (chat fallback) responded: {len(text):,} chars")
+                    print(f"[ALT_MODEL] {grok_model} (chat fallback) responded: {len(text):,} chars")
                     return text
             except Exception as e2:
                 import traceback
-                print(f"[ALT_MODEL] grok chat fallback also failed: {e2}")
+                print(f"[ALT_MODEL] {grok_model} chat fallback also failed: {e2}")
                 traceback.print_exc()
                 return ""
 
