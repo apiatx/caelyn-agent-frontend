@@ -29,6 +29,8 @@ interface ChatbotContextType {
   clearChat: () => void;
   hasUnread: boolean;
   setHasUnread: (v: boolean) => void;
+  reasoningModel: string;
+  setReasoningModel: (m: string) => void;
 }
 
 const ChatbotContext = createContext<ChatbotContextType | null>(null);
@@ -45,6 +47,7 @@ export function ChatbotProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStage, setLoadingStage] = useState('');
   const [hasUnread, setHasUnread] = useState(false);
+  const [reasoningModel, setReasoningModel] = useState('claude');
 
   const sendMessage = useCallback(async (prompt: string) => {
     if (!prompt.trim() || isLoading) return;
@@ -61,7 +64,7 @@ export function ChatbotProvider({ children }: { children: React.ReactNode }) {
       const res = await fetch(`${AGENT_BACKEND_URL}/api/query`, {
         method: 'POST',
         headers: authHeaders(),
-        body: JSON.stringify({ prompt: prompt.trim(), history: chatHistory.slice(-20), chatbox_mode: true }),
+        body: JSON.stringify({ prompt: prompt.trim(), history: chatHistory.slice(-20), chatbox_mode: true, reasoning_model: reasoningModel }),
       });
       if (!res.ok) throw new Error(`Status ${res.status}`);
       const raw = (await res.text()).trim();
@@ -89,7 +92,7 @@ export function ChatbotProvider({ children }: { children: React.ReactNode }) {
       setLoadingStage('');
       setIsLoading(false);
     }
-  }, [isLoading, chatHistory]);
+  }, [isLoading, chatHistory, reasoningModel]);
 
   const clearChat = useCallback(() => {
     setMessages([]);
@@ -98,7 +101,7 @@ export function ChatbotProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <ChatbotContext.Provider value={{ messages, isLoading, loadingStage, sendMessage, clearChat, hasUnread, setHasUnread }}>
+    <ChatbotContext.Provider value={{ messages, isLoading, loadingStage, sendMessage, clearChat, hasUnread, setHasUnread, reasoningModel, setReasoningModel }}>
       {children}
     </ChatbotContext.Provider>
   );

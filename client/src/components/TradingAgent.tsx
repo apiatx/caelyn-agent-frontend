@@ -18,17 +18,21 @@ function authHeaders(extra: Record<string, string> = {}): Record<string, string>
 
 // Map preset_intent → history category for automatic saving
 const INTENT_TO_HISTORY_CATEGORY: Record<string, string> = {
-  daily_briefing: 'overview', macro_outlook: 'overview', news_leaders: 'overview',
-  catalyst_scan: 'overview', cross_asset_trending: 'overview', social_momentum_scan: 'overview',
-  sector_rotation: 'overview',
-  best_trades: 'trades', long_term_conviction: 'trades', microcap_asymmetry: 'trades',
-  microcap_spec: 'trades', short_squeeze_scan: 'trades',
+  daily_briefing: 'daily_briefing', macro_outlook: 'macro', macro: 'macro',
+  news_leaders: 'headlines', headlines: 'headlines',
+  earnings_catalyst: 'upcoming_catalysts', catalyst_scan: 'upcoming_catalysts',
+  cross_asset_trending: 'trending_now',
+  social_momentum_scan: 'social_momentum', social_momentum: 'social_momentum',
+  sector_rotation: 'sector_rotation',
+  best_trades: 'best_trades', long_term_conviction: 'investments', investments: 'investments',
+  microcap_asymmetry: 'best_trades', microcap_spec: 'best_trades', short_squeeze_scan: 'best_trades',
+  crypto_focus: 'crypto', crypto: 'crypto',
   fundamental_leaders: 'fundamental', fundamental_acceleration: 'fundamental',
   earnings_watch: 'fundamental', insider_buying: 'fundamental',
   revenue_reaccelerating: 'fundamental', margin_expansion: 'fundamental',
   undervalued_growth: 'fundamental', institutional_accumulation: 'fundamental',
   free_cash_flow_leaders: 'fundamental',
-  crypto_focus: 'sectors', commodities_focus: 'sectors', sector_energy: 'sectors',
+  commodities_focus: 'sectors', sector_energy: 'sectors',
   sector_materials: 'sectors', sector_defense: 'sectors', sector_tech: 'sectors',
   sector_ai: 'sectors', sector_quantum: 'sectors', sector_financials: 'sectors',
   sector_healthcare: 'sectors', sector_real_estate: 'sectors',
@@ -358,7 +362,7 @@ export default function TradingAgent() {
   function humanReadableLabel(intent: string): string {
     const known: Record<string, string> = {
       daily_briefing: 'Daily Briefing', best_trades: 'Best Trades', macro_outlook: 'Macro Overview',
-      news_leaders: 'Headlines', catalyst_scan: 'Upcoming Catalysts', cross_asset_trending: 'Trending Now',
+      news_leaders: 'Headlines', earnings_catalyst: 'Upcoming Catalysts', catalyst_scan: 'Upcoming Catalysts', cross_asset_trending: 'Trending Now',
       social_momentum_scan: 'Social Momentum', sector_rotation: 'Sector Rotation',
       long_term_conviction: 'Best Investments', microcap_asymmetry: 'Asymmetric R:R',
       microcap_spec: 'Small Cap Spec', short_squeeze_scan: 'Short Squeeze',
@@ -490,6 +494,7 @@ export default function TradingAgent() {
       query: presetIntent ? '' : queryText,
       preset_intent: typeof presetIntent === 'string' ? presetIntent : null,
       conversation_id: freshChat ? null : (typeof conversationId === 'string' ? conversationId : null),
+      chatbox_mode: true,
       ...(csvData ? { csv_data: csvData } : {}),
     };
     if (collabConfig) {
@@ -2335,7 +2340,7 @@ export default function TradingAgent() {
       {l:'Daily Briefing', intent:'daily_briefing'},
       {l:'Macro Overview', intent:'macro_outlook'},
       {l:'Headlines', intent:'news_leaders'},
-      {l:'Upcoming Catalysts', intent:'catalyst_scan'},
+      {l:'Upcoming Catalysts', intent:'earnings_catalyst'},
       {l:'Trending Now', intent:'cross_asset_trending'},
       {l:'Social Momentum', intent:'social_momentum_scan'},
       {l:'Sector Rotation', intent:'sector_rotation'},
@@ -2585,7 +2590,7 @@ export default function TradingAgent() {
                   { id: 'full_collab', label: 'Full Collaboration', primary: 'claude', agents: ['claude', 'grok', 'gpt-4o', 'gemini', 'perplexity'], lock_agents: true, lock_reasoning: false },
                   { id: 'custom_collab', label: 'Custom Collaboration', primary: 'claude', agents: ['grok', 'perplexity'], lock_agents: false, lock_reasoning: false },
                 ];
-                const presetDefs = (collabOptions?.collab_presets?.length ? collabOptions.collab_presets : fallbackPresets).map((p: any) => ({
+                const presetDefs = (collabOptions?.presets?.length ? collabOptions.presets : fallbackPresets).map((p: any) => ({
                   id: p.id, label: p.label || p.name || p.id, primary: p.primary || 'claude',
                   agents: p.agents || [], lock_agents: p.lock_agents ?? true, lock_reasoning: p.lock_reasoning ?? false,
                 }));
