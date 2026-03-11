@@ -21,7 +21,7 @@ class XAISentimentProvider:
 
     def __init__(self, api_key: str):
         self.api_key = api_key
-        self.model = "grok-4-1-fast-non-reasoning"
+        self.model = "grok-3-fast"
         self.deep_model = "grok-4-1-fast-reasoning"  # Reasoning model for deep scans (matches Grok on x.com)
         self.headers = {
             "Content-Type": "application/json",
