@@ -3217,18 +3217,14 @@ class TradingAgent:
             effective_model = reasoning_model
         print(f"[AGENT] Sending to {effective_model} (selected={reasoning_model}, primary={primary_model}): {data_size:,} chars of market data (category={category}, chatbox_mode={chatbox_mode})")
 
-        # Non-Claude models: try the selected model first.
-        # In agent_collab mode, skip web search — data sources already provided live data.
-        # For preset/scan categories (data-heavy structured output), fall back to Claude
-        # if the alt model returns empty or errors — these must always produce results.
+        # ── Solo model mode ──
+        # When a specific solo model is selected (grok, gpt-4o, gemini, perplexity),
+        # ONLY that model is called. No fallback to Claude. No other LLM API is called.
+        # The solo model does its own web search and reasons with the proprietary data
+        # (finnhub, finviz, edgar, etc.) that was already gathered above.
+        _is_solo_mode = reasoning_model not in ("claude", "agent_collab", "all_agents")
         _is_agent_collab_alt = (reasoning_model == "agent_collab" and effective_model != "claude")
-        _FALLBACK_CATEGORIES = {
-            "daily_briefing", "briefing", "best_trades", "cross_asset_trending",
-            "sector_rotation", "earnings_catalyst", "crypto", "investments",
-            "social_momentum", "ticker_analysis", "portfolio_review",
-            "cross_market", "prediction_markets",
-        }
-        _should_fallback = preset_intent or category in _FALLBACK_CATEGORIES
+
         if effective_model != "claude":
             try:
                 result = await asyncio.wait_for(
@@ -3237,17 +3233,23 @@ class TradingAgent:
                 )
                 if result:
                     return result
-                # Always fall back to Claude when alt model returns empty —
-                # a Claude response is infinitely better than an error message.
-                print(f"[AGENT] {reasoning_model} returned empty for {category} (preset={preset_intent}) — falling back to Claude")
+                if _is_solo_mode:
+                    print(f"[AGENT] Solo {effective_model} returned empty for {category} (preset={preset_intent}) — no fallback in solo mode")
+                    return json.dumps({"display_type": "chat", "message": f"{effective_model} returned an empty response. Please try again."})
+                print(f"[AGENT] {effective_model} returned empty for {category} (preset={preset_intent}) — falling back to Claude")
             except asyncio.TimeoutError:
-                print(f"[AGENT] {reasoning_model} timed out for {category} (preset={preset_intent}) — falling back to Claude")
+                if _is_solo_mode:
+                    print(f"[AGENT] Solo {effective_model} timed out for {category} (preset={preset_intent}) — no fallback in solo mode")
+                    return json.dumps({"display_type": "chat", "message": f"{effective_model} timed out. Please try again — the model may be under heavy load."})
+                print(f"[AGENT] {effective_model} timed out for {category} (preset={preset_intent}) — falling back to Claude")
             except Exception as e:
-                print(f"[AGENT] {reasoning_model} failed ({e}) for {category} (preset={preset_intent}) — falling back to Claude")
+                if _is_solo_mode:
+                    print(f"[AGENT] Solo {effective_model} failed ({e}) for {category} (preset={preset_intent}) — no fallback in solo mode")
+                    return json.dumps({"display_type": "chat", "message": f"{effective_model} encountered an error: {str(e)}"})
+                print(f"[AGENT] {effective_model} failed ({e}) for {category} (preset={preset_intent}) — falling back to Claude")
 
         # Claude path: use async client + web search
-        # Both standalone claude and agent_collab always use the async web-search path —
-        # it handles large payloads better and gives Claude access to real-time data.
+        # Used for standalone claude selection or agent_collab mode (Claude is the default reasoner).
         try:
             return await asyncio.wait_for(
                 self._ask_claude_async_web_search(user_prompt, market_data, history, is_followup, category, chatbox_mode, reasoning_model=reasoning_model, preset_intent=preset_intent),
