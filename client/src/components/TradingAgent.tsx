@@ -493,15 +493,22 @@ export default function TradingAgent() {
       ...(csvData ? { csv_data: csvData } : {}),
     };
     if (collabConfig) {
-      if (collabConfig.preset === 'default') {
+      if (collabConfig.preset === 'full_collab') {
+        // Full Collaboration: all agents reason independently
+        payload.reasoning_model = 'all_agents';
+        payload.collab_agents = collabConfig.agents;
+        payload.primary_model = collabConfig.primary || 'claude';
+      } else if (collabConfig.preset === 'custom_collab') {
+        // Custom Collaboration: user-picked agents
+        payload.reasoning_model = 'agent_collab';
+        payload.collab_agents = collabConfig.agents;
+        payload.primary_model = collabConfig.primary || 'claude';
+      } else {
+        // Default: data pipeline collects, selected model synthesizes
         payload.reasoning_model = 'agent_collab';
         if (collabConfig.primary && collabConfig.primary !== 'claude') {
           payload.primary_model = collabConfig.primary;
         }
-      } else {
-        payload.reasoning_model = 'all_agents';
-        payload.collab_agents = collabConfig.agents;
-        payload.primary_model = collabConfig.primary;
       }
     } else {
       payload.reasoning_model = selectedModel;
@@ -2573,11 +2580,15 @@ export default function TradingAgent() {
             <div className="agent-collab-dropdown" style={{ position:'absolute', top:'100%', left:0, minWidth:280, background:'rgba(15,15,30,0.98)', border:'1px solid rgba(139,92,246,0.25)', borderRadius:12, boxShadow:'0 8px 32px rgba(0,0,0,0.5)', padding:'8px 0', zIndex:1000, paddingTop:12 }}>
               {/* PRESETS */}
               {(() => {
-                const presetDefs = [
+                const fallbackPresets = [
                   { id: 'default', label: 'Default', primary: 'claude', agents: ['grok', 'perplexity'], lock_agents: true, lock_reasoning: false },
                   { id: 'full_collab', label: 'Full Collaboration', primary: 'claude', agents: ['claude', 'grok', 'gpt-4o', 'gemini', 'perplexity'], lock_agents: true, lock_reasoning: false },
                   { id: 'custom_collab', label: 'Custom Collaboration', primary: 'claude', agents: ['grok', 'perplexity'], lock_agents: false, lock_reasoning: false },
                 ];
+                const presetDefs = (collabOptions?.collab_presets?.length ? collabOptions.collab_presets : fallbackPresets).map((p: any) => ({
+                  id: p.id, label: p.label || p.name || p.id, primary: p.primary || 'claude',
+                  agents: p.agents || [], lock_agents: p.lock_agents ?? true, lock_reasoning: p.lock_reasoning ?? false,
+                }));
                 const activePreset = presetDefs.find(p => p.id === collabConfig?.preset) || presetDefs[0];
                 const isReasoningLocked = activePreset.lock_reasoning;
                 const isAgentsLocked = activePreset.lock_agents;
