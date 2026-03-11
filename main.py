@@ -1816,9 +1816,10 @@ async def query_agent(
             print(f"[API] Conversation {conv_id} not found, creating new one")
             conv_id = None
 
-    # If client explicitly sent history, prefer it — handles model switches and message deletions
-    # Always trust client history when provided (even if shorter, e.g. after user deleted messages)
-    if body.history is not None:
+    # If client explicitly sent history WITH messages, prefer it — handles model switches
+    # and message deletions.  An empty list means the client has no history loaded,
+    # so fall back to the DB history to preserve follow-up context.
+    if body.history is not None and len(body.history) > 0:
         print(f"[API] Using client-provided history ({len(body.history)} msgs) over DB history ({len(history)} msgs)")
         history = body.history
 

@@ -2329,7 +2329,7 @@ class TradingAgent:
             resp = _httpx.post(
                 "https://api.x.ai/v1/chat/completions",
                 headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-                json={"model": "grok-3-fast", "max_tokens": max_tokens, "messages": oai_msgs},
+                json={"model": "grok-4-1-fast-non-reasoning", "max_tokens": max_tokens, "messages": oai_msgs},
                 timeout=60.0,
             )
             resp.raise_for_status()
@@ -2405,7 +2405,7 @@ class TradingAgent:
             resp = _httpx.post(
                 "https://api.x.ai/v1/chat/completions",
                 headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-                json={"model": "grok-3-fast", "max_tokens": 500, "messages": oai_msgs},
+                json={"model": "grok-4-1-fast-non-reasoning", "max_tokens": 500, "messages": oai_msgs},
                 timeout=15.0,
             )
             resp.raise_for_status()
@@ -2494,7 +2494,7 @@ class TradingAgent:
             resp = _httpx.post(
                 "https://api.x.ai/v1/chat/completions",
                 headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-                json={"model": "grok-3-fast", "max_tokens": max_tokens, "messages": oai_msgs},
+                json={"model": "grok-4-1-fast-non-reasoning", "max_tokens": max_tokens, "messages": oai_msgs},
                 timeout=90.0,
             )
             resp.raise_for_status()
@@ -3490,7 +3490,7 @@ class TradingAgent:
                 if use_web_search:
                     tools = [{"type": "web_search"}, {"type": "x_search"}]
                 kwargs = {
-                    "model": "grok-3-fast",
+                    "model": "grok-4-1-fast-non-reasoning",
                     "input": oai_messages,
                     "max_output_tokens": token_limit,
                 }
@@ -3499,7 +3499,7 @@ class TradingAgent:
                 resp = await client.responses.create(**kwargs)
                 text = resp.output_text or ""
                 search_tag = "+web_search+x_search" if use_web_search else ""
-                print(f"[ALT_MODEL] grok-3-fast{search_tag} responded: {len(text):,} chars")
+                print(f"[ALT_MODEL] grok-4-1-fast-non-reasoning{search_tag} responded: {len(text):,} chars")
                 if text:
                     return text
                 print("[ALT_MODEL] grok Responses API returned empty, trying chat completions")
@@ -3514,7 +3514,7 @@ class TradingAgent:
                         "https://api.x.ai/v1/chat/completions",
                         headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
                         json={
-                            "model": "grok-3-fast",
+                            "model": "grok-4-1-fast-non-reasoning",
                             "max_tokens": token_limit,
                             "messages": oai_messages,
                         },
@@ -3522,7 +3522,7 @@ class TradingAgent:
                     resp.raise_for_status()
                     data = resp.json()
                     text = data["choices"][0]["message"]["content"] or ""
-                    print(f"[ALT_MODEL] grok-3-fast (chat fallback) responded: {len(text):,} chars")
+                    print(f"[ALT_MODEL] grok-4-1-fast-non-reasoning (chat fallback) responded: {len(text):,} chars")
                     return text
             except Exception as e2:
                 import traceback
