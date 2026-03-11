@@ -1817,7 +1817,8 @@ async def query_agent(
             conv_id = None
 
     # If client explicitly sent history, prefer it — handles model switches and message deletions
-    if body.history is not None and len(body.history) > 0:
+    # Always trust client history when provided (even if shorter, e.g. after user deleted messages)
+    if body.history is not None:
         print(f"[API] Using client-provided history ({len(body.history)} msgs) over DB history ({len(history)} msgs)")
         history = body.history
 
