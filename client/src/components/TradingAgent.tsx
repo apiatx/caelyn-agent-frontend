@@ -2311,7 +2311,7 @@ export default function TradingAgent() {
 
   function renderAssistantMessage(msg: {role: string, content: string, parsed?: any}) {
     const s = msg.parsed?.structured || (msg.parsed?.display_type ? msg.parsed : {});
-    const displayType = s.display_type;
+    const displayType = msg.parsed?.display_type || s.display_type || msg.parsed?.type;
     const rawAnalysis = msg.parsed?.analysis || msg.parsed?.structured?.message || msg.parsed?.message || msg.content;
     const analysisText = (rawAnalysis && /^Response received\.?\s*(See panel data for details\.?)?$/i.test(rawAnalysis.trim())) ? '' : rawAnalysis;
     return <div>
