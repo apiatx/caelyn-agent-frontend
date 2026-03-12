@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { normalizeHistoryBuckets } from '@/lib/history';
 const AGENT_BACKEND_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
 const AGENT_API_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
 function getToken(): string | null {
@@ -219,7 +220,7 @@ export function HistoryPanel({ isOpen, onClose }: { isOpen: boolean; onClose: ()
       const res = await fetch(`${AGENT_BACKEND_URL}/api/history`, { headers: authHeaders() });
       if (res.ok) {
         const data = await res.json();
-        setHistory(data);
+        setHistory(normalizeHistoryBuckets(data) as HistoryData);
       }
     } catch (e) {
       console.error('[HISTORY] fetch error:', e);
@@ -241,6 +242,31 @@ export function HistoryPanel({ isOpen, onClose }: { isOpen: boolean; onClose: ()
       setBacktestLoading(false);
     }
   }, []);
+  const deleteHistoryEntry = useCallback(async (category: string, intent: string, entryId: string) => {
+    try {
+      const res = await fetch(`${AGENT_BACKEND_URL}/api/history/${encodeURIComponent(category)}/${encodeURIComponent(intent)}/${encodeURIComponent(entryId)}`, {
+        method: 'DELETE',
+        headers: authHeaders(),
+      });
+      if (!res.ok) throw new Error(`Delete failed: ${res.status}`);
+      await fetchHistory();
+    } catch (e) {
+      console.error('[HISTORY] delete entry error:', e);
+    }
+  }, [fetchHistory]);
+
+  const deleteHistoryIntent = useCallback(async (category: string, intent: string) => {
+    try {
+      const res = await fetch(`${AGENT_BACKEND_URL}/api/history/${encodeURIComponent(category)}/${encodeURIComponent(intent)}`, {
+        method: 'DELETE',
+        headers: authHeaders(),
+      });
+      if (!res.ok) throw new Error(`Delete intent failed: ${res.status}`);
+      await fetchHistory();
+    } catch (e) {
+      console.error('[HISTORY] delete intent error:', e);
+    }
+  }, [fetchHistory]);
   useEffect(() => {
     if (isOpen) {
       setView({ level: 'categories' });
@@ -363,27 +389,38 @@ export function HistoryPanel({ isOpen, onClose }: { isOpen: boolean; onClose: ()
         {intents.map(i => {
           const entries = getEntriesForIntent(view.categoryId, i.intent);
           return (
-            <button
-              key={i.intent}
-              onClick={() => {
-                if (entries.length > 0) {
-                  setView({ level: 'entries', categoryId: view.categoryId, intent: i.intent, label: i.label });
-                }
-              }}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '8px 12px', background: entries.length > 0 ? C.card : `${C.card}80`,
-                border: `1px solid ${C.border}`, borderRadius: 6, cursor: entries.length > 0 ? 'pointer' : 'default',
-                transition: 'all 0.15s', width: '100%', textAlign: 'left',
-                opacity: entries.length > 0 ? 1 : 0.4,
-              }}
-              className={entries.length > 0 ? 'panel-btn' : ''}
-            >
-              <span style={{ color: entries.length > 0 ? C.bright : C.dim, fontSize: 11, fontFamily: sansFont }}>{i.label}</span>
+            <div key={i.intent} style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+              <button
+                onClick={() => {
+                  if (entries.length > 0) {
+                    setView({ level: 'entries', categoryId: view.categoryId, intent: i.intent, label: i.label });
+                  }
+                }}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '8px 12px', background: entries.length > 0 ? C.card : `${C.card}80`,
+                  border: `1px solid ${C.border}`, borderRadius: 6, cursor: entries.length > 0 ? 'pointer' : 'default',
+                  transition: 'all 0.15s', width: '100%', textAlign: 'left',
+                  opacity: entries.length > 0 ? 1 : 0.4,
+                }}
+                className={entries.length > 0 ? 'panel-btn' : ''}
+              >
+                <span style={{ color: entries.length > 0 ? C.bright : C.dim, fontSize: 11, fontFamily: sansFont }}>{i.label}</span>
+                {entries.length > 0 && (
+                  <span style={{ color: C.dim, fontSize: 9, fontFamily: font }}>{entries.length}</span>
+                )}
+              </button>
               {entries.length > 0 && (
-                <span style={{ color: C.dim, fontSize: 9, fontFamily: font }}>{entries.length}</span>
+                <button
+                  onClick={(e) => { e.stopPropagation(); deleteHistoryIntent(view.categoryId, i.intent); }}
+                  title="Delete all entries"
+                  style={{ background: 'transparent', border: `1px solid ${C.border}`, borderRadius: 6, color: C.dim, cursor: 'pointer', padding: '6px 8px', fontSize: 10, fontFamily: font }}
+                  className="panel-btn"
+                >
+                  Del
+                </button>
               )}
-            </button>
+            </div>
           );
         })}
       </div>
@@ -416,7 +453,7 @@ export function HistoryPanel({ isOpen, onClose }: { isOpen: boolean; onClose: ()
       }
 
       return (
-        <button
+        <div
           key={entry.id}
           onClick={() => setView({ level: 'detail', categoryId: view.categoryId, intent: view.intent, label: view.label, entry, entryLabel: labelParts })}
           style={{
@@ -427,20 +464,33 @@ export function HistoryPanel({ isOpen, onClose }: { isOpen: boolean; onClose: ()
             boxSizing: 'border-box',
           }}
           className="panel-btn"
+          role="button"
         >
           <span style={{ color: C.bright, fontSize: 11, fontFamily: sansFont, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {labelParts}
           </span>
-          {pctBadge != null && (
-            <span style={{
-              color: pctBadge >= 0 ? C.green : C.red,
-              fontSize: 11, fontWeight: 700, fontFamily: font,
-              marginLeft: 8, flexShrink: 0,
-            }}>
-              {pctBadge >= 0 ? '+' : ''}{pctBadge.toFixed(1)}%
-            </span>
-          )}
-        </button>
+          <div style={{ display:'flex', alignItems:'center', gap:8, marginLeft: 8, flexShrink:0 }}>
+            {pctBadge != null && (
+              <span style={{
+                color: pctBadge >= 0 ? C.green : C.red,
+                fontSize: 11, fontWeight: 700, fontFamily: font,
+              }}>
+                {pctBadge >= 0 ? '+' : ''}{pctBadge.toFixed(1)}%
+              </span>
+            )}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                deleteHistoryEntry(view.categoryId, view.intent, entry.id);
+              }}
+              title="Delete entry"
+              style={{ background:'transparent', border:`1px solid ${C.border}`, borderRadius:4, color:C.dim, fontSize:9, padding:'2px 6px', cursor:'pointer' }}
+              className="panel-btn"
+            >
+              Del
+            </button>
+          </div>
+        </div>
       );
     };
     if (entries.length > 20) {
