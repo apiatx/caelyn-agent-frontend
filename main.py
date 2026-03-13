@@ -16,24 +16,28 @@ import uuid as _uuid
 from datetime import datetime as _dt, timezone as _tz
 
 from pathlib import Path
+from urllib.parse import urlparse, unquote
 
 AGENT_API_KEY = os.getenv("AGENT_API_KEY")
 _pg_startup_checked = False
 _pg_startup_attempts = 0
+_pg_last_init_error = None
 
 
 def _init_postgres_chat_storage_on_startup(reason: str = "startup"):
     """Ensure PostgreSQL chat tables exist in the live runtime entrypoint."""
-    global _pg_startup_checked, _pg_startup_attempts
+    global _pg_startup_checked, _pg_startup_attempts, _pg_last_init_error
     _pg_startup_attempts += 1
 
     db_url = os.getenv("DATABASE_URL")
     print(f"[STARTUP][PG] reason={reason} attempt={_pg_startup_attempts} DATABASE_URL detected={'YES' if bool(db_url) else 'NO'}")
     if not db_url:
         print("[STARTUP][PG] Skipping PostgreSQL init because DATABASE_URL is not set")
+        _pg_last_init_error = "DATABASE_URL not set"
         return
 
     if _pg_startup_checked:
+        _pg_last_init_error = None
         print("[STARTUP][PG] PostgreSQL init already completed in this process")
         return
 
@@ -50,6 +54,7 @@ def _init_postgres_chat_storage_on_startup(reason: str = "startup"):
         ok = _pg_init()
         print(f"[STARTUP][PG] table initialization {'SUCCESS' if ok else 'FAIL'}")
         if not ok:
+            _pg_last_init_error = "init_tables returned False"
             return
 
         after = _pg_probe()
@@ -59,7 +64,9 @@ def _init_postgres_chat_storage_on_startup(reason: str = "startup"):
             f"has_messages={'messages' in after.get('tables', [])}"
         )
         _pg_startup_checked = True
+        _pg_last_init_error = None
     except Exception as e:
+        _pg_last_init_error = str(e)
         print(f"[STARTUP][PG] FATAL PostgreSQL startup init error: {e}")
 
 
@@ -689,6 +696,65 @@ async def debug_echo(request: Request):
         })
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+def _safe_database_url_parts(db_url: str | None) -> tuple[str | None, str | None]:
+    if not db_url:
+        return None, None
+    try:
+        parsed = urlparse(db_url)
+        host = parsed.hostname
+        db_name = unquote((parsed.path or "").lstrip("/")) or None
+        return host, db_name
+    except Exception:
+        return None, None
+
+
+@app.get("/api/debug/db")
+async def debug_db(request: Request):
+    """Temporary debugging endpoint for PostgreSQL runtime state."""
+    _init_postgres_chat_storage_on_startup("debug_endpoint")
+    db_url = os.getenv("DATABASE_URL")
+    database_host, database_name = _safe_database_url_parts(db_url)
+
+    current_database = None
+    current_schema = None
+    public_tables = []
+    pg_probe_error = None
+    try:
+        from data.pg_storage import startup_probe as _pg_probe
+        probe = _pg_probe()
+        current_database = probe.get("database")
+        current_schema = probe.get("schema")
+        public_tables = probe.get("tables") or []
+        pg_probe_error = probe.get("error")
+    except Exception as e:
+        pg_probe_error = str(e)
+
+    pg_backend_active = False
+    try:
+        import data.chat_history as _chat_hist
+        _chat_hist._ensure_postgres_backend()
+        pg_backend_active = bool(getattr(_chat_hist, "_use_postgres", False))
+    except Exception:
+        pg_backend_active = False
+
+    dev_domain = os.getenv("REPLIT_DEV_DOMAIN")
+    suggested_debug_url = f"https://{dev_domain}/api/debug/db" if dev_domain else "/api/debug/db"
+
+    return {
+        "database_host": database_host,
+        "database_name": database_name,
+        "current_database": current_database,
+        "current_schema": current_schema,
+        "public_tables": public_tables,
+        "init_tables_executed_in_process": bool(_pg_startup_checked),
+        "postgres_backend_active_in_process": pg_backend_active,
+        "last_initialization_error": _pg_last_init_error,
+        "pg_probe_error": pg_probe_error,
+        "init_attempts": _pg_startup_attempts,
+        "suggested_debug_url": suggested_debug_url,
+    }
 
 
 @app.get("/api/presets")
