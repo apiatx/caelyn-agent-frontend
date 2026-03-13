@@ -18,6 +18,46 @@ from datetime import datetime as _dt, timezone as _tz
 from pathlib import Path
 
 AGENT_API_KEY = os.getenv("AGENT_API_KEY")
+_pg_startup_checked = False
+
+
+def _init_postgres_chat_storage_on_startup():
+    """Ensure PostgreSQL chat tables exist in the live runtime entrypoint."""
+    global _pg_startup_checked
+    if _pg_startup_checked:
+        return
+
+    db_url = os.getenv("DATABASE_URL")
+    print(f"[STARTUP][PG] DATABASE_URL detected={'YES' if bool(db_url) else 'NO'}")
+    if not db_url:
+        print("[STARTUP][PG] Skipping PostgreSQL init because DATABASE_URL is not set")
+        _pg_startup_checked = True
+        return
+
+    try:
+        from data.pg_storage import startup_probe as _pg_probe, init_tables as _pg_init
+
+        before = _pg_probe()
+        print(
+            f"[STARTUP][PG] connection={'OK' if before.get('connected') else 'FAILED'} "
+            f"database={before.get('database')} schema={before.get('schema')} tables_before={before.get('tables', [])}"
+        )
+
+        print("[STARTUP][PG] table initialization start (schema=public)")
+        ok = _pg_init()
+        print(f"[STARTUP][PG] init_tables_ran={'YES' if ok else 'NO'}")
+        if not ok:
+            return
+
+        after = _pg_probe()
+        print(
+            f"[STARTUP][PG] tables_after={after.get('tables', [])} "
+            f"has_conversations={'conversations' in after.get('tables', [])} "
+            f"has_messages={'messages' in after.get('tables', [])}"
+        )
+        _pg_startup_checked = True
+    except Exception as e:
+        print(f"[STARTUP][PG] FATAL PostgreSQL startup init error: {e}")
 
 
 def _jwt_or_key(request: Request, api_key) -> bool:
@@ -58,6 +98,8 @@ class JWTAuthMiddleware:
 
 @asynccontextmanager
 async def lifespan(app):
+    _init_postgres_chat_storage_on_startup()
+
     # Diagnostic: confirm storage backends
     try:
         from data.prompt_history import _use_postgres as _ph_pg, _use_object_storage as _ph_obj, _use_replit_db as _ph_db
@@ -589,6 +631,7 @@ async def _edgar_cache_loop():
 
 async def _wait_for_init():
     import asyncio
+    _init_postgres_chat_storage_on_startup()
     if _init_done:
         return
     if _init_error:

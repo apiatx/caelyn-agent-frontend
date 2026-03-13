@@ -16,7 +16,7 @@ _VALID_ID_PATTERN = re.compile(r'^[a-f0-9]{8}-[a-f0-9]{4}$')
 _use_postgres = False
 _use_object_storage = False
 _use_replit_db = False
-_pg_required = bool(os.environ.get("DATABASE_URL") or os.environ.get("REPLIT_DB_URL_POSTGRES"))
+_pg_required = bool(os.environ.get("DATABASE_URL"))
 
 # PostgreSQL functions (primary)
 try:
@@ -40,6 +40,24 @@ except Exception as e:
 
 if _pg_required and not _use_postgres:
     print("[CHAT_HISTORY] WARNING: DATABASE_URL is set but PostgreSQL init failed; legacy fallback disabled for production")
+
+
+def _ensure_postgres_backend() -> bool:
+    """Retry PostgreSQL activation if DATABASE_URL is configured."""
+    global _use_postgres
+    if _use_postgres:
+        return True
+    if not _pg_required:
+        return False
+    try:
+        if _pg_available():
+            _pg_init()
+            _use_postgres = True
+            print("[CHAT_HISTORY] PostgreSQL backend activated")
+            return True
+    except Exception as e:
+        print(f"[CHAT_HISTORY] PostgreSQL activation failed: {e}")
+    return False
 
 
 def _validate_id(conv_id: str) -> bool:
@@ -72,13 +90,12 @@ def create_conversation(first_query: str, session_id: str | None = None) -> dict
         "messages": [],
     }
 
-    if _use_postgres:
+    if _ensure_postgres_backend():
         _pg_chat_create(conv_id, title=title, session_id=session_id)
         return _pg_chat_read(conv_id) or conversation
 
     if _pg_required:
-        # Production mode requires PostgreSQL; return deterministic object even on outage.
-        return conversation
+        raise RuntimeError("PostgreSQL required for chat persistence but is unavailable")
 
     return _fallback_create(first_query)
 
@@ -95,7 +112,7 @@ def append_message(
 ) -> bool:
     if not _validate_id(conv_id):
         return False
-    if not _use_postgres:
+    if not _ensure_postgres_backend():
         return False
     return _pg_chat_append(
         conv_id=conv_id,
@@ -112,7 +129,7 @@ def save_messages(conv_id: str, messages: list):
     if not _validate_id(conv_id):
         return False
 
-    if _use_postgres:
+    if _ensure_postgres_backend():
         title = None
         if messages and isinstance(messages[0], dict) and messages[0].get("role") == "user":
             base = (messages[0].get("content") or "").strip()
@@ -125,13 +142,13 @@ def save_messages(conv_id: str, messages: list):
 def get_conversation(conv_id: str) -> dict | None:
     if not _validate_id(conv_id):
         return None
-    if _use_postgres:
+    if _ensure_postgres_backend():
         return _pg_chat_read(conv_id)
     return None
 
 
 def list_conversations() -> list:
-    if _use_postgres:
+    if _ensure_postgres_backend():
         return _pg_chat_list()
     return []
 
@@ -139,7 +156,7 @@ def list_conversations() -> list:
 def delete_conversation(conv_id: str) -> bool:
     if not _validate_id(conv_id):
         return False
-    if _use_postgres:
+    if _ensure_postgres_backend():
         return _pg_chat_delete(conv_id)
     return False
 
