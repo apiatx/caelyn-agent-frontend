@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import caelynLogo from "@assets/image_1771528728963.png";
 import { useAuth } from '@/contexts/AuthContext';
+import { normalizeHistory, type NormalizedHistoryEntry } from '@/lib/history';
 import {
   applyPresetState,
   buildCollabPayload,
@@ -306,7 +307,7 @@ export default function TradingAgent() {
   const [screenerSortCol, setScreenerSortCol] = useState('');
   const [screenerSortAsc, setScreenerSortAsc] = useState(true);
   const [groupExpanded, setGroupExpanded] = useState<Record<string, boolean>>({ g1: true, g2: true, g3: true, g4: true, g5: true });
-  const [recentHistory, setRecentHistory] = useState<Array<{key: string, category: string, intent: string, id: string, timestamp: number, content: string, display_type: string | null, model_used?: string, query?: string}>>([]);
+  const [recentHistory, setRecentHistory] = useState<NormalizedHistoryEntry[]>([]);
   const [leftRailSearch, setLeftRailSearch] = useState('');
   const [expandedRiskIds, setExpandedRiskIds] = useState<Set<string>>(new Set());
   const [leftRailOpen, setLeftRailOpen] = useState(false);
@@ -366,14 +367,8 @@ export default function TradingAgent() {
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (!data) return;
-        const flat: typeof recentHistory = [];
-        for (const [key, bucket] of Object.entries(data as Record<string, any>)) {
-          for (const entry of (bucket as any).entries || []) {
-            flat.push({ key, category: (bucket as any).category, intent: (bucket as any).intent, ...entry });
-          }
-        }
-        flat.sort((a, b) => b.timestamp - a.timestamp);
-        setRecentHistory(flat.slice(0, 5));
+        const flat = normalizeHistory(data);
+        setRecentHistory(flat.slice(0, 10));
       })
       .catch(() => {});
   }
@@ -496,6 +491,7 @@ export default function TradingAgent() {
       let responseText = data.analysis?.trim() || data.structured?.message?.trim() || data.message?.trim() || '';
       const assistantMsg: PanelMessage = { role: 'assistant', content: responseText, parsed: data, timestamp: Date.now() };
       setPanels(prev => prev.map(p => p.id === panelId ? { ...p, thread: [...(p.thread || []), assistantMsg] } : p));
+      fetchRecentHistory();
     } catch (err: any) {
       const errMsg: PanelMessage = { role: 'assistant', content: `Follow-up failed: ${err.message || 'Unknown error'}`, timestamp: Date.now() };
       setPanels(prev => prev.map(p => p.id === panelId ? { ...p, thread: [...(p.thread || []), errMsg] } : p));
@@ -630,6 +626,7 @@ export default function TradingAgent() {
         reasoningModel: data?.meta?.reasoning_model || (collabConfig ? collabConfig.reasoningModelRequest : selectedModel),
       };
       setPanels(prev => [...prev, newPanel]);
+      fetchRecentHistory();
       // Auto-save ALL successful responses to history
       const usedModel = data?.meta?.reasoning_model || (collabConfig ? collabConfig.reasoningModelRequest : selectedModel);
       if (presetIntent) {
