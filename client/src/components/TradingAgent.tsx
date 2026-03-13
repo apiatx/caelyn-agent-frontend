@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import caelynLogo from "@assets/image_1771528728963.png";
 import { useAuth } from '@/contexts/AuthContext';
-import { normalizeHistory, type NormalizedHistoryEntry } from '@/lib/history';
+import { normalizeHistory, normalizeNewHistoryFlat, type NormalizedHistoryEntry } from '@/lib/history';
 import {
   applyPresetState,
   buildCollabPayload,
@@ -363,12 +363,16 @@ export default function TradingAgent() {
   }, [collabConfig?.reasoningModelRequest]);
 
   function fetchRecentHistory() {
-    fetch(`${AGENT_BACKEND_URL}/api/history`, { headers: authHeaders() })
+    fetch(`${AGENT_BACKEND_URL}/api/history/recent?limit=10`, { headers: authHeaders() })
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (!data) return;
-        const flat = normalizeHistory(data);
-        setRecentHistory(flat.slice(0, 10));
+        // Detect new format { items: [...] } vs old bucket format
+        if (data && typeof data === 'object' && (Array.isArray(data.items) || Array.isArray(data.recent))) {
+          setRecentHistory(normalizeNewHistoryFlat(data).slice(0, 10));
+        } else {
+          setRecentHistory(normalizeHistory(data).slice(0, 10));
+        }
       })
       .catch(() => {});
   }
