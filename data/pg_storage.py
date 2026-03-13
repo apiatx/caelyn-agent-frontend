@@ -1,13 +1,17 @@
 """
 PostgreSQL storage backend for prompt history and chat history.
-Uses the DATABASE_URL environment variable set by Replit's PostgreSQL add-on.
+Prefers NEON_DATABASE_URL (external cloud DB, works in dev + production).
+Falls back to DATABASE_URL (Replit internal Helium DB, dev-only).
 Auto-creates tables on first use. Survives all deploys and autoscale events.
 """
 
 import json
 import os
 
-_DATABASE_URL = os.environ.get("DATABASE_URL")
+# NEON_DATABASE_URL is the externally-accessible cloud DB (works in both dev and
+# production deployments). DATABASE_URL points to Replit's internal Helium host
+# which is only reachable from the dev workspace, not from deployed containers.
+_DATABASE_URL = os.environ.get("NEON_DATABASE_URL") or os.environ.get("DATABASE_URL")
 _pool = None
 _available = False
 

@@ -54,3 +54,4 @@ build = ["bash", "-c", "pip install anthropic openai httpx fastapi slowapi pydan
 [userenv]
 
 [userenv.shared]
+NEON_DATABASE_URL = "postgresql://neondb_owner:npg_Z6ezotKuQPq1@ep-young-waterfall-aedg6yhx-pooler.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
