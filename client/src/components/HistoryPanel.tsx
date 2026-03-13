@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { normalizeHistoryBuckets } from '@/lib/history';
+import { normalizeHistoryBuckets, normalizeNewHistoryApiResponse } from '@/lib/history';
 const AGENT_BACKEND_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
 const AGENT_API_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
 function getToken(): string | null {
@@ -220,7 +220,12 @@ export function HistoryPanel({ isOpen, onClose }: { isOpen: boolean; onClose: ()
       const res = await fetch(`${AGENT_BACKEND_URL}/api/history`, { headers: authHeaders() });
       if (res.ok) {
         const data = await res.json();
-        setHistory(normalizeHistoryBuckets(data) as HistoryData);
+        // Detect new format { items: [...], recent: [...], total_count: N }
+        if (data && typeof data === 'object' && (Array.isArray(data.items) || Array.isArray(data.recent))) {
+          setHistory(normalizeNewHistoryApiResponse(data) as HistoryData);
+        } else {
+          setHistory(normalizeHistoryBuckets(data) as HistoryData);
+        }
       }
     } catch (e) {
       console.error('[HISTORY] fetch error:', e);
@@ -521,6 +526,16 @@ export function HistoryPanel({ isOpen, onClose }: { isOpen: boolean; onClose: ()
     const conversation = (entry as any).conversation as { role: string; content: string }[] | undefined;
     return (
       <div style={{ padding: 16, flex: 1, overflowY: 'auto' }}>
+        {entry.query && (
+          <div style={{
+            marginBottom: 10, padding: '7px 10px', background: '#12141a',
+            border: `1px solid ${C.border}`, borderRadius: 6,
+            color: C.text, fontSize: 11, fontFamily: sansFont, lineHeight: 1.5,
+          }}>
+            <span style={{ color: C.dim, fontSize: 9, fontFamily: font, textTransform: 'uppercase', letterSpacing: 1, display: 'block', marginBottom: 3 }}>Query</span>
+            {entry.query}
+          </div>
+        )}
         <div style={{ color: C.dim, fontSize: 9, fontFamily: font, marginBottom: 8 }}>
           {new Date(entry.timestamp * 1000).toLocaleString()}
           {entry.model_used && <span style={{ marginLeft: 8, color: C.purple }}>{modelLabel(entry.model_used)}</span>}

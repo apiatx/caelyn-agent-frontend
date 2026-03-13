@@ -73,3 +73,78 @@ export function normalizeHistory(apiData: unknown): NormalizedHistoryEntry[] {
 
   return flat.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 }
+
+/**
+ * Normalizes the NEW backend format: { items: [...], recent: [...], total_count: N }
+ * into the bucket structure the HistoryPanel expects.
+ */
+export function normalizeNewHistoryApiResponse(apiData: unknown): Record<string, HistoryBucket> {
+  if (!apiData || typeof apiData !== 'object') return {};
+  const data = apiData as any;
+
+  const items: any[] = Array.isArray(data.items)
+    ? data.items
+    : Array.isArray(data.recent)
+    ? data.recent
+    : [];
+
+  const out: Record<string, HistoryBucket> = {};
+
+  for (const item of items) {
+    if (!item || typeof item !== 'object') continue;
+    const category = String(item.category || 'terminal');
+    const intent = String(item.intent || 'freeform_query');
+    const key = `${category}::${intent}`;
+    if (!out[key]) out[key] = { category, intent, entries: [] };
+
+    const ts = toSafeTimestamp(item.timestamp);
+    out[key].entries.push({
+      id: String(item.id || `${category}-${intent}-${ts}-${Math.random()}`),
+      timestamp: ts,
+      content: typeof item.content === 'string' ? item.content : '',
+      display_type: item.display_type != null ? String(item.display_type) : null,
+      query: typeof item.query === 'string' ? item.query : undefined,
+      model_used: typeof item.model_used === 'string' ? item.model_used : undefined,
+      tickers: Array.isArray(item.tickers) ? item.tickers as any : undefined,
+    });
+  }
+
+  for (const bucket of Object.values(out)) {
+    bucket.entries.sort((a, b) => b.timestamp - a.timestamp);
+  }
+
+  return out;
+}
+
+/**
+ * Flattens the new { items: [...] } format directly into NormalizedHistoryEntry[].
+ * Use this in TradingAgent for the recent history sidebar.
+ */
+export function normalizeNewHistoryFlat(apiData: unknown): NormalizedHistoryEntry[] {
+  if (!apiData || typeof apiData !== 'object') return [];
+  const data = apiData as any;
+
+  const items: any[] = Array.isArray(data.items)
+    ? data.items
+    : Array.isArray(data.recent)
+    ? data.recent
+    : [];
+
+  return items.map((item: any) => {
+    const category = String(item.category || 'terminal');
+    const intent = String(item.intent || 'freeform_query');
+    const ts = toSafeTimestamp(item.timestamp);
+    return {
+      id: String(item.id || `${category}-${intent}-${ts}`),
+      timestamp: ts,
+      content: typeof item.content === 'string' ? item.content : '',
+      display_type: item.display_type != null ? String(item.display_type) : null,
+      query: typeof item.query === 'string' ? item.query : undefined,
+      model_used: typeof item.model_used === 'string' ? item.model_used : undefined,
+      tickers: Array.isArray(item.tickers) ? item.tickers as any : undefined,
+      key: `${category}::${intent}`,
+      category,
+      intent,
+    };
+  }).sort((a, b) => b.timestamp - a.timestamp);
+}
