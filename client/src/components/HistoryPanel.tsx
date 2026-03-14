@@ -13,17 +13,20 @@ function authHeaders(): Record<string, string> {
 }
 // Human-readable category title map (used for both predefined and dynamic categories)
 const CATEGORY_TITLE_MAP: Record<string, string> = {
-  overview: 'Overview', trades: 'Trades & Ideas', fundamental: 'Fundamental',
-  sectors: 'Sectors', ta_screener: 'TA Screener',
-  earnings_agent: 'Earnings Agent', prediction_markets: 'Prediction Markets',
-  news_intelligence: 'NotifAI', terminal: 'Terminal',
+  terminal: 'Terminal Chat', overview: 'Overview', trades: 'Trades & Ideas',
+  fundamental: 'Fundamental', sectors: 'Sectors', ta_screener: 'TA Screener',
+  earnings_agent: 'Earnings', prediction_markets: 'Prediction Markets',
+  news_intelligence: 'NotifAI',
 };
 function categoryTitle(id: string): string {
   if (CATEGORY_TITLE_MAP[id]) return CATEGORY_TITLE_MAP[id];
   return id.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
-// Must match TradingAgent.tsx promptGroups exactly
+// Section order: Terminal Chat first, NotifAI last
 const CATEGORIES: { id: string; title: string; intents: { label: string; intent: string }[] }[] = [
+  { id: 'terminal', title: 'Terminal Chat', intents: [
+    { label: 'Terminal Query', intent: 'freeform_query' },
+  ]},
   { id: 'overview', title: 'Overview', intents: [
     { label: 'Daily Briefing', intent: 'daily_briefing' },
     { label: 'Macro Overview', intent: 'macro_overview' },
@@ -80,7 +83,7 @@ const CATEGORIES: { id: string; title: string; intents: { label: string; intent:
     { label: 'Momentum Shifts', intent: 'momentum_shift_scan' },
     { label: 'Volume & Movers', intent: 'volume_movers_scan' },
   ]},
-  { id: 'earnings_agent', title: 'Earnings Agent', intents: [
+  { id: 'earnings_agent', title: 'Earnings', intents: [
     { label: 'Earnings Agent', intent: 'earnings_agent' },
   ]},
   { id: 'prediction_markets', title: 'Prediction Markets', intents: [
@@ -88,9 +91,6 @@ const CATEGORIES: { id: string; title: string; intents: { label: string; intent:
   ]},
   { id: 'news_intelligence', title: 'NotifAI', intents: [
     { label: 'NotifAI', intent: 'news_intelligence' },
-  ]},
-  { id: 'terminal', title: 'Terminal', intents: [
-    { label: 'Terminal Query', intent: 'freeform_query' },
   ]},
 ];
 interface TickerBacktest {
@@ -315,6 +315,30 @@ export function HistoryPanel({ isOpen, onClose }: { isOpen: boolean; onClose: ()
       </div>
     );
   }
+  // Computes a section-level gain/loss % by averaging backend-provided cumulative_pct
+  // values from backtestMap across all entries in the category. Returns null if no data.
+  function sectionPerf(cat: typeof CATEGORIES[0]): number | null {
+    const vals: number[] = [];
+    for (const intent of cat.intents) {
+      const entries = getEntriesForIntent(cat.id, intent.intent);
+      for (const entry of entries) {
+        const bt = backtestMap[entry.id];
+        if (bt != null && typeof bt.cumulative_pct === 'number' && isFinite(bt.cumulative_pct)) {
+          vals.push(bt.cumulative_pct);
+        } else {
+          // Also use inline ticker data if backtest map doesn't have this entry
+          const priced = entry.tickers?.filter(t => typeof t.pct_change === 'number' && t.pct_change != null) || [];
+          if (priced.length > 0) {
+            const avg = priced.reduce((s, t) => s + t.pct_change!, 0) / priced.length;
+            vals.push(avg);
+          }
+        }
+      }
+    }
+    if (vals.length === 0) return null;
+    return vals.reduce((s, v) => s + v, 0) / vals.length;
+  }
+
   function renderCategories() {
     const knownCatIds = new Set(CATEGORIES.map(c => c.id));
     const dynamicCats: { id: string; title: string; count: number }[] = [];
@@ -330,6 +354,7 @@ export function HistoryPanel({ isOpen, onClose }: { isOpen: boolean; onClose: ()
       <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
         {CATEGORIES.map(cat => {
           const count = countForCategory(cat);
+          const perf = sectionPerf(cat);
           return (
             <button
               key={cat.id}
@@ -346,11 +371,20 @@ export function HistoryPanel({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                 <span style={{ fontSize: 7, color: C.dim }}>&#9654;</span>
                 <span style={{ color: C.bright, fontSize: 12, fontWeight: 600, fontFamily: sansFont }}>{cat.title}</span>
               </div>
-              {count > 0 && (
-                <span style={{ color: C.blue, fontSize: 10, fontWeight: 600, fontFamily: font, padding: '2px 8px', background: `${C.blue}12`, borderRadius: 10 }}>
-                  {count}
-                </span>
-              )}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                {count > 0 && (
+                  <span style={{ color: C.blue, fontSize: 10, fontWeight: 600, fontFamily: font, padding: '2px 8px', background: `${C.blue}12`, borderRadius: 10 }}>
+                    {count}
+                  </span>
+                )}
+                {count > 0 && (
+                  perf != null
+                    ? <span style={{ color: perf >= 0 ? C.green : C.red, fontSize: 10, fontWeight: 700, fontFamily: font, minWidth: 40, textAlign: 'right' }}>
+                        {perf >= 0 ? '+' : ''}{perf.toFixed(1)}%
+                      </span>
+                    : <span style={{ color: C.dim, fontSize: 10, fontFamily: font, opacity: 0.5 }}>—</span>
+                )}
+              </div>
             </button>
           );
         })}
