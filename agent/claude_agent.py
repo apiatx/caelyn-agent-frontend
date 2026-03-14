@@ -3656,47 +3656,28 @@ class TradingAgent:
                     "The following are targeted domain findings from collaborating models. "
                     "They supplement the proprietary structured data above. "
                     "Cross-reference them with the quantitative data — where they converge, "
-                    "conviction is stronger. Where they diverge, flag the tension."
+                    "conviction is stronger. Where they diverge, flag the tension. "
+                    "Do NOT mention the individual models by name in your response."
                 ),
                 "findings": collab_findings,
                 "formatted": "\n\n".join(finding_sections),
             }
 
-        # ── Build synthesis prompt with format enforcement ────────────────────
-        if collab_findings:
-            collab_summary = "\n\n".join(
-                f"[{_agent_labels.get(a, a)}]\n{t}" for a, t in collab_findings.items()
-            )
-            synthesis_prompt = (
-                f"{user_prompt}\n\n"
-                f"══════════════════════════════════════════════════════════════\n"
-                f"CAELYN COLLABORATIVE CONTEXT — ADDITIONAL DOMAIN FINDINGS\n"
-                f"══════════════════════════════════════════════════════════════\n"
-                f"The following targeted findings have been gathered by specialist models\n"
-                f"to supplement the proprietary structured market data above.\n\n"
-                f"{collab_summary}\n\n"
-                f"══════════════════════════════════════════════════════════════\n"
-                f"YOUR TASK: Synthesize the proprietary data (structured market context)\n"
-                f"WITH the specialist findings above into your final authoritative analysis.\n"
-                f"- Proprietary data is authoritative for quantitative signals.\n"
-                f"- Specialist findings add social, news, and research context.\n"
-                f"- Where they agree, conviction is higher. Where they conflict, flag it.\n"
-                f"- Do NOT mention the individual models by name in your response.\n"
-                f"- Respond in your normal structured JSON format for this category.\n"
-            )
-        else:
-            # No collaborator findings came back — run as standard single-model
-            synthesis_prompt = user_prompt
-
         # ── Call the final reasoning model ────────────────────────────────────
-        print(f"[CAELYN] Calling final model '{final_model}' with {len(synthesis_prompt):,} char prompt + "
+        # IMPORTANT: Pass the original user_prompt (not a synthesis_prompt) so that
+        # _build_prompt receives the clean preset query and correctly applies the
+        # category-specific format contracts (BEST_TRADES_CONTRACT, TRENDING_VALIDATION_PROMPT,
+        # etc.) via the system prompt. Collab findings are already embedded in
+        # synthesis_market_data["_caelyn_collab_findings"] and will appear in the
+        # [MARKET DATA] section — no need to repeat them in the user message.
+        print(f"[CAELYN] Calling final model '{final_model}' with {len(user_prompt):,} char prompt + "
               f"{len(json.dumps(synthesis_market_data, default=str)):,} char context")
 
         if final_model == "claude":
             try:
                 return await asyncio.wait_for(
                     self._ask_claude_async_web_search(
-                        synthesis_prompt, synthesis_market_data, history, is_followup,
+                        user_prompt, synthesis_market_data, history, is_followup,
                         category, chatbox_mode, reasoning_model="agent_collab", preset_intent=preset_intent,
                     ),
                     timeout=120.0,
@@ -3708,7 +3689,7 @@ class TradingAgent:
                 try:
                     return await asyncio.wait_for(
                         asyncio.to_thread(
-                            self._ask_claude, synthesis_prompt, synthesis_market_data,
+                            self._ask_claude, user_prompt, synthesis_market_data,
                             history, is_followup, category, chatbox_mode,
                             reasoning_model="agent_collab", preset_intent=preset_intent,
                         ),
@@ -3724,14 +3705,14 @@ class TradingAgent:
             try:
                 if final_model == "grok":
                     _final_coro = self._call_grok_via_provider(
-                        synthesis_prompt, synthesis_market_data,
+                        user_prompt, synthesis_market_data,
                         history, is_followup, category, chatbox_mode,
                         preset_intent=preset_intent,
                         is_collab_agent=False,
                     )
                 else:
                     _final_coro = self._call_alt_model(
-                        final_model, synthesis_prompt, synthesis_market_data,
+                        final_model, user_prompt, synthesis_market_data,
                         history, is_followup, category, chatbox_mode,
                         preset_intent=preset_intent, skip_web_search=True,
                     )
