@@ -24,17 +24,21 @@ _use_object_storage = False
 _obj_client = None
 _use_replit_db = False
 _replit_db = None
+_pg_write_bucket = None
+_pg_read_bucket = None
 
 # 1. Try PostgreSQL first (most reliable — real database)
 try:
     from data.pg_storage import is_available as _pg_available, init_tables as _pg_init
-    from data.pg_storage import ph_read as _pg_read, ph_write as _pg_write
+    from data.pg_storage import ph_read as _pg_read, ph_write as _pg_write, ph_write_bucket as _pg_write_bucket, ph_read_bucket as _pg_read_bucket
     if _pg_available():
         _pg_init()
         _use_postgres = True
         print("[HISTORY] Using PostgreSQL for prompt history (persistent across deploys)")
 except Exception as e:
     print(f"[HISTORY] PostgreSQL unavailable ({e}), trying Object Storage...")
+    _pg_write_bucket = None
+    _pg_read_bucket = None
 
 # 2. Try Object Storage
 if not _use_postgres:
@@ -298,9 +302,26 @@ def save_response(category: str, intent: str, content: str, display_type: str | 
         entry["tickers"] = tickers
     if conversation:
         entry["conversation"] = conversation
+
+    key = f"{category}::{intent}"
+
+    # PostgreSQL fast path: single-bucket read + UPSERT — no global read/write, no delete cascade
+    if _use_postgres and _pg_write_bucket and _pg_read_bucket:
+        with _get_lock(user_id):
+            bucket = _pg_read_bucket(user_id, key) or {"category": category, "intent": intent, "entries": []}
+            entries = bucket.get("entries", [])
+            entries.insert(0, entry)
+            if len(entries) > MAX_PER_INTENT:
+                entries = entries[:MAX_PER_INTENT]
+            bucket["entries"] = entries
+            bucket["category"] = category
+            bucket["intent"] = intent
+            _pg_write_bucket(user_id, key, bucket)
+        return entry
+
+    # Non-PostgreSQL path: full read/write (object storage / replit db / file)
     with _get_lock(user_id):
         data = _read(user_id)
-        key = f"{category}::{intent}"
         if key not in data:
             data[key] = {"category": category, "intent": intent, "entries": []}
         entries = data[key]["entries"]
