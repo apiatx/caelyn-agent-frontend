@@ -2581,20 +2581,35 @@ export default function TradingAgent() {
         <button onClick={() => csvInputRef.current?.click()} title="Upload CSV watchlist" style={{ width:28, height:28, display:'flex', alignItems:'center', justifyContent:'center', background: csvData ? 'rgba(32,144,208,0.2)' : 'transparent', border: csvData ? '1px solid rgba(32,144,208,0.4)' : '1px solid rgba(255,255,255,0.08)', borderRadius:3, color: csvData ? '#a78bfa' : '#666', cursor:'pointer', fontSize:14, flexShrink:0 }}>+</button>
         {csvFileName && <div style={{ display:'flex', alignItems:'center', gap:4, padding:'2px 8px', background:'rgba(32,144,208,0.15)', border:'1px solid rgba(32,144,208,0.3)', borderRadius:3, fontSize:10, color:'#a78bfa', fontFamily:'monospace', flexShrink:0, maxWidth:160, overflow:'hidden' }}><span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{csvFileName}</span><span onClick={() => { setCsvData(null); setCsvFileName(null); }} style={{ cursor:'pointer', color:'#ef4444', fontWeight:700, flexShrink:0 }}>x</span></div>}
         <div style={{ display:'flex', gap:3, alignItems:'center', flexShrink:0 }}>
+          {/* Caelyn — automatic smart mode */}
+          <button
+            onClick={() => { if (!collabConfig) setCollabConfig(DEFAULT_COLLAB_STATE); }}
+            title="Automatic multi-model intelligence"
+            style={{ padding:'3px 8px', borderRadius:10, fontSize:9, fontWeight:700, fontFamily:"'JetBrains Mono', monospace", background: collabConfig ? 'linear-gradient(135deg, #8b5cf6, #3b82f6, #06b6d4)' : 'rgba(139,92,246,0.08)', color: collabConfig ? '#ffffff' : '#a78bfa', border: collabConfig ? 'none' : '1px solid rgba(139,92,246,0.25)', cursor:'pointer', transition:'all 0.15s', textShadow: collabConfig ? '0 1px 2px rgba(0,0,0,0.3)' : 'none', boxShadow: collabConfig ? '0 0 8px rgba(139,92,246,0.4)' : 'none', flexShrink:0 }}
+          >
+            Caelyn
+          </button>
+          {/* Customize — advanced collaboration settings dropdown */}
           <div className="agent-collab-wrapper" style={{ position:'relative', display:'inline-block' }}>
-            <button key="custom_collab" onClick={() => { if (!collabConfig) setCollabConfig(DEFAULT_COLLAB_STATE); }} style={{ padding:'3px 8px', borderRadius:10, fontSize:9, fontWeight:700, fontFamily:"'JetBrains Mono', monospace", background: collabConfig ? 'linear-gradient(135deg, #8b5cf6, #3b82f6, #06b6d4)' : 'rgba(139,92,246,0.08)', color: collabConfig ? '#ffffff' : '#a78bfa', border: collabConfig ? 'none' : '1px solid rgba(139,92,246,0.25)', cursor:'pointer', transition:'all 0.15s', textShadow: collabConfig ? '0 1px 2px rgba(0,0,0,0.3)' : 'none', boxShadow: collabConfig ? '0 0 8px rgba(139,92,246,0.4)' : 'none' }}>
-              Caelyn
+            <button key="customize_trigger" style={{ padding:'3px 7px', borderRadius:10, fontSize:9, fontWeight:600, fontFamily:"'JetBrains Mono', monospace", background: 'rgba(255,255,255,0.03)', color: collabConfig ? 'rgba(167,139,250,0.7)' : '#4b5563', border: '1px solid rgba(255,255,255,0.07)', cursor:'pointer', transition:'all 0.15s', letterSpacing:'0.2px' }}>
+              Customize ▾
             </button>
-            <div className="agent-collab-dropdown" style={{ position:'absolute', top:'100%', left:0, minWidth:280, background:'rgba(15,15,30,0.98)', border:'1px solid rgba(139,92,246,0.25)', borderRadius:12, boxShadow:'0 8px 32px rgba(0,0,0,0.5)', padding:'8px 0', zIndex:1000, paddingTop:12 }}>
+            <div className="agent-collab-dropdown" style={{ position:'absolute', top:'100%', left:0, minWidth:290, background:'rgba(15,15,30,0.98)', border:'1px solid rgba(139,92,246,0.25)', borderRadius:12, boxShadow:'0 8px 32px rgba(0,0,0,0.5)', padding:'8px 0', zIndex:1000, paddingTop:0 }}>
+              {/* CUSTOMIZE HEADER */}
+              <div style={{ padding:'10px 14px 8px', borderBottom:'1px solid rgba(255,255,255,0.06)', marginBottom:4 }}>
+                <div style={{ fontSize:11, fontWeight:700, color:'#c4b5fd', fontFamily:"'JetBrains Mono', monospace", letterSpacing:'0.3px' }}>Customize</div>
+                <div style={{ fontSize:9, color:'#4b5563', fontFamily:"'JetBrains Mono', monospace", marginTop:2 }}>Advanced collaboration settings</div>
+              </div>
               {/* PRESETS */}
               {(() => {
                 const fallbackPresets = [
-                  { id: 'default', label: 'Default', primary: 'claude', agents: ['grok', 'perplexity'], lock_agents: true, lock_reasoning: false },
+                  { id: 'default', label: 'Auto', primary: 'claude', agents: ['grok', 'perplexity'], lock_agents: true, lock_reasoning: false },
                   { id: 'full_collab', label: 'Full Collaboration', primary: 'claude', agents: ['claude', 'grok', 'gpt-4o', 'gemini', 'perplexity'], lock_agents: true, lock_reasoning: false },
                   { id: 'custom_collab', label: 'Custom Collaboration', primary: 'claude', agents: ['grok', 'perplexity'], lock_agents: false, lock_reasoning: false },
                 ];
+                const PRESET_LABEL_OVERRIDE: Record<string, string> = { default: 'Auto' };
                 const presetDefs = (collabOptions?.collab_presets?.length ? collabOptions.collab_presets : fallbackPresets).map((p: any) => ({
-                  id: p.id, label: p.label || p.name || p.id, primary: p.primary || 'claude', reasoning_model: p.reasoning_model || (p.id === 'full_collab' ? 'all_agents' : 'agent_collab'),
+                  id: p.id, label: PRESET_LABEL_OVERRIDE[p.id] || p.label || p.name || p.id, primary: p.primary || 'claude', reasoning_model: p.reasoning_model || (p.id === 'full_collab' ? 'all_agents' : 'agent_collab'),
                   agents: p.agents || [], lock_agents: p.lock_agents ?? true, lock_reasoning: p.lock_reasoning ?? false,
                 }));
                 const activePreset = presetDefs.find(p => p.id === collabConfig?.selectedPresetId) || presetDefs[0];
@@ -2663,8 +2678,14 @@ export default function TradingAgent() {
               })()}
             </div>
           </div>
-          {(['claude', 'gpt-4o', 'grok', 'gemini', 'perplexity'] as const).map(m => (
-            <button key={m} onClick={() => { setSelectedModel(m); setCollabConfig(null); }} style={{ padding:'3px 8px', borderRadius:10, fontSize:9, fontWeight:600, fontFamily:"'JetBrains Mono', monospace", background: !collabConfig && selectedModel === m ? '#3b82f6' : 'rgba(255,255,255,0.04)', color: !collabConfig && selectedModel === m ? '#ffffff' : '#6b7280', border:'none', cursor:'pointer', transition:'all 0.15s' }}>{m}</button>
+          {([
+            { id: 'claude', label: 'Claude' },
+            { id: 'gpt-4o', label: 'ChatGPT' },
+            { id: 'grok', label: 'Grok' },
+            { id: 'gemini', label: 'Gemini' },
+            { id: 'perplexity', label: 'Perplexity' },
+          ] as const).map(({ id, label }) => (
+            <button key={id} onClick={() => { setSelectedModel(id); setCollabConfig(null); }} style={{ padding:'3px 8px', borderRadius:10, fontSize:9, fontWeight:600, fontFamily:"'JetBrains Mono', monospace", background: !collabConfig && selectedModel === id ? '#3b82f6' : 'rgba(255,255,255,0.04)', color: !collabConfig && selectedModel === id ? '#ffffff' : '#6b7280', border:'none', cursor:'pointer', transition:'all 0.15s' }}>{label}</button>
           ))}
         </div>
         <div style={{ position:'relative', flex:1 }}>
