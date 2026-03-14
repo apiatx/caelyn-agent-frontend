@@ -702,9 +702,42 @@ export default function TradingAgent() {
     return <div onClick={onClick} style={{ background:C.card, border:`1px solid ${expanded ? C.blue+'40' : C.border}`, borderLeft:`3px solid ${borderColor || C.border}`, borderRadius:10, overflow:'hidden', cursor: onClick ? 'pointer' : 'default', transition:'all 0.2s' }}>{children}</div>;
   }
 
+  // Canonical TradingView futures symbols for common commodities.
+  // Used when the backend item doesn't include a tradingview_symbol field.
+  const COMMODITY_TV_MAP: Record<string, string> = {
+    'WTI': 'NYMEX:CL1!', 'WTI CRUDE OIL': 'NYMEX:CL1!', 'CRUDE OIL': 'NYMEX:CL1!',
+    'CRUDE': 'NYMEX:CL1!', 'OIL': 'NYMEX:CL1!', 'CL': 'NYMEX:CL1!', 'CL1!': 'NYMEX:CL1!',
+    'BRENT': 'ICEEUR:B1!', 'BRENT CRUDE': 'ICEEUR:B1!', 'BZ': 'NYMEX:BB1!', 'BZ1!': 'NYMEX:BB1!',
+    'GOLD': 'COMEX:GC1!', 'GC': 'COMEX:GC1!', 'GC1!': 'COMEX:GC1!',
+    'SILVER': 'COMEX:SI1!', 'SI': 'COMEX:SI1!', 'SI1!': 'COMEX:SI1!',
+    'COPPER': 'COMEX:HG1!', 'HG': 'COMEX:HG1!', 'HG1!': 'COMEX:HG1!',
+    'NATURAL GAS': 'NYMEX:NG1!', 'NATGAS': 'NYMEX:NG1!', 'NG': 'NYMEX:NG1!', 'NG1!': 'NYMEX:NG1!',
+    'WHEAT': 'CBOT:ZW1!', 'ZW': 'CBOT:ZW1!', 'ZW1!': 'CBOT:ZW1!',
+    'CORN': 'CBOT:ZC1!', 'ZC': 'CBOT:ZC1!', 'ZC1!': 'CBOT:ZC1!',
+    'SOYBEANS': 'CBOT:ZS1!', 'SOYBEAN': 'CBOT:ZS1!', 'ZS': 'CBOT:ZS1!', 'ZS1!': 'CBOT:ZS1!',
+    'PLATINUM': 'NYMEX:PL1!', 'PL': 'NYMEX:PL1!', 'PL1!': 'NYMEX:PL1!',
+    'PALLADIUM': 'NYMEX:PA1!', 'PA': 'NYMEX:PA1!', 'PA1!': 'NYMEX:PA1!',
+    'LUMBER': 'CME:LB1!', 'LB': 'CME:LB1!', 'LB1!': 'CME:LB1!',
+    'COCOA': 'ICEEUR:C1!', 'CC': 'ICEEUR:C1!', 'CC1!': 'ICEEUR:C1!',
+    'COFFEE': 'ICEEUR:KC1!', 'KC': 'ICEEUR:KC1!', 'KC1!': 'ICEEUR:KC1!',
+    'SUGAR': 'ICEEUR:SB1!', 'SB': 'ICEEUR:SB1!', 'SB1!': 'ICEEUR:SB1!',
+  };
+
   function getTVSymbol(ticker: string, pick?: any): string {
+    // Priority 1: explicit TradingView symbol from backend (any alias)
     if (pick?.tradingview_symbol) return pick.tradingview_symbol;
+    if (pick?.tv_symbol) return pick.tv_symbol;
+    if (pick?.chart_symbol) return pick.chart_symbol;
+    // Priority 2: crypto — prefix with exchange
     if (pick?.asset_class === 'crypto' || pick?.asset_type === 'crypto' || pick?.category === 'crypto') return `BINANCE:${ticker}USDT`;
+    // Priority 3: commodity futures map — resolve vague names/tickers to canonical exchange:contract
+    const upperTicker = ticker.toUpperCase();
+    if (COMMODITY_TV_MAP[upperTicker]) return COMMODITY_TV_MAP[upperTicker];
+    // Also check the item's name field in case symbol is vague
+    if (pick?.name) {
+      const upperName = String(pick.name).toUpperCase();
+      if (COMMODITY_TV_MAP[upperName]) return COMMODITY_TV_MAP[upperName];
+    }
     return ticker;
   }
 
@@ -1889,6 +1922,7 @@ export default function TradingAgent() {
                   <div style={{ color:C.text, fontSize:11, lineHeight:1.5, fontFamily:sansFont }}>{c.outlook_12m}</div>
                 </div>}
               </div>
+              <TradingViewMini ticker={c.ticker || c.symbol || c.name} pick={c} />
             </div>}
           </CardWrap>;
         })}
