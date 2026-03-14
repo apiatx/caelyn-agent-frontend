@@ -25,20 +25,20 @@ function authHeaders(extra: Record<string, string> = {}): Record<string, string>
 
 // Map preset_intent → history category for automatic saving
 const INTENT_TO_HISTORY_CATEGORY: Record<string, string> = {
-  daily_briefing: 'overview', macro_outlook: 'overview', news_leaders: 'overview',
-  catalyst_scan: 'overview', cross_asset_trending: 'overview', social_momentum_scan: 'overview',
+  daily_briefing: 'overview', macro_overview: 'overview', headlines: 'overview',
+  upcoming_catalysts: 'overview', trending_now: 'overview', social_momentum: 'overview',
   sector_rotation: 'overview',
-  best_trades: 'trades', long_term_conviction: 'trades', microcap_asymmetry: 'trades',
-  microcap_spec: 'trades', short_squeeze_scan: 'trades',
-  fundamental_leaders: 'fundamental', fundamental_acceleration: 'fundamental',
+  best_trades: 'trades', best_investments: 'trades', asymmetric_rr: 'trades',
+  small_cap_spec: 'trades', short_squeeze: 'trades',
+  fundamental_leaders: 'fundamental', rapidly_improving: 'fundamental',
   earnings_watch: 'fundamental', insider_buying: 'fundamental',
   revenue_reaccelerating: 'fundamental', margin_expansion: 'fundamental',
   undervalued_growth: 'fundamental', institutional_accumulation: 'fundamental',
   free_cash_flow_leaders: 'fundamental',
-  crypto_focus: 'sectors', commodities_focus: 'sectors', sector_energy: 'sectors',
-  sector_materials: 'sectors', sector_defense: 'sectors', sector_tech: 'sectors',
-  sector_ai: 'sectors', sector_quantum: 'sectors', sector_financials: 'sectors',
-  sector_healthcare: 'sectors', sector_real_estate: 'sectors',
+  crypto: 'sectors', commodities: 'sectors', energy: 'sectors',
+  materials: 'sectors', aerospace_defense: 'sectors', tech: 'sectors',
+  ai_compute: 'sectors', quantum: 'sectors', fintech: 'sectors',
+  biotech: 'sectors', real_estate: 'sectors',
   oversold_growing: 'ta_screener', value_momentum: 'ta_screener',
   insider_breakout: 'ta_screener', high_growth_sc: 'ta_screener',
   dividend_value: 'ta_screener', technical_stage2: 'ta_screener',
@@ -86,11 +86,11 @@ interface Panel {
 const slashCommands: Record<string, string> = {
   '/briefing': 'daily_briefing',
   '/trades': 'best_trades',
-  '/macro': 'macro_outlook',
-  '/crypto': 'crypto_focus',
-  '/scan': 'cross_asset_trending',
-  '/sentiment': 'social_momentum_scan',
-  '/news': 'news_leaders',
+  '/macro': 'macro_overview',
+  '/crypto': 'crypto',
+  '/scan': 'trending_now',
+  '/sentiment': 'social_momentum',
+  '/news': 'headlines',
 };
 
 const FOLLOWUP_STAGES = [
@@ -379,12 +379,12 @@ export default function TradingAgent() {
 
   function humanReadableLabel(intent: string): string {
     const known: Record<string, string> = {
-      daily_briefing: 'Daily Briefing', best_trades: 'Best Trades', macro_outlook: 'Macro Overview',
-      news_leaders: 'Headlines', catalyst_scan: 'Upcoming Catalysts', cross_asset_trending: 'Trending Now',
-      social_momentum_scan: 'Social Momentum', sector_rotation: 'Sector Rotation',
-      long_term_conviction: 'Best Investments', microcap_asymmetry: 'Asymmetric R:R',
-      microcap_spec: 'Small Cap Spec', short_squeeze_scan: 'Short Squeeze',
-      fundamental_leaders: 'Fundamental Leaders', fundamental_acceleration: 'Rapidly Improving',
+      daily_briefing: 'Daily Briefing', best_trades: 'Best Trades', macro_overview: 'Macro Overview',
+      headlines: 'Headlines', upcoming_catalysts: 'Upcoming Catalysts', trending_now: 'Trending Now',
+      social_momentum: 'Social Momentum', sector_rotation: 'Sector Rotation',
+      best_investments: 'Best Investments', asymmetric_rr: 'Asymmetric R:R',
+      small_cap_spec: 'Small Cap Spec', short_squeeze: 'Short Squeeze',
+      fundamental_leaders: 'Fundamental Leaders', rapidly_improving: 'Rapidly Improving',
       earnings_watch: 'Earnings Watch', insider_buying: 'Insider Buying',
       earnings_agent: 'Earnings Agent', prediction_markets: 'Prediction Markets',
       news_intelligence: 'NotifAI', freeform_query: 'Terminal Query',
@@ -2310,7 +2310,7 @@ export default function TradingAgent() {
     </div>;
   }
 
-  const knownTypes = ['trades','investments','fundamentals','technicals','analysis','dashboard','sector_rotation','earnings_catalyst','commodities','portfolio','briefing','crypto','trending','screener','cross_asset_trending','cross_market','csv_watchlist'];
+  const knownTypes = ['trades','investments','fundamentals','technicals','analysis','dashboard','sector_rotation','earnings_catalyst','commodities','portfolio','briefing','crypto','trending','screener','trending_now','cross_market','csv_watchlist'];
 
   function renderAssistantMessage(msg: {role: string, content: string, parsed?: any}) {
     const s = msg.parsed?.structured || (msg.parsed?.display_type ? msg.parsed : {});
@@ -2324,7 +2324,7 @@ export default function TradingAgent() {
       {displayType === 'technicals' && renderTechnicals(s)}
       {displayType === 'analysis' && renderAnalysis(s)}
       {displayType === 'trending' && renderTrades(s)}
-      {(displayType === 'cross_asset_trending' || displayType === 'cross_market') && renderCrossAssetTrending(s, analysisText)}
+      {(displayType === 'trending_now' || displayType === 'cross_market') && renderCrossAssetTrending(s, analysisText)}
       {displayType === 'screener' && renderScreener(s)}
       {displayType === 'crypto' && renderCrypto(s)}
       {displayType === 'briefing' && renderBriefing(s)}
@@ -2334,30 +2334,30 @@ export default function TradingAgent() {
       {displayType === 'earnings_catalyst' && renderEarningsCatalyst(s)}
       {displayType === 'csv_watchlist' && renderCsvWatchlist(s)}
       {(displayType === 'chat' || !knownTypes.includes(displayType)) && analysisText && analysisText.trim() && <div style={{ padding:22, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont }} dangerouslySetInnerHTML={{ __html: formatAnalysis(analysisText) }} />}
-      {displayType && displayType !== 'chat' && displayType !== 'cross_market' && displayType !== 'cross_asset_trending' && displayType !== 'trades' && knownTypes.includes(displayType) && analysisText && analysisText.trim() && <div style={{ marginTop:16, padding:22, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont }} dangerouslySetInnerHTML={{ __html: formatAnalysis(analysisText) }} />}
+      {displayType && displayType !== 'chat' && displayType !== 'cross_market' && displayType !== 'trending_now' && displayType !== 'trades' && knownTypes.includes(displayType) && analysisText && analysisText.trim() && <div style={{ marginTop:16, padding:22, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont }} dangerouslySetInnerHTML={{ __html: formatAnalysis(analysisText) }} />}
     </div>;
   }
 
   const promptGroups: { id: string; title: string; buttons: { l: string; intent: string }[] }[] = [
     { id: 'g1', title: 'Overview', buttons: [
       {l:'Daily Briefing', intent:'daily_briefing'},
-      {l:'Macro Overview', intent:'macro_outlook'},
-      {l:'Headlines', intent:'news_leaders'},
-      {l:'Upcoming Catalysts', intent:'catalyst_scan'},
-      {l:'Trending Now', intent:'cross_asset_trending'},
-      {l:'Social Momentum', intent:'social_momentum_scan'},
+      {l:'Macro Overview', intent:'macro_overview'},
+      {l:'Headlines', intent:'headlines'},
+      {l:'Upcoming Catalysts', intent:'upcoming_catalysts'},
+      {l:'Trending Now', intent:'trending_now'},
+      {l:'Social Momentum', intent:'social_momentum'},
       {l:'Sector Rotation', intent:'sector_rotation'},
     ]},
     { id: 'g2', title: 'Trades & Ideas', buttons: [
       {l:'Best Trades', intent:'best_trades'},
-      {l:'Best Investments', intent:'long_term_conviction'},
-      {l:'Asymmetric R:R', intent:'microcap_asymmetry'},
-      {l:'Small Cap Spec', intent:'microcap_spec'},
-      {l:'Short Squeeze', intent:'short_squeeze_scan'},
+      {l:'Best Investments', intent:'best_investments'},
+      {l:'Asymmetric R:R', intent:'asymmetric_rr'},
+      {l:'Small Cap Spec', intent:'small_cap_spec'},
+      {l:'Short Squeeze', intent:'short_squeeze'},
     ]},
     { id: 'g3', title: 'Fundamental', buttons: [
       {l:'Fundamental Leaders', intent:'fundamental_leaders'},
-      {l:'Rapidly Improving', intent:'fundamental_acceleration'},
+      {l:'Rapidly Improving', intent:'rapidly_improving'},
       {l:'Earnings Watch', intent:'earnings_watch'},
       {l:'Insider Buying', intent:'insider_buying'},
       {l:'Revenue Reaccelerating', intent:'revenue_reaccelerating'},
@@ -2367,17 +2367,17 @@ export default function TradingAgent() {
       {l:'Free Cash Flow Leaders', intent:'free_cash_flow_leaders'},
     ]},
     { id: 'g4', title: 'Sectors', buttons: [
-      {l:'Crypto', intent:'crypto_focus'},
-      {l:'Commodities', intent:'commodities_focus'},
-      {l:'Energy', intent:'sector_energy'},
-      {l:'Materials', intent:'sector_materials'},
-      {l:'Aerospace/Defense', intent:'sector_defense'},
-      {l:'Tech', intent:'sector_tech'},
-      {l:'AI/Compute', intent:'sector_ai'},
-      {l:'Quantum', intent:'sector_quantum'},
-      {l:'Fintech', intent:'sector_financials'},
-      {l:'Biotech', intent:'sector_healthcare'},
-      {l:'Real Estate', intent:'sector_real_estate'},
+      {l:'Crypto', intent:'crypto'},
+      {l:'Commodities', intent:'commodities'},
+      {l:'Energy', intent:'energy'},
+      {l:'Materials', intent:'materials'},
+      {l:'Aerospace/Defense', intent:'aerospace_defense'},
+      {l:'Tech', intent:'tech'},
+      {l:'AI/Compute', intent:'ai_compute'},
+      {l:'Quantum', intent:'quantum'},
+      {l:'Fintech', intent:'fintech'},
+      {l:'Biotech', intent:'biotech'},
+      {l:'Real Estate', intent:'real_estate'},
     ]},
   ];
 
@@ -2795,8 +2795,8 @@ export default function TradingAgent() {
                   {[
                     { l: '/briefing', intent: 'daily_briefing' },
                     { l: '/trades', intent: 'best_trades' },
-                    { l: '/crypto', intent: 'crypto_focus' },
-                    { l: '/scan', intent: 'cross_asset_trending' },
+                    { l: '/crypto', intent: 'crypto' },
+                    { l: '/scan', intent: 'trending_now' },
                   ].map(cmd => (
                     <button key={cmd.l} className="panel-btn" onClick={() => askAgent('', true, cmd.intent)} style={{ padding:'8px 18px', background:C.card, border:`1px solid ${C.border}`, borderRadius:8, color:C.blue, fontSize:11, fontWeight:600, fontFamily:font, cursor:'pointer', transition:'all 0.15s' }}>{cmd.l}</button>
                   ))}

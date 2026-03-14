@@ -44,10 +44,21 @@ export function applyPresetState(preset: CollabPreset): CollabState {
 
 export function buildCollabPayload(collabState: CollabState | null, selectedModel: string) {
   if (!collabState) {
+    // Direct model mode — single model, no collab
     return { reasoning_model: selectedModel };
   }
 
+  if (collabState.selectedPresetId === 'default') {
+    // Caelyn / Auto mode — let backend handle all routing
+    return {
+      reasoning_model: 'agent_collab',
+      primary_model: null,
+      collab_agents: [],
+    };
+  }
+
   if (collabState.selectedPresetId === 'full_collab') {
+    // Full collab — all selected agents reason independently
     return {
       reasoning_model: 'all_agents',
       primary_model: collabState.primaryModel || 'claude',
@@ -55,6 +66,7 @@ export function buildCollabPayload(collabState: CollabState | null, selectedMode
     };
   }
 
+  // Custom collab — explicit collaborator selections
   return {
     reasoning_model: collabState.reasoningModelRequest || 'agent_collab',
     primary_model: collabState.primaryModel || 'claude',
