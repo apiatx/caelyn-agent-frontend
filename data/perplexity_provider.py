@@ -324,6 +324,54 @@ class PerplexityProvider:
         cache.set(cache_key, combined, PERPLEXITY_TTL)
         return combined
 
+    async def get_collab_findings(self, prompt: str) -> str:
+        """
+        Free-form analytical response using sonar-reasoning-pro with
+        FINANCIAL_DOMAIN_ALLOWLIST applied. Used exclusively by the Caelyn
+        collaborator synthesis pipeline so the same trusted source list and
+        stronger model are applied consistently across every collaborator call.
+
+        Returns plain text — the model's targeted findings, not a structured dict.
+        """
+        body = {
+            "model": "sonar-reasoning-pro",
+            "max_tokens": 600,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a financial news and catalyst analyst with access to live web search. "
+                        "Search for current, factual developments relevant to the request. "
+                        "Be concise and direct — under 500 words. "
+                        "Return only your findings. No meta-commentary, no preamble."
+                    ),
+                },
+                {"role": "user", "content": prompt},
+            ],
+            "search_domain_filter": FINANCIAL_DOMAIN_ALLOWLIST,
+            "search_recency_filter": "day",
+        }
+        try:
+            async with httpx.AsyncClient(timeout=55.0) as client:
+                resp = await client.post(
+                    self.CHAT_URL,
+                    headers=self._headers,
+                    json=body,
+                )
+            resp.raise_for_status()
+            data = resp.json()
+            text = data["choices"][0]["message"]["content"] or ""
+            citations = data.get("citations", [])
+            print(
+                f"[Perplexity][collab] sonar-reasoning-pro responded: "
+                f"{len(text):,} chars, {len(citations)} citations, "
+                f"domain_filter={len(FINANCIAL_DOMAIN_ALLOWLIST)} sources"
+            )
+            return text
+        except Exception as e:
+            print(f"[Perplexity][collab] get_collab_findings error: {e}")
+            return ""
+
     async def get_market_news(self, topic: str = "stock market today") -> dict:
         """Get broad market news -- same interface as BraveProvider/TavilyProvider."""
         cache_key = f"pplx:market_news:{topic.replace(' ', '_')[:30]}"

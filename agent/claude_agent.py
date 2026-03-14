@@ -3524,6 +3524,13 @@ class TradingAgent:
         t0 = _t.time()
 
         # ── Fan-out: call collaborators in parallel with focused domain prompts ──
+        # Grok and Perplexity are routed through their configured provider
+        # instances so that custom source configs are preserved:
+        #   Grok      → self.data.xai._call_grok_with_x_search()
+        #               (x_search tool, correct model, raw_mode=True)
+        #   Perplexity → self.data.web_search.perplexity.get_collab_findings()
+        #               (sonar-reasoning-pro, FINANCIAL_DOMAIN_ALLOWLIST, recency=day)
+        # All other collaborators fall back to _call_alt_model as before.
         async def _call_collab(agent_id: str) -> tuple[str, str, int]:
             a0 = _t.time()
             domain_prefix = COLLAB_DOMAIN_PROMPTS.get(agent_id, "")
@@ -3532,24 +3539,66 @@ class TradingAgent:
                 f"USER REQUEST CONTEXT:\n{user_prompt}"
             ) if domain_prefix else user_prompt
             try:
-                text = await asyncio.wait_for(
-                    self._call_alt_model(
-                        agent_id,
-                        focused_prompt,
-                        market_data,
-                        history,
-                        is_followup,
-                        category,
-                        chatbox_mode=False,
-                        preset_intent=preset_intent,
-                        skip_web_search=False,   # each collaborator uses its native search
-                        is_collab_agent=True,    # use faster non-reasoning model variant
-                    ),
-                    timeout=60.0,
-                )
+                if agent_id == "grok" and self.data.xai:
+                    # Route through XaiSentimentProvider._call_grok_with_x_search
+                    # Preserves: x_search tool config, correct model selection, raw_mode
+                    raw = await asyncio.wait_for(
+                        self.data.xai._call_grok_with_x_search(
+                            focused_prompt,
+                            raw_mode=True,
+                            timeout=55.0,
+                        ),
+                        timeout=60.0,
+                    )
+                    text = raw.get("_raw_analysis", "") if isinstance(raw, dict) else str(raw or "")
+                    print(f"[CAELYN] grok collab via XaiSentimentProvider: {len(text):,} chars in {int((_t.time()-a0)*1000)}ms")
+
+                elif agent_id == "perplexity":
+                    # Route through PerplexityProvider.get_collab_findings
+                    # Preserves: FINANCIAL_DOMAIN_ALLOWLIST, sonar-reasoning-pro, recency=day
+                    pplx = getattr(self.data.web_search, "perplexity", None) if self.data.web_search else None
+                    if pplx:
+                        text = await asyncio.wait_for(
+                            pplx.get_collab_findings(focused_prompt),
+                            timeout=60.0,
+                        )
+                        text = text or ""
+                    else:
+                        # No configured PerplexityProvider — fall back to _call_alt_model
+                        print("[CAELYN] perplexity provider not configured, falling back to _call_alt_model")
+                        text = await asyncio.wait_for(
+                            self._call_alt_model(
+                                agent_id, focused_prompt, market_data,
+                                history, is_followup, category,
+                                chatbox_mode=False, preset_intent=preset_intent,
+                                skip_web_search=False, is_collab_agent=True,
+                            ),
+                            timeout=60.0,
+                        )
+                        text = text or ""
+
+                else:
+                    # Gemini, gpt-4o, and any future collaborators use _call_alt_model
+                    text = await asyncio.wait_for(
+                        self._call_alt_model(
+                            agent_id,
+                            focused_prompt,
+                            market_data,
+                            history,
+                            is_followup,
+                            category,
+                            chatbox_mode=False,
+                            preset_intent=preset_intent,
+                            skip_web_search=False,   # each collaborator uses its native search
+                            is_collab_agent=True,    # use faster non-reasoning model variant
+                        ),
+                        timeout=60.0,
+                    )
+                    text = text or ""
+
                 ms = int((_t.time() - a0) * 1000)
-                print(f"[CAELYN] {agent_id} collab findings: {len(text or ''):,} chars in {ms}ms")
-                return (agent_id, text or "", ms)
+                print(f"[CAELYN] {agent_id} collab findings: {len(text):,} chars in {ms}ms")
+                return (agent_id, text, ms)
             except asyncio.TimeoutError:
                 ms = int((_t.time() - a0) * 1000)
                 print(f"[CAELYN] {agent_id} timed out after {ms}ms")
