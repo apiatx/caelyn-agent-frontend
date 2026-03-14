@@ -3799,12 +3799,20 @@ class TradingAgent:
         try:
             raw = await self.data.xai._call_grok_with_x_search(
                 latest_user,
-                raw_mode=True,
+                raw_mode=False,      # final/solo: structured JSON output (collaborator path uses raw_mode separately)
                 use_deep_model=use_deep,
                 system_text=system_text,
                 timeout=80.0,
             )
-            text = raw.get("_raw_analysis", "") if isinstance(raw, dict) else str(raw or "")
+            # raw_mode=False returns a Python dict from _parse_json_response.
+            # On success: clean parsed dict → serialize to JSON string for the response pipeline.
+            # On failure: error dict with "error" key → treat as empty, trigger fallback.
+            if isinstance(raw, dict) and not raw.get("error"):
+                text = json.dumps(raw)
+            else:
+                err = raw.get("error", "unknown") if isinstance(raw, dict) else str(raw)
+                print(f"[GROK_DISPATCH] _parse_json_response returned error: {err} — using _call_alt_model fallback")
+                text = ""
         except Exception as e:
             print(f"[GROK_DISPATCH] XaiSentimentProvider error: {e} — using _call_alt_model fallback")
             text = ""
