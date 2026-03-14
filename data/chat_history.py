@@ -1,6 +1,7 @@
 """
 Persistent chat conversation storage.
-PostgreSQL is the production source of truth when DATABASE_URL is set.
+PostgreSQL is the production source of truth when NEON_DATABASE_URL or DATABASE_URL is set.
+Prefers NEON_DATABASE_URL (external Neon cloud DB) over DATABASE_URL (Replit internal DB).
 """
 
 import os
@@ -16,7 +17,7 @@ _VALID_ID_PATTERN = re.compile(r'^[a-f0-9]{8}-[a-f0-9]{4}$')
 _use_postgres = False
 _use_object_storage = False
 _use_replit_db = False
-_pg_required = bool(os.environ.get("DATABASE_URL"))
+_pg_required = bool(os.environ.get("NEON_DATABASE_URL") or os.environ.get("DATABASE_URL"))
 
 # PostgreSQL functions (primary)
 try:

@@ -30,11 +30,11 @@ def _init_postgres_chat_storage_on_startup(reason: str = "startup"):
     global _pg_startup_checked, _pg_startup_attempts, _pg_last_init_error
     _pg_startup_attempts += 1
 
-    db_url = os.getenv("DATABASE_URL")
-    print(f"[STARTUP][PG] reason={reason} attempt={_pg_startup_attempts} DATABASE_URL detected={'YES' if bool(db_url) else 'NO'}")
+    db_url = os.getenv("NEON_DATABASE_URL") or os.getenv("DATABASE_URL")
+    print(f"[STARTUP][PG] reason={reason} attempt={_pg_startup_attempts} db_configured={'YES' if bool(db_url) else 'NO'} source={'NEON' if os.getenv('NEON_DATABASE_URL') else 'REPLIT_INTERNAL' if os.getenv('DATABASE_URL') else 'NONE'}")
     if not db_url:
-        print("[STARTUP][PG] Skipping PostgreSQL init because DATABASE_URL is not set")
-        _pg_last_init_error = "DATABASE_URL not set"
+        print("[STARTUP][PG] Skipping PostgreSQL init — no database URL configured")
+        _pg_last_init_error = "No database URL configured"
         return
 
     if _pg_startup_checked:
@@ -715,7 +715,7 @@ def _safe_database_url_parts(db_url: str | None) -> tuple[str | None, str | None
 async def debug_db(request: Request):
     """Temporary debugging endpoint for PostgreSQL runtime state."""
     _init_postgres_chat_storage_on_startup("debug_endpoint")
-    db_url = os.getenv("DATABASE_URL")
+    db_url = os.getenv("NEON_DATABASE_URL") or os.getenv("DATABASE_URL")
     database_host, database_name = _safe_database_url_parts(db_url)
 
     current_database = None
