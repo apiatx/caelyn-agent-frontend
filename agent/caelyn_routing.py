@@ -81,6 +81,7 @@ _ALIAS_MAP: dict[str, str] = {
     "briefing": "daily_briefing",
     "daily_briefing": "daily_briefing",
     "daily briefing": "daily_briefing",
+    "daily": "daily_briefing",
     "market_briefing": "daily_briefing",
     "morning_briefing": "daily_briefing",
     "briefing_dashboard": "daily_briefing",
@@ -92,17 +93,25 @@ _ALIAS_MAP: dict[str, str] = {
     "macroeconomic": "macro_overview",
     "macro_snapshot": "macro_overview",
     "global_macro": "macro_overview",
+    "macro_outlook": "macro_overview",
+    "economy": "macro_overview",
 
-    # Headlines
+    # Headlines — all news_intelligence variants must resolve here
     "headlines": "headlines",
     "news": "headlines",
     "market_news": "headlines",
     "newsfeed": "headlines",
+    "news_intelligence": "headlines",
+    "notifai": "headlines",
+    "news_analysis": "headlines",
+    "news_markets": "headlines",
 
     # Upcoming Catalysts
     "upcoming_catalysts": "upcoming_catalysts",
     "catalysts": "upcoming_catalysts",
     "earnings_catalyst": "upcoming_catalysts",
+    "earnings_agent": "upcoming_catalysts",
+    "earnings": "upcoming_catalysts",
     "catalyst": "upcoming_catalysts",
     "upcoming catalysts": "upcoming_catalysts",
 
@@ -111,8 +120,10 @@ _ALIAS_MAP: dict[str, str] = {
     "trending": "trending_now",
     "trending now": "trending_now",
     "cross_asset_trending": "trending_now",
+    "cross_asset": "trending_now",
     "cross_market": "trending_now",
     "trending_scan": "trending_now",
+    "whats_hot": "trending_now",
 
     # Social Momentum
     "social_momentum": "social_momentum",
@@ -120,6 +131,8 @@ _ALIAS_MAP: dict[str, str] = {
     "social": "social_momentum",
     "social_scan": "social_momentum",
     "sentiment": "social_momentum",
+    "wsb": "social_momentum",
+    "reddit": "social_momentum",
 
     # Sector Rotation
     "sector_rotation": "sector_rotation",
@@ -134,6 +147,8 @@ _ALIAS_MAP: dict[str, str] = {
     "market_scan": "best_trades",
     "breakout": "best_trades",
     "trade_ideas": "best_trades",
+    "setups": "best_trades",
+    "trade_setups": "best_trades",
 
     # Best Investments
     "best_investments": "best_investments",
@@ -141,6 +156,8 @@ _ALIAS_MAP: dict[str, str] = {
     "investments": "best_investments",
     "investment_ideas": "best_investments",
     "long_term": "best_investments",
+    "long_term_conviction": "best_investments",
+    "sqglp": "best_investments",
 
     # Asymmetric R:R
     "asymmetric_rr": "asymmetric_rr",
@@ -155,6 +172,8 @@ _ALIAS_MAP: dict[str, str] = {
     "small cap spec": "small_cap_spec",
     "small cap": "small_cap_spec",
     "small_cap_speculation": "small_cap_spec",
+    "microcap": "small_cap_spec",
+    "microcap_spec": "small_cap_spec",
 
     # Short Squeeze
     "short_squeeze": "short_squeeze",
@@ -177,28 +196,70 @@ _ALIAS_MAP: dict[str, str] = {
     "insider_buying": "insider_buying",
     "insider": "insider_buying",
 
-    # Sectors
+    # Crypto
     "crypto": "crypto",
     "cryptocurrency": "crypto",
     "crypto_scan": "crypto",
+    "crypto_scanner": "crypto",
+    "crypto_focus": "crypto",
+
+    # Commodities
     "commodities": "commodities",
     "commodity": "commodities",
+    "commodity_scan": "commodities",
+    "commodity_focus": "commodities",
+    "commodities_focus": "commodities",
+
+    # Energy
     "energy": "energy",
+    "sector_energy": "energy",
+    "energy_focus": "energy",
+
+    # Materials
     "materials": "materials",
+    "sector_materials": "materials",
+    "materials_focus": "materials",
+
+    # Aerospace / Defense
     "aerospace_defense": "aerospace_defense",
     "aerospace": "aerospace_defense",
     "defense": "aerospace_defense",
+    "sector_defense": "aerospace_defense",
+    "aerospace_focus": "aerospace_defense",
+
+    # Tech
     "tech": "tech",
     "technology": "tech",
+    "sector_tech": "tech",
+    "tech_focus": "tech",
+
+    # AI / Compute
     "ai_compute": "ai_compute",
     "ai": "ai_compute",
     "ai/compute": "ai_compute",
+    "sector_ai": "ai_compute",
+
+    # Quantum
     "quantum": "quantum",
+    "quantum_focus": "quantum",
+    "sector_quantum": "quantum",
+
+    # Fintech
     "fintech": "fintech",
+    "finance_focus": "fintech",
+    "sector_financials": "fintech",
+
+    # Biotech
     "biotech": "biotech",
     "biopharma": "biotech",
+    "sector_healthcare": "biotech",
+    "healthcare_focus": "biotech",
+
+    # Real Estate
     "real_estate": "real_estate",
     "reits": "real_estate",
+    "sector_real_estate": "real_estate",
+    "real_estate_focus": "real_estate",
 }
 
 
