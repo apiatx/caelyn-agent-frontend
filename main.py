@@ -2131,7 +2131,8 @@ async def query_agent(
                                    "rows", "screen_name",
                                    "top_trades", "bearish_setups",
                                    "top_moves", "market_pulse", "top_stocks_to_watch",
-                                   "sector_thesis", "benchmark", "whats_moving"}
+                                   "sector_thesis", "benchmark", "whats_moving",
+                                   "watchlist_today", "strongest_overall"}
                 has_content = any(structured.get(k) for k in meaningful_keys)
                 if has_content:
                     return False

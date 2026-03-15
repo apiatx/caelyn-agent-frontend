@@ -1071,15 +1071,20 @@ HARD RULES:
 3. market_pulse.summary: Write 2–3 sentences of sector thesis here — why this sector matters RIGHT NOW.
 4. market_pulse.verdict: Use the sector bias (e.g. "Bullish — Energy", "Cautiously Bullish — AI/Compute").
 5. key_numbers: Lead with the sector benchmark ETF ticker(s) from the mapping above. Include spy/vix as secondary context only. For each sector ETF row, use the ETF ticker as the key (e.g. "xle", "soxx", "smh"). Do NOT put N/A in price/change if data is available. Omit unknown fields rather than writing "N/A".
-6. whats_moving: 3–5 bullets of the most important SECTOR-SPECIFIC drivers (not generic market commentary).
-7. top_moves: This is "Top Stocks to Watch" for this sector. Include 3–7 stocks from the SAME sector ONLY. Sort by conviction. NEVER include stocks from other sectors.
-   - Select using: relative strength vs sector ETF → upcoming catalyst → institutional/insider flows → social/news momentum → fundamentals → technical setup
-   - Include a MIX of market cap tiers: at least 1 large cap (>$10B), 1 mid cap ($2B–$10B), 1 small/micro cap (<$2B) when data supports it.
-   - Each entry: ticker, action (Buy/Hold/Watch), conviction, conviction_score, thesis (sector-specific, 1–2 sentences), why_could_fail.
-8. signal_highlights: Use sector-relevant picks for best_ta_setup, best_fundamental, hottest_social, strongest_sector.
+6. whats_moving: 3–5 bullets of the most important SECTOR-SPECIFIC drivers. For each row, the "category" field MUST be the relevant TICKER SYMBOL (e.g. "NVDA", "XOM", "LMT") — NOT the sector preset name. If a row is a macro driver with no single ticker, use a short descriptor like "OPEC" or "Fed" — never repeat the sector name.
+7. top_moves: This is the "Watchlist Today" section for this sector. Include 4–9 stocks from the SAME sector ONLY. NEVER include stocks from other sectors.
+   - Selection criteria (use whichever signals exist in the data): relative strength vs sector ETF → upcoming catalyst → institutional/insider flows → social/news momentum → fundamentals → technical setup.
+   - Structure the list by market cap tier, ordered: large caps first, then mid caps, then low/small caps. Add a "#1 Buy Right Now" as the last entry (rank 99) — the single highest-conviction pick from any tier.
+   - Market cap tiers: large = >$10B, mid = $2B–$10B, low/small = <$2B. If a tier has thin data, include the best available name with a note. Do NOT leave tiers empty.
+   - Each entry: ticker, action (Buy/Hold/Watch), conviction, conviction_score, position_tier ("large"/"mid"/"low"), thesis (sector-specific, 1–2 sentences), why_could_fail.
+8. signal_highlights: Use sector-relevant picks for best_ta_setup, best_fundamental, hottest_social. The fourth signal MUST be "strongest_overall" — the single best overall investment/trade/fundamental leader with active catalysts at the time of the prompt (cross all cap tiers within the sector). This is NOT the sector ETF — it is one specific stock.
 9. upcoming_catalysts: 3–5 SECTOR-SPECIFIC upcoming events (earnings, regulatory dates, product launches, macro catalysts relevant to this sector).
 10. portfolio_bias: One actionable positioning sentence for this sector.
-11. top_stocks_to_watch: Add this as an ADDITIONAL top-level field (alongside the briefing schema) with three sub-arrays: large_cap, mid_cap, small_micro_cap — each with 1–3 tickers. This preserves cap-tier intelligence for enhanced rendering.
+11. watchlist_today: Add this as an ADDITIONAL top-level field with four sub-arrays for structured cap-tier data:
+    - large_cap (1–3 names, >$10B)
+    - mid_cap (1–3 names, $2B–$10B)
+    - low_cap (1–3 names, <$2B)
+    - buy_right_now: exactly 1 entry — the #1 highest-conviction pick from any tier with the strongest combination of catalyst + technicals + fundamentals
 
 OUTPUT SCHEMA (JSON — no markdown wrapping):
 {
@@ -1088,13 +1093,14 @@ OUTPUT SCHEMA (JSON — no markdown wrapping):
   "sector_key": "<sector_key from SECTOR_CONTEXT>",
   "market_pulse": {"verdict": "<Bias — Sector Name>", "summary": "<2–3 sentence sector thesis>", "regime": "Risk-On|Risk-Off|Neutral"},
   "key_numbers": {"<sector_etf_ticker_lowercase>": {"price": "", "change": "", "trend": ""}, "spy": {"price": "", "change": "", "trend": ""}, "vix": {"price": "", "change": "", "trend": ""}},
-  "whats_moving": [{"headline": "<sector-specific driver>", "category": "<sector name>"}],
-  "signal_highlights": {"best_ta_setup": {"ticker": "", "signal": ""}, "best_fundamental": {"ticker": "", "signal": ""}, "hottest_social": {"ticker": "", "signal": ""}, "strongest_sector": {"sector": "<sector name>", "ticker": "", "signal": ""}},
-  "top_moves": [{"rank": 1, "ticker": "", "action": "Buy", "conviction": "High", "conviction_score": 0, "position_tier": "", "thesis": "", "why_could_fail": "", "signals_stacking": [""], "signal_count": 0, "entry": "", "stop": "", "target": "", "risk_reward": "", "timeframe": ""}],
-  "top_stocks_to_watch": {
-    "large_cap":       [{"rank": 1, "ticker": "", "company": "", "market_cap_tier": "large",       "why_now": "", "catalyst": "", "conviction": "", "conviction_score": 0}],
-    "mid_cap":         [{"rank": 1, "ticker": "", "company": "", "market_cap_tier": "mid",         "why_now": "", "catalyst": "", "conviction": "", "conviction_score": 0}],
-    "small_micro_cap": [{"rank": 1, "ticker": "", "company": "", "market_cap_tier": "small/micro", "why_now": "", "catalyst": "", "conviction": "", "conviction_score": 0}]
+  "whats_moving": [{"headline": "<sector-specific driver>", "category": "<TICKER or short macro descriptor — NOT the sector name>"}],
+  "signal_highlights": {"best_ta_setup": {"ticker": "", "signal": ""}, "best_fundamental": {"ticker": "", "signal": ""}, "hottest_social": {"ticker": "", "signal": ""}, "strongest_overall": {"ticker": "", "signal": "<why this is the best overall investment/trade with active catalyst>"}},
+  "top_moves": [{"rank": 1, "ticker": "", "action": "Buy", "conviction": "High", "conviction_score": 0, "position_tier": "large|mid|low", "thesis": "", "why_could_fail": "", "signals_stacking": [""], "signal_count": 0, "entry": "", "stop": "", "target": "", "risk_reward": "", "timeframe": ""}],
+  "watchlist_today": {
+    "large_cap": [{"rank": 1, "ticker": "", "company": "", "market_cap_tier": "large", "why_now": "", "catalyst": "", "conviction": "", "conviction_score": 0}],
+    "mid_cap":   [{"rank": 1, "ticker": "", "company": "", "market_cap_tier": "mid",   "why_now": "", "catalyst": "", "conviction": "", "conviction_score": 0}],
+    "low_cap":   [{"rank": 1, "ticker": "", "company": "", "market_cap_tier": "low",   "why_now": "", "catalyst": "", "conviction": "", "conviction_score": 0}],
+    "buy_right_now": {"ticker": "", "company": "", "market_cap_tier": "", "why_now": "", "catalyst": "", "conviction": "High", "conviction_score": 0}
   },
   "upcoming_catalysts": [""],
   "portfolio_bias": ""

@@ -6425,7 +6425,7 @@ FOLLOW-UP MODE: The user is continuing a conversation. You have the full convers
                     f"  sector_key  = \"{_skey}\"\n"
                     f"  primary_benchmark_etf(s) = {_setf}\n"
                     f"Use {_setf} as the lead benchmark row(s) in the benchmark array.\n"
-                    f"All stocks in top_stocks_to_watch must be from the {_slabel} sector.\n"
+                    f"All stocks in watchlist_today and top_moves must be from the {_slabel} sector only.\n"
                 ),
             })
 
