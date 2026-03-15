@@ -9,7 +9,7 @@ import httpx
 
 from agent.data_compressor import compress_data
 from agent.institutional_scorer import apply_institutional_scoring
-from agent.prompts import SYSTEM_PROMPT, USER_INVESTMENT_PROFILE, CORE_QUANT_DNA, DEFAULT_PERSONAL_PROFILE, QUERY_CLASSIFIER_PROMPT, ORCHESTRATION_PROMPT, REASONING_BRIEF_PROMPT, TRENDING_VALIDATION_PROMPT, CROSS_ASSET_TRENDING_CONTRACT, BEST_TRADES_CONTRACT, DETERMINISTIC_SCREENER_CONTRACT, SMART_ORCHESTRATOR_PROMPT, PREDICTION_MARKETS_CONTRACT, SECTOR_ROTATION_CONTRACT, EARNINGS_CATALYST_CONTRACT
+from agent.prompts import SYSTEM_PROMPT, USER_INVESTMENT_PROFILE, CORE_QUANT_DNA, DEFAULT_PERSONAL_PROFILE, QUERY_CLASSIFIER_PROMPT, ORCHESTRATION_PROMPT, REASONING_BRIEF_PROMPT, TRENDING_VALIDATION_PROMPT, CROSS_ASSET_TRENDING_CONTRACT, BEST_TRADES_CONTRACT, DETERMINISTIC_SCREENER_CONTRACT, SMART_ORCHESTRATOR_PROMPT, PREDICTION_MARKETS_CONTRACT, SECTOR_ROTATION_CONTRACT, EARNINGS_CATALYST_CONTRACT, SECTOR_INTEL_CONTRACT
 from data.market_data_service import MarketDataService
 
 
@@ -40,15 +40,24 @@ class TradingAgent:
         "commodity": "commodity_scan",
         "commodity_focus": "commodity_scan",
         "commodities_focus": "commodity_scan",
-        "energy_focus": "thematic_scan",
-        "ai_compute": "thematic_scan",
-        "quantum_focus": "thematic_scan",
-        "materials_focus": "thematic_scan",
-        "aerospace_focus": "thematic_scan",
-        "tech_focus": "thematic_scan",
-        "finance_focus": "thematic_scan",
-        "healthcare_focus": "thematic_scan",
-        "real_estate_focus": "thematic_scan",
+        # --- Sector preset direct keys (frontend sends these) ---
+        "energy": "thematic_energy",
+        "energy_focus": "thematic_energy",
+        "materials": "thematic_materials",
+        "materials_focus": "thematic_materials",
+        "aerospace_defense": "thematic_defense",
+        "aerospace_focus": "thematic_defense",
+        "tech": "thematic_tech",
+        "tech_focus": "thematic_tech",
+        "ai_compute": "thematic_ai",
+        "quantum": "thematic_quantum",
+        "quantum_focus": "thematic_quantum",
+        "fintech": "thematic_financials",
+        "finance_focus": "thematic_financials",
+        "biotech": "thematic_healthcare",
+        "healthcare_focus": "thematic_healthcare",
+        "real_estate": "thematic_real_estate",
+        "real_estate_focus": "thematic_real_estate",
         "social": "social_momentum",
         "wsb": "social_momentum",
         "reddit": "social_momentum",
@@ -6365,6 +6374,59 @@ FOLLOW-UP MODE: The user is continuing a conversation. You have the full convers
             system_blocks.append({
                 "type": "text",
                 "text": SECTOR_ROTATION_CONTRACT,
+            })
+
+        if category == "thematic":
+            _SECTOR_META = {
+                # raw frontend keys
+                "energy":           {"label": "Energy",               "etf": "XLE",         "sector_key": "energy"},
+                "energy_focus":     {"label": "Energy",               "etf": "XLE",         "sector_key": "energy"},
+                "materials":        {"label": "Materials",            "etf": "XLB",         "sector_key": "materials"},
+                "materials_focus":  {"label": "Materials",            "etf": "XLB",         "sector_key": "materials"},
+                "aerospace_defense":{"label": "Aerospace & Defense",  "etf": "ITA, XAR",    "sector_key": "aerospace_defense"},
+                "aerospace_focus":  {"label": "Aerospace & Defense",  "etf": "ITA, XAR",    "sector_key": "aerospace_defense"},
+                "tech":             {"label": "Technology",           "etf": "XLK",         "sector_key": "tech"},
+                "tech_focus":       {"label": "Technology",           "etf": "XLK",         "sector_key": "tech"},
+                "ai_compute":       {"label": "AI / Compute",         "etf": "SOXX, SMH",   "sector_key": "ai_compute"},
+                "quantum":          {"label": "Quantum Computing",    "etf": "QTUM, QQQ",   "sector_key": "quantum"},
+                "quantum_focus":    {"label": "Quantum Computing",    "etf": "QTUM, QQQ",   "sector_key": "quantum"},
+                "fintech":          {"label": "Fintech & Financials", "etf": "FINX, XLF",  "sector_key": "fintech"},
+                "finance_focus":    {"label": "Fintech & Financials", "etf": "FINX, XLF",  "sector_key": "fintech"},
+                "biotech":          {"label": "Biotech & Healthcare", "etf": "XBI, XLV",   "sector_key": "biotech"},
+                "healthcare_focus": {"label": "Biotech & Healthcare", "etf": "XBI, XLV",   "sector_key": "biotech"},
+                "real_estate":      {"label": "Real Estate & REITs",  "etf": "XLRE, IYR",  "sector_key": "real_estate"},
+                "real_estate_focus":{"label": "Real Estate & REITs",  "etf": "XLRE, IYR",  "sector_key": "real_estate"},
+                "uranium":          {"label": "Uranium & Nuclear",    "etf": "URA, URNM",  "sector_key": "uranium"},
+                # resolved profile name fallbacks
+                "thematic_energy":      {"label": "Energy",               "etf": "XLE",         "sector_key": "energy"},
+                "thematic_ai":          {"label": "AI / Compute",         "etf": "SOXX, SMH",   "sector_key": "ai_compute"},
+                "thematic_materials":   {"label": "Materials",            "etf": "XLB",         "sector_key": "materials"},
+                "thematic_defense":     {"label": "Aerospace & Defense",  "etf": "ITA, XAR",    "sector_key": "aerospace_defense"},
+                "thematic_tech":        {"label": "Technology",           "etf": "XLK",         "sector_key": "tech"},
+                "thematic_quantum":     {"label": "Quantum Computing",    "etf": "QTUM, QQQ",   "sector_key": "quantum"},
+                "thematic_financials":  {"label": "Fintech & Financials", "etf": "FINX, XLF",  "sector_key": "fintech"},
+                "thematic_healthcare":  {"label": "Biotech & Healthcare", "etf": "XBI, XLV",   "sector_key": "biotech"},
+                "thematic_real_estate": {"label": "Real Estate & REITs",  "etf": "XLRE, IYR",  "sector_key": "real_estate"},
+                "thematic_uranium":     {"label": "Uranium & Nuclear",    "etf": "URA, URNM",  "sector_key": "uranium"},
+            }
+            _smeta = _SECTOR_META.get(preset_intent or "", {})
+            _slabel = _smeta.get("label", (preset_intent or "sector").replace("thematic_", "").replace("_", " ").title())
+            _setf   = _smeta.get("etf", "sector ETF")
+            _skey   = _smeta.get("sector_key", preset_intent or "")
+            system_blocks.append({
+                "type": "text",
+                "text": SECTOR_INTEL_CONTRACT,
+            })
+            system_blocks.append({
+                "type": "text",
+                "text": (
+                    f"SECTOR_CONTEXT (inject these into your response fields):\n"
+                    f"  human_label = \"{_slabel}\"\n"
+                    f"  sector_key  = \"{_skey}\"\n"
+                    f"  primary_benchmark_etf(s) = {_setf}\n"
+                    f"Use {_setf} as the lead benchmark row(s) in the benchmark array.\n"
+                    f"All stocks in top_stocks_to_watch must be from the {_slabel} sector.\n"
+                ),
             })
 
         use_fast_model = category not in self.DEEP_ANALYSIS_CATEGORIES
