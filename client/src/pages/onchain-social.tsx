@@ -388,7 +388,18 @@ export default function OnchainSocialPage() {
         {/* HERO */}
         <div style={{ padding: '1.5rem 3rem 1rem', maxWidth: 900, margin: '0 auto', textAlign: 'center', position: 'relative', zIndex: 1 }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem', marginBottom: '0.5rem' }}>
-            <img src={socialImage} alt="Caelyn.ai" style={{ width: 320, height: 'auto', objectFit: 'contain' }} />
+            <img
+              src={socialImage}
+              alt="Caelyn.ai"
+              style={{
+                width: 320,
+                height: 'auto',
+                objectFit: 'contain',
+                WebkitMaskImage: 'radial-gradient(ellipse 80% 80% at 50% 48%, black 45%, transparent 78%)',
+                maskImage: 'radial-gradient(ellipse 80% 80% at 50% 48%, black 45%, transparent 78%)',
+                filter: 'drop-shadow(0 0 18px rgba(255,255,255,0.55)) drop-shadow(0 0 40px rgba(220,240,255,0.3))',
+              }}
+            />
             <h1 style={{ fontSize: 'clamp(1.4rem, 3vw, 2rem)', fontWeight: 700, lineHeight: 1.15, letterSpacing: '-0.03em', margin: 0 }}>
               <span className="gradient-text">Social</span>
             </h1>
