@@ -3856,6 +3856,24 @@ class TradingAgent:
                     "— last 30 days only. Do NOT include posts from any accounts outside this list. "
                     "Identify consensus bullish tickers across only these 18 selected traders and follow your JSON schema exactly."
                 ),
+                "crypto": (
+                    "Search X/crypto Twitter for the most actively discussed cryptocurrencies, DeFi protocols, "
+                    "and on-chain narratives right now (last 24h). Use your X search to find current BTC sentiment, "
+                    "trending altcoins, and narrative heat (AI tokens, RWA, DePIN, meme coins, L2s, etc.). "
+                    "Then synthesize your X findings WITH the proprietary market data provided (CoinGecko, CMC, "
+                    "Hyperliquid funding rates, DeFiLlama TVL, altFINS signals, Polymarket probabilities). "
+                    "Where your X search and the data agree = highest conviction. "
+                    "Return structured JSON exactly per your crypto schema instructions."
+                ),
+                "crypto_scanner": (
+                    "Search X/crypto Twitter for the most actively discussed cryptocurrencies, DeFi protocols, "
+                    "and on-chain narratives right now (last 24h). Use your X search to find current BTC sentiment, "
+                    "trending altcoins, and narrative heat (AI tokens, RWA, DePIN, meme coins, L2s, etc.). "
+                    "Then synthesize your X findings WITH the proprietary market data provided (CoinGecko, CMC, "
+                    "Hyperliquid funding rates, DeFiLlama TVL, altFINS signals, Polymarket probabilities). "
+                    "Where your X search and the data agree = highest conviction. "
+                    "Return structured JSON exactly per your crypto schema instructions."
+                ),
             }
             latest_user = _PRESET_TRIGGERS.get(
                 preset_intent or "",
@@ -6454,7 +6472,17 @@ Be direct and opinionated. Tell me what you actually think."""
 
         crypto_preamble = ""
         if category == "crypto":
+            _is_grok_solo = reasoning_model == "grok"
+            _grok_addendum = (
+                "YOU ARE GROK — USE YOUR X SEARCH ADVANTAGE:\n"
+                "You have real-time X/Twitter search. Use it FIRST to find what crypto twitter is discussing RIGHT NOW.\n"
+                "Then cross-reference your X findings with the proprietary market data provided below.\n"
+                "Where X sentiment ALIGNS with on-chain data (funding rates, TVL flows, volume) = HIGHEST conviction.\n"
+                "Where X is hyped but data shows no confirmation = flag as speculative only.\n"
+                "Your X search is your edge here. Prioritize coins that show BOTH social momentum AND data confirmation.\n\n"
+            ) if _is_grok_solo else ""
             crypto_preamble = (
+                f"{_grok_addendum}"
                 "CRYPTO MARKET INTELLIGENCE — You are analyzing crypto data for a trader whose philosophy is:\n"
                 "- BTC is the only true INVESTMENT. All other crypto is TRADED based on hype cycles + technical momentum + catalysts.\n"
                 "- Focus on: Fear & Greed sentiment, BTC dominance, funding rates (squeeze setups), and altcoins with ACCELERATING relative strength or social hype.\n"
