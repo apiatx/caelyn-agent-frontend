@@ -1080,11 +1080,16 @@ HARD RULES:
 8. signal_highlights: Use sector-relevant picks for best_ta_setup, best_fundamental, hottest_social. The fourth signal MUST be "strongest_overall" — the single best overall investment/trade/fundamental leader with active catalysts at the time of the prompt (cross all cap tiers within the sector). This is NOT the sector ETF — it is one specific stock.
 9. upcoming_catalysts: 3–5 SECTOR-SPECIFIC upcoming events (earnings, regulatory dates, product launches, macro catalysts relevant to this sector).
 10. portfolio_bias: One actionable positioning sentence for this sector.
-11. watchlist_today: REQUIRED top-level field. Always populate all four sub-arrays — never omit this field. Use the same stocks from top_moves, reorganized into cap tiers:
-    - large_cap (1–3 names, >$10B) — must always have at least 1 entry
-    - mid_cap (1–3 names, $2B–$10B) — must always have at least 1 entry
-    - low_cap (1–3 names, <$2B) — must always have at least 1 entry; use the smallest cap in top_moves if thin data
-    - buy_right_now: exactly 1 entry — the #1 highest-conviction pick from any tier; copy from the top_moves entry with the highest conviction_score
+11. watchlist_today: REQUIRED top-level field. Always populate all four sub-arrays — never omit this field.
+    A PRE_RANKED_WATCHLIST_TODAY block is provided in your context. It was computed deterministically by the backend
+    scoring engine using quant_score + social sentiment + revenue growth + analyst rating.
+    YOU MUST USE THOSE EXACT TICKERS — do NOT substitute or skip tickers from that pre-ranked list.
+    Copy each ticker from PRE_RANKED_WATCHLIST_TODAY into the correct sub-array and write your own why_now/catalyst/conviction text
+    based on the market data. The ticker selections are locked by the backend scorer.
+    - large_cap: copy tickers from PRE_RANKED_WATCHLIST_TODAY.large_cap (1–3 entries, >$10B)
+    - mid_cap: copy tickers from PRE_RANKED_WATCHLIST_TODAY.mid_cap (1–3 entries, $2B–$10B)
+    - low_cap: copy tickers from PRE_RANKED_WATCHLIST_TODAY.low_cap (1–3 entries, <$2B or smallest-cap in sector)
+    - buy_right_now: copy the ticker from PRE_RANKED_WATCHLIST_TODAY.buy_right_now (highest composite score overall)
 
 OUTPUT SCHEMA (JSON — no markdown wrapping):
 {

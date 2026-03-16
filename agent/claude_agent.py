@@ -5937,6 +5937,169 @@ Be direct and opinionated. Tell me what you actually think."""
                 print(f"[Agent] Removed oldest message ({content_len:,} chars) to fit context window")
         return messages
 
+    @staticmethod
+    def _build_thematic_watchlist_prerank(market_data: dict) -> str:
+        """
+        Deterministically rank and bucket sector candidates into watchlist_today
+        using the structured data already gathered by get_thematic_scan().
+
+        Scoring weights (applied to normalised 0-100 values):
+          40%  quant_score         (from score_for_trades in market_data_service)
+          30%  social_bull_pct     (StockTwits bullish_percent)
+          20%  revenue_growth_pct  (StockAnalysis overview)
+          10%  analyst_boost       (+15 pts if "Buy" in analyst_rating)
+
+        Market-cap buckets:
+          large  > $10B
+          mid    $2B – $10B
+          low    < $2B  (falls back to the smallest-cap ticker when sector is thin)
+
+        Returns a compact JSON string to inject into the system prompt.
+        """
+        import re as _re
+
+        def _parse_mcap_billions(raw: str) -> float | None:
+            """Convert '$3.5T' / '$450B' / '$4.5B' / '$250M' → float billions."""
+            if not raw or not isinstance(raw, str):
+                return None
+            raw = raw.replace(",", "").strip()
+            m = _re.search(r'([\d.]+)\s*([TBMK])', raw, _re.IGNORECASE)
+            if not m:
+                return None
+            val, suffix = float(m.group(1)), m.group(2).upper()
+            multipliers = {"T": 1_000, "B": 1, "M": 0.001, "K": 0.000001}
+            return val * multipliers.get(suffix, 1)
+
+        def _parse_pct(raw) -> float:
+            """Parse '78%' / '-12.5%' / 78.0 → float, else 0."""
+            if raw is None:
+                return 0.0
+            if isinstance(raw, (int, float)):
+                return float(raw)
+            m = _re.search(r'([+-]?\d+\.?\d*)', str(raw))
+            return float(m.group(1)) if m else 0.0
+
+        ranked_tickers = market_data.get("ranked_tickers", [])
+        enriched_data  = market_data.get("enriched_data", {})
+
+        # Build quant_score lookup {ticker: score}
+        qs_map = {r["ticker"]: float(r.get("score", 0)) for r in ranked_tickers if isinstance(r, dict)}
+
+        # Score every enriched ticker
+        candidates = []
+        for ticker, tdata in enriched_data.items():
+            if not isinstance(tdata, dict):
+                continue
+            overview  = tdata.get("overview", {}) or {}
+            sentiment = tdata.get("sentiment", {}) or {}
+
+            quant     = qs_map.get(ticker, 0.0)
+            social    = float(sentiment.get("bullish_percent") or 0)
+            rev_g     = _parse_pct(overview.get("revenue_growth"))
+            rev_g     = max(min(rev_g, 200), -50)          # clamp wild outliers
+
+            analyst_raw = (overview.get("analyst_rating") or "").lower()
+            analyst_boost = 15.0 if "buy" in analyst_raw else 0.0
+
+            # Normalise each component to 0-100 before weighting
+            quant_n  = min(quant, 100)
+            social_n = min(social, 100)
+            rev_n    = min(max((rev_g + 50) / 2.5, 0), 100)   # -50→0, 0→20, 200→100
+
+            composite = (
+                0.40 * quant_n
+                + 0.30 * social_n
+                + 0.20 * rev_n
+                + 0.10 * analyst_boost
+            )
+
+            mcap_raw  = overview.get("market_cap", "")
+            mcap_b    = _parse_mcap_billions(mcap_raw)
+            company   = overview.get("company", ticker)
+            earnings  = overview.get("earnings_date", "")
+            rev_str   = overview.get("revenue_growth", "")
+            price_tgt = overview.get("price_target", "")
+            upside    = overview.get("upside_downside", "")
+
+            candidates.append({
+                "ticker":       ticker,
+                "company":      company,
+                "composite":    round(composite, 1),
+                "quant":        round(quant_n, 1),
+                "social":       round(social_n, 1),
+                "rev_growth":   rev_str,
+                "analyst":      overview.get("analyst_rating", ""),
+                "price_target": price_tgt,
+                "upside":       upside,
+                "earnings_date":earnings,
+                "mcap_b":       mcap_b,
+                "mcap_raw":     mcap_raw,
+            })
+
+        if not candidates:
+            return ""
+
+        candidates.sort(key=lambda c: c["composite"], reverse=True)
+
+        # Bucket by market cap
+        large, mid, low = [], [], []
+        for c in candidates:
+            mb = c["mcap_b"]
+            if mb is None:
+                mid.append(c)            # unknown → mid bucket
+            elif mb >= 10:
+                large.append(c)
+            elif mb >= 2:
+                mid.append(c)
+            else:
+                low.append(c)
+
+        # Fallback: if low_cap is empty, use the smallest-cap ticker from any bucket
+        if not low and candidates:
+            by_size = [c for c in candidates if c["mcap_b"] is not None]
+            if by_size:
+                by_size.sort(key=lambda c: c["mcap_b"])
+                low = [by_size[0]]      # smallest available; label noted in injected text
+
+        def _to_entry(c: dict, rank: int, tier_note: str = "") -> dict:
+            note_parts = []
+            if c.get("rev_growth"):
+                note_parts.append(f"rev_growth={c['rev_growth']}")
+            if c.get("analyst"):
+                note_parts.append(f"analyst={c['analyst']}")
+            if c.get("earnings_date"):
+                note_parts.append(f"earnings={c['earnings_date']}")
+            if c.get("upside"):
+                note_parts.append(f"upside={c['upside']}")
+            if tier_note:
+                note_parts.append(tier_note)
+            return {
+                "rank":            rank,
+                "ticker":          c["ticker"],
+                "company":         c["company"],
+                "market_cap":      c["mcap_raw"] or "unknown",
+                "composite_score": c["composite"],
+                "signals":         ", ".join(note_parts) if note_parts else "see data",
+            }
+
+        large_entries = [_to_entry(c, i+1) for i, c in enumerate(large[:3])]
+        mid_entries   = [_to_entry(c, i+1) for i, c in enumerate(mid[:3])]
+        low_entries   = [_to_entry(c, i+1, tier_note="smallest-cap in sector" if c not in [x for x in candidates if (x.get("mcap_b") or 999) < 2] else "") for i, c in enumerate(low[:3])]
+        buy_rn        = _to_entry(candidates[0], 1)   # highest composite overall
+
+        prerank = {
+            "large_cap":     large_entries,
+            "mid_cap":       mid_entries,
+            "low_cap":       low_entries,
+            "buy_right_now": buy_rn,
+        }
+
+        print(f"[SECTOR_PRERANK] large={len(large_entries)} mid={len(mid_entries)} low={len(low_entries)} "
+              f"buy_rn={buy_rn['ticker']}({buy_rn['composite_score']}) "
+              f"pool={len(candidates)}")
+
+        return json.dumps(prerank, indent=2)
+
     def _build_prompt(self, user_prompt: str, market_data: dict, history: list = None, is_followup: bool = False, category: str = "", chatbox_mode: bool = False, reasoning_model: str = "claude", preset_intent: str = None):
         """Build system_blocks, messages, model selection for a Claude call.
         Returns (system_blocks, messages, model, token_limit, use_thinking, thinking_budget)."""
@@ -6427,6 +6590,25 @@ FOLLOW-UP MODE: The user is continuing a conversation. You have the full convers
                     f"All stocks in watchlist_today and top_moves must be from the {_slabel} sector only.\n"
                 ),
             })
+            # Inject deterministic pre-ranked watchlist so Claude uses real signal data
+            # instead of guessing from truncated prose
+            try:
+                _prerank_json = self._build_thematic_watchlist_prerank(market_data)
+                if _prerank_json:
+                    system_blocks.append({
+                        "type": "text",
+                        "text": (
+                            "PRE_RANKED_WATCHLIST_TODAY (computed deterministically from backend signals):\n"
+                            "This data was scored using: quant_score(40%) + social_bull_pct(30%) + "
+                            "revenue_growth(20%) + analyst_rating(10%).\n"
+                            "USE THESE EXACT TICKERS in your watchlist_today output — do NOT swap them "
+                            "for other names. You may enhance the why_now/catalyst/conviction text, "
+                            "but the ticker selections are FIXED.\n\n"
+                            f"{_prerank_json}"
+                        ),
+                    })
+            except Exception as _pre_err:
+                print(f"[SECTOR_PRERANK] Error building pre-ranked watchlist: {_pre_err}")
 
         use_fast_model = category not in self.DEEP_ANALYSIS_CATEGORIES
         if category == "crypto":

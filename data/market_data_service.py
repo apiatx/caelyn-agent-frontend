@@ -3040,17 +3040,27 @@ class MarketDataService:
                 "name":
                 "AI & Compute Infrastructure",
                 "tickers": [
+                    # Large caps (>$10B)
                     "NVDA", "AMD", "AVGO", "MRVL", "CRDO", "SMCI", "VRT",
                     "ANET", "DELL", "ORCL", "MSFT", "GOOGL", "AMZN", "META",
-                    "TSM"
+                    "TSM",
+                    # Mid cap (~$3B) — pure-play AI inference/voice
+                    "SOUN",
+                    # Low cap (~$1.9B) — AI enterprise software
+                    "BBAI",
                 ],
             },
             "energy": {
                 "name":
                 "Energy & Oil/Gas",
                 "tickers": [
+                    # Large caps (>$10B)
                     "XOM", "CVX", "COP", "EOG", "DVN", "FANG", "OXY", "SLB",
-                    "HAL", "AR", "EQT", "RRC"
+                    "HAL", "AR", "EQT", "RRC",
+                    # Mid cap (~$2.7B) — non-op E&P royalties
+                    "NOG",
+                    # Low cap (~$1.1B) — deepwater E&P
+                    "KOS",
                 ],
             },
             "uranium": {
@@ -3073,8 +3083,11 @@ class MarketDataService:
                 "name":
                 "Defense & Aerospace",
                 "tickers": [
+                    # Large caps
                     "LMT", "RTX", "NOC", "GD", "BA", "LHX", "LDOS", "KTOS",
-                    "PLTR", "RKLB"
+                    "PLTR", "RKLB",
+                    # Mid cap (~$9.5B) — eVTOL / advanced air mobility
+                    "JOBY",
                 ],
             },
             "quantum": {
@@ -3089,33 +3102,51 @@ class MarketDataService:
                 "name":
                 "Technology & Software",
                 "tickers": [
+                    # Large caps
                     "AAPL", "MSFT", "GOOGL", "META", "AMZN", "CRM", "NOW",
                     "ADBE", "INTU", "PANW", "CRWD", "SNOW", "NET", "DDOG",
-                    "ZS"
+                    "ZS",
+                    # Mid cap (~$3.9B) — DevSecOps platform
+                    "GTLB",
                 ],
             },
             "financials": {
                 "name":
                 "Financials & Banking",
                 "tickers": [
+                    # Large caps
                     "JPM", "BAC", "GS", "MS", "WFC", "C", "SCHW", "BLK",
-                    "AXP", "V", "MA", "COF"
+                    "AXP", "V", "MA", "COF",
+                    # Mid cap (~$2.6B) — AI lending platform
+                    "UPST",
+                    # Low cap (~$1.6B) — marketplace lending
+                    "LC",
                 ],
             },
             "healthcare": {
                 "name":
                 "Healthcare & Biotech",
                 "tickers": [
+                    # Large caps
                     "UNH", "JNJ", "LLY", "ABBV", "PFE", "MRK", "TMO",
-                    "ABT", "AMGN", "GILD", "ISRG", "VRTX"
+                    "ABT", "AMGN", "GILD", "ISRG", "VRTX",
+                    # Low cap (~$1.8B) — AI drug discovery
+                    "RXRX",
+                    # Low cap (~$1.6B) — TIL therapy
+                    "IOVA",
                 ],
             },
             "real_estate": {
                 "name":
                 "Real Estate & REITs",
                 "tickers": [
+                    # Large caps
                     "AMT", "PLD", "EQIX", "SPG", "O", "DLR", "WELL", "AVB",
-                    "PSA", "VICI", "ARE", "EXR"
+                    "PSA", "VICI", "ARE", "EXR",
+                    # Mid cap (~$4.7B) — iBuyer / proptech
+                    "OPEN",
+                    # Low cap (~$1.4B) — tech-enabled residential brokerage
+                    "RDFN",
                 ],
             },
             "materials": {
