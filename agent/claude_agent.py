@@ -3811,6 +3811,22 @@ class TradingAgent:
                 latest_user = m.get("content", user_prompt)
                 break
 
+        # xAI Responses API rejects empty user messages with "No query provided".
+        # Preset buttons often send no typed text — supply a minimal trigger so the
+        # system-block instructions drive the response instead.
+        if not latest_user or not latest_user.strip():
+            _PRESET_TRIGGERS = {
+                "x_trader_consensus": (
+                    "Search the last 30 days of posts from the listed X accounts and identify "
+                    "the top consensus bullish tickers. Follow your JSON schema exactly."
+                ),
+            }
+            latest_user = _PRESET_TRIGGERS.get(
+                preset_intent or "",
+                "Analyze the market data provided and return structured JSON per your instructions.",
+            )
+            print(f"[GROK_DISPATCH] Empty user_prompt — using preset trigger for {preset_intent!r}: {latest_user[:80]}")
+
         use_deep = not is_collab_agent
         print(
             f"[GROK_DISPATCH] XaiSentimentProvider: model={'deep' if use_deep else 'fast'}, "
