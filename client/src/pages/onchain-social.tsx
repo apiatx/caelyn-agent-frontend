@@ -67,6 +67,192 @@ interface GrokMessage {
   role: 'user' | 'assistant';
   content: string;
   timestamp: number;
+  structured?: any;
+}
+
+// ─── Structured social response renderer ─────────────────────────
+const font = "'JetBrains Mono', monospace";
+const sansFont = "'Outfit', sans-serif";
+
+function ConvictionBadge({ value }: { value: string }) {
+  const color = /high/i.test(value) ? '#22c55e' : /medium/i.test(value) ? '#f59e0b' : '#64748b';
+  return (
+    <span style={{
+      padding: '1px 7px', borderRadius: 100, fontSize: '0.6rem', fontWeight: 700,
+      fontFamily: font, color, border: `1px solid ${color}40`,
+      background: `${color}12`, textTransform: 'uppercase' as const, letterSpacing: '0.06em',
+    }}>{value}</span>
+  );
+}
+
+function renderConsensusResponse(structured: any) {
+  const C = {
+    blue: '#38bdf8', gold: '#f59e0b', green: '#22c55e', red: '#ef4444',
+    purple: '#a78bfa', dim: '#475569', text: '#94a3b8', bright: '#e2e8f0',
+    card: 'rgba(10,12,28,0.85)', border: 'rgba(255,255,255,0.07)',
+  };
+
+  const tickers: any[] = structured.consensus_tickers || [];
+  const momentumLeaders: any[] = structured.momentum_leaders || [];
+  const earlyVsCrowded = structured.early_vs_crowded || {};
+  const earlyStage: any[] = earlyVsCrowded.early_stage || [];
+  const crowded: any[] = earlyVsCrowded.crowded || [];
+  const finalOpinion = structured.final_opinion || {};
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+
+      {/* Header */}
+      <div style={{ borderBottom: `1px solid ${C.border}`, paddingBottom: '0.6rem', marginBottom: '0.2rem' }}>
+        <div style={{ color: C.bright, fontWeight: 700, fontSize: '0.85rem', fontFamily: font, marginBottom: 4 }}>
+          {structured.title || 'Consensus Tickers Among Top X Traders'}
+        </div>
+        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+          {structured.analysis_window && (
+            <span style={{ color: C.dim, fontSize: '0.62rem', fontFamily: font }}>
+              Window: <span style={{ color: C.blue }}>{structured.analysis_window}</span>
+            </span>
+          )}
+          {structured.accounts_analyzed && (
+            <span style={{ color: C.dim, fontSize: '0.62rem', fontFamily: font }}>
+              Accounts: <span style={{ color: C.blue }}>{Array.isArray(structured.accounts_analyzed) ? structured.accounts_analyzed.length : structured.accounts_analyzed}</span>
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Consensus summary */}
+      {structured.consensus_summary && (
+        <div style={{ color: C.text, fontSize: '0.74rem', fontFamily: sansFont, lineHeight: 1.65,
+          background: `${C.blue}08`, border: `1px solid ${C.blue}18`, borderRadius: 8, padding: '0.65rem 0.9rem' }}>
+          {structured.consensus_summary}
+        </div>
+      )}
+
+      {/* Consensus tickers */}
+      {tickers.length > 0 && (
+        <div>
+          <div style={{ color: C.dim, fontSize: '0.6rem', fontWeight: 700, fontFamily: font,
+            textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.5rem' }}>
+            Consensus Tickers ({tickers.length})
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {tickers.map((t: any, i: number) => (
+              <div key={i} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, padding: '0.75rem 0.9rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: t.thesis || t.why_bullish ? 6 : 0 }}>
+                  {t.rank != null && <span style={{ color: C.gold, fontWeight: 800, fontSize: '0.8rem', fontFamily: font }}>#{t.rank}</span>}
+                  <span style={{ color: C.blue, fontWeight: 800, fontSize: '0.88rem', fontFamily: font }}>{t.ticker}</span>
+                  {t.conviction && <ConvictionBadge value={t.conviction} />}
+                  {t.consensus_strength && (
+                    <span style={{ color: C.purple, fontSize: '0.62rem', fontFamily: font }}>{t.consensus_strength}</span>
+                  )}
+                  {t.trader_count != null && (
+                    <span style={{ color: C.dim, fontSize: '0.62rem', fontFamily: font }}>{t.trader_count} traders</span>
+                  )}
+                  {t.signal_weight != null && (
+                    <span style={{ color: C.gold, fontSize: '0.62rem', fontFamily: font }}>score {t.signal_weight}</span>
+                  )}
+                  {t.momentum && (
+                    <span style={{ color: /increas/i.test(t.momentum) ? C.green : C.dim, fontSize: '0.62rem', fontFamily: font }}>↑ {t.momentum}</span>
+                  )}
+                </div>
+                {t.thesis && <div style={{ color: C.text, fontSize: '0.72rem', fontFamily: sansFont, lineHeight: 1.6, marginBottom: 4 }}>{t.thesis}</div>}
+                {t.why_bullish && <div style={{ color: C.green, fontSize: '0.68rem', fontFamily: sansFont, lineHeight: 1.5, marginBottom: 4 }}>Bullish: {t.why_bullish}</div>}
+                {t.risks && <div style={{ color: C.red, fontSize: '0.68rem', fontFamily: sansFont, lineHeight: 1.5, marginBottom: 4 }}>Risks: {t.risks}</div>}
+                {Array.isArray(t.representative_reasons) && t.representative_reasons.length > 0 && (
+                  <div style={{ marginTop: 4 }}>
+                    {t.representative_reasons.map((r: string, j: number) => (
+                      <div key={j} style={{ color: C.dim, fontSize: '0.65rem', fontFamily: sansFont, lineHeight: 1.5 }}>• {r}</div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Momentum leaders */}
+      {momentumLeaders.length > 0 && (
+        <div>
+          <div style={{ color: C.dim, fontSize: '0.6rem', fontWeight: 700, fontFamily: font,
+            textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.4rem' }}>
+            Momentum Leaders
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+            {momentumLeaders.map((m: any, i: number) => (
+              <div key={i} style={{ padding: '0.35rem 0.75rem', background: `${C.green}10`,
+                border: `1px solid ${C.green}28`, borderRadius: 8 }}>
+                <span style={{ color: C.green, fontWeight: 700, fontFamily: font, fontSize: '0.72rem' }}>{m.ticker}</span>
+                {m.note && <span style={{ color: C.dim, fontSize: '0.62rem', fontFamily: sansFont, marginLeft: 6 }}>{m.note}</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Early vs Crowded */}
+      {(earlyStage.length > 0 || crowded.length > 0) && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+          <div>
+            <div style={{ color: C.dim, fontSize: '0.6rem', fontWeight: 700, fontFamily: font,
+              textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.4rem' }}>
+              Early Stage
+            </div>
+            {earlyStage.length > 0 ? earlyStage.map((e: any, i: number) => (
+              <div key={i} style={{ padding: '0.35rem 0.65rem', background: `${C.purple}10`,
+                border: `1px solid ${C.purple}28`, borderRadius: 6, marginBottom: 4 }}>
+                <span style={{ color: C.purple, fontWeight: 700, fontFamily: font, fontSize: '0.72rem' }}>{e.ticker}</span>
+                {e.note && <div style={{ color: C.dim, fontSize: '0.62rem', fontFamily: sansFont }}>{e.note}</div>}
+              </div>
+            )) : <div style={{ color: C.dim, fontSize: '0.65rem', fontFamily: sansFont }}>—</div>}
+          </div>
+          <div>
+            <div style={{ color: C.dim, fontSize: '0.6rem', fontWeight: 700, fontFamily: font,
+              textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.4rem' }}>
+              Crowded
+            </div>
+            {crowded.length > 0 ? crowded.map((c: any, i: number) => (
+              <div key={i} style={{ padding: '0.35rem 0.65rem', background: `${C.gold}08`,
+                border: `1px solid ${C.gold}28`, borderRadius: 6, marginBottom: 4 }}>
+                <span style={{ color: C.gold, fontWeight: 700, fontFamily: font, fontSize: '0.72rem' }}>{c.ticker}</span>
+                {c.note && <div style={{ color: C.dim, fontSize: '0.62rem', fontFamily: sansFont }}>{c.note}</div>}
+              </div>
+            )) : <div style={{ color: C.dim, fontSize: '0.65rem', fontFamily: sansFont }}>—</div>}
+          </div>
+        </div>
+      )}
+
+      {/* Final opinion */}
+      {(finalOpinion.reasoning || (finalOpinion.strongest_buys && finalOpinion.strongest_buys.length > 0)) && (
+        <div style={{ background: `${C.gold}08`, border: `1px solid ${C.gold}22`, borderRadius: 8, padding: '0.75rem 0.9rem' }}>
+          <div style={{ color: C.gold, fontSize: '0.6rem', fontWeight: 700, fontFamily: font,
+            textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+            Final Opinion
+          </div>
+          {finalOpinion.strongest_buys && finalOpinion.strongest_buys.length > 0 && (
+            <div style={{ marginBottom: 6 }}>
+              <span style={{ color: C.dim, fontSize: '0.65rem', fontFamily: font }}>Strongest Buys: </span>
+              {finalOpinion.strongest_buys.map((t: string, i: number) => (
+                <span key={i} style={{ color: C.green, fontWeight: 700, fontFamily: font, fontSize: '0.72rem', marginRight: 6 }}>{t}</span>
+              ))}
+            </div>
+          )}
+          {finalOpinion.watch_closely && finalOpinion.watch_closely.length > 0 && (
+            <div style={{ marginBottom: 6 }}>
+              <span style={{ color: C.dim, fontSize: '0.65rem', fontFamily: font }}>Watch Closely: </span>
+              {finalOpinion.watch_closely.map((t: string, i: number) => (
+                <span key={i} style={{ color: C.blue, fontWeight: 700, fontFamily: font, fontSize: '0.72rem', marginRight: 6 }}>{t}</span>
+              ))}
+            </div>
+          )}
+          {finalOpinion.reasoning && (
+            <div style={{ color: C.text, fontSize: '0.72rem', fontFamily: sansFont, lineHeight: 1.65 }}>{finalOpinion.reasoning}</div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function GrokSocialAgent() {
@@ -80,18 +266,23 @@ function GrokSocialAgent() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const sendMessage = useCallback(async (text: string) => {
-    if (!text.trim() || loading) return;
-    const userMsg: GrokMessage = { role: 'user', content: text.trim(), timestamp: Date.now() };
+  const sendMessage = useCallback(async (text: string, presetIntent?: string) => {
+    const effectiveText = text.trim() || (presetIntent ? presetIntent.replace(/_/g, ' ') : '');
+    if (!effectiveText && !presetIntent) return;
+    if (loading) return;
+    const userMsg: GrokMessage = { role: 'user', content: text.trim() || presetIntent || '', timestamp: Date.now() };
     setMessages(prev => [...prev, userMsg]);
     setInput('');
     setLoading(true);
 
     try {
+      const payload: Record<string, any> = { query: text.trim() };
+      if (presetIntent) payload.preset_intent = presetIntent;
+
       const res = await fetch(`${AGENT_BACKEND_URL}/api/social/query`, {
         method: 'POST',
         headers: authHeaders(),
-        body: JSON.stringify({ query: text.trim() }),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
@@ -100,12 +291,13 @@ function GrokSocialAgent() {
       }
 
       const data = await res.json();
-      const responseText = data.response || data.error || 'No response received';
+      const responseText = data.response || data.analysis || data.error || 'No response received';
 
       setMessages(prev => [...prev, {
         role: 'assistant',
         content: responseText,
         timestamp: Date.now(),
+        structured: data.structured || null,
       }]);
     } catch (err) {
       setMessages(prev => [...prev, {
@@ -208,6 +400,44 @@ function GrokSocialAgent() {
           >{loading ? '...' : 'SEND'}</button>
         </form>
 
+        {/* ── x_trader_consensus preset button ── */}
+        <div style={{ marginBottom: '0.6rem' }}>
+          <button
+            onClick={() => sendMessage('', 'x_trader_consensus')}
+            disabled={loading}
+            style={{
+              fontFamily: font,
+              fontSize: '0.68rem',
+              fontWeight: 700,
+              color: '#38bdf8',
+              background: 'rgba(56,189,248,0.08)',
+              border: '1px solid rgba(56,189,248,0.3)',
+              borderRadius: 8,
+              padding: '0.45rem 1rem',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              opacity: loading ? 0.4 : 1,
+              transition: 'all 0.2s',
+              letterSpacing: '0.02em',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+            }}
+            onMouseOver={e => {
+              if (!loading) {
+                (e.currentTarget as HTMLButtonElement).style.background = 'rgba(56,189,248,0.15)';
+                (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(56,189,248,0.5)';
+              }
+            }}
+            onMouseOut={e => {
+              (e.currentTarget as HTMLButtonElement).style.background = 'rgba(56,189,248,0.08)';
+              (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(56,189,248,0.3)';
+            }}
+          >
+            <span style={{ fontSize: '0.7rem' }}>𝕏</span>
+            Consensus tickers among top X traders
+          </button>
+        </div>
+
         {/* Pre-prompt chips */}
         <div style={{
           display: 'flex', flexWrap: 'wrap', gap: '0.4rem',
@@ -278,7 +508,11 @@ function GrokSocialAgent() {
                   lineHeight: 1.65,
                   color: msg.role === 'user' ? '#c7d2fe' : '#94a3b8',
                 }}>
-                  {msg.role === 'assistant' ? renderGrokResponse(msg.content) : msg.content}
+                  {msg.role === 'assistant'
+                    ? (msg.structured?.scan_type === 'x_trader_consensus' || msg.structured?.display_type === 'social')
+                      ? renderConsensusResponse(msg.structured)
+                      : renderGrokResponse(msg.content)
+                    : msg.content}
                 </div>
               </div>
             ))}
