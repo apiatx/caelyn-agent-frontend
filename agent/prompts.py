@@ -1080,11 +1080,11 @@ HARD RULES:
 8. signal_highlights: Use sector-relevant picks for best_ta_setup, best_fundamental, hottest_social. The fourth signal MUST be "strongest_overall" — the single best overall investment/trade/fundamental leader with active catalysts at the time of the prompt (cross all cap tiers within the sector). This is NOT the sector ETF — it is one specific stock.
 9. upcoming_catalysts: 3–5 SECTOR-SPECIFIC upcoming events (earnings, regulatory dates, product launches, macro catalysts relevant to this sector).
 10. portfolio_bias: One actionable positioning sentence for this sector.
-11. watchlist_today: Add this as an ADDITIONAL top-level field with four sub-arrays for structured cap-tier data:
-    - large_cap (1–3 names, >$10B)
-    - mid_cap (1–3 names, $2B–$10B)
-    - low_cap (1–3 names, <$2B)
-    - buy_right_now: exactly 1 entry — the #1 highest-conviction pick from any tier with the strongest combination of catalyst + technicals + fundamentals
+11. watchlist_today: REQUIRED top-level field. Always populate all four sub-arrays — never omit this field. Use the same stocks from top_moves, reorganized into cap tiers:
+    - large_cap (1–3 names, >$10B) — must always have at least 1 entry
+    - mid_cap (1–3 names, $2B–$10B) — must always have at least 1 entry
+    - low_cap (1–3 names, <$2B) — must always have at least 1 entry; use the smallest cap in top_moves if thin data
+    - buy_right_now: exactly 1 entry — the #1 highest-conviction pick from any tier; copy from the top_moves entry with the highest conviction_score
 
 OUTPUT SCHEMA (JSON — no markdown wrapping):
 {

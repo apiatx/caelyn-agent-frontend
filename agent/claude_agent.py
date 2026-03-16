@@ -6457,6 +6457,9 @@ FOLLOW-UP MODE: The user is continuing a conversation. You have the full convers
         elif category == "social_momentum":
             model = "claude-sonnet-4-5-20250929"
             token_limit = 6000
+        elif category == "thematic":
+            model = "claude-sonnet-4-5-20250929"
+            token_limit = 8000
         elif category == "followup":
             model = "claude-sonnet-4-20250514"
             token_limit = 4096
