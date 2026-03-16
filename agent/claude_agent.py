@@ -983,6 +983,12 @@ class TradingAgent:
         parsed_display = result.get("structured", {}).get("display_type", result.get("type", "unknown"))
         print(f"[AGENT] Response parsed, display_type: {parsed_display} ({time.time() - start_time:.1f}s)")
 
+        # Inject TradingView chart URLs for every coin in the crypto response
+        # This is a safety-net post-processor — runs regardless of whether Grok/Claude
+        # included the chart field, so every coin always has a clickable chart link.
+        if parsed_display == "crypto" and isinstance(result.get("structured"), dict):
+            result["structured"] = self._inject_crypto_chart_urls(result["structured"])
+
         if category == "best_trades" and market_data and isinstance(market_data, dict) and not use_chatbox_mode:
             if parsed_display != "trades":
                 print(f"[BEST_TRADES] Claude returned display_type={parsed_display}, enforcing structured trades output")
@@ -6549,6 +6555,18 @@ Be direct and opinionated. Tell me what you actually think."""
                 "- Format: event title + current yes probability + how it affects positioning\n"
                 "- Example: 'BTC ETF inflow >$500M this week (72% yes on Polymarket) → bullish catalyst, watch for momentum'\n"
                 "If polymarket_crypto is empty, skip — do NOT fabricate prediction market data.\n\n"
+                "TRADINGVIEW CHART URLS — MANDATORY FOR EVERY COIN:\n"
+                "Every entry in top_momentum, perps_squeezes, perps_crowded_longs, perps_divergences, \n"
+                "perps_top_volume, x_sentiment.top_social_movers, funding_rate_analysis.squeeze_candidates, \n"
+                "and funding_rate_analysis.crowded_longs MUST include a 'chart' field.\n"
+                "Format: \"chart\": \"https://www.tradingview.com/chart/?symbol=BINANCE:{SYMBOL}USDT\"\n"
+                "Rules:\n"
+                "- Replace {SYMBOL} with the uppercase coin symbol (BTC, ETH, SOL, HYPE, etc.)\n"
+                "- Always use BINANCE: prefix — it has the deepest liquidity and most reliable chart data\n"
+                "- BTC → BINANCE:BTCUSDT, ETH → BINANCE:ETHUSDT, SOL → BINANCE:SOLUSDT\n"
+                "- Less common tokens (HYPE, TAO, etc.) → BINANCE:HYPEUSDT, BINANCE:TAOUSDT\n"
+                "- NEVER use just the symbol alone (e.g. 'BTC') — always include BINANCE: prefix and USDT suffix\n"
+                "- NEVER omit the chart field — every coin item must have it\n\n"
                 "RESPONSE SECTION ORDER (follow this exactly):\n"
                 "1. market_overview\n"
                 "2. btc_eth_summary\n"
@@ -7072,6 +7090,81 @@ FOLLOW-UP MODE: The user is continuing a conversation. You have the full convers
                 "tickers": tickers,
             },
         }
+
+    def _inject_crypto_chart_urls(self, structured: dict) -> dict:
+        """
+        Post-processor: ensure every coin entry in the crypto response has a valid
+        TradingView chart URL. Runs after parse_response regardless of which model
+        generated the response, so charts always appear in the frontend.
+
+        Format: https://www.tradingview.com/chart/?symbol=BINANCE:{SYMBOL}USDT
+        Special cases: USDT/USDC are stablecoins — skip chart generation for them.
+        BTC uses BTCUSDT, ETH uses ETHUSDT (standard Binance perpetual/spot pairs).
+        """
+        _STABLECOINS = {"USDT", "USDC", "BUSD", "TUSD", "DAI", "FRAX", "LUSD", "PYUSD"}
+
+        def _make_chart(symbol: str) -> str:
+            sym = (symbol or "").upper().strip()
+            if not sym or sym in _STABLECOINS:
+                return ""
+            # Strip common suffixes already present (USDT, USD, PERP)
+            for suffix in ("USDT", "USD", "PERP", "-PERP"):
+                if sym.endswith(suffix) and len(sym) > len(suffix):
+                    sym = sym[: -len(suffix)]
+                    break
+            return f"https://www.tradingview.com/chart/?symbol=BINANCE:{sym}USDT"
+
+        def _inject_list(items: list, symbol_key: str = "symbol") -> list:
+            """Add chart field to every item in a list that has a symbol."""
+            if not isinstance(items, list):
+                return items
+            for item in items:
+                if not isinstance(item, dict):
+                    continue
+                if item.get("chart"):
+                    continue  # already present — respect model's choice
+                sym = item.get(symbol_key) or item.get("coin") or item.get("ticker") or ""
+                url = _make_chart(str(sym))
+                if url:
+                    item["chart"] = url
+            return items
+
+        added = 0
+        before = sum(
+            sum(1 for i in lst if isinstance(i, dict) and not i.get("chart"))
+            for key in ("top_momentum", "perps_squeezes", "perps_crowded_longs",
+                        "perps_divergences", "perps_top_volume")
+            for lst in [structured.get(key, [])]
+            if isinstance(lst, list)
+        )
+
+        # Top-level coin arrays
+        for key in ("top_momentum", "perps_squeezes", "perps_crowded_longs",
+                    "perps_divergences", "perps_top_volume"):
+            structured[key] = _inject_list(structured.get(key, []))
+
+        # Nested: x_sentiment.top_social_movers
+        x_sent = structured.get("x_sentiment", {})
+        if isinstance(x_sent, dict):
+            x_sent["top_social_movers"] = _inject_list(x_sent.get("top_social_movers", []))
+
+        # Nested: funding_rate_analysis.{squeeze_candidates, crowded_longs}
+        fra = structured.get("funding_rate_analysis", {})
+        if isinstance(fra, dict):
+            fra["squeeze_candidates"] = _inject_list(fra.get("squeeze_candidates", []))
+            fra["crowded_longs"] = _inject_list(fra.get("crowded_longs", []))
+
+        after = sum(
+            sum(1 for i in lst if isinstance(i, dict) and not i.get("chart"))
+            for key in ("top_momentum", "perps_squeezes", "perps_crowded_longs",
+                        "perps_divergences", "perps_top_volume")
+            for lst in [structured.get(key, [])]
+            if isinstance(lst, list)
+        )
+        added = before - after
+        if added > 0:
+            print(f"[CRYPTO_CHARTS] Injected {added} TradingView chart URLs into crypto response")
+        return structured
 
     def _parse_response(self, raw_response: str, request_id: str = "") -> dict:
         """
