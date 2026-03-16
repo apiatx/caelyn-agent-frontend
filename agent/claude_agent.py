@@ -9,7 +9,7 @@ import httpx
 
 from agent.data_compressor import compress_data
 from agent.institutional_scorer import apply_institutional_scoring
-from agent.prompts import SYSTEM_PROMPT, USER_INVESTMENT_PROFILE, CORE_QUANT_DNA, DEFAULT_PERSONAL_PROFILE, QUERY_CLASSIFIER_PROMPT, ORCHESTRATION_PROMPT, REASONING_BRIEF_PROMPT, TRENDING_VALIDATION_PROMPT, CROSS_ASSET_TRENDING_CONTRACT, BEST_TRADES_CONTRACT, DETERMINISTIC_SCREENER_CONTRACT, SMART_ORCHESTRATOR_PROMPT, PREDICTION_MARKETS_CONTRACT, SECTOR_ROTATION_CONTRACT, EARNINGS_CATALYST_CONTRACT, SECTOR_INTEL_CONTRACT
+from agent.prompts import SYSTEM_PROMPT, USER_INVESTMENT_PROFILE, CORE_QUANT_DNA, DEFAULT_PERSONAL_PROFILE, QUERY_CLASSIFIER_PROMPT, ORCHESTRATION_PROMPT, REASONING_BRIEF_PROMPT, TRENDING_VALIDATION_PROMPT, CROSS_ASSET_TRENDING_CONTRACT, BEST_TRADES_CONTRACT, DETERMINISTIC_SCREENER_CONTRACT, SMART_ORCHESTRATOR_PROMPT, PREDICTION_MARKETS_CONTRACT, SECTOR_ROTATION_CONTRACT, EARNINGS_CATALYST_CONTRACT, SECTOR_INTEL_CONTRACT, X_TRADER_CONSENSUS_CONTRACT
 from data.market_data_service import MarketDataService
 
 
@@ -125,6 +125,12 @@ class TradingAgent:
         "social_momentum_scan": "social_momentum",
         "news_leaders": "news_leaders",
         "catalyst_scan": "catalyst_scan",
+        # --- X Trader Consensus ---
+        "x_trader_consensus": "x_trader_consensus",
+        "trader_consensus": "x_trader_consensus",
+        "top_traders": "x_trader_consensus",
+        "consensus_tickers": "x_trader_consensus",
+        "x_consensus": "x_trader_consensus",
         # --- Other ---
         "microcap_spec": "microcap_spec",
         # --- Trending Now (frontend Trending button sends "trending_now") ---
@@ -1798,6 +1804,23 @@ class TradingAgent:
             "response_style": "high_conviction_ranked",
             "priority_depth": "medium",
         },
+        "x_trader_consensus": {
+            "intent": "x_trader_consensus",
+            "asset_classes": ["equities"],
+            "modules": {
+                "x_sentiment": False,
+                "social_sentiment": False,
+                "technical_scan": False,
+                "fundamental_validation": False,
+                "macro_context": False,
+                "liquidity_filter": False,
+                "earnings_data": False,
+                "ticker_research": False,
+            },
+            "risk_framework": "neutral",
+            "response_style": "high_conviction_ranked",
+            "priority_depth": "medium",
+        },
         "investment_ideas": {
             "intent": "investment_ideas",
             "asset_classes": ["equities"],
@@ -2300,6 +2323,7 @@ class TradingAgent:
         "investment_ideas": "investments",
         "briefing": "briefing",
         "x_social_scan": "social_momentum",
+        "x_trader_consensus": "x_trader_consensus",
         "custom_screen": "custom_screen",
         "short_setup": "bearish",
         "best_trades": "best_trades",
@@ -6530,6 +6554,12 @@ FOLLOW-UP MODE: The user is continuing a conversation. You have the full convers
             system_blocks.append({
                 "type": "text",
                 "text": EARNINGS_CATALYST_CONTRACT,
+            })
+
+        if category == "x_trader_consensus":
+            system_blocks.append({
+                "type": "text",
+                "text": X_TRADER_CONSENSUS_CONTRACT,
             })
 
         if category == "sector_rotation":

@@ -32,6 +32,7 @@ CAELYN_ROUTES: dict[str, dict] = {
     "upcoming_catalysts":   {"final": "claude",      "collaborators": ["perplexity"],                      "mode": "fast"},
     "trending_now":         {"final": "grok",        "collaborators": ["perplexity"],                      "mode": "fast"},
     "social_momentum":      {"final": "grok",        "collaborators": [],                                  "mode": "fast"},
+    "x_trader_consensus":   {"final": "grok",        "collaborators": [],                                  "mode": "fast"},
     "sector_rotation":      {"final": "claude",      "collaborators": ["gemini", "perplexity"],            "mode": "deep"},
 
     # TRADES & IDEAS
@@ -133,6 +134,13 @@ _ALIAS_MAP: dict[str, str] = {
     "sentiment": "social_momentum",
     "wsb": "social_momentum",
     "reddit": "social_momentum",
+
+    # X Trader Consensus
+    "x_trader_consensus": "x_trader_consensus",
+    "trader_consensus": "x_trader_consensus",
+    "top_traders": "x_trader_consensus",
+    "consensus_tickers": "x_trader_consensus",
+    "x_consensus": "x_trader_consensus",
 
     # Sector Rotation
     "sector_rotation": "sector_rotation",
