@@ -404,42 +404,48 @@ function GrokSocialAgent() {
           >{loading ? '...' : 'SEND'}</button>
         </form>
 
-        {/* ── x_trader_consensus preset button ── */}
-        <div style={{ marginBottom: '0.6rem' }}>
-          <button
-            onClick={() => sendMessage('Consensus tickers among top X traders', 'x_trader_consensus')}
-            disabled={loading}
-            style={{
-              fontFamily: font,
-              fontSize: '0.68rem',
-              fontWeight: 700,
-              color: '#38bdf8',
-              background: 'rgba(56,189,248,0.08)',
-              border: '1px solid rgba(56,189,248,0.3)',
-              borderRadius: 8,
-              padding: '0.45rem 1rem',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              opacity: loading ? 0.4 : 1,
-              transition: 'all 0.2s',
-              letterSpacing: '0.02em',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-            }}
-            onMouseOver={e => {
-              if (!loading) {
-                (e.currentTarget as HTMLButtonElement).style.background = 'rgba(56,189,248,0.15)';
-                (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(56,189,248,0.5)';
-              }
-            }}
-            onMouseOut={e => {
-              (e.currentTarget as HTMLButtonElement).style.background = 'rgba(56,189,248,0.08)';
-              (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(56,189,248,0.3)';
-            }}
-          >
-            <span style={{ fontSize: '0.7rem' }}>𝕏</span>
-            Consensus tickers among top X traders
-          </button>
+        {/* ── Social preset buttons ── */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '0.6rem' }}>
+          {[
+            { label: 'Consensus tickers among top X traders', preset: 'x_trader_consensus' },
+            { label: 'Concensus tickers among select X traders', preset: 'x_select_trader_consensus' },
+          ].map(({ label, preset }) => (
+            <button
+              key={preset}
+              onClick={() => sendMessage(label, preset)}
+              disabled={loading}
+              style={{
+                fontFamily: font,
+                fontSize: '0.68rem',
+                fontWeight: 700,
+                color: '#38bdf8',
+                background: 'rgba(56,189,248,0.08)',
+                border: '1px solid rgba(56,189,248,0.3)',
+                borderRadius: 8,
+                padding: '0.45rem 1rem',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                opacity: loading ? 0.4 : 1,
+                transition: 'all 0.2s',
+                letterSpacing: '0.02em',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+              }}
+              onMouseOver={e => {
+                if (!loading) {
+                  (e.currentTarget as HTMLButtonElement).style.background = 'rgba(56,189,248,0.15)';
+                  (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(56,189,248,0.5)';
+                }
+              }}
+              onMouseOut={e => {
+                (e.currentTarget as HTMLButtonElement).style.background = 'rgba(56,189,248,0.08)';
+                (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(56,189,248,0.3)';
+              }}
+            >
+              <span style={{ fontSize: '0.7rem' }}>𝕏</span>
+              {label}
+            </button>
+          ))}
         </div>
 
         {/* Pre-prompt chips */}
