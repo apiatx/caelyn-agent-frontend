@@ -416,6 +416,17 @@ export default function OnchainSocialPage() {
           <div style={{ background: 'rgba(10,12,18,0.85)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: '1.25rem', flex: 1, overflowY: 'auto', maxHeight: '65vh' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.5rem' }}>
               {[
+                { name: 'StockSavvyShay', handle: '@StockSavvyShay' },
+                { name: 'HyperTechInvest', handle: '@HyperTechInvest' },
+                { name: 'crux_capital_', handle: '@crux_capital_' },
+                { name: 'SJCapitalInvest', handle: '@SJCapitalInvest' },
+                { name: 'BlackPantherCap', handle: '@BlackPantherCap' },
+                { name: 'Kaizen_Investor', handle: '@Kaizen_Investor' },
+                { name: 'Venu_7_', handle: '@Venu_7_' },
+                { name: 'CKCapitalxx', handle: '@CKCapitalxx' },
+                { name: 'TheTape_TNM', handle: '@TheTape_TNM' },
+                { name: 'equitydd', handle: '@equitydd' },
+                { name: 'Speculator_io', handle: '@Speculator_io' },
                 { name: 'RebellioMarket', handle: '@RebellioMarket' },
                 { name: 'StocksToTrade', handle: '@StocksToTrade' },
                 { name: 'Timothy Sykes', handle: '@timothysykes' },
