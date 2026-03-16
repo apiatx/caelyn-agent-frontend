@@ -884,6 +884,69 @@ def _compress_crypto(data: dict) -> dict:
                     entry["description"] = desc[:200]
                 compressed["coin_metadata"][k] = entry
 
+    # DeFiLlama: TVL, protocol flows, chains, DEX volumes, stablecoins
+    defi = data.get("defillama", {})
+    if isinstance(defi, dict) and (defi.get("top_protocols") or defi.get("total_tvl_usd")):
+        compressed["defillama"] = {
+            "total_tvl_usd": defi.get("total_tvl_usd"),
+            "top_protocols": [
+                {
+                    "name": p.get("name"),
+                    "symbol": p.get("symbol"),
+                    "category": p.get("category"),
+                    "chain": p.get("chain"),
+                    "tvl": p.get("tvl"),
+                    "change_1d": p.get("change_1d"),
+                    "change_7d": p.get("change_7d"),
+                }
+                for p in (defi.get("top_protocols") or [])[:10]
+            ],
+            "top_chains": [
+                {
+                    "name": c.get("name"),
+                    "tvl": c.get("tvl"),
+                }
+                for c in (defi.get("top_chains") or [])[:6]
+            ],
+            "dex_volume_24h": defi.get("dex_volume_24h"),
+            "dex_volume_7d": defi.get("dex_volume_7d"),
+            "dex_change_1d": defi.get("dex_change_1d"),
+            "top_dexs": (defi.get("top_dexs") or [])[:5],
+            "stablecoin_total_mcap": defi.get("stablecoin_total_mcap"),
+            "top_stablecoins": [
+                {
+                    "symbol": s.get("symbol"),
+                    "name": s.get("name"),
+                    "mcap": s.get("mcap"),
+                    "change_24h": s.get("change_24h"),
+                }
+                for s in (defi.get("top_stablecoins") or [])[:5]
+            ],
+        }
+        print(f"[CRYPTO_COMPRESS] DeFiLlama: total_tvl=${defi.get('total_tvl_usd', 0)/1e9:.1f}B, "
+              f"protocols={len(compressed['defillama']['top_protocols'])}")
+    else:
+        compressed["defillama"] = {}
+
+    # Polymarket: crypto-tagged prediction events (catalysts, probabilities)
+    pm_events = data.get("polymarket_crypto", [])
+    if isinstance(pm_events, list) and pm_events:
+        compressed["polymarket_crypto"] = [
+            {
+                "title": e.get("question", e.get("title", "")),
+                "yes_prob": round(e.get("outcomePrices", [None])[0] * 100, 1)
+                    if isinstance(e.get("outcomePrices"), list) and e.get("outcomePrices") else None,
+                "volume_24h": e.get("volume24hr"),
+                "liquidity": e.get("liquidity"),
+                "end_date": (e.get("endDate") or e.get("end_date", ""))[:10],
+            }
+            for e in pm_events[:10]
+            if isinstance(e, dict) and (e.get("question") or e.get("title"))
+        ]
+        print(f"[CRYPTO_COMPRESS] Polymarket crypto: {len(compressed['polymarket_crypto'])} events")
+    else:
+        compressed["polymarket_crypto"] = []
+
     import json as _json
     size = len(_json.dumps(compressed, default=str))
     print(f"[COMPRESS] crypto: {size:,} chars (from raw data)", flush=True)

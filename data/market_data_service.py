@@ -384,6 +384,9 @@ class MarketDataService:
         self.tavily = self.web_search
         self.polymarket = PolymarketProvider()
         print("[INIT] Polymarket prediction markets provider initialized")
+        from data.defillama_provider import DeFiLlamaProvider
+        self.defillama = DeFiLlamaProvider()
+        print("[INIT] DeFiLlama provider initialized (no key required)")
 
     @property
     def _web_search_allowed(self) -> bool:
@@ -5054,6 +5057,12 @@ class MarketDataService:
             tasks["x_twitter_crypto"] = asyncio.wait_for(
                 self.xai.get_trending_tickers("crypto"), timeout=20.0)
 
+        tasks["defillama"] = asyncio.wait_for(
+            self.defillama.get_defi_overview(), timeout=12.0)
+
+        tasks["polymarket_crypto"] = asyncio.wait_for(
+            self.polymarket.get_events_by_tag("crypto", limit=15), timeout=8.0)
+
         task_names = list(tasks.keys())
         results = await asyncio.gather(
             *tasks.values(),
@@ -5166,6 +5175,10 @@ class MarketDataService:
             data.get("altfins", {}),
             "x_twitter_crypto":
             data.get("x_twitter_crypto", {}),
+            "defillama":
+            data.get("defillama", {}),
+            "polymarket_crypto":
+            data.get("polymarket_crypto", []),
         }
 
         x_data = data.get("x_twitter_crypto", {})
