@@ -3864,9 +3864,27 @@ class TradingAgent:
             print(f"[GROK_DISPATCH] Empty user_prompt — using preset trigger for {preset_intent!r}: {latest_user[:80]}")
 
         use_deep = not is_collab_agent
+
+        # For x_select_trader_consensus, hard-lock x_search to the curated 18-account list
+        # using the native allowed_x_handles API parameter — handles without @ symbol.
+        # This constrains the search at the API level, not just via prompt wording.
+        _X_SELECT_HANDLES = [
+            "StockSavvyShay", "HyperTechInvest", "crux_capital_", "SJCapitalInvest",
+            "BlackPantherCap", "Kaizen_Investor", "Venu_7_", "CKCapitalxx",
+            "TheTape_TNM", "equitydd", "Speculator_io", "DrJebaim",
+            "StonkValue", "stamatoudism", "yianisz", "sunxliao",
+            "futurist_lens", "Thomas_james_1",
+        ]
+        x_search_config = (
+            {"allowed_x_handles": _X_SELECT_HANDLES}
+            if category == "x_select_trader_consensus"
+            else None
+        )
+
         print(
             f"[GROK_DISPATCH] XaiSentimentProvider: model={'deep' if use_deep else 'fast'}, "
-            f"x_search=enabled, system={len(system_text):,} chars, category={category}"
+            f"x_search=enabled, system={len(system_text):,} chars, category={category}, "
+            f"allowed_handles={len(_X_SELECT_HANDLES) if x_search_config else 'unrestricted'}"
         )
         try:
             raw = await self.data.xai._call_grok_with_x_search(
@@ -3874,6 +3892,7 @@ class TradingAgent:
                 raw_mode=False,      # final/solo: structured JSON output (collaborator path uses raw_mode separately)
                 use_deep_model=use_deep,
                 system_text=system_text,
+                x_search_config=x_search_config,
                 timeout=80.0,
             )
             # raw_mode=False returns a Python dict from _parse_json_response.
