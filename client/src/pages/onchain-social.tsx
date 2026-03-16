@@ -386,8 +386,8 @@ export default function OnchainSocialPage() {
         }} />
 
         {/* HERO */}
-        <div style={{ padding: '1.5rem 3rem 1rem', maxWidth: 900, margin: '0 auto', textAlign: 'center', position: 'relative', zIndex: 1 }}>
-          <div style={{ position: 'relative', display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
+        <div style={{ padding: '1.5rem 3rem 0', maxWidth: 900, margin: '0 auto', textAlign: 'center', position: 'relative', zIndex: 1 }}>
+          <div style={{ position: 'relative', display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem', paddingBottom: '0.5rem', marginBottom: '0.5rem' }}>
             {/* Blurred white blob — no border-radius corners, no hard edges, pure seamless fade */}
             <div style={{
               position: 'absolute',
@@ -407,9 +407,6 @@ export default function OnchainSocialPage() {
             </p>
           </div>
         </div>
-
-        {/* DIVIDER */}
-        <div style={{ width: 60, height: 2, background: 'linear-gradient(135deg, #2090d0, #3b82f6, #80d8f8)', margin: '0 auto 2rem', borderRadius: 2 }} />
 
         {/* ═══ Grok Social Agent ═══ */}
         <GrokSocialAgent />
