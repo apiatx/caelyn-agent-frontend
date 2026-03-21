@@ -2489,10 +2489,25 @@ class UpdateConversationRequest(BaseModel):
 
 
 @traceable(name="main.shape_prompt_history")
-def _shape_prompt_history(all_history: dict, recent_limit: int = 10) -> dict:
+def _shape_prompt_history(all_history: dict, recent_limit: int = 10, current_prices: dict | None = None) -> dict:
     """Return a frontend-friendly history payload while preserving bucket grouping."""
     if not isinstance(all_history, dict):
         all_history = {}
+
+    # Enrich ticker entries with current prices if provided
+    if current_prices:
+        for _key, bucket in all_history.items():
+            if not isinstance(bucket, dict):
+                continue
+            for entry in bucket.get("entries", []):
+                if not isinstance(entry, dict):
+                    continue
+                for t in entry.get("tickers", []):
+                    rec = t.get("rec_price")
+                    cur = current_prices.get(t.get("ticker"))
+                    if rec and cur:
+                        t["current_price"] = round(cur, 2)
+                        t["pct_change"] = round(((cur - rec) / rec) * 100, 2)
 
     categories: dict = {}
     items: list[dict] = []
