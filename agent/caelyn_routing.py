@@ -18,6 +18,16 @@ ARCHITECTURAL CONTRACT:
 
 from __future__ import annotations
 
+try:
+    from langsmith import traceable
+except ImportError:
+    def traceable(*args, **kwargs):
+        def _noop(fn):
+            return fn
+        if args and callable(args[0]):
+            return args[0]
+        return _noop
+
 # ── Routing matrix ────────────────────────────────────────────────────────────
 # Keys are normalized route identifiers.
 # final:        internal model id for the final reasoning/synthesis model
@@ -316,6 +326,7 @@ def normalize_route_key(preset_intent: str | None, category: str | None) -> str 
     return None
 
 
+@traceable(name="routing")
 def get_caelyn_route(preset_intent: str | None, category: str | None) -> dict:
     """
     Return the routing config for a given preset/category in Caelyn mode.

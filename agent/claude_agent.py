@@ -12,6 +12,16 @@ from agent.institutional_scorer import apply_institutional_scoring
 from agent.prompts import SYSTEM_PROMPT, USER_INVESTMENT_PROFILE, CORE_QUANT_DNA, DEFAULT_PERSONAL_PROFILE, QUERY_CLASSIFIER_PROMPT, ORCHESTRATION_PROMPT, REASONING_BRIEF_PROMPT, TRENDING_VALIDATION_PROMPT, CROSS_ASSET_TRENDING_CONTRACT, BEST_TRADES_CONTRACT, DETERMINISTIC_SCREENER_CONTRACT, SMART_ORCHESTRATOR_PROMPT, PREDICTION_MARKETS_CONTRACT, SECTOR_ROTATION_CONTRACT, EARNINGS_CATALYST_CONTRACT, SECTOR_INTEL_CONTRACT, X_TRADER_CONSENSUS_CONTRACT, X_SELECT_TRADER_CONSENSUS_CONTRACT
 from data.market_data_service import MarketDataService
 
+try:
+    from langsmith import traceable
+except ImportError:
+    def traceable(*args, **kwargs):
+        def _noop(fn):
+            return fn
+        if args and callable(args[0]):
+            return args[0]
+        return _noop
+
 
 class TradingAgent:
     def __init__(self, api_key: str, data_service: MarketDataService, openai_api_key: str = None):
@@ -387,6 +397,7 @@ class TradingAgent:
             "tickers": [],
         }
 
+    @traceable(name="caelyn_main_agent")
     async def handle_query(self, user_prompt: str, history: list = None, preset_intent: str = None, request_id: str = "", csv_data: str = None, chatbox_mode: bool = False, reasoning_model: str = "agent_collab", collab_agents: list = None, primary_model: str = None) -> dict:
         try:
             return await self._handle_query_inner(user_prompt, history=history, preset_intent=preset_intent, request_id=request_id, csv_data=csv_data, chatbox_mode=chatbox_mode, reasoning_model=reasoning_model, collab_agents=collab_agents, primary_model=primary_model)
@@ -404,6 +415,7 @@ class TradingAgent:
                 },
             }
 
+    @traceable(name="handle_query_inner")
     async def _handle_query_inner(self, user_prompt: str, history: list = None, preset_intent: str = None, request_id: str = "", csv_data: str = None, chatbox_mode: bool = False, reasoning_model: str = "agent_collab", collab_agents: list = None, primary_model: str = None) -> dict:
         start_time = time.time()
         if history is None:
@@ -3050,6 +3062,7 @@ class TradingAgent:
 
         return primary_data
 
+    @traceable(name="gather_market_data")
     async def _gather_data_safe(self, query_info: dict) -> dict:
         category = query_info.get("category", "general")
         has_plan = "orchestration_plan" in query_info
@@ -3411,6 +3424,7 @@ class TradingAgent:
     # to the synthesis model (Claude by default) for final reasoning.
     # ────────────────────────────────────────────────────────────────
 
+    @traceable(name="multi_agent_collab")
     async def _multi_agent_collab(self, user_prompt: str, market_data: dict, history: list = None, is_followup: bool = False, category: str = "", chatbox_mode: bool = False, preset_intent: str = None, agents: list = None, synthesis_model: str = "claude") -> str:
         """Call multiple agents in parallel, collect full theses, then synthesise."""
         import time as _t
@@ -3796,6 +3810,7 @@ class TradingAgent:
                 print(f"[CAELYN] {final_model} synthesis failed: {e}")
             return json.dumps({"display_type": "chat", "message": f"{final_model} synthesis failed. Please try again."})
 
+    @traceable(name="grok_call")
     async def _call_grok_via_provider(
         self,
         user_prompt: str,
@@ -3951,6 +3966,7 @@ class TradingAgent:
             oai_msgs.append({"role": m["role"], "content": m["content"]})
         return oai_msgs
 
+    @traceable(name="alt_model_call")
     async def _call_alt_model(self, reasoning_model: str, user_prompt: str, market_data: dict, history: list = None, is_followup: bool = False, category: str = "", chatbox_mode: bool = False, preset_intent: str = None, skip_web_search: bool = False, is_collab_agent: bool = False) -> str:
         """Call a non-Claude model. When running solo, web search is enabled.
         When running as the reasoner in agent_collab mode (skip_web_search=True),
@@ -4159,8 +4175,9 @@ class TradingAgent:
 
         return ""
 
-    async def _ask_claude_async_web_search(self, user_prompt: str, market_data: dict, history: list = None, is_followup: bool = False, category: str = "", chatbox_mode: bool = False, reasoning_model: str = "claude", preset_intent: str = None, skip_web_search: bool = False) -> str:
-        """Async Claude call with optional web_search tool. Web search is skipped for thematic/sector preset calls to avoid 120s timeouts."""
+    @traceable(name="claude_call")
+    async def _ask_claude_async_web_search(self, user_prompt: str, market_data: dict, history: list = None, is_followup: bool = False, category: str = "", chatbox_mode: bool = False, reasoning_model: str = "claude", preset_intent: str = None) -> str:
+        """Async Claude call with web_search tool for eligible categories."""
         system_blocks, messages, model, token_limit, use_thinking, thinking_budget = self._build_prompt(
             user_prompt, market_data, history, is_followup, category, chatbox_mode, reasoning_model=reasoning_model, preset_intent=preset_intent
         )
