@@ -4285,17 +4285,20 @@ class TradingAgent:
             results = {}
             _tickers_to_research = tickers[:5]
             if _tickers_to_research:
+                # Limit to 2 concurrent research_ticker calls — each makes 15+ API requests
+                _research_sem = asyncio.Semaphore(2)
                 async def _research_one(t):
-                    try:
-                        return t, await asyncio.wait_for(
-                            self.data.research_ticker(t), timeout=30.0
-                        )
-                    except asyncio.TimeoutError:
-                        print(f"[TICKER_ANALYSIS] research_ticker({t}) timed out after 30s")
-                        return t, {"error": "timeout"}
-                    except Exception as e:
-                        print(f"[TICKER_ANALYSIS] research_ticker({t}) failed: {e}")
-                        return t, {"error": str(e)}
+                    async with _research_sem:
+                        try:
+                            return t, await asyncio.wait_for(
+                                self.data.research_ticker(t), timeout=30.0
+                            )
+                        except asyncio.TimeoutError:
+                            print(f"[TICKER_ANALYSIS] research_ticker({t}) timed out after 30s")
+                            return t, {"error": "timeout"}
+                        except Exception as e:
+                            print(f"[TICKER_ANALYSIS] research_ticker({t}) failed: {e}")
+                            return t, {"error": str(e)}
                 _gather_results = await asyncio.gather(
                     *[_research_one(t) for t in _tickers_to_research]
                 )

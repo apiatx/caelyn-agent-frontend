@@ -1324,8 +1324,8 @@ class MarketDataService:
         ticker_list = list(all_tickers)[:limit]
 
         enrichment_results = []
-        # Parallel light enrichment in batches of 8 (budget-aware)
-        _le_batch_size = 8
+        # Parallel light enrichment in batches of 3 (budget-aware, avoids rate limits)
+        _le_batch_size = 3
         for batch_start in range(0, len(ticker_list), _le_batch_size):
             if not budget.can_continue():
                 print(
@@ -1441,10 +1441,14 @@ class MarketDataService:
                 return {"error": str(e)}
 
         deep_results = []
-        # Parallel deep enrichment (small set, typically ≤8 tickers)
+        # Parallel deep enrichment with concurrency limit (each makes ~5 API calls)
         if deep_tickers and budget.can_continue():
+            _deep_sem = asyncio.Semaphore(3)
+            async def _deep_with_sem(t):
+                async with _deep_sem:
+                    return await asyncio.wait_for(deep_enrich(t), timeout=8.0)
             _deep_raw = await asyncio.gather(
-                *[asyncio.wait_for(deep_enrich(t), timeout=8.0) for t in deep_tickers],
+                *[_deep_with_sem(t) for t in deep_tickers],
                 return_exceptions=True,
             )
             for i, result in enumerate(_deep_raw):
@@ -5289,8 +5293,8 @@ class MarketDataService:
         result = {}
         processed = 0
 
-        # Parallel EDGAR enrichment with concurrency limit (SEC rate limit safe)
-        _edgar_sem = asyncio.Semaphore(3)
+        # Sequential EDGAR enrichment via semaphore (SEC has strict rate limits)
+        _edgar_sem = asyncio.Semaphore(1)
 
         async def _enrich_one_edgar(ticker_raw):
             ticker_clean = ticker_raw.upper().strip()
