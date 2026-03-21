@@ -144,6 +144,7 @@ class TradingAgent:
         "news_markets": "news_intelligence",
     }
 
+    @traceable(name="resolve_preset")
     def _resolve_preset(self, preset_intent: str) -> str:
         if preset_intent in self.INTENT_PROFILES:
             return preset_intent
@@ -161,6 +162,7 @@ class TradingAgent:
         print(f"[ROUTING] Unknown preset_intent: '{preset_intent}' (normalized: '{normalized}') — no alias or profile found")
         return None
 
+    @traceable(name="build_plan_from_preset")
     def _build_plan_from_preset(self, preset_intent: str) -> dict:
         resolved = self._resolve_preset(preset_intent)
         if not resolved:
@@ -183,6 +185,7 @@ class TradingAgent:
             plan["_screener_preset"] = profile["_screener_preset"]
         return plan
 
+    @traceable(name="refine_plan_with_query")
     def _refine_plan_with_query(self, base_plan: dict, query: str) -> dict:
         q = query.lower().strip()
         plan = {
@@ -256,6 +259,7 @@ class TradingAgent:
 
         return plan
 
+    @traceable(name="heuristic_fallback_plan")
     def _heuristic_fallback_plan(self, prompt: str) -> dict:
         q = prompt.lower().strip()
 
@@ -1228,6 +1232,7 @@ class TradingAgent:
 
         return result
 
+    @traceable(name="needs_fresh_data")
     def _needs_fresh_data(self, query: str) -> bool:
         q = query.lower().strip()
 
@@ -1278,6 +1283,7 @@ class TradingAgent:
 
         return False
 
+    @traceable(name="classify_with_timeout")
     async def _classify_with_timeout(self, prompt: str) -> dict:
         try:
             return await asyncio.wait_for(
@@ -1288,6 +1294,7 @@ class TradingAgent:
             print(f"[AGENT] Classification failed/timed out: {e}, using keyword fallback")
             return self._keyword_classify(prompt)
 
+    @traceable(name="keyword_classify")
     def _keyword_classify(self, query: str) -> dict:
         q = query.lower().strip()
 
@@ -1432,6 +1439,7 @@ class TradingAgent:
             return {"category": "market_scan"}
         return {"category": "market_scan"}
 
+    @traceable(name="detect_cross_market")
     def _detect_cross_market(self, q: str) -> dict | None:
         if self._is_crypto_query(q):
             return None
@@ -1463,6 +1471,7 @@ class TradingAgent:
             return {"category": "cross_market"}
         return None
 
+    @traceable(name="extract_tickers")
     def _extract_tickers(self, query: str) -> list:
         ticker_pattern = re.findall(r'\$?([A-Z]{2,5})\b', query)
         # Handle TradingView export format: NYSE:LAC, NASDAQ:ASTI, CRYPTO:HYPEHUSD
@@ -1487,6 +1496,7 @@ class TradingAgent:
         }
         return [t for t in ticker_pattern if t not in common]
 
+    @traceable(name="extract_followup_tickers")
     def _extract_followup_tickers(self, history: list, csv_followup: bool = False) -> list:
         """Extract tickers from conversation history for follow-up queries.
         For CSV follow-ups, extracts up to 50 tickers. Otherwise up to 10."""
@@ -1523,9 +1533,11 @@ class TradingAgent:
         print(f"[FOLLOWUP_TICKERS] Extracted {len(result)} tickers (csv={csv_followup}): {result[:10]}...")
         return result
 
+    @traceable(name="classify_query")
     def _classify_query(self, prompt: str) -> dict:
         return self._classify_query_claude(prompt)
 
+    @traceable(name="classify_query_claude")
     def _classify_query_claude(self, prompt: str) -> dict:
         try:
             response = self.client.messages.create(
@@ -1550,6 +1562,7 @@ class TradingAgent:
             print(f"[AGENT] Claude Haiku classification error: {e}, falling back to keyword classifier")
             return self._keyword_classify(prompt)
 
+    @traceable(name="smart_orchestrate")
     def _smart_orchestrate(self, user_prompt: str, history: list = None, csv_context: str = None, reasoning_model: str = "claude") -> dict:
         """
         Smart Orchestrator + Prompt Engineer — uses the selected reasoning model.
@@ -2338,6 +2351,7 @@ class TradingAgent:
         "tickers": [],
     }
 
+    @traceable(name="call_simple_model")
     def _call_simple_model(self, reasoning_model: str, prompt: str, max_tokens: int = 4096) -> str:
         """Call the selected model with a simple user prompt (no system blocks). Sync."""
         messages = [{"role": "user", "content": prompt}]
@@ -2406,6 +2420,7 @@ class TradingAgent:
 
         raise ValueError(f"Unknown model: {reasoning_model}")
 
+    @traceable(name="call_orchestrator_model")
     def _call_orchestrator_model(self, reasoning_model: str, system_prompt: str, messages: list) -> str:
         """Call the selected model for orchestration (lightweight JSON routing).
         Returns the raw text response. Uses sync calls since orchestration runs in a thread."""
@@ -2493,6 +2508,7 @@ class TradingAgent:
 
         raise ValueError(f"Unknown reasoning model: {reasoning_model}")
 
+    @traceable(name="call_watchlist_model")
     def _call_watchlist_model(self, reasoning_model: str, system_text: str, messages: list, max_tokens: int = 16384) -> str:
         """Call the selected model for watchlist review (long-form analysis).
         Similar to _call_orchestrator_model but with higher token limits and longer timeouts."""
@@ -2579,6 +2595,7 @@ class TradingAgent:
 
         raise ValueError(f"Unknown reasoning model: {reasoning_model}")
 
+    @traceable(name="orchestrate_query")
     def _orchestrate_query(self, prompt: str, history: list = None, csv_context: str = None, reasoning_model: str = "claude") -> dict:
         """Orchestrate query using the selected reasoning model.
         Delegates to _smart_orchestrate for context-aware routing + prompt enhancement.
@@ -2600,6 +2617,7 @@ class TradingAgent:
         plan["_api_calls"] = result.get("api_calls", {})
         return plan
 
+    @traceable(name="get_api_budget_hint")
     def _get_api_budget_hint(self) -> str:
         """Returns a plain-text budget hint for the orchestration prompt."""
         try:
@@ -2620,6 +2638,7 @@ class TradingAgent:
             return "\n".join(lines) if lines else "- All providers: healthy"
         except Exception:
             return "- Budget status unavailable"
+    @traceable(name="validate_plan")
     def _validate_plan(self, plan: dict, prompt: str) -> dict:
         if not isinstance(plan, dict):
             print(f"[ORCHESTRATOR] Invalid plan type: {type(plan)}, using default")
@@ -2662,6 +2681,7 @@ class TradingAgent:
         plan = self._apply_priority_overrides(plan, prompt)
         return plan
 
+    @traceable(name="apply_priority_overrides")
     def _apply_priority_overrides(self, plan: dict, prompt: str) -> dict:
         q = prompt.lower().strip()
 
@@ -2704,6 +2724,7 @@ class TradingAgent:
 
         return plan
 
+    @traceable(name="derive_news_query")
     def _derive_news_query(self, prompt: str) -> str:
         import re
         q = (prompt or "").strip()
@@ -2713,6 +2734,7 @@ class TradingAgent:
         q = re.sub(r"\s+", " ", q).strip(" ?")
         return q or "stock market financial news today"
 
+    @traceable(name="plan_to_query_info")
     def _plan_to_query_info(self, plan: dict) -> dict:
         intent = plan.get("intent", "cross_asset_trending")
         category = self.INTENT_TO_CATEGORY.get(intent, "market_scan")
@@ -2766,6 +2788,7 @@ class TradingAgent:
 
         return query_info
 
+    @traceable(name="generate_reasoning_brief")
     async def _generate_reasoning_brief(self, user_prompt: str, plan: dict, reasoning_model: str = "claude") -> dict | None:
         try:
             plan_summary = json.dumps({
@@ -2799,6 +2822,7 @@ class TradingAgent:
             print(f"[REASONING_BRIEF] Generation failed (non-fatal): {e}")
             return None
 
+    @traceable(name="generate_followup_suggestions")
     def _generate_followup_suggestions(self, analysis_text: str, reasoning_model: str = "claude") -> list:
         """Generate 4 contextual follow-up prompt suggestions using the selected model.
         Returns list of 4 short suggestion strings."""
@@ -2829,6 +2853,7 @@ class TradingAgent:
             print(f"[SUGGESTIONS] Claude call failed: {e}")
             return []
 
+    @traceable(name="orchestrate_with_timeout")
     async def _orchestrate_with_timeout(self, prompt: str, history: list = None, csv_context: str = None, reasoning_model: str = "claude") -> dict:
         try:
             plan = await asyncio.wait_for(
@@ -2886,6 +2911,7 @@ class TradingAgent:
             fallback["_routing_confidence"] = "medium"
             return fallback
 
+    @traceable(name="execute_orchestration_plan")
     async def _execute_orchestration_plan(self, query_info: dict) -> dict:
         plan = query_info.get("orchestration_plan")
         if not plan:
@@ -3023,6 +3049,7 @@ class TradingAgent:
             print(f"[AGENT] Data gathering error: {e}")
             return {"error": f"Data gathering failed: {str(e)}"}
 
+    @traceable(name="gather_chat_context")
     async def _gather_chat_context(self, query: str, query_info: dict) -> dict:
         context = {}
 
@@ -3116,6 +3143,7 @@ class TradingAgent:
         return context
 
     @staticmethod
+    @traceable(name="distinct_article_urls")
     def _distinct_article_urls(articles: list) -> list:
         urls = []
         seen = set()
@@ -3129,6 +3157,7 @@ class TradingAgent:
             urls.append(u)
         return urls
 
+    @traceable(name="fetch_web_news_context")
     async def _fetch_web_news_context(self, plan: dict, user_prompt: str) -> dict:
         if not self.data.web_search:
             return {"query": plan.get("news_query") or self._derive_news_query(user_prompt), "provider_used": "none", "articles": []}
@@ -3208,6 +3237,7 @@ class TradingAgent:
     CRYPTO_EXCLUDE_COMMODITY = ["gold", "oil", "silver", "commodit"]
 
     @classmethod
+    @traceable(name="is_crypto_query")
     def _is_crypto_query(cls, q_lower: str) -> bool:
         if any(s in q_lower for s in cls.CRYPTO_PHRASE_SIGNALS):
             return True
@@ -3223,6 +3253,7 @@ class TradingAgent:
 
     WEB_SEARCH_CATEGORIES = {"cross_asset_trending", "daily_briefing", "best_trades", "earnings_catalyst"}
 
+    @traceable(name="ask_claude_with_timeout")
     async def _ask_claude_with_timeout(self, user_prompt: str, market_data: dict, history: list = None, is_followup: bool = False, category: str = "", chatbox_mode: bool = False, reasoning_model: str = "claude", preset_intent: str = None, collab_agents: list = None, primary_model: str = None) -> str:
         data_size = len(json.dumps(market_data, default=str)) if market_data else 0
         reasoning_model = reasoning_model if reasoning_model in self.VALID_REASONING_MODELS else "claude"
@@ -3520,6 +3551,7 @@ class TradingAgent:
     #   The final model is primary_model (the real reasoning engine).
     # ─────────────────────────────────────────────────────────────────────────
 
+    @traceable(name="caelyn_collab_synthesis")
     async def _caelyn_collab_synthesis(
         self,
         user_prompt: str,
@@ -3841,6 +3873,7 @@ class TradingAgent:
             )
         return text
 
+    @traceable(name="prompt_to_openai_messages")
     def _prompt_to_openai_messages(self, system_blocks, messages) -> list:
         """Convert Anthropic system_blocks + messages into OpenAI-compatible message list."""
         system_text = "\n\n".join(
@@ -4133,6 +4166,7 @@ class TradingAgent:
         finally:
             await async_client.close()
 
+    @traceable(name="gather_polymarket_context")
     async def _gather_polymarket_context(self, query_info: dict) -> dict:
         """Fetch Polymarket prediction markets data + macro context via the dedicated provider."""
         context = {}
@@ -4219,6 +4253,7 @@ class TradingAgent:
 
         return context
 
+    @traceable(name="gather_data")
     async def _gather_data(self, query_info: dict) -> dict:
         """Fetch the appropriate data based on query classification."""
         category = query_info.get("category", "general")
@@ -4641,6 +4676,7 @@ class TradingAgent:
         else:
             return {}
 
+    @traceable(name="gather_custom_screen_data")
     async def _gather_custom_screen_data(self, query_info: dict) -> dict:
         plan = query_info.get("orchestration_plan", {})
         filters = plan.get("filters", {})
@@ -4737,6 +4773,7 @@ class TradingAgent:
             else:
                 self.data.CATEGORY_FILTERS.pop("custom_screen", None)
 
+    @traceable(name="gather_cross_asset_trending_data")
     async def _gather_cross_asset_trending_data(self, query_info: dict) -> dict:
         from data.cache import cache, XAI_CROSS_ASSET_TTL
         import time as _t
@@ -5112,6 +5149,7 @@ class TradingAgent:
 
         return primary_data
 
+    @traceable(name="light_enrich_grok_shortlist")
     async def _light_enrich_grok_shortlist(self, grok_shortlist: dict) -> dict:
         enriched = {}
         equity_tickers = []
@@ -5180,6 +5218,7 @@ class TradingAgent:
 
         return enriched
 
+    @traceable(name="compute_social_signal_rank")
     def _compute_social_signal_rank(self, grok_shortlist: dict, market_data_result: dict, primary_data: dict) -> dict:
         if not grok_shortlist:
             return {}
@@ -5327,6 +5366,7 @@ class TradingAgent:
 
         return result
 
+    @traceable(name="extract_grok_commodity_themes")
     def _extract_grok_commodity_themes(self, grok_shortlist: dict | None) -> list[str]:
         if not grok_shortlist or not isinstance(grok_shortlist, dict):
             return []
@@ -5357,6 +5397,7 @@ class TradingAgent:
                 found.append(theme)
         return found
 
+    @traceable(name="count_candidates")
     def _count_candidates(self, data: dict, asset_class: str) -> int:
         """Count candidates the RANKER can actually see (not Grok shortlist which is passed separately to Claude).
         Only counts stock_trending.enriched_data for equities, since that's what rank_cross_market receives."""
@@ -5389,6 +5430,7 @@ class TradingAgent:
             count += len(grok_comm)
         return count
 
+    @traceable(name="fix_trending_output")
     def _fix_trending_output(self, result: dict, market_data: dict):
         """Post-process trending output to fix crypto tradingview_symbols, ETF classification, and name accuracy."""
         structured = result.get("structured")
@@ -5521,6 +5563,7 @@ class TradingAgent:
             if sym and sym in name_lookup:
                 item["name"] = name_lookup[sym]
 
+    @traceable(name="broaden_candidates")
     async def _broaden_candidates(self, data: dict, needs: list) -> dict:
         broadened = {}
         tasks = []
@@ -5573,6 +5616,7 @@ class TradingAgent:
 
         return broadened
 
+    @traceable(name="review_watchlist")
     async def review_watchlist(self, tickers: list, csv_parsed: dict = None, reasoning_model: str = "claude") -> dict:
         """Dedicated watchlist review — bypasses the classifier entirely."""
         import time
@@ -5720,6 +5764,7 @@ Be direct and opinionated. Tell me what you actually think."""
                 },
             }
 
+    @traceable(name="extract_screener_filters")
     def _extract_screener_filters(self, prompt: str) -> dict:
         """
         Parse natural language screener request into structured filters.
@@ -5945,6 +5990,7 @@ Be direct and opinionated. Tell me what you actually think."""
         print(f"[AI Screener] Extracted filters from prompt: {filters}")
         return filters
 
+    @traceable(name="trim_history")
     def _trim_history(self, messages: list, max_chars: int = 100000) -> list:
         total = sum(len(m.get("content", "")) for m in messages)
         while total > max_chars and len(messages) > 2:
@@ -5962,6 +6008,7 @@ Be direct and opinionated. Tell me what you actually think."""
                 print(f"[Agent] Removed oldest message ({content_len:,} chars) to fit context window")
         return messages
 
+    @traceable(name="build_prompt")
     def _build_prompt(self, user_prompt: str, market_data: dict, history: list = None, is_followup: bool = False, category: str = "", chatbox_mode: bool = False, reasoning_model: str = "claude", preset_intent: str = None):
         """Build system_blocks, messages, model selection for a Claude call.
         Returns (system_blocks, messages, model, token_limit, use_thinking, thinking_budget)."""
@@ -6442,6 +6489,7 @@ FOLLOW-UP MODE: The user is continuing a conversation. You have the full convers
 
         return system_blocks, messages, model, token_limit, use_thinking, thinking_budget
 
+    @traceable(name="ask_claude")
     def _ask_claude(self, user_prompt: str, market_data: dict, history: list = None, is_followup: bool = False, category: str = "", chatbox_mode: bool = False, reasoning_model: str = "claude", preset_intent: str = None) -> str:
         """Send the user's question + market data to Claude with conversation history."""
         system_blocks, messages, model, token_limit, use_thinking, thinking_budget = self._build_prompt(
@@ -6486,6 +6534,7 @@ FOLLOW-UP MODE: The user is continuing a conversation. You have the full convers
 
         return response_text
 
+    @traceable(name="slim_cross_market_data")
     def _slim_cross_market_data(self, data: dict) -> dict:
         """Pre-compress cross-market data. Now prioritizes pre-ranked candidates over raw dumps."""
         try:
@@ -6574,6 +6623,7 @@ FOLLOW-UP MODE: The user is continuing a conversation. You have the full convers
             print(f"[Agent] _slim_cross_market_data error: {e}, passing raw data")
             return data
 
+    @traceable(name="parse_chatbox_response")
     def _parse_chatbox_response(self, raw_response: str, request_id: str = "") -> dict:
         """Parse chatbox mode response — conversational text with optional ticker extraction."""
         response_text = raw_response.strip()
@@ -6600,6 +6650,7 @@ FOLLOW-UP MODE: The user is continuing a conversation. You have the full convers
             },
         }
 
+    @traceable(name="parse_response")
     def _parse_response(self, raw_response: str, request_id: str = "") -> dict:
         """
         Parse Claude's response into structured JSON.

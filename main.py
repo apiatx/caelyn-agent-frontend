@@ -216,6 +216,7 @@ class LoginRequest(BaseModel):
 
 
 @app.post("/api/auth/login")
+@traceable(name="main.auth_login")
 async def auth_login(body: LoginRequest):
     """Authenticate user and return JWT token."""
     from auth import validate_credentials, create_token, AUTH_USERNAME
@@ -251,6 +252,7 @@ async def auth_login(body: LoginRequest):
 
 
 @app.get("/api/auth/verify")
+@traceable(name="main.auth_verify")
 async def auth_verify(request: Request):
     """Verify the current JWT token and return user info.
     This endpoint is public so we must extract the token manually."""
@@ -268,6 +270,7 @@ async def auth_verify(request: Request):
 
 
 @app.post("/api/auth/logout")
+@traceable(name="main.auth_logout")
 async def auth_logout(request: Request):
     """Logout — client should delete the token. Server-side is stateless."""
     return {"success": True, "message": "Logged out. Delete the token client-side."}
@@ -299,6 +302,7 @@ def _do_init():
         # instead of blocking every request for 60 seconds
         _init_event.set()
 
+@traceable(name="main.briefing_precompute_loop")
 async def _briefing_precompute_loop():
     """
     Background precomputation for Daily Briefing.
@@ -524,6 +528,7 @@ async def _briefing_precompute_loop():
 # Results cached to disk for 6 hours.
 _smart_scan_running = False
 
+@traceable(name="main.smart_earnings_loop")
 async def _smart_earnings_loop():
     """Background loop: runs smart earnings scan at 8am + 12pm EST on weekdays."""
     global _smart_scan_running
@@ -597,6 +602,7 @@ async def _smart_earnings_loop():
 # EDGAR Background Cache Loop
 # ============================================================
 
+@traceable(name="main.edgar_cache_loop")
 async def _edgar_cache_loop():
     """
     Background EDGAR data caching with two schedules:
@@ -674,17 +680,20 @@ async def _wait_for_init():
         raise HTTPException(status_code=503, detail=f"Server init failed: {err}")
 
 @app.get("/")
+@traceable(name="main.root")
 async def root():
     """Health check — visit this URL to confirm the backend is running."""
     return {"status": "running", "message": "Trading Agent API is live"}
 
 
 @app.get("/ping")
+@traceable(name="main.ping")
 async def ping():
     return {"status": "ok", "code_version": "2026-03-08-v3-pure-asgi"}
 
 
 @app.get("/health")
+@traceable(name="main.health")
 async def health():
     return {
         "status": "ok" if _init_done else ("init_failed" if _init_error else "starting"),
@@ -697,6 +706,7 @@ async def health():
 
 
 @app.post("/api/debug/echo")
+@traceable(name="main.debug_echo")
 async def debug_echo(request: Request):
     """Debug endpoint: echoes the request body back to verify the full pipeline works."""
     try:
@@ -725,6 +735,7 @@ def _safe_database_url_parts(db_url: str | None) -> tuple[str | None, str | None
 
 
 @app.get("/api/debug/db")
+@traceable(name="main.debug_db")
 async def debug_db(request: Request):
     """Temporary debugging endpoint for PostgreSQL runtime state."""
     _init_postgres_chat_storage_on_startup("debug_endpoint")
@@ -772,6 +783,7 @@ async def debug_db(request: Request):
 
 
 @app.get("/api/presets")
+@traceable(name="main.list_presets")
 async def list_presets(request: Request):
     """List all available preset_intent values the backend supports.
 
@@ -796,6 +808,7 @@ async def list_presets(request: Request):
 # ============================================================
 
 @app.get("/api/collab-options")
+@traceable(name="main.get_collab_options")
 async def get_collab_options(request: Request):
     """Return available solo reasoning models, collaborating agents, and collab presets.
 
@@ -907,6 +920,7 @@ async def get_collab_options(request: Request):
 
 @app.get("/api/polymarket/events")
 @limiter.limit("30/minute")
+@traceable(name="main.polymarket_events_proxy")
 async def polymarket_events_proxy(request: Request):
     """Proxy for Polymarket Gamma API — avoids CORS issues on the frontend."""
     import httpx
@@ -944,6 +958,7 @@ async def polymarket_events_proxy(request: Request):
 
 @app.get("/api/news/feed")
 @limiter.limit("15/minute")
+@traceable(name="main.news_feed")
 async def news_feed(request: Request, category: str = "finance"):
     """
     DEPRECATED: News feed has moved to a frontend RSS proxy
@@ -964,6 +979,7 @@ async def news_feed(request: Request, category: str = "finance"):
 
 @app.get("/api/earnings/calendar")
 @limiter.limit("10/minute")
+@traceable(name="main.earnings_calendar")
 async def earnings_calendar(request: Request, from_date: str = "", to_date: str = ""):
     """
     Returns all earnings for a date range from Finnhub.
@@ -1034,6 +1050,7 @@ async def earnings_calendar(request: Request, from_date: str = "", to_date: str 
 
 @app.get("/api/earnings/smart/{date}")
 @limiter.limit("20/minute")
+@traceable(name="main.smart_earnings_for_date")
 async def smart_earnings_for_date(request: Request, date: str):
     """
     Return Tier 2 (social + news ranked) earnings tickers for a specific date.
@@ -1080,6 +1097,7 @@ async def smart_earnings_for_date(request: Request, date: str):
 
 @app.get("/api/earnings/smart-status")
 @limiter.limit("30/minute")
+@traceable(name="main.smart_earnings_status")
 async def smart_earnings_status(request: Request):
     """Return cache freshness status for UI display."""
     from data.smart_earnings_scanner import get_cache_status
@@ -1090,6 +1108,7 @@ async def smart_earnings_status(request: Request):
 
 @app.post("/api/earnings/refresh-smart-cache")
 @limiter.limit("2/minute")
+@traceable(name="main.refresh_smart_cache")
 async def refresh_smart_cache(request: Request, x_api_key: str = Header(None), date: str = None):
     """Manual trigger for smart earnings scan. Runs in background.
     Optional 'date' query param to scan a specific week."""
@@ -1124,6 +1143,7 @@ async def refresh_smart_cache(request: Request, x_api_key: str = Header(None), d
 
 @app.get("/api/settings")
 @limiter.limit("20/minute")
+@traceable(name="main.get_settings_endpoint")
 async def get_settings_endpoint(request: Request):
     from data.user_settings import get_settings
     from agent.prompts import DEFAULT_PERSONAL_PROFILE, CORE_QUANT_DNA
@@ -1135,6 +1155,7 @@ async def get_settings_endpoint(request: Request):
 
 @app.put("/api/settings")
 @limiter.limit("20/minute")
+@traceable(name="main.update_settings_endpoint")
 async def update_settings_endpoint(
     request: Request,
     api_key: str = Header(None, alias="X-API-Key"),
@@ -1156,6 +1177,7 @@ async def update_settings_endpoint(
 
 @app.post("/api/settings/templates")
 @limiter.limit("20/minute")
+@traceable(name="main.save_template_endpoint")
 async def save_template_endpoint(
     request: Request,
     api_key: str = Header(None, alias="X-API-Key"),
@@ -1178,6 +1200,7 @@ async def save_template_endpoint(
 
 @app.delete("/api/settings/templates")
 @limiter.limit("20/minute")
+@traceable(name="main.delete_template_endpoint")
 async def delete_template_endpoint(
     request: Request,
     api_key: str = Header(None, alias="X-API-Key"),
@@ -1199,6 +1222,7 @@ async def delete_template_endpoint(
 
 @app.get("/api/earnings/detail")
 @limiter.limit("30/minute")
+@traceable(name="main.earnings_detail")
 async def earnings_detail(request: Request, ticker: str = ""):
     """
     Enriched earnings detail for a single ticker.
@@ -1387,6 +1411,7 @@ async def earnings_detail(request: Request, ticker: str = ""):
     return JSONResponse(content=result)
 
 
+@traceable(name="main.verify_api_key")
 async def verify_api_key(request: Request, x_api_key: Optional[str] = Header(None)):
     """Verify the API key sent in the X-API-Key header, or pass if JWT-authenticated."""
     if not _jwt_or_key(request, x_api_key):
@@ -1410,6 +1435,7 @@ class QueryRequest(BaseModel):
     primary_model: Optional[str] = None              # final synthesis model (default: claude)
     history: Optional[List[dict]] = None             # client-side conversation history (for model-switch continuity)
 
+@traceable(name="main.build_meta")
 def _build_meta(req_id: str, preset_intent=None, conv_id=None, routing=None, timing_ms=None, reasoning_model=None):
     rm = normalize_reasoning_model(reasoning_model)
     return {
@@ -1423,6 +1449,7 @@ def _build_meta(req_id: str, preset_intent=None, conv_id=None, routing=None, tim
     }
 
 
+@traceable(name="main.render_cross_market_analysis")
 def _render_cross_market_analysis(s: dict) -> str:
     parts = []
     regime = s.get("macro_regime", {})
@@ -1630,6 +1657,7 @@ def _render_cross_market_analysis(s: dict) -> str:
     return "\n".join(parts).strip()
 
 
+@traceable(name="main.render_trades_analysis")
 def _render_trades_analysis(s: dict) -> str:
     parts = []
     pulse = s.get("market_pulse", {})
@@ -1738,6 +1766,7 @@ def _render_trades_analysis(s: dict) -> str:
 
 
 _NARRATIVE_KEYS = ("summary", "narrative", "analysis", "report", "text", "message", "observations")
+@traceable(name="main.render_screener_analysis")
 def _render_screener_analysis(s: dict) -> str:
     parts = []
     screen_name = s.get("screen_name", "Screener")
@@ -1787,6 +1816,7 @@ _RENDERERS = {
 }
 
 
+@traceable(name="main.ensure_analysis")
 def _ensure_analysis(result: dict, meta: dict = None) -> dict:
     analysis = result.get("analysis", "")
     structured = result.get("structured", {})
@@ -1817,6 +1847,7 @@ def _ensure_analysis(result: dict, meta: dict = None) -> dict:
     return result
 
 
+@traceable(name="main.ok_envelope")
 def _ok_envelope(result: dict, meta: dict) -> dict:
     if not isinstance(result, dict):
         result = {"analysis": str(result) if result else "", "structured": {}}
@@ -1837,6 +1868,7 @@ def _ok_envelope(result: dict, meta: dict) -> dict:
     return result
 
 
+@traceable(name="main.error_envelope")
 def _error_envelope(code: str, message: str, meta: dict, details=None, partial=None) -> dict:
     env = {
         "type": "error",
@@ -1855,6 +1887,7 @@ def _error_envelope(code: str, message: str, meta: dict, details=None, partial=N
     return env
 
 
+@traceable(name="main.resp_log")
 def _resp_log(req_id: str, status: int, resp_type: str, resp: dict):
     resp_bytes = len(_json.dumps(resp, default=str).encode("utf-8"))
     print(f"[RESP] id={req_id} status={status} type={resp_type} bytes={resp_bytes}")
@@ -1862,6 +1895,7 @@ def _resp_log(req_id: str, status: int, resp_type: str, resp: dict):
 
 @app.post("/api/social/query")
 @limiter.limit("10/minute")
+@traceable(name="main.social_grok_query")
 async def social_grok_query(
     request: Request,
     body: dict = Body(...),
@@ -1908,6 +1942,7 @@ async def social_grok_query(
 
 @app.post("/api/query")
 @limiter.limit("10/minute")
+@traceable(name="main.query_agent")
 async def query_agent(
     request: Request,
     body: QueryRequest,
@@ -2317,6 +2352,7 @@ class TestCsvRequest(BaseModel):
 
 @app.post("/api/test-csv")
 @limiter.limit("10/minute")
+@traceable(name="main.test_csv")
 async def test_csv(request: Request, body: TestCsvRequest):
     """Debug endpoint: accepts csv_data, parses it, returns tickers + first 3 rows."""
     import csv as _csv
@@ -2370,6 +2406,7 @@ async def test_csv(request: Request, body: TestCsvRequest):
 
 @app.post("/api/cache/clear")
 @limiter.limit("5/minute")
+@traceable(name="main.clear_cache")
 async def clear_cache(request: Request, api_key: str = Header(None, alias="X-API-Key")):
     if not _jwt_or_key(request, api_key):
         raise HTTPException(status_code=403, detail="Invalid API key")
@@ -2385,6 +2422,7 @@ class WatchlistRequest(BaseModel):
 
 @app.post("/api/watchlist")
 @limiter.limit("10/minute")
+@traceable(name="main.review_watchlist")
 async def review_watchlist(
     request: Request,
     body: WatchlistRequest,
@@ -2447,6 +2485,7 @@ class UpdateConversationRequest(BaseModel):
     messages: List[dict] = []
 
 
+@traceable(name="main.shape_prompt_history")
 def _shape_prompt_history(all_history: dict, recent_limit: int = 10) -> dict:
     """Return a frontend-friendly history payload while preserving bucket grouping."""
     if not isinstance(all_history, dict):
@@ -2494,12 +2533,14 @@ def _shape_prompt_history(all_history: dict, recent_limit: int = 10) -> dict:
 
 @app.get("/api/conversations")
 @limiter.limit("30/minute")
+@traceable(name="main.get_conversations")
 async def get_conversations(request: Request):
     from data.chat_history import list_conversations
     return {"conversations": list_conversations()}
 
 @app.get("/api/conversations/{conv_id}")
 @limiter.limit("30/minute")
+@traceable(name="main.get_conversation_detail")
 async def get_conversation_detail(request: Request, conv_id: str):
     from data.chat_history import get_conversation
     conv = get_conversation(conv_id)
@@ -2509,6 +2550,7 @@ async def get_conversation_detail(request: Request, conv_id: str):
 
 @app.post("/api/conversations")
 @limiter.limit("30/minute")
+@traceable(name="main.create_new_conversation")
 async def create_new_conversation(request: Request, body: CreateConversationRequest):
     from data.chat_history import create_conversation
     conv = create_conversation(body.first_query)
@@ -2516,6 +2558,7 @@ async def create_new_conversation(request: Request, body: CreateConversationRequ
 
 @app.put("/api/conversations/{conv_id}")
 @limiter.limit("30/minute")
+@traceable(name="main.update_conversation")
 async def update_conversation(request: Request, conv_id: str, body: UpdateConversationRequest):
     from data.chat_history import save_messages
     success = save_messages(conv_id, body.messages)
@@ -2525,6 +2568,7 @@ async def update_conversation(request: Request, conv_id: str, body: UpdateConver
 
 @app.delete("/api/conversations/{conv_id}")
 @limiter.limit("30/minute")
+@traceable(name="main.delete_conv")
 async def delete_conv(request: Request, conv_id: str):
     from data.chat_history import delete_conversation
     success = delete_conversation(conv_id)
@@ -2534,6 +2578,7 @@ async def delete_conv(request: Request, conv_id: str):
 
 @app.get("/api/history")
 @limiter.limit("30/minute")
+@traceable(name="main.get_history")
 async def get_history(request: Request):
     import asyncio as _aio
     from data.prompt_history import get_all
@@ -2550,6 +2595,7 @@ async def get_history(request: Request):
 
     current_prices = {}
     if ticker_set and data_service:
+        @traceable(name="fetch")
         async def _fetch(ticker):
             try:
                 quote = await _aio.to_thread(data_service.finnhub.get_quote, ticker)
@@ -2585,6 +2631,7 @@ async def get_history(request: Request):
 
 @app.get("/api/history/recent")
 @limiter.limit("30/minute")
+@traceable(name="main.get_history_recent")
 async def get_history_recent(request: Request, limit: int = 10):
     from data.prompt_history import get_all
     user_id = getattr(request.state, "user_id", "default")
@@ -2598,6 +2645,7 @@ async def get_history_recent(request: Request, limit: int = 10):
 
 @app.get("/api/history/storage-info")
 @limiter.limit("10/minute")
+@traceable(name="main.history_storage_info")
 async def history_storage_info(request: Request):
     """Diagnostic: which storage backend is active and how much data is stored."""
     from data.prompt_history import _use_postgres as _ph_pg, _use_object_storage as _ph_obj, _use_replit_db as _ph_db
@@ -2618,6 +2666,7 @@ async def history_storage_info(request: Request):
 
 @app.get("/api/history/backtest-summary")
 @limiter.limit("10/minute")
+@traceable(name="main.history_backtest_summary")
 async def history_backtest_summary(request: Request):
     """
     For each history entry that has tickers with rec_price,
@@ -2649,6 +2698,7 @@ async def history_backtest_summary(request: Request):
         return {"backtest": {}, "as_of": _dt.now(_tz.utc).isoformat()}
 
     # Batch-fetch current prices (in thread to not block)
+    @traceable(name="fetch_price")
     async def _fetch_price(ticker: str) -> tuple:
         try:
             quote = await _aio.to_thread(data_service.finnhub.get_quote, ticker)
@@ -2690,6 +2740,7 @@ async def history_backtest_summary(request: Request):
 
 @app.get("/api/history/{category}/{intent}")
 @limiter.limit("30/minute")
+@traceable(name="main.get_history_by_intent")
 async def get_history_by_intent(request: Request, category: str, intent: str):
     from data.prompt_history import get_by_intent
     user_id = getattr(request.state, "user_id", "default")
@@ -2697,6 +2748,7 @@ async def get_history_by_intent(request: Request, category: str, intent: str):
 
 @app.post("/api/history")
 @limiter.limit("30/minute")
+@traceable(name="main.save_history")
 async def save_history(request: Request, x_api_key: str = Header(None)):
     body = await request.json()
     category = body.get("category", "")
@@ -2712,6 +2764,7 @@ async def save_history(request: Request, x_api_key: str = Header(None)):
 
 @app.delete("/api/history/{category}/{intent}/{entry_id}")
 @limiter.limit("30/minute")
+@traceable(name="main.delete_history_entry")
 async def delete_history_entry(request: Request, category: str, intent: str, entry_id: str):
     user_id = getattr(request.state, "user_id", "default")
     from data.prompt_history import delete_entry
@@ -2720,6 +2773,7 @@ async def delete_history_entry(request: Request, category: str, intent: str, ent
 
 @app.delete("/api/history/{category}/{intent}")
 @limiter.limit("30/minute")
+@traceable(name="main.clear_history_intent")
 async def clear_history_intent(request: Request, category: str, intent: str):
     user_id = getattr(request.state, "user_id", "default")
     from data.prompt_history import clear_intent
@@ -2739,6 +2793,7 @@ class BacktestRequest(BaseModel):
 
 @app.post("/api/backtest")
 @limiter.limit("20/minute")
+@traceable(name="main.backtest_recommendations")
 async def backtest_recommendations(request: Request, body: BacktestRequest):
     """
     Backtest historical recommendations: fetch current price via Finnhub,
@@ -2816,6 +2871,7 @@ async def backtest_recommendations(request: Request, body: BacktestRequest):
 
 @app.get("/api/health")
 @limiter.limit("30/minute")
+@traceable(name="main.health_check")
 async def health_check(request: Request):
     """Full diagnostic — tests Claude, Finviz, and StockAnalysis."""
     import asyncio
@@ -2882,6 +2938,7 @@ async def health_check(request: Request):
 # ============================================================
 
 @app.get("/api/candle_stats")
+@traceable(name="main.candle_stats")
 async def candle_stats(request: Request):
     from data.market_data_service import get_last_candle_stats, _is_finnhub_candles_disabled, _is_twelvedata_disabled
     stats = get_last_candle_stats()
@@ -2891,6 +2948,7 @@ async def candle_stats(request: Request):
 
 
 @app.get("/api/health/budget")
+@traceable(name="main.health_budget")
 async def health_budget(request: Request):
     from api_budget import daily_budget
     return daily_budget.status()
@@ -2900,11 +2958,13 @@ async def health_budget(request: Request):
 # Portfolio Holdings CRUD
 # ============================================================
 
+@traceable(name="main.portfolio_file")
 def _portfolio_file(user_id: str) -> Path:
     return Path(f"data/portfolio_holdings_{user_id}.json")
 
 
 @app.get("/api/portfolio/holdings")
+@traceable(name="main.get_holdings")
 async def get_holdings(request: Request, api_key: str = Header(None, alias="X-API-Key")):
     """Return saved portfolio holdings (JSON file, per-user)."""
     user_id = getattr(request.state, "user_id", "default")
@@ -2922,6 +2982,7 @@ async def get_holdings(request: Request, api_key: str = Header(None, alias="X-AP
 
 
 @app.post("/api/portfolio/holdings")
+@traceable(name="main.save_holdings")
 async def save_holdings(request: Request, api_key: str = Header(None, alias="X-API-Key")):
     """Save portfolio holdings. Expects {holdings: [{ticker, shares, avg_cost, ...}]}."""
     user_id = getattr(request.state, "user_id", "default")
@@ -2970,6 +3031,7 @@ def _is_known_index(ticker: str) -> bool:
 COINGECKO_COIN_LIST_TTL = 86400
 
 
+@traceable(name="main.get_coingecko_symbol_map")
 async def get_coingecko_symbol_map() -> dict:
     """Fetch CoinGecko's full coin list and build symbol->id mapping. Cached 24h."""
     import httpx
@@ -3004,6 +3066,7 @@ async def get_coingecko_symbol_map() -> dict:
 
 
 @app.post("/api/portfolio/quotes")
+@traceable(name="main.get_portfolio_quotes")
 async def get_portfolio_quotes(request: Request, api_key: str = Header(None, alias="X-API-Key")):
     """Get current quotes — stocks via FMP, crypto via dynamic CoinGecko lookup, commodities via FMP."""
     import httpx
@@ -3576,6 +3639,7 @@ async def get_portfolio_quotes(request: Request, api_key: str = Header(None, ali
 # ============================================================
 
 @app.get("/api/portfolio/events")
+@traceable(name="main.get_portfolio_events")
 async def get_portfolio_events(request: Request, api_key: str = Header(None, alias="X-API-Key")):
     """Get upcoming earnings and dividend dates for portfolio holdings."""
     import httpx
@@ -3655,6 +3719,7 @@ async def get_portfolio_events(request: Request, api_key: str = Header(None, ali
 
 @app.post("/api/portfolio/review")
 @limiter.limit("5/minute")
+@traceable(name="main.review_portfolio")
 async def review_portfolio(request: Request, api_key: str = Header(None, alias="X-API-Key")):
     """AI Portfolio Review — comprehensive analysis with Buy/Hold/Sell verdicts."""
     import asyncio
@@ -3662,6 +3727,7 @@ async def review_portfolio(request: Request, api_key: str = Header(None, alias="
     import time as _time
     from fastapi.responses import JSONResponse
 
+    @traceable(name="log")
     def _log(msg):
         print(msg, flush=True)
 
@@ -3684,6 +3750,7 @@ async def review_portfolio(request: Request, api_key: str = Header(None, alias="
             },
         }
 
+    @traceable(name="err_response")
     def _err_response(msg):
         return JSONResponse(status_code=200, content={
             "type": "chat", "analysis": "",
@@ -3839,11 +3906,13 @@ async def review_portfolio(request: Request, api_key: str = Header(None, alias="
 
         _log(f"[PORTFOLIO_REVIEW] Starting parallel fetch for {len(tickers)} tickers + macro...")
 
+        @traceable(name="fetch_all_tickers")
         async def _fetch_all_tickers():
             ticker_asset_map = {h["ticker"]: h.get("asset_type", "stock") for h in holdings_context}
             ticker_tasks = [fetch_ticker_data(t, ticker_asset_map.get(t, "stock")) for t in tickers[:15]]
             return await asyncio.gather(*ticker_tasks, return_exceptions=True)
 
+        @traceable(name="fetch_macro")
         async def _fetch_macro():
             try:
                 return await asyncio.wait_for(agent.data._build_macro_snapshot(), timeout=6.0)
@@ -4086,6 +4155,7 @@ IMPORTANT: Return plain text analysis (not JSON). Be formatted with markdown hea
 
 
 @app.get("/api/test-altfins")
+@traceable(name="main.test_altfins")
 async def test_altfins(symbol: str = "BTC", api_key: str = Header(None, alias="X-API-Key")):
     await verify_api_key(api_key)
     if not data_service.altfins:

@@ -1,6 +1,17 @@
 import asyncio
 import time as _time
 
+try:
+    from langsmith import traceable
+except ImportError:
+    def traceable(*args, **kwargs):
+        def _noop(fn):
+            return fn
+        if args and callable(args[0]):
+            return args[0]
+        return _noop
+
+
 from data.polygon_provider import PolygonProvider
 from data.twelvedata_provider import TwelveDataProvider
 from data.finviz_scraper import FinvizScraper, scrape_yahoo_trending, scrape_stockanalysis_trending
@@ -251,12 +262,14 @@ def _disable_twelvedata():
     print("[CIRCUIT_BREAKER] TwelveData disabled for 15 minutes (auth error)")
 
 
+@traceable(name="market_data_service.get_last_candle_stats")
 def get_last_candle_stats() -> dict:
     if _last_candle_budget:
         return _last_candle_budget.stats_dict()
     return {}
 
 
+@traceable(name="market_data_service.fetch_with_fallback")
 async def fetch_with_fallback(category: str,
                               fetch_primary,
                               fetch_secondary=None,
@@ -390,6 +403,7 @@ class MarketDataService:
         """Return True if LLM-backed web search (Perplexity/Brave/Tavily) is allowed for this request."""
         return self.web_search is not None and not self._skip_llm_web_search
 
+    @traceable(name="get_candles")
     async def get_candles(self,
                           symbol: str,
                           days: int = 120,
@@ -524,6 +538,7 @@ class MarketDataService:
         "material weakness",
     ]
 
+    @traceable(name="get_market_news_context")
     async def get_market_news_context(self,
                                       tickers: list = None,
                                       modules: dict = None) -> dict:
@@ -625,6 +640,7 @@ class MarketDataService:
 
         return news_data
 
+    @traceable(name="enrich_with_sentiment_filter")
     async def enrich_with_sentiment_filter(self,
                                            ticker_list: list,
                                            screener_results: list = None
@@ -688,6 +704,7 @@ class MarketDataService:
 
         return enriched
 
+    @traceable(name="research_ticker")
     async def research_ticker(self, ticker: str) -> dict:
         """
         Get everything about a single stock — all sources in parallel.
@@ -859,6 +876,7 @@ class MarketDataService:
 
         return sync_data
 
+    @traceable(name="scan_market")
     async def scan_market(self) -> dict:
         """Broad market overview — parallelized for speed."""
         movers = {}
@@ -906,6 +924,7 @@ class MarketDataService:
             "fear_greed_index": fear_greed,
         }
 
+    @traceable(name="get_options_flow")
     async def get_options_flow(self) -> dict:
         """
         Dedicated options flow scan.
@@ -921,6 +940,7 @@ class MarketDataService:
             "volume_leaders": volume_leaders,
         }
 
+    @traceable(name="get_earnings_scan")
     async def get_earnings_scan(self) -> dict:
         """
         Dedicated earnings scan.
@@ -930,6 +950,7 @@ class MarketDataService:
             "upcoming_earnings": self.finnhub.get_upcoming_earnings(),
         }
 
+    @traceable(name="get_macro_overview")
     async def get_macro_overview(self) -> dict:
         """
         Comprehensive macro dashboard combining FRED + FMP + Fear & Greed.
@@ -990,6 +1011,7 @@ class MarketDataService:
         cache.set("macro_overview_full", result, MACRO_TTL)
         return result
 
+    @traceable(name="get_commodities_dashboard")
     async def get_commodities_dashboard(self) -> dict:
         """
         Full commodities market dashboard:
@@ -1119,6 +1141,7 @@ class MarketDataService:
         },
     }
 
+    @traceable(name="wide_scan_and_rank")
     async def wide_scan_and_rank(self,
                                  category: str,
                                  filters: dict = None) -> dict:
@@ -1657,6 +1680,7 @@ class MarketDataService:
         scan_result.update(budget.degradation_metadata())
         return scan_result
 
+    @traceable(name="get_sec_filings")
     async def get_sec_filings(self, ticker: str) -> dict:
         """
         Dedicated SEC filings lookup.
@@ -1668,6 +1692,7 @@ class MarketDataService:
             "insider_filings": await self.edgar.get_insider_filings(ticker),
         }
 
+    @traceable(name="get_unusual_volume")
     async def get_unusual_volume(self) -> dict:
         """Scan for unusual volume stocks with enriched data."""
         unusual_vol = await self.finviz.get_unusual_volume()
@@ -1676,6 +1701,7 @@ class MarketDataService:
             "market_news": [],
         }
 
+    @traceable(name="get_oversold")
     async def get_oversold(self) -> dict:
         """Scan for oversold bounce candidates."""
         oversold = await self.finviz.get_oversold_stocks()
@@ -1684,6 +1710,7 @@ class MarketDataService:
             "market_news": [],
         }
 
+    @traceable(name="get_overbought")
     async def get_overbought(self) -> dict:
         """Scan for overbought stocks."""
         overbought = await self.finviz.get_overbought_stocks()
@@ -1691,6 +1718,7 @@ class MarketDataService:
             "overbought_stocks": overbought,
         }
 
+    @traceable(name="get_squeeze_candidates")
     async def get_squeeze_candidates(self) -> dict:
         """Scan for short squeeze setups."""
         high_short, unusual_vol, new_highs = await asyncio.gather(
@@ -1718,6 +1746,7 @@ class MarketDataService:
             "stocktwits_trending": trending,
         }
 
+    @traceable(name="get_top_ta_setups")
     async def get_top_ta_setups(self) -> dict:
         """
         Scan for the best technical analysis setups across stocks.
@@ -1757,6 +1786,7 @@ class MarketDataService:
             "options_signals": options_signals,
         }
 
+    @traceable(name="get_best_trades_scan")
     async def get_best_trades_scan(self) -> dict:
         """
         TA-first scanner for best trade setups.
@@ -2108,6 +2138,7 @@ class MarketDataService:
             "market_mood_social": market_mood,
         }
 
+    @traceable(name="enrich_trade_candidate")
     async def _enrich_trade_candidate(self, candidate: dict) -> dict:
         ticker = candidate.get("ticker", "")
         try:
@@ -2134,6 +2165,7 @@ class MarketDataService:
             candidate["data_gaps"].append("fundamentals")
         return candidate
 
+    @traceable(name="get_top_fundamental_catalysts")
     async def get_top_fundamental_catalysts(self) -> dict:
         """
         Scan for the best fundamental catalysts — earnings beats,
@@ -2186,6 +2218,7 @@ class MarketDataService:
             "fundamental_data": fundamental_data,
         }
 
+    @traceable(name="get_social_buzz")
     async def get_social_buzz(self) -> dict:
         """
         Scan for the most hyped stocks on social media.
@@ -2234,6 +2267,7 @@ class MarketDataService:
             "insider_buying": insider_buying,
         }
 
+    @traceable(name="get_dashboard")
     async def get_dashboard(self) -> dict:
         """
         Full dashboard: TA setups, fundamental catalysts, social buzz,
@@ -2262,6 +2296,7 @@ class MarketDataService:
             "fear_greed_index": fear_greed,
         }
 
+    @traceable(name="get_social_momentum")
     async def get_social_momentum(self) -> dict:
         """
         Scan for stocks with accelerating social media mentions
@@ -2302,6 +2337,7 @@ class MarketDataService:
             "social_details": social_data,
         }
 
+    @traceable(name="get_volume_spikes")
     async def get_volume_spikes(self) -> dict:
         """Scan for stocks with unusual volume vs 30-day average."""
         unusual_vol, most_active = await asyncio.gather(
@@ -2317,6 +2353,7 @@ class MarketDataService:
             "most_active": most_active,
         }
 
+    @traceable(name="get_earnings_catalyst_watch")
     async def get_earnings_catalyst_watch(self) -> dict:
         """
         Enhanced earnings watch: pulls all upcoming earnings,
@@ -2477,6 +2514,7 @@ class MarketDataService:
             "market_news": earnings_news,
         }
 
+        @traceable(name="get_sector_rotation")
         async def get_sector_rotation(self) -> dict:
             """
             Enhanced sector rotation using FMP sector ETF data + FRED macro.
@@ -2532,6 +2570,7 @@ class MarketDataService:
         market_close = now_et.replace(hour=16, minute=0, second=0, microsecond=0)
         return now_et < market_open or now_et > market_close
 
+    @traceable(name="get_overnight_derivatives_signal")
     async def get_overnight_derivatives_signal(self) -> dict:
         """Fetch Hyperliquid equity/commodity perp signal when US markets are closed."""
         if not self._is_us_market_closed():
@@ -2544,6 +2583,7 @@ class MarketDataService:
             print(f"[OVERNIGHT] Hyperliquid overnight signal failed: {e}")
             return {}
 
+    @traceable(name="get_sector_rotation_with_stages")
     async def get_sector_rotation_with_stages(self) -> dict:
         """
         Simplified Weinstein sector rotation.
@@ -2954,6 +2994,7 @@ class MarketDataService:
                     "breakout_candidates": [],
                 }
 
+    @traceable(name="get_asymmetric_setups")
     async def get_asymmetric_setups(self) -> dict:
         """
         Scan for asymmetric setups: compressed valuation + catalyst + volume.
@@ -3012,6 +3053,7 @@ class MarketDataService:
             "detail_data": detail_data,
         }
 
+    @traceable(name="get_bearish_setups")
     async def get_bearish_setups(self) -> dict:
         """Scan for breakdown / bearish plays — weakest stocks and sectors."""
         losers, overbought = await asyncio.gather(
@@ -3027,6 +3069,7 @@ class MarketDataService:
             "overbought_stocks": overbought,
         }
 
+    @traceable(name="get_thematic_scan")
     async def get_thematic_scan(self, theme: str = "ai_compute") -> dict:
         """
         Enhanced thematic scanner with full data per ticker:
@@ -3181,6 +3224,7 @@ class MarketDataService:
             "market_news": [],
         }
 
+    @traceable(name="build_macro_snapshot")
     async def _build_macro_snapshot(self) -> dict:
         """
         Lightweight macro snapshot for daily briefing key_numbers.
@@ -3367,6 +3411,7 @@ class MarketDataService:
         cache.set("macro_snapshot_v1", snapshot, 90)
         return snapshot
 
+    @traceable(name="compute_signal_highlights")
     def _compute_signal_highlights(
         self,
         screener_sources,
@@ -3547,6 +3592,7 @@ class MarketDataService:
             "biggest_volume": biggest_vol,
         }
 
+    @traceable(name="get_morning_briefing")
     async def get_morning_briefing(self) -> dict:
         """
         Combined intelligence briefing pulling the top signal from every data source.
@@ -3923,6 +3969,7 @@ class MarketDataService:
             if isinstance(upcoming_earnings, list) else [],
         }
 
+    @traceable(name="analyze_portfolio")
     async def analyze_portfolio(self, tickers: list) -> dict:
         """
         Full analysis pipeline for a user-provided list of tickers (up to 25).
@@ -4073,6 +4120,7 @@ class MarketDataService:
             self.fred.get_quick_macro(),
         }
 
+    @traceable(name="get_small_cap_spec")
     async def get_small_cap_spec(self) -> dict:
         """
         Speculative small cap scanner: high volatility, increasing volume,
@@ -4123,6 +4171,7 @@ class MarketDataService:
             "enriched_data": enriched_data,
         }
 
+    @traceable(name="get_cross_platform_trending")
     async def get_cross_platform_trending(self) -> dict:
         """
         Hybrid Grok+Claude trending architecture:
@@ -4477,6 +4526,7 @@ class MarketDataService:
             sorted_enriched,
         }
 
+    @traceable(name="get_cross_market_scan")
     async def get_cross_market_scan(self) -> dict:
         """
         Pull data from ALL asset classes in parallel: stocks, crypto, commodities, macro.
@@ -4565,6 +4615,7 @@ class MarketDataService:
 
         return result
 
+    @traceable(name="get_stock_trending_light")
     async def _get_stock_trending_light(self) -> dict:
         """Lighter stock trending for cross-market scan — skip heavy enrichment."""
         from collections import Counter
@@ -4631,6 +4682,7 @@ class MarketDataService:
             enriched,
         }
 
+    @traceable(name="get_crypto_light")
     async def _get_crypto_light(self) -> dict:
         """Lighter crypto scan for cross-market — skip xAI and altFINS to save time."""
         tasks = {}
@@ -4816,6 +4868,7 @@ class MarketDataService:
         "clean_energy": "AMEX:ICLN", "timber": "AMEX:WOOD",
     }
 
+    @traceable(name="get_commodities_light")
     async def _get_commodities_light(self,
                                      grok_themes: list[str] | None = None
                                      ) -> dict:
@@ -4989,6 +5042,7 @@ class MarketDataService:
         cache.set(CACHE_KEY, result, CACHE_TTL)
         return result
 
+    @traceable(name="get_crypto_scanner")
     async def get_crypto_scanner(self) -> dict:
         """
         Combined crypto scanner pulling from BOTH CoinGecko and CoinMarketCap.
@@ -5166,6 +5220,7 @@ class MarketDataService:
                 print(f"[CRYPTO_SCANNER]   {k}: {ks:,} chars", flush=True)
         return result
 
+    @traceable(name="get_quotes_batch")
     async def get_quotes_batch(self, symbols: list[str]) -> dict:
         results = {}
         quote_semaphore = asyncio.Semaphore(5)
@@ -5206,6 +5261,7 @@ class MarketDataService:
         await asyncio.gather(*tasks, return_exceptions=True)
         return results
 
+    @traceable(name="enrich_with_edgar")
     async def enrich_with_edgar(self,
                                 tickers: list[str],
                                 mode: str = "light") -> dict:
@@ -5297,6 +5353,7 @@ class MarketDataService:
         )
         return result
 
+    @traceable(name="run_deterministic_screener")
     async def run_deterministic_screener(self, preset_name: str) -> dict:
         """
         Deterministic screener pipeline for preset buttons.
@@ -5888,6 +5945,7 @@ class MarketDataService:
             "market_mood_social": market_mood,
         }
 
+    @traceable(name="run_ai_screener")
     async def run_ai_screener(self, filters: dict) -> dict:
         """
         AI-powered custom screener. Takes parsed filter criteria and
@@ -6182,6 +6240,7 @@ class MarketDataService:
             "results": clean_results,
         }
 
+    @traceable(name="analyze_funding_rates")
     def _analyze_funding_rates(self, derivatives: list) -> dict:
         if not derivatives or not isinstance(derivatives, list):
             return {}
