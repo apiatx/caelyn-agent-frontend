@@ -6,6 +6,7 @@ Requires LANGCHAIN_API_KEY (or LANGSMITH_API_KEY) in env.
 
 import os
 import json
+import urllib.parse
 import urllib.request
 import urllib.error
 from datetime import datetime, timezone, timedelta
@@ -32,7 +33,7 @@ def _get(path: str, params: Optional[dict] = None, timeout: int = 15) -> dict:
         return json.loads(resp.read())
 
 
-def _post(path: str, body: dict, timeout: int = 15) -> dict:
+def _post(path: str, body: dict, timeout: int = 30) -> dict:
     url = f"{BASE_URL}{path}"
     data = json.dumps(body).encode()
     req = urllib.request.Request(url, data=data, headers={
@@ -43,43 +44,40 @@ def _post(path: str, body: dict, timeout: int = 15) -> dict:
         return json.loads(resp.read())
 
 
-import urllib.parse  # noqa: E402 (needed by _get)
-
-
-def get_project_id(project_name: str = DEFAULT_PROJECT) -> Optional[str]:
-    """Get the LangSmith project/session ID by name."""
-    sessions = _get("/sessions", {"name": project_name})
-    if isinstance(sessions, list) and sessions:
-        return sessions[0].get("id")
-    return None
-
-
 def get_recent_runs(
     project_name: str = DEFAULT_PROJECT,
     hours: int = 24,
     error_only: bool = False,
     limit: int = 20,
+    filter_expr: Optional[str] = None,
 ) -> list:
-    """Fetch recent runs, optionally filtered to errors only."""
-    project_id = get_project_id(project_name)
-    if not project_id:
-        return []
-
+    """Fetch recent runs using session_name (no project ID lookup needed)."""
     start_time = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
 
     body = {
-        "session": [project_id],
-        "start_time": start_time,
+        "session_name": [project_name],
         "is_root": True,
         "limit": limit,
+        "order": "desc",
         "select": [
-            "id", "name", "status", "error", "start_time", "end_time",
+            "id", "name", "run_type", "status", "error",
+            "start_time", "end_time", "latency",
             "total_tokens", "prompt_tokens", "completion_tokens",
-            "feedback_stats", "first_token_time",
+            "feedback_stats", "tags",
         ],
     }
+
+    # Build filter expression
+    filters = [f'gt(start_time, "{start_time}")']
     if error_only:
-        body["error"] = True
+        filters.append("neq(error, null)")
+    if filter_expr:
+        filters.append(filter_expr)
+
+    if len(filters) == 1:
+        body["filter"] = filters[0]
+    else:
+        body["filter"] = f"and({', '.join(filters)})"
 
     try:
         result = _post("/runs/query", body)
@@ -98,7 +96,7 @@ def get_feedback(run_ids: list) -> list:
     if not run_ids:
         return []
     try:
-        params = {"run": ",".join(run_ids)}
+        params = {"run_ids": ",".join(run_ids)}
         return _get("/feedback", params)
     except Exception:
         return []
@@ -128,6 +126,7 @@ def diagnose(hours: int = 24, limit: int = 20, project_name: str = DEFAULT_PROJE
                 "error": r.get("error"),
                 "start_time": r.get("start_time"),
                 "tokens": r.get("total_tokens"),
+                "tags": r.get("tags"),
             }
             for r in error_runs
             if not r.get("_fetch_error")
@@ -141,13 +140,15 @@ def diagnose(hours: int = 24, limit: int = 20, project_name: str = DEFAULT_PROJE
             {
                 "id": r.get("id"),
                 "name": r.get("name"),
+                "run_type": r.get("run_type"),
                 "status": r.get("status"),
                 "error": r.get("error"),
                 "start_time": r.get("start_time"),
                 "end_time": r.get("end_time"),
                 "total_tokens": r.get("total_tokens"),
                 "feedback_stats": r.get("feedback_stats"),
-                "latency_s": _calc_latency(r),
+                "latency_s": r.get("latency") or _calc_latency(r),
+                "tags": r.get("tags"),
             }
             for r in all_runs
             if not r.get("_fetch_error")
