@@ -16,6 +16,19 @@ import uuid as _uuid
 from datetime import datetime as _dt, timezone as _tz
 from agent.mode_normalizer import normalize_reasoning_model, mode_concept, mode_display_label
 
+# Ensure LangSmith env vars are set before any langsmith import
+import config as _cfg  # noqa: F401  — triggers os.environ.setdefault calls
+
+try:
+    from langsmith import traceable as _ls_traceable
+except ImportError:
+    def _ls_traceable(*args, **kwargs):
+        def _noop(fn):
+            return fn
+        if args and callable(args[0]):
+            return args[0]
+        return _noop
+
 from pathlib import Path
 from urllib.parse import urlparse, unquote
 

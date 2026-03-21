@@ -1,5 +1,13 @@
 import os
 
+# ── LangSmith tracing ──────────────────────────────────────────────────
+# Setting these env vars enables automatic trace export to LangSmith.
+# The API key should be stored in Replit Secrets as LANGSMITH_API_KEY.
+os.environ.setdefault("LANGCHAIN_TRACING_V2", "true")
+os.environ.setdefault("LANGCHAIN_PROJECT", "CaelynAI")
+if os.getenv("LANGSMITH_API_KEY"):
+    os.environ.setdefault("LANGCHAIN_API_KEY", os.getenv("LANGSMITH_API_KEY"))
+
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 POLYGON_API_KEY = os.getenv("POLYGON_API_KEY")
 FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY")
