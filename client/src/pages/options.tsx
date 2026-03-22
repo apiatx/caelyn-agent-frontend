@@ -224,7 +224,11 @@ export default function OptionsPage() {
   const unusualActivity: any[] = resp?.unusual_activity || [];
   const convictionPlays: any[] = resp?.conviction_plays || [];
   const ivHeatmap: any[] = resp?.iv_heatmap || resp?.iv_heat_map || [];
-  const timing = data?.timing || resp?.timing;
+  const timingRaw = data?.timing || resp?.timing;
+  const timingSecs: number | null = timingRaw == null ? null
+    : typeof timingRaw === 'number' ? timingRaw
+    : typeof timingRaw === 'object' ? (timingRaw.total_seconds ?? timingRaw.total ?? null)
+    : parseFloat(String(timingRaw)) || null;
   const scannedCount = resp?.tickers_scanned ?? unusualActivity.length + convictionPlays.length;
 
   // ─── Tabs ────────────────────────────────────────────────────────────────────
@@ -430,9 +434,9 @@ export default function OptionsPage() {
             <span style={{ color: C.bright, fontSize: 18, fontWeight: 800, fontFamily: font, letterSpacing: '-0.02em' }}>OPTIONS FLOW</span>
             <Badge color={C.blue}>LIVE</Badge>
           </div>
-          {hasData && timing && (
+          {hasData && timingSecs != null && (
             <div style={{ color: C.dim, fontSize: 11, fontFamily: font, marginTop: 3 }}>
-              Scanned {scannedCount} tickers in {typeof timing === 'number' ? timing.toFixed(1) : timing}s
+              Scanned {scannedCount} tickers in {timingSecs.toFixed(1)}s
             </div>
           )}
         </div>
