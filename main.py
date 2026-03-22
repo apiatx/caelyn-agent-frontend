@@ -1966,24 +1966,77 @@ async def social_grok_query(
             "ConnorJBates_", "BussinBiotech", "BambroughKevin", "AlexfromBabylon",
             "UncleAlpha007",
         ]
-        user_prompt = (
-            "Search the last 20 posts for EACH of these EXACT accounts — no others: "
-            + " OR ".join(f"from:{h}" for h in _X_SELECT_HANDLES)
-            + " — extract the highest signal. I want 5-10 tickers in the response and why. "
-            "Give me the thesis of these X accounts on those tickers and tell me what's really worth watching. "
-            "Use @KobeissiLetter for macro/regime context in market_pulse, the others for ticker picks. "
-            "Flag any new ticker that has recently started being talked about as a potential new/fresh trade with a good entry. "
-            "Follow your briefing JSON schema exactly — display_type must be 'briefing'."
-        )
-        print(f"[SOCIAL_GROK] Select trader consensus — {len(_X_SELECT_HANDLES)} handles, x_search constrained")
-        try:
+
+        # ── Phase 1: Parallel batched x_search (max ~8 handles per call) ──
+        # Grok's allowed_x_handles supports ~10 per call; we batch into groups
+        # using the fast non-reasoning model for data collection.
+        BATCH_SIZE = 8
+        batches = [_X_SELECT_HANDLES[i:i + BATCH_SIZE]
+                    for i in range(0, len(_X_SELECT_HANDLES), BATCH_SIZE)]
+        print(f"[SOCIAL_GROK] Select trader consensus — {len(_X_SELECT_HANDLES)} handles in {len(batches)} batches")
+
+        async def _fetch_batch(handles: list[str], batch_num: int) -> str:
+            """Fetch raw post data for a batch of handles."""
+            batch_prompt = (
+                f"Search the last 20 posts from EACH of these accounts: "
+                + ", ".join(f"@{h}" for h in handles)
+                + ". For each account, list the tickers/assets they mention with bullish/bearish context, "
+                "their thesis, conviction level, and any catalysts they cite. "
+                "Include the account handle with each finding. Be thorough and specific — "
+                "quote or closely paraphrase their actual posts."
+            )
             result = await data_service.xai._call_grok_with_x_search(
-                prompt=user_prompt,
+                prompt=batch_prompt,
+                raw_mode=True,
+                use_deep_model=False,
+                timeout=60.0,
+                x_search_config={"allowed_x_handles": handles},
+            )
+            text = ""
+            if isinstance(result, dict):
+                text = result.get("_raw_analysis", "") or result.get("error", "")
+            print(f"[SOCIAL_GROK] Batch {batch_num + 1}/{len(batches)}: {len(handles)} handles -> {len(text)} chars")
+            return text
+
+        try:
+            # Run all batches in parallel
+            batch_results = await asyncio.gather(
+                *[_fetch_batch(batch, i) for i, batch in enumerate(batches)],
+                return_exceptions=True,
+            )
+            # Combine results, skip failures
+            combined_data = []
+            for i, res in enumerate(batch_results):
+                if isinstance(res, Exception):
+                    print(f"[SOCIAL_GROK] Batch {i + 1} failed: {res}")
+                    continue
+                if res and not res.startswith("xAI"):
+                    combined_data.append(f"=== Batch {i + 1} ({', '.join('@' + h for h in batches[i])}) ===\n{res}")
+
+            if not combined_data:
+                return JSONResponse(status_code=502, content={
+                    "error": "All x_search batches failed — xAI may be experiencing issues",
+                    "query": query,
+                })
+
+            # ── Phase 2: Synthesize with reasoning model ──────────────────
+            combined_text = "\n\n".join(combined_data)
+            print(f"[SOCIAL_GROK] Synthesis phase: {len(combined_text):,} chars from {len(combined_data)} batches")
+
+            synthesis_prompt = (
+                "Below is raw data from X/Twitter posts by 25 select trader accounts. "
+                "Analyze ALL of this data and produce the consensus JSON output per your schema.\n\n"
+                "RAW X DATA:\n" + combined_text + "\n\n"
+                "Now synthesize this into the exact JSON schema from your system instructions. "
+                "Return ONLY valid JSON — no markdown, no backticks, no extra text."
+            )
+
+            result = await data_service.xai._call_grok_with_x_search(
+                prompt=synthesis_prompt,
                 raw_mode=False,
                 use_deep_model=True,
-                timeout=80.0,
+                timeout=90.0,
                 system_text=X_SELECT_TRADER_CONSENSUS_CONTRACT,
-                x_search_config={"allowed_x_handles": _X_SELECT_HANDLES},
             )
             if isinstance(result, dict) and not result.get("error"):
                 return JSONResponse(content={
@@ -1994,7 +2047,7 @@ async def social_grok_query(
                 })
             else:
                 err = result.get("error", "unknown") if isinstance(result, dict) else str(result)
-                print(f"[SOCIAL_GROK] Select consensus error: {err}")
+                print(f"[SOCIAL_GROK] Synthesis error: {err}")
                 return JSONResponse(status_code=502, content={"error": err, "query": query})
         except Exception as e:
             print(f"[SOCIAL_GROK] Select consensus exception: {e}")
