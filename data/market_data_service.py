@@ -18,8 +18,9 @@ from data.finviz_scraper import FinvizScraper, scrape_yahoo_trending, scrape_sto
 from data.stocktwits_provider import StockTwitsProvider
 from data.stockanalysis_scraper import StockAnalysisScraper
 from data.options_scraper import OptionsScraper
+from data.public_com_provider import PublicComProvider
 from data.finnhub_provider import FinnhubProvider
-from config import FINNHUB_API_KEY, ALPHA_VANTAGE_API_KEY, FRED_API_KEY, FMP_API_KEY, TWELVEDATA_API_KEY, TAVILY_API_KEY, BRAVE_API_KEY, PERPLEXITY_API_KEY
+from config import FINNHUB_API_KEY, ALPHA_VANTAGE_API_KEY, FRED_API_KEY, FMP_API_KEY, TWELVEDATA_API_KEY, TAVILY_API_KEY, BRAVE_API_KEY, PERPLEXITY_API_KEY, PUBLIC_COM_API_KEY
 from data.alphavantage_provider import AlphaVantageProvider
 from data.tavily_provider import TavilyProvider
 from data.web_search_provider import WebSearchProvider
@@ -367,6 +368,11 @@ class MarketDataService:
         self.stocktwits = StockTwitsProvider()
         self.stockanalysis = StockAnalysisScraper()
         self.options = OptionsScraper()
+        self.public_com = PublicComProvider(PUBLIC_COM_API_KEY) if PUBLIC_COM_API_KEY else None
+        if self.public_com:
+            print("[INIT] Public.com options provider initialized")
+        else:
+            print("[INIT] Public.com options provider SKIPPED (no PUBLIC_COM_API_KEY)")
         self.finnhub = FinnhubProvider(FINNHUB_API_KEY)
         self.alphavantage = AlphaVantageProvider(ALPHA_VANTAGE_API_KEY)
         self.fred = FredProvider(FRED_API_KEY)

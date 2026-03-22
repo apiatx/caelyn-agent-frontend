@@ -4450,3 +4450,226 @@ async def test_altfins(symbol: str = "BTC", api_key: str = Header(None, alias="X
         }
     except Exception as e:
         return {"status": "error", "error": str(e)}
+
+
+# ═══════════════════════════════════════════════════════════════════
+# OPTIONS DASHBOARD — Live options flow + Claude signal extraction
+# ═══════════════════════════════════════════════════════════════════
+
+# Default tickers scanned when no specific list is provided
+_OPTIONS_DEFAULT_TICKERS = [
+    "SPY", "QQQ", "AAPL", "NVDA", "TSLA", "AMZN", "META", "MSFT",
+    "AMD", "GOOGL", "NFLX", "COIN", "MARA", "SMCI", "ARM",
+]
+
+
+@app.post("/api/options/dashboard")
+@limiter.limit("10/minute")
+@traceable(name="main.options_dashboard")
+async def options_dashboard(
+    request: Request,
+    api_key: str = Header(None, alias="X-API-Key"),
+):
+    """
+    Live options dashboard: fetches real-time options data from Public.com,
+    then uses Claude to extract high-value trade signals.
+
+    Request body (optional):
+    {
+        "tickers": ["AAPL", "NVDA", "TSLA"],   // defaults to top 15 if omitted
+        "expiration": "2025-04-25"               // defaults to nearest if omitted
+    }
+    """
+    await _wait_for_init()
+
+    if not data_service or not data_service.public_com:
+        return JSONResponse(
+            status_code=503,
+            content={"error": "Public.com options provider not configured. Set PUBLIC_COM_API_KEY in secrets."},
+        )
+
+    body = {}
+    try:
+        body = await request.json()
+    except Exception:
+        pass
+
+    tickers = body.get("tickers") or _OPTIONS_DEFAULT_TICKERS
+    requested_expiration = body.get("expiration")
+
+    print(f"[OPTIONS_DASH] Scanning {len(tickers)} tickers: {tickers[:10]}...")
+    import time as _time
+    t0 = _time.time()
+
+    try:
+        # Phase 1: Gather raw options data from Public.com
+        all_chains = {}
+        unusual_contracts = []
+
+        # Also gather Barchart scraper data for cross-referencing
+        barchart_unusual, barchart_volume = await asyncio.gather(
+            data_service.options.get_unusual_options_activity(),
+            data_service.options.get_options_volume_leaders(),
+        )
+        barchart_signals = data_service.options.interpret_flow(barchart_unusual)
+
+        # Fetch chains + high-vol scan from Public.com
+        scan_results = await data_service.public_com.scan_high_volume_options(tickers)
+        unusual_contracts = scan_results
+
+        # For each ticker, also grab nearest expiration chain for Claude context
+        async def _get_chain(ticker):
+            exps = await data_service.public_com.get_option_expirations(ticker)
+            if not exps:
+                return None
+            exp = requested_expiration if requested_expiration and requested_expiration in exps else exps[0]
+            chain = await data_service.public_com.get_full_chain_with_greeks(ticker, exp)
+            return chain
+
+        chain_tasks = [_get_chain(t) for t in tickers[:10]]
+        chain_results = await asyncio.gather(*chain_tasks, return_exceptions=True)
+        for i, result in enumerate(chain_results):
+            if result and not isinstance(result, Exception):
+                all_chains[tickers[i]] = result
+
+        gather_time = _time.time() - t0
+        print(f"[OPTIONS_DASH] Data gathered in {gather_time:.1f}s — {len(all_chains)} chains, {len(unusual_contracts)} unusual contracts")
+
+        # Phase 2: Build data package for Claude
+        raw_data = {
+            "live_chains": {},
+            "unusual_contracts": unusual_contracts[:30],
+            "barchart_unusual_activity": barchart_unusual[:20],
+            "barchart_volume_leaders": barchart_volume[:15],
+            "barchart_flow_signals": barchart_signals,
+            "tickers_scanned": tickers,
+        }
+
+        # Compress chains to top contracts by volume for Claude context efficiency
+        for ticker, chain in all_chains.items():
+            compressed = {"expiration": chain.get("expiration"), "calls": [], "puts": []}
+            for side in ("calls", "puts"):
+                contracts = chain.get(side, [])
+                # Keep contracts with volume > 0, sorted by volume desc
+                active = [c for c in contracts if c.get("volume") and int(c.get("volume", 0)) > 0]
+                active.sort(key=lambda x: int(x.get("volume", 0)), reverse=True)
+                compressed[side] = active[:15]
+            raw_data["live_chains"][ticker] = compressed
+
+        # Phase 3: Claude reasoning
+        from agent.prompts import OPTIONS_DASHBOARD_CONTRACT
+        from config import ANTHROPIC_API_KEY
+
+        import anthropic
+        claude_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY, timeout=90.0)
+
+        claude_response = claude_client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=4096,
+            system=OPTIONS_DASHBOARD_CONTRACT,
+            messages=[{
+                "role": "user",
+                "content": f"Here is the live options data to analyze:\n\n{_json.dumps(raw_data, default=str)}"
+            }],
+        )
+
+        raw_text = claude_response.content[0].text
+        analysis_time = _time.time() - t0 - gather_time
+
+        # Parse the JSON response
+        try:
+            # Strip markdown fences if present
+            cleaned = raw_text.strip()
+            if cleaned.startswith("```"):
+                cleaned = cleaned.split("\n", 1)[1] if "\n" in cleaned else cleaned[3:]
+            if cleaned.endswith("```"):
+                cleaned = cleaned[:-3]
+            if cleaned.startswith("json"):
+                cleaned = cleaned[4:]
+            result = _json.loads(cleaned.strip())
+        except _json.JSONDecodeError:
+            # Try to find JSON in the response
+            import re
+            json_match = re.search(r'\{[\s\S]*\}', raw_text)
+            if json_match:
+                result = _json.loads(json_match.group())
+            else:
+                result = {"display_type": "options_dashboard", "error": "Failed to parse Claude analysis", "raw": raw_text[:500]}
+
+        total_time = _time.time() - t0
+        print(f"[OPTIONS_DASH] Complete in {total_time:.1f}s (gather={gather_time:.1f}s, analysis={analysis_time:.1f}s)")
+
+        return {
+            "response": result,
+            "structured": True,
+            "preset": "options_dashboard",
+            "timing": {
+                "gather_seconds": round(gather_time, 1),
+                "analysis_seconds": round(analysis_time, 1),
+                "total_seconds": round(total_time, 1),
+            },
+        }
+
+    except asyncio.TimeoutError:
+        return JSONResponse(status_code=504, content={"error": "Options dashboard timed out. Try with fewer tickers."})
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        print(f"[OPTIONS_DASH] Error: {e}")
+        return JSONResponse(status_code=500, content={"error": f"Options dashboard error: {str(e)[:300]}"})
+
+
+@app.get("/api/options/chain/{symbol}")
+@limiter.limit("30/minute")
+@traceable(name="main.options_chain")
+async def get_options_chain(
+    request: Request,
+    symbol: str,
+    expiration: str = None,
+    api_key: str = Header(None, alias="X-API-Key"),
+):
+    """Get option chain for a single ticker. Used when clicking into a specific ticker."""
+    await _wait_for_init()
+
+    if not data_service or not data_service.public_com:
+        return JSONResponse(status_code=503, content={"error": "Public.com not configured"})
+
+    symbol = symbol.upper()
+
+    try:
+        expirations = await data_service.public_com.get_option_expirations(symbol)
+        if not expirations:
+            return {"symbol": symbol, "expirations": [], "chain": {}, "error": "No expirations found"}
+
+        target_exp = expiration if expiration and expiration in expirations else expirations[0]
+        chain = await data_service.public_com.get_full_chain_with_greeks(symbol, target_exp)
+
+        return {
+            "symbol": symbol,
+            "expirations": expirations,
+            "selected_expiration": target_exp,
+            "chain": chain,
+        }
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": f"Chain error for {symbol}: {str(e)[:200]}"})
+
+
+@app.get("/api/options/expirations/{symbol}")
+@limiter.limit("30/minute")
+@traceable(name="main.options_expirations")
+async def get_options_expirations(
+    request: Request,
+    symbol: str,
+    api_key: str = Header(None, alias="X-API-Key"),
+):
+    """Get available option expiration dates for a ticker."""
+    await _wait_for_init()
+
+    if not data_service or not data_service.public_com:
+        return JSONResponse(status_code=503, content={"error": "Public.com not configured"})
+
+    try:
+        expirations = await data_service.public_com.get_option_expirations(symbol.upper())
+        return {"symbol": symbol.upper(), "expirations": expirations}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)[:200]})
