@@ -101,6 +101,12 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
           path: '/app/stocks/options'
         },
         {
+          id: 'options-flow',
+          label: 'Options Flow',
+          icon: <Zap className="w-4 h-4" />,
+          path: '/app/options'
+        },
+        {
           id: 'stocks-sectors',
           label: 'Sectors + ETFs',
           icon: <Layers className="w-4 h-4" />,
