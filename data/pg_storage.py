@@ -353,6 +353,33 @@ def ph_write(user_id: str, data: dict):
         _put_conn(conn)
 
 
+@traceable(name="pg_storage.ph_read_bucket")
+def ph_read_bucket(user_id: str, bucket_key: str) -> dict:
+    """Read a single bucket for a user."""
+    conn = _get_conn()
+    if conn is None:
+        return {}
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT data FROM public.prompt_history WHERE user_id = %s AND bucket_key = %s",
+            (user_id, bucket_key),
+        )
+        row = cur.fetchone()
+        cur.close()
+        if row is None:
+            return {}
+        data = row[0]
+        if isinstance(data, str):
+            data = json.loads(data)
+        return data
+    except Exception as e:
+        print(f"[PG_STORAGE] ph_read_bucket error for {user_id}/{bucket_key}: {e}")
+        return {}
+    finally:
+        _put_conn(conn)
+
+
 @traceable(name="pg_storage.ph_write_bucket")
 def ph_write_bucket(user_id: str, bucket_key: str, bucket_data: dict):
     """Write a single bucket (more efficient for single-intent updates)."""
