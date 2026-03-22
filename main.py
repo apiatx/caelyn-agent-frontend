@@ -1967,12 +1967,13 @@ async def social_grok_query(
             "UncleAlpha007",
         ]
         user_prompt = (
-            "Search the last 10 posts for EACH of these EXACT accounts — no others: "
+            "Search the last 20 posts for EACH of these EXACT accounts — no others: "
             + " OR ".join(f"from:{h}" for h in _X_SELECT_HANDLES)
             + " — extract the highest signal. I want 5-10 tickers in the response and why. "
             "Give me the thesis of these X accounts on those tickers and tell me what's really worth watching. "
+            "Use @KobeissiLetter for macro/regime context in market_pulse, the others for ticker picks. "
             "Flag any new ticker that has recently started being talked about as a potential new/fresh trade with a good entry. "
-            "Follow your JSON schema exactly."
+            "Follow your briefing JSON schema exactly — display_type must be 'briefing'."
         )
         print(f"[SOCIAL_GROK] Select trader consensus — {len(_X_SELECT_HANDLES)} handles, x_search constrained")
         try:
@@ -2326,6 +2327,8 @@ async def query_agent(
                     "ticker_analysis": ("ticker_analysis", "analysis"),
                     "portfolio_review": ("portfolio_review", "review"),
                     "crypto": ("crypto", "scan"),
+                    "x_select_trader_consensus": ("x_trader_consensus", "briefing"),
+                    "select_trader_consensus": ("x_trader_consensus", "briefing"),
                 }
                 _preset = body.preset_intent or ""
                 if _preset and _preset in _PRESET_TO_HISTORY:
