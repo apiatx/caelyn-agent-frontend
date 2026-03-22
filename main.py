@@ -2320,6 +2320,15 @@ async def query_agent(
                 except Exception:
                     pass
 
+                # Build the full structured response object for the frontend
+                _hist_structured_response = None
+                if isinstance(result, dict):
+                    _hist_structured_response = {}
+                    if result.get("analysis"):
+                        _hist_structured_response["analysis"] = result["analysis"]
+                    if result.get("structured"):
+                        _hist_structured_response["structured"] = result["structured"]
+
                 _save_prompt_history(
                     category=_hist_category,
                     intent=_hist_intent,
@@ -2330,6 +2339,7 @@ async def query_agent(
                     query=user_query,
                     tickers=_hist_tickers,
                     conversation=_hist_conversation,
+                    structured_response=_hist_structured_response,
                 )
                 _ticker_count = len(_hist_tickers) if _hist_tickers else 0
                 print(f"[HISTORY] Saved to prompt_history: category={_hist_category}, intent={_hist_intent}, model={_hist_model}, tickers={_ticker_count}, len={len(_hist_content)}")
@@ -2569,7 +2579,18 @@ def _shape_prompt_history(all_history: dict, recent_limit: int = 10, current_pri
                 }
             )
 
-    items.sort(key=lambda x: x.get("timestamp", 0), reverse=True)
+    def _sort_ts(x):
+        """Extract a sortable timestamp, falling back to id (ms epoch)."""
+        ts = x.get("timestamp")
+        if isinstance(ts, (int, float)) and ts > 0:
+            return float(ts)
+        # id is str(int(time.time() * 1000))
+        try:
+            return int(x.get("id", 0)) / 1000.0
+        except (ValueError, TypeError):
+            return 0.0
+
+    items.sort(key=_sort_ts, reverse=True)
     recent = items[: max(1, min(recent_limit, 100))]
 
     return {
@@ -2711,6 +2732,22 @@ async def get_history_recent(request: Request, limit: int = 10):
         "_meta": _history_storage_meta(),
     }
 
+@app.get("/api/history/sidebar")
+@limiter.limit("30/minute")
+@traceable(name="main.get_history_sidebar")
+async def get_history_sidebar(request: Request, limit: int = 10):
+    """Sidebar-friendly recent history — same shape as /api/history/recent."""
+    from data.prompt_history import get_all
+    user_id = getattr(request.state, "user_id", "default")
+    all_history = get_all(user_id=user_id)
+    shaped = _shape_prompt_history(all_history, recent_limit=limit)
+    return {
+        "recent": shaped.get("recent", []),
+        "recent_count": shaped.get("recent_count", 0),
+        "total_count": shaped.get("total_count", 0),
+        "_meta": _history_storage_meta(),
+    }
+
 @app.get("/api/history/storage-info")
 @limiter.limit("10/minute")
 @traceable(name="main.history_storage_info")
@@ -2828,7 +2865,18 @@ async def save_history(request: Request, x_api_key: str = Header(None)):
         raise HTTPException(status_code=400, detail="category, intent, and content are required")
     user_id = getattr(request.state, "user_id", "default")
     from data.prompt_history import save_response
-    entry = save_response(category, intent, content, display_type, user_id=user_id)
+    entry = save_response(
+        category,
+        intent,
+        content,
+        display_type,
+        user_id=user_id,
+        model_used=body.get("model_used"),
+        query=body.get("query"),
+        tickers=body.get("tickers"),
+        conversation=body.get("conversation"),
+        structured_response=body.get("structured_response"),
+    )
     return {"success": True, "entry": entry}
 
 @app.delete("/api/history/{category}/{intent}/{entry_id}")
