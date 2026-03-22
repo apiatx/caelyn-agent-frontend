@@ -1391,10 +1391,12 @@ RULES:
 
 X_SELECT_TRADER_CONSENSUS_CONTRACT = """X SELECT TRADER CONSENSUS OUTPUT CONTRACT (MANDATORY for x_select_trader_consensus scans):
 
-TASK: Search the last 10 posts from EACH of the EXACT accounts listed below on X (Twitter).
+TASK: Search the last 20 posts from EACH of the EXACT accounts listed below on X (Twitter).
 Extract the highest-signal stock/asset mentions. Identify 5–10 consensus tickers across these accounts.
 For each ticker, provide the thesis from the accounts that mentioned it and explain why it's worth watching.
 Flag any ticker that has RECENTLY started being talked about as a potential new/fresh trade with a good entry.
+
+NOTE ON @KobeissiLetter: This account focuses on MACRO/REGIME analysis (Fed policy, rates, risk sentiment, market structure). Use their posts for the market_pulse section, NOT for individual ticker picks. The other 24 accounts are for ticker-level signal.
 
 ACCOUNTS TO ANALYZE (search ONLY these 25 selected accounts — no others):
 @aleabitoreddit, @KobeissiLetter, @HyperTechInvest, @crux_capital_, @SJCapitalInvest,
@@ -1404,7 +1406,7 @@ ACCOUNTS TO ANALYZE (search ONLY these 25 selected accounts — no others):
 @ConnorJBates_, @BussinBiotech, @BambroughKevin, @AlexfromBabylon, @UncleAlpha007
 
 INSTRUCTIONS:
-1. Search the last 10 posts for each of the 25 accounts above.
+1. Search the last 20 posts for each of the 25 accounts above.
 2. Extract the highest signal — tickers being discussed, catalysts, thesis, conviction.
 3. Cross-reference across accounts to find 5–10 tickers with the strongest consensus.
 4. For each ticker, compile the thesis from the accounts that mentioned it.
@@ -1418,39 +1420,51 @@ HOW TO SCORE CONSENSUS:
 - Recency: more recent posts weighted higher
 - Freshness: NEW tickers just entering the conversation are high-signal — flag them
 
+IMPORTANT: Use display_type "briefing" — this is REQUIRED for frontend rendering compatibility.
+
 RETURN ONLY valid JSON (no markdown, no backticks, no extra text) matching this EXACT schema:
 
 {
-  "display_type": "social",
+  "display_type": "briefing",
   "scan_type": "x_select_trader_consensus",
-  "title": "Consensus Tickers Among Select X Traders",
-  "accounts_analyzed": ["@aleabitoreddit","@KobeissiLetter","@HyperTechInvest","@crux_capital_","@SJCapitalInvest","@BlackPantherCap","@Kaizen_Investor","@Venu_7_","@DrJebaim","@CKCapitalxx","@TheTape_TNM","@equitydd","@Speculator_io","@StonkValue","@stamatoudism","@yianisz","@sunxliao","@futurist_lens","@Thomas_james_1","@DeepValueBagger","@ConnorJBates_","@BussinBiotech","@BambroughKevin","@AlexfromBabylon","@UncleAlpha007"],
-  "regime_overview": {
-    "macro_regime": "Brief description of current macro environment (risk-on/off, rate expectations, liquidity conditions)",
-    "market_sentiment": "What these traders collectively signal about market direction",
-    "key_themes": ["theme1", "theme2", "theme3"]
+  "market_pulse": {
+    "verdict": "Overall regime call synthesized from @KobeissiLetter + collective trader sentiment (e.g. Cautiously Bullish — Selective Risk-On)",
+    "summary": "2–3 sentence macro context from @KobeissiLetter posts + overall trader positioning. What is the regime? Where is smart money leaning?",
+    "regime": "Risk-On | Risk-Off | Neutral"
   },
-  "consensus_tickers": [
+  "hype_radar": [
+    {
+      "theme": "Dominant narrative or sector thesis these traders are collectively buzzing about (e.g. AI Power Infrastructure, Uranium Supercycle, GLP-1 Supply Chain)",
+      "buzz_level": "extreme | high | moderate",
+      "key_tickers": ["TICKER1", "TICKER2"],
+      "why_hot": "1 sentence — why this theme is getting attention from these accounts right now"
+    }
+  ],
+  "spotlight": {
+    "most_hyped": {"ticker": "", "signal": "The single ticker with the most cross-account buzz — why everyone is talking about it"},
+    "highest_conviction": {"ticker": "", "signal": "The ticker with the strongest bullish thesis quality across accounts — not just hype, but real conviction"},
+    "freshest_alpha": {"ticker": "", "signal": "Newest ticker just entering the conversation — potential early entry before the crowd"},
+    "contrarian_pick": {"ticker": "", "signal": "A ticker where one or two sharp accounts are building a position that goes against the crowd — the non-obvious play"}
+  },
+  "consensus_picks": [
     {
       "rank": 1,
       "ticker": "TICKER",
       "name": "Company Name",
-      "consensus_strength": "Very High | High | Moderate | Emerging",
+      "tradingview_symbol": "NASDAQ:TICKER",
+      "hype_score": 88,
       "trader_count": 7,
-      "conviction": "High | Moderate | Low",
-      "signal_weight": 88,
+      "consensus_strength": "Very High | High | Moderate | Emerging",
+      "buzz_trend": "Accelerating | Steady | New Mention",
+      "thesis": "Core bullish thesis in 2–3 sentences synthesized across accounts — why these traders think this is worth owning",
+      "catalysts": ["upcoming catalyst 1", "catalyst 2"],
+      "risk": "Main risk or counterargument if visible in posts",
       "is_fresh_trade": false,
       "fresh_trade_note": "null or explanation of why this is a new/fresh entry opportunity",
-      "tradingview_symbol": "NASDAQ:TICKER",
-      "thesis": "Core bullish thesis in 2–3 sentences synthesized across accounts",
-      "why_worth_watching": "What specifically makes this ticker actionable RIGHT NOW",
-      "catalysts": ["upcoming catalyst 1", "catalyst 2"],
       "trader_theses": [
-        {"account": "@handle", "thesis": "What this specific account is saying about the ticker"},
+        {"account": "@handle", "thesis": "What this specific account is saying about the ticker — their actual argument, not a generic summary"},
         {"account": "@handle2", "thesis": "What this account says"}
-      ],
-      "risks": "Main risk or counterargument if visible in posts",
-      "momentum": "Increasing | Stable | New Mention"
+      ]
     }
   ],
   "fresh_trades": [
@@ -1463,21 +1477,19 @@ RETURN ONLY valid JSON (no markdown, no backticks, no extra text) matching this 
       "entry_thesis": "Why now might be a good entry point based on what these traders are saying"
     }
   ],
-  "focus_now": {
-    "top_priority_tickers": ["TICKER1", "TICKER2"],
-    "reasoning": "3–4 sentence synthesis of what the user should focus on RIGHT NOW given these signals. Be specific and actionable — not generic market commentary. Reference the actual trader theses and cross-account agreement.",
-    "risk_watch": "Key risk or scenario that could invalidate these trades"
-  }
+  "portfolio_bias": "1–2 sentence actionable positioning call based on collective trader consensus — cite specific evidence from posts, not generic commentary",
+  "accounts_analyzed": ["@aleabitoreddit","@KobeissiLetter","@HyperTechInvest","@crux_capital_","@SJCapitalInvest","@BlackPantherCap","@Kaizen_Investor","@Venu_7_","@DrJebaim","@CKCapitalxx","@TheTape_TNM","@equitydd","@Speculator_io","@StonkValue","@stamatoudism","@yianisz","@sunxliao","@futurist_lens","@Thomas_james_1","@DeepValueBagger","@ConnorJBates_","@BussinBiotech","@BambroughKevin","@AlexfromBabylon","@UncleAlpha007"]
 }
 
 RULES:
-1. consensus_tickers MUST be sorted by rank (rank 1 = highest consensus). Include 5–10 tickers.
-2. signal_weight is 0–100 composite (cross-account agreement + conviction + recency + thesis quality).
+1. consensus_picks MUST be sorted by rank (rank 1 = highest consensus). Include 5–10 tickers.
+2. hype_score is 0–100 composite (cross-account agreement + conviction + recency + thesis quality). This is NOT a price move score — it measures how much social alpha signal exists.
 3. trader_count is the number of the 25 selected accounts that mentioned this ticker.
-4. trader_theses MUST include the actual thesis/reasoning from each account that mentioned the ticker — not generic summaries.
+4. trader_theses MUST include the actual thesis/reasoning from each account that mentioned the ticker — not generic summaries. Quote or closely paraphrase their actual posts.
 5. tradingview_symbol must be a valid TradingView symbol format (e.g., "NASDAQ:AAPL", "NYSE:GM", "AMEX:USO").
 6. fresh_trades: any ticker that has RECENTLY started being discussed by these accounts (new name, not a long-running position). If none, return empty array.
-7. is_fresh_trade in consensus_tickers should be true if the ticker also appears in fresh_trades.
-8. focus_now.reasoning must cite specific evidence from the trader posts — not generic market commentary.
-9. Do NOT include tickers only mentioned bearishly or neutrally.
-10. Return ONLY valid JSON. No preamble, no markdown, no explanation outside the JSON."""
+7. is_fresh_trade in consensus_picks should be true if the ticker also appears in fresh_trades.
+8. hype_radar: 2–4 dominant themes/narratives these traders are collectively posting about. This is the "what sectors/themes are hot" view.
+9. spotlight: the 4 signal highlights. Most hyped = volume of mentions. Highest conviction = quality of thesis. Freshest alpha = newest name. Contrarian = the non-obvious play.
+10. Do NOT include tickers only mentioned bearishly or neutrally.
+11. Return ONLY valid JSON. No preamble, no markdown, no explanation outside the JSON."""
