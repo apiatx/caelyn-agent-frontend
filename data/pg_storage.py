@@ -276,6 +276,68 @@ def init_tables():
             CREATE INDEX IF NOT EXISTS idx_ticker_mentions_message
             ON public.ticker_mentions (message_id)
         """)
+
+        # ── Historic options data (Polygon EOD) ─────────────────────
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS public.options_history (
+                id BIGSERIAL PRIMARY KEY,
+                underlying TEXT NOT NULL,
+                option_ticker TEXT NOT NULL,
+                expiration DATE NOT NULL,
+                strike NUMERIC(12, 4) NOT NULL,
+                option_type TEXT NOT NULL,
+                trade_date DATE NOT NULL,
+                open NUMERIC(12, 4),
+                high NUMERIC(12, 4),
+                low NUMERIC(12, 4),
+                close NUMERIC(12, 4),
+                volume BIGINT,
+                vwap NUMERIC(12, 4),
+                num_trades INT,
+                fetched_at TIMESTAMPTZ DEFAULT NOW(),
+                UNIQUE (option_ticker, trade_date)
+            )
+        """)
+        cur.execute("""
+            CREATE INDEX IF NOT EXISTS idx_options_history_underlying
+            ON public.options_history (underlying, trade_date)
+        """)
+        cur.execute("""
+            CREATE INDEX IF NOT EXISTS idx_options_history_expiration
+            ON public.options_history (underlying, expiration, trade_date)
+        """)
+
+        # ── Technical indicators for underlying stocks (Polygon) ────
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS public.stock_technicals (
+                id BIGSERIAL PRIMARY KEY,
+                ticker TEXT NOT NULL,
+                indicator TEXT NOT NULL,
+                trade_date DATE NOT NULL,
+                value NUMERIC(20, 6),
+                signal_value NUMERIC(20, 6),
+                histogram NUMERIC(20, 6),
+                fetched_at TIMESTAMPTZ DEFAULT NOW(),
+                UNIQUE (ticker, indicator, trade_date)
+            )
+        """)
+        cur.execute("""
+            CREATE INDEX IF NOT EXISTS idx_stock_technicals_ticker
+            ON public.stock_technicals (ticker, trade_date)
+        """)
+
+        # ── Fetch progress tracking for background ingestion ────────
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS public.options_fetch_progress (
+                ticker TEXT PRIMARY KEY,
+                last_fetched_date DATE,
+                contracts_fetched INT DEFAULT 0,
+                status TEXT DEFAULT 'pending',
+                error_message TEXT,
+                updated_at TIMESTAMPTZ DEFAULT NOW()
+            )
+        """)
+
         conn.commit()
         cur.close()
         print("[PG_STORAGE] init_tables completed (CREATE TABLE IF NOT EXISTS executed)")

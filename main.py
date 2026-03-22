@@ -148,6 +148,7 @@ async def lifespan(app):
     asyncio.create_task(_smart_earnings_loop())
     asyncio.create_task(_edgar_cache_loop())
     asyncio.create_task(_options_precompute_loop())
+    asyncio.create_task(_polygon_options_ingestion_loop())
     yield
 
 app = FastAPI(title="Trading Agent API", lifespan=lifespan)
@@ -4458,12 +4459,17 @@ async def test_altfins(symbol: str = "BTC", api_key: str = Header(None, alias="X
 # ═══════════════════════════════════════════════════════════════════
 
 # ── Options Screener: ticker universe ───────────────────────────────────────
+# Core high-volume tickers for the 90-second real-time Public.com precompute loop
 _OPTIONS_SCREENER_TICKERS = [
     # ETFs — macro + sector flow
     "SPY", "QQQ", "IWM", "GLD", "TLT", "XLF", "XLK",
     # Stocks — highest-volume options universe
     "AAPL", "NVDA", "TSLA", "AMZN", "META", "MSFT", "AMD", "GOOGL", "NFLX", "COIN",
 ]
+
+# Extended watchlist for Polygon historic data ingestion (runs at 5 calls/min)
+# Imported from the ingestion module — used by the background pipeline
+from data.options_ingestion import OPTIONS_WATCHLIST as _OPTIONS_FULL_WATCHLIST
 
 _OPTIONS_PRECOMPUTE_INTERVAL = 90    # 90 seconds — fast since no Claude overhead
 _OPTIONS_CACHE_KEY = "options_screener_v2"
@@ -4499,6 +4505,24 @@ async def _options_precompute_loop():
             elapsed = _time.time() - t0
             n_tickers = len(screener_data.get("tickers", []))
             n_contracts = len(screener_data.get("all_contracts", []))
+
+            # Enrich screener tickers with stored technicals + historic volume
+            try:
+                from data.options_history_store import get_latest_technicals, get_options_volume_summary
+                for ticker_row in screener_data.get("tickers", []):
+                    sym = ticker_row.get("ticker", "")
+                    if not sym:
+                        continue
+                    # Merge latest technical indicators from DB
+                    techs = get_latest_technicals(sym)
+                    if techs and len(techs) > 1:  # >1 means we have data beyond just 'ticker' key
+                        ticker_row["technicals"] = techs
+                    # Merge historic volume summary (30-day)
+                    vol_summary = get_options_volume_summary(sym, days=30)
+                    if vol_summary and vol_summary.get("call_total_volume"):
+                        ticker_row["historic_volume"] = vol_summary
+            except Exception as _enrich_err:
+                print(f"[OPTIONS_PRECOMPUTE] Enrichment warning (non-fatal): {_enrich_err}")
 
             result = {
                 "display_type": "options_screener",
@@ -4642,5 +4666,147 @@ async def get_options_expirations(
     try:
         expirations = await data_service.public_com.get_option_expirations(symbol.upper())
         return {"symbol": symbol.upper(), "expirations": expirations}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)[:200]})
+
+
+# ═══════════════════════════════════════════════════════════════════
+# POLYGON HISTORIC OPTIONS INGESTION — Background data pipeline
+# ═══════════════════════════════════════════════════════════════════
+
+async def _polygon_options_ingestion_loop():
+    """
+    Background loop that fetches historic options data + technical indicators
+    from Polygon (Massive free tier, 5 calls/min) for the full watchlist.
+    Stores everything in Neon PostgreSQL for the agent's TA reference.
+    Initial load: ~4-5 hours for 95 tickers. Then refreshes every 6 hours.
+    """
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(None, _init_event.wait, 180)
+
+    if data_service is None or not getattr(data_service, "polygon_options", None):
+        print("[POLYGON_INGEST] Polygon options provider not available, skipping ingestion loop")
+        return
+
+    try:
+        from data.options_ingestion import run_ingestion_loop
+        print("[POLYGON_INGEST] Starting historic options data ingestion loop")
+        await run_ingestion_loop(data_service.polygon_options, init_event=_init_event)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        print(f"[POLYGON_INGEST] Fatal error in ingestion loop: {e}")
+
+
+# ── Historic Options Data API Endpoints ─────────────────────────────
+
+@app.get("/api/options/history/{symbol}")
+@limiter.limit("30/minute")
+@traceable(name="main.options_history")
+async def get_options_history_endpoint(
+    request: Request,
+    symbol: str,
+    option_type: str = None,
+    from_date: str = None,
+    to_date: str = None,
+    limit: int = 500,
+    api_key: str = Header(None, alias="X-API-Key"),
+):
+    """Get stored historic options data for a ticker from Neon DB."""
+    from data.options_history_store import get_options_history
+    try:
+        history = get_options_history(
+            symbol.upper(),
+            option_type=option_type,
+            from_date=from_date,
+            to_date=to_date,
+            limit=min(limit, 2000),
+        )
+        return {"symbol": symbol.upper(), "count": len(history), "data": history}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)[:200]})
+
+
+@app.get("/api/options/volume-summary/{symbol}")
+@limiter.limit("30/minute")
+@traceable(name="main.options_volume_summary")
+async def get_options_volume_summary_endpoint(
+    request: Request,
+    symbol: str,
+    days: int = 30,
+    api_key: str = Header(None, alias="X-API-Key"),
+):
+    """Get aggregated options volume summary from stored historic data."""
+    from data.options_history_store import get_options_volume_summary
+    try:
+        summary = get_options_volume_summary(symbol.upper(), days=min(days, 365))
+        return {"symbol": symbol.upper(), "summary": summary}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)[:200]})
+
+
+@app.get("/api/options/technicals/{symbol}")
+@limiter.limit("30/minute")
+@traceable(name="main.options_technicals")
+async def get_options_technicals_endpoint(
+    request: Request,
+    symbol: str,
+    indicator: str = None,
+    from_date: str = None,
+    limit: int = 250,
+    api_key: str = Header(None, alias="X-API-Key"),
+):
+    """Get stored technical indicators for a ticker from Neon DB."""
+    from data.options_history_store import get_technicals, get_latest_technicals
+    try:
+        if not indicator and not from_date and limit <= 10:
+            # Return latest snapshot
+            latest = get_latest_technicals(symbol.upper())
+            return {"symbol": symbol.upper(), "latest": latest}
+
+        data = get_technicals(
+            symbol.upper(),
+            indicator=indicator,
+            from_date=from_date,
+            limit=min(limit, 2000),
+        )
+        return {"symbol": symbol.upper(), "count": len(data), "data": data}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)[:200]})
+
+
+@app.get("/api/options/data-coverage")
+@limiter.limit("10/minute")
+@traceable(name="main.options_data_coverage")
+async def get_options_data_coverage(
+    request: Request,
+    api_key: str = Header(None, alias="X-API-Key"),
+):
+    """Get summary of historic options data coverage in the database."""
+    from data.options_history_store import get_data_coverage
+    try:
+        coverage = get_data_coverage()
+        return {"coverage": coverage}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)[:200]})
+
+
+@app.get("/api/options/fetch-progress")
+@limiter.limit("10/minute")
+@traceable(name="main.options_fetch_progress")
+async def get_options_fetch_progress_endpoint(
+    request: Request,
+    ticker: str = None,
+    api_key: str = Header(None, alias="X-API-Key"),
+):
+    """Get ingestion progress for watchlist tickers."""
+    from data.options_history_store import get_fetch_progress
+    try:
+        if ticker:
+            progress = get_fetch_progress(ticker.upper())
+            return {"ticker": ticker.upper(), "progress": progress}
+        else:
+            progress = get_fetch_progress()
+            return {"count": len(progress), "progress": progress}
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)[:200]})

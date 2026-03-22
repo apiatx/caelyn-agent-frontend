@@ -13,6 +13,7 @@ except ImportError:
 
 
 from data.polygon_provider import PolygonProvider
+from data.polygon_options_provider import PolygonOptionsProvider
 from data.twelvedata_provider import TwelveDataProvider
 from data.finviz_scraper import FinvizScraper, scrape_yahoo_trending, scrape_stockanalysis_trending
 from data.stocktwits_provider import StockTwitsProvider
@@ -20,7 +21,7 @@ from data.stockanalysis_scraper import StockAnalysisScraper
 from data.options_scraper import OptionsScraper
 from data.public_com_provider import PublicComProvider
 from data.finnhub_provider import FinnhubProvider
-from config import FINNHUB_API_KEY, ALPHA_VANTAGE_API_KEY, FRED_API_KEY, FMP_API_KEY, TWELVEDATA_API_KEY, TAVILY_API_KEY, BRAVE_API_KEY, PERPLEXITY_API_KEY, PUBLIC_COM_API_KEY
+from config import FINNHUB_API_KEY, ALPHA_VANTAGE_API_KEY, FRED_API_KEY, FMP_API_KEY, TWELVEDATA_API_KEY, TAVILY_API_KEY, BRAVE_API_KEY, PERPLEXITY_API_KEY, PUBLIC_COM_API_KEY, POLYGON_API_KEY
 from data.alphavantage_provider import AlphaVantageProvider
 from data.tavily_provider import TavilyProvider
 from data.web_search_provider import WebSearchProvider
@@ -373,6 +374,12 @@ class MarketDataService:
             print("[INIT] Public.com options provider initialized")
         else:
             print("[INIT] Public.com options provider SKIPPED (no PUBLIC_COM_API_KEY)")
+        _poly_key = polygon_key or POLYGON_API_KEY
+        self.polygon_options = PolygonOptionsProvider(_poly_key, max_per_minute=5) if _poly_key else None
+        if self.polygon_options:
+            print("[INIT] Polygon options provider initialized (5 calls/min, Massive free tier)")
+        else:
+            print("[INIT] Polygon options provider SKIPPED (no POLYGON_API_KEY)")
         self.finnhub = FinnhubProvider(FINNHUB_API_KEY)
         self.alphavantage = AlphaVantageProvider(ALPHA_VANTAGE_API_KEY)
         self.fred = FredProvider(FRED_API_KEY)
