@@ -207,7 +207,7 @@ function ConvictionBadge({ value }: { value: string }) {
   );
 }
 
-function renderConsensusResponse(structured: any) {
+function renderConsensusResponse(structured: any, fallbackText?: string) {
   const C = {
     blue: '#38bdf8', gold: '#f59e0b', green: '#22c55e', red: '#ef4444',
     purple: '#a78bfa', dim: '#475569', text: '#94a3b8', bright: '#e2e8f0',
@@ -220,6 +220,14 @@ function renderConsensusResponse(structured: any) {
   const earlyStage: any[] = earlyVsCrowded.early_stage || [];
   const crowded: any[] = earlyVsCrowded.crowded || [];
   const finalOpinion = structured.final_opinion || {};
+
+  // If structured data has no meaningful content, fall back to text rendering
+  const hasData = tickers.length > 0 || momentumLeaders.length > 0 ||
+    earlyStage.length > 0 || crowded.length > 0 ||
+    finalOpinion.reasoning || structured.consensus_summary;
+  if (!hasData && fallbackText) {
+    return renderGrokResponse(fallbackText);
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -405,6 +413,7 @@ function GrokSocialAgent() {
       const payload: Record<string, any> = { query: text.trim() };
       if (presetIntent) payload.preset_intent = presetIntent;
 
+      console.log('[SOCIAL_QUERY] Sending:', JSON.stringify(payload));
       const res = await fetch(`${AGENT_BACKEND_URL}/api/social/query`, {
         method: 'POST',
         headers: authHeaders(),
@@ -413,10 +422,12 @@ function GrokSocialAgent() {
 
       if (!res.ok) {
         const errText = await res.text().catch(() => '');
+        console.error('[SOCIAL_QUERY] HTTP error:', res.status, errText.slice(0, 500));
         throw new Error(`${res.status}: ${errText.slice(0, 200)}`);
       }
 
       const data = await res.json();
+      console.log('[SOCIAL_QUERY] Response:', JSON.stringify(data).slice(0, 1000));
       const responseText = data.response || data.analysis || data.error || 'No response received';
 
       setMessages(prev => [...prev, {
@@ -642,7 +653,7 @@ function GrokSocialAgent() {
                 }}>
                   {msg.role === 'assistant'
                     ? (msg.structured?.scan_type === 'x_trader_consensus' || msg.structured?.display_type === 'social')
-                      ? renderConsensusResponse(msg.structured)
+                      ? renderConsensusResponse(msg.structured, msg.content)
                       : isBriefingResponse(msg.content) || isBriefingResponse(msg.structured)
                         ? renderBriefingCard((isBriefingResponse(msg.content) ? msg.content : msg.structured) as BriefingResponse)
                         : renderGrokResponse(msg.content)
