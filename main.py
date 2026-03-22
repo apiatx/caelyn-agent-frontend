@@ -2551,6 +2551,9 @@ def _shape_prompt_history(all_history: dict, recent_limit: int = 10, current_pri
                         t["current_price"] = round(cur, 2)
                         t["pct_change"] = round(((cur - rec) / rec) * 100, 2)
 
+    # Re-render content from structured_response so old entries get the latest renderer
+    from data.history_renderer import render_structured_to_text as _re_render
+
     categories: dict = {}
     items: list[dict] = []
 
@@ -2570,6 +2573,17 @@ def _shape_prompt_history(all_history: dict, recent_limit: int = 10, current_pri
         for entry in entries:
             if not isinstance(entry, dict):
                 continue
+
+            # Re-render content from structured_response if available
+            sr = entry.get("structured_response")
+            if isinstance(sr, dict) and sr:
+                try:
+                    fresh = _re_render(sr)
+                    if fresh and len(fresh) > 20:
+                        entry["content"] = fresh[:8000]
+                except Exception:
+                    pass
+
             items.append(
                 {
                     "category": category,
