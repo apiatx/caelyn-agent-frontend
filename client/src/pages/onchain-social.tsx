@@ -385,6 +385,168 @@ function renderConsensusResponse(structured: any, fallbackText?: string) {
   );
 }
 
+// ─── Consensus Briefing renderer (market_pulse / hype_radar / consensus_picks / spotlight / fresh_trades) ───
+function isConsensusBriefing(obj: any): boolean {
+  return obj && typeof obj === 'object' &&
+    (obj.display_type === 'briefing' || obj.scan_type === 'x_select_trader_consensus' || obj.scan_type === 'x_trader_consensus') &&
+    (obj.market_pulse || obj.hype_radar || obj.consensus_picks || obj.fresh_trades);
+}
+
+function renderConsensusBriefing(data: any) {
+  const C = {
+    blue: '#38bdf8', gold: '#f59e0b', green: '#22c55e', red: '#ef4444',
+    purple: '#a78bfa', dim: '#475569', text: '#94a3b8', bright: '#e2e8f0',
+    card: 'rgba(10,12,28,0.85)', border: 'rgba(255,255,255,0.07)',
+  };
+  const mp = data.market_pulse || {};
+  const hypeRadar: any[] = data.hype_radar || [];
+  const picks: any[] = data.consensus_picks || [];
+  const spotlight = data.spotlight || null;
+  const freshTrades: any[] = data.fresh_trades || [];
+  const bias = data.portfolio_bias || '';
+
+  const verdictColor = /bull/i.test(mp.verdict || '') ? C.green : /bear/i.test(mp.verdict || '') ? C.red : C.gold;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+
+      {/* Market Pulse */}
+      {(mp.verdict || mp.summary) && (
+        <div style={{ background: `${verdictColor}08`, border: `1px solid ${verdictColor}22`, borderRadius: 8, padding: '0.75rem 0.9rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: 6 }}>
+            <span style={{ color: C.dim, fontSize: '0.6rem', fontWeight: 700, fontFamily: font,
+              textTransform: 'uppercase', letterSpacing: '0.08em' }}>Market Pulse</span>
+            {mp.verdict && (
+              <span style={{ color: verdictColor, fontWeight: 800, fontSize: '0.72rem', fontFamily: font,
+                textTransform: 'uppercase' }}>{mp.verdict}</span>
+            )}
+            {mp.regime && (
+              <span style={{ color: C.dim, fontSize: '0.62rem', fontFamily: font }}>({mp.regime})</span>
+            )}
+          </div>
+          {mp.summary && (
+            <div style={{ color: C.text, fontSize: '0.72rem', fontFamily: sansFont, lineHeight: 1.65 }}>{mp.summary}</div>
+          )}
+        </div>
+      )}
+
+      {/* Hype Radar */}
+      {hypeRadar.length > 0 && (
+        <div>
+          <div style={{ color: C.dim, fontSize: '0.6rem', fontWeight: 700, fontFamily: font,
+            textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.5rem' }}>
+            Hype Radar ({hypeRadar.length})
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+            {hypeRadar.map((h: any, i: number) => (
+              <div key={i} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, padding: '0.6rem 0.85rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <span style={{ color: C.blue, fontWeight: 800, fontSize: '0.82rem', fontFamily: font }}>{h.ticker || h.symbol}</span>
+                  {h.mentions != null && (
+                    <span style={{ color: C.dim, fontSize: '0.62rem', fontFamily: font }}>{h.mentions} mentions</span>
+                  )}
+                  {h.sentiment && (
+                    <span style={{ color: /bull/i.test(h.sentiment) ? C.green : /bear/i.test(h.sentiment) ? C.red : C.gold,
+                      fontSize: '0.62rem', fontWeight: 600, fontFamily: font, textTransform: 'uppercase' }}>{h.sentiment}</span>
+                  )}
+                  {h.conviction && <ConvictionBadge value={h.conviction} />}
+                </div>
+                {h.catalyst && <div style={{ color: C.text, fontSize: '0.68rem', fontFamily: sansFont, lineHeight: 1.5, marginTop: 4 }}>{h.catalyst}</div>}
+                {h.reason && <div style={{ color: C.text, fontSize: '0.68rem', fontFamily: sansFont, lineHeight: 1.5, marginTop: 4 }}>{h.reason}</div>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Consensus Picks */}
+      {picks.length > 0 && (
+        <div>
+          <div style={{ color: C.dim, fontSize: '0.6rem', fontWeight: 700, fontFamily: font,
+            textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.5rem' }}>
+            Consensus Picks ({picks.length})
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {picks.map((p: any, i: number) => (
+              <div key={i} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, padding: '0.75rem 0.9rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: p.thesis || p.reason ? 6 : 0 }}>
+                  {p.rank != null && <span style={{ color: C.gold, fontWeight: 800, fontSize: '0.8rem', fontFamily: font }}>#{p.rank}</span>}
+                  <span style={{ color: C.blue, fontWeight: 800, fontSize: '0.88rem', fontFamily: font }}>{p.ticker || p.symbol}</span>
+                  {p.conviction && <ConvictionBadge value={p.conviction} />}
+                  {p.trader_count != null && (
+                    <span style={{ color: C.dim, fontSize: '0.62rem', fontFamily: font }}>{p.trader_count} traders</span>
+                  )}
+                  {p.direction && (
+                    <span style={{ color: /bull|long|buy/i.test(p.direction) ? C.green : /bear|short|sell/i.test(p.direction) ? C.red : C.gold,
+                      fontSize: '0.62rem', fontWeight: 700, fontFamily: font, textTransform: 'uppercase' }}>{p.direction}</span>
+                  )}
+                </div>
+                {p.thesis && <div style={{ color: C.text, fontSize: '0.72rem', fontFamily: sansFont, lineHeight: 1.6 }}>{p.thesis}</div>}
+                {p.reason && <div style={{ color: C.text, fontSize: '0.72rem', fontFamily: sansFont, lineHeight: 1.6 }}>{p.reason}</div>}
+                {p.why_bullish && <div style={{ color: C.green, fontSize: '0.68rem', fontFamily: sansFont, lineHeight: 1.5, marginTop: 4 }}>Bullish: {p.why_bullish}</div>}
+                {p.risks && <div style={{ color: C.red, fontSize: '0.68rem', fontFamily: sansFont, lineHeight: 1.5, marginTop: 4 }}>Risks: {p.risks}</div>}
+                {Array.isArray(p.traders) && p.traders.length > 0 && (
+                  <div style={{ color: C.dim, fontSize: '0.62rem', fontFamily: font, marginTop: 4 }}>
+                    Traders: {p.traders.join(', ')}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Spotlight */}
+      {spotlight && (spotlight.ticker || spotlight.symbol) && (
+        <div style={{ background: `${C.purple}08`, border: `1px solid ${C.purple}22`, borderRadius: 8, padding: '0.75rem 0.9rem' }}>
+          <div style={{ color: C.purple, fontSize: '0.6rem', fontWeight: 700, fontFamily: font,
+            textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>
+            Spotlight
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: spotlight.thesis || spotlight.reason ? 6 : 0 }}>
+            <span style={{ color: C.purple, fontWeight: 800, fontSize: '0.88rem', fontFamily: font }}>{spotlight.ticker || spotlight.symbol}</span>
+            {spotlight.conviction && <ConvictionBadge value={spotlight.conviction} />}
+          </div>
+          {spotlight.thesis && <div style={{ color: C.text, fontSize: '0.72rem', fontFamily: sansFont, lineHeight: 1.65 }}>{spotlight.thesis}</div>}
+          {spotlight.reason && <div style={{ color: C.text, fontSize: '0.72rem', fontFamily: sansFont, lineHeight: 1.65 }}>{spotlight.reason}</div>}
+          {spotlight.catalyst && <div style={{ color: C.gold, fontSize: '0.68rem', fontFamily: sansFont, lineHeight: 1.5, marginTop: 4 }}>{spotlight.catalyst}</div>}
+        </div>
+      )}
+
+      {/* Fresh Trades */}
+      {freshTrades.length > 0 && (
+        <div>
+          <div style={{ color: C.dim, fontSize: '0.6rem', fontWeight: 700, fontFamily: font,
+            textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.4rem' }}>
+            Fresh Trades
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+            {freshTrades.map((t: any, i: number) => (
+              <div key={i} style={{ padding: '0.35rem 0.75rem', background: `${C.green}10`,
+                border: `1px solid ${C.green}28`, borderRadius: 8 }}>
+                <span style={{ color: C.green, fontWeight: 700, fontFamily: font, fontSize: '0.72rem' }}>{t.ticker || t.symbol}</span>
+                {t.action && <span style={{ color: C.dim, fontSize: '0.62rem', fontFamily: sansFont, marginLeft: 6 }}>{t.action}</span>}
+                {t.trader && <span style={{ color: C.blue, fontSize: '0.62rem', fontFamily: font, marginLeft: 6 }}>@{t.trader}</span>}
+                {t.note && <span style={{ color: C.dim, fontSize: '0.62rem', fontFamily: sansFont, marginLeft: 6 }}>{t.note}</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Portfolio Bias */}
+      {bias && (
+        <div style={{ color: C.text, fontSize: '0.72rem', fontFamily: sansFont, lineHeight: 1.65,
+          background: `${C.blue}08`, border: `1px solid ${C.blue}18`, borderRadius: 8, padding: '0.65rem 0.9rem' }}>
+          <span style={{ color: C.dim, fontSize: '0.6rem', fontWeight: 700, fontFamily: font,
+            textTransform: 'uppercase', letterSpacing: '0.08em' }}>Portfolio Bias: </span>
+          {bias}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function GrokSocialAgent() {
   const [messages, setMessages] = useState<GrokMessage[]>([]);
   const [input, setInput] = useState('');
@@ -428,13 +590,27 @@ function GrokSocialAgent() {
 
       const data = await res.json();
       console.log('[SOCIAL_QUERY] Response:', JSON.stringify(data).slice(0, 1000));
-      const responseText = data.response || data.analysis || data.error || 'No response received';
+
+      // Backend returns { response: <object|string>, structured: true, preset: '...' }
+      // When response is an object (briefing JSON), use it as structured data
+      let responseText: string;
+      let structuredData: any = null;
+
+      if (data.response && typeof data.response === 'object') {
+        // Nested: data.response IS the structured briefing
+        structuredData = data.response;
+        responseText = data.response.summary || data.response.consensus_summary || JSON.stringify(data.response);
+        console.log('[SOCIAL_QUERY] Structured briefing detected:', structuredData.display_type, structuredData.scan_type);
+      } else {
+        responseText = data.response || data.analysis || data.error || 'No response received';
+        structuredData = (data.structured && typeof data.structured === 'object') ? data.structured : null;
+      }
 
       setMessages(prev => [...prev, {
         role: 'assistant',
         content: responseText,
         timestamp: Date.now(),
-        structured: data.structured || null,
+        structured: structuredData,
       }]);
     } catch (err) {
       setMessages(prev => [...prev, {
@@ -652,11 +828,13 @@ function GrokSocialAgent() {
                   color: msg.role === 'user' ? '#c7d2fe' : '#94a3b8',
                 }}>
                   {msg.role === 'assistant'
-                    ? (msg.structured?.scan_type === 'x_trader_consensus' || msg.structured?.display_type === 'social')
-                      ? renderConsensusResponse(msg.structured, msg.content)
-                      : isBriefingResponse(msg.content) || isBriefingResponse(msg.structured)
-                        ? renderBriefingCard((isBriefingResponse(msg.content) ? msg.content : msg.structured) as BriefingResponse)
-                        : renderGrokResponse(msg.content)
+                    ? isConsensusBriefing(msg.structured)
+                      ? renderConsensusBriefing(msg.structured)
+                      : (msg.structured?.scan_type === 'x_trader_consensus' || msg.structured?.display_type === 'social')
+                        ? renderConsensusResponse(msg.structured, typeof msg.content === 'string' ? msg.content : undefined)
+                        : isBriefingResponse(msg.content) || isBriefingResponse(msg.structured)
+                          ? renderBriefingCard((isBriefingResponse(msg.content) ? msg.content : msg.structured) as BriefingResponse)
+                          : renderGrokResponse(typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content, null, 2))
                     : msg.content}
                 </div>
               </div>
