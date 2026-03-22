@@ -95,12 +95,6 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
           path: '/app/stocks/earnings-calendar'
         },
         {
-          id: 'stocks-options',
-          label: 'Options',
-          icon: <BarChart3 className="w-4 h-4" />,
-          path: '/app/stocks/options'
-        },
-        {
           id: 'options-flow',
           label: 'Options Flow',
           icon: <Zap className="w-4 h-4" />,

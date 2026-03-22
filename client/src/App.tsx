@@ -29,7 +29,6 @@ import StocksPortfolioPage from "@/pages/stocks-portfolio";
 import StocksFundamentalsPage from "@/pages/stocks-fundamentals";
 import StocksScreeningPage from "@/pages/stocks-screening";
 import StocksEarningsCalendarPage from "@/pages/stocks-earnings-calendar";
-import StocksOptionsPage from "@/pages/stocks-options";
 import CryptoStonks from "@/pages/crypto-stonks";
 import CommoditiesPage from "@/pages/commodities";
 import RWAPage from "@/pages/rwa";
@@ -147,7 +146,7 @@ function Router() {
       <Route path="/app/stonks" component={CryptoStocks} />
       <Route path="/app/stocks/screening" component={StocksScreeningPage} />
       <Route path="/app/stocks/earnings-calendar" component={StocksEarningsCalendarPage} />
-      <Route path="/app/stocks/options" component={StocksOptionsPage} />
+
       <Route path="/app/stocks/dashboard" component={StocksDashboardPage} />
       <Route path="/app/stocks/sectors" component={StocksSectorsPage} />
       <Route path="/app/stocks/fundamentals" component={StocksFundamentalsPage} />

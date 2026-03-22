@@ -882,6 +882,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // === Options Flow (proxy to FastAPI backend) ===
+  const AGENT_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
+  const AGENT_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+
+  app.post('/api/options/dashboard', async (req, res) => {
+    try {
+      const { tickers } = req.body;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 90000);
+      const response = await fetch(`${AGENT_URL}/api/options/dashboard`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-API-Key': AGENT_KEY },
+        body: JSON.stringify({ tickers: tickers || null }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      if (!response.ok) {
+        const text = await response.text();
+        return res.status(response.status).json({ error: `Agent returned ${response.status}`, detail: text.slice(0, 200) });
+      }
+      const data = await response.json();
+      res.json(data);
+    } catch (error: any) {
+      console.error('Options dashboard error:', error);
+      res.status(500).json({ error: error?.name === 'AbortError' ? 'Request timed out' : 'Failed to fetch options dashboard' });
+    }
+  });
+
+  app.get('/api/options/chain/:symbol', async (req, res) => {
+    try {
+      const { symbol } = req.params;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+      const response = await fetch(`${AGENT_URL}/api/options/chain/${encodeURIComponent(symbol)}`, {
+        headers: { 'X-API-Key': AGENT_KEY },
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      if (!response.ok) return res.status(response.status).json({ error: `Agent returned ${response.status}` });
+      res.json(await response.json());
+    } catch (error: any) {
+      console.error('Options chain error:', error);
+      res.status(500).json({ error: 'Failed to fetch options chain' });
+    }
+  });
+
+  app.get('/api/options/expirations/:symbol', async (req, res) => {
+    try {
+      const { symbol } = req.params;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      const response = await fetch(`${AGENT_URL}/api/options/expirations/${encodeURIComponent(symbol)}`, {
+        headers: { 'X-API-Key': AGENT_KEY },
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      if (!response.ok) return res.status(response.status).json({ error: `Agent returned ${response.status}` });
+      res.json(await response.json());
+    } catch (error: any) {
+      console.error('Options expirations error:', error);
+      res.status(500).json({ error: 'Failed to fetch expirations' });
+    }
+  });
+
   // === AI Portfolio Review (server-side proxy) ===
   app.post('/api/portfolio-review', async (req, res) => {
     try {
