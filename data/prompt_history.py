@@ -343,7 +343,7 @@ def extract_tickers_from_structured(structured: dict) -> list[dict]:
 # ── Public API ───────────────────────────────────────────────
 
 @traceable(name="prompt_history.save_response")
-def save_response(category: str, intent: str, content: str, display_type: str | None = None, user_id: str = "default", model_used: str | None = None, query: str | None = None, tickers: list | None = None, conversation: list | None = None) -> dict:
+def save_response(category: str, intent: str, content: str, display_type: str | None = None, user_id: str = "default", model_used: str | None = None, query: str | None = None, tickers: list | None = None, conversation: list | None = None, structured_response: dict | None = None) -> dict:
     """Save a prompt response. Returns the created entry."""
     entry = {
         "id": str(int(time.time() * 1000)),
@@ -359,6 +359,8 @@ def save_response(category: str, intent: str, content: str, display_type: str | 
         entry["tickers"] = tickers
     if conversation:
         entry["conversation"] = conversation
+    if structured_response:
+        entry["structured_response"] = structured_response
     with _get_lock(user_id):
         data = _read(user_id)
         key = f"{category}::{intent}"

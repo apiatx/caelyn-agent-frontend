@@ -2320,6 +2320,15 @@ async def query_agent(
                 except Exception:
                     pass
 
+                # Build the full structured response object for the frontend
+                _hist_structured_response = None
+                if isinstance(result, dict):
+                    _hist_structured_response = {}
+                    if result.get("analysis"):
+                        _hist_structured_response["analysis"] = result["analysis"]
+                    if result.get("structured"):
+                        _hist_structured_response["structured"] = result["structured"]
+
                 _save_prompt_history(
                     category=_hist_category,
                     intent=_hist_intent,
@@ -2330,6 +2339,7 @@ async def query_agent(
                     query=user_query,
                     tickers=_hist_tickers,
                     conversation=_hist_conversation,
+                    structured_response=_hist_structured_response,
                 )
                 _ticker_count = len(_hist_tickers) if _hist_tickers else 0
                 print(f"[HISTORY] Saved to prompt_history: category={_hist_category}, intent={_hist_intent}, model={_hist_model}, tickers={_ticker_count}, len={len(_hist_content)}")
@@ -2569,7 +2579,18 @@ def _shape_prompt_history(all_history: dict, recent_limit: int = 10, current_pri
                 }
             )
 
-    items.sort(key=lambda x: x.get("timestamp", 0), reverse=True)
+    def _sort_ts(x):
+        """Extract a sortable timestamp, falling back to id (ms epoch)."""
+        ts = x.get("timestamp")
+        if isinstance(ts, (int, float)) and ts > 0:
+            return float(ts)
+        # id is str(int(time.time() * 1000))
+        try:
+            return int(x.get("id", 0)) / 1000.0
+        except (ValueError, TypeError):
+            return 0.0
+
+    items.sort(key=_sort_ts, reverse=True)
     recent = items[: max(1, min(recent_limit, 100))]
 
     return {
