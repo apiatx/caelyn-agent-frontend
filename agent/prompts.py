@@ -1421,7 +1421,6 @@ HOW TO SCORE CONSENSUS:
 - Freshness: NEW tickers just entering the conversation are high-signal — flag them
 
 IMPORTANT: Use display_type "briefing" — this is REQUIRED for frontend rendering compatibility.
-The response MUST use the same briefing JSON schema as the Daily Intelligence Briefing.
 
 RETURN ONLY valid JSON (no markdown, no backticks, no extra text) matching this EXACT schema:
 
@@ -1433,81 +1432,64 @@ RETURN ONLY valid JSON (no markdown, no backticks, no extra text) matching this 
     "summary": "2–3 sentence macro context from @KobeissiLetter posts + overall trader positioning. What is the regime? Where is smart money leaning?",
     "regime": "Risk-On | Risk-Off | Neutral"
   },
-  "key_numbers": {
-    "spy": {"price": "", "change": "", "trend": ""},
-    "qqq": {"price": "", "change": "", "trend": ""},
-    "iwm": {"price": "", "change": "", "trend": ""},
-    "vix": {"price": "", "change": "", "trend": ""},
-    "fear_greed": {"value": "", "label": "", "trend": ""},
-    "dxy": {"price": "", "change": "", "trend": ""},
-    "ten_year": {"price": "", "change": "", "trend": ""},
-    "oil": {"price": "", "change": "", "trend": ""},
-    "gold": {"price": "", "change": "", "trend": ""}
-  },
-  "whats_moving": [
-    {"headline": "Key theme or catalyst being discussed across these traders", "category": "TICKER or macro descriptor"}
+  "hype_radar": [
+    {
+      "theme": "Dominant narrative or sector thesis these traders are collectively buzzing about (e.g. AI Power Infrastructure, Uranium Supercycle, GLP-1 Supply Chain)",
+      "buzz_level": "extreme | high | moderate",
+      "key_tickers": ["TICKER1", "TICKER2"],
+      "why_hot": "1 sentence — why this theme is getting attention from these accounts right now"
+    }
   ],
-  "signal_highlights": {
-    "best_ta_setup": {"ticker": "", "signal": "Best technical setup from trader posts"},
-    "best_fundamental": {"ticker": "", "signal": "Strongest fundamental thesis from trader posts"},
-    "hottest_social": {"ticker": "", "signal": "Most discussed/hyped ticker across accounts"},
-    "top_squeeze": {"ticker": "", "signal": "Best squeeze or asymmetric setup mentioned"},
-    "biggest_volume": {"ticker": "", "signal": "Ticker with most volume/attention signals"},
-    "strongest_sector": {"sector": "", "ticker": "", "signal": "Sector these traders are most aligned on"}
+  "spotlight": {
+    "most_hyped": {"ticker": "", "signal": "The single ticker with the most cross-account buzz — why everyone is talking about it"},
+    "highest_conviction": {"ticker": "", "signal": "The ticker with the strongest bullish thesis quality across accounts — not just hype, but real conviction"},
+    "freshest_alpha": {"ticker": "", "signal": "Newest ticker just entering the conversation — potential early entry before the crowd"},
+    "contrarian_pick": {"ticker": "", "signal": "A ticker where one or two sharp accounts are building a position that goes against the crowd — the non-obvious play"}
   },
-  "top_moves": [
+  "consensus_picks": [
     {
       "rank": 1,
       "ticker": "TICKER",
-      "action": "BUY",
-      "conviction": "High | Moderate | Low",
-      "conviction_score": 88,
-      "position_tier": "large | mid | small",
-      "thesis": "Core bullish thesis in 2–3 sentences synthesized across accounts",
-      "why_could_fail": "Main risk or counterargument from trader posts",
-      "signals_stacking": ["signal1", "signal2"],
-      "signal_count": 3,
-      "entry": "Entry level if mentioned by traders",
-      "stop": "Stop level if mentioned",
-      "target": "Target if mentioned",
-      "risk_reward": "R:R if derivable",
-      "timeframe": "Swing | Position | Long-term",
+      "name": "Company Name",
       "tradingview_symbol": "NASDAQ:TICKER",
+      "hype_score": 88,
       "trader_count": 7,
       "consensus_strength": "Very High | High | Moderate | Emerging",
+      "buzz_trend": "Accelerating | Steady | New Mention",
+      "thesis": "Core bullish thesis in 2–3 sentences synthesized across accounts — why these traders think this is worth owning",
+      "catalysts": ["upcoming catalyst 1", "catalyst 2"],
+      "risk": "Main risk or counterargument if visible in posts",
       "is_fresh_trade": false,
       "fresh_trade_note": "null or explanation of why this is a new/fresh entry opportunity",
       "trader_theses": [
-        {"account": "@handle", "thesis": "What this specific account is saying about the ticker"},
+        {"account": "@handle", "thesis": "What this specific account is saying about the ticker — their actual argument, not a generic summary"},
         {"account": "@handle2", "thesis": "What this account says"}
       ]
     }
   ],
-  "upcoming_catalysts": ["Catalyst 1 mentioned by traders", "Catalyst 2"],
-  "portfolio_bias": "1–2 sentence actionable positioning call based on collective trader consensus",
   "fresh_trades": [
     {
       "ticker": "TICKER",
       "name": "Company Name",
       "tradingview_symbol": "NASDAQ:TICKER",
       "first_mentioned_by": ["@handle1", "@handle2"],
-      "why_fresh": "Why this looks like a new/early trade — just entering the conversation",
+      "why_fresh": "Why this looks like a new/early trade — just entering the conversation, not widely known yet",
       "entry_thesis": "Why now might be a good entry point based on what these traders are saying"
     }
   ],
+  "portfolio_bias": "1–2 sentence actionable positioning call based on collective trader consensus — cite specific evidence from posts, not generic commentary",
   "accounts_analyzed": ["@aleabitoreddit","@KobeissiLetter","@HyperTechInvest","@crux_capital_","@SJCapitalInvest","@BlackPantherCap","@Kaizen_Investor","@Venu_7_","@DrJebaim","@CKCapitalxx","@TheTape_TNM","@equitydd","@Speculator_io","@StonkValue","@stamatoudism","@yianisz","@sunxliao","@futurist_lens","@Thomas_james_1","@DeepValueBagger","@ConnorJBates_","@BussinBiotech","@BambroughKevin","@AlexfromBabylon","@UncleAlpha007"]
 }
 
 RULES:
-1. top_moves MUST be sorted by rank (rank 1 = highest consensus). Include 5–10 tickers.
-2. conviction_score is 0–100 composite (cross-account agreement + conviction + recency + thesis quality).
+1. consensus_picks MUST be sorted by rank (rank 1 = highest consensus). Include 5–10 tickers.
+2. hype_score is 0–100 composite (cross-account agreement + conviction + recency + thesis quality). This is NOT a price move score — it measures how much social alpha signal exists.
 3. trader_count is the number of the 25 selected accounts that mentioned this ticker.
-4. trader_theses MUST include the actual thesis/reasoning from each account that mentioned the ticker — not generic summaries.
+4. trader_theses MUST include the actual thesis/reasoning from each account that mentioned the ticker — not generic summaries. Quote or closely paraphrase their actual posts.
 5. tradingview_symbol must be a valid TradingView symbol format (e.g., "NASDAQ:AAPL", "NYSE:GM", "AMEX:USO").
 6. fresh_trades: any ticker that has RECENTLY started being discussed by these accounts (new name, not a long-running position). If none, return empty array.
-7. is_fresh_trade in top_moves should be true if the ticker also appears in fresh_trades.
-8. portfolio_bias must cite specific evidence from the trader posts — not generic market commentary.
-9. Do NOT include tickers only mentioned bearishly or neutrally.
-10. key_numbers: populate from any market data mentioned in trader posts. If a value is not available from X posts, leave the string empty — do NOT write "N/A".
-11. whats_moving: 3–5 headlines capturing the dominant themes/catalysts these traders are discussing. Each category MUST be a TICKER or short macro descriptor (e.g. "Fed", "CPI"), NOT a generic label.
-12. Return ONLY valid JSON. No preamble, no markdown, no explanation outside the JSON."""
+7. is_fresh_trade in consensus_picks should be true if the ticker also appears in fresh_trades.
+8. hype_radar: 2–4 dominant themes/narratives these traders are collectively posting about. This is the "what sectors/themes are hot" view.
+9. spotlight: the 4 signal highlights. Most hyped = volume of mentions. Highest conviction = quality of thesis. Freshest alpha = newest name. Contrarian = the non-obvious play.
+10. Do NOT include tickers only mentioned bearishly or neutrally.
+11. Return ONLY valid JSON. No preamble, no markdown, no explanation outside the JSON."""
