@@ -613,8 +613,8 @@ type MainTab = 'tickers' | 'flow';
 
 export default function OptionsPage() {
   const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
-  const [loadStage, setLoadStage] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [loadStage, setLoadStage] = useState('Initializing live scan...');
   const [error, setError] = useState('');
   const [tab, setTab] = useState<MainTab>('tickers');
   const [chatInput, setChatInput] = useState('');
@@ -626,10 +626,10 @@ export default function OptionsPage() {
   const fetchDashboard = useCallback(async () => {
     setLoading(true);
     setError('');
-    const stages = ['Scanning options chains...', 'Aggregating volume & OI...', 'Computing greeks...', 'Finalizing...'];
+    const stages = ['Running live scan...', 'Scanning options chains...', 'Aggregating volume & OI...', 'Computing greeks & IV...', 'Building market summary...', 'Finalizing...'];
     let si = 0;
     setLoadStage(stages[0]);
-    const stageTimer = setInterval(() => { si = Math.min(si + 1, stages.length - 1); setLoadStage(stages[si]); }, 3000);
+    const stageTimer = setInterval(() => { si = Math.min(si + 1, stages.length - 1); setLoadStage(stages[si]); }, 2500);
     try {
       const res = await fetch('/api/options/dashboard', { method: 'POST', headers: authHeaders(), body: JSON.stringify({}) });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
