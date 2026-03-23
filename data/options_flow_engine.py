@@ -197,12 +197,30 @@ class OptionsFlowEngine:
         self.defaults = dict(OPTIONS_FLOW_DEFAULTS)
         self.weights = dict(OPTIONS_FLOW_WEIGHTS)
 
-    @traceable(name="options_flow_engine.run_scan")
-    async def run_scan(self, seed_tickers: list[str] | None = None) -> dict:
+    @traceable(name="options_flow_engine.build_prefilter_snapshot")
+    async def build_prefilter_snapshot(self, seed_tickers: list[str] | None = None) -> dict:
         prefilter_data = await self._build_prefilter(seed_tickers or [])
-        candidates = prefilter_data["candidates"]
-        degraded_sources = list(prefilter_data["degraded_sources"])
-        macro = prefilter_data.get("macro", {})
+        return {
+            "generated_at": datetime.utcnow().isoformat(),
+            "filter_defaults": self.defaults,
+            **prefilter_data,
+        }
+
+    @traceable(name="options_flow_engine.run_live_scan")
+    async def run_live_scan(
+        self,
+        seed_tickers: list[str] | None = None,
+        prefilter_snapshot: dict | None = None,
+    ) -> dict:
+        if prefilter_snapshot and isinstance(prefilter_snapshot, dict):
+            candidates = list(prefilter_snapshot.get("candidates") or [])
+            degraded_sources = list(prefilter_snapshot.get("degraded_sources") or [])
+            macro = prefilter_snapshot.get("macro", {}) or {}
+        else:
+            prefilter_data = await self.build_prefilter_snapshot(seed_tickers or [])
+            candidates = list(prefilter_data.get("candidates") or [])
+            degraded_sources = list(prefilter_data.get("degraded_sources") or [])
+            macro = prefilter_data.get("macro", {}) or {}
 
         inspectable = candidates[: self.defaults["options_inspection_limit"]]
         results = await self._inspect_shortlist(inspectable, macro)
@@ -220,10 +238,11 @@ class OptionsFlowEngine:
                     "primary_signal": row.get("primary_signal"),
                     "confidence": row.get("confidence"),
                     "composite_score": row.get("composite_score"),
-                    "side": contract.get("type"),
-                    "openInterest": contract.get("open_interest"),
-                    "iv": contract.get("implied_volatility"),
+                    "side": contract.get("type") or contract.get("side"),
+                    "openInterest": contract.get("openInterest", contract.get("open_interest")),
+                    "iv": contract.get("iv", contract.get("implied_volatility")),
                     "mid": contract.get("mid"),
+                    "vol_oi_ratio": contract.get("vol_oi_ratio", contract.get("option_volume_to_oi_ratio")),
                 }
                 all_contracts.append(flat)
             snapshot_rows.extend(row.pop("snapshot_rows", []))
@@ -253,7 +272,7 @@ class OptionsFlowEngine:
 
         return {
             "display_type": "options_screener",
-            "scan_type": "options_flow_signal_engine",
+            "scan_type": "options_flow",
             "filter_defaults": self.defaults,
             "score_weights": self.weights,
             "pipeline_stats": {
@@ -267,6 +286,14 @@ class OptionsFlowEngine:
             "all_contracts": all_contracts[:500],
             "market_summary": market_summary,
         }
+
+    @traceable(name="options_flow_engine.run_scan")
+    async def run_scan(
+        self,
+        seed_tickers: list[str] | None = None,
+        prefilter_snapshot: dict | None = None,
+    ) -> dict:
+        return await self.run_live_scan(seed_tickers, prefilter_snapshot=prefilter_snapshot)
 
     async def _build_prefilter(self, seed_tickers: list[str]) -> dict:
         degraded_sources: list[str] = []
@@ -397,7 +424,14 @@ class OptionsFlowEngine:
                 continue
             if enriched.get("price") is None or enriched.get("price", 0) < self.defaults["min_stock_price"]:
                 continue
-            if enriched.get("liquidity_dollars", 0) < self.defaults["min_stock_liquidity"]:
+            liquidity_dollars = enriched.get("liquidity_dollars")
+            liquidity_supported = enriched.get("liquidity_supported", False)
+            if (
+                liquidity_supported
+                and liquidity_dollars is not None
+                and liquidity_dollars < self.defaults["min_stock_liquidity"]
+                and base.get("source_score", 0) < 28
+            ):
                 continue
             merged = {**base, **enriched}
             merged["reasons"] = sorted(list(base.get("reasons", set())))
@@ -445,7 +479,7 @@ class OptionsFlowEngine:
         volume = _safe_float(fmp_quote.get("volume"))
         avg_volume = _safe_float(technicals.get("avg_volume"))
         relative_volume = round(volume / avg_volume, 2) if volume and avg_volume else None
-        liquidity_dollars = (price or 0) * (volume or 0)
+        liquidity_dollars = (price or 0) * volume if price and volume else None
 
         sma20 = _safe_float(technicals.get("sma_20"))
         sma50 = _safe_float(technicals.get("sma_50"))
@@ -481,7 +515,8 @@ class OptionsFlowEngine:
             "volume": int(volume) if volume else 0,
             "avg_volume": round(avg_volume, 0) if avg_volume else None,
             "stock_relative_volume": relative_volume,
-            "liquidity_dollars": float(liquidity_dollars or 0),
+            "liquidity_dollars": float(liquidity_dollars) if liquidity_dollars is not None else None,
+            "liquidity_supported": liquidity_dollars is not None,
             "technicals": technicals,
             "profile": profile,
             "breakout_context": breakout_context or None,
@@ -669,8 +704,8 @@ class OptionsFlowEngine:
             "avg_put_iv": self._avg_iv(put_contracts),
             "iv_skew": round((self._avg_iv(put_contracts) or 0) - (self._avg_iv(call_contracts) or 0), 4) if call_contracts and put_contracts else None,
             "max_pain": self._max_pain(contracts),
-            "top_calls": call_contracts[:3],
-            "top_puts": put_contracts[:3],
+            "top_calls": [self._contract_response(symbol, c, primary_signal) for c in call_contracts[:3]],
+            "top_puts": [self._contract_response(symbol, c, primary_signal) for c in put_contracts[:3]],
             "primary_signal": primary_signal,
             "confidence": confidence,
             "confidence_score": confidence_score,
@@ -1002,6 +1037,7 @@ class OptionsFlowEngine:
             "contract_symbol": contract.get("contract_symbol"),
             "symbol": contract.get("contract_symbol"),
             "type": contract.get("type"),
+            "side": contract.get("type"),
             "strike": contract.get("strike"),
             "expiration": contract.get("expiration"),
             "dte": contract.get("dte"),
@@ -1009,9 +1045,16 @@ class OptionsFlowEngine:
             "ask": contract.get("ask"),
             "last": contract.get("last"),
             "mid": contract.get("midpoint"),
+            "midpoint": contract.get("midpoint"),
             "volume": contract.get("volume"),
             "open_interest": contract.get("open_interest"),
+            "openInterest": contract.get("open_interest"),
             "implied_volatility": contract.get("implied_volatility"),
+            "iv": contract.get("implied_volatility"),
+            "delta": contract.get("delta"),
+            "gamma": contract.get("gamma"),
+            "theta": contract.get("theta"),
+            "vega": contract.get("vega"),
             "greeks": {
                 "delta": contract.get("delta"),
                 "gamma": contract.get("gamma"),
@@ -1019,6 +1062,7 @@ class OptionsFlowEngine:
                 "vega": contract.get("vega"),
             },
             "option_volume_to_oi_ratio": contract.get("option_volume_to_oi_ratio"),
+            "vol_oi_ratio": contract.get("option_volume_to_oi_ratio"),
             "spread_pct": contract.get("spread_pct"),
             "premium_traded_estimate": contract.get("premium_traded_estimate"),
             "break_even": contract.get("break_even"),
