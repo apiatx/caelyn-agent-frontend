@@ -946,6 +946,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/options/history/:symbol — Historic EOD options bars (2yr)
+  app.get('/api/options/history/:symbol', async (req, res) => {
+    try {
+      const { symbol } = req.params;
+      const limit = req.query.limit || '500';
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+      const response = await fetch(`${AGENT_URL}/api/options/history/${encodeURIComponent(symbol)}?limit=${encodeURIComponent(String(limit))}`, {
+        headers: { 'X-API-Key': AGENT_KEY },
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      if (!response.ok) return res.status(response.status).json({ error: `Agent returned ${response.status}` });
+      res.json(await response.json());
+    } catch (error: any) {
+      console.error('Options history error:', error);
+      res.status(500).json({ error: 'Failed to fetch options history' });
+    }
+  });
+
+  // GET /api/options/technicals/:symbol — SMA 20/50, RSI 14, MACD for underlying
+  app.get('/api/options/technicals/:symbol', async (req, res) => {
+    try {
+      const { symbol } = req.params;
+      const qs = new URLSearchParams();
+      if (req.query.indicator) qs.set('indicator', String(req.query.indicator));
+      if (req.query.limit) qs.set('limit', String(req.query.limit));
+      const qsStr = qs.toString() ? `?${qs.toString()}` : '';
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+      const response = await fetch(`${AGENT_URL}/api/options/technicals/${encodeURIComponent(symbol)}${qsStr}`, {
+        headers: { 'X-API-Key': AGENT_KEY },
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      if (!response.ok) return res.status(response.status).json({ error: `Agent returned ${response.status}` });
+      res.json(await response.json());
+    } catch (error: any) {
+      console.error('Options technicals error:', error);
+      res.status(500).json({ error: 'Failed to fetch technicals' });
+    }
+  });
+
+  // GET /api/options/volume-summary/:symbol — 30-day aggregated call/put volume
+  app.get('/api/options/volume-summary/:symbol', async (req, res) => {
+    try {
+      const { symbol } = req.params;
+      const days = req.query.days || '30';
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+      const response = await fetch(`${AGENT_URL}/api/options/volume-summary/${encodeURIComponent(symbol)}?days=${encodeURIComponent(String(days))}`, {
+        headers: { 'X-API-Key': AGENT_KEY },
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      if (!response.ok) return res.status(response.status).json({ error: `Agent returned ${response.status}` });
+      res.json(await response.json());
+    } catch (error: any) {
+      console.error('Options volume-summary error:', error);
+      res.status(500).json({ error: 'Failed to fetch volume summary' });
+    }
+  });
+
+  // GET /api/options/data-coverage — DB coverage stats (admin/debug)
+  app.get('/api/options/data-coverage', async (req, res) => {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      const response = await fetch(`${AGENT_URL}/api/options/data-coverage`, {
+        headers: { 'X-API-Key': AGENT_KEY },
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      if (!response.ok) return res.status(response.status).json({ error: `Agent returned ${response.status}` });
+      res.json(await response.json());
+    } catch (error: any) {
+      console.error('Options data-coverage error:', error);
+      res.status(500).json({ error: 'Failed to fetch data coverage' });
+    }
+  });
+
+  // GET /api/options/fetch-progress — Ingestion progress per ticker
+  app.get('/api/options/fetch-progress', async (req, res) => {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      const response = await fetch(`${AGENT_URL}/api/options/fetch-progress`, {
+        headers: { 'X-API-Key': AGENT_KEY },
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      if (!response.ok) return res.status(response.status).json({ error: `Agent returned ${response.status}` });
+      res.json(await response.json());
+    } catch (error: any) {
+      console.error('Options fetch-progress error:', error);
+      res.status(500).json({ error: 'Failed to fetch ingestion progress' });
+    }
+  });
+
   // === AI Portfolio Review (server-side proxy) ===
   app.post('/api/portfolio-review', async (req, res) => {
     try {

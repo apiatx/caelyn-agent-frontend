@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, Fragment } from "react";
-import { RefreshCw, Send, Loader2, Zap, ChevronDown, ChevronUp, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { RefreshCw, Send, Loader2, Zap, ChevronDown, ChevronUp, ArrowUpDown, ArrowUp, ArrowDown, TrendingUp, TrendingDown, Activity, BarChart3, Database } from "lucide-react";
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ComposedChart, Area, ReferenceLine } from 'recharts';
 
 const AGENT_API_KEY = "hippo_ak_7f3x9k2m4p8q1w5t";
 
@@ -30,6 +31,12 @@ const skewColor = (s: number | null) => s == null ? C.dim : s > 0.05 ? C.red : s
 const fmtVol = (n: number | null | undefined) => n == null ? '—' : n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1_000 ? `${(n / 1_000).toFixed(0)}K` : String(n);
 const fmtPct = (n: number | null | undefined) => n == null ? '—' : `${(n * 100).toFixed(1)}%`;
 const fmtNum = (n: number | null | undefined, d = 2) => n == null ? '—' : n.toFixed(d);
+const rsiColor = (v: number | null | undefined) => v == null ? C.dim : v > 70 ? C.red : v < 30 ? C.green : C.text;
+const trendSignal = (sma20?: number | null, sma50?: number | null): { label: string; color: string } | null => {
+  if (sma20 == null || sma50 == null) return null;
+  return sma20 > sma50 ? { label: 'Bullish', color: C.green } : { label: 'Bearish', color: C.red };
+};
+const macdColor = (v: number | null | undefined) => v == null ? C.dim : v > 0 ? C.green : C.red;
 
 function Badge({ color, children, sm }: { color: string; children: React.ReactNode; sm?: boolean }) {
   return <span style={{ background: `${color}18`, color, border: `1px solid ${color}35`, borderRadius: 4, padding: sm ? '1px 5px' : '2px 7px', fontSize: sm ? 9 : 10, fontWeight: 700, fontFamily: font, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{children}</span>;
@@ -103,13 +110,283 @@ function ContractsMini({ contracts, side }: { contracts: any[]; side: 'call' | '
   );
 }
 
+// ─── TICKER DETAIL PANEL (expanded row with charts) ─────────────────────────────
+function TickerDetailPanel({ symbol }: { symbol: string }) {
+  const [technicals, setTechnicals] = useState<any>(null);
+  const [history, setHistory] = useState<any[]>([]);
+  const [volumeSummary, setVolumeSummary] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    Promise.all([
+      fetch(`/api/options/technicals/${encodeURIComponent(symbol)}`, { headers: authHeaders() }).then(r => r.ok ? r.json() : null).catch(() => null),
+      fetch(`/api/options/history/${encodeURIComponent(symbol)}?limit=60`, { headers: authHeaders() }).then(r => r.ok ? r.json() : null).catch(() => null),
+      fetch(`/api/options/volume-summary/${encodeURIComponent(symbol)}?days=30`, { headers: authHeaders() }).then(r => r.ok ? r.json() : null).catch(() => null),
+    ]).then(([tech, hist, vol]) => {
+      if (cancelled) return;
+      setTechnicals(tech);
+      setHistory(Array.isArray(hist?.bars || hist) ? (hist?.bars || hist) : []);
+      setVolumeSummary(vol);
+      setLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [symbol]);
+
+  if (loading) {
+    return (
+      <div style={{ padding: 20, display: 'flex', alignItems: 'center', gap: 8, color: C.dim, fontSize: 11, fontFamily: font }}>
+        <Loader2 className="w-3 h-3 animate-spin" /> Loading technicals & history for {symbol}...
+      </div>
+    );
+  }
+
+  // Extract SMA series for price chart overlay
+  const smaData = technicals?.sma_20 || technicals?.sma_50 ? (() => {
+    const sma20List = Array.isArray(technicals?.sma_20) ? technicals.sma_20 : technicals?.sma_20 ? [technicals.sma_20] : [];
+    const sma50List = Array.isArray(technicals?.sma_50) ? technicals.sma_50 : technicals?.sma_50 ? [technicals.sma_50] : [];
+    const dateMap: Record<string, any> = {};
+    sma20List.forEach((d: any) => { dateMap[d.date] = { ...dateMap[d.date], date: d.date, sma20: d.value }; });
+    sma50List.forEach((d: any) => { dateMap[d.date] = { ...dateMap[d.date], date: d.date, sma50: d.value }; });
+    return Object.values(dateMap).sort((a: any, b: any) => a.date.localeCompare(b.date));
+  })() : [];
+
+  // RSI data
+  const rsiData = (() => {
+    const rsiList = Array.isArray(technicals?.rsi_14) ? technicals.rsi_14 : technicals?.rsi_14 ? [technicals.rsi_14] : [];
+    return rsiList.map((d: any) => ({ date: d.date, rsi: d.value })).sort((a: any, b: any) => a.date.localeCompare(b.date));
+  })();
+
+  // MACD data
+  const macdData = (() => {
+    const macdList = Array.isArray(technicals?.macd) ? technicals.macd : technicals?.macd ? [technicals.macd] : [];
+    return macdList.map((d: any) => ({ date: d.date, macd: d.value, signal: d.signal, histogram: d.histogram })).sort((a: any, b: any) => a.date.localeCompare(b.date));
+  })();
+
+  // Volume bar chart data from history
+  const volumeChartData = history.slice(-30).map((bar: any) => ({
+    date: bar.date || bar.day,
+    callVol: bar.call_volume || 0,
+    putVol: bar.put_volume || 0,
+    pcRatio: (bar.call_volume && bar.put_volume) ? (bar.put_volume / bar.call_volume) : null,
+  }));
+
+  const chartStyle = { background: C.cardAlt, border: `1px solid ${C.border}`, borderRadius: 8, padding: '10px 8px', marginBottom: 10 };
+  const chartLabel = (text: string) => <div style={{ color: C.dim, fontSize: 9, fontFamily: font, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6, paddingLeft: 4 }}>{text}</div>;
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }} onClick={e => e.stopPropagation()}>
+      {/* SMA Price Overlay */}
+      {smaData.length > 1 && (
+        <div style={chartStyle}>
+          {chartLabel('SMA 20 / 50')}
+          <ResponsiveContainer width="100%" height={140}>
+            <LineChart data={smaData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
+              <XAxis dataKey="date" tick={{ fontSize: 8, fill: C.dim }} tickFormatter={(v: string) => v.slice(5)} />
+              <YAxis tick={{ fontSize: 8, fill: C.dim }} domain={['auto', 'auto']} />
+              <Tooltip contentStyle={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 10 }} />
+              <Line type="monotone" dataKey="sma20" stroke={C.blue} strokeWidth={1.5} dot={false} name="SMA 20" />
+              <Line type="monotone" dataKey="sma50" stroke={C.orange} strokeWidth={1.5} dot={false} name="SMA 50" />
+              <Legend iconSize={8} wrapperStyle={{ fontSize: 9, fontFamily: font }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
+      {/* RSI Sub-Chart */}
+      {rsiData.length > 1 && (
+        <div style={chartStyle}>
+          {chartLabel('RSI (14)')}
+          <ResponsiveContainer width="100%" height={140}>
+            <ComposedChart data={rsiData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
+              <XAxis dataKey="date" tick={{ fontSize: 8, fill: C.dim }} tickFormatter={(v: string) => v.slice(5)} />
+              <YAxis tick={{ fontSize: 8, fill: C.dim }} domain={[0, 100]} />
+              <Tooltip contentStyle={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 10 }} />
+              <ReferenceLine y={70} stroke={C.red} strokeDasharray="3 3" strokeOpacity={0.6} />
+              <ReferenceLine y={30} stroke={C.green} strokeDasharray="3 3" strokeOpacity={0.6} />
+              <Area type="monotone" dataKey="rsi" fill={`${C.purple}15`} stroke={C.purple} strokeWidth={1.5} />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
+      {/* MACD Sub-Chart */}
+      {macdData.length > 1 && (
+        <div style={chartStyle}>
+          {chartLabel('MACD')}
+          <ResponsiveContainer width="100%" height={140}>
+            <ComposedChart data={macdData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
+              <XAxis dataKey="date" tick={{ fontSize: 8, fill: C.dim }} tickFormatter={(v: string) => v.slice(5)} />
+              <YAxis tick={{ fontSize: 8, fill: C.dim }} />
+              <Tooltip contentStyle={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 10 }} />
+              <Bar dataKey="histogram" fill={C.blue} opacity={0.5} name="Histogram" />
+              <Line type="monotone" dataKey="macd" stroke={C.blue} strokeWidth={1.5} dot={false} name="MACD" />
+              <Line type="monotone" dataKey="signal" stroke={C.orange} strokeWidth={1.5} dot={false} name="Signal" />
+              <Legend iconSize={8} wrapperStyle={{ fontSize: 9, fontFamily: font }} />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
+      {/* Options Volume Bar Chart (Call vs Put) */}
+      {volumeChartData.length > 0 && (
+        <div style={chartStyle}>
+          {chartLabel('Daily Options Volume (30d)')}
+          <ResponsiveContainer width="100%" height={140}>
+            <BarChart data={volumeChartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
+              <XAxis dataKey="date" tick={{ fontSize: 8, fill: C.dim }} tickFormatter={(v: string) => v.slice(5)} />
+              <YAxis tick={{ fontSize: 8, fill: C.dim }} />
+              <Tooltip contentStyle={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 10 }} />
+              <Bar dataKey="callVol" fill={C.green} opacity={0.8} name="Call Vol" />
+              <Bar dataKey="putVol" fill={C.red} opacity={0.8} name="Put Vol" />
+              <Legend iconSize={8} wrapperStyle={{ fontSize: 9, fontFamily: font }} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
+      {/* P/C Ratio Trend from history */}
+      {volumeChartData.filter(d => d.pcRatio != null).length > 1 && (
+        <div style={chartStyle}>
+          {chartLabel('Put/Call Ratio Trend (30d)')}
+          <ResponsiveContainer width="100%" height={140}>
+            <LineChart data={volumeChartData.filter(d => d.pcRatio != null)} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
+              <XAxis dataKey="date" tick={{ fontSize: 8, fill: C.dim }} tickFormatter={(v: string) => v.slice(5)} />
+              <YAxis tick={{ fontSize: 8, fill: C.dim }} domain={['auto', 'auto']} />
+              <Tooltip contentStyle={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 10 }} />
+              <ReferenceLine y={1} stroke={C.yellow} strokeDasharray="3 3" strokeOpacity={0.5} />
+              <Line type="monotone" dataKey="pcRatio" stroke={C.yellow} strokeWidth={1.5} dot={false} name="P/C Ratio" />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
+      {/* Volume Summary Stats */}
+      {volumeSummary && (
+        <div style={chartStyle}>
+          {chartLabel(`30-Day Volume Summary`)}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, padding: '4px 4px' }}>
+            {[
+              { label: 'Call Total Vol', value: fmtVol(volumeSummary.call_total_volume), color: C.green },
+              { label: 'Put Total Vol', value: fmtVol(volumeSummary.put_total_volume), color: C.red },
+              { label: 'Call Avg Daily', value: fmtVol(volumeSummary.call_avg_daily_vol), color: C.green },
+              { label: 'Put Avg Daily', value: fmtVol(volumeSummary.put_avg_daily_vol), color: C.red },
+              { label: 'Call Contracts', value: fmtVol(volumeSummary.call_unique_contracts), color: C.blue },
+              { label: 'Put Contracts', value: fmtVol(volumeSummary.put_unique_contracts), color: C.purple },
+            ].map((s, i) => (
+              <div key={i} style={{ padding: '5px 8px', background: `${s.color}08`, borderRadius: 5, border: `1px solid ${s.color}15` }}>
+                <div style={{ color: C.dim, fontSize: 8, fontFamily: font, textTransform: 'uppercase', marginBottom: 2 }}>{s.label}</div>
+                <div style={{ color: s.color, fontSize: 13, fontWeight: 700, fontFamily: font }}>{s.value}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Fallback if no data */}
+      {smaData.length <= 1 && rsiData.length <= 1 && macdData.length <= 1 && volumeChartData.length === 0 && !volumeSummary && (
+        <div style={{ gridColumn: '1 / -1', padding: '16px 0', color: C.dim, fontSize: 11, fontFamily: font, textAlign: 'center' }}>
+          <Activity className="w-4 h-4 inline-block" style={{ marginRight: 6 }} />
+          Technical data not yet available — Polygon ingestion may still be in progress.
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── DATA INGESTION STATUS WIDGET ────────────────────────────────────────────────
+function DataIngestionWidget() {
+  const [coverage, setCoverage] = useState<any>(null);
+  const [progress, setProgress] = useState<any>(null);
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const fetchStatus = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [covRes, progRes] = await Promise.all([
+        fetch('/api/options/data-coverage', { headers: authHeaders() }).then(r => r.ok ? r.json() : null).catch(() => null),
+        fetch('/api/options/fetch-progress', { headers: authHeaders() }).then(r => r.ok ? r.json() : null).catch(() => null),
+      ]);
+      setCoverage(covRes);
+      setProgress(progRes);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (open && !coverage) fetchStatus();
+  }, [open, coverage, fetchStatus]);
+
+  const tickersIngested = progress?.tickers_completed ?? coverage?.tickers_ingested ?? '?';
+  const tickersTotal = progress?.tickers_total ?? coverage?.tickers_total ?? '?';
+  const barsStored = coverage?.total_bars ?? '?';
+  const lastUpdated = coverage?.last_updated;
+  const timeAgo = lastUpdated ? (() => {
+    const diff = Date.now() - new Date(lastUpdated).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    return `${hrs}h ago`;
+  })() : 'unknown';
+
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <button onClick={() => setOpen(o => !o)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', fontSize: 10, fontWeight: 600, fontFamily: font, background: open ? `${C.purple}15` : 'transparent', color: open ? C.purple : C.dim, border: `1px solid ${open ? C.purple + '40' : C.border}`, borderRadius: 6, cursor: 'pointer' }}>
+        <Database className="w-3 h-3" />
+        Ingestion Status
+        {open ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+      </button>
+      {open && (
+        <div style={{ marginTop: 8, background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, padding: '12px 16px', animation: 'fadeIn 0.2s ease' }}>
+          {loading ? (
+            <div style={{ color: C.dim, fontSize: 11, fontFamily: font, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Loader2 className="w-3 h-3 animate-spin" /> Fetching ingestion status...
+            </div>
+          ) : (
+            <div style={{ display: 'flex', gap: 20, alignItems: 'center', flexWrap: 'wrap' }}>
+              <div style={{ color: C.text, fontSize: 12, fontFamily: font }}>
+                <span style={{ color: C.bright, fontWeight: 700 }}>{tickersIngested}</span>
+                <span style={{ color: C.dim }}> / {tickersTotal} tickers ingested</span>
+              </div>
+              <div style={{ color: C.text, fontSize: 12, fontFamily: font }}>
+                <span style={{ color: C.blue, fontWeight: 700 }}>{typeof barsStored === 'number' ? barsStored.toLocaleString() : barsStored}</span>
+                <span style={{ color: C.dim }}> bars stored</span>
+              </div>
+              <div style={{ color: C.dim, fontSize: 11, fontFamily: font }}>
+                Last updated: <span style={{ color: C.text }}>{timeAgo}</span>
+              </div>
+              <button onClick={fetchStatus} style={{ padding: '3px 8px', fontSize: 9, fontFamily: font, background: `${C.blue}12`, border: `1px solid ${C.blue}30`, borderRadius: 4, color: C.blue, cursor: 'pointer' }}>
+                <RefreshCw className="w-3 h-3 inline-block" />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── TICKER SUMMARY TAB ──────────────────────────────────────────────────────────
 type CatFilter = 'all' | 'stock' | 'etf';
 
 function TickerSummaryTab({ tickers }: { tickers: any[] }) {
   const [catFilter, setCatFilter] = useState<CatFilter>('all');
   const [expanded, setExpanded] = useState<string | null>(null);
-  const filtered = tickers.filter(t => catFilter === 'all' || t.category === catFilter);
+  const filtered = tickers.filter(t => catFilter === 'all' || t.category === catFilter).map(t => ({
+    ...t,
+    _rsi: t.technicals?.rsi_14?.value ?? null,
+    _trend: (() => { const s = trendSignal(t.technicals?.sma_20?.value, t.technicals?.sma_50?.value); return s ? (s.label === 'Bullish' ? 1 : 0) : null; })(),
+    _macd: t.technicals?.macd?.histogram ?? null,
+    _histVol: ((t.historic_volume?.call_total_volume ?? 0) + (t.historic_volume?.put_total_volume ?? 0)) || null,
+  }));
   const { sorted, col, dir, toggle } = useSortable(filtered, 'total_volume');
 
   const TH = ({ c, label, right }: { c: string; label: string; right?: boolean }) => (
@@ -147,6 +424,10 @@ function TickerSummaryTab({ tickers }: { tickers: any[] }) {
                 <TH c="iv_skew" label="Skew" right />
                 <TH c="max_pain" label="Max Pain" right />
                 <TH c="total_oi" label="Total OI" right />
+                <TH c="_rsi" label="RSI" right />
+                <TH c="_trend" label="Trend" right />
+                <TH c="_macd" label="MACD" right />
+                <TH c="_histVol" label="Hist Vol" right />
                 <th style={{ padding: '8px 10px', width: 30 }} />
               </tr>
             </thead>
@@ -171,14 +452,40 @@ function TickerSummaryTab({ tickers }: { tickers: any[] }) {
                     <td style={{ padding: '10px 10px', textAlign: 'right', fontFamily: font, fontSize: 11, color: skewColor(t.iv_skew) }}>{t.iv_skew != null ? (t.iv_skew >= 0 ? '+' : '') + fmtPct(t.iv_skew) : '—'}</td>
                     <td style={{ padding: '10px 10px', textAlign: 'right', fontFamily: font, fontSize: 11, color: C.gold }}>{t.max_pain != null ? `$${t.max_pain}` : '—'}</td>
                     <td style={{ padding: '10px 10px', textAlign: 'right', fontFamily: font, fontSize: 11, color: C.text }}>{fmtVol(t.total_oi)}</td>
+                    {/* RSI */}
+                    <td style={{ padding: '10px 10px', textAlign: 'right', fontFamily: font, fontSize: 11, fontWeight: t._rsi != null ? 700 : 400, color: rsiColor(t._rsi) }}>
+                      {t._rsi != null ? fmtNum(t._rsi, 1) : '—'}
+                    </td>
+                    {/* Trend */}
+                    <td style={{ padding: '10px 10px', textAlign: 'right' }}>
+                      {(() => {
+                        const s = trendSignal(t.technicals?.sma_20?.value, t.technicals?.sma_50?.value);
+                        if (!s) return <span style={{ color: C.dim, fontFamily: font, fontSize: 11 }}>—</span>;
+                        return (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: s.color, fontFamily: font, fontSize: 10, fontWeight: 700 }}>
+                            {s.label === 'Bullish' ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                            {s.label}
+                          </span>
+                        );
+                      })()}
+                    </td>
+                    {/* MACD Histogram */}
+                    <td style={{ padding: '10px 10px', textAlign: 'right', fontFamily: font, fontSize: 11, fontWeight: t._macd != null ? 700 : 400, color: macdColor(t._macd) }}>
+                      {t._macd != null ? (t._macd >= 0 ? '+' : '') + fmtNum(t._macd, 2) : '—'}
+                    </td>
+                    {/* Hist Vol (30d total) */}
+                    <td style={{ padding: '10px 10px', textAlign: 'right', fontFamily: font, fontSize: 11, color: t._histVol ? C.bright : C.dim }}>
+                      {t._histVol ? fmtVol(t._histVol) : '—'}
+                    </td>
                     <td style={{ padding: '10px 10px', textAlign: 'right' }}>
                       {isExp ? <ChevronUp className="w-3 h-3" style={{ color: C.dim }} /> : <ChevronDown className="w-3 h-3" style={{ color: C.dim }} />}
                     </td>
                   </tr>
                   {isExp && (
                     <tr key={`${t.ticker}-exp`}>
-                      <td colSpan={11} style={{ padding: '14px 16px', background: `${C.cardAlt}`, borderTop: `1px solid ${C.border}` }} onClick={e => e.stopPropagation()}>
+                      <td colSpan={15} style={{ padding: '14px 16px', background: `${C.cardAlt}`, borderTop: `1px solid ${C.border}` }} onClick={e => e.stopPropagation()}>
                         <TVChart symbol={t.ticker} />
+                        <TickerDetailPanel symbol={t.ticker} />
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 4 }}>
                           <ContractsMini contracts={t.top_calls} side="call" />
                           <ContractsMini contracts={t.top_puts} side="put" />
@@ -438,6 +745,9 @@ export default function OptionsPage() {
           {error && !loading && (
             <div style={{ background: `${C.red}10`, border: `1px solid ${C.red}30`, borderRadius: 10, padding: '14px 18px', color: C.red, fontSize: 13, fontFamily: sans }}>⚠ {error}</div>
           )}
+
+          {/* Data Ingestion Status */}
+          {hasData && <DataIngestionWidget />}
 
           {/* Tabs */}
           {hasData && (
