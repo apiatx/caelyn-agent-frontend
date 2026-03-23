@@ -463,6 +463,50 @@ class FinvizScraper:
             "v=111&f=sh_avgvol_o300,sh_short_o10,ta_change_d,ta_sma50_pb&ft=4&o=-sh_short"
         )
 
+    # ── High-Growth / Mid-Cap screens ($500M–$100B) for Options Flow ────────
+
+    @traceable(name="get_midcap_unusual_volume")
+    async def get_midcap_unusual_volume(self) -> list:
+        """Mid-cap stocks ($500M–$10B) with unusual volume — hidden signal."""
+        return await self._custom_screen(
+            "v=111&f=cap_smallover,cap_midunder,sh_avgvol_o200,ta_unusualvolume&ft=4&o=-relvol"
+        )
+
+    @traceable(name="get_midcap_breakouts")
+    async def get_midcap_breakouts(self) -> list:
+        """Mid/large-cap ($2B–$100B) breakout setups — new highs + volume."""
+        return await self._custom_screen(
+            "v=111&f=cap_midover,cap_megaunder,sh_avgvol_o300,sh_relvol_o2,ta_highlow52w_nh&ft=4&o=-change"
+        )
+
+    @traceable(name="get_midcap_momentum")
+    async def get_midcap_momentum(self) -> list:
+        """Mid-cap ($500M–$10B) momentum — above SMA20, volume surge, up today."""
+        return await self._custom_screen(
+            "v=111&f=cap_smallover,cap_midunder,sh_avgvol_o200,sh_relvol_o1.5,ta_sma20_pa,ta_change_u&ft=4&o=-change"
+        )
+
+    @traceable(name="get_midcap_high_short")
+    async def get_midcap_high_short(self) -> list:
+        """Mid-cap ($500M–$10B) high short interest — squeeze signal."""
+        return await self._custom_screen(
+            "v=111&f=cap_smallover,cap_midunder,sh_avgvol_o200,sh_short_o15&ft=4&o=-shortinterestshare"
+        )
+
+    @traceable(name="get_growth_earnings_catalyst")
+    async def get_growth_earnings_catalyst(self) -> list:
+        """Growth stocks with earnings this week + strong EPS growth — catalyst play."""
+        return await self._custom_screen(
+            "v=111&f=cap_megaunder,earningsdate_thisweek,fa_epsqoq_o15,sh_avgvol_o200&ft=4&o=-marketcap"
+        )
+
+    @traceable(name="get_midlarge_volume_breakout")
+    async def get_midlarge_volume_breakout(self) -> list:
+        """$2B–$100B stocks with 3x+ volume surge + price up — institutional flow signal."""
+        return await self._custom_screen(
+            "v=111&f=cap_midover,cap_megaunder,sh_avgvol_o300,sh_relvol_o3,ta_change_u3&ft=4&o=-relvol"
+        )
+
 
 @traceable(name="finviz_scraper.scrape_yahoo_trending")
 async def scrape_yahoo_trending() -> list:

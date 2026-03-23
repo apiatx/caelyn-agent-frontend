@@ -4467,16 +4467,42 @@ _OPTIONS_SCREENER_TICKERS = [
     "AAPL", "NVDA", "TSLA", "AMZN", "META", "MSFT", "AMD", "GOOGL", "NFLX", "COIN",
 ]
 
+# High Growth tab: signal-rich seed tickers in $500M–$100B range
+# These are NOT the only tickers scanned — the prefilter casts a wide net via
+# Finviz mid-cap screens. These seeds just ensure coverage of known active names.
+_OPTIONS_HIGH_GROWTH_SEEDS = [
+    # Semis / hardware with active options flow
+    "MRVL", "ON", "SMCI", "CRDO", "ALAB", "MCHP", "PSTG", "COHR",
+    # Growth software / infra
+    "SHOP", "NET", "DDOG", "SNOW", "CRWD", "ZS", "BILL", "CFLT",
+    # Energy / clean
+    "CEG", "FSLR", "BE", "EQT",
+    # Space / defense
+    "RKLB", "LUNR", "ASTS", "PL", "AVAV",
+    # Crypto-adjacent / digital infra
+    "COIN", "MARA", "CLSK", "HUT", "IONQ",
+    # Biotech / health with options activity
+    "HIMS", "RXRX", "KRYS", "VERA",
+]
+
+_OPTIONS_VALID_TABS = {"megacap", "high_growth"}
+
 # Extended watchlist for Polygon historic data ingestion (runs at 5 calls/min)
 # Imported from the ingestion module — used by the background pipeline
 from data.options_ingestion import OPTIONS_WATCHLIST as _OPTIONS_FULL_WATCHLIST
 from data.options_flow_engine import OptionsFlowEngine
 
 _OPTIONS_PRECOMPUTE_INTERVAL = 1800  # 30 minutes — stock-side prefilter only
-_OPTIONS_CACHE_KEY = "options_screener_v2"
 _OPTIONS_CACHE_TTL = 45              # short-lived page response cache
-_OPTIONS_PREFILTER_CACHE_KEY = "options_screener_prefilter_v1"
 _OPTIONS_PREFILTER_CACHE_TTL = 3600  # 1 hour — proprietary stock-side data only
+
+
+def _options_cache_key(tab: str) -> str:
+    return f"options_screener_v3:{tab}"
+
+
+def _options_prefilter_cache_key(tab: str) -> str:
+    return f"options_screener_prefilter_v2:{tab}"
 
 
 async def _options_precompute_loop():
@@ -4484,7 +4510,7 @@ async def _options_precompute_loop():
     Background screener loop for the Options Flow dashboard.
     Runs every 30 minutes. Precomputes ONLY stock-side/catalyst prefilter data
     from the supporting proprietary/free sources so the page can stay responsive.
-    Public.com is intentionally reserved for the page request itself.
+    Precomputes BOTH megacap and high_growth tabs.
     """
     loop = asyncio.get_event_loop()
     await loop.run_in_executor(None, _init_event.wait, 120)
@@ -4497,23 +4523,25 @@ async def _options_precompute_loop():
     from data.cache import cache
 
     while True:
-        try:
-            print(f"[OPTIONS_PRECOMPUTE] Refreshing stock-side prefilter for {len(_OPTIONS_SCREENER_TICKERS)} seed tickers...")
-            t0 = _time.time()
+        for tab, seeds in [("megacap", _OPTIONS_SCREENER_TICKERS), ("high_growth", _OPTIONS_HIGH_GROWTH_SEEDS)]:
+            try:
+                print(f"[OPTIONS_PRECOMPUTE] [{tab}] Refreshing stock-side prefilter for {len(seeds)} seed tickers...")
+                t0 = _time.time()
 
-            prefilter_data = await OptionsFlowEngine(data_service).build_prefilter_snapshot(
-                _OPTIONS_SCREENER_TICKERS
-            )
+                prefilter_data = await OptionsFlowEngine(data_service).build_prefilter_snapshot(
+                    seeds, tab=tab
+                )
 
-            elapsed = _time.time() - t0
-            cache.set(_OPTIONS_PREFILTER_CACHE_KEY, prefilter_data, _OPTIONS_PREFILTER_CACHE_TTL)
-            print(f"[OPTIONS_PRECOMPUTE] Cached {len(prefilter_data.get('candidates', []))} prefilter candidates in {elapsed:.1f}s. Next in {_OPTIONS_PRECOMPUTE_INTERVAL}s.")
+                elapsed = _time.time() - t0
+                cache.set(_options_prefilter_cache_key(tab), prefilter_data, _OPTIONS_PREFILTER_CACHE_TTL)
+                print(f"[OPTIONS_PRECOMPUTE] [{tab}] Cached {len(prefilter_data.get('candidates', []))} prefilter candidates in {elapsed:.1f}s.")
 
-        except Exception as e:
-            import traceback
-            traceback.print_exc()
-            print(f"[OPTIONS_PRECOMPUTE] Error: {e}")
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                print(f"[OPTIONS_PRECOMPUTE] [{tab}] Error: {e}")
 
+        print(f"[OPTIONS_PRECOMPUTE] Both tabs refreshed. Next in {_OPTIONS_PRECOMPUTE_INTERVAL}s.")
         await asyncio.sleep(_OPTIONS_PRECOMPUTE_INTERVAL)
 
 
@@ -4529,6 +4557,7 @@ async def options_dashboard(
 ):
     """
     Options flow screener — pure data endpoint, no Claude involved.
+    Accepts optional JSON body {"tab": "megacap" | "high_growth"}.
     Returns a live Public.com options scan over a stock-side shortlist that is
     pre-fetched periodically in the background. Claude remains available via
     the chat bar instead of being part of this route.
@@ -4541,39 +4570,55 @@ async def options_dashboard(
             content={"error": "Public.com options provider not configured. Set PUBLIC_COM_API_KEY in secrets."},
         )
 
+    # Parse tab from request body (default: megacap)
+    tab = "megacap"
+    try:
+        body = await request.json()
+        if isinstance(body, dict) and body.get("tab") in _OPTIONS_VALID_TABS:
+            tab = body["tab"]
+    except Exception:
+        pass  # No body or invalid JSON → default tab
+
+    seed_tickers = _OPTIONS_HIGH_GROWTH_SEEDS if tab == "high_growth" else _OPTIONS_SCREENER_TICKERS
+
     import time as _time
     from data.cache import cache
 
     # ── Primary path: serve short-lived live-response cache ─────────────────
-    cached = cache.get(_OPTIONS_CACHE_KEY)
+    cache_key = _options_cache_key(tab)
+    cached = cache.get(cache_key)
     if cached:
         age = int(_time.time() - cached.get("cached_at", _time.time()))
-        print(f"[OPTIONS_DASH] Cache hit (age={age}s, {len(cached.get('tickers', []))} tickers, {len(cached.get('all_contracts', []))} contracts)")
+        print(f"[OPTIONS_DASH] [{tab}] Cache hit (age={age}s, {len(cached.get('tickers', []))} tickers, {len(cached.get('all_contracts', []))} contracts)")
         return {
             "response": cached,
             "structured": True,
             "preset": "options_screener",
+            "tab": tab,
+            "available_tabs": sorted(_OPTIONS_VALID_TABS),
             "from_cache": True,
             "cache_age_seconds": age,
         }
 
     # ── Live page visit path: use cached prefilter, then call Public.com now ─
-    prefilter_snapshot = cache.get(_OPTIONS_PREFILTER_CACHE_KEY)
+    prefilter_key = _options_prefilter_cache_key(tab)
+    prefilter_snapshot = cache.get(prefilter_key)
     if prefilter_snapshot:
         pre_age = int(_time.time() - _dt.fromisoformat(prefilter_snapshot.get("generated_at")).timestamp()) if prefilter_snapshot.get("generated_at") else None
-        print(f"[OPTIONS_DASH] Using prefilter cache (age={pre_age}s)")
+        print(f"[OPTIONS_DASH] [{tab}] Using prefilter cache (age={pre_age}s)")
     else:
-        print("[OPTIONS_DASH] Prefilter cache cold — building stock-side shortlist now...")
+        print(f"[OPTIONS_DASH] [{tab}] Prefilter cache cold — building stock-side shortlist now...")
     t0 = _time.time()
     try:
         engine = OptionsFlowEngine(data_service)
         if not prefilter_snapshot:
-            prefilter_snapshot = await engine.build_prefilter_snapshot(_OPTIONS_SCREENER_TICKERS)
-            cache.set(_OPTIONS_PREFILTER_CACHE_KEY, prefilter_snapshot, _OPTIONS_PREFILTER_CACHE_TTL)
+            prefilter_snapshot = await engine.build_prefilter_snapshot(seed_tickers, tab=tab)
+            cache.set(prefilter_key, prefilter_snapshot, _OPTIONS_PREFILTER_CACHE_TTL)
 
         screener_data = await engine.run_live_scan(
-            _OPTIONS_SCREENER_TICKERS,
+            seed_tickers,
             prefilter_snapshot=prefilter_snapshot,
+            tab=tab,
         )
         elapsed = _time.time() - t0
 
@@ -4591,22 +4636,25 @@ async def options_dashboard(
                 if vol_summary and vol_summary.get("call_total_volume"):
                     ticker_row["historic_volume"] = vol_summary
         except Exception as _enrich_err:
-            print(f"[OPTIONS_DASH] Enrichment warning (non-fatal): {_enrich_err}")
+            print(f"[OPTIONS_DASH] [{tab}] Enrichment warning (non-fatal): {_enrich_err}")
 
         result = {
             "display_type": "options_screener",
             "scan_type": "options_flow",
+            "tab": tab,
             "cached_at": _time.time(),
-            "tickers_scanned": _OPTIONS_SCREENER_TICKERS,
+            "tickers_scanned": seed_tickers,
             **screener_data,
         }
-        cache.set(_OPTIONS_CACHE_KEY, result, _OPTIONS_CACHE_TTL)
-        print(f"[OPTIONS_DASH] Live scan completed in {elapsed:.1f}s — {len(screener_data.get('tickers', []))} tickers")
+        cache.set(cache_key, result, _OPTIONS_CACHE_TTL)
+        print(f"[OPTIONS_DASH] [{tab}] Live scan completed in {elapsed:.1f}s — {len(screener_data.get('tickers', []))} tickers")
 
         return {
             "response": result,
             "structured": True,
             "preset": "options_screener",
+            "tab": tab,
+            "available_tabs": sorted(_OPTIONS_VALID_TABS),
             "from_cache": False,
             "timing": {"total_seconds": round(elapsed, 1)},
         }
@@ -4614,7 +4662,7 @@ async def options_dashboard(
     except Exception as e:
         import traceback
         traceback.print_exc()
-        print(f"[OPTIONS_DASH] Error: {e}")
+        print(f"[OPTIONS_DASH] [{tab}] Error: {e}")
         return JSONResponse(status_code=500, content={"error": f"Options screener error: {str(e)[:300]}"})
 
 

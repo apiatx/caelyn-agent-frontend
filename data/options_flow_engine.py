@@ -43,6 +43,8 @@ OPTIONS_FLOW_DEFAULTS = {
     "options_inspection_limit": _env_int("OPTIONS_FLOW_INSPECTION_LIMIT", 12),
     "min_stock_price": _env_float("OPTIONS_FLOW_MIN_STOCK_PRICE", 8.0),
     "min_stock_liquidity": _env_float("OPTIONS_FLOW_MIN_STOCK_LIQUIDITY", 15_000_000.0),
+    "high_growth_min_mcap": _env_float("OPTIONS_FLOW_HG_MIN_MCAP", 500_000_000.0),
+    "high_growth_max_mcap": _env_float("OPTIONS_FLOW_HG_MAX_MCAP", 100_000_000_000.0),
     "relative_volume_threshold": _env_float("OPTIONS_FLOW_RELATIVE_VOLUME_THRESHOLD", 1.5),
     "min_dte": _env_int("OPTIONS_FLOW_MIN_DTE", 7),
     "max_dte": _env_int("OPTIONS_FLOW_MAX_DTE", 45),
@@ -198,11 +200,16 @@ class OptionsFlowEngine:
         self.weights = dict(OPTIONS_FLOW_WEIGHTS)
 
     @traceable(name="options_flow_engine.build_prefilter_snapshot")
-    async def build_prefilter_snapshot(self, seed_tickers: list[str] | None = None) -> dict:
-        prefilter_data = await self._build_prefilter(seed_tickers or [])
+    async def build_prefilter_snapshot(
+        self,
+        seed_tickers: list[str] | None = None,
+        tab: str = "megacap",
+    ) -> dict:
+        prefilter_data = await self._build_prefilter(seed_tickers or [], tab=tab)
         return {
             "generated_at": datetime.utcnow().isoformat(),
             "filter_defaults": self.defaults,
+            "tab": tab,
             **prefilter_data,
         }
 
@@ -211,13 +218,14 @@ class OptionsFlowEngine:
         self,
         seed_tickers: list[str] | None = None,
         prefilter_snapshot: dict | None = None,
+        tab: str = "megacap",
     ) -> dict:
         if prefilter_snapshot and isinstance(prefilter_snapshot, dict):
             candidates = list(prefilter_snapshot.get("candidates") or [])
             degraded_sources = list(prefilter_snapshot.get("degraded_sources") or [])
             macro = prefilter_snapshot.get("macro", {}) or {}
         else:
-            prefilter_data = await self.build_prefilter_snapshot(seed_tickers or [])
+            prefilter_data = await self.build_prefilter_snapshot(seed_tickers or [], tab=tab)
             candidates = list(prefilter_data.get("candidates") or [])
             degraded_sources = list(prefilter_data.get("degraded_sources") or [])
             macro = prefilter_data.get("macro", {}) or {}
@@ -273,6 +281,7 @@ class OptionsFlowEngine:
         return {
             "display_type": "options_screener",
             "scan_type": "options_flow",
+            "tab": tab,
             "filter_defaults": self.defaults,
             "score_weights": self.weights,
             "pipeline_stats": {
@@ -292,21 +301,38 @@ class OptionsFlowEngine:
         self,
         seed_tickers: list[str] | None = None,
         prefilter_snapshot: dict | None = None,
+        tab: str = "megacap",
     ) -> dict:
-        return await self.run_live_scan(seed_tickers, prefilter_snapshot=prefilter_snapshot)
+        return await self.run_live_scan(seed_tickers, prefilter_snapshot=prefilter_snapshot, tab=tab)
 
-    async def _build_prefilter(self, seed_tickers: list[str]) -> dict:
+    async def _build_prefilter(self, seed_tickers: list[str], tab: str = "megacap") -> dict:
         degraded_sources: list[str] = []
-        finviz_tasks = {
-            "unusual_volume": self.data.finviz.get_unusual_volume(),
-            "most_active": self.data.finviz.get_most_active(),
-            "new_highs": self.data.finviz.get_new_highs(),
-            "top_losers": self.data.finviz.get_top_losers(),
-            "oversold": self.data.finviz.get_oversold_stocks(),
-            "overbought": self.data.finviz.get_overbought_stocks(),
-            "high_short_float": self.data.finviz.get_high_short_float(),
-            "earnings_this_week": self.data.finviz.get_earnings_this_week(),
-        }
+
+        if tab == "high_growth":
+            # Signal-focused screens targeting $500M–$100B market cap
+            finviz_tasks = {
+                "midcap_unusual_volume": self.data.finviz.get_midcap_unusual_volume(),
+                "midcap_breakouts": self.data.finviz.get_midcap_breakouts(),
+                "midcap_momentum": self.data.finviz.get_midcap_momentum(),
+                "midcap_high_short": self.data.finviz.get_midcap_high_short(),
+                "growth_earnings_catalyst": self.data.finviz.get_growth_earnings_catalyst(),
+                "midlarge_volume_breakout": self.data.finviz.get_midlarge_volume_breakout(),
+                "volume_breakouts": self.data.finviz.get_volume_breakouts(),
+                "stage2_breakouts": self.data.finviz.get_stage2_breakouts(),
+                "revenue_growth_leaders": self.data.finviz.get_revenue_growth_leaders(),
+                "earnings_growth_leaders": self.data.finviz.get_earnings_growth_leaders(),
+            }
+        else:
+            finviz_tasks = {
+                "unusual_volume": self.data.finviz.get_unusual_volume(),
+                "most_active": self.data.finviz.get_most_active(),
+                "new_highs": self.data.finviz.get_new_highs(),
+                "top_losers": self.data.finviz.get_top_losers(),
+                "oversold": self.data.finviz.get_oversold_stocks(),
+                "overbought": self.data.finviz.get_overbought_stocks(),
+                "high_short_float": self.data.finviz.get_high_short_float(),
+                "earnings_this_week": self.data.finviz.get_earnings_this_week(),
+            }
 
         tasks = [*finviz_tasks.values()]
         labels = list(finviz_tasks.keys())
@@ -382,14 +408,28 @@ class OptionsFlowEngine:
                 if "earnings" in label:
                     row["catalyst_hint"] = "earnings"
 
-        add_rows(source_map.get("unusual_volume", []), "unusual_volume", 22, "relative stock volume")
-        add_rows(source_map.get("most_active", []), "most_active", 14, "stock liquidity")
-        add_rows(source_map.get("new_highs", []), "new_highs", 16, "breakout setup")
-        add_rows(source_map.get("top_losers", []), "top_losers", 10, "reversal watch")
-        add_rows(source_map.get("oversold", []), "oversold", 12, "oversold reversal")
-        add_rows(source_map.get("overbought", []), "overbought", 10, "exhaustion watch")
-        add_rows(source_map.get("high_short_float", []), "high_short_float", 14, "short squeeze context")
-        add_rows(source_map.get("earnings_this_week", []), "earnings_this_week", 12, "earnings catalyst")
+        if tab == "high_growth":
+            add_rows(source_map.get("midcap_unusual_volume", []), "midcap_unusual_volume", 24, "mid-cap unusual volume")
+            add_rows(source_map.get("midcap_breakouts", []), "midcap_breakouts", 20, "mid-cap breakout")
+            add_rows(source_map.get("midcap_momentum", []), "midcap_momentum", 18, "mid-cap momentum")
+            add_rows(source_map.get("midcap_high_short", []), "midcap_high_short", 16, "mid-cap short squeeze")
+            add_rows(source_map.get("growth_earnings_catalyst", []), "growth_earnings_catalyst", 18, "growth earnings catalyst")
+            add_rows(source_map.get("midlarge_volume_breakout", []), "midlarge_volume_breakout", 22, "institutional volume breakout")
+            add_rows(source_map.get("volume_breakouts", []), "volume_breakouts", 16, "volume breakout")
+            add_rows(source_map.get("stage2_breakouts", []), "stage2_breakouts", 18, "stage 2 breakout")
+            add_rows(source_map.get("revenue_growth_leaders", []), "revenue_growth_leaders", 14, "revenue growth")
+            add_rows(source_map.get("earnings_growth_leaders", []), "earnings_growth_leaders", 14, "earnings growth")
+        else:
+            add_rows(source_map.get("unusual_volume", []), "unusual_volume", 22, "relative stock volume")
+            add_rows(source_map.get("most_active", []), "most_active", 14, "stock liquidity")
+            add_rows(source_map.get("new_highs", []), "new_highs", 16, "breakout setup")
+            add_rows(source_map.get("top_losers", []), "top_losers", 10, "reversal watch")
+            add_rows(source_map.get("oversold", []), "oversold", 12, "oversold reversal")
+            add_rows(source_map.get("overbought", []), "overbought", 10, "exhaustion watch")
+            add_rows(source_map.get("high_short_float", []), "high_short_float", 14, "short squeeze context")
+            add_rows(source_map.get("earnings_this_week", []), "earnings_this_week", 12, "earnings catalyst")
+
+        # FMP sources apply to both tabs
         add_rows(source_map.get("fmp_actives", []), "fmp_actives", 12, "stock liquidity")
         add_rows(source_map.get("fmp_gainers", []), "fmp_gainers", 12, "momentum move")
         add_rows(source_map.get("fmp_losers", []), "fmp_losers", 8, "reversal watch")
@@ -407,8 +447,10 @@ class OptionsFlowEngine:
             row["source_hits"].append("seed_watchlist")
             row["reasons"].add("watchlist inclusion")
 
+        # For high_growth, cast a wider net — inspect more candidates
+        prefilter_multiplier = 3 if tab == "high_growth" else 2
         preliminary = sorted(candidates.values(), key=lambda x: x["source_score"], reverse=True)
-        preliminary = preliminary[: max(self.defaults["prefilter_target"] * 2, 40)]
+        preliminary = preliminary[: max(self.defaults["prefilter_target"] * prefilter_multiplier, 60 if tab == "high_growth" else 40)]
 
         quote_tasks = []
         for row in preliminary:
@@ -433,6 +475,16 @@ class OptionsFlowEngine:
                 and base.get("source_score", 0) < 28
             ):
                 continue
+
+            # Market cap gate for high_growth tab: $500M–$100B only
+            if tab == "high_growth":
+                profile = enriched.get("profile") or {}
+                mcap = _safe_float(profile.get("market_cap"))
+                if mcap is not None:
+                    if mcap < self.defaults["high_growth_min_mcap"] or mcap > self.defaults["high_growth_max_mcap"]:
+                        continue
+                # If mcap is unknown, keep the candidate (signal > certainty)
+
             merged = {**base, **enriched}
             merged["reasons"] = sorted(list(base.get("reasons", set())))
             merged["prefilter_score"] = round(self._score_stock_context(merged), 1)
