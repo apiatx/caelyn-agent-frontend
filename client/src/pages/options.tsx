@@ -524,7 +524,7 @@ function TopContractsSection({ ticker, historyReady }: { ticker: TickerResult; h
       {primaryContracts.map((raw, index) => {
         const contract = normalizeContract(raw);
         const spreadWide = contract.spread_pct != null && contract.spread_pct > 15;
-        const liquidityText = contract.contract_liquidity_quality || (spreadWide ? "wide spread" : contract.openInterest && contract.openInterest > 500 ? "strong liquidity" : "standard liquidity");
+        const liquidityText = String(contract.contract_liquidity_quality || (spreadWide ? "wide spread" : contract.openInterest && contract.openInterest > 500 ? "strong liquidity" : "standard liquidity"));
         return (
           <div key={`${contract.contract_symbol || contract.symbol || index}`} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, padding: 12 }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start", marginBottom: 10, flexWrap: "wrap" }}>
@@ -887,6 +887,100 @@ function DataIngestionWidget() {
   );
 }
 
+function TickerRows({ t, index, isExp, onToggle }: { t: TickerResult; index: number; isExp: boolean; onToggle: () => void }) {
+  const confidence = getConfidence(t.confidence || t.data_quality?.confidence, t.confidence_score ?? t.data_quality?.confidence_score ?? null);
+  const signalColor = getSignalColor(t.primary_signal);
+  const tags = signalTagsForTicker(t);
+  const modular = t.modular_scores || {};
+  return (
+    <Fragment>
+      <tr onClick={onToggle} style={{ borderTop: `1px solid ${C.border}`, cursor: "pointer", background: isExp ? `${C.blue}06` : "transparent", verticalAlign: "top" }}>
+        <td style={{ padding: "12px 10px" }}>
+          <div style={{ display: "grid", gap: 6 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <span style={{ color: C.dim, fontSize: 11, fontFamily: font }}>#{index + 1}</span>
+              <span style={{ color: C.bright, fontFamily: font, fontWeight: 800, fontSize: 14 }}>{t.ticker}</span>
+              {t.category ? <Badge color={t.category === "etf" ? C.purple : C.blue} sm>{t.category}</Badge> : null}
+            </div>
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap", fontFamily: font, fontSize: 11 }}>
+              <span style={{ color: C.bright }}>{fmtMoney(t.underlying_price)}</span>
+              <span style={{ color: (safeNum(t.price_change_pct) ?? 0) >= 0 ? C.green : C.red }}>{fmtSmartPct(t.price_change_pct)}</span>
+            </div>
+            {t.expiration_focus?.length ? <div style={{ color: C.dim, fontSize: 10 }}>Focus: {fmtMaybeText(t.expiration_focus)}</div> : null}
+          </div>
+        </td>
+        <td style={{ padding: "12px 10px" }}>
+          <div style={{ display: "grid", gap: 8 }}>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {t.primary_signal ? <Badge color={signalColor}>{t.primary_signal}</Badge> : <Badge color={C.dim}>No primary signal</Badge>}
+              <Badge color={confidence.color}>{confidence.label} confidence</Badge>
+              {t.options_context?.gamma_score_is_approximation ? <Badge color={C.orange}>Gamma Approx.</Badge> : null}
+            </div>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {tags.length ? tags.map(tag => <Badge key={tag.label} color={tag.color} sm>{tag.label}</Badge>) : <span style={{ color: C.dim, fontSize: 11 }}>No secondary tags</span>}
+            </div>
+          </div>
+        </td>
+        <td style={{ padding: "12px 10px" }}>
+          <div style={{ display: "grid", gap: 8 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(72px, 1fr))", gap: 8 }}>
+              <MetricBlock label="Total Vol" value={fmtVol(t.total_volume)} color={C.bright} />
+              <MetricBlock label="P/C Ratio" value={t.pc_ratio != null ? fmtNum(t.pc_ratio, 2) : "—"} color={pcColor(t.pc_ratio ?? null)} />
+              <MetricBlock label="Calls" value={fmtVol(t.call_volume)} color={C.green} />
+              <MetricBlock label="Puts" value={fmtVol(t.put_volume)} color={C.red} />
+            </div>
+          </div>
+        </td>
+        <td style={{ padding: "12px 10px" }}>
+          <div style={{ display: "grid", gap: 10 }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+              <span style={{ color: scoreColor(normalizeScore(t.composite_score)), fontFamily: font, fontSize: 24, fontWeight: 800 }}>{normalizeScore(t.composite_score) != null ? fmtNum(normalizeScore(t.composite_score), 0) : "—"}</span>
+              <span style={{ color: C.dim, fontSize: 10, fontFamily: font, textTransform: "uppercase" }}>Composite</span>
+            </div>
+            <div style={{ display: "grid", gap: 8 }}>
+              <ScoreBar label="Flow" value={modular.flow_score} />
+              <ScoreBar label="Gamma" value={modular.gamma_score} />
+              <ScoreBar label="Asymmetry" value={modular.asymmetry_score} />
+              <ScoreBar label="Volatility" value={modular.volatility_score} />
+              <ScoreBar label="Sentiment" value={modular.sentiment_score} />
+              <ScoreBar label="Stock Context" value={modular.stock_context_score} />
+            </div>
+          </div>
+        </td>
+        <td style={{ padding: "12px 10px" }}>
+          <div style={{ display: "grid", gap: 8 }}>
+            <div style={{ color: C.text, fontSize: 12, lineHeight: 1.55 }}>{t.stock_context_summary || "No stock context summary returned."}</div>
+            <div style={{ color: C.text, fontSize: 12, lineHeight: 1.55 }}>{t.options_context_summary || "No options context summary returned."}</div>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {ensureArray(t.data_quality?.missing_data_flags).slice(0, 2).map(item => <Badge key={item} color={C.red} sm>{item}</Badge>)}
+              {ensureArray(t.data_quality?.approximate_metrics).slice(0, 2).map(item => <Badge key={item} color={C.orange} sm>{item}</Badge>)}
+            </div>
+          </div>
+        </td>
+        <td style={{ padding: "12px 10px" }}>
+          <div style={{ display: "grid", gap: 6, fontFamily: font, fontSize: 11 }}>
+            <div style={{ color: C.text }}>Rel Vol <span style={{ color: C.blue }}>{t.stock_context?.stock_relative_volume != null ? `${fmtNum(t.stock_context.stock_relative_volume, 2)}×` : "—"}</span></div>
+            <div style={{ color: C.text }}>Vol Ratio <span style={{ color: C.green }}>{t.options_context?.call_put_volume_ratio != null ? `${fmtNum(t.options_context.call_put_volume_ratio, 2)}×` : "—"}</span></div>
+            <div style={{ color: C.text }}>OI Ratio <span style={{ color: C.blue }}>{t.options_context?.call_put_oi_ratio != null ? `${fmtNum(t.options_context.call_put_oi_ratio, 2)}×` : "—"}</span></div>
+            <div style={{ color: C.text }}>IV <span style={{ color: C.yellow }}>{t.options_context?.iv_current != null ? fmtRatioPct(t.options_context.iv_current) : "—"}</span></div>
+            <div style={{ color: C.text }}>Exp Move <span style={{ color: C.orange }}>{fmtSmartPct(t.options_context?.expected_move_from_atm_straddle)}</span></div>
+          </div>
+        </td>
+        <td style={{ padding: "12px 10px", textAlign: "right" }}>
+          {isExp ? <ChevronUp className="w-3 h-3" style={{ color: C.dim }} /> : <ChevronDown className="w-3 h-3" style={{ color: C.dim }} />}
+        </td>
+      </tr>
+      {isExp && (
+        <tr>
+          <td colSpan={7} style={{ padding: "14px 16px", background: C.cardAlt, borderTop: `1px solid ${C.border}` }} onClick={e => e.stopPropagation()}>
+            <TickerDetailPanel symbol={t.ticker} ticker={t} />
+          </td>
+        </tr>
+      )}
+    </Fragment>
+  );
+}
+
 function TickerSummaryTab({ tickers }: { tickers: TickerResult[] }) {
   const [catFilter, setCatFilter] = useState<CatFilter>("all");
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -945,100 +1039,15 @@ function TickerSummaryTab({ tickers }: { tickers: TickerResult[] }) {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((t, index) => {
-                const isExp = expanded === t.ticker;
-                const confidence = getConfidence(t.confidence || t.data_quality?.confidence, t.confidence_score ?? t.data_quality?.confidence_score ?? null);
-                const signalColor = getSignalColor(t.primary_signal);
-                const tags = signalTagsForTicker(t);
-                const modular = t.modular_scores || {};
-                return (
-                  <Fragment key={t.ticker}>
-                    <tr onClick={() => setExpanded(isExp ? null : t.ticker)} style={{ borderTop: `1px solid ${C.border}`, cursor: "pointer", background: isExp ? `${C.blue}06` : "transparent", verticalAlign: "top" }}>
-                      <td style={{ padding: "12px 10px" }}>
-                        <div style={{ display: "grid", gap: 6 }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                            <span style={{ color: C.dim, fontSize: 11, fontFamily: font }}>#{index + 1}</span>
-                            <span style={{ color: C.bright, fontFamily: font, fontWeight: 800, fontSize: 14 }}>{t.ticker}</span>
-                            {t.category ? <Badge color={t.category === "etf" ? C.purple : C.blue} sm>{t.category}</Badge> : null}
-                          </div>
-                          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", fontFamily: font, fontSize: 11 }}>
-                            <span style={{ color: C.bright }}>{fmtMoney(t.underlying_price)}</span>
-                            <span style={{ color: (t.price_change_pct ?? 0) >= 0 ? C.green : C.red }}>{fmtSmartPct(t.price_change_pct)}</span>
-                          </div>
-                          {t.expiration_focus?.length ? <div style={{ color: C.dim, fontSize: 10 }}>Focus: {fmtMaybeText(t.expiration_focus)}</div> : null}
-                        </div>
-                      </td>
-                      <td style={{ padding: "12px 10px" }}>
-                        <div style={{ display: "grid", gap: 8 }}>
-                          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                            {t.primary_signal ? <Badge color={signalColor}>{t.primary_signal}</Badge> : <Badge color={C.dim}>No primary signal</Badge>}
-                            <Badge color={confidence.color}>{confidence.label} confidence</Badge>
-                            {t.options_context?.gamma_score_is_approximation ? <Badge color={C.orange}>Gamma Approx.</Badge> : null}
-                          </div>
-                          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                            {tags.length ? tags.map(tag => <Badge key={tag.label} color={tag.color} sm>{tag.label}</Badge>) : <span style={{ color: C.dim, fontSize: 11 }}>No secondary tags</span>}
-                          </div>
-                        </div>
-                      </td>
-                      <td style={{ padding: "12px 10px" }}>
-                        <div style={{ display: "grid", gap: 8 }}>
-                          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(72px, 1fr))", gap: 8 }}>
-                            <MetricBlock label="Total Vol" value={fmtVol(t.total_volume)} color={C.bright} />
-                            <MetricBlock label="P/C Ratio" value={t.pc_ratio != null ? fmtNum(t.pc_ratio, 2) : "—"} color={pcColor(t.pc_ratio ?? null)} />
-                            <MetricBlock label="Calls" value={fmtVol(t.call_volume)} color={C.green} />
-                            <MetricBlock label="Puts" value={fmtVol(t.put_volume)} color={C.red} />
-                          </div>
-                        </div>
-                      </td>
-                      <td style={{ padding: "12px 10px" }}>
-                        <div style={{ display: "grid", gap: 10 }}>
-                          <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                            <span style={{ color: scoreColor(normalizeScore(t.composite_score)), fontFamily: font, fontSize: 24, fontWeight: 800 }}>{normalizeScore(t.composite_score) != null ? fmtNum(normalizeScore(t.composite_score), 0) : "—"}</span>
-                            <span style={{ color: C.dim, fontSize: 10, fontFamily: font, textTransform: "uppercase" }}>Composite</span>
-                          </div>
-                          <div style={{ display: "grid", gap: 8 }}>
-                            <ScoreBar label="Flow" value={modular.flow_score} />
-                            <ScoreBar label="Gamma" value={modular.gamma_score} />
-                            <ScoreBar label="Asymmetry" value={modular.asymmetry_score} />
-                            <ScoreBar label="Volatility" value={modular.volatility_score} />
-                            <ScoreBar label="Sentiment" value={modular.sentiment_score} />
-                            <ScoreBar label="Stock Context" value={modular.stock_context_score} />
-                          </div>
-                        </div>
-                      </td>
-                      <td style={{ padding: "12px 10px" }}>
-                        <div style={{ display: "grid", gap: 8 }}>
-                          <div style={{ color: C.text, fontSize: 12, lineHeight: 1.55 }}>{t.stock_context_summary || "No stock context summary returned."}</div>
-                          <div style={{ color: C.text, fontSize: 12, lineHeight: 1.55 }}>{t.options_context_summary || "No options context summary returned."}</div>
-                          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                            {ensureArray(t.data_quality?.missing_data_flags).slice(0, 2).map(item => <Badge key={item} color={C.red} sm>{item}</Badge>)}
-                            {ensureArray(t.data_quality?.approximate_metrics).slice(0, 2).map(item => <Badge key={item} color={C.orange} sm>{item}</Badge>)}
-                          </div>
-                        </div>
-                      </td>
-                      <td style={{ padding: "12px 10px" }}>
-                        <div style={{ display: "grid", gap: 6, fontFamily: font, fontSize: 11 }}>
-                          <div style={{ color: C.text }}>Rel Vol <span style={{ color: C.blue }}>{t.stock_context?.stock_relative_volume != null ? `${fmtNum(t.stock_context.stock_relative_volume, 2)}×` : "—"}</span></div>
-                          <div style={{ color: C.text }}>Vol Ratio <span style={{ color: C.green }}>{t.options_context?.call_put_volume_ratio != null ? `${fmtNum(t.options_context.call_put_volume_ratio, 2)}×` : "—"}</span></div>
-                          <div style={{ color: C.text }}>OI Ratio <span style={{ color: C.blue }}>{t.options_context?.call_put_oi_ratio != null ? `${fmtNum(t.options_context.call_put_oi_ratio, 2)}×` : "—"}</span></div>
-                          <div style={{ color: C.text }}>IV <span style={{ color: C.yellow }}>{t.options_context?.iv_current != null ? fmtRatioPct(t.options_context.iv_current) : "—"}</span></div>
-                          <div style={{ color: C.text }}>Exp Move <span style={{ color: C.orange }}>{fmtSmartPct(t.options_context?.expected_move_from_atm_straddle)}</span></div>
-                        </div>
-                      </td>
-                      <td style={{ padding: "12px 10px", textAlign: "right" }}>
-                        {isExp ? <ChevronUp className="w-3 h-3" style={{ color: C.dim }} /> : <ChevronDown className="w-3 h-3" style={{ color: C.dim }} />}
-                      </td>
-                    </tr>
-                    {isExp && (
-                      <tr>
-                        <td colSpan={7} style={{ padding: "14px 16px", background: C.cardAlt, borderTop: `1px solid ${C.border}` }} onClick={e => e.stopPropagation()}>
-                          <TickerDetailPanel symbol={t.ticker} ticker={t} />
-                        </td>
-                      </tr>
-                    )}
-                  </Fragment>
-                );
-              })}
+              {filtered.map((t, index) => (
+                <TickerRows
+                  key={t.ticker}
+                  t={t}
+                  index={index}
+                  isExp={expanded === t.ticker}
+                  onToggle={() => setExpanded(expanded === t.ticker ? null : t.ticker)}
+                />
+              ))}
             </tbody>
           </table>
         </div>
