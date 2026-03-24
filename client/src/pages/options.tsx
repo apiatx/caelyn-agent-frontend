@@ -16,6 +16,9 @@ import {
   CircleAlert,
   Save,
   RotateCcw,
+  X,
+  Clock,
+  Eye,
 } from "lucide-react";
 import {
   BarChart,
@@ -568,7 +571,7 @@ function TopContractsSection({ ticker, historyReady }: { ticker: TickerResult; h
   );
 }
 
-function TickerDetailPanel({ symbol, ticker, apiBase = "/api/options" }: { symbol: string; ticker: TickerResult; apiBase?: string }) {
+function TickerDetailPanel({ symbol, ticker, apiBase = "/api/options", enableTimeSales = false }: { symbol: string; ticker: TickerResult; apiBase?: string; enableTimeSales?: boolean }) {
   const [technicals, setTechnicals] = useState<any>(null);
   const [history, setHistory] = useState<any[]>([]);
   const [volumeSummary, setVolumeSummary] = useState<any>(null);
@@ -812,6 +815,8 @@ function TickerDetailPanel({ symbol, ticker, apiBase = "/api/options" }: { symbo
           <ContractsMini contracts={ticker.top_puts || []} side="put" />
         </div>
       ) : null}
+
+      {enableTimeSales && <TimeSalesPanel symbol={symbol} apiBase={apiBase} />}
     </div>
   );
 }
@@ -878,7 +883,7 @@ function DataIngestionWidget({ apiBase = "/api/options" }: { apiBase?: string })
   );
 }
 
-function TickerRows({ t, index, isExp, onToggle, apiBase = "/api/options" }: { t: TickerResult; index: number; isExp: boolean; onToggle: () => void; apiBase?: string }) {
+function TickerRows({ t, index, isExp, onToggle, apiBase = "/api/options", enableTimeSales = false }: { t: TickerResult; index: number; isExp: boolean; onToggle: () => void; apiBase?: string; enableTimeSales?: boolean }) {
   const confidence = getConfidence(t.confidence || t.data_quality?.confidence, t.confidence_score ?? t.data_quality?.confidence_score ?? null);
   const signalColor = getSignalColor(t.primary_signal);
   const tags = signalTagsForTicker(t);
@@ -964,7 +969,7 @@ function TickerRows({ t, index, isExp, onToggle, apiBase = "/api/options" }: { t
       {isExp && (
         <tr>
           <td colSpan={7} style={{ padding: "14px 16px", background: C.cardAlt, borderTop: `1px solid ${C.border}` }} onClick={e => e.stopPropagation()}>
-            <TickerDetailPanel symbol={t.ticker} ticker={t} apiBase={apiBase} />
+            <TickerDetailPanel symbol={t.ticker} ticker={t} apiBase={apiBase} enableTimeSales={enableTimeSales} />
           </td>
         </tr>
       )}
@@ -972,7 +977,7 @@ function TickerRows({ t, index, isExp, onToggle, apiBase = "/api/options" }: { t
   );
 }
 
-function TickerSummaryTab({ tickers, apiBase = "/api/options" }: { tickers: TickerResult[]; apiBase?: string }) {
+function TickerSummaryTab({ tickers, apiBase = "/api/options", enableTimeSales = false }: { tickers: TickerResult[]; apiBase?: string; enableTimeSales?: boolean }) {
   const [catFilter, setCatFilter] = useState<CatFilter>("all");
   const [expanded, setExpanded] = useState<string | null>(null);
 
@@ -1038,6 +1043,7 @@ function TickerSummaryTab({ tickers, apiBase = "/api/options" }: { tickers: Tick
                   isExp={expanded === t.ticker}
                   onToggle={() => setExpanded(expanded === t.ticker ? null : t.ticker)}
                   apiBase={apiBase}
+                  enableTimeSales={enableTimeSales}
                 />
               ))}
             </tbody>
@@ -1049,7 +1055,7 @@ function TickerSummaryTab({ tickers, apiBase = "/api/options" }: { tickers: Tick
   );
 }
 
-function FlowTab({ contracts }: { contracts: OptionContract[] }) {
+function FlowTab({ contracts, onContractClick }: { contracts: OptionContract[]; onContractClick?: (occSymbol: string) => void }) {
   const [catFilter, setCatFilter] = useState<CatFilter>("all");
   const [sideFilter, setSideFilter] = useState<SideFilter>("all");
   const [unusualOnly, setUnusualOnly] = useState(false);
@@ -1139,10 +1145,10 @@ function FlowTab({ contracts }: { contracts: OptionContract[] }) {
               {visible.map((c, i) => {
                 const confidence = getConfidence(c.confidence, null);
                 return (
-                  <tr key={`${c.contract_symbol || c.symbol || i}`} style={{ borderTop: `1px solid ${C.border}` }}>
+                  <tr key={`${c.contract_symbol || c.symbol || i}`} style={{ borderTop: `1px solid ${C.border}`, cursor: onContractClick ? "pointer" : undefined }} onClick={() => { const sym = c.contract_symbol || c.symbol; if (onContractClick && sym) onContractClick(sym); }}>
                     <td style={{ padding: "8px 8px" }}>
                       <div style={{ fontFamily: font, fontWeight: 700, fontSize: 12, color: C.bright }}>{c.underlying || "—"}</div>
-                      <div style={{ color: C.dim, fontSize: 10 }}>{c.symbol || c.contract_symbol || ""}</div>
+                      <div style={{ color: onContractClick ? C.blue : C.dim, fontSize: 10, textDecoration: onContractClick ? "underline" : "none" }}>{c.symbol || c.contract_symbol || ""}</div>
                     </td>
                     <td style={{ padding: "8px 8px" }}><Badge color={sideColor(c.side)} sm>{c.side || "—"}</Badge></td>
                     <td style={{ padding: "8px 8px", textAlign: "right", fontFamily: font, color: scoreColor(normalizeScore(c.contract_score)), fontWeight: 700 }}>{normalizeScore(c.contract_score) != null ? fmtNum(normalizeScore(c.contract_score), 0) : "—"}</td>
@@ -1176,6 +1182,210 @@ function FlowTab({ contracts }: { contracts: OptionContract[] }) {
   );
 }
 
+/* ── Contract Detail Modal (Tradier-only) ── */
+function ContractDetailModal({ occSymbol, apiBase, onClose }: { occSymbol: string; apiBase: string; onClose: () => void }) {
+  const [detail, setDetail] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError("");
+    fetch(`${apiBase}/contract-detail/${encodeURIComponent(occSymbol)}`, { headers: authHeaders() })
+      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+      .then(json => { if (!cancelled) setDetail(json); })
+      .catch(e => { if (!cancelled) setError(e.message); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [occSymbol, apiBase]);
+
+  const quote = detail?.quote;
+  const history = detail?.history?.bars || detail?.history || [];
+  const timesales = detail?.timesales?.ticks || detail?.timesales || [];
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }} onClick={onClose}>
+      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.7)" }} />
+      <div style={{ position: "relative", background: C.bg, border: `1px solid ${C.border}`, borderRadius: 12, width: "90%", maxWidth: 800, maxHeight: "85vh", overflow: "auto", padding: 0 }} onClick={e => e.stopPropagation()}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderBottom: `1px solid ${C.border}`, position: "sticky", top: 0, background: C.bg, zIndex: 1 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Eye className="w-4 h-4" style={{ color: C.blue }} />
+            <span style={{ color: C.bright, fontSize: 14, fontWeight: 800, fontFamily: font }}>{occSymbol}</span>
+          </div>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: C.dim, cursor: "pointer", padding: 4 }}><X className="w-4 h-4" /></button>
+        </div>
+
+        <div style={{ padding: "16px 18px" }}>
+          {loading && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, color: C.dim, fontSize: 12, fontFamily: font, padding: "30px 0", justifyContent: "center" }}>
+              <Loader2 className="w-4 h-4 animate-spin" /> Loading contract detail...
+            </div>
+          )}
+          {error && <div style={{ color: C.red, fontSize: 12, padding: "20px 0", textAlign: "center" }}>{error}</div>}
+
+          {!loading && !error && detail && (
+            <div style={{ display: "grid", gap: 16 }}>
+              {/* Quote */}
+              {quote && (
+                <div>
+                  <div style={{ color: C.dim, fontSize: 9, fontFamily: font, textTransform: "uppercase", marginBottom: 8 }}>Live Quote</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: 8 }}>
+                    <MetricBlock label="Last" value={fmtMoney(quote.last)} color={C.bright} />
+                    <MetricBlock label="Bid / Ask" value={quote.bid != null && quote.ask != null ? `${fmtMoney(quote.bid)} / ${fmtMoney(quote.ask)}` : "—"} color={C.text} />
+                    <MetricBlock label="Volume" value={fmtVol(quote.volume)} color={C.blue} />
+                    <MetricBlock label="Open Int" value={fmtVol(quote.open_interest)} color={C.text} />
+                    <MetricBlock label="Change" value={quote.change_percentage != null ? `${safeNum(quote.change_percentage)! >= 0 ? "+" : ""}${fmtNum(quote.change_percentage, 2)}%` : "—"} color={safeNum(quote.change_percentage) != null ? (safeNum(quote.change_percentage)! >= 0 ? C.green : C.red) : C.dim} />
+                    {quote.greeks?.mid_iv != null && <MetricBlock label="Mid IV" value={fmtRatioPct(quote.greeks.mid_iv)} color={C.yellow} />}
+                    {quote.greeks?.smv_vol != null && <MetricBlock label="SMV Vol" value={fmtRatioPct(quote.greeks.smv_vol)} color={C.orange} />}
+                    {quote.greeks?.delta != null && <MetricBlock label="Greeks" value={`\u0394 ${fmtNum(quote.greeks.delta, 3)} \u00B7 \u0393 ${fmtNum(quote.greeks.gamma, 4)}`} color={C.green} subtext={`\u0398 ${fmtNum(quote.greeks.theta, 4)} \u00B7 \u03BD ${fmtNum(quote.greeks.vega, 3)}${quote.greeks.rho != null ? ` \u00B7 \u03C1 ${fmtNum(quote.greeks.rho, 4)}` : ""}`} />}
+                  </div>
+                </div>
+              )}
+
+              {/* Price History Chart */}
+              {history.length > 1 && (
+                <div>
+                  <div style={{ color: C.dim, fontSize: 9, fontFamily: font, textTransform: "uppercase", marginBottom: 8 }}>90-Day Price History</div>
+                  <div style={{ background: C.cardAlt, border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 8px" }}>
+                    <ResponsiveContainer width="100%" height={180}>
+                      <ComposedChart data={history.slice(-90)} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
+                        <XAxis dataKey="date" tick={{ fontSize: 8, fill: C.dim }} tickFormatter={(v: string) => v?.slice(5) || ""} />
+                        <YAxis tick={{ fontSize: 8, fill: C.dim }} domain={["auto", "auto"]} />
+                        <Tooltip contentStyle={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 10 }} />
+                        <Area type="monotone" dataKey="close" fill={`${C.blue}15`} stroke={C.blue} strokeWidth={1.5} name="Close" />
+                        <Bar dataKey="volume" fill={`${C.purple}40`} name="Volume" yAxisId="right" />
+                        <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 8, fill: C.dim }} />
+                      </ComposedChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              )}
+
+              {/* Intraday Time & Sales */}
+              {timesales.length > 0 && (
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                    <Clock className="w-3 h-3" style={{ color: C.purple }} />
+                    <span style={{ color: C.dim, fontSize: 9, fontFamily: font, textTransform: "uppercase" }}>Intraday Time & Sales ({timesales.length} ticks)</span>
+                  </div>
+                  <div style={{ background: C.cardAlt, border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 8px", marginBottom: 8 }}>
+                    <ResponsiveContainer width="100%" height={120}>
+                      <LineChart data={timesales.slice(-120)} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
+                        <XAxis dataKey="time" tick={{ fontSize: 7, fill: C.dim }} tickFormatter={(v: string) => v?.slice(11, 16) || ""} />
+                        <YAxis tick={{ fontSize: 8, fill: C.dim }} domain={["auto", "auto"]} />
+                        <Tooltip contentStyle={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 10 }} />
+                        <Line type="monotone" dataKey="price" stroke={C.green} strokeWidth={1.5} dot={false} name="Price" />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div style={{ maxHeight: 200, overflowY: "auto", borderRadius: 8, border: `1px solid ${C.border}` }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                      <thead>
+                        <tr style={{ background: `${C.border}50` }}>
+                          <th style={{ padding: "5px 8px", fontSize: 9, fontFamily: font, textAlign: "left", color: C.dim }}>TIME</th>
+                          <th style={{ padding: "5px 8px", fontSize: 9, fontFamily: font, textAlign: "right", color: C.dim }}>PRICE</th>
+                          <th style={{ padding: "5px 8px", fontSize: 9, fontFamily: font, textAlign: "right", color: C.dim }}>SIZE</th>
+                          <th style={{ padding: "5px 8px", fontSize: 9, fontFamily: font, textAlign: "right", color: C.dim }}>VWAP</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {timesales.slice(-50).reverse().map((tick: any, i: number) => (
+                          <tr key={i} style={{ borderTop: `1px solid ${C.border}` }}>
+                            <td style={{ padding: "4px 8px", fontSize: 10, fontFamily: font, color: C.text }}>{tick.time?.slice(11, 19) || tick.timestamp || "—"}</td>
+                            <td style={{ padding: "4px 8px", fontSize: 10, fontFamily: font, color: C.bright, textAlign: "right" }}>{fmtMoney(tick.price)}</td>
+                            <td style={{ padding: "4px 8px", fontSize: 10, fontFamily: font, color: C.blue, textAlign: "right" }}>{fmtVol(tick.volume || tick.size)}</td>
+                            <td style={{ padding: "4px 8px", fontSize: 10, fontFamily: font, color: C.purple, textAlign: "right" }}>{tick.vwap != null ? fmtMoney(tick.vwap) : "—"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Time & Sales Panel (for ticker detail, Tradier-only) ── */
+function TimeSalesPanel({ symbol, apiBase }: { symbol: string; apiBase: string }) {
+  const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    fetch(`${apiBase}/timesales/${encodeURIComponent(symbol)}?interval=5min`, { headers: authHeaders() })
+      .then(r => r.ok ? r.json() : null)
+      .then(json => {
+        if (!cancelled) {
+          const ticks = json?.ticks || json?.timesales || json?.data || [];
+          setData(Array.isArray(ticks) ? ticks : []);
+        }
+      })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [symbol, apiBase]);
+
+  if (loading) return <div style={{ padding: 12, color: C.dim, fontSize: 11, fontFamily: font, display: "flex", alignItems: "center", gap: 6 }}><Loader2 className="w-3 h-3 animate-spin" /> Loading time & sales...</div>;
+  if (!data.length) return <div style={{ padding: 12, color: C.dim, fontSize: 11, fontFamily: font }}>No intraday time & sales data available.</div>;
+
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+        <Clock className="w-3 h-3" style={{ color: C.purple }} />
+        <span style={{ color: C.dim, fontSize: 9, fontFamily: font, textTransform: "uppercase" }}>Intraday Time & Sales — {symbol}</span>
+      </div>
+      <div style={{ background: C.cardAlt, border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 8px", marginBottom: 8 }}>
+        <ResponsiveContainer width="100%" height={100}>
+          <LineChart data={data.slice(-120)} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
+            <XAxis dataKey="time" tick={{ fontSize: 7, fill: C.dim }} tickFormatter={(v: string) => v?.slice(11, 16) || ""} />
+            <YAxis tick={{ fontSize: 8, fill: C.dim }} domain={["auto", "auto"]} />
+            <Tooltip contentStyle={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 10 }} />
+            <Line type="monotone" dataKey="price" stroke={C.green} strokeWidth={1.5} dot={false} name="Price" />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+      <div style={{ maxHeight: 180, overflowY: "auto", borderRadius: 8, border: `1px solid ${C.border}` }}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead>
+            <tr style={{ background: `${C.border}50` }}>
+              <th style={{ padding: "4px 8px", fontSize: 9, fontFamily: font, textAlign: "left", color: C.dim }}>TIME</th>
+              <th style={{ padding: "4px 8px", fontSize: 9, fontFamily: font, textAlign: "right", color: C.dim }}>OPEN</th>
+              <th style={{ padding: "4px 8px", fontSize: 9, fontFamily: font, textAlign: "right", color: C.dim }}>HIGH</th>
+              <th style={{ padding: "4px 8px", fontSize: 9, fontFamily: font, textAlign: "right", color: C.dim }}>LOW</th>
+              <th style={{ padding: "4px 8px", fontSize: 9, fontFamily: font, textAlign: "right", color: C.dim }}>CLOSE</th>
+              <th style={{ padding: "4px 8px", fontSize: 9, fontFamily: font, textAlign: "right", color: C.dim }}>VOL</th>
+              <th style={{ padding: "4px 8px", fontSize: 9, fontFamily: font, textAlign: "right", color: C.dim }}>VWAP</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.slice(-30).reverse().map((tick: any, i: number) => (
+              <tr key={i} style={{ borderTop: `1px solid ${C.border}` }}>
+                <td style={{ padding: "3px 8px", fontSize: 10, fontFamily: font, color: C.text }}>{tick.time?.slice(11, 16) || tick.timestamp || "—"}</td>
+                <td style={{ padding: "3px 8px", fontSize: 10, fontFamily: font, color: C.text, textAlign: "right" }}>{fmtMoney(tick.open)}</td>
+                <td style={{ padding: "3px 8px", fontSize: 10, fontFamily: font, color: C.green, textAlign: "right" }}>{fmtMoney(tick.high)}</td>
+                <td style={{ padding: "3px 8px", fontSize: 10, fontFamily: font, color: C.red, textAlign: "right" }}>{fmtMoney(tick.low)}</td>
+                <td style={{ padding: "3px 8px", fontSize: 10, fontFamily: font, color: C.bright, textAlign: "right" }}>{fmtMoney(tick.close || tick.price)}</td>
+                <td style={{ padding: "3px 8px", fontSize: 10, fontFamily: font, color: C.blue, textAlign: "right" }}>{fmtVol(tick.volume)}</td>
+                <td style={{ padding: "3px 8px", fontSize: 10, fontFamily: font, color: C.purple, textAlign: "right" }}>{tick.vwap != null ? fmtMoney(tick.vwap) : "—"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 type ScanTab = "megacap" | "high_growth";
 const SCAN_TAB_LABELS: Record<ScanTab, string> = { megacap: "Megacap", high_growth: "High Growth" };
 
@@ -1183,9 +1393,12 @@ interface OptionsPageProps {
   apiBase?: string;
   pageTitle?: string;
   queryPresetIntent?: string;
+  enableContractDetail?: boolean;
+  enableTimeSales?: boolean;
+  dataSourceLabel?: string | null;
 }
 
-export default function OptionsPage({ apiBase = "/api/options", pageTitle = "OPTIONS FLOW", queryPresetIntent = "options_flow" }: OptionsPageProps = {}) {
+export default function OptionsPage({ apiBase = "/api/options", pageTitle = "OPTIONS FLOW", queryPresetIntent = "options_flow", enableContractDetail = false, enableTimeSales = false, dataSourceLabel = null }: OptionsPageProps = {}) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [loadStage, setLoadStage] = useState("Initializing live scan...");
@@ -1196,6 +1409,7 @@ export default function OptionsPage({ apiBase = "/api/options", pageTitle = "OPT
   const [chatMessages, setChatMessages] = useState<Array<{ role: "user" | "ai"; text: string }>>([]);
   const [chatLoading, setChatLoading] = useState(false);
   const [showRankingInfo, setShowRankingInfo] = useState(false);
+  const [contractDetailSymbol, setContractDetailSymbol] = useState<string | null>(null);
   const chatBottomRef = useRef<HTMLDivElement>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -1365,6 +1579,7 @@ export default function OptionsPage({ apiBase = "/api/options", pageTitle = "OPT
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             <Zap className="w-5 h-5" style={{ color: C.green }} />
             <span style={{ color: C.bright, fontSize: 17, fontWeight: 800, fontFamily: font, letterSpacing: "-0.02em" }}>{pageTitle}</span>
+            {dataSourceLabel && <span style={{ background: `${C.green}12`, border: `1px solid ${C.green}25`, borderRadius: 4, padding: "2px 8px", color: C.green, fontSize: 9, fontWeight: 700, fontFamily: font, textTransform: "uppercase" }}>Powered by {dataSourceLabel}</span>}
             {fromCache && cacheAge != null ? <span style={{ color: C.dim, fontSize: 10, fontFamily: font }}>Updated {cacheAge}s ago</span> : null}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -1514,8 +1729,8 @@ export default function OptionsPage({ apiBase = "/api/options", pageTitle = "OPT
                   </button>
                 ))}
               </div>
-              {tab === "tickers" && <TickerSummaryTab tickers={tickers} apiBase={apiBase} />}
-              {tab === "flow" && <FlowTab contracts={allContracts} />}
+              {tab === "tickers" && <TickerSummaryTab tickers={tickers} apiBase={apiBase} enableTimeSales={enableTimeSales} />}
+              {tab === "flow" && <FlowTab contracts={allContracts} onContractClick={enableContractDetail ? (sym) => setContractDetailSymbol(sym) : undefined} />}
             </div>
           )}
         </div>
@@ -1542,6 +1757,15 @@ export default function OptionsPage({ apiBase = "/api/options", pageTitle = "OPT
           </div>
         </div>
       </div>
+
+      {/* Contract Detail Modal (Tradier-only) */}
+      {enableContractDetail && contractDetailSymbol && (
+        <ContractDetailModal
+          occSymbol={contractDetailSymbol}
+          apiBase={apiBase}
+          onClose={() => setContractDetailSymbol(null)}
+        />
+      )}
     </div>
   );
 }
