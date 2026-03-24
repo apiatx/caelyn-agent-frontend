@@ -1264,14 +1264,21 @@ export default function OptionsPage() {
       si = Math.min(si + 1, stages.length - 1);
       setLoadStage(stages[si]);
     }, 2500);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 55_000);
     try {
-      const res = await fetch("/api/options/dashboard", { method: "POST", headers: authHeaders(), body: JSON.stringify({ tab: tabOverride ?? scanTabRef.current }) });
+      const res = await fetch("/api/options/dashboard", { method: "POST", headers: authHeaders(), body: JSON.stringify({ tab: tabOverride ?? scanTabRef.current }), signal: controller.signal });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
       setData(json);
     } catch (e: any) {
-      setError(e.message || "Failed to load options dashboard");
+      if (e.name === "AbortError") {
+        setError("Request timed out (55s). The backend may still be building the cache — click Refresh to try again.");
+      } else {
+        setError(e.message || "Failed to load options dashboard");
+      }
     } finally {
+      clearTimeout(timeout);
       clearInterval(stageTimer);
       setLoading(false);
       setLoadStage("");
@@ -1326,6 +1333,7 @@ export default function OptionsPage() {
   const scoreWeights = resp.score_weights || {};
   const cacheAge: number | null = data?.cache_age_seconds ?? null;
   const fromCache: boolean = data?.from_cache ?? false;
+  const availableTabs: ScanTab[] = (data?.available_tabs as ScanTab[] | undefined) || ["megacap", "high_growth"];
   const hasData = !loading && tickers.length > 0;
   const degradedSources = ensureArray((pipelineStats as any)?.degraded_sources || (mktSum as any)?.degraded_sources);
 
@@ -1362,10 +1370,10 @@ export default function OptionsPage() {
 
         {/* Scan tab switcher */}
         <div style={{ display: "flex", gap: 4, marginBottom: 10 }}>
-          {(["megacap", "high_growth"] as ScanTab[]).map(t => (
+          {availableTabs.map(t => (
             <button key={t} onClick={() => switchScanTab(t)} disabled={loading}
               style={{ padding: "5px 16px", fontSize: 11, fontWeight: 700, fontFamily: font, background: scanTab === t ? `${C.green}18` : "transparent", color: scanTab === t ? C.green : C.dim, border: `1px solid ${scanTab === t ? C.green + "40" : C.border}`, borderRadius: 6, cursor: loading ? "not-allowed" : "pointer", opacity: loading && scanTab !== t ? 0.5 : 1, transition: "all 0.15s ease" }}>
-              {SCAN_TAB_LABELS[t]}
+              {SCAN_TAB_LABELS[t] || toTitleCase(t)}
             </button>
           ))}
         </div>
@@ -1463,6 +1471,20 @@ export default function OptionsPage() {
 
           {error && !loading && (
             <div style={{ background: `${C.red}10`, border: `1px solid ${C.red}30`, borderRadius: 10, padding: "14px 18px", color: C.red, fontSize: 13, fontFamily: sans }}>⚠ {error}</div>
+          )}
+
+          {!loading && !error && data && tickers.length === 0 && (
+            <div style={{ background: `${C.yellow}08`, border: `1px solid ${C.yellow}25`, borderRadius: 10, padding: "24px 20px", textAlign: "center", animation: "fadeIn 0.3s ease" }}>
+              <div style={{ color: C.yellow, fontSize: 14, fontWeight: 700, fontFamily: font, marginBottom: 8 }}>No tickers returned</div>
+              <div style={{ color: C.text, fontSize: 12, lineHeight: 1.6, marginBottom: 14 }}>
+                The scan completed but returned zero ranked tickers. This usually means the cache is still warming up after a fresh deploy.
+                Click Refresh to retry once the backend cache is ready.
+              </div>
+              <button onClick={() => fetchDashboard()} style={{ padding: "8px 20px", background: `${C.blue}18`, border: `1px solid ${C.blue}40`, borderRadius: 7, color: C.blue, fontSize: 12, fontWeight: 600, fontFamily: font, cursor: "pointer" }}>
+                <RefreshCw className="w-3 h-3" style={{ display: "inline-block", marginRight: 6, verticalAlign: "middle" }} />
+                Refresh
+              </button>
+            </div>
           )}
 
           {hasData && <DataIngestionWidget />}
