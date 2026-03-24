@@ -263,7 +263,7 @@ class TradierFlowEngine(OptionsFlowEngine):
 
     # ── Ticker inspection — Tradier + Polygon enrichment ─────────────
 
-    async def _inspect_one_ticker(self, candidate: dict, macro: dict) -> dict | None:
+    async def _inspect_one_ticker(self, candidate: dict, macro: dict, *, tab: str = "megacap") -> dict | None:
         """
         Override parent to:
         1. Call Tradier directly for expirations + chains
@@ -271,7 +271,7 @@ class TradierFlowEngine(OptionsFlowEngine):
         3. Re-score volatility with the enriched data
         """
         # Call parent — which now hits Tradier via the swap in run_live_scan
-        result = await super()._inspect_one_ticker(candidate, macro)
+        result = await super()._inspect_one_ticker(candidate, macro, tab=tab)
         if result is None:
             return None
 
