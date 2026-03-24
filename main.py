@@ -4466,13 +4466,16 @@ async def test_altfins(symbol: str = "BTC", api_key: str = Header(None, alias="X
 # pulls in Finviz screen results, so these are NOT the only tickers scanned.
 
 _OPTIONS_ETF_SEEDS = [
-    # Macro + sector ETFs — highest-volume options flow in the market
-    "SPY", "QQQ", "IWM", "DIA",     # Index
-    "GLD", "TLT", "HYG",            # Commodities / fixed income
-    "XLF", "XLK", "XLE", "XLV",     # Sector
-    "SMH", "SOXX",                   # Semis
-    "EEM", "ARKK",                   # Thematic
-    "VXX", "UVXY",                   # Volatility
+    # Highest-volume options ETFs — seeds ensure coverage even if Finviz misses them
+    "SPY", "QQQ", "IWM", "DIA",             # Index
+    "GLD", "SLV", "TLT", "HYG", "LQD",     # Commodities / fixed income
+    "XLF", "XLK", "XLE", "XLV", "XLC",     # Sector
+    "SMH", "SOXX",                           # Semis
+    "EEM", "EFA", "FXI",                     # International
+    "ARKK", "IBIT",                          # Thematic
+    "VXX", "UVXY",                           # Volatility
+    "TQQQ", "SQQQ", "SOXL",                 # Leveraged
+    "KRE", "XBI", "OIH",                    # Industry
 ]
 
 _OPTIONS_MEGACAP_SEEDS = [
@@ -4526,11 +4529,11 @@ _OPTIONS_PREFILTER_CACHE_TTL = 3600  # 1 hour — proprietary stock-side data on
 
 
 def _options_cache_key(tab: str) -> str:
-    return f"options_screener_v3:{tab}"
+    return f"options_screener_v4:{tab}"
 
 
 def _options_prefilter_cache_key(tab: str) -> str:
-    return f"options_screener_prefilter_v2:{tab}"
+    return f"options_screener_prefilter_v3:{tab}"
 
 
 async def _options_precompute_loop():
