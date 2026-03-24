@@ -542,8 +542,8 @@ class OptionsFlowEngine:
         # Adjust preliminary count per tab — no need to enrich 48 candidates
         # when only a handful will pass the mcap/ETF gate.
         if tab == "small_cap":
-            prefilter_multiplier = 3
-            preliminary_cap = 60
+            prefilter_multiplier = 2
+            preliminary_cap = 45
         elif tab == "etf":
             # ETFs already filtered — candidate pool IS the final pool
             prefilter_multiplier = 1
@@ -598,7 +598,7 @@ class OptionsFlowEngine:
                 profile = enriched.get("profile") or {}
                 mcap = _safe_float(profile.get("market_cap"))
                 tier_min, tier_max = TIER_MCAP_RANGES.get(tab, (0, None))
-                if mcap is not None:
+                if mcap is not None and mcap > 0:
                     if mcap < tier_min:
                         continue
                     if tier_max is not None and mcap > tier_max:
