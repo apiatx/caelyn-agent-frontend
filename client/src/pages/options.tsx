@@ -568,7 +568,7 @@ function TopContractsSection({ ticker, historyReady }: { ticker: TickerResult; h
   );
 }
 
-function TickerDetailPanel({ symbol, ticker }: { symbol: string; ticker: TickerResult }) {
+function TickerDetailPanel({ symbol, ticker, apiBase = "/api/options" }: { symbol: string; ticker: TickerResult; apiBase?: string }) {
   const [technicals, setTechnicals] = useState<any>(null);
   const [history, setHistory] = useState<any[]>([]);
   const [volumeSummary, setVolumeSummary] = useState<any>(null);
@@ -578,9 +578,9 @@ function TickerDetailPanel({ symbol, ticker }: { symbol: string; ticker: TickerR
     let cancelled = false;
     setLoading(true);
     Promise.all([
-      fetch(`/api/options/technicals/${encodeURIComponent(symbol)}`, { headers: authHeaders() }).then(r => r.ok ? r.json() : null).catch(() => null),
-      fetch(`/api/options/history/${encodeURIComponent(symbol)}?limit=60`, { headers: authHeaders() }).then(r => r.ok ? r.json() : null).catch(() => null),
-      fetch(`/api/options/volume-summary/${encodeURIComponent(symbol)}?days=30`, { headers: authHeaders() }).then(r => r.ok ? r.json() : null).catch(() => null),
+      fetch(`${apiBase}/technicals/${encodeURIComponent(symbol)}`, { headers: authHeaders() }).then(r => r.ok ? r.json() : null).catch(() => null),
+      fetch(`${apiBase}/history/${encodeURIComponent(symbol)}?limit=60`, { headers: authHeaders() }).then(r => r.ok ? r.json() : null).catch(() => null),
+      fetch(`${apiBase}/volume-summary/${encodeURIComponent(symbol)}?days=30`, { headers: authHeaders() }).then(r => r.ok ? r.json() : null).catch(() => null),
     ]).then(([tech, hist, vol]) => {
       if (cancelled) return;
       setTechnicals(tech);
@@ -816,7 +816,7 @@ function TickerDetailPanel({ symbol, ticker }: { symbol: string; ticker: TickerR
   );
 }
 
-function DataIngestionWidget() {
+function DataIngestionWidget({ apiBase = "/api/options" }: { apiBase?: string }) {
   const [summary, setSummary] = useState<any>(null);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -824,7 +824,7 @@ function DataIngestionWidget() {
   const fetchStatus = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/options/ingestion-summary", { headers: authHeaders() });
+      const res = await fetch(`${apiBase}/ingestion-summary`, { headers: authHeaders() });
       if (res.ok) setSummary(await res.json());
     } catch { /* ignore */ } finally {
       setLoading(false);
@@ -878,7 +878,7 @@ function DataIngestionWidget() {
   );
 }
 
-function TickerRows({ t, index, isExp, onToggle }: { t: TickerResult; index: number; isExp: boolean; onToggle: () => void }) {
+function TickerRows({ t, index, isExp, onToggle, apiBase = "/api/options" }: { t: TickerResult; index: number; isExp: boolean; onToggle: () => void; apiBase?: string }) {
   const confidence = getConfidence(t.confidence || t.data_quality?.confidence, t.confidence_score ?? t.data_quality?.confidence_score ?? null);
   const signalColor = getSignalColor(t.primary_signal);
   const tags = signalTagsForTicker(t);
@@ -964,7 +964,7 @@ function TickerRows({ t, index, isExp, onToggle }: { t: TickerResult; index: num
       {isExp && (
         <tr>
           <td colSpan={7} style={{ padding: "14px 16px", background: C.cardAlt, borderTop: `1px solid ${C.border}` }} onClick={e => e.stopPropagation()}>
-            <TickerDetailPanel symbol={t.ticker} ticker={t} />
+            <TickerDetailPanel symbol={t.ticker} ticker={t} apiBase={apiBase} />
           </td>
         </tr>
       )}
@@ -972,7 +972,7 @@ function TickerRows({ t, index, isExp, onToggle }: { t: TickerResult; index: num
   );
 }
 
-function TickerSummaryTab({ tickers }: { tickers: TickerResult[] }) {
+function TickerSummaryTab({ tickers, apiBase = "/api/options" }: { tickers: TickerResult[]; apiBase?: string }) {
   const [catFilter, setCatFilter] = useState<CatFilter>("all");
   const [expanded, setExpanded] = useState<string | null>(null);
 
@@ -1037,6 +1037,7 @@ function TickerSummaryTab({ tickers }: { tickers: TickerResult[] }) {
                   index={index}
                   isExp={expanded === t.ticker}
                   onToggle={() => setExpanded(expanded === t.ticker ? null : t.ticker)}
+                  apiBase={apiBase}
                 />
               ))}
             </tbody>
@@ -1178,7 +1179,13 @@ function FlowTab({ contracts }: { contracts: OptionContract[] }) {
 type ScanTab = "megacap" | "high_growth";
 const SCAN_TAB_LABELS: Record<ScanTab, string> = { megacap: "Megacap", high_growth: "High Growth" };
 
-export default function OptionsPage() {
+interface OptionsPageProps {
+  apiBase?: string;
+  pageTitle?: string;
+  queryPresetIntent?: string;
+}
+
+export default function OptionsPage({ apiBase = "/api/options", pageTitle = "OPTIONS FLOW", queryPresetIntent = "options_flow" }: OptionsPageProps = {}) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [loadStage, setLoadStage] = useState("Initializing live scan...");
@@ -1204,7 +1211,7 @@ export default function OptionsPage() {
 
   const fetchScanDefaults = useCallback(async (t: ScanTab) => {
     try {
-      const res = await fetch(`/api/options/scan-defaults?tab=${t}`, { headers: authHeaders() });
+      const res = await fetch(`${apiBase}/scan-defaults?tab=${t}`, { headers: authHeaders() });
       if (!res.ok) return;
       const json = await res.json();
       setScanDefaults(json.defaults || {});
@@ -1212,7 +1219,7 @@ export default function OptionsPage() {
       setScanDefaultsIsEditable(json.editable !== false);
       setScanDefaultsOverrides({});
     } catch { /* ignore */ }
-  }, []);
+  }, [apiBase]);
 
   useEffect(() => {
     fetchScanDefaults(scanTab);
@@ -1221,7 +1228,7 @@ export default function OptionsPage() {
   const saveScanDefaults = async () => {
     setScanDefaultsSaving(true);
     try {
-      const res = await fetch("/api/options/scan-defaults", {
+      const res = await fetch(`${apiBase}/scan-defaults`, {
         method: "PUT",
         headers: authHeaders(),
         body: JSON.stringify({ tab: scanTab, overrides: scanDefaultsOverrides }),
@@ -1239,7 +1246,7 @@ export default function OptionsPage() {
   const resetScanDefaults = async () => {
     setScanDefaultsSaving(true);
     try {
-      const res = await fetch("/api/options/scan-defaults", {
+      const res = await fetch(`${apiBase}/scan-defaults`, {
         method: "PUT",
         headers: authHeaders(),
         body: JSON.stringify({ tab: scanTab, reset: true }),
@@ -1268,7 +1275,7 @@ export default function OptionsPage() {
     const timeout = setTimeout(() => controller.abort(), 55_000);
     try {
       const activeTab = tabOverride ?? scanTabRef.current;
-      const url = `/api/options/dashboard?tab=${encodeURIComponent(activeTab)}`;
+      const url = `${apiBase}/dashboard?tab=${encodeURIComponent(activeTab)}`;
       console.log(`[OptionsPage] fetchDashboard → ${url}  (tabOverride=${tabOverride ?? "none"}, scanTabRef=${scanTabRef.current})`);
       const res = await fetch(url, { headers: authHeaders(), signal: controller.signal });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -1288,7 +1295,7 @@ export default function OptionsPage() {
       setLoading(false);
       setLoadStage("");
     }
-  }, []);
+  }, [apiBase]);
 
   useEffect(() => {
     fetchDashboard();
@@ -1317,7 +1324,7 @@ export default function OptionsPage() {
       const res = await fetch("/api/query", {
         method: "POST",
         headers: authHeaders(),
-        body: JSON.stringify({ query: q, preset_intent: "options_flow", context_data: data, conversation_id: null, reasoning_model: "claude" }),
+        body: JSON.stringify({ query: q, preset_intent: queryPresetIntent, context_data: data, conversation_id: null, reasoning_model: "claude" }),
       });
       const json = await res.json();
       const text = json.analysis || json.response?.analysis || json.structured?.summary || json.text || "No response.";
@@ -1357,7 +1364,7 @@ export default function OptionsPage() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: hasData ? 10 : 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             <Zap className="w-5 h-5" style={{ color: C.green }} />
-            <span style={{ color: C.bright, fontSize: 17, fontWeight: 800, fontFamily: font, letterSpacing: "-0.02em" }}>OPTIONS FLOW</span>
+            <span style={{ color: C.bright, fontSize: 17, fontWeight: 800, fontFamily: font, letterSpacing: "-0.02em" }}>{pageTitle}</span>
             {fromCache && cacheAge != null ? <span style={{ color: C.dim, fontSize: 10, fontFamily: font }}>Updated {cacheAge}s ago</span> : null}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -1492,7 +1499,7 @@ export default function OptionsPage() {
             </div>
           )}
 
-          {hasData && <DataIngestionWidget />}
+          {hasData && <DataIngestionWidget apiBase={apiBase} />}
 
           {hasData && (
             <div style={{ animation: "fadeIn 0.35s ease" }}>
@@ -1507,7 +1514,7 @@ export default function OptionsPage() {
                   </button>
                 ))}
               </div>
-              {tab === "tickers" && <TickerSummaryTab tickers={tickers} />}
+              {tab === "tickers" && <TickerSummaryTab tickers={tickers} apiBase={apiBase} />}
               {tab === "flow" && <FlowTab contracts={allContracts} />}
             </div>
           )}
