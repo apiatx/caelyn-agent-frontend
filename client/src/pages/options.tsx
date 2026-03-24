@@ -1267,7 +1267,8 @@ export default function OptionsPage() {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 55_000);
     try {
-      const res = await fetch("/api/options/dashboard", { method: "POST", headers: authHeaders(), body: JSON.stringify({ tab: tabOverride ?? scanTabRef.current }), signal: controller.signal });
+      const activeTab = tabOverride ?? scanTabRef.current;
+      const res = await fetch(`/api/options/dashboard?tab=${encodeURIComponent(activeTab)}`, { headers: authHeaders(), signal: controller.signal });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
       setData(json);

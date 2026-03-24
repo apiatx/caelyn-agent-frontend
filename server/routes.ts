@@ -886,15 +886,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const AGENT_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
   const AGENT_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
 
-  app.post('/api/options/dashboard', async (req, res) => {
+  app.get('/api/options/dashboard', async (req, res) => {
     try {
-      const { tickers } = req.body;
+      const tab = (req.query.tab as string) || 'megacap';
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 90000);
-      const response = await fetch(`${AGENT_URL}/api/options/dashboard`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-API-Key': AGENT_KEY },
-        body: JSON.stringify({ tickers: tickers || null }),
+      const response = await fetch(`${AGENT_URL}/api/options/dashboard?tab=${encodeURIComponent(tab)}`, {
+        method: 'GET',
+        headers: { 'X-API-Key': AGENT_KEY },
         signal: controller.signal,
       });
       clearTimeout(timeoutId);
