@@ -150,6 +150,7 @@ async def lifespan(app):
     asyncio.create_task(_options_precompute_loop())
     # Tradier precompute loop removed — Options Flow now uses TradierFlowEngine directly
     asyncio.create_task(_polygon_options_ingestion_loop())
+    asyncio.create_task(_macro_precompute_loop())
     yield
 
 app = FastAPI(title="Trading Agent API", lifespan=lifespan)
@@ -5518,3 +5519,214 @@ async def tradier_scan_defaults(request: Request, tab: str = "megacap", api_key:
 @limiter.limit("10/minute")
 async def tradier_update_scan_defaults(request: Request, body: dict = Body(...), api_key: str = Header(None, alias="X-API-Key")):
     return await update_scan_defaults(request, body, api_key)
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# ── Macro Terminal API Endpoints ──────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════
+
+_macro_provider = None  # Initialized lazily after data_service is ready
+
+
+def _get_macro_provider():
+    global _macro_provider
+    if _macro_provider is None:
+        if data_service and data_service.fred:
+            from data.macro_provider import MacroProvider
+            _macro_provider = MacroProvider(
+                fred_provider=data_service.fred,
+                fmp_provider=data_service.fmp if hasattr(data_service, "fmp") else None,
+            )
+    return _macro_provider
+
+
+# ── Background refresh loop ──────────────────────────────────────────
+
+_MACRO_PRECOMPUTE_INTERVAL = 14400  # 4 hours
+
+
+async def _macro_precompute_loop():
+    """Background loop to keep macro data warm in cache."""
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(None, _init_event.wait, 120)
+
+    import time as _time
+
+    while True:
+        mp = _get_macro_provider()
+        if not mp:
+            print("[MACRO_PRECOMPUTE] Macro provider not available, retrying in 60s")
+            await asyncio.sleep(60)
+            continue
+
+        try:
+            t0 = _time.time()
+            # Fetch FRED data (synchronous — run in thread)
+            dashboard = await asyncio.to_thread(mp.get_dashboard)
+
+            # Fetch commodity prices (async)
+            commodities = await mp.get_commodities_async()
+            if commodities:
+                dashboard["commodities"]["wti_oil"] = commodities.get("wti_oil")
+                dashboard["commodities"]["gold"] = commodities.get("gold")
+                oil_price = commodities.get("wti_oil")
+                gold_price = commodities.get("gold")
+                dashboard["commodities"]["commentary"] = (
+                    f"WTI crude at ${oil_price}, gold at ${gold_price}."
+                    if oil_price and gold_price else "Commodity data unavailable."
+                )
+                # Update the cached dashboard with commodity data
+                from data.cache import cache as _cache
+                _cache.set("macro:dashboard:v1", dashboard, 14400)
+
+            # Pre-warm indicators
+            await asyncio.to_thread(mp.get_indicators)
+
+            # Pre-warm calendar
+            await mp.get_calendar(days_ahead=14)
+
+            elapsed = _time.time() - t0
+            print(f"[MACRO_PRECOMPUTE] Refreshed dashboard + indicators + calendar in {elapsed:.1f}s")
+
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            print(f"[MACRO_PRECOMPUTE] Error: {e}")
+
+        await asyncio.sleep(_MACRO_PRECOMPUTE_INTERVAL)
+
+
+# ── GET /api/macro/dashboard ─────────────────────────────────────────
+
+@app.get("/api/macro/dashboard")
+@limiter.limit("60/minute")
+@traceable(name="main.macro_dashboard")
+async def macro_dashboard(
+    request: Request,
+    api_key: str = Header(None, alias="X-API-Key"),
+):
+    """Full macro overview for the Macro Terminal frontend."""
+    await _wait_for_init()
+
+    mp = _get_macro_provider()
+    if not mp:
+        return JSONResponse(
+            status_code=503,
+            content={"error": "Macro data provider not configured. Ensure FRED_API_KEY is set."},
+        )
+
+    try:
+        import time as _time
+        t0 = _time.time()
+
+        # FRED data is synchronous — run in thread to avoid blocking
+        dashboard = await asyncio.to_thread(mp.get_dashboard)
+
+        # Enrich with commodity prices (async, from FMP)
+        commodities = await mp.get_commodities_async()
+        if commodities:
+            dashboard["commodities"]["wti_oil"] = commodities.get("wti_oil")
+            dashboard["commodities"]["gold"] = commodities.get("gold")
+            oil_price = commodities.get("wti_oil")
+            gold_price = commodities.get("gold")
+            dashboard["commodities"]["commentary"] = (
+                f"WTI crude at ${oil_price}, gold at ${gold_price}."
+                if oil_price and gold_price else "Commodity data unavailable."
+            )
+
+        elapsed = _time.time() - t0
+        return {
+            "response": dashboard,
+            "structured": True,
+            "preset": "macro_dashboard",
+            "from_cache": elapsed < 0.5,  # fast = was cached
+            "timing": {"total_seconds": round(elapsed, 1)},
+        }
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(status_code=500, content={"error": f"Macro dashboard error: {str(e)}"})
+
+
+# ── GET /api/macro/indicators ────────────────────────────────────────
+
+@app.get("/api/macro/indicators")
+@limiter.limit("60/minute")
+@traceable(name="main.macro_indicators")
+async def macro_indicators(
+    request: Request,
+    api_key: str = Header(None, alias="X-API-Key"),
+):
+    """Individual indicator cards with signal, source, and trend."""
+    await _wait_for_init()
+
+    mp = _get_macro_provider()
+    if not mp:
+        return JSONResponse(
+            status_code=503,
+            content={"error": "Macro data provider not configured."},
+        )
+
+    try:
+        result = await asyncio.to_thread(mp.get_indicators)
+        return {"response": result, "structured": True, "preset": "macro_indicators"}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+# ── GET /api/macro/calendar ──────────────────────────────────────────
+
+@app.get("/api/macro/calendar")
+@limiter.limit("60/minute")
+@traceable(name="main.macro_calendar")
+async def macro_calendar(
+    request: Request,
+    days: int = 14,
+    api_key: str = Header(None, alias="X-API-Key"),
+):
+    """Upcoming economic events/releases."""
+    await _wait_for_init()
+
+    mp = _get_macro_provider()
+    if not mp:
+        return JSONResponse(
+            status_code=503,
+            content={"error": "Macro data provider not configured."},
+        )
+
+    try:
+        result = await mp.get_calendar(days_ahead=min(days, 30))
+        return {"response": result, "structured": True, "preset": "macro_calendar"}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+# ── GET /api/macro/history/{indicator} ───────────────────────────────
+
+@app.get("/api/macro/history/{indicator}")
+@limiter.limit("60/minute")
+@traceable(name="main.macro_history")
+async def macro_history(
+    request: Request,
+    indicator: str,
+    months: int = 12,
+    api_key: str = Header(None, alias="X-API-Key"),
+):
+    """Time-series data for charting a specific indicator."""
+    await _wait_for_init()
+
+    mp = _get_macro_provider()
+    if not mp:
+        return JSONResponse(
+            status_code=503,
+            content={"error": "Macro data provider not configured."},
+        )
+
+    try:
+        result = await asyncio.to_thread(mp.get_history, indicator, min(months, 60))
+        if "error" in result and "Unknown indicator" in result.get("error", ""):
+            return JSONResponse(status_code=400, content=result)
+        return {"response": result, "structured": True, "preset": "macro_history"}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
