@@ -883,9 +883,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // === Macro Dashboard (benchmark ETFs + VIX) ===
+  // === FastAPI backend config ===
+  const AGENT_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
+  const AGENT_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+
+  // === Macro Dashboard — legacy (still uses local fmpService) ===
   app.get('/api/macro/dashboard', async (req, res) => {
     try {
+      // Try FastAPI first, fall back to local service
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      try {
+        const response = await fetch(`${AGENT_URL}/api/macro/dashboard`, {
+          headers: { 'X-API-Key': AGENT_KEY },
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        if (response.ok) return res.json(await response.json());
+      } catch { clearTimeout(timeoutId); }
+      // Fallback to local
       const data = await macroDashboardService.getDashboard();
       res.json(data);
     } catch (error) {
@@ -894,9 +910,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // === Macro Terminal — Proxy all tabs to FastAPI backend ===
+  const MACRO_TABS = ['rates', 'inflation', 'growth', 'labor', 'risk'] as const;
+  for (const tab of MACRO_TABS) {
+    app.get(`/api/macro/${tab}`, async (_req, res) => {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
+        const response = await fetch(`${AGENT_URL}/api/macro/${tab}`, {
+          headers: { 'X-API-Key': AGENT_KEY },
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        if (!response.ok) {
+          const text = await response.text();
+          return res.status(response.status).json({ error: `FastAPI returned ${response.status}`, detail: text.slice(0, 200) });
+        }
+        res.json(await response.json());
+      } catch (error: any) {
+        console.error(`Macro ${tab} proxy error:`, error);
+        res.status(500).json({ error: error?.name === 'AbortError' ? 'Request timed out' : `Failed to fetch macro ${tab}` });
+      }
+    });
+  }
+
   // === Options Flow (proxy to FastAPI backend) ===
-  const AGENT_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
-  const AGENT_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
 
   app.get('/api/options/dashboard', async (req, res) => {
     try {
