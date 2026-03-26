@@ -74,8 +74,11 @@ def _month_year_label(date_str: str | None) -> str:
 def transform_dashboard(raw: dict) -> dict:
     """
     Input:  MacroProvider.get_dashboard() result
-    Output: { benchmark_etfs, vix, yield_snapshot, indicators }
+    Output: Full dashboard with all sections + frontend-expected keys
+            (benchmark_etfs, vix, yield_snapshot, indicators) at top level.
     """
+    # ── Frontend-required keys ────────────────────────────────────────
+
     # benchmark_etfs — already close to the right shape
     benchmark_etfs = []
     for etf in raw.get("benchmark_etfs", []):
@@ -86,26 +89,25 @@ def transform_dashboard(raw: dict) -> dict:
             "pct_from_52w_high": _r(etf.get("pct_from_52w_high"), 1),
         })
 
-    # vix
+    # vix — flat {current, change_pct}
     vix_raw = raw.get("vix", {})
     vix = {
         "current": _r(vix_raw.get("current")),
         "change_pct": _r(vix_raw.get("change_pct")),
     }
 
-    # yield_snapshot
+    # yield_snapshot — flat {2Y, 5Y, 10Y, 30Y}
     rates = raw.get("rates_and_yields", {})
     yield_snapshot = {
         "2Y": _r(rates.get("us_2y")),
-        "5Y": None,  # not in dashboard, filled from rates if available
+        "5Y": None,
         "10Y": _r(rates.get("us_10y")),
         "30Y": _r(rates.get("us_30y")),
     }
 
-    # indicators — build from dashboard sections
+    # indicators — summary cards with {name, value, status}
     indicators = []
 
-    # Fed
     fed = raw.get("fed", {})
     if fed.get("funds_rate_range"):
         indicators.append({
@@ -114,7 +116,6 @@ def transform_dashboard(raw: dict) -> dict:
             "status": "elevated" if (_r(fed.get("funds_rate")) or 0) > 4 else "neutral",
         })
 
-    # Inflation
     infl = raw.get("inflation", {})
     if infl.get("cpi_yoy") is not None:
         indicators.append({
@@ -129,7 +130,6 @@ def transform_dashboard(raw: dict) -> dict:
             "status": "elevated" if (infl["core_pce_yoy"] or 0) > 2.5 else "neutral",
         })
 
-    # Labor
     labor = raw.get("labor", {})
     if labor.get("unemployment_rate") is not None:
         indicators.append({
@@ -138,7 +138,6 @@ def transform_dashboard(raw: dict) -> dict:
             "status": "positive" if (labor["unemployment_rate"] or 5) < 4.5 else "neutral",
         })
 
-    # GDP
     gdp = raw.get("gdp", {})
     if gdp.get("gdp_now_estimate") is not None:
         indicators.append({
@@ -147,7 +146,6 @@ def transform_dashboard(raw: dict) -> dict:
             "status": "positive" if (gdp["gdp_now_estimate"] or 0) > 2 else "neutral" if (gdp["gdp_now_estimate"] or 0) > 0 else "negative",
         })
 
-    # Yield curve
     if rates.get("spread_2s10s") is not None:
         indicators.append({
             "name": "2s10s Spread",
@@ -155,7 +153,6 @@ def transform_dashboard(raw: dict) -> dict:
             "status": "inverted" if (rates["spread_2s10s"] or 0) < 0 else "neutral",
         })
 
-    # M2
     liq = raw.get("liquidity", {})
     if liq.get("m2_yoy_growth") is not None:
         indicators.append({
@@ -164,7 +161,6 @@ def transform_dashboard(raw: dict) -> dict:
             "status": _status(liq.get("m2_trend")),
         })
 
-    # Fear & Greed
     fg = raw.get("fear_greed", {})
     if fg.get("score") is not None:
         indicators.append({
@@ -173,11 +169,29 @@ def transform_dashboard(raw: dict) -> dict:
             "status": "positive" if (fg.get("score") or 50) > 60 else "negative" if (fg.get("score") or 50) < 40 else "neutral",
         })
 
+    # ── Build full response: ALL original sections + frontend keys ────
     return {
+        # Frontend-required top-level keys
         "benchmark_etfs": benchmark_etfs,
         "vix": vix,
         "yield_snapshot": yield_snapshot,
         "indicators": indicators,
+        # Full dashboard sections (all original data preserved)
+        "last_updated": raw.get("last_updated"),
+        "data_sources": raw.get("data_sources"),
+        "market_snapshot": raw.get("market_snapshot"),
+        "fed": raw.get("fed"),
+        "inflation": raw.get("inflation"),
+        "labor": raw.get("labor"),
+        "gdp": raw.get("gdp"),
+        "rates_and_yields": raw.get("rates_and_yields"),
+        "liquidity": raw.get("liquidity"),
+        "commodities": raw.get("commodities"),
+        "manufacturing": raw.get("manufacturing"),
+        "scenarios": raw.get("scenarios"),
+        "fear_greed": raw.get("fear_greed"),
+        "dollar": raw.get("dollar"),
+        "geopolitical": raw.get("geopolitical"),
     }
 
 
