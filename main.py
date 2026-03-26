@@ -5620,13 +5620,10 @@ async def macro_dashboard(
         dashboard = await mp.get_dashboard()
 
         elapsed = _time.time() - t0
-        return {
-            "response": dashboard,
-            "structured": True,
-            "preset": "macro_dashboard",
-            "from_cache": elapsed < 0.5,  # fast = was cached
-            "timing": {"total_seconds": round(elapsed, 1)},
-        }
+
+        # Transform to frontend-expected flat shape
+        from data.macro_transforms import transform_dashboard
+        return transform_dashboard(dashboard)
 
     except Exception as e:
         import traceback
@@ -5738,7 +5735,8 @@ async def macro_rates(
 
     try:
         result = await mp.get_rates()
-        return {"response": result, "structured": True, "preset": "macro_rates"}
+        from data.macro_transforms import transform_rates
+        return transform_rates(result)
     except Exception as e:
         import traceback
         traceback.print_exc()
@@ -5766,7 +5764,8 @@ async def macro_inflation(
 
     try:
         result = await mp.get_inflation()
-        return {"response": result, "structured": True, "preset": "macro_inflation"}
+        from data.macro_transforms import transform_inflation
+        return transform_inflation(result)
     except Exception as e:
         import traceback
         traceback.print_exc()
@@ -5794,7 +5793,8 @@ async def macro_growth(
 
     try:
         result = await mp.get_growth()
-        return {"response": result, "structured": True, "preset": "macro_growth"}
+        from data.macro_transforms import transform_growth
+        return transform_growth(result)
     except Exception as e:
         import traceback
         traceback.print_exc()
@@ -5822,7 +5822,8 @@ async def macro_labor(
 
     try:
         result = await mp.get_labor()
-        return {"response": result, "structured": True, "preset": "macro_labor"}
+        from data.macro_transforms import transform_labor
+        return transform_labor(result)
     except Exception as e:
         import traceback
         traceback.print_exc()
@@ -5850,7 +5851,8 @@ async def macro_risk(
 
     try:
         result = await mp.get_risk()
-        return {"response": result, "structured": True, "preset": "macro_risk"}
+        from data.macro_transforms import transform_risk
+        return transform_risk(result)
     except Exception as e:
         import traceback
         traceback.print_exc()
