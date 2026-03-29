@@ -510,44 +510,46 @@ export default function NotifAIPage() {
         pointerEvents: 'none', zIndex: 0,
       }} />
 
-      {/* Header — fixed height */}
-      <div
-        className="max-w-[1600px] mx-auto w-full px-4 sm:px-6 lg:px-8 pt-5 pb-2"
-        style={{ zIndex: 1, flexShrink: 0 }}
-      >
-        <div className="flex items-center gap-4 mb-1">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg, #2090d0, #5cc8f0)', boxShadow: '0 0 20px rgba(92,200,240,0.2)' }}>
-            <Newspaper className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold" style={{
-              background: 'linear-gradient(135deg, #e2e8f0, #5cc8f0)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-            }}>
-              NotifAI
-            </h1>
-            <p className="text-xs text-white/30">Real-time market news intelligence</p>
-          </div>
-        </div>
-        <div className="w-24 h-0.5 rounded-full mt-3 mb-3" style={{ background: 'linear-gradient(135deg, #2090d0, #5cc8f0, #80d8f8)' }} />
-      </div>
-
-      {/* Main Content — fills all remaining height */}
+      {/* Main Content — fills full viewport height */}
       <main
         style={{
           flex: 1, minHeight: 0, position: 'relative', zIndex: 1,
           display: 'flex', gap: 24, padding: '0 2rem 1rem', overflow: 'hidden',
         }}
       >
-        {/* Left: News Feed — scrollable */}
-        <div style={{ flex: 1, minWidth: 0, overflowY: 'auto' }}>
-          <NewsFeed />
+        {/* Left column: header + NewsFeed */}
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          {/* Left-only header */}
+          <div style={{ flexShrink: 0, paddingTop: '1.25rem', paddingBottom: '0.25rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 4 }}>
+              <div style={{
+                width: 40, height: 40, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: 'linear-gradient(135deg, #2090d0, #5cc8f0)', boxShadow: '0 0 20px rgba(92,200,240,0.2)',
+              }}>
+                <Newspaper className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h1 style={{
+                  fontSize: '1.5rem', fontWeight: 700,
+                  background: 'linear-gradient(135deg, #e2e8f0, #5cc8f0)',
+                  WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+                }}>NotifAI</h1>
+                <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.3)', margin: 0 }}>Real-time market news intelligence</p>
+              </div>
+            </div>
+            <div style={{
+              width: 96, height: 2, borderRadius: 9999, marginTop: 12, marginBottom: 12,
+              background: 'linear-gradient(135deg, #2090d0, #5cc8f0, #80d8f8)',
+            }} />
+          </div>
+          {/* Scrollable news feed */}
+          <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+            <NewsFeed />
+          </div>
         </div>
 
-        {/* Right column: Ask Caelyn (top) + Top Stories (fills remaining) */}
-        <div style={{ width: 420, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {/* Right column: Ask Caelyn + Top Stories — starts at the very top */}
+        <div style={{ width: 420, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 16, paddingTop: '1.25rem' }}>
           {/* Ask Caelyn */}
           <NewsAgent />
 
