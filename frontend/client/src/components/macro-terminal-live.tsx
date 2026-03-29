@@ -479,46 +479,31 @@ function OverviewTab({ data }: { data: any }) {
 function RatesTab({ data }: { data: any }) {
   if (!data) return null;
 
-  // ── Data prep ──────────────────────────────────────────────────────────────
+  // ── Data prep — all sourced directly from FastAPI backend ──────────────────
   const MATS = ['1M', '3M', '6M', '1Y', '2Y', '5Y', '7Y', '10Y', '20Y', '30Y'];
 
-  // yield_curve comes as numeric-keyed object; convert & filter to our 10 maturities
+  // yield_curve: numeric-keyed object → map by maturity label
   const ycMap: Record<string, any> = {};
   for (const e of Object.values(data.yield_curve || {}) as any[]) {
     if (MATS.includes(e.maturity)) ycMap[e.maturity] = e;
   }
 
-  // History arrays (sorted ascending by date)
-  const hist = data.history || {};
-  const h10y: { date: string; value: number }[] = hist.us_10y || [];
-  const h2y:  { date: string; value: number }[] = hist.us_2y  || [];
-  const hSpr: { date: string; value: number }[] = hist.spread_2s10s || [];
+  // yield_curve_snapshot: backend provides 1W and 1M ago for all 10 maturities
+  const snap     = data.yield_curve_snapshot || {};
+  const weekAgo  = snap.week_ago  || {};   // { '1M': 3.73, '3M': 3.73, ... }
+  const monthAgo = snap.month_ago || {};   // { '1M': 3.71, '3M': 3.69, ... }
 
-  const getHist = (arr: { date: string; value: number }[], daysBack: number) => {
-    const idx = arr.length - 1 - daysBack;
-    return idx >= 0 ? (arr[idx]?.value ?? null) : null;
-  };
+  // key_rates: backend provides current value, date, and change_1w_bps per maturity
+  const kr       = data.key_rates  || {};
+  const kr2y     = kr.us_2y  || {};
+  const kr10y    = kr.us_10y || {};
 
-  // 1W ≈ 5 trading days, 1M ≈ 21 trading days
-  const prev1w: Record<string, number | null> = { '2Y': getHist(h2y, 5),  '10Y': getHist(h10y, 5)  };
-  const prev1m: Record<string, number | null> = { '2Y': getHist(h2y, 21), '10Y': getHist(h10y, 21) };
-
-  // Card-level values
-  const curr10y  = h10y[h10y.length - 1]?.value ?? null;
-  const curr2y   = h2y[h2y.length   - 1]?.value ?? null;
-  const p10y1w   = getHist(h10y, 5);
-  const p2y1w    = getHist(h2y,  5);
-  const pSpr1w   = getHist(hSpr, 5);
-  const chg10y1w = curr10y != null && p10y1w  != null ? curr10y - p10y1w  : null;
-  const chg2y1w  = curr2y  != null && p2y1w   != null ? curr2y  - p2y1w   : null;
-  const currSpr  = data.spreads?.['2s10s'] ?? null;
-  const chgSpr1w = currSpr != null && pSpr1w  != null ? currSpr - pSpr1w  : null;
-
+  // fed_policy, spreads, mortgage: all from backend, including pre-computed changes
   const fed      = data.fed_policy || {};
   const spreads  = data.spreads    || {};
   const mortgage = data.mortgage   || {};
 
-  // Indicators → status lookup
+  // Indicators → status lookup (from backend indicators array)
   const indicators: { name: string; value: string; status: string }[] = data.indicators || [];
   const getStatus = (name: string) =>
     (indicators.find(i => i.name === name)?.status || 'neutral').toLowerCase();
@@ -527,46 +512,66 @@ function RatesTab({ data }: { data: any }) {
   const asOf = data.last_updated
     ? new Date(data.last_updated).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
     : '';
-  const lastDate = h10y[h10y.length - 1]?.date || '';
   const fmtCardDate = (d: string) =>
     d ? new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
 
-  // Time-series data: last ~50 calendar days
+  // Time-series: history arrays — backend now provides us_2y, us_5y, us_10y, us_30y
+  const hist = data.history || {};
+  const h2y:   { date: string; value: number }[] = hist.us_2y   || [];
+  const h5y:   { date: string; value: number }[] = hist.us_5y   || [];
+  const h10y:  { date: string; value: number }[] = hist.us_10y  || [];
+  const h30y:  { date: string; value: number }[] = hist.us_30y  || [];
+
   const cutoff = new Date(Date.now() - 50 * 86400000).toISOString().split('T')[0];
-  const tsMap: Record<string, { date: string; us_2y?: number; us_10y?: number }> = {};
+  const tsMap: Record<string, { date: string; us_2y?: number; us_5y?: number; us_10y?: number; us_30y?: number }> = {};
   for (const e of h2y)  if (e.date >= cutoff) tsMap[e.date] = { ...tsMap[e.date], date: e.date, us_2y:  e.value };
+  for (const e of h5y)  if (e.date >= cutoff) tsMap[e.date] = { ...tsMap[e.date], date: e.date, us_5y:  e.value };
   for (const e of h10y) if (e.date >= cutoff) tsMap[e.date] = { ...tsMap[e.date], date: e.date, us_10y: e.value };
+  for (const e of h30y) if (e.date >= cutoff) tsMap[e.date] = { ...tsMap[e.date], date: e.date, us_30y: e.value };
   const tsData = Object.values(tsMap).sort((a, b) => a.date.localeCompare(b.date));
 
   const tsFirst = tsData[0]?.date || '';
   const tsLast  = tsData[tsData.length - 1]?.date || '';
-  const fmtMon  = (d: string) => d
-    ? new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short' }).toUpperCase()
-    : '';
+  const fmtMon  = (d: string) =>
+    d ? new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short' }).toUpperCase() : '';
   const tsYear  = tsLast ? new Date(tsLast + 'T12:00:00').getFullYear() : '';
   const tsTitle = tsFirst
     ? `YIELD TIME SERIES — ${fmtMon(tsFirst)} TO ${fmtMon(tsLast)} ${tsYear}`
     : 'YIELD TIME SERIES';
 
-  // Yield-curve chart data
+  // Yield-curve area chart data
   const curveData = MATS
     .map(m => ({ maturity: m, yield: ycMap[m]?.yield ?? null }))
     .filter(d => d.yield != null);
   const ffRate = fed.funds_rate ?? null;
 
-  // ── Helpers ────────────────────────────────────────────────────────────────
+  // ── Display helpers ────────────────────────────────────────────────────────
   const fmtYld = (v: number | null | undefined) =>
     v != null ? v.toFixed(2) + '%' : '—';
 
-  const fmtBps = (chg: number | null | undefined) => {
-    if (chg == null) return null;
-    const b = Math.round(chg * 100);
-    return (b > 0 ? '+' : '') + b + 'bp';
+  // bps integer: already an integer from backend (change_1w_bps), or decimal*100 for spread
+  const fmtBpsInt = (bps: number | null | undefined) => {
+    if (bps == null) return null;
+    const b = Math.round(bps);
+    return (b > 0 ? '+' : '') + b + ' bps';
   };
 
-  const bpColor = (chg: number | null | undefined) => {
-    if (chg == null || Math.round((chg || 0) * 100) === 0) return T.dim;
-    return chg > 0 ? T.red : T.green;
+  // For the table Chg row: current - monthAgo in percentage points → bps
+  const chgBpsStr = (curr: number | null | undefined, prev: number | null | undefined) => {
+    if (curr == null || prev == null) return '—';
+    const bps = Math.round((curr - prev) * 100);
+    return (bps > 0 ? '+' : '') + bps + 'bp';
+  };
+  const chgBpsColor = (curr: number | null | undefined, prev: number | null | undefined) => {
+    if (curr == null || prev == null) return T.dim;
+    const bps = Math.round((curr - prev) * 100);
+    if (bps === 0) return T.dim;
+    return bps > 0 ? T.red : T.green; // yield up = bearish for bonds
+  };
+
+  const bpsIntColor = (bps: number | null | undefined) => {
+    if (bps == null || Math.round(bps) === 0) return T.dim;
+    return bps > 0 ? T.red : T.green;
   };
 
   const badgeStyle = (status: string) => {
@@ -582,11 +587,13 @@ function RatesTab({ data }: { data: any }) {
     if (sl === 'elevated') return 'BEARISH';
     return sl.toUpperCase();
   };
-
   const numColor = (status: string) => {
     const s = status.toLowerCase();
     return (s === 'bearish' || s === 'elevated') ? T.red : T.green;
   };
+
+  const arrow = (bps: number | null | undefined) =>
+    bps == null || Math.round(bps) === 0 ? '◆' : bps > 0 ? '▲' : '▼';
 
   const fmtXDate = (d: string) => d ? d.slice(5) : ''; // MM-DD
 
@@ -623,35 +630,33 @@ function RatesTab({ data }: { data: any }) {
                 </td>
               ))}
             </tr>
-            {/* 1W Ago */}
+            {/* 1W Ago — from backend yield_curve_snapshot.week_ago */}
             <tr style={{ borderBottom: `1px solid ${T.border}40` }}>
               <td style={{ padding: '5px 0', color: T.dim, fontSize: 11 }}>1W Ago</td>
               {MATS.map(m => (
                 <td key={m} className="tabular-nums" style={{ textAlign: 'right', padding: '5px 3px', color: T.dim, fontSize: 11 }}>
-                  {fmtYld(prev1w[m] ?? null)}
+                  {fmtYld(weekAgo[m] ?? null)}
                 </td>
               ))}
             </tr>
-            {/* 1M Ago */}
+            {/* 1M Ago — from backend yield_curve_snapshot.month_ago */}
             <tr style={{ borderBottom: `1px solid ${T.border}40` }}>
               <td style={{ padding: '5px 0', color: T.dim, fontSize: 11 }}>1M Ago</td>
               {MATS.map(m => (
                 <td key={m} className="tabular-nums" style={{ textAlign: 'right', padding: '5px 3px', color: T.dim, fontSize: 11 }}>
-                  {fmtYld(prev1m[m] ?? null)}
+                  {fmtYld(monthAgo[m] ?? null)}
                 </td>
               ))}
             </tr>
-            {/* Chg (1M) */}
+            {/* Chg (1M) — computed from backend current vs month_ago */}
             <tr>
               <td style={{ padding: '5px 0', color: T.amber, fontWeight: 600, fontSize: 11 }}>Chg (1M)</td>
               {MATS.map(m => {
                 const curr = ycMap[m]?.yield ?? null;
-                const prev = prev1m[m] ?? null;
-                const chg  = curr != null && prev != null ? curr - prev : null;
-                const txt  = fmtBps(chg);
+                const prev = monthAgo[m] ?? null;
                 return (
-                  <td key={m} className="tabular-nums" style={{ textAlign: 'right', padding: '5px 3px', color: bpColor(chg), fontWeight: 600, fontSize: 11 }}>
-                    {txt ?? '—'}
+                  <td key={m} className="tabular-nums" style={{ textAlign: 'right', padding: '5px 3px', color: chgBpsColor(curr, prev), fontWeight: 600, fontSize: 11 }}>
+                    {chgBpsStr(curr, prev)}
                   </td>
                 );
               })}
@@ -748,13 +753,20 @@ function RatesTab({ data }: { data: any }) {
                   formatter={(v: any, n: string) => [Number(v).toFixed(2) + '%', n]}
                 />
                 <Line type="monotone" dataKey="us_2y"  stroke={T.cyan}  strokeWidth={1.5} dot={false} name="2Y"  />
+                <Line type="monotone" dataKey="us_5y"  stroke={T.green} strokeWidth={1.5} dot={false} name="5Y"  />
                 <Line type="monotone" dataKey="us_10y" stroke={T.amber} strokeWidth={1.5} dot={false} name="10Y" />
+                <Line type="monotone" dataKey="us_30y" stroke={T.red}   strokeWidth={1.5} dot={false} name="30Y" />
               </LineChart>
             </ResponsiveContainer>
           </div>
-          {/* Legend */}
+          {/* Legend — 2Y/5Y/10Y/30Y from backend history */}
           <div style={{ display: 'flex', gap: 14, justifyContent: 'center', marginTop: 8 }}>
-            {[{ label: '2Y', color: T.cyan }, { label: '10Y', color: T.amber }].map(({ label, color }) => (
+            {[
+              { label: '2Y',  color: T.cyan  },
+              { label: '5Y',  color: T.green },
+              { label: '10Y', color: T.amber },
+              { label: '30Y', color: T.red   },
+            ].map(({ label, color }) => (
               <span key={label} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color }}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                   <span style={{ fontSize: 8 }}>◇</span>
@@ -769,58 +781,80 @@ function RatesTab({ data }: { data: any }) {
 
       {/* ── 6 METRIC CARDS (3 + 3) ────────────────────────────────────────── */}
       {[
-        // Row 1
+        // Row 1 — all values and changes from backend directly
         [
           {
+            // fed_policy.funds_rate_range + funds_rate_range_date
             title: 'FED FUNDS RATE',
             value: fed.funds_rate_range ? fed.funds_rate_range + '%' : (fed.funds_rate != null ? fed.funds_rate.toFixed(2) + '%' : '—'),
             status: getStatus('Fed Funds Rate'),
             changeText: null as string | null,
-            date: asOf,
+            date: fmtCardDate(fed.funds_rate_range_date || ''),
           },
           {
+            // key_rates.us_10y.value + change_1w_bps + date
             title: '10Y TREASURY YIELD',
-            value: curr10y != null ? curr10y.toFixed(2) + '%' : (data.key_rates?.us_10y != null ? data.key_rates.us_10y.toFixed(2) + '%' : '—'),
+            value: kr10y.value != null ? Number(kr10y.value).toFixed(2) + '%' : '—',
             status: getStatus('10Y Yield'),
-            changeText: chg10y1w != null && p10y1w != null
-              ? `${chg10y1w > 0 ? '▲' : chg10y1w < 0 ? '▼' : '◆'} ${fmtBps(chg10y1w)} from ${p10y1w.toFixed(2)}%`
+            changeText: kr10y.change_1w_bps != null && kr10y.value != null
+              ? `${arrow(kr10y.change_1w_bps)} ${fmtBpsInt(kr10y.change_1w_bps)} from ${(kr10y.value - kr10y.change_1w_bps / 100).toFixed(2)}%`
               : null,
-            date: fmtCardDate(lastDate),
+            date: fmtCardDate(kr10y.date || ''),
           },
           {
+            // key_rates.us_2y.value + change_1w_bps + date
             title: '2Y TREASURY YIELD',
-            value: curr2y != null ? curr2y.toFixed(2) + '%' : (data.key_rates?.us_2y != null ? data.key_rates.us_2y.toFixed(2) + '%' : '—'),
+            value: kr2y.value != null ? Number(kr2y.value).toFixed(2) + '%' : '—',
             status: getStatus('2Y Yield'),
-            changeText: chg2y1w != null && p2y1w != null
-              ? `${chg2y1w > 0 ? '▲' : chg2y1w < 0 ? '▼' : '◆'} ${fmtBps(chg2y1w)} from ${p2y1w.toFixed(2)}%`
+            changeText: kr2y.change_1w_bps != null && kr2y.value != null
+              ? `${arrow(kr2y.change_1w_bps)} ${fmtBpsInt(kr2y.change_1w_bps)} from ${(kr2y.value - kr2y.change_1w_bps / 100).toFixed(2)}%`
               : null,
-            date: fmtCardDate(lastDate),
+            date: fmtCardDate(kr2y.date || ''),
           },
         ],
-        // Row 2
+        // Row 2 — all values and changes from backend directly
         [
           {
+            // spreads['2s10s'] + change_2s10s_1w_bps
             title: '2S10S SPREAD',
-            value: currSpr != null ? (currSpr >= 0 ? '+' : '') + Math.round(currSpr * 100) + ' bps' : '—',
-            status: currSpr != null ? (currSpr < 0 ? 'bearish' : 'neutral') : 'neutral',
-            changeText: chgSpr1w != null && pSpr1w != null
-              ? `${chgSpr1w > 0 ? '▲' : chgSpr1w < 0 ? '▼' : '◆'} ${fmtBps(chgSpr1w)} from ${pSpr1w >= 0 ? '+' : ''}${Math.round(pSpr1w * 100)} bps`
-              : null,
-            date: fmtCardDate(lastDate),
+            value: spreads['2s10s'] != null ? (spreads['2s10s'] >= 0 ? '+' : '') + Math.round(spreads['2s10s'] * 100) + ' bps' : '—',
+            status: spreads['2s10s'] != null ? (spreads['2s10s'] < 0 ? 'bearish' : 'neutral') : 'neutral',
+            changeText: (() => {
+              const bps = spreads.change_2s10s_1w_bps ?? null;
+              const curr = spreads['2s10s'] ?? null;
+              if (bps == null || curr == null) return null;
+              const prevBps = Math.round(curr * 100) - Math.round(bps);
+              return `${arrow(bps)} ${fmtBpsInt(bps)} from ${prevBps >= 0 ? '+' : ''}${prevBps} bps`;
+            })(),
+            date: fmtCardDate(kr10y.date || ''),
           },
           {
+            // spreads['10y3m'] + change_10y3m_1w_bps + spread_10y3m_date
             title: '10Y3M SPREAD',
             value: spreads['10y3m'] != null ? (spreads['10y3m'] >= 0 ? '+' : '') + Math.round(spreads['10y3m'] * 100) + ' bps' : '—',
             status: spreads['10y3m'] != null ? (spreads['10y3m'] < 0 ? 'bearish' : 'neutral') : 'neutral',
-            changeText: null as string | null,
-            date: fmtCardDate(lastDate),
+            changeText: (() => {
+              const bps = spreads.change_10y3m_1w_bps ?? null;
+              const curr = spreads['10y3m'] ?? null;
+              if (bps == null || curr == null) return null;
+              const prevBps = Math.round(curr * 100) - Math.round(bps);
+              return `${arrow(bps)} ${fmtBpsInt(bps)} from ${prevBps >= 0 ? '+' : ''}${prevBps} bps`;
+            })(),
+            date: fmtCardDate(spreads.spread_10y3m_date || ''),
           },
           {
+            // mortgage.rate_30y + change_1w_bps + rate_30y_date
             title: '30Y MORTGAGE RATE',
-            value: mortgage.rate_30y != null ? mortgage.rate_30y.toFixed(2) + '%' : '—',
+            value: mortgage.rate_30y != null ? Number(mortgage.rate_30y).toFixed(2) + '%' : '—',
             status: getStatus('30Y Mortgage'),
-            changeText: null as string | null,
-            date: fmtCardDate(lastDate),
+            changeText: (() => {
+              const bps = mortgage.change_1w_bps ?? null;
+              const curr = mortgage.rate_30y ?? null;
+              if (bps == null || curr == null) return null;
+              const prevPct = (curr - bps / 100).toFixed(2);
+              return `${arrow(bps)} ${fmtBpsInt(bps)} from ${prevPct}%`;
+            })(),
+            date: fmtCardDate(mortgage.rate_30y_date || ''),
           },
         ],
       ].map((row, ri) => (
