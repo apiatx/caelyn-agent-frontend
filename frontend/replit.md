@@ -3,6 +3,9 @@
 ## Overview
 CryptoHippo is a web application for comprehensive cryptocurrency portfolio management, focusing on BASE network and Bittensor (TAO) assets. It offers real-time portfolio tracking, whale transaction monitoring, and in-depth market research insights. The platform aims to provide a streamlined, secure, and data-rich environment for crypto investors, combining real-time market data with advanced analytics and access to essential Web3 tools. Its business vision is to become a leading hub for sophisticated crypto analysis and portfolio management across multiple blockchain ecosystems.
 
+## Key Pages / Features
+- **Should I Be Trading?** (`/app/stocks/should-i-be-trading`): Bloomberg Terminal-style market dashboard that scores the current equity market environment across 5 pillars (Volatility 25%, Momentum 25%, Trend 20%, Breadth 20%, Macro 10%) and outputs a YES/CAUTION/NO trading decision with a Market Quality Score. Includes sector heatmap, execution window tracker, and AI terminal analysis. Backend service: `server/should-i-be-trading-service.ts`. API: `GET /api/trading-dashboard?mode=swing|day`, `POST /api/trading-dashboard/refresh`.
+
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 

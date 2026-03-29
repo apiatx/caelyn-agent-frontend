@@ -13,6 +13,7 @@ import { coinbasePortfolioService } from './coinbase-portfolio-service';
 import { ETFService } from './etf-service';
 import { fmpService } from './fmp-service';
 import { macroDashboardService } from './macro-dashboard-service';
+import { shouldIBeTradingService } from './should-i-be-trading-service';
 import { z } from "zod";
 import { insertPremiumAccessSchema } from "@shared/schema";
 import fs from 'fs';
@@ -1498,6 +1499,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error fetching portfolio optimization:', error);
       res.status(500).json({ error: 'Failed to fetch portfolio optimization' });
+    }
+  });
+
+  app.get('/api/trading-dashboard', async (req, res) => {
+    try {
+      const mode = req.query.mode === 'day' ? 'day' : 'swing';
+      const data = await shouldIBeTradingService.getDashboard(mode);
+      res.json(data);
+    } catch (error) {
+      console.error('Error fetching trading dashboard:', error);
+      res.status(500).json({ error: 'Failed to fetch trading dashboard data' });
+    }
+  });
+
+  app.post('/api/trading-dashboard/refresh', async (req, res) => {
+    try {
+      shouldIBeTradingService.invalidateCache();
+      const mode = req.query.mode === 'day' ? 'day' : 'swing';
+      const data = await shouldIBeTradingService.getDashboard(mode);
+      res.json(data);
+    } catch (error) {
+      console.error('Error refreshing trading dashboard:', error);
+      res.status(500).json({ error: 'Failed to refresh trading dashboard data' });
     }
   });
 

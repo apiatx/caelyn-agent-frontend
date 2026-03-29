@@ -78,6 +78,12 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
       path: '/app/macro-terminal'
     },
     {
+      id: 'should-i-be-trading',
+      label: 'Should I Be Trading?',
+      icon: <Zap className="w-4 h-4" />,
+      path: '/app/stocks/should-i-be-trading'
+    },
+    {
       id: 'stocks-portfolio',
       label: 'Portfolio Dashboard',
       icon: <Wallet className="w-4 h-4" />,

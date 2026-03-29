@@ -54,6 +54,7 @@ import PredictPage from "@/pages/predict";
 import NotifAIPage from "@/pages/notifai";
 import OptionsPage from "@/pages/options";
 import MacroTerminalPage from "@/pages/macro-terminal";
+import ShouldIBeTradingPage from "@/pages/should-i-be-trading";
 import AboutPage from "@/pages/about";
 
 import NotFound from "@/pages/not-found";
@@ -159,6 +160,8 @@ function Router() {
       <Route path="/notifai" component={NotifAIPage} />
       <Route path="/app/macro-terminal" component={MacroTerminalPage} />
       <Route path="/macro-terminal" component={MacroTerminalPage} />
+      <Route path="/app/stocks/should-i-be-trading" component={ShouldIBeTradingPage} />
+      <Route path="/should-i-be-trading" component={ShouldIBeTradingPage} />
       <Route path="/app/options" component={OptionsPage} />
       <Route path="/options" component={OptionsPage} />
       <Route path="/app/tradier"><Redirect to="/app/options" /></Route>
