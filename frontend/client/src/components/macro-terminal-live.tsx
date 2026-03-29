@@ -2277,7 +2277,7 @@ interface STSectorItem { ticker: string; name: string; change_pct: number; }
 interface STDashboard {
   decision: STDecision; market_quality_score: number; execution_window_score: number; mode: STMode;
   pillars: STPillar[]; summary: string; execution_conditions: STExecCond[];
-  terminal_analysis: STTerminalLine[]; alert: { show: boolean; text: string }; as_of: string; from_cache: boolean;
+  terminal_analysis: STTerminalLine[]; alert: { show: boolean; title: string; text: string }; as_of: string; from_cache: boolean;
   sector_performance?: STSectorItem[];
 }
 
@@ -2318,32 +2318,6 @@ function stPositionLabel(d: STDecision) {
   if (d === 'YES') return { label: 'FULL SIZE', sub: 'Press risk' };
   if (d === 'CAUTION') return { label: 'SELECTIVE', sub: 'Half size' };
   return { label: 'MINIMAL', sub: 'Preserve capital' };
-}
-function stParseAlertText(text: string): { title: string; desc: string } {
-  const words = text.trim().split(' ');
-  let i = 0;
-  while (i < words.length && /^[A-Z0-9\/\-:\.&]+$/.test(words[i])) i++;
-  if (i > 0 && i < words.length) {
-    return { title: words.slice(0, i).join(' '), desc: words.slice(i).join(' ') };
-  }
-  return { title: 'MARKET ALERT', desc: text };
-}
-function stBuildFallbackBanner(): { title: string; desc: string } | null {
-  const today = new Date();
-  const events = computeUpcomingEvents(today);
-  if (!events.length) return null;
-  const next = events[0];
-  const nextDate = (() => {
-    const months: Record<string,number> = { Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11 };
-    const parts = next.dateLabel.split(' ');
-    return new Date(today.getFullYear(), months[parts[0]], parseInt(parts[1]));
-  })();
-  const diffDays = Math.round((nextDate.getTime() - today.getTime()) / 86400000);
-  const suffix = diffDays === 0 ? 'TODAY' : diffDays === 1 ? 'TOMORROW' : `IN ${diffDays} DAYS`;
-  const title = `${next.label.toUpperCase()} ${suffix}`;
-  const highImpact = next.impact === 'high' ? 'High-impact macro event.' : 'Macro data release.';
-  const desc = `${highImpact} Scheduled for ${next.dateLabel}. Monitor for elevated volatility and potential regime shift.`;
-  return { title, desc };
 }
 function stFindMetric(pillars: STPillar[], titleKey: string, labelKey: string): STMetric | undefined {
   const p = pillars.find(p => p.title.toLowerCase().includes(titleKey.toLowerCase()));
@@ -2541,20 +2515,14 @@ function TradingTab() {
           </div>
         </div>
 
-        {/* ── ALERT BANNER ─────────────────────────── */}
-        {(() => {
-          const banner = d.alert.show && d.alert.text
-            ? stParseAlertText(d.alert.text)
-            : stBuildFallbackBanner();
-          if (!banner) return null;
-          return (
-            <div style={{ background: '#1a140099', border: `1px solid ${ST.yellow}55`, borderRadius: 4, padding: '9px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ color: ST.yellow, fontSize: 13, flexShrink: 0 }}>⚠</span>
-              <span style={{ color: ST.yellow, fontSize: 11, fontWeight: 800, letterSpacing: 1.2, flexShrink: 0, textTransform: 'uppercase' }}>{banner.title}</span>
-              <span style={{ color: '#c8a840', fontSize: 11 }}>{banner.desc}</span>
-            </div>
-          );
-        })()}
+        {/* ── ALERT BANNER — populated entirely by backend ─ */}
+        {d.alert.show && (
+          <div style={{ background: '#1a140099', border: `1px solid ${ST.yellow}55`, borderRadius: 4, padding: '9px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ color: ST.yellow, fontSize: 13, flexShrink: 0 }}>⚠</span>
+            <span style={{ color: ST.yellow, fontSize: 11, fontWeight: 800, letterSpacing: 1.2, flexShrink: 0, textTransform: 'uppercase' }}>{d.alert.title}</span>
+            <span style={{ color: '#c8a840', fontSize: 11 }}>{d.alert.text}</span>
+          </div>
+        )}
 
         {/* ── 5 PILLAR CARDS ───────────────────────── */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
