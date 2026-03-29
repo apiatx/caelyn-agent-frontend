@@ -893,86 +893,296 @@ function RatesTab({ data }: { data: any }) {
 // ─── TAB 3: INFLATION ────────────────────────────────────────────────────────
 function InflationTab({ data }: { data: any }) {
   if (!data) return null;
+
+  /* ── Pull all backend fields ─────────────────────────────────────────── */
+  const hl          = data.headline            || {};
+  const histRaw: any[] = Array.isArray(data.history) ? data.history : Object.values(data.history || {});
+  const components: any[] = data.cpi_components || [];
+  const indicators: any[] = data.indicators    || [];
+  const commentary: string = data.commentary   || '';
+  const altMeasures        = data.alternative_measures  || {};
+  const mktExp             = data.market_expectations   || {};
+  const fedPref            = data.fed_preferred         || {};
+
+  /* ── Indicator status lookup ─────────────────────────────────────────── */
+  const indStatus = (keyword: string) => {
+    const hit = indicators.find((i: any) =>
+      i.name.toLowerCase().includes(keyword.toLowerCase())
+    );
+    return hit?.status ?? 'neutral';
+  };
+
+  /* ── Badge helpers ───────────────────────────────────────────────────── */
+  type BadgeInfo = { label: string; bg: string; color: string; border: string };
+  const inflBadge = (status: string): BadgeInfo => {
+    const s = status.toLowerCase();
+    if (s === 'bearish' || s === 'elevated' || s === 'well_above_target')
+      return { label: 'BEARISH', bg: `${T.red}20`,   color: T.red,   border: `${T.red}50`   };
+    if (s === 'bullish')
+      return { label: 'BULLISH', bg: `${T.green}20`, color: T.green, border: `${T.green}50` };
+    return { label: 'NEUTRAL',   bg: `${T.amber}20`, color: T.amber, border: `${T.amber}50` };
+  };
+  const inflBadgeStyle = (status: string) => {
+    const b = inflBadge(status);
+    return {
+      fontSize: 9, fontWeight: 700, letterSpacing: '0.1em',
+      padding: '2px 6px', borderRadius: 2,
+      background: b.bg, color: b.color, border: `1px solid ${b.border}`,
+    };
+  };
+  const inflNumColor = (status: string) => {
+    const s = status.toLowerCase();
+    if (s === 'bearish' || s === 'elevated') return T.red;
+    if (s === 'bullish') return T.green;
+    return T.amber;
+  };
+
+  /* ── History: label each point with Month + Year context ─────────────── */
+  // Backend returns months in chronological order starting ~Feb 2025
+  let yearCtx = 25;
+  const histLabelled = histRaw.map((h: any, i: number) => {
+    if (i > 0 && h.month === 'Jan') yearCtx = 26;
+    return { ...h, label: `${h.month} ${yearCtx}` };
+  });
+  // Detect government-shutdown gap (Oct missing, Nov present)
+  const hasMissingOct = histRaw.some((h: any) => h.month === 'Nov')
+                     && !histRaw.some((h: any) => h.month === 'Oct');
+
+  /* ── CPI components: split into two columns ──────────────────────────── */
+  const half      = Math.ceil(components.length / 2);
+  const leftCol   = components.slice(0, half);
+  const rightCol  = components.slice(half);
+  const maxAbsVal = Math.max(...components.map((c: any) => Math.abs(c.value)), 0.1);
+
+  /* ── 6 metric cards ──────────────────────────────────────────────────── */
+  const cpiSt    = indStatus('CPI');
+  const corePceSt = fedPref.target_status === 'well_above_target' ? 'elevated' : indStatus('PCE');
+  const ppiSt    = indStatus('PPI');
+
+  const cardRows = [
+    /* Row 1 */
+    [
+      {
+        title: 'CPI (HEADLINE YOY)',
+        // headline.cpi_yoy from backend
+        value: hl.cpi_yoy  != null ? `${Number(hl.cpi_yoy).toFixed(1)}%`        : '—',
+        status: cpiSt,
+        change: null as string | null,
+        date: '',
+      },
+      {
+        title: 'CORE CPI (YOY)',
+        // headline.core_cpi_yoy from backend
+        value: hl.core_cpi_yoy != null ? `${Number(hl.core_cpi_yoy).toFixed(1)}%` : '—',
+        status: cpiSt,
+        change: null,
+        date: '',
+      },
+      {
+        title: 'CORE PCE (YOY)',
+        // fed_preferred.core_pce_yoy from backend — prefixed with ~ (est.)
+        value: hl.core_pce_yoy != null ? `~${Number(hl.core_pce_yoy).toFixed(1)}%` : '—',
+        status: corePceSt,
+        change: null,
+        date: '',
+      },
+    ],
+    /* Row 2 */
+    [
+      {
+        title: 'PPI (YOY)',
+        // headline.ppi_yoy from backend
+        value: hl.ppi_yoy != null ? `${Number(hl.ppi_yoy).toFixed(1)}%` : '—',
+        status: ppiSt,
+        change: null,
+        date: '',
+      },
+      {
+        title: 'CPI MOM',
+        // headline.cpi_mom from backend — format as +X.X%
+        value: hl.cpi_mom != null
+          ? `${Number(hl.cpi_mom) >= 0 ? '+' : ''}${Number(hl.cpi_mom).toFixed(1)}%`
+          : '—',
+        status: 'elevated',
+        change: null,
+        date: '',
+      },
+      {
+        title: 'OIL (WTI VIA USD)',
+        // ⚠ Not yet provided by backend — backend instruction below
+        value: '—',
+        status: 'neutral',
+        change: null,
+        date: 'backend needed',
+      },
+    ],
+  ] as const;
+
+  /* ── Render ──────────────────────────────────────────────────────────── */
   return (
-    <div className="space-y-4">
-      {data.headline && (
-        <div className={card}>
-          <div className={sectionTitle} style={{ color: T.amber }}>HEADLINE NUMBERS</div>
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
-            {[
-              { label: 'CPI YoY', val: data.headline.cpi_yoy },
-              { label: 'Core CPI', val: data.headline.core_cpi_yoy },
-              { label: 'Core PCE', val: data.headline.core_pce_yoy },
-              { label: 'PPI YoY', val: data.headline.ppi_yoy },
-              { label: 'CPI MoM', val: data.headline.cpi_mom },
-              { label: 'Target', val: data.headline.target },
-            ].map(({ label, val }) => (
-              <div key={label} className="text-center">
-                <div className="text-[10px] text-[hsl(var(--term-dim))] uppercase mb-1">{label}</div>
-                <div className={`text-sm font-bold tabular-nums ${val > data.headline.target ? 'text-[hsl(var(--term-amber))] glow-amber' : 'text-[hsl(var(--term-green))] glow-green'}`}>
-                  {val}%
-                </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+      {/* ── CHART: CPI TREND — HEADLINE VS CORE ───────────────────────── */}
+      <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 2, padding: '12px 16px' }}>
+
+        {/* Header row: title + legend */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: '#ccc' }}>
+              CPI TREND — HEADLINE VS CORE (CPI INDEX LEVEL)
+            </div>
+            {hasMissingOct && (
+              <div style={{ fontSize: 10, color: T.dim, marginTop: 2 }}>
+                Note: Oct 2025 data unavailable due to government shutdown
+              </div>
+            )}
+          </div>
+          <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexShrink: 0, fontSize: 10 }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: T.green }}>
+              <span style={{ width: 10, height: 10, background: T.green, display: 'inline-block' }} />
+              Headline
+            </span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: T.amber }}>
+              <span style={{ width: 10, height: 10, background: T.amber, display: 'inline-block' }} />
+              Core
+            </span>
+          </div>
+        </div>
+
+        {/* Grouped bar chart — data from backend history[] */}
+        {histLabelled.length > 0 && (
+          <div style={{ height: 200 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={histLabelled} barGap={2} barCategoryGap="30%">
+                <CartesianGrid strokeDasharray="3 3" stroke={chartGrid} vertical={false} />
+                <XAxis
+                  dataKey="label"
+                  tick={chartTick}
+                  interval={0}
+                  angle={-30}
+                  textAnchor="end"
+                  height={42}
+                />
+                <YAxis tick={chartTick} width={50} />
+                <Tooltip
+                  contentStyle={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 2, fontSize: 11 }}
+                  labelStyle={{ color: T.dim }}
+                  formatter={(v: any, n: string) => [Number(v).toFixed(1), n]}
+                />
+                <Bar dataKey="headline" name="Headline" fill={T.green}  opacity={0.85} radius={[1,1,0,0]} />
+                <Bar dataKey="core"     name="Core"     fill={T.amber}  opacity={0.85} radius={[1,1,0,0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+
+        {/* Commentary — from backend commentary field */}
+        {commentary && (
+          <div style={{ marginTop: 10, paddingTop: 8, borderTop: `1px solid ${T.border}40`, fontSize: 11, color: '#aaa', lineHeight: 1.55 }}>
+            <span style={{ color: T.green, fontWeight: 700, marginRight: 6 }}>&gt;</span>
+            {commentary}
+          </div>
+        )}
+      </div>
+
+      {/* ── CPI ALTERNATIVE MEASURES (what backend cpi_components provides) ── */}
+      {components.length > 0 && (
+        <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 2, padding: '12px 16px' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: '#ccc', marginBottom: 10 }}>
+            ALTERNATIVE INFLATION MEASURES (YOY %)
+          </div>
+
+          {/* Two-column horizontal bars — from cpi_components[] */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 32px' }}>
+            {[leftCol, rightCol].map((col, ci) => (
+              <div key={ci} style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+                {col.map((c: any) => {
+                  const pct      = Math.abs(c.value) / maxAbsVal * 100;
+                  const isNeg    = c.value < 0;
+                  const barColor = isNeg ? T.cyan : c.hot ? T.amber : T.red;
+                  return (
+                    <div key={c.name} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: 11, color: T.dim, width: 160, flexShrink: 0 }}>
+                        {c.name}
+                      </span>
+                      <div style={{ flex: 1, height: 6, background: `${T.border}40`, borderRadius: 1, overflow: 'hidden', position: 'relative' }}>
+                        <div style={{
+                          position: 'absolute', top: 0, left: 0, height: '100%',
+                          width: `${Math.min(pct, 100)}%`,
+                          background: barColor, borderRadius: 1,
+                        }} />
+                      </div>
+                      <span className="tabular-nums" style={{ fontSize: 11, fontWeight: 700, color: barColor, minWidth: 44, textAlign: 'right' }}>
+                        {c.value > 0 ? '+' : ''}{Number(c.value).toFixed(2)}%
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             ))}
           </div>
+
+          {/* Market expectations strip — from market_expectations + alternative_measures */}
+          {(mktExp.breakeven_5y != null || mktExp.breakeven_10y != null || altMeasures.sticky_cpi != null) && (
+            <div style={{ marginTop: 10, paddingTop: 8, borderTop: `1px solid ${T.border}40`, display: 'flex', flexWrap: 'wrap', gap: 20, fontSize: 11, color: T.dim }}>
+              {mktExp.breakeven_5y != null && (
+                <span>5Y Breakeven: <span style={{ color: T.cyan, fontWeight: 700 }} className="tabular-nums">{mktExp.breakeven_5y.toFixed(2)}%</span></span>
+              )}
+              {mktExp.breakeven_10y != null && (
+                <span>10Y Breakeven: <span style={{ color: T.cyan, fontWeight: 700 }} className="tabular-nums">{mktExp.breakeven_10y.toFixed(2)}%</span></span>
+              )}
+              {altMeasures.sticky_cpi != null && (
+                <span>Sticky CPI: <span style={{ color: T.amber, fontWeight: 700 }} className="tabular-nums">{altMeasures.sticky_cpi.toFixed(1)}%</span></span>
+              )}
+              {altMeasures.trimmed_mean_pce != null && (
+                <span>Trimmed Mean PCE: <span style={{ color: T.amber, fontWeight: 700 }} className="tabular-nums">{altMeasures.trimmed_mean_pce.toFixed(1)}%</span></span>
+              )}
+              {fedPref.target != null && (
+                <span>Fed Target: <span style={{ color: T.green, fontWeight: 700 }} className="tabular-nums">{fedPref.target.toFixed(1)}%</span></span>
+              )}
+            </div>
+          )}
         </div>
       )}
 
-      {data.history?.length > 0 && (
-        <div className={card}>
-          <div className={sectionTitle} style={{ color: T.amber }}>INFLATION TREND</div>
-          <div className="h-56">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data.history}>
-                <CartesianGrid strokeDasharray="3 3" stroke={chartGrid} />
-                <XAxis dataKey="month" tick={chartTick} />
-                <YAxis tick={chartTick} domain={[1.5, 4]} />
-                <Tooltip content={<ChartTooltipContent />} />
-                <Line type="monotone" dataKey="headline" stroke={T.amber} strokeWidth={2} dot={false} name="Headline" />
-                <Line type="monotone" dataKey="core" stroke={T.red} strokeWidth={2} dot={false} name="Core" />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="flex gap-4 mt-2 text-[10px]">
-            <span className="flex items-center gap-1"><span className="w-3 h-0.5" style={{ background: T.amber }} /> Headline</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-0.5" style={{ background: T.red }} /> Core</span>
-          </div>
-        </div>
-      )}
-
-      {data.cpi_components?.length > 0 && (
-        <div className={card}>
-          <div className={sectionTitle} style={{ color: T.amber }}>CPI COMPONENT BREAKDOWN (YoY %)</div>
-          <div className="space-y-2">
-            {data.cpi_components.map((c: any) => {
-              const maxVal = Math.max(...data.cpi_components.map((x: any) => Math.abs(x.value)));
-              const pct = Math.abs(c.value) / maxVal * 100;
-              return (
-                <div key={c.name} className="flex items-center gap-3">
-                  <span className="text-xs text-[hsl(var(--term-dim))] w-40 shrink-0 text-right">{c.name}</span>
-                  <div className="flex-1 h-4 bg-white/5 overflow-hidden relative">
-                    <div
-                      className={`h-full ${c.hot ? 'bg-[hsl(var(--term-amber)/0.15)]' : c.value < 0 ? 'bg-[hsl(var(--term-green)/0.15)]' : 'bg-white/10'}`}
-                      style={{ width: `${Math.min(pct, 100)}%` }}
-                    />
-                  </div>
-                  <span className={`text-xs font-medium w-14 text-right tabular-nums ${c.hot ? 'text-[hsl(var(--term-amber))]' : c.value < 0 ? 'text-[hsl(var(--term-green))]' : 'text-[hsl(var(--term-dim))]'}`}>
-                    {c.value > 0 ? '+' : ''}{c.value}%
+      {/* ── 6 METRIC CARDS (2 rows × 3) ───────────────────────────────── */}
+      {cardRows.map((row, ri) => (
+        <div key={ri} style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+          {row.map((c) => {
+            const b      = inflBadge(c.status);
+            const nColor = inflNumColor(c.status);
+            return (
+              <div
+                key={c.title}
+                style={{
+                  background: T.surface, border: `1px solid ${T.border}`, borderRadius: 2,
+                  padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 6,
+                }}
+              >
+                {/* Title + badge */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 10, color: T.dim, letterSpacing: '0.08em', fontWeight: 600 }}>
+                    {c.title}
                   </span>
+                  {c.status !== 'neutral' && (
+                    <span style={inflBadgeStyle(c.status)}>{b.label}</span>
+                  )}
                 </div>
-              );
-            })}
-          </div>
+                {/* Big number */}
+                <div className="tabular-nums" style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em', color: nColor, lineHeight: 1.1 }}>
+                  {c.value}
+                </div>
+                {/* Change + date */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 2 }}>
+                  <span style={{ fontSize: 10, color: T.dim }}>{c.change ?? ''}</span>
+                  <span style={{ fontSize: 10, color: T.dim }}>{c.date}</span>
+                </div>
+              </div>
+            );
+          })}
         </div>
-      )}
+      ))}
 
-      {data.indicators && (
-        <div className="grid grid-cols-3 gap-3">
-          {data.indicators.map((ind: any) => (
-            <IndicatorCard key={ind.name} {...ind} />
-          ))}
-        </div>
-      )}
     </div>
   );
 }
