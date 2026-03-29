@@ -1431,54 +1431,336 @@ function GrowthTab({ data }: { data: any }) {
 // ─── TAB 5: LABOR ────────────────────────────────────────────────────────────
 function LaborTab({ data }: { data: any }) {
   if (!data) return null;
+
+  /* ── Pull backend fields ──────────────────────────────────────────────── */
+  const employment          = data.employment   || {};
+  const wages               = data.wages        || {};
+  const claims              = data.claims       || {};
+  const jobOpenings         = data.job_openings || {};
+  const commentary: string  = data.commentary  || '';
+  const indicators: any[]   = data.indicators  || [];
+  const unemployHist: any[] = data.unemployment || [];
+  const nfpHist: any[]      = data.nfp         || [];
+
+  /* ── Add year context to history arrays ─────────────────────────────── */
+  let uYear = 25;
+  const unemployLabelled = unemployHist.map((u: any, i: number) => {
+    if (i > 0 && u.month === 'Jan') uYear = 26;
+    return { ...u, label: `${u.month} ${uYear}` };
+  });
+  let nYear = 25;
+  const nfpLabelled = nfpHist.map((n: any, i: number) => {
+    if (i > 0 && n.month === 'Jan') nYear = 26;
+    return { ...n, label: `${n.month} ${nYear}` };
+  });
+
+  /* ── Alert condition: NFP negative ──────────────────────────────────── */
+  const nfpNegative = (employment.nfp_mom_change ?? 0) < 0;
+  const lastNfpK    = employment.nfp_mom_change != null
+    ? Math.round(employment.nfp_mom_change / 1000)
+    : null;
+
+  /* ── Badge helpers ───────────────────────────────────────────────────── */
+  type LBadge = { label: string; bg: string; color: string; border: string };
+  const laborBadge = (status: string): LBadge => {
+    const s = (status || '').toLowerCase();
+    if (s === 'positive' || s === 'bullish')
+      return { label: 'BULLISH', bg: `${T.green}20`, color: T.green, border: `${T.green}50` };
+    if (s === 'negative' || s === 'bearish' || s === 'elevated')
+      return { label: 'BEARISH', bg: `${T.red}20`,   color: T.red,   border: `${T.red}50`   };
+    return { label: 'NEUTRAL',  bg: `${T.amber}20`,  color: T.amber, border: `${T.amber}50` };
+  };
+  const lBadgeStyle = (status: string) => {
+    const b = laborBadge(status);
+    return { fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', padding: '2px 6px', borderRadius: 2, background: b.bg, color: b.color, border: `1px solid ${b.border}` };
+  };
+  const lNumColor = (status: string) => {
+    const s = (status || '').toLowerCase();
+    if (s === 'positive' || s === 'bullish') return T.green;
+    if (s === 'negative' || s === 'bearish' || s === 'elevated') return T.red;
+    return T.amber;
+  };
+
+  // Indicator status lookup
+  const indSt = (kw: string) =>
+    (indicators.find((i: any) => i.name.toLowerCase().includes(kw.toLowerCase()))?.status) ?? 'neutral';
+
+  /* ── 6 metric cards ──────────────────────────────────────────────────── */
+  const unempSt  = indSt('unemployment');
+  const nfpSt    = indSt('nfp last');
+  const wageSt   = indSt('wage');
+  const claimsSt = indSt('claims');
+  const joltsst  = indSt('jolts');
+  const u6St     = indSt('u-6');
+
+  const cardRows = [
+    [
+      {
+        title: 'UNEMPLOYMENT RATE',
+        // employment.unemployment_rate from backend
+        value: employment.unemployment_rate != null ? `${Number(employment.unemployment_rate).toFixed(1)}%` : '—',
+        status: unempSt,
+        change: employment.u6_rate != null ? `U-6: ${employment.u6_rate.toFixed(1)}%` : null as string | null,
+        date: 'Feb 2026',
+      },
+      {
+        title: 'NONFARM PAYROLLS',
+        // employment.nfp_mom_change from backend — show "Negative" when < 0
+        value: lastNfpK != null ? (lastNfpK < 0 ? 'Negative' : `+${lastNfpK}K`) : '—',
+        status: nfpSt,
+        change: employment.nfp_3m_avg != null
+          ? `3M avg: ${Math.round(employment.nfp_3m_avg / 1000)}K/mo`
+          : null,
+        date: 'Feb 2026',
+      },
+      {
+        title: 'WAGE GROWTH',
+        // wages.avg_hourly_earnings_yoy from backend
+        value: wages.avg_hourly_earnings_yoy != null ? `${Number(wages.avg_hourly_earnings_yoy).toFixed(1)}%` : '—',
+        status: wageSt,
+        change: null as string | null,
+        date: 'Latest',
+      },
+    ],
+    [
+      {
+        title: 'INITIAL CLAIMS',
+        // claims.initial_claims from backend
+        value: claims.initial_claims != null ? `${Math.round(claims.initial_claims / 1000)}K` : '—',
+        status: claimsSt,
+        change: claims.continued_claims != null ? `Continued: ${Math.round(claims.continued_claims / 1000)}K` : null,
+        date: 'Weekly',
+      },
+      {
+        title: 'JOLTS OPENINGS',
+        // job_openings.jolts_millions from backend
+        value: jobOpenings.jolts_millions != null ? `${Number(jobOpenings.jolts_millions).toFixed(1)}M` : '—',
+        status: joltsst,
+        change: null,
+        date: 'Latest',
+      },
+      {
+        title: 'PARTICIPATION RATE',
+        // employment.participation_rate from backend
+        value: employment.participation_rate != null ? `${Number(employment.participation_rate).toFixed(1)}%` : '—',
+        status: 'neutral',
+        change: null,
+        date: 'Latest',
+      },
+    ],
+  ];
+
+  /* ── Render ──────────────────────────────────────────────────────────── */
   return (
-    <div className="space-y-4">
-      {data.unemployment?.length > 0 && (
-        <div className={card}>
-          <div className={sectionTitle} style={{ color: T.red }}>UNEMPLOYMENT RATE (%)</div>
-          <div className="h-56">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data.unemployment}>
-                <CartesianGrid strokeDasharray="3 3" stroke={chartGrid} />
-                <XAxis dataKey="month" tick={chartTick} />
-                <YAxis tick={chartTick} domain={[3.8, 4.8]} />
-                <Tooltip content={<ChartTooltipContent />} />
-                <Line type="monotone" dataKey="rate" stroke={T.red} strokeWidth={2} dot={{ r: 2 }} name="U-3 Rate" />
-              </LineChart>
-            </ResponsiveContainer>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+      {/* ── ALERT BANNER — shown when NFP is negative ─────────────────── */}
+      {nfpNegative && (
+        <div style={{
+          border: `1px solid ${T.red}60`, background: `${T.red}08`, borderRadius: 2,
+          padding: '10px 14px', display: 'flex', gap: 10, alignItems: 'flex-start',
+        }}>
+          <span style={{ color: T.amber, fontSize: 13, flexShrink: 0, marginTop: 1 }}>⚠</span>
+          <div style={{ fontSize: 11, color: '#ddd', lineHeight: 1.6 }}>
+            <span style={{ color: T.red, fontWeight: 700, letterSpacing: '0.05em' }}>LABOR MARKET DETERIORATION</span>
+            {' — '}{commentary}
           </div>
         </div>
       )}
 
-      {data.nfp?.length > 0 && (
-        <div className={card}>
-          <div className={sectionTitle} style={{ color: T.red }}>NON-FARM PAYROLLS (K)</div>
-          <div className="h-56">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data.nfp}>
-                <CartesianGrid strokeDasharray="3 3" stroke={chartGrid} />
-                <XAxis dataKey="month" tick={chartTick} />
-                <YAxis tick={chartTick} />
-                <Tooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="nfp" name="NFP (K)">
-                  {data.nfp.map((entry: any, i: number) => (
-                    <Cell key={i} fill={entry.nfp >= 100 ? T.green : entry.nfp >= 0 ? T.amber : T.red} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="text-[10px] text-[hsl(var(--term-dim))] mt-1">— Declining payroll trend signals labor market deterioration</div>
-        </div>
-      )}
+      {/* ── TWO SIDE-BY-SIDE CHARTS ──────────────────────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
 
-      {data.indicators && (
-        <div className="grid grid-cols-3 gap-3">
-          {data.indicators.map((ind: any) => (
-            <IndicatorCard key={ind.name} {...ind} />
-          ))}
+        {/* LEFT: UNEMPLOYMENT RATE — from unemployment[] */}
+        <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 2, padding: '12px 14px' }}>
+          <div style={{ marginBottom: 6 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: '#ccc', marginBottom: 3 }}>
+              UNEMPLOYMENT RATE (%)
+            </div>
+            {employment.unemployment_rate != null && (
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                <span style={{ fontSize: 20, fontWeight: 700, color: T.red }} className="tabular-nums">
+                  {Number(employment.unemployment_rate).toFixed(1)}%
+                </span>
+                {employment.nfp_3m_avg != null && (
+                  <span style={{ fontSize: 10, color: T.green }}>
+                    ▲ trending up
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+          {unemployLabelled.length > 0 && (
+            <div style={{ height: 180 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={unemployLabelled}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={chartGrid} vertical={false} />
+                  <XAxis dataKey="label" tick={chartTick} interval={1} angle={-30} textAnchor="end" height={40} />
+                  <YAxis tick={chartTick} width={36} domain={[3.8, 4.8]} />
+                  <ReferenceLine
+                    y={4.5}
+                    stroke={T.amber}
+                    strokeDasharray="4 3"
+                    strokeWidth={1}
+                    label={{ value: 'C', position: 'right', fill: T.amber, fontSize: 10 }}
+                  />
+                  <Tooltip
+                    contentStyle={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 2, fontSize: 11 }}
+                    labelStyle={{ color: T.dim }}
+                    formatter={(v: any) => [`${Number(v).toFixed(1)}%`, 'U-3']}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="rate"
+                    stroke={T.red}
+                    strokeWidth={2}
+                    dot={{ r: 2, fill: T.red }}
+                    name="U-3 Rate"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </div>
-      )}
+
+        {/* RIGHT: NONFARM PAYROLLS — from nfp[] */}
+        <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 2, padding: '12px 14px' }}>
+          <div style={{ marginBottom: 6 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: '#ccc', marginBottom: 3 }}>
+              NONFARM PAYROLLS (K/MONTH)
+            </div>
+            {lastNfpK != null && (
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 20, fontWeight: 700, color: lastNfpK < 0 ? T.red : T.green }} className="tabular-nums">
+                  {lastNfpK < 0 ? '' : '+'}{lastNfpK}K
+                </span>
+                {nfpNegative && (
+                  <span style={{ fontSize: 10, color: T.red, fontWeight: 600 }}>First negative since COVID</span>
+                )}
+              </div>
+            )}
+          </div>
+          {nfpLabelled.length > 0 && (
+            <div style={{ height: 180 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={nfpLabelled}>
+                  <defs>
+                    <linearGradient id="nfpGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%"  stopColor={T.green} stopOpacity={0.25} />
+                      <stop offset="95%" stopColor={T.green} stopOpacity={0.03} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke={chartGrid} vertical={false} />
+                  <XAxis dataKey="label" tick={chartTick} interval={1} angle={-30} textAnchor="end" height={40} />
+                  <YAxis
+                    tick={chartTick}
+                    width={42}
+                    tickFormatter={(v: number) => `${Math.round(v / 1000)}K`}
+                  />
+                  <ReferenceLine
+                    y={70000}
+                    stroke={T.amber}
+                    strokeDasharray="4 3"
+                    strokeWidth={1}
+                    label={{ value: 'B', position: 'right', fill: T.amber, fontSize: 10 }}
+                  />
+                  <Tooltip
+                    contentStyle={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 2, fontSize: 11 }}
+                    labelStyle={{ color: T.dim }}
+                    formatter={(v: any) => [`${Math.round(Number(v) / 1000)}K`, 'NFP']}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="nfp"
+                    stroke={T.green}
+                    strokeWidth={2}
+                    fill="url(#nfpGrad)"
+                    dot={{ r: 2, fill: T.green }}
+                    name="NFP"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── LABOR MARKET STRUCTURE — COMMENTARY ────────────────────────── */}
+      <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 2, padding: '12px 16px' }}>
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: '#ccc', marginBottom: 10 }}>
+          LABOR MARKET STRUCTURE
+        </div>
+        {/* commentary from backend */}
+        {commentary && (
+          <div style={{ fontSize: 11, color: '#aaa', lineHeight: 1.65, marginBottom: 8 }}>
+            <span style={{ color: T.green, fontWeight: 700, marginRight: 6 }}>&gt;</span>
+            {commentary}
+          </div>
+        )}
+        {/* Supplementary metrics from backend */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, fontSize: 11, color: T.dim, paddingTop: 8, borderTop: `1px solid ${T.border}40` }}>
+          {employment.nfp_3m_avg != null && (
+            <span>NFP 3M avg: <span style={{ color: T.amber, fontWeight: 700 }} className="tabular-nums">
+              {Math.round(employment.nfp_3m_avg / 1000)}K/mo
+            </span></span>
+          )}
+          {employment.u6_rate != null && (
+            <span>U-6 Rate: <span style={{ color: T.amber, fontWeight: 700 }} className="tabular-nums">
+              {employment.u6_rate.toFixed(1)}%
+            </span></span>
+          )}
+          {employment.participation_rate != null && (
+            <span>Participation: <span style={{ color: T.amber, fontWeight: 700 }} className="tabular-nums">
+              {employment.participation_rate.toFixed(1)}%
+            </span></span>
+          )}
+          {claims.initial_claims != null && (
+            <span>Initial Claims: <span style={{ color: T.cyan, fontWeight: 700 }} className="tabular-nums">
+              {Math.round(claims.initial_claims / 1000)}K
+            </span></span>
+          )}
+          {claims.continued_claims != null && (
+            <span>Continued Claims: <span style={{ color: T.cyan, fontWeight: 700 }} className="tabular-nums">
+              {Math.round(claims.continued_claims / 1000)}K
+            </span></span>
+          )}
+        </div>
+      </div>
+
+      {/* ── 6 METRIC CARDS (2 rows × 3) ──────────────────────────────────── */}
+      {cardRows.map((row, ri) => (
+        <div key={ri} style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+          {row.map((c) => {
+            const b      = laborBadge(c.status);
+            const nColor = lNumColor(c.status);
+            return (
+              <div
+                key={c.title}
+                style={{
+                  background: T.surface, border: `1px solid ${T.border}`, borderRadius: 2,
+                  padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 6,
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 10, color: T.dim, letterSpacing: '0.08em', fontWeight: 600 }}>{c.title}</span>
+                  <span style={lBadgeStyle(c.status)}>{b.label}</span>
+                </div>
+                <div
+                  className="tabular-nums"
+                  style={{ fontSize: c.value === 'Negative' ? 20 : 22, fontWeight: 700, letterSpacing: '-0.02em', color: nColor, lineHeight: 1.1 }}
+                >
+                  {c.value}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 2 }}>
+                  <span style={{ fontSize: 10, color: T.dim }}>{c.change ?? ''}</span>
+                  <span style={{ fontSize: 10, color: T.dim }}>{c.date}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ))}
+
     </div>
   );
 }
