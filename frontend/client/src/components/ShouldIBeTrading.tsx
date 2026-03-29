@@ -349,31 +349,51 @@ export default function ShouldIBeTrading() {
           <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, overflow: 'hidden' }}>
             <div style={{ padding: '8px 12px', borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ color: C.dim, fontSize: 10 }}>◈</span>
+                <span style={{ color: C.red, fontSize: 10 }}>◈</span>
                 <span style={{ color: C.dim, fontSize: 9, letterSpacing: 1.5 }}>EXECUTION WINDOW</span>
               </div>
               <span style={{ fontSize: 18, fontWeight: 900, color: scoreColor(ews) }}>{ews.toFixed(0)}</span>
             </div>
-            <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {/* Score bar */}
+            <div style={{ height: 2, background: C.bg }}>
+              <div style={{ height: '100%', width: `${Math.min(ews,100)}%`, background: scoreColor(ews), transition: 'width 0.8s ease' }} />
+            </div>
+            <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 9 }}>
               {d.execution_conditions.map((ec, i) => {
-                const statusColor = ec.ok ? C.green : C.red;
-                // Shorten verbose labels: extract text before first "(" or truncate
-                const shortLabel = (ec.label.includes('(')
-                  ? ec.label.split('(')[0].trim()
-                  : ec.label
-                ).replace('volatility acceptable','').replace('trend intact','').replace(' today/tomorrow','').trim();
+                const okColor = ec.ok ? C.green : C.red;
+                const statusColor = ec.status ? statusWordColor(ec.status, ec.ok) : okColor;
+                // Clean up verbose labels — keep question-style if short, strip parenthetical suffixes
+                const rawLabel = ec.label.includes('(') ? ec.label.split('(')[0].trim() : ec.label;
+                const displayLabel = rawLabel
+                  .replace(/\bvolatility acceptable\b/gi,'')
+                  .replace(/\btrend intact\b/gi,'')
+                  .replace(/\btoday\/tomorrow\b/gi,'')
+                  .replace(/\bsectors positive\b/gi,'positive')
+                  .replace(/\bbelow\b/gi,'below')
+                  .trim();
+
                 return (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
-                    <span style={{ color: C.dimLow, fontSize: 10, flexShrink: 0 }}>●</span>
-                    <span style={{ color: C.dim, fontSize: 10, flex: 1, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{shortLabel}</span>
-                    {ec.value && (
-                      <span style={{ color: C.text, fontSize: 10, fontWeight: 600, flexShrink: 0, marginLeft: 4, whiteSpace: 'nowrap' }}>{ec.value}</span>
-                    )}
-                    {ec.status ? (
-                      <span style={{ color: statusColor, fontSize: 9, flexShrink: 0, marginLeft: 2, whiteSpace: 'nowrap' }}>{ec.status}</span>
-                    ) : (
-                      <span style={{ color: statusColor, fontSize: 9, fontWeight: 700, flexShrink: 0, marginLeft: 2 }}>{ec.ok ? 'PASS' : 'FAIL'}</span>
-                    )}
+                  <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', alignItems: 'center', gap: 6, minWidth: 0 }}>
+                    {/* Label */}
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 5, minWidth: 0 }}>
+                      <span style={{ color: C.dimLow, fontSize: 10, flexShrink: 0 }}>●</span>
+                      <span style={{ color: C.dim, fontSize: 10, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayLabel}</span>
+                    </span>
+                    {/* Value */}
+                    <span style={{ color: C.text, fontSize: 10, fontWeight: 700, whiteSpace: 'nowrap', textAlign: 'right' }}>
+                      {ec.value ?? (ec.ok ? 'Yes' : 'No')}
+                    </span>
+                    {/* Status badge */}
+                    <span style={{
+                      color: statusColor,
+                      fontSize: 9,
+                      fontStyle: 'italic',
+                      whiteSpace: 'nowrap',
+                      minWidth: 64,
+                      textAlign: 'right',
+                    }}>
+                      {ec.status ?? (ec.ok ? 'PASS' : 'FAIL')}
+                    </span>
                   </div>
                 );
               })}
