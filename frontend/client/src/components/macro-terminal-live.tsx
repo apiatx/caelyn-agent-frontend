@@ -2118,7 +2118,7 @@ const WatchMarketOverview = memo(function WatchMarketOverview({ config }: { conf
     container.current.appendChild(script);
   }, []);
   return (
-    <div ref={container} style={{ width: '100%', height: '100%' }}>
+    <div className="tradingview-widget-container" ref={container} style={{ width: '100%', height: '100%' }}>
       <div className="tradingview-widget-container__widget" style={{ width: '100%', height: '100%' }} />
     </div>
   );
@@ -2136,7 +2136,7 @@ const WatchForexHeatmap = memo(function WatchForexHeatmap() {
     container.current.appendChild(script);
   }, []);
   return (
-    <div ref={container} style={{ width: '100%', height: '100%' }}>
+    <div className="tradingview-widget-container" ref={container} style={{ width: '100%', height: '100%' }}>
       <div className="tradingview-widget-container__widget" style={{ width: '100%', height: '100%' }} />
     </div>
   );
@@ -2154,7 +2154,7 @@ const WatchEconomicCalendar = memo(function WatchEconomicCalendar() {
     container.current.appendChild(script);
   }, []);
   return (
-    <div ref={container} style={{ width: '100%', height: '100%' }}>
+    <div className="tradingview-widget-container" ref={container} style={{ width: '100%', height: '100%' }}>
       <div className="tradingview-widget-container__widget" style={{ width: '100%', height: '100%' }} />
     </div>
   );
@@ -2201,43 +2201,43 @@ function WatchTab() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-      {/* ── ECONOMIC CALENDAR + INDICES — side by side ────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-        <div style={{ ...panelStyle, height: 560 }}>
-          <div style={labelStyle}>ECONOMIC CALENDAR</div>
-          <div style={{ height: 'calc(100% - 37px)' }}>
-            <WatchEconomicCalendar />
-          </div>
+      {/* ── ECONOMIC CALENDAR — full width ───────────────────────────── */}
+      <div style={{ ...panelStyle, height: 580 }}>
+        <div style={labelStyle}>ECONOMIC CALENDAR</div>
+        <div style={{ height: 'calc(100% - 37px)' }}>
+          <WatchEconomicCalendar />
         </div>
-        <div style={{ ...panelStyle, height: 560 }}>
+      </div>
+
+      {/* ── INDICES + STOCKS — side by side ──────────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <div style={{ ...panelStyle, height: 500 }}>
           <div style={labelStyle}>INDICES</div>
           <div style={{ height: 'calc(100% - 37px)' }}>
             <WatchMarketOverview config={watchIndicesConfig} />
           </div>
         </div>
-      </div>
-
-      {/* ── STOCKS + CURRENCIES — side by side ───────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
         <div style={{ ...panelStyle, height: 500 }}>
           <div style={labelStyle}>STOCKS</div>
           <div style={{ height: 'calc(100% - 37px)' }}>
             <WatchMarketOverview config={watchStocksConfig} />
           </div>
         </div>
+      </div>
+
+      {/* ── CURRENCIES + CRYPTO — side by side ───────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
         <div style={{ ...panelStyle, height: 500 }}>
           <div style={labelStyle}>CURRENCIES</div>
           <div style={{ height: 'calc(100% - 37px)' }}>
             <WatchMarketOverview config={watchCurrenciesConfig} />
           </div>
         </div>
-      </div>
-
-      {/* ── CRYPTO — full width ───────────────────────────────────────── */}
-      <div style={{ ...panelStyle, height: 500 }}>
-        <div style={labelStyle}>CRYPTOCURRENCIES</div>
-        <div style={{ height: 'calc(100% - 37px)' }}>
-          <WatchMarketOverview config={watchCryptoConfig} />
+        <div style={{ ...panelStyle, height: 500 }}>
+          <div style={labelStyle}>CRYPTOCURRENCIES</div>
+          <div style={{ height: 'calc(100% - 37px)' }}>
+            <WatchMarketOverview config={watchCryptoConfig} />
+          </div>
         </div>
       </div>
 
