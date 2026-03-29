@@ -45,6 +45,12 @@ function parseVal(v: string): { main: string; sub: string } {
   const m = v.match(/^([^(]+?)(?:\s*\(([^)]+)\))?$/);
   return { main: m?.[1]?.trim() ?? v, sub: m?.[2]?.trim() ?? '' };
 }
+function statusWordColor(status: string, ok: boolean): string {
+  const s = status.toLowerCase();
+  const neutral = ['normal','neutral','stable','moderate','easing','upcoming','soon','hold','clear','upcoming'];
+  if (neutral.some(w => s === w || s.startsWith(w))) return C.yellow;
+  return ok ? C.green : C.red;
+}
 function pillarIcon(title: string) {
   const t = title.toLowerCase();
   if (t.includes('volat')) return '⚡';
@@ -316,16 +322,16 @@ export default function ShouldIBeTrading() {
                 <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {p.metrics.map((m, j) => {
                     const { main, sub } = parseVal(m.value);
-                    const statusText = m.status ?? sub;
-                    const statusColor = m.ok ? C.green : C.red;
+                    const statusText = m.status ?? sub ?? '';
+                    const sColor = statusText ? statusWordColor(statusText, m.ok) : (m.ok ? C.green : C.red);
                     return (
                       <div key={j} style={{ display: 'flex', alignItems: 'baseline', gap: 4, minWidth: 0 }}>
                         <span style={{ color: C.dimLow, fontSize: 10, flexShrink: 0 }}>●</span>
                         <span style={{ color: C.dim, fontSize: 10, flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>{m.label}</span>
                         <span style={{ color: C.text, fontSize: 10, fontWeight: 600, flexShrink: 0, marginLeft: 4, whiteSpace: 'nowrap' }}>{main}</span>
                         {statusText
-                          ? <span style={{ color: statusColor, fontSize: 9, flexShrink: 0, marginLeft: 3, whiteSpace: 'nowrap' }}>{statusText}</span>
-                          : <span style={{ color: statusColor, fontSize: 9, flexShrink: 0, marginLeft: 3 }}>{m.ok ? '↑' : '↓'}</span>
+                          ? <span style={{ color: sColor, fontSize: 9, flexShrink: 0, marginLeft: 3, whiteSpace: 'nowrap' }}>{statusText}</span>
+                          : <span style={{ color: m.ok ? C.green : C.red, fontSize: 9, flexShrink: 0, marginLeft: 3 }}>{m.ok ? '↑' : '↓'}</span>
                         }
                       </div>
                     );
@@ -351,20 +357,22 @@ export default function ShouldIBeTrading() {
             <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
               {d.execution_conditions.map((ec, i) => {
                 const statusColor = ec.ok ? C.green : C.red;
-                const hasRich = ec.value !== undefined || ec.status !== undefined;
+                // Shorten verbose labels: extract text before first "(" or truncate
+                const shortLabel = (ec.label.includes('(')
+                  ? ec.label.split('(')[0].trim()
+                  : ec.label
+                ).replace('volatility acceptable','').replace('trend intact','').replace(' today/tomorrow','').trim();
                 return (
-                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 6, minWidth: 0 }}>
-                    <span style={{ color: C.dimLow, fontSize: 10, marginTop: 1, flexShrink: 0 }}>●</span>
-                    <span style={{ color: C.dim, fontSize: 10, flex: 1, lineHeight: 1.4, minWidth: 0 }}>{ec.label}</span>
-                    {hasRich ? (
-                      <span style={{ display: 'flex', gap: 4, flexShrink: 0, marginLeft: 4, alignItems: 'center' }}>
-                        {ec.value && <span style={{ color: C.text, fontSize: 10, fontWeight: 600 }}>{ec.value}</span>}
-                        {ec.status && <span style={{ color: statusColor, fontSize: 9 }}>{ec.status}</span>}
-                      </span>
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+                    <span style={{ color: C.dimLow, fontSize: 10, flexShrink: 0 }}>●</span>
+                    <span style={{ color: C.dim, fontSize: 10, flex: 1, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{shortLabel}</span>
+                    {ec.value && (
+                      <span style={{ color: C.text, fontSize: 10, fontWeight: 600, flexShrink: 0, marginLeft: 4, whiteSpace: 'nowrap' }}>{ec.value}</span>
+                    )}
+                    {ec.status ? (
+                      <span style={{ color: statusColor, fontSize: 9, flexShrink: 0, marginLeft: 2, whiteSpace: 'nowrap' }}>{ec.status}</span>
                     ) : (
-                      <span style={{ color: statusColor, fontSize: 9, fontWeight: 700, flexShrink: 0, marginLeft: 4 }}>
-                        {ec.ok ? 'PASS' : 'FAIL'}
-                      </span>
+                      <span style={{ color: statusColor, fontSize: 9, fontWeight: 700, flexShrink: 0, marginLeft: 2 }}>{ec.ok ? 'PASS' : 'FAIL'}</span>
                     )}
                   </div>
                 );
