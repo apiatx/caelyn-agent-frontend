@@ -1505,23 +1505,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/trading-dashboard', async (req, res) => {
     try {
       const mode = req.query.mode === 'day' ? 'day' : 'swing';
-      const data = await shouldIBeTradingService.getDashboard(mode);
-      res.json(data);
-    } catch (error) {
-      console.error('Error fetching trading dashboard:', error);
-      res.status(500).json({ error: 'Failed to fetch trading dashboard data' });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 20000);
+      const response = await fetch(`${AGENT_URL}/api/trading-dashboard?mode=${mode}`, {
+        headers: { 'X-API-Key': AGENT_KEY },
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      if (!response.ok) {
+        const text = await response.text();
+        return res.status(response.status).json({ error: `Backend returned ${response.status}`, detail: text.slice(0, 200) });
+      }
+      res.json(await response.json());
+    } catch (error: any) {
+      console.error('Trading dashboard proxy error:', error);
+      res.status(500).json({ error: error?.name === 'AbortError' ? 'Request timed out' : 'Failed to fetch trading dashboard data' });
     }
   });
 
   app.post('/api/trading-dashboard/refresh', async (req, res) => {
     try {
-      shouldIBeTradingService.invalidateCache();
       const mode = req.query.mode === 'day' ? 'day' : 'swing';
-      const data = await shouldIBeTradingService.getDashboard(mode);
-      res.json(data);
-    } catch (error) {
-      console.error('Error refreshing trading dashboard:', error);
-      res.status(500).json({ error: 'Failed to refresh trading dashboard data' });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 20000);
+      const response = await fetch(`${AGENT_URL}/api/trading-dashboard/refresh?mode=${mode}`, {
+        method: 'POST',
+        headers: { 'X-API-Key': AGENT_KEY },
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      if (!response.ok) {
+        const text = await response.text();
+        return res.status(response.status).json({ error: `Backend returned ${response.status}`, detail: text.slice(0, 200) });
+      }
+      res.json(await response.json());
+    } catch (error: any) {
+      console.error('Trading dashboard refresh proxy error:', error);
+      res.status(500).json({ error: error?.name === 'AbortError' ? 'Request timed out' : 'Failed to refresh trading dashboard data' });
     }
   });
 
