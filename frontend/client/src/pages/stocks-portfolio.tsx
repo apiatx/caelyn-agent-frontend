@@ -1,7 +1,7 @@
 import { Fragment, useState, useEffect, useCallback, useMemo, type ReactNode } from 'react';
 import { Card } from "@/components/ui/card";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
-import { Plus, Trash2, ArrowUpDown, ChevronDown, ChevronRight, Bot, Calendar, TrendingUp, TrendingDown, ExternalLink, RefreshCw, Briefcase } from 'lucide-react';
+import { Plus, Trash2, ArrowUpDown, ChevronDown, ChevronRight, Bot, Calendar, TrendingUp, TrendingDown, ExternalLink, RefreshCw, Briefcase, Pencil, Check, X } from 'lucide-react';
 
 
 interface Holding {
@@ -176,6 +176,10 @@ export default function StocksPortfolioPage() {
   const [quotesError, setQuotesError] = useState(false);
   const [addingHolding, setAddingHolding] = useState(false);
   const [selectedAssetType, setSelectedAssetType] = useState('stock');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editShares, setEditShares] = useState('');
+  const [editAvgCost, setEditAvgCost] = useState('');
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const fetchHoldings = useCallback(async () => {
     try {
@@ -290,6 +294,42 @@ export default function StocksPortfolioPage() {
       await fetchHoldings();
     } catch (err) {
       console.error('Failed to delete holding:', err);
+    }
+  };
+
+  const startEdit = (h: Holding, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingId(h.id);
+    setEditShares(String(h.shares));
+    setEditAvgCost(String(h.avgCost));
+    setExpandedCard(null);
+  };
+
+  const cancelEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingId(null);
+    setEditShares('');
+    setEditAvgCost('');
+  };
+
+  const saveEdit = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!editingId || !editShares || !editAvgCost) return;
+    setSavingEdit(true);
+    try {
+      await fetch(`/api/stock-holdings/${editingId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shares: parseFloat(editShares), avgCost: parseFloat(editAvgCost) }),
+      });
+      setEditingId(null);
+      setEditShares('');
+      setEditAvgCost('');
+      await fetchHoldings();
+    } catch (err) {
+      console.error('Failed to update holding:', err);
+    } finally {
+      setSavingEdit(false);
     }
   };
 
@@ -776,7 +816,7 @@ export default function StocksPortfolioPage() {
                       <th className="text-right pb-2 px-3"><SortHeader label="Daily P&L" keyName="dailyPL" /></th>
                       <th className="text-right pb-2 px-3"><SortHeader label="Total P&L" keyName="totalPL" /></th>
                       <th className="text-right pb-2 px-3"><SortHeader label="Weight%" keyName="weight" /></th>
-                      <th className="text-right pb-2 pl-3 w-10"></th>
+                      <th className="text-right pb-2 pl-3 w-16"></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -786,37 +826,82 @@ export default function StocksPortfolioPage() {
                       const q = h.quote;
                       return (
                         <Fragment key={h.id}>
-                          <tr onClick={() => setExpandedCard(isExpanded ? null : h.id)} className="transition-colors cursor-pointer" style={{ borderBottom: '1px solid #1a1c3a' }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(32, 144, 208, 0.06)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                            <td className="py-2.5 pr-1 w-6">
-                              {isExpanded ? <ChevronDown className="w-3.5 h-3.5" style={{ color: '#5cc8f0' }} /> : <ChevronRight className="w-3.5 h-3.5 text-crypto-silver hover:text-[#5cc8f0]" />}
-                            </td>
-                            <td className="py-2.5 pr-3">
-                              <div style={{ color: '#e2e8f0', fontWeight: 700, fontSize: '1rem' }}>{h.ticker}</div>
-                              <div className="truncate max-w-[120px]" style={{ color: '#64748b', fontSize: '0.8rem' }}>{getDisplayName(h.ticker, h.assetType, h.quote?.companyName || h.quote?.name)}</div>
-                            </td>
-                            <td className="text-right py-2.5 px-3 text-crypto-silver">{h.shares}</td>
-                            <td className="text-right py-2.5 px-3 text-crypto-silver">{fmt(h.avgCost)}</td>
-                            <td className="text-right py-2.5 px-3" style={{ color: '#5cc8f0', fontWeight: 600 }}>
-                              {loadingQuotes && !h.currentPrice ? <span className="animate-pulse text-crypto-silver">Loading...</span> : quotesError && !h.currentPrice ? <span className="text-yellow-500 text-xs">Unavailable</span> : h.currentPrice > 0 ? fmt(h.currentPrice) : <span className="text-crypto-silver/50">—</span>}
-                            </td>
-                            <td className="text-right py-2.5 px-3 font-medium" style={{ color: '#a78bfa' }}>
-                              {fmt(h.avgCost * h.shares)}
-                            </td>
-                            <td className={`text-right py-2.5 px-3 font-medium ${h.dailyPL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                              {loadingQuotes && !h.currentPrice ? <span className="animate-pulse text-crypto-silver">...</span> : quotesError && !h.currentPrice ? <span className="text-yellow-500 text-xs">—</span> : h.currentPrice > 0 ? fmtPL(h.dailyPL) : <span className="text-crypto-silver/50">—</span>}
-                            </td>
-                            <td className={`text-right py-2.5 px-3 font-medium ${h.totalPL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                              {loadingQuotes && !h.currentPrice ? <span className="animate-pulse text-crypto-silver">...</span> : quotesError && !h.currentPrice ? <span className="text-yellow-500 text-xs">—</span> : h.currentPrice > 0 ? <><div>{fmtPL(h.totalPL)}</div><div className="text-[10px] opacity-70">{pctPL(h.totalPL, h.avgCost * h.shares)}</div></> : <span className="text-crypto-silver/50">—</span>}
-                            </td>
-                            <td className="text-right py-2.5 px-3 text-crypto-silver">
-                              {totalPortfolioValue > 0 ? ((h.totalValue / totalPortfolioValue) * 100).toFixed(1) + '%' : <span className="text-crypto-silver/50">—</span>}
-                            </td>
-                            <td className="text-right py-2.5 pl-3">
-                              <button onClick={(e) => { e.stopPropagation(); deleteHolding(h.id); }} className="opacity-50 hover:opacity-100 transition-all p-1" style={{ color: '#475569' }} onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')} onMouseLeave={e => (e.currentTarget.style.color = '#475569')}>
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </td>
-                          </tr>
+                          {(() => {
+                            const isEditing = editingId === h.id;
+                            const editedShares = parseFloat(editShares) || 0;
+                            const editedAvgCost = parseFloat(editAvgCost) || 0;
+                            const editedInvested = editedShares * editedAvgCost;
+                            const inputCls = "w-full bg-transparent text-right text-white text-sm border-b border-[#5cc8f0]/60 focus:border-[#5cc8f0] focus:outline-none py-0.5 px-1";
+                            return (
+                              <tr
+                                onClick={() => !isEditing && setExpandedCard(isExpanded ? null : h.id)}
+                                className="transition-colors"
+                                style={{ borderBottom: '1px solid #1a1c3a', cursor: isEditing ? 'default' : 'pointer', background: isEditing ? 'rgba(92,200,240,0.04)' : 'transparent' }}
+                                onMouseEnter={e => { if (!isEditing) e.currentTarget.style.background = 'rgba(32, 144, 208, 0.06)'; }}
+                                onMouseLeave={e => { if (!isEditing) e.currentTarget.style.background = 'transparent'; }}
+                              >
+                                <td className="py-2.5 pr-1 w-6">
+                                  {!isEditing && (isExpanded ? <ChevronDown className="w-3.5 h-3.5" style={{ color: '#5cc8f0' }} /> : <ChevronRight className="w-3.5 h-3.5 text-crypto-silver hover:text-[#5cc8f0]" />)}
+                                </td>
+                                <td className="py-2.5 pr-3">
+                                  <div style={{ color: '#e2e8f0', fontWeight: 700, fontSize: '1rem' }}>{h.ticker}</div>
+                                  <div className="truncate max-w-[120px]" style={{ color: '#64748b', fontSize: '0.8rem' }}>{getDisplayName(h.ticker, h.assetType, h.quote?.companyName || h.quote?.name)}</div>
+                                </td>
+                                {/* Shares — editable */}
+                                <td className="text-right py-2.5 px-3">
+                                  {isEditing
+                                    ? <input type="number" value={editShares} onChange={e => setEditShares(e.target.value)} onClick={e => e.stopPropagation()} onKeyDown={e => { if (e.key === 'Enter') saveEdit(e as any); if (e.key === 'Escape') cancelEdit(e as any); }} className={inputCls} style={{ width: 72 }} autoFocus />
+                                    : <span className="text-crypto-silver">{h.shares}</span>
+                                  }
+                                </td>
+                                {/* Avg Price — editable */}
+                                <td className="text-right py-2.5 px-3">
+                                  {isEditing
+                                    ? <input type="number" value={editAvgCost} onChange={e => setEditAvgCost(e.target.value)} onClick={e => e.stopPropagation()} onKeyDown={e => { if (e.key === 'Enter') saveEdit(e as any); if (e.key === 'Escape') cancelEdit(e as any); }} className={inputCls} style={{ width: 80 }} />
+                                    : <span className="text-crypto-silver">{fmt(h.avgCost)}</span>
+                                  }
+                                </td>
+                                <td className="text-right py-2.5 px-3" style={{ color: '#5cc8f0', fontWeight: 600 }}>
+                                  {loadingQuotes && !h.currentPrice ? <span className="animate-pulse text-crypto-silver">Loading...</span> : quotesError && !h.currentPrice ? <span className="text-yellow-500 text-xs">Unavailable</span> : h.currentPrice > 0 ? fmt(h.currentPrice) : <span className="text-crypto-silver/50">—</span>}
+                                </td>
+                                {/* Invested — live preview when editing */}
+                                <td className="text-right py-2.5 px-3 font-medium" style={{ color: isEditing ? '#c4b5fd' : '#a78bfa' }}>
+                                  {isEditing ? fmt(editedInvested) : fmt(h.avgCost * h.shares)}
+                                </td>
+                                <td className={`text-right py-2.5 px-3 font-medium ${h.dailyPL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                  {loadingQuotes && !h.currentPrice ? <span className="animate-pulse text-crypto-silver">...</span> : quotesError && !h.currentPrice ? <span className="text-yellow-500 text-xs">—</span> : h.currentPrice > 0 ? fmtPL(h.dailyPL) : <span className="text-crypto-silver/50">—</span>}
+                                </td>
+                                <td className={`text-right py-2.5 px-3 font-medium ${h.totalPL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                  {loadingQuotes && !h.currentPrice ? <span className="animate-pulse text-crypto-silver">...</span> : quotesError && !h.currentPrice ? <span className="text-yellow-500 text-xs">—</span> : h.currentPrice > 0 ? <><div>{fmtPL(h.totalPL)}</div><div className="text-[10px] opacity-70">{pctPL(h.totalPL, h.avgCost * h.shares)}</div></> : <span className="text-crypto-silver/50">—</span>}
+                                </td>
+                                <td className="text-right py-2.5 px-3 text-crypto-silver">
+                                  {totalPortfolioValue > 0 ? ((h.totalValue / totalPortfolioValue) * 100).toFixed(1) + '%' : <span className="text-crypto-silver/50">—</span>}
+                                </td>
+                                {/* Actions */}
+                                <td className="text-right py-2.5 pl-3">
+                                  {isEditing ? (
+                                    <div className="flex items-center justify-end gap-1">
+                                      <button onClick={saveEdit} disabled={savingEdit} title="Save" className="p-1 rounded transition-all hover:bg-green-500/15" style={{ color: '#4ade80', opacity: savingEdit ? 0.4 : 1 }}>
+                                        <Check className="w-3.5 h-3.5" />
+                                      </button>
+                                      <button onClick={cancelEdit} title="Cancel" className="p-1 rounded transition-all hover:bg-red-500/15" style={{ color: '#f87171' }}>
+                                        <X className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center justify-end gap-1">
+                                      <button onClick={e => startEdit(h, e)} title="Edit" className="opacity-40 hover:opacity-100 transition-all p-1" style={{ color: '#5cc8f0' }}>
+                                        <Pencil className="w-3 h-3" />
+                                      </button>
+                                      <button onClick={(e) => { e.stopPropagation(); deleteHolding(h.id); }} title="Delete" className="opacity-40 hover:opacity-100 transition-all p-1" style={{ color: '#475569' }} onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')} onMouseLeave={e => (e.currentTarget.style.color = '#475569')}>
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })()}
                           {isExpanded && (
                             <tr style={{ borderBottom: '1px solid #1a1c3a' }}>
                               <td colSpan={9} className="p-0">
