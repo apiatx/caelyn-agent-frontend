@@ -6,14 +6,16 @@ type Direction = 'up' | 'down' | 'flat';
 type Mode = 'swing' | 'day';
 type TerminalType = 'dim' | 'red' | 'green' | 'yellow' | 'blue' | 'white';
 
-interface Metric { label: string; value: string; ok: boolean; }
+interface Metric { label: string; value: string; status?: string; ok: boolean; }
 interface Pillar { title: string; score: number; weight: number; direction: Direction; metrics: Metric[]; }
-interface ExecutionCondition { label: string; ok: boolean; }
+interface ExecutionCondition { label: string; value?: string; status?: string; ok: boolean; }
 interface TerminalLine { type: TerminalType; text: string; }
+interface SectorItem { ticker: string; name: string; change_pct: number; }
 interface TradingDashboardData {
   decision: Decision; market_quality_score: number; execution_window_score: number; mode: Mode;
   pillars: Pillar[]; summary: string; execution_conditions: ExecutionCondition[];
   terminal_analysis: TerminalLine[]; alert: { show: boolean; text: string }; as_of: string; from_cache: boolean;
+  sector_performance?: SectorItem[];
 }
 
 const C = {
@@ -314,14 +316,17 @@ export default function ShouldIBeTrading() {
                 <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {p.metrics.map((m, j) => {
                     const { main, sub } = parseVal(m.value);
-                    const valColor = m.ok ? C.green : C.red;
+                    const statusText = m.status ?? sub;
+                    const statusColor = m.ok ? C.green : C.red;
                     return (
-                      <div key={j} style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
+                      <div key={j} style={{ display: 'flex', alignItems: 'baseline', gap: 4, minWidth: 0 }}>
                         <span style={{ color: C.dimLow, fontSize: 10, flexShrink: 0 }}>●</span>
-                        <span style={{ color: C.dim, fontSize: 10, flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.label}</span>
-                        <span style={{ color: C.text, fontSize: 10, fontWeight: 600, flexShrink: 0, marginLeft: 4 }}>{main}</span>
-                        {sub && <span style={{ color: valColor, fontSize: 9, flexShrink: 0, marginLeft: 3 }}>{sub}</span>}
-                        {!sub && <span style={{ color: m.ok ? C.green : C.red, fontSize: 9, flexShrink: 0, marginLeft: 3 }}>{m.ok ? '↑' : '↓'}</span>}
+                        <span style={{ color: C.dim, fontSize: 10, flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>{m.label}</span>
+                        <span style={{ color: C.text, fontSize: 10, fontWeight: 600, flexShrink: 0, marginLeft: 4, whiteSpace: 'nowrap' }}>{main}</span>
+                        {statusText
+                          ? <span style={{ color: statusColor, fontSize: 9, flexShrink: 0, marginLeft: 3, whiteSpace: 'nowrap' }}>{statusText}</span>
+                          : <span style={{ color: statusColor, fontSize: 9, flexShrink: 0, marginLeft: 3 }}>{m.ok ? '↑' : '↓'}</span>
+                        }
                       </div>
                     );
                   })}
@@ -332,7 +337,7 @@ export default function ShouldIBeTrading() {
         </div>
 
         {/* ── BOTTOM ROW ────────────────────────────── */}
-        <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr 260px', gap: 8 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr 1fr 240px', gap: 8 }}>
 
           {/* EXECUTION WINDOW */}
           <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, overflow: 'hidden' }}>
@@ -346,23 +351,31 @@ export default function ShouldIBeTrading() {
             <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
               {d.execution_conditions.map((ec, i) => {
                 const statusColor = ec.ok ? C.green : C.red;
-                const statusText = ec.ok ? 'PASS' : 'FAIL';
+                const hasRich = ec.value !== undefined || ec.status !== undefined;
                 return (
-                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 6, minWidth: 0 }}>
                     <span style={{ color: C.dimLow, fontSize: 10, marginTop: 1, flexShrink: 0 }}>●</span>
-                    <span style={{ color: C.dim, fontSize: 10, flex: 1, lineHeight: 1.4 }}>{ec.label}</span>
-                    <span style={{ color: statusColor, fontSize: 9, fontWeight: 700, flexShrink: 0, marginLeft: 4 }}>{statusText}</span>
+                    <span style={{ color: C.dim, fontSize: 10, flex: 1, lineHeight: 1.4, minWidth: 0 }}>{ec.label}</span>
+                    {hasRich ? (
+                      <span style={{ display: 'flex', gap: 4, flexShrink: 0, marginLeft: 4, alignItems: 'center' }}>
+                        {ec.value && <span style={{ color: C.text, fontSize: 10, fontWeight: 600 }}>{ec.value}</span>}
+                        {ec.status && <span style={{ color: statusColor, fontSize: 9 }}>{ec.status}</span>}
+                      </span>
+                    ) : (
+                      <span style={{ color: statusColor, fontSize: 9, fontWeight: 700, flexShrink: 0, marginLeft: 4 }}>
+                        {ec.ok ? 'PASS' : 'FAIL'}
+                      </span>
+                    )}
                   </div>
                 );
               })}
             </div>
           </div>
 
-          {/* MOMENTUM / SENTIMENT panel */}
+          {/* MARKET METRICS — pillar scores as bars */}
           {(() => {
-            const momPillar = d.pillars.find(p => p.title.toLowerCase().includes('moment') || p.title.toLowerCase().includes('sent'));
-            const allMetrics = d.pillars.flatMap(p => p.metrics.map(m => ({ ...m, pillar: p.title.split('/')[0].trim() })));
-            const barItems = allMetrics.slice(0, 12);
+            const allMetrics = d.pillars.flatMap(p => p.metrics.map(m => ({ ...m })));
+            const barItems = allMetrics.slice(0, 10);
             return (
               <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, overflow: 'hidden' }}>
                 <div style={{ padding: '8px 12px', borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -381,14 +394,69 @@ export default function ShouldIBeTrading() {
                     const color = m.ok ? C.green : C.red;
                     return (
                       <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <span style={{ color: C.dimLow, fontSize: 9, width: 70, flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.label}</span>
-                        <div style={{ flex: 1, height: 10, background: C.bg, borderRadius: 2, overflow: 'hidden' }}>
+                        <span style={{ color: C.dimLow, fontSize: 9, width: 68, flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.label}</span>
+                        <div style={{ flex: 1, height: 9, background: C.bg, borderRadius: 2, overflow: 'hidden' }}>
                           <div style={{ height: '100%', width: `${barPct}%`, background: color, borderRadius: 2, transition: 'width 0.8s ease' }} />
                         </div>
-                        <span style={{ color, fontSize: 9, fontWeight: 600, width: 42, textAlign: 'right', flexShrink: 0 }}>{main}</span>
+                        <span style={{ color, fontSize: 9, fontWeight: 600, width: 38, textAlign: 'right', flexShrink: 0 }}>{main}</span>
                       </div>
                     );
                   })}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* SECTOR PERFORMANCE */}
+          {(() => {
+            const sectors = d.sector_performance;
+            const hasSectors = sectors && sectors.length > 0;
+            const minPct = hasSectors ? Math.min(...sectors.map(s => s.change_pct)) : -3;
+            const maxPct = hasSectors ? Math.max(...sectors.map(s => s.change_pct)) : 3;
+            const absMax = Math.max(Math.abs(minPct), Math.abs(maxPct), 0.01);
+            return (
+              <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, overflow: 'hidden' }}>
+                <div style={{ padding: '8px 12px', borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ color: C.dim, fontSize: 10 }}>▤</span>
+                    <span style={{ color: C.dim, fontSize: 9, letterSpacing: 1.5 }}>SECTOR PERFORMANCE</span>
+                  </div>
+                  {!hasSectors && <span style={{ color: C.dimLow, fontSize: 9 }}>awaiting data</span>}
+                </div>
+                <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {hasSectors ? sectors.map((s, i) => {
+                    const isPos = s.change_pct >= 0;
+                    const color = isPos ? C.green : C.red;
+                    const barPct = (Math.abs(s.change_pct) / absMax) * 100;
+                    const shortName = s.name.replace('Consumer ', 'Con ').replace('Communication', 'Communic.').replace('Real Estate', 'Real Est.').replace('Technology', 'Tech').replace('Industrials', 'Industrl').replace('Materials', 'Material').replace('Financials', 'Finance').replace('Utilities', 'Utilities').replace('Health Care', 'Hlth Care');
+                    return (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                        <span style={{ color: C.dimLow, fontSize: 9, width: 62, flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{shortName}</span>
+                        <div style={{ flex: 1, height: 9, background: C.bg, borderRadius: 2, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: isPos ? 'flex-start' : 'flex-end' }}>
+                          <div style={{ height: '100%', width: `${barPct}%`, background: color, borderRadius: 2, transition: 'width 0.8s ease' }} />
+                        </div>
+                        <span style={{ color, fontSize: 9, fontWeight: 600, width: 42, textAlign: 'right', flexShrink: 0 }}>
+                          {isPos ? '+' : ''}{s.change_pct.toFixed(2)}%
+                        </span>
+                      </div>
+                    );
+                  }) : (
+                    /* Placeholder bars while awaiting backend deploy */
+                    d.pillars.map((p, i) => {
+                      const color = scoreColor(p.score);
+                      return (
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                          <span style={{ color: C.dimLow, fontSize: 9, width: 62, flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {p.title.split('/')[0].trim().replace('MARKET ','').replace('MOMENTUM','Mom').replace('VOLATILITY','Volat')}
+                          </span>
+                          <div style={{ flex: 1, height: 9, background: C.bg, borderRadius: 2, overflow: 'hidden' }}>
+                            <div style={{ height: '100%', width: `${Math.min(p.score,100)}%`, background: color, borderRadius: 2, opacity: 0.35 }} />
+                          </div>
+                          <span style={{ color: C.dimLow, fontSize: 9, width: 42, textAlign: 'right', flexShrink: 0 }}>—</span>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
               </div>
             );
