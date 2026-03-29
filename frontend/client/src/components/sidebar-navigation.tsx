@@ -55,9 +55,15 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
   const navItems: NavItem[] = [
     {
       id: 'caelyn-ai',
-      label: 'Terminal',
+      label: 'AI Terminal',
       icon: <Brain className="w-4 h-4" />,
       path: '/app/caelyn-ai'
+    },
+    {
+      id: 'macro-terminal',
+      label: 'Macro',
+      icon: <ChartLine className="w-4 h-4" />,
+      path: '/app/macro-terminal'
     },
     {
       id: 'notifai',
@@ -66,14 +72,8 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
       path: '/app/notifai'
     },
     {
-      id: 'macro-terminal',
-      label: 'Macro Terminal',
-      icon: <ChartLine className="w-4 h-4" />,
-      path: '/app/macro-terminal'
-    },
-    {
       id: 'stocks-portfolio',
-      label: 'Portfolio Dashboard',
+      label: 'Portfolio',
       icon: <Wallet className="w-4 h-4" />,
       path: '/app/stocks/portfolio'
     },
