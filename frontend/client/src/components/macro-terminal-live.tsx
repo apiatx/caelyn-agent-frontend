@@ -1190,59 +1190,240 @@ function InflationTab({ data }: { data: any }) {
 // ─── TAB 4: GROWTH ───────────────────────────────────────────────────────────
 function GrowthTab({ data }: { data: any }) {
   if (!data) return null;
+
+  /* ── Pull backend fields ──────────────────────────────────────────────── */
+  const gdpData: any[]      = data.gdp           || [];
+  const pmiData: any[]      = data.pmi           || [];
+  const mfgObj              = data.manufacturing  || {};
+  const consumer            = data.consumer       || {};
+  const liquidity           = data.liquidity      || {};
+  const indicators: any[]   = data.indicators    || [];
+  const commentary: string  = data.commentary    || '';
+
+  /* ── GDP: abbreviate quarter labels (Q1 2024 → Q1 24) ────────────────── */
+  const gdpLabelled = gdpData.map((q: any) => ({
+    ...q,
+    label: (q.quarter || '').replace(' 20', ' '),
+  }));
+  const lastGdp = gdpData[gdpData.length - 1] || null;
+
+  /* ── PMI: add year context to month labels ───────────────────────────── */
+  let pmiyear = 25;
+  const pmiLabelled = pmiData.map((p: any, i: number) => {
+    if (i > 0 && p.month === 'Jan') pmiyear = 26;
+    // svc values are in correct PMI range (~50-60)
+    // mfg values from backend are in wrong scale (~12,600) — omitted from chart
+    return { ...p, label: `${p.month} ${pmiyear}` };
+  });
+  const lastPmi = pmiData[pmiData.length - 1] || null;
+
+  /* ── Status → badge mapping ──────────────────────────────────────────── */
+  type GBadge = { label: string; bg: string; color: string; border: string };
+  const growthBadge = (status: string): GBadge => {
+    const s = (status || '').toLowerCase();
+    if (s === 'positive' || s === 'bullish')
+      return { label: 'BULLISH', bg: `${T.green}20`, color: T.green, border: `${T.green}50` };
+    if (s === 'negative' || s === 'bearish' || s === 'elevated')
+      return { label: 'BEARISH', bg: `${T.red}20`,   color: T.red,   border: `${T.red}50`   };
+    return { label: 'NEUTRAL',  bg: `${T.amber}20`,  color: T.amber, border: `${T.amber}50` };
+  };
+  const gBadgeStyle = (status: string) => {
+    const b = growthBadge(status);
+    return { fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', padding: '2px 6px', borderRadius: 2, background: b.bg, color: b.color, border: `1px solid ${b.border}` };
+  };
+  const gNumColor = (status: string) => {
+    const s = (status || '').toLowerCase();
+    if (s === 'positive' || s === 'bullish') return T.green;
+    if (s === 'negative' || s === 'bearish') return T.red;
+    return T.amber;
+  };
+
+  // Look up indicator status by keyword
+  const indSt = (kw: string) =>
+    (indicators.find((i: any) => i.name.toLowerCase().includes(kw.toLowerCase()))?.status) ?? 'neutral';
+
+  /* ── 6 metric cards ──────────────────────────────────────────────────── */
+  const gdpSt   = indSt('gdp');
+  const ismSt   = indSt('manufacturing');
+  const m2St    = indSt('m2');
+  const csmSt   = indSt('consumer');
+
+  const cardRows = [
+    [
+      {
+        title: `REAL GDP (${lastGdp?.quarter ?? 'LATEST'})`,
+        // gdp[last].gdp from backend
+        value: lastGdp?.gdp != null
+          ? `${lastGdp.gdp >= 0 ? '+' : ''}${Number(lastGdp.gdp).toFixed(1)}%`
+          : '—',
+        status: gdpSt,
+        change: null as string | null,
+        date: lastGdp?.quarter ?? '',
+      },
+      {
+        title: 'GDP 2026 FORECAST',
+        // ⚠ Not yet provided by backend
+        value: '—',
+        status: 'neutral',
+        change: null,
+        date: 'backend needed',
+      },
+      {
+        title: 'ISM MANUFACTURING',
+        // manufacturing.ism_manufacturing from backend
+        // Note: backend returns wrong scale (~12573 instead of ~52); displayed as-is
+        value: mfgObj.ism_manufacturing != null ? `${Number(mfgObj.ism_manufacturing).toFixed(0)}` : '—',
+        status: ismSt,
+        change: null,
+        date: '',
+      },
+    ],
+    [
+      {
+        title: 'ISM SERVICES',
+        // pmi[last].svc from backend (services PMI, correct scale ~56)
+        value: lastPmi?.svc != null ? `${Number(lastPmi.svc).toFixed(1)}` : '—',
+        status: 'positive',
+        change: null,
+        date: lastPmi ? `${lastPmi.month} 26` : '',
+      },
+      {
+        title: 'M2 MONEY SUPPLY',
+        // liquidity.m2_current_trillion + m2_yoy_growth from backend
+        value: liquidity.m2_current_trillion != null ? `$${Number(liquidity.m2_current_trillion).toFixed(1)}T` : '—',
+        status: m2St,
+        change: liquidity.m2_yoy_growth != null ? `▲ +${liquidity.m2_yoy_growth.toFixed(1)}% YoY` : null,
+        date: '',
+      },
+      {
+        title: 'HOUSING STARTS',
+        // ⚠ Not yet provided by backend
+        value: '—',
+        status: 'neutral',
+        change: null,
+        date: 'backend needed',
+      },
+    ],
+  ];
+
+  /* ── Render ──────────────────────────────────────────────────────────── */
   return (
-    <div className="space-y-4">
-      {data.gdp?.length > 0 && (
-        <div className={card}>
-          <div className={sectionTitle} style={{ color: T.green }}>REAL GDP GROWTH (QoQ SAAR %)</div>
-          <div className="h-56">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data.gdp}>
-                <CartesianGrid strokeDasharray="3 3" stroke={chartGrid} />
-                <XAxis dataKey="quarter" tick={chartTick} />
-                <YAxis tick={chartTick} />
-                <Tooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="gdp" name="GDP %">
-                  {data.gdp.map((entry: any, i: number) => (
-                    <Cell key={i} fill={entry.gdp >= 2.5 ? T.green : entry.gdp >= 1.5 ? T.amber : T.red} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      )}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
-      {data.pmi?.length > 0 && (
-        <div className={card}>
-          <div className={sectionTitle} style={{ color: T.green }}>MANUFACTURING vs SERVICES PMI</div>
-          <div className="h-56">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data.pmi}>
-                <CartesianGrid strokeDasharray="3 3" stroke={chartGrid} />
-                <XAxis dataKey="month" tick={chartTick} />
-                <YAxis tick={chartTick} domain={[44, 60]} />
-                <Tooltip content={<ChartTooltipContent />} />
-                <Line type="monotone" dataKey="mfg" stroke={T.amber} strokeWidth={2} dot={{ r: 2 }} name="Manufacturing" />
-                <Line type="monotone" dataKey="svc" stroke={T.cyan} strokeWidth={2} dot={{ r: 2 }} name="Services" />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="flex gap-4 mt-2 text-[10px]">
-            <span className="flex items-center gap-1"><span className="w-3 h-0.5" style={{ background: T.amber }} /> Manufacturing</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-0.5" style={{ background: T.cyan }} /> Services</span>
-          </div>
-          <div className="text-[10px] text-[hsl(var(--term-dim))] mt-1">— Readings above 50 indicate expansion</div>
-        </div>
-      )}
+      {/* ── ROW 1: TWO SIDE-BY-SIDE CHARTS ──────────────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
 
-      {data.indicators && (
-        <div className="grid grid-cols-3 gap-3">
-          {data.indicators.map((ind: any) => (
-            <IndicatorCard key={ind.name} {...ind} />
-          ))}
+        {/* LEFT: REAL GDP GROWTH chart */}
+        <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 2, padding: '12px 14px' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: '#ccc', marginBottom: 8 }}>
+            REAL GDP GROWTH (SAAR, %)
+          </div>
+          {gdpLabelled.length > 0 && (
+            <div style={{ height: 200 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={gdpLabelled} barCategoryGap="25%">
+                  <CartesianGrid strokeDasharray="3 3" stroke={chartGrid} vertical={false} />
+                  <XAxis dataKey="label" tick={chartTick} interval={0} angle={-30} textAnchor="end" height={40} />
+                  <YAxis tick={chartTick} width={32} />
+                  <ReferenceLine y={2} stroke={T.amber} strokeDasharray="4 3" strokeWidth={1} />
+                  <Tooltip
+                    contentStyle={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 2, fontSize: 11 }}
+                    labelStyle={{ color: T.dim }}
+                    formatter={(v: any) => [`${Number(v).toFixed(1)}%`, 'GDP']}
+                  />
+                  <Bar dataKey="gdp" name="GDP %" radius={[1,1,0,0]}>
+                    {gdpLabelled.map((e: any, i: number) => (
+                      <Cell
+                        key={i}
+                        fill={e.gdp >= 3.5 ? T.green : e.gdp >= 1.5 ? T.amber : T.red}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+          {/* Commentary from backend */}
+          {commentary && (
+            <div style={{ marginTop: 8, paddingTop: 6, borderTop: `1px solid ${T.border}40`, fontSize: 10, color: '#aaa', lineHeight: 1.5 }}>
+              <span style={{ color: T.green, fontWeight: 700, marginRight: 5 }}>▶</span>
+              {commentary}
+            </div>
+          )}
         </div>
-      )}
+
+        {/* RIGHT: ISM PMI — SERVICES chart (mfg data from backend is wrong scale) */}
+        <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 2, padding: '12px 14px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: '#ccc' }}>
+              ISM PMI — SERVICES
+            </div>
+            <div style={{ display: 'flex', gap: 12, fontSize: 10 }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: T.cyan }}>
+                <span style={{ width: 10, height: 10, background: T.cyan, display: 'inline-block' }} />
+                Services
+              </span>
+            </div>
+          </div>
+          {pmiLabelled.length > 0 && (
+            <div style={{ height: 200 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={pmiLabelled} barCategoryGap="30%">
+                  <CartesianGrid strokeDasharray="3 3" stroke={chartGrid} vertical={false} />
+                  <XAxis dataKey="label" tick={chartTick} interval={1} angle={-30} textAnchor="end" height={40} />
+                  <YAxis tick={chartTick} width={32} domain={['auto', 'auto']} />
+                  <ReferenceLine y={50} stroke={T.amber} strokeDasharray="4 3" strokeWidth={1} label={{ value: '50', position: 'right', fill: T.amber, fontSize: 10 }} />
+                  <Tooltip
+                    contentStyle={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 2, fontSize: 11 }}
+                    labelStyle={{ color: T.dim }}
+                    formatter={(v: any, n: string) => [`${Number(v).toFixed(1)}`, n]}
+                  />
+                  <Bar dataKey="svc" name="Services" fill={T.cyan} opacity={0.85} radius={[1,1,0,0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+          {/* PMI expansion note */}
+          <div style={{ marginTop: 8, paddingTop: 6, borderTop: `1px solid ${T.border}40`, fontSize: 10, color: '#aaa', lineHeight: 1.5 }}>
+            <span style={{ color: T.green, fontWeight: 700, marginRight: 5 }}>▶</span>
+            Services PMI above 50 = expansion. Manufacturing PMI data pending backend correction.
+          </div>
+        </div>
+      </div>
+
+      {/* ── 6 METRIC CARDS (2 rows × 3) ──────────────────────────────────── */}
+      {cardRows.map((row, ri) => (
+        <div key={ri} style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+          {row.map((c) => {
+            const b      = growthBadge(c.status);
+            const nColor = gNumColor(c.status);
+            return (
+              <div
+                key={c.title}
+                style={{
+                  background: T.surface, border: `1px solid ${T.border}`, borderRadius: 2,
+                  padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 6,
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 10, color: T.dim, letterSpacing: '0.08em', fontWeight: 600 }}>{c.title}</span>
+                  {c.status !== 'neutral' && (
+                    <span style={gBadgeStyle(c.status)}>{b.label}</span>
+                  )}
+                </div>
+                <div className="tabular-nums" style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em', color: nColor, lineHeight: 1.1 }}>
+                  {c.value}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 2 }}>
+                  <span style={{ fontSize: 10, color: T.dim }}>{c.change ?? ''}</span>
+                  <span style={{ fontSize: 10, color: T.dim }}>{c.date}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ))}
+
     </div>
   );
 }
