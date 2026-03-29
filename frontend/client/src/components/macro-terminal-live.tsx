@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, memo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, BarChart, Bar, Cell, ReferenceLine,
@@ -64,6 +64,7 @@ const TABS = [
   { id: 'labor',      label: 'LABOR',      shortcut: '5' },
   { id: 'sentiment',  label: 'RISK',       shortcut: '6' },
   { id: 'watch',      label: 'WATCH',      shortcut: '7' },
+  { id: 'trade',      label: 'TRADE',      shortcut: '8' },
 ] as const;
 
 type TabId = typeof TABS[number]['id'];
@@ -76,6 +77,7 @@ const API_MAP: Record<TabId, string> = {
   labor:     '/api/macro/labor',
   sentiment: '/api/macro/risk',
   watch:     '/api/macro/dashboard',
+  trade:     '/api/macro/dashboard',
 };
 
 // ─── Shared styles ──────────────────────────────────────────────────────────
@@ -2261,6 +2263,509 @@ function WatchTab() {
   );
 }
 
+// ─── TAB 8: TRADE (Should I Be Trading?) ────────────────────────────────────
+
+type STDecision = 'YES' | 'CAUTION' | 'NO';
+type STDirection = 'up' | 'down' | 'flat';
+type STMode = 'swing' | 'day';
+type STTerminalType = 'dim' | 'red' | 'green' | 'yellow' | 'blue' | 'white';
+interface STMetric { label: string; value: string; status?: string; ok: boolean; }
+interface STPillar { title: string; score: number; weight: number; direction: STDirection; metrics: STMetric[]; }
+interface STExecCond { label: string; value?: string; status?: string; ok: boolean; }
+interface STTerminalLine { type: STTerminalType; text: string; }
+interface STSectorItem { ticker: string; name: string; change_pct: number; }
+interface STDashboard {
+  decision: STDecision; market_quality_score: number; execution_window_score: number; mode: STMode;
+  pillars: STPillar[]; summary: string; execution_conditions: STExecCond[];
+  terminal_analysis: STTerminalLine[]; alert: { show: boolean; text: string }; as_of: string; from_cache: boolean;
+  sector_performance?: STSectorItem[];
+}
+
+const ST = {
+  bg: '#0d1117', card: '#161b22', border: '#21262d',
+  text: '#e6edf3', dim: '#8b949e', dimLow: '#484f58',
+  green: '#3fb950', yellow: '#e3b341', orange: '#f0883e', red: '#f85149', blue: '#58a6ff',
+};
+function stScoreColor(s: number) {
+  if (s >= 70) return ST.green; if (s >= 50) return ST.yellow;
+  if (s >= 30) return ST.orange; return ST.red;
+}
+function stDecisionColor(d: STDecision) {
+  if (d === 'YES') return ST.green; if (d === 'CAUTION') return ST.yellow; return ST.red;
+}
+function stTermColor(t: STTerminalType) {
+  if (t === 'red') return ST.red; if (t === 'green') return ST.green;
+  if (t === 'yellow') return ST.yellow; if (t === 'blue') return ST.blue;
+  if (t === 'white') return ST.text; return ST.dim;
+}
+function stParseVal(v: string): { main: string; sub: string } {
+  const m = v.match(/^([^(]+?)(?:\s*\(([^)]+)\))?$/);
+  return { main: m?.[1]?.trim() ?? v, sub: m?.[2]?.trim() ?? '' };
+}
+function stStatusWordColor(status: string, ok: boolean): string {
+  const s = status.toLowerCase();
+  const neutral = ['normal','neutral','stable','moderate','easing','upcoming','soon','hold','clear'];
+  if (neutral.some(w => s === w || s.startsWith(w))) return ST.yellow;
+  return ok ? ST.green : ST.red;
+}
+function stPillarIcon(title: string) {
+  const t = title.toLowerCase();
+  if (t.includes('volat')) return '⚡'; if (t.includes('trend')) return '↗';
+  if (t.includes('breadth')) return '≋'; if (t.includes('macro') || t.includes('liquid')) return '◉';
+  if (t.includes('moment') || t.includes('sent')) return '◎'; return '●';
+}
+function stPositionLabel(d: STDecision) {
+  if (d === 'YES') return { label: 'FULL SIZE', sub: 'Press risk' };
+  if (d === 'CAUTION') return { label: 'SELECTIVE', sub: 'Half size' };
+  return { label: 'MINIMAL', sub: 'Preserve capital' };
+}
+function stFindMetric(pillars: STPillar[], titleKey: string, labelKey: string): STMetric | undefined {
+  const p = pillars.find(p => p.title.toLowerCase().includes(titleKey.toLowerCase()));
+  return p?.metrics.find(m => m.label.toLowerCase().includes(labelKey.toLowerCase()));
+}
+const stFetchDashboard = async (mode: STMode): Promise<STDashboard> => {
+  const res = await fetch(`/api/trading-dashboard?mode=${mode}`);
+  if (!res.ok) throw new Error('Failed');
+  return res.json();
+};
+const stPostRefresh = async (mode: STMode): Promise<STDashboard> => {
+  const r = await fetch(`/api/trading-dashboard/refresh?mode=${mode}`, { method: 'POST' });
+  if (!r.ok) return stFetchDashboard(mode);
+  return r.json();
+};
+
+function STGauge({ score, size = 120, thick = 9 }: { score: number; size?: number; thick?: number }) {
+  const r = (size - thick * 2) / 2;
+  const circ = 2 * Math.PI * r;
+  const fill = circ - (Math.min(Math.max(score, 0), 100) / 100) * circ;
+  const color = stScoreColor(score);
+  return (
+    <svg width={size} height={size} style={{ transform: 'rotate(-90deg)', flexShrink: 0 }}>
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={ST.card} strokeWidth={thick} />
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={thick}
+        strokeDasharray={circ} strokeDashoffset={fill} strokeLinecap="round"
+        style={{ transition: 'stroke-dashoffset 0.8s ease', filter: `drop-shadow(0 0 4px ${color}88)` }} />
+    </svg>
+  );
+}
+
+function STTickerTape({ pillars }: { pillars: STPillar[] }) {
+  const items: { label: string; val: string; ok?: boolean }[] = [];
+  const vix = stFindMetric(pillars, 'volat', 'vix');
+  const fg = stFindMetric(pillars, 'volat', 'fear');
+  const tnx = stFindMetric(pillars, 'macro', '10y');
+  const dxy = stFindMetric(pillars, 'macro', 'dxy');
+  const spyChg = stFindMetric(pillars, 'trend', 'spy chg');
+  const qqqChg = stFindMetric(pillars, 'trend', 'qqq');
+  const hyoas = stFindMetric(pillars, 'volat', 'oas');
+  const spread = stFindMetric(pillars, 'macro', '2s10s');
+  if (vix) items.push({ label: 'VIX', val: stParseVal(vix.value).main, ok: vix.ok });
+  if (fg) items.push({ label: 'FEAR/GREED', val: stParseVal(fg.value).main, ok: fg.ok });
+  if (tnx) items.push({ label: 'TNX', val: stParseVal(tnx.value).main, ok: tnx.ok });
+  if (dxy) items.push({ label: 'DXY', val: stParseVal(dxy.value).main, ok: dxy.ok });
+  if (spyChg) items.push({ label: 'SPY', val: stParseVal(spyChg.value).main, ok: spyChg.ok });
+  if (qqqChg) items.push({ label: 'QQQ', val: stParseVal(qqqChg.value).main, ok: qqqChg.ok });
+  if (hyoas) items.push({ label: 'HY OAS', val: stParseVal(hyoas.value).main, ok: hyoas.ok });
+  if (spread) items.push({ label: '2s10s', val: stParseVal(spread.value).main, ok: spread.ok });
+  for (const p of pillars) items.push({ label: p.title.split('/')[0].trim(), val: p.score.toFixed(0) + '/100' });
+  const doubled = [...items, ...items, ...items];
+  return (
+    <div style={{ background: '#090d12', borderBottom: `1px solid ${ST.border}`, overflow: 'hidden', height: 28, display: 'flex', alignItems: 'center' }}>
+      <div style={{ display: 'flex', animation: 'ticker 60s linear infinite', whiteSpace: 'nowrap', willChange: 'transform' }}>
+        {doubled.map((it, i) => {
+          const valColor = it.ok === undefined ? ST.dim : it.ok ? ST.green : ST.red;
+          return (
+            <span key={i} style={{ display: 'inline-flex', gap: 6, alignItems: 'center', padding: '0 18px', fontFamily: 'monospace', fontSize: 11 }}>
+              <span style={{ color: ST.dim }}>{it.label}</span>
+              <span style={{ color: valColor, fontWeight: 600 }}>{it.val}</span>
+              <span style={{ color: ST.dimLow, marginLeft: 4 }}>│</span>
+            </span>
+          );
+        })}
+      </div>
+      <style>{`@keyframes ticker { from{transform:translateX(0)} to{transform:translateX(-33.333%)} }`}</style>
+    </div>
+  );
+}
+
+function TradingTab() {
+  const [stMode, setStMode] = useState<STMode>('swing');
+  const [timeLeft, setTimeLeft] = useState(45);
+  const qc = useQueryClient();
+  const { data, isLoading, isError, dataUpdatedAt } = useQuery({
+    queryKey: ['trading-dashboard', stMode],
+    queryFn: () => stFetchDashboard(stMode),
+    refetchInterval: 45000,
+    staleTime: 30000,
+    retry: 2,
+  });
+  const refresh = useMutation({
+    mutationFn: () => stPostRefresh(stMode),
+    onSuccess: (d) => { qc.setQueryData(['trading-dashboard', stMode], d); setTimeLeft(45); },
+  });
+  useEffect(() => {
+    setTimeLeft(45);
+    const t = setInterval(() => setTimeLeft(p => Math.max(0, p - 1)), 1000);
+    return () => clearInterval(t);
+  }, [dataUpdatedAt]);
+
+  if (isLoading) return (
+    <div style={{ minHeight: '100vh', background: ST.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'monospace' }}>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ color: ST.blue, letterSpacing: 3, fontSize: 12, marginBottom: 12 }}>LOADING MARKET DATA...</div>
+        <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
+          {[0,1,2].map(i => <div key={i} style={{ width:7,height:7,borderRadius:'50%',background:ST.blue,animation:`blink 1s ${i*0.3}s infinite` }}/>)}
+        </div>
+        <style>{`@keyframes blink{0%,100%{opacity:.15}50%{opacity:1}}`}</style>
+      </div>
+    </div>
+  );
+  if (isError || !data) return (
+    <div style={{ minHeight: '100vh', background: ST.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'monospace' }}>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ color: ST.red, fontSize: 12, marginBottom: 12 }}>⚠ BACKEND UNREACHABLE</div>
+        <button onClick={() => refresh.mutate()} style={{ padding: '6px 18px', background: 'transparent', border: `1px solid ${ST.blue}`, color: ST.blue, fontFamily: 'monospace', fontSize: 11, cursor: 'pointer' }}>↻ RETRY</button>
+      </div>
+    </div>
+  );
+
+  const d = data;
+  const mqs = d.market_quality_score;
+  const ews = d.execution_window_score;
+  const dc = stDecisionColor(d.decision);
+  const pos = stPositionLabel(d.decision);
+  const asOf = new Date(d.as_of);
+  const secsAgo = Math.round((Date.now() - asOf.getTime()) / 1000);
+  const agoLabel = secsAgo < 90 ? `${secsAgo}s ago` : secsAgo < 3600 ? `${Math.round(secsAgo/60)}m ago` : asOf.toLocaleTimeString();
+
+  return (
+    <div style={{ background: ST.bg, color: ST.text, fontFamily: '"SF Mono","Fira Code","Consolas",monospace', fontSize: 12, lineHeight: 1.5 }}>
+      {/* ── TOP BAR ─────────────────────────────────── */}
+      <div style={{ background: '#090d12', borderBottom: `1px solid ${ST.border}`, padding: '0 16px', height: 42, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontSize: 16 }}>⚡</span>
+          <span style={{ fontWeight: 700, fontSize: 13, color: ST.text, letterSpacing: 1 }}>SHOULD I BE TRADING?</span>
+          <span style={{ color: ST.dimLow, fontSize: 10, letterSpacing: 2 }}>MARKET QUALITY TERMINAL</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: 'flex', border: `1px solid ${ST.border}`, borderRadius: 4, overflow: 'hidden' }}>
+            {(['swing','day'] as STMode[]).map(m => (
+              <button key={m} onClick={() => setStMode(m)} style={{ padding: '4px 12px', background: stMode===m ? '#1f2937' : 'transparent', color: stMode===m ? ST.yellow : ST.dim, border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', fontWeight: stMode===m ? 700 : 400 }}>
+                {m}
+              </button>
+            ))}
+          </div>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: d.from_cache ? ST.yellow : ST.green }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: d.from_cache ? ST.yellow : ST.green, display: 'inline-block', boxShadow: `0 0 6px ${d.from_cache ? ST.yellow : ST.green}` }} />
+            {d.from_cache ? 'CACHED' : 'LIVE'}
+          </span>
+          <span style={{ color: ST.dimLow, fontSize: 10 }}>{agoLabel}</span>
+          <button onClick={() => refresh.mutate()} disabled={refresh.isPending} style={{ background: 'transparent', border: 'none', color: ST.dim, cursor: 'pointer', fontSize: 13, padding: '2px 4px', opacity: refresh.isPending ? 0.4 : 1 }} title="Refresh">↻</button>
+        </div>
+      </div>
+
+      {/* ── TICKER TAPE ─────────────────────────────── */}
+      <STTickerTape pillars={d.pillars} />
+
+      <div style={{ padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {/* ── HERO ROW ──────────────────────────────── */}
+        <div style={{ background: ST.card, border: `1px solid ${ST.border}`, borderRadius: 6, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 0 }}>
+          <div style={{ minWidth: 110, paddingRight: 18, borderRight: `1px solid ${ST.border}` }}>
+            <div style={{ color: ST.dim, fontSize: 9, letterSpacing: 2, marginBottom: 6 }}>DECISION</div>
+            <div style={{ width: 68, height: 52, border: `2px solid ${dc}`, borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 16px ${dc}44`, background: `${dc}0d` }}>
+              <span style={{ fontSize: 24, fontWeight: 900, color: dc, letterSpacing: 1 }}>{d.decision}</span>
+            </div>
+            <div style={{ color: ST.dimLow, fontSize: 9, marginTop: 5, textTransform: 'capitalize' }}>{d.mode} Trading</div>
+          </div>
+          <div style={{ padding: '0 20px', borderRight: `1px solid ${ST.border}`, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0 }}>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <STGauge score={mqs} size={110} thick={8} />
+              <div style={{ position: 'absolute', textAlign: 'center' }}>
+                <div style={{ fontSize: 26, fontWeight: 900, color: stScoreColor(mqs), lineHeight: 1 }}>{mqs.toFixed(0)}</div>
+                <div style={{ fontSize: 10, color: ST.dim, lineHeight: 1 }}>/ 100</div>
+              </div>
+            </div>
+          </div>
+          <div style={{ flex: 1, display: 'flex', gap: 0, padding: '0 10px' }}>
+            {d.pillars.map((p, i) => {
+              const color = stScoreColor(p.score);
+              const barWidth = Math.min(p.score, 100);
+              return (
+                <div key={i} style={{ flex: 1, padding: '0 12px', borderRight: i < d.pillars.length - 1 ? `1px solid ${ST.border}` : 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                  <div style={{ fontSize: 14, color: ST.dim }}>{stPillarIcon(p.title)}</div>
+                  <div style={{ fontSize: 8, color: ST.dim, letterSpacing: 1, textAlign: 'center', textTransform: 'uppercase' }}>
+                    {p.title.split('/')[0].trim().replace('MARKET ','').replace('MOMENTUM','MOM').replace('VOLATILITY','VOLAT')}
+                  </div>
+                  <div style={{ fontSize: 22, fontWeight: 900, color, lineHeight: 1 }}>{p.score.toFixed(0)}</div>
+                  <div style={{ width: '100%', height: 3, background: ST.bg, borderRadius: 2 }}>
+                    <div style={{ height: '100%', width: `${barWidth}%`, background: color, borderRadius: 2, boxShadow: `0 0 4px ${color}88`, transition: 'width 0.8s ease' }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ minWidth: 110, paddingLeft: 18, borderLeft: `1px solid ${ST.border}`, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+            <div style={{ color: ST.dim, fontSize: 9, letterSpacing: 2 }}>POSITION SIZE</div>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <STGauge score={mqs} size={46} thick={4} />
+              <span style={{ position: 'absolute', fontSize: 8, color: dc, fontWeight: 700 }}>●</span>
+            </div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: dc }}>{pos.label}</div>
+            <div style={{ fontSize: 9, color: ST.dimLow, textAlign: 'center' }}>{pos.sub}</div>
+          </div>
+        </div>
+
+        {/* ── ALERT BANNER ─────────────────────────── */}
+        {d.alert.show && (
+          <div style={{ background: '#1a1400', border: `1px solid ${ST.yellow}44`, borderRadius: 4, padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ color: ST.yellow, fontSize: 12 }}>⚠</span>
+            <span style={{ color: ST.yellow, fontSize: 11, fontWeight: 700, letterSpacing: 1 }}>MACRO ALERT</span>
+            <span style={{ color: '#d1a500', fontSize: 11 }}>{d.alert.text}</span>
+          </div>
+        )}
+
+        {/* ── 5 PILLAR CARDS ───────────────────────── */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
+          {d.pillars.map((p, i) => {
+            const color = stScoreColor(p.score);
+            return (
+              <div key={i} style={{ background: ST.card, border: `1px solid ${ST.border}`, borderRadius: 6, overflow: 'hidden' }}>
+                <div style={{ padding: '8px 12px 6px', borderBottom: `1px solid ${ST.border}` }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontSize: 11 }}>{stPillarIcon(p.title)}</span>
+                      <span style={{ color: ST.dim, fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase' }}>
+                        {p.title.split('/')[0].trim().replace('MARKET ','')}
+                      </span>
+                    </div>
+                    <span style={{ fontSize: 18, fontWeight: 900, color }}>{p.score.toFixed(0)}</span>
+                  </div>
+                  <div style={{ marginTop: 6, height: 3, background: ST.bg, borderRadius: 2 }}>
+                    <div style={{ height: '100%', width: `${Math.min(p.score, 100)}%`, background: color, borderRadius: 2, transition: 'width 0.8s ease' }} />
+                  </div>
+                </div>
+                <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {p.metrics.map((m, j) => {
+                    const { main, sub } = stParseVal(m.value);
+                    const statusText = m.status ?? sub ?? '';
+                    const sColor = statusText ? stStatusWordColor(statusText, m.ok) : (m.ok ? ST.green : ST.red);
+                    return (
+                      <div key={j} style={{ display: 'flex', alignItems: 'baseline', gap: 4, minWidth: 0 }}>
+                        <span style={{ color: ST.dimLow, fontSize: 10, flexShrink: 0 }}>●</span>
+                        <span style={{ color: ST.dim, fontSize: 10, flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>{m.label}</span>
+                        <span style={{ color: ST.text, fontSize: 10, fontWeight: 600, flexShrink: 0, marginLeft: 4, whiteSpace: 'nowrap' }}>{main}</span>
+                        {statusText
+                          ? <span style={{ color: sColor, fontSize: 9, flexShrink: 0, marginLeft: 3, whiteSpace: 'nowrap' }}>{statusText}</span>
+                          : <span style={{ color: m.ok ? ST.green : ST.red, fontSize: 9, flexShrink: 0, marginLeft: 3 }}>{m.ok ? '↑' : '↓'}</span>
+                        }
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* ── BOTTOM ROW ────────────────────────────── */}
+        <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr 1fr 240px', gap: 8 }}>
+          {/* EXECUTION WINDOW */}
+          <div style={{ background: ST.card, border: `1px solid ${ST.border}`, borderRadius: 6, overflow: 'hidden' }}>
+            <div style={{ padding: '8px 12px', borderBottom: `1px solid ${ST.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ color: ST.red, fontSize: 10 }}>◈</span>
+                <span style={{ color: ST.dim, fontSize: 9, letterSpacing: 1.5 }}>EXECUTION WINDOW</span>
+              </div>
+              <span style={{ fontSize: 18, fontWeight: 900, color: stScoreColor(ews) }}>{ews.toFixed(0)}</span>
+            </div>
+            <div style={{ height: 2, background: ST.bg }}>
+              <div style={{ height: '100%', width: `${Math.min(ews,100)}%`, background: stScoreColor(ews), transition: 'width 0.8s ease' }} />
+            </div>
+            <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 9 }}>
+              {d.execution_conditions.map((ec, i) => {
+                const okColor = ec.ok ? ST.green : ST.red;
+                const statusColor = ec.status ? stStatusWordColor(ec.status, ec.ok) : okColor;
+                const rawLabel = ec.label.includes('(') ? ec.label.split('(')[0].trim() : ec.label;
+                const displayLabel = rawLabel
+                  .replace(/\bvolatility acceptable\b/gi,'').replace(/\btrend intact\b/gi,'')
+                  .replace(/\btoday\/tomorrow\b/gi,'').replace(/\bsectors positive\b/gi,'positive')
+                  .replace(/\bbelow\b/gi,'below').trim();
+                return (
+                  <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', alignItems: 'center', gap: 6, minWidth: 0 }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 5, minWidth: 0 }}>
+                      <span style={{ color: ST.dimLow, fontSize: 10, flexShrink: 0 }}>●</span>
+                      <span style={{ color: ST.dim, fontSize: 10, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayLabel}</span>
+                    </span>
+                    <span style={{ color: ST.text, fontSize: 10, fontWeight: 700, whiteSpace: 'nowrap', textAlign: 'right' }}>
+                      {ec.value ?? (ec.ok ? 'Yes' : 'No')}
+                    </span>
+                    <span style={{ color: statusColor, fontSize: 9, fontStyle: 'italic', whiteSpace: 'nowrap', minWidth: 64, textAlign: 'right' }}>
+                      {ec.status ?? (ec.ok ? 'PASS' : 'FAIL')}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* MARKET METRICS */}
+          {(() => {
+            const allMetrics = d.pillars.flatMap(p => p.metrics.map(m => ({ ...m })));
+            const barItems = allMetrics.slice(0, 10);
+            return (
+              <div style={{ background: ST.card, border: `1px solid ${ST.border}`, borderRadius: 6, overflow: 'hidden' }}>
+                <div style={{ padding: '8px 12px', borderBottom: `1px solid ${ST.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ color: ST.dim, fontSize: 10 }}>◎</span>
+                    <span style={{ color: ST.dim, fontSize: 9, letterSpacing: 1.5 }}>MARKET METRICS</span>
+                  </div>
+                  <span style={{ color: ST.dimLow, fontSize: 9 }}>all pillars</span>
+                </div>
+                <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 5 }}>
+                  {barItems.map((m, i) => {
+                    const { main } = stParseVal(m.value);
+                    const isScore = /^\d+\/100$/.test(main);
+                    const numVal = isScore ? parseInt(main) : null;
+                    const barPct = numVal !== null ? numVal : (m.ok ? 70 : 25);
+                    const color = m.ok ? ST.green : ST.red;
+                    return (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ color: ST.dimLow, fontSize: 9, width: 68, flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.label}</span>
+                        <div style={{ flex: 1, height: 9, background: ST.bg, borderRadius: 2, overflow: 'hidden' }}>
+                          <div style={{ height: '100%', width: `${barPct}%`, background: color, borderRadius: 2, transition: 'width 0.8s ease' }} />
+                        </div>
+                        <span style={{ color, fontSize: 9, fontWeight: 600, width: 38, textAlign: 'right', flexShrink: 0 }}>{main}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* SECTOR PERFORMANCE */}
+          {(() => {
+            const sectors = d.sector_performance;
+            const hasSectors = sectors && sectors.length > 0;
+            const minPct = hasSectors ? Math.min(...sectors.map(s => s.change_pct)) : -3;
+            const maxPct = hasSectors ? Math.max(...sectors.map(s => s.change_pct)) : 3;
+            const absMax = Math.max(Math.abs(minPct), Math.abs(maxPct), 0.01);
+            return (
+              <div style={{ background: ST.card, border: `1px solid ${ST.border}`, borderRadius: 6, overflow: 'hidden' }}>
+                <div style={{ padding: '8px 12px', borderBottom: `1px solid ${ST.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ color: ST.dim, fontSize: 10 }}>▤</span>
+                    <span style={{ color: ST.dim, fontSize: 9, letterSpacing: 1.5 }}>SECTOR PERFORMANCE</span>
+                  </div>
+                  {!hasSectors && <span style={{ color: ST.dimLow, fontSize: 9 }}>awaiting data</span>}
+                </div>
+                <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {hasSectors ? sectors.map((s, i) => {
+                    const isPos = s.change_pct >= 0;
+                    const color = isPos ? ST.green : ST.red;
+                    const barPct = (Math.abs(s.change_pct) / absMax) * 100;
+                    const shortName = s.name.replace('Consumer ','Con ').replace('Communication','Communic.').replace('Real Estate','Real Est.').replace('Technology','Tech').replace('Industrials','Industrl').replace('Materials','Material').replace('Financials','Finance').replace('Health Care','Hlth Care');
+                    return (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                        <span style={{ color: ST.dimLow, fontSize: 9, width: 62, flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{shortName}</span>
+                        <div style={{ flex: 1, height: 9, background: ST.bg, borderRadius: 2, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: isPos ? 'flex-start' : 'flex-end' }}>
+                          <div style={{ height: '100%', width: `${barPct}%`, background: color, borderRadius: 2, transition: 'width 0.8s ease' }} />
+                        </div>
+                        <span style={{ color, fontSize: 9, fontWeight: 600, width: 42, textAlign: 'right', flexShrink: 0 }}>{isPos ? '+' : ''}{s.change_pct.toFixed(2)}%</span>
+                      </div>
+                    );
+                  }) : d.pillars.map((p, i) => {
+                    const color = stScoreColor(p.score);
+                    return (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                        <span style={{ color: ST.dimLow, fontSize: 9, width: 62, flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {p.title.split('/')[0].trim().replace('MARKET ','').replace('MOMENTUM','Mom').replace('VOLATILITY','Volat')}
+                        </span>
+                        <div style={{ flex: 1, height: 9, background: ST.bg, borderRadius: 2, overflow: 'hidden' }}>
+                          <div style={{ height: '100%', width: `${Math.min(p.score,100)}%`, background: color, borderRadius: 2, opacity: 0.35 }} />
+                        </div>
+                        <span style={{ color: ST.dimLow, fontSize: 9, width: 42, textAlign: 'right', flexShrink: 0 }}>—</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* SCORING WEIGHTS */}
+          <div style={{ background: ST.card, border: `1px solid ${ST.border}`, borderRadius: 6, overflow: 'hidden' }}>
+            <div style={{ padding: '8px 12px', borderBottom: `1px solid ${ST.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ color: ST.dim, fontSize: 10 }}>▦</span>
+                <span style={{ color: ST.dim, fontSize: 9, letterSpacing: 1.5 }}>SCORING WEIGHTS</span>
+              </div>
+            </div>
+            <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {d.pillars.map((p, i) => {
+                const color = stScoreColor(p.score);
+                const shortTitle = p.title.split('/')[0].trim().replace('MARKET ','').replace('MOMENTUM','Momentum').replace('VOLATILITY','Volatility');
+                return (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ color: ST.dim, fontSize: 9, width: 64, flexShrink: 0 }}>{shortTitle}</span>
+                    <div style={{ flex: 1, height: 10, background: ST.bg, borderRadius: 2, overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${Math.min(p.score, 100)}%`, background: color, borderRadius: 2, transition: 'width 0.8s ease' }} />
+                    </div>
+                    <span style={{ color, fontSize: 10, fontWeight: 700, width: 20, textAlign: 'right', flexShrink: 0 }}>{p.score.toFixed(0)}</span>
+                    <span style={{ color: ST.dimLow, fontSize: 9, width: 28, textAlign: 'right', flexShrink: 0 }}>+{p.weight}%</span>
+                  </div>
+                );
+              })}
+              <div style={{ height: 1, background: ST.border, margin: '4px 0' }} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: ST.dim, fontSize: 10 }}>TOTAL SCORE</span>
+                <span style={{ color: stScoreColor(mqs), fontSize: 14, fontWeight: 900 }}>{mqs.toFixed(0)}/100</span>
+              </div>
+              <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                {[
+                  { dot: ST.green, text: '80–100: YES (press risk)' },
+                  { dot: ST.yellow, text: '60–79: CAUTION (selective)' },
+                  { dot: ST.red, text: '<60: NO (preserve capital)' },
+                ].map((l, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: l.dot, display: 'inline-block', flexShrink: 0 }} />
+                    <span style={{ color: ST.dimLow, fontSize: 9 }}>{l.text}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── TERMINAL ANALYSIS ─────────────────────── */}
+        <div style={{ background: ST.card, border: `1px solid ${ST.border}`, borderRadius: 6, overflow: 'hidden' }}>
+          <div style={{ padding: '8px 14px', borderBottom: `1px solid ${ST.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ color: ST.dim, fontSize: 10 }}>▶</span>
+              <span style={{ color: ST.dim, fontSize: 9, letterSpacing: 1.5 }}>TERMINAL ANALYSIS</span>
+              <span style={{ color: ST.dimLow, fontSize: 9, padding: '1px 6px', border: `1px solid ${ST.dimLow}44`, borderRadius: 2 }}>AI-generated market assessment</span>
+            </div>
+            <span style={{ color: ST.dimLow, fontSize: 9 }}>Updated {asOf.toLocaleString()}</span>
+          </div>
+          <div style={{ padding: '12px 14px' }}>
+            {d.terminal_analysis.map((line, i) => (
+              <div key={i} style={{ fontFamily: 'inherit', fontSize: 11, lineHeight: 1.9, color: stTermColor(line.type), whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                {line.text || '\u00A0'}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── FOOTER ───────────────────────────────── */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 2px', color: ST.dimLow, fontSize: 9 }}>
+          <span>Data: Live backend pipeline | Auto-refresh: 45s | Not financial advice</span>
+          <span>Refresh in {timeLeft}s</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Live clock hook ─────────────────────────────────────────────────────────
 function useLiveClock() {
   const [now, setNow] = useState(() => new Date());
@@ -2305,6 +2810,7 @@ export function MacroTerminalLive() {
     labor:     <LaborTab data={data} />,
     sentiment: <RiskTab data={data} />,
     watch:     <WatchTab />,
+    trade:     null,
   };
 
   const clockStr = now.toLocaleTimeString('en-US', { hour12: false });
@@ -2365,31 +2871,37 @@ export function MacroTerminalLive() {
           );
         })}
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', color: T.dim, fontSize: 10 }}>
-          KEYS [1-7] TO NAVIGATE
+          KEYS [1-8] TO NAVIGATE
         </div>
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto overscroll-contain p-4">
-        {isLoading && !data && (
-          <div className="space-y-4 animate-pulse">
-            <div className="h-6 bg-white/5 w-64" />
-            <div className="grid grid-cols-3 gap-3">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="h-24 bg-white/5" />
-              ))}
+      {activeTab === 'trade' ? (
+        <div className="flex-1 overflow-y-auto overscroll-contain">
+          <TradingTab />
+        </div>
+      ) : (
+        <div className="flex-1 overflow-y-auto overscroll-contain p-4">
+          {isLoading && !data && (
+            <div className="space-y-4 animate-pulse">
+              <div className="h-6 bg-white/5 w-64" />
+              <div className="grid grid-cols-3 gap-3">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="h-24 bg-white/5" />
+                ))}
+              </div>
+              <div className="h-64 bg-white/5" />
             </div>
-            <div className="h-64 bg-white/5" />
-          </div>
-        )}
-        {!isLoading && !data && (
-          <div className="text-center py-12 text-[hsl(var(--term-dim))]">
-            <div className="text-sm mb-2">Failed to load {activeTab} data</div>
-            <div className="text-xs">Check your connection and try again</div>
-          </div>
-        )}
-        {data && tabComponents[activeTab]}
-      </div>
+          )}
+          {!isLoading && !data && (
+            <div className="text-center py-12 text-[hsl(var(--term-dim))]">
+              <div className="text-sm mb-2">Failed to load {activeTab} data</div>
+              <div className="text-xs">Check your connection and try again</div>
+            </div>
+          )}
+          {data && tabComponents[activeTab]}
+        </div>
+      )}
     </div>
   );
 }
