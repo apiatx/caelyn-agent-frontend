@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { Newspaper, Send, Loader2, MessageSquare, ExternalLink, Clock, RefreshCw, Sparkles } from 'lucide-react';
 import { openSecureLink } from '@/utils/security';
 import { Button } from '@/components/ui/button';
@@ -258,6 +258,35 @@ function NewsCard({ article }: { article: NewsArticle }) {
   );
 }
 
+// ─── Top Stories (TradingView Timeline) ──────────────────────────
+
+const TopStoriesWidget = memo(function TopStoriesWidget() {
+  const container = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!container.current) return;
+    const script = document.createElement('script');
+    script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-timeline.js';
+    script.type = 'text/javascript';
+    script.async = true;
+    script.innerHTML = JSON.stringify({
+      displayMode: 'regular',
+      feedMode: 'market',
+      colorTheme: 'dark',
+      isTransparent: false,
+      locale: 'en',
+      market: 'stock',
+      width: '100%',
+      height: '100%',
+    });
+    container.current.appendChild(script);
+  }, []);
+  return (
+    <div ref={container} className="tradingview-widget-container" style={{ width: '100%', height: '100%' }}>
+      <div className="tradingview-widget-container__widget" style={{ width: '100%', height: '100%' }} />
+    </div>
+  );
+});
+
 // ─── News Intelligence Agent ──────────────────────────────────────
 
 function NewsAgent() {
@@ -349,8 +378,8 @@ function NewsAgent() {
   };
 
   return (
-    <div className="w-full lg:w-[380px] xl:w-[420px] flex-shrink-0">
-      <div className="rounded-xl p-5 sticky top-4" style={{
+    <div style={{ width: '100%' }}>
+      <div className="rounded-xl p-5" style={{
         background: 'rgba(255,255,255,0.02)',
         border: '1px solid rgba(255,255,255,0.06)',
         boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.03), 0 2px 16px rgba(0,0,0,0.3)',
@@ -462,7 +491,13 @@ function NewsAgent() {
 
 export default function NotifAIPage() {
   return (
-    <div className="min-h-screen text-white relative" style={{ background: '#050608', fontFamily: "'Outfit', sans-serif" }}>
+    <div
+      className="text-white"
+      style={{
+        height: '100vh', display: 'flex', flexDirection: 'column',
+        background: '#050608', fontFamily: "'Outfit', sans-serif", overflow: 'hidden',
+      }}
+    >
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
         .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
@@ -475,8 +510,11 @@ export default function NotifAIPage() {
         pointerEvents: 'none', zIndex: 0,
       }} />
 
-      {/* Header */}
-      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-2 relative" style={{ zIndex: 1 }}>
+      {/* Header — fixed height */}
+      <div
+        className="max-w-[1600px] mx-auto w-full px-4 sm:px-6 lg:px-8 pt-5 pb-2"
+        style={{ zIndex: 1, flexShrink: 0 }}
+      >
         <div className="flex items-center gap-4 mb-1">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center"
             style={{ background: 'linear-gradient(135deg, #2090d0, #5cc8f0)', boxShadow: '0 0 20px rgba(92,200,240,0.2)' }}>
@@ -493,14 +531,40 @@ export default function NotifAIPage() {
             <p className="text-xs text-white/30">Real-time market news intelligence</p>
           </div>
         </div>
-        <div className="w-24 h-0.5 rounded-full mt-3 mb-4" style={{ background: 'linear-gradient(135deg, #2090d0, #5cc8f0, #80d8f8)' }} />
+        <div className="w-24 h-0.5 rounded-full mt-3 mb-3" style={{ background: 'linear-gradient(135deg, #2090d0, #5cc8f0, #80d8f8)' }} />
       </div>
 
-      {/* Main Content — News Grid + Agent Sidebar */}
-      <main className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pb-8 relative" style={{ zIndex: 1 }}>
-        <div className="flex flex-col lg:flex-row gap-6">
+      {/* Main Content — fills all remaining height */}
+      <main
+        style={{
+          flex: 1, minHeight: 0, position: 'relative', zIndex: 1,
+          display: 'flex', gap: 24, padding: '0 2rem 1rem', overflow: 'hidden',
+        }}
+      >
+        {/* Left: News Feed — scrollable */}
+        <div style={{ flex: 1, minWidth: 0, overflowY: 'auto' }}>
           <NewsFeed />
+        </div>
+
+        {/* Right column: Ask Caelyn (top) + Top Stories (fills remaining) */}
+        <div style={{ width: 420, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* Ask Caelyn */}
           <NewsAgent />
+
+          {/* Top Stories widget — fills remaining vertical space */}
+          <div style={{
+            flex: 1, minHeight: 0, borderRadius: 12, overflow: 'hidden',
+            border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)',
+          }}>
+            <div style={{ padding: '10px 14px 8px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', color: 'rgba(255,255,255,0.5)' }}>
+                TOP STORIES
+              </span>
+            </div>
+            <div style={{ height: 'calc(100% - 39px)' }}>
+              <TopStoriesWidget />
+            </div>
+          </div>
         </div>
       </main>
     </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -57,23 +57,25 @@ const T = {
 
 // ─── Tab config ─────────────────────────────────────────────────────────────
 const TABS = [
-  { id: 'overview', label: 'OVERVIEW', shortcut: '1' },
-  { id: 'rates', label: 'RATES', shortcut: '2' },
-  { id: 'inflation', label: 'INFLATION', shortcut: '3' },
-  { id: 'growth', label: 'GROWTH', shortcut: '4' },
-  { id: 'labor', label: 'LABOR', shortcut: '5' },
-  { id: 'sentiment', label: 'RISK', shortcut: '6' },
+  { id: 'overview',   label: 'OVERVIEW',   shortcut: '1' },
+  { id: 'rates',      label: 'RATES',      shortcut: '2' },
+  { id: 'inflation',  label: 'INFLATION',  shortcut: '3' },
+  { id: 'growth',     label: 'GROWTH',     shortcut: '4' },
+  { id: 'labor',      label: 'LABOR',      shortcut: '5' },
+  { id: 'sentiment',  label: 'RISK',       shortcut: '6' },
+  { id: 'watch',      label: 'WATCH',      shortcut: '7' },
 ] as const;
 
 type TabId = typeof TABS[number]['id'];
 
 const API_MAP: Record<TabId, string> = {
-  overview: '/api/macro/dashboard',
-  rates: '/api/macro/rates',
+  overview:  '/api/macro/dashboard',
+  rates:     '/api/macro/rates',
   inflation: '/api/macro/inflation',
-  growth: '/api/macro/growth',
-  labor: '/api/macro/labor',
+  growth:    '/api/macro/growth',
+  labor:     '/api/macro/labor',
   sentiment: '/api/macro/risk',
+  watch:     '/api/macro/dashboard',
 };
 
 // ─── Shared styles ──────────────────────────────────────────────────────────
@@ -2101,6 +2103,164 @@ function RiskTab({ data }: { data: any }) {
   );
 }
 
+// ─── TAB 7: WATCH ─────────────────────────────────────────────────────────────
+// All TradingView market widgets in a scrollable terminal panel
+
+const WatchMarketOverview = memo(function WatchMarketOverview({ config }: { config: object }) {
+  const container = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!container.current) return;
+    const script = document.createElement('script');
+    script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js';
+    script.type = 'text/javascript';
+    script.async = true;
+    script.innerHTML = JSON.stringify(config);
+    container.current.appendChild(script);
+  }, []);
+  return (
+    <div ref={container} style={{ width: '100%', height: '100%' }}>
+      <div className="tradingview-widget-container__widget" style={{ width: '100%', height: '100%' }} />
+    </div>
+  );
+});
+
+const WatchForexHeatmap = memo(function WatchForexHeatmap() {
+  const container = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!container.current) return;
+    const script = document.createElement('script');
+    script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-forex-heat-map.js';
+    script.type = 'text/javascript';
+    script.async = true;
+    script.innerHTML = JSON.stringify({ colorTheme: 'dark', isTransparent: true, locale: 'en', currencies: ['EUR','USD','JPY','GBP','CHF','AUD','CAD','NZD','CNY'], width: '100%', height: '100%' });
+    container.current.appendChild(script);
+  }, []);
+  return (
+    <div ref={container} style={{ width: '100%', height: '100%' }}>
+      <div className="tradingview-widget-container__widget" style={{ width: '100%', height: '100%' }} />
+    </div>
+  );
+});
+
+const WatchEconomicCalendar = memo(function WatchEconomicCalendar() {
+  const container = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!container.current) return;
+    const script = document.createElement('script');
+    script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-events.js';
+    script.type = 'text/javascript';
+    script.async = true;
+    script.innerHTML = JSON.stringify({ colorTheme: 'dark', isTransparent: false, locale: 'en', countryFilter: 'ar,au,br,ca,cn,fr,de,in,id,it,jp,kr,mx,ru,sa,za,tr,gb,us,eu', importanceFilter: '-1,0,1', width: '100%', height: '100%' });
+    container.current.appendChild(script);
+  }, []);
+  return (
+    <div ref={container} style={{ width: '100%', height: '100%' }}>
+      <div className="tradingview-widget-container__widget" style={{ width: '100%', height: '100%' }} />
+    </div>
+  );
+});
+
+function WatchEconomicMap() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const iframe = document.createElement('iframe');
+    iframe.style.width = '100%';
+    iframe.style.height = '100%';
+    iframe.style.border = 'none';
+    iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-popups');
+    containerRef.current.appendChild(iframe);
+    const doc = iframe.contentDocument;
+    if (doc) {
+      doc.open();
+      doc.write(`<!DOCTYPE html><html><head><style>body{margin:0;padding:0;overflow:hidden;background:transparent;}</style></head><body><script type="module" src="https://widgets.tradingview-widget.com/w/en/tv-economic-map.js"><\/script><tv-economic-map metric="intr" theme="dark" transparent style="width:100%;height:700px;display:block;"></tv-economic-map></body></html>`);
+      doc.close();
+    }
+    return () => {
+      if (containerRef.current && iframe.parentNode === containerRef.current) {
+        containerRef.current.removeChild(iframe);
+      }
+    };
+  }, []);
+  return <div ref={containerRef} style={{ width: '100%', height: '100%' }} />;
+}
+
+const watchIndicesConfig = { title: 'Indices', tabs: [{ title: 'US & Canada', symbols: [{ s: 'FOREXCOM:SPXUSD', d: 'S&P 500' }, { s: 'FOREXCOM:NSXUSD', d: 'US 100' }, { s: 'INDEX:DXY', d: 'U.S. Dollar Index' }, { s: 'FOREXCOM:DJI', d: 'Dow 30' }, { s: 'BMFBOVESPA:ISP1!', d: 'S&P Futures' }] }, { title: 'Europe', symbols: [{ s: 'INDEX:SX5E', d: 'Euro Stoxx 50' }, { s: 'FOREXCOM:UKXGBP', d: 'UK 100' }, { s: 'INDEX:DEU40', d: 'DAX' }, { s: 'INDEX:CAC40', d: 'CAC 40' }] }, { title: 'Asia/Pacific', symbols: [{ s: 'INDEX:NKY', d: 'Nikkei 225' }, { s: 'INDEX:HSI', d: 'Hang Seng' }, { s: 'BSE:SENSEX', d: 'Sensex' }] }], width: '100%', height: '100%', showChart: true, showFloatingTooltip: false, locale: 'en', plotLineColorGrowing: '#2962FF', plotLineColorFalling: '#2962FF', belowLineFillColorGrowing: 'rgba(41,98,255,0.12)', belowLineFillColorFalling: 'rgba(41,98,255,0.12)', belowLineFillColorGrowingBottom: 'rgba(41,98,255,0)', belowLineFillColorFallingBottom: 'rgba(41,98,255,0)', gridLineColor: 'rgba(240,243,250,0)', scaleFontColor: 'rgba(120,123,134,1)', showSymbolLogo: true, symbolActiveColor: 'rgba(41,98,255,0.12)', colorTheme: 'dark' };
+const watchStocksConfig = { title: 'Stocks', tabs: [{ title: 'Financial', symbols: [{ s: 'NYSE:JPM', d: 'JPMorgan' }, { s: 'NYSE:WFC', d: 'Wells Fargo' }, { s: 'NYSE:BAC', d: 'Bank of America' }, { s: 'NYSE:C', d: 'Citigroup' }, { s: 'NYSE:MA', d: 'Mastercard' }] }, { title: 'Technology', symbols: [{ s: 'NASDAQ:AAPL', d: 'Apple' }, { s: 'NASDAQ:GOOGL', d: 'Alphabet' }, { s: 'NASDAQ:MSFT', d: 'Microsoft' }, { s: 'NASDAQ:NVDA', d: 'NVIDIA' }, { s: 'NASDAQ:META', d: 'Meta' }] }, { title: 'Services', symbols: [{ s: 'NASDAQ:AMZN', d: 'Amazon' }, { s: 'NYSE:T', d: 'AT&T' }, { s: 'NYSE:WMT', d: 'Walmart' }, { s: 'NYSE:V', d: 'Visa' }] }], width: '100%', height: '100%', showChart: true, showFloatingTooltip: false, locale: 'en', plotLineColorGrowing: '#2962FF', plotLineColorFalling: '#2962FF', belowLineFillColorGrowing: 'rgba(41,98,255,0.12)', belowLineFillColorFalling: 'rgba(41,98,255,0.12)', belowLineFillColorGrowingBottom: 'rgba(41,98,255,0)', belowLineFillColorFallingBottom: 'rgba(41,98,255,0)', gridLineColor: 'rgba(240,243,250,0)', scaleFontColor: 'rgba(120,123,134,1)', showSymbolLogo: true, symbolActiveColor: 'rgba(41,98,255,0.12)', colorTheme: 'dark' };
+const watchCurrenciesConfig = { title: 'Currencies', tabs: [{ title: 'Major', symbols: [{ s: 'FX_IDC:EURUSD', d: 'EUR/USD' }, { s: 'FX_IDC:USDJPY', d: 'USD/JPY' }, { s: 'FX_IDC:GBPUSD', d: 'GBP/USD' }, { s: 'FX_IDC:AUDUSD', d: 'AUD/USD' }, { s: 'FX_IDC:USDCAD', d: 'USD/CAD' }, { s: 'FX_IDC:USDCHF', d: 'USD/CHF' }] }, { title: 'Minor', symbols: [{ s: 'FX_IDC:EURGBP', d: 'EUR/GBP' }, { s: 'FX_IDC:EURJPY', d: 'EUR/JPY' }, { s: 'FX_IDC:GBPJPY', d: 'GBP/JPY' }] }], width: '100%', height: '100%', showChart: true, showFloatingTooltip: false, locale: 'en', plotLineColorGrowing: '#2962FF', plotLineColorFalling: '#2962FF', belowLineFillColorGrowing: 'rgba(41,98,255,0.12)', belowLineFillColorFalling: 'rgba(41,98,255,0.12)', belowLineFillColorGrowingBottom: 'rgba(41,98,255,0)', belowLineFillColorFallingBottom: 'rgba(41,98,255,0)', gridLineColor: 'rgba(240,243,250,0)', scaleFontColor: 'rgba(120,123,134,1)', showSymbolLogo: true, symbolActiveColor: 'rgba(41,98,255,0.12)', colorTheme: 'dark' };
+const watchCryptoConfig = { title: 'Cryptocurrencies', tabs: [{ title: 'Overview', symbols: [{ s: 'CRYPTOCAP:TOTAL' }, { s: 'BITSTAMP:BTCUSD' }, { s: 'BITSTAMP:ETHUSD' }, { s: 'COINBASE:SOLUSD' }, { s: 'BINANCE:AVAXUSD' }] }, { title: 'Bitcoin', symbols: [{ s: 'BITSTAMP:BTCUSD' }, { s: 'COINBASE:BTCEUR' }, { s: 'COINBASE:BTCGBP' }] }, { title: 'Ethereum', symbols: [{ s: 'BITSTAMP:ETHUSD' }, { s: 'KRAKEN:ETHEUR' }, { s: 'BINANCE:ETHBTC' }] }], width: '100%', height: '100%', showChart: true, showFloatingTooltip: false, locale: 'en', plotLineColorGrowing: '#2962FF', plotLineColorFalling: '#2962FF', belowLineFillColorGrowing: 'rgba(41,98,255,0.12)', belowLineFillColorFalling: 'rgba(41,98,255,0.12)', belowLineFillColorGrowingBottom: 'rgba(41,98,255,0)', belowLineFillColorFallingBottom: 'rgba(41,98,255,0)', gridLineColor: 'rgba(240,243,250,0)', scaleFontColor: 'rgba(120,123,134,1)', showSymbolLogo: true, symbolActiveColor: 'rgba(41,98,255,0.12)', colorTheme: 'dark' };
+
+function WatchTab() {
+  const panelStyle = {
+    background: T.surface, border: `1px solid ${T.border}`, borderRadius: 2, overflow: 'hidden',
+  };
+  const labelStyle = {
+    fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: T.dim, padding: '8px 12px',
+    borderBottom: `1px solid ${T.border}`, textTransform: 'uppercase' as const,
+  };
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+      {/* ── ECONOMIC CALENDAR + INDICES — side by side ────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <div style={{ ...panelStyle, height: 560 }}>
+          <div style={labelStyle}>ECONOMIC CALENDAR</div>
+          <div style={{ height: 'calc(100% - 37px)' }}>
+            <WatchEconomicCalendar />
+          </div>
+        </div>
+        <div style={{ ...panelStyle, height: 560 }}>
+          <div style={labelStyle}>INDICES</div>
+          <div style={{ height: 'calc(100% - 37px)' }}>
+            <WatchMarketOverview config={watchIndicesConfig} />
+          </div>
+        </div>
+      </div>
+
+      {/* ── STOCKS + CURRENCIES — side by side ───────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <div style={{ ...panelStyle, height: 500 }}>
+          <div style={labelStyle}>STOCKS</div>
+          <div style={{ height: 'calc(100% - 37px)' }}>
+            <WatchMarketOverview config={watchStocksConfig} />
+          </div>
+        </div>
+        <div style={{ ...panelStyle, height: 500 }}>
+          <div style={labelStyle}>CURRENCIES</div>
+          <div style={{ height: 'calc(100% - 37px)' }}>
+            <WatchMarketOverview config={watchCurrenciesConfig} />
+          </div>
+        </div>
+      </div>
+
+      {/* ── CRYPTO — full width ───────────────────────────────────────── */}
+      <div style={{ ...panelStyle, height: 500 }}>
+        <div style={labelStyle}>CRYPTOCURRENCIES</div>
+        <div style={{ height: 'calc(100% - 37px)' }}>
+          <WatchMarketOverview config={watchCryptoConfig} />
+        </div>
+      </div>
+
+      {/* ── FOREX HEATMAP — full width ────────────────────────────────── */}
+      <div style={{ ...panelStyle, height: 520 }}>
+        <div style={labelStyle}>FOREX HEATMAP</div>
+        <div style={{ height: 'calc(100% - 37px)' }}>
+          <WatchForexHeatmap />
+        </div>
+      </div>
+
+      {/* ── ECONOMIC MAP — full width ─────────────────────────────────── */}
+      <div style={{ ...panelStyle, height: 740 }}>
+        <div style={labelStyle}>ECONOMIC MAP</div>
+        <div style={{ height: 'calc(100% - 37px)' }}>
+          <WatchEconomicMap />
+        </div>
+      </div>
+
+    </div>
+  );
+}
+
 // ─── Live clock hook ─────────────────────────────────────────────────────────
 function useLiveClock() {
   const [now, setNow] = useState(() => new Date());
@@ -2138,12 +2298,13 @@ export function MacroTerminalLive() {
   });
 
   const tabComponents: Record<TabId, React.ReactNode> = {
-    overview: <OverviewTab data={data} />,
-    rates: <RatesTab data={data} />,
+    overview:  <OverviewTab data={data} />,
+    rates:     <RatesTab data={data} />,
     inflation: <InflationTab data={data} />,
-    growth: <GrowthTab data={data} />,
-    labor: <LaborTab data={data} />,
+    growth:    <GrowthTab data={data} />,
+    labor:     <LaborTab data={data} />,
     sentiment: <RiskTab data={data} />,
+    watch:     <WatchTab />,
   };
 
   const clockStr = now.toLocaleTimeString('en-US', { hour12: false });
@@ -2204,7 +2365,7 @@ export function MacroTerminalLive() {
           );
         })}
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', color: T.dim, fontSize: 10 }}>
-          KEYS [1-6] TO NAVIGATE
+          KEYS [1-7] TO NAVIGATE
         </div>
       </div>
 

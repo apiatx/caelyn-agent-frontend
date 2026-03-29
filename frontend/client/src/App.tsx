@@ -23,7 +23,6 @@ import BNBPage from "@/pages/bnb";
 import SUIPage from "@/pages/sui";
 import CaelynAIPage from "@/pages/hippo-ai";
 import CryptoStocks from "@/pages/crypto-stocks";
-import StocksDashboardPage from "@/pages/stocks-dashboard";
 import StocksSectorsPage from "@/pages/stocks-sectors";
 import StocksPortfolioPage from "@/pages/stocks-portfolio";
 import StocksFundamentalsPage from "@/pages/stocks-fundamentals";
@@ -149,7 +148,7 @@ function Router() {
       <Route path="/app/stocks/screening" component={StocksScreeningPage} />
       <Route path="/app/stocks/earnings-calendar" component={StocksEarningsCalendarPage} />
 
-      <Route path="/app/stocks/dashboard" component={StocksDashboardPage} />
+      <Route path="/app/stocks/dashboard"><Redirect to="/app/macro-terminal" /></Route>
       <Route path="/app/stocks/sectors" component={StocksSectorsPage} />
       <Route path="/app/stocks/fundamentals" component={StocksFundamentalsPage} />
       <Route path="/app/stocks/portfolio" component={StocksPortfolioPage} />
