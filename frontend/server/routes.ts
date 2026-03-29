@@ -935,6 +935,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   }
 
+  // === SPY 1-Year Historical Prices (for Macro Overview chart) ===
+  app.get('/api/macro/spy-history', async (_req, res) => {
+    try {
+      const url = 'https://query1.finance.yahoo.com/v8/finance/chart/SPY?interval=1d&range=1y&includePrePost=false';
+      const resp = await fetch(url, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; MacroTerminal/1.0)' },
+        signal: AbortSignal.timeout(12000),
+      });
+      if (!resp.ok) return res.json({ historical: [] });
+      const data = await resp.json() as any;
+      const result = data.chart?.result?.[0];
+      const timestamps: number[] = result?.timestamp ?? [];
+      const closes: number[] = result?.indicators?.quote?.[0]?.close ?? [];
+      const historical = timestamps.map((ts: number, i: number) => ({
+        date: new Date(ts * 1000).toISOString().split('T')[0],
+        close: closes[i] ? parseFloat(closes[i].toFixed(2)) : null,
+      })).filter((d: any) => d.close != null);
+      res.json({ historical });
+    } catch {
+      res.json({ historical: [] });
+    }
+  });
+
   // === Options Flow (proxy to FastAPI backend) ===
 
   app.get('/api/options/dashboard', async (req, res) => {

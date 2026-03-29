@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  BarChart, Bar, Cell,
+  LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, BarChart, Bar, Cell, ReferenceLine,
 } from 'recharts';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 
@@ -127,85 +127,350 @@ function ChartTooltipContent({ active, payload, label }: any) {
 const chartGrid = 'hsl(220 15% 14%)';
 const chartTick = { fill: 'hsl(220 10% 40%)', fontSize: 10 };
 
+// ─── Calendar helpers ────────────────────────────────────────────────────────
+function getNthWeekday(year: number, month: number, weekday: number, n: number): Date {
+  const d = new Date(year, month, 1);
+  let count = 0;
+  while (count < n) {
+    if (d.getDay() === weekday) count++;
+    if (count < n) d.setDate(d.getDate() + 1);
+  }
+  return d;
+}
+function getLastWeekday(year: number, month: number, weekday: number): Date {
+  const d = new Date(year, month + 1, 0);
+  while (d.getDay() !== weekday) d.setDate(d.getDate() - 1);
+  return d;
+}
+const MONTH_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function computeUpcomingEvents(today: Date) {
+  const fomcDates = ['2026-04-29','2026-06-17','2026-07-29','2026-09-16','2026-11-04','2026-12-09'];
+  const events: Array<{ date: Date; label: string; impact: 'high'|'medium' }> = [];
+  for (const d of fomcDates) {
+    const dt = new Date(d + 'T12:00:00');
+    if (dt > today) events.push({ date: dt, label: 'FOMC Rate Decision', impact: 'high' });
+  }
+  for (let m = 0; m <= 2; m++) {
+    const ref = new Date(today.getFullYear(), today.getMonth() + m, 1);
+    const yr = ref.getFullYear(); const mo = ref.getMonth();
+    const cpi = getNthWeekday(yr, mo, 3, 2);
+    if (cpi > today) events.push({ date: cpi, label: `CPI Report (${MONTH_SHORT[(mo+11)%12]})`, impact: 'high' });
+    const ppi = new Date(cpi); ppi.setDate(ppi.getDate()+1);
+    if (ppi > today) events.push({ date: ppi, label: `PPI Report (${MONTH_SHORT[(mo+11)%12]})`, impact: 'medium' });
+    const pce = getLastWeekday(yr, mo, 5);
+    if (pce > today) events.push({ date: pce, label: `PCE Report (${MONTH_SHORT[(mo+10)%12]})`, impact: 'medium' });
+    const nfp = getNthWeekday(yr, mo, 5, 1);
+    if (nfp > today) events.push({ date: nfp, label: `Unemployment Rate (${MONTH_SHORT[(mo+11)%12]})`, impact: 'medium' });
+    if ([1,4,7,10].includes(mo)) {
+      const gdp = new Date(yr, mo, 30);
+      if (gdp > today) events.push({ date: gdp, label: `GDP Q${Math.ceil(mo/3)} (Advance)`, impact: 'high' });
+    }
+  }
+  events.sort((a,b) => a.date.getTime()-b.date.getTime());
+  const fmt = (d: Date) => `${MONTH_SHORT[d.getMonth()]} ${d.getDate()}`;
+  return events.slice(0,8).map(e => ({ dateLabel: fmt(e.date), label: e.label, impact: e.impact }));
+}
+
 // ─── TAB 1: OVERVIEW ─────────────────────────────────────────────────────────
 function OverviewTab({ data }: { data: any }) {
   if (!data) return null;
-  const etfNames: Record<string, string> = {
-    SPY: 'S&P 500', QQQ: 'Nasdaq 100', TLT: '20+ Yr Treasury',
-    GLD: 'Gold', USO: 'Crude Oil', HYG: 'High Yield Corp',
-  };
+
+  const { data: ratesData } = useQuery<any>({ queryKey: ['/api/macro/rates'], staleTime: 120_000, refetchInterval: 120_000 });
+  const { data: spyHistData } = useQuery<any>({ queryKey: ['/api/macro/spy-history'], staleTime: 300_000 });
+
+  // ── Regime derivation ──
+  const infl = data.inflation || {};
+  const fed = data.fed || {};
+  const labor = data.labor || {};
+  const rates = data.rates_and_yields || {};
+  const liq = data.liquidity || {};
+  const scen = data.scenarios || {};
+  const gdpData = data.gdp || {};
+  const latestGdp: number = (gdpData.quarterly_data ?? []).slice(-1)[0]?.gdp ?? 2;
+  const nfp: number = labor.nfp_last ?? 100000;
+  const corePce: number = infl.core_pce_yoy ?? 0;
+  const cpi: number = infl.cpi_yoy ?? 0;
+  const unemp: number = labor.unemployment_rate ?? 4;
+
+  let regime = 'MIXED SIGNALS';
+  let rColor = T.amber;
+  if (corePce > 2.5 && (latestGdp < 2 || nfp < 50000)) { regime = 'STAGFLATION RISK'; rColor = T.amber; }
+  else if (corePce > 3 && latestGdp > 2.5) { regime = 'OVERHEATING'; rColor = T.red; }
+  else if (cpi < 2.2 && latestGdp > 2) { regime = 'GOLDILOCKS'; rColor = T.green; }
+  else if (latestGdp < 0 || nfp < -200000) { regime = 'RECESSION RISK'; rColor = T.red; }
+
+  // ── Dates ──
+  const lastUpdated = new Date(data.last_updated || Date.now());
+  const asOfDate = lastUpdated.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  const snapLabel = `MARKET SNAPSHOT — ${lastUpdated.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase()}`;
+
+  // ── Narrative bullets from live backend data ──
+  const narratives: string[] = [
+    `The U.S. economy is caught between competing forces. ${gdpData.commentary || `GDP at ${latestGdp.toFixed(1)}% in the latest quarter.`} ${labor.commentary || ''} ${nfp < 0 ? `February showing outright job losses (${nfp.toLocaleString()})` : `NFP at +${nfp.toLocaleString()}`} and unemployment rising to ${unemp}%.`,
+    `Inflation is the Fed's primary constraint. CPI is at ${cpi}% but core PCE is estimated at ${corePce}% — ${Math.round((corePce - 2) * 100)}bps above target. ${infl.commentary || ''} ${scen.bear?.[0] || ''}`,
+    `The Fed faces a dilemma. Rates at ${fed.funds_rate_range || fed.funds_rate} — ${fed.commentary || ''} ${rates.commentary || ''} The yield curve has ${(rates.spread_2s10s ?? 0) > 0 ? `re-steepened (2s10s +${Math.round((rates.spread_2s10s ?? 0) * 100)}bps)` : 'inverted'}.`,
+    `Key signals: ${liq.commentary || ''} ${scen.base || ''} Resolution depends on ${(rates.spread_2s10s ?? 0) > 0 ? 'inflation trajectory and labor market resilience' : 'whether the yield curve re-steepens'}.`,
+  ];
+
+  // ── SPY data ──
+  const spy = (data.benchmark_etfs ?? []).find((e: any) => e.ticker === 'SPY') ?? null;
+  const spyHistory: { date: string; close: number }[] = spyHistData?.historical ?? [];
+  const closes = spyHistory.map((h: any) => h.close).filter(Boolean) as number[];
+  const spy52wLow = closes.length > 0 ? Math.min(...closes) : null;
+  const spy52wHigh = closes.length > 0 ? Math.max(...closes) : null;
+
+  // Downsample to ~every 5th point for chart performance
+  const spyChartData = spyHistory
+    .filter((_: any, i: number) => i % 3 === 0 || i === spyHistory.length - 1)
+    .map((h: any) => ({ date: h.date.slice(5), close: parseFloat(h.close.toFixed(2)) }));
+
+  // ── Yield curve ──
+  const yieldCurve = (ratesData?.yield_curve ?? []).filter((y: any) => y.yield != null);
+  const ffRate: number = fed.funds_rate ?? 3.64;
+
+  // ── ETFs + VIX ──
+  const etfs: any[] = data.benchmark_etfs ?? [];
+  const vix = data.vix ?? null;
+
+  // ── Key risks (scenarios.bear + derived) ──
+  const keyRisks: string[] = [
+    ...(scen.bear ?? []),
+    nfp < 0 ? `AI-driven 'jobless growth' → structural unemployment rise` : `Rising unemployment (${unemp}%) → demand destruction`,
+    (rates.spread_2s10s ?? 0) < 0 ? `Yield curve inversion → recession signal ahead` : `Fiscal deficits → term premium expansion → higher long rates`,
+    `Consumer confidence collapse → spending finally rolls over`,
+  ].slice(0, 4);
+
+  // ── Key opportunities ──
+  const keyOpps: string[] = [
+    ...(scen.bull ?? []),
+    `Fed eventually cuts → front-end duration trade`,
+    `${scen.base || 'Soft landing base case → equity multiple expansion'}`,
+  ].slice(0, 4);
+
+  // ── Upcoming events ──
+  const upcomingEvents = computeUpcomingEvents(new Date());
+
   return (
-    <div className="space-y-4">
-      <div className={card}>
-        <div className={sectionTitle}>BENCHMARK ETFs</div>
-        <div className="grid grid-cols-7 gap-2">
-          {data.benchmark_etfs?.map((etf: any) => {
-            const up = etf.change_pct >= 0;
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, paddingBottom: 24 }}>
+
+      {/* ─ MACRO REGIME ─ */}
+      <div style={{
+        border: `1px solid ${rColor}50`,
+        borderLeft: `3px solid ${rColor}`,
+        background: `linear-gradient(135deg, ${rColor}08 0%, transparent 60%)`,
+        padding: '14px 18px',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+          <span style={{ color: rColor, fontSize: 14 }}>⚠</span>
+          <span style={{ color: rColor, fontSize: 12, fontWeight: 700, letterSpacing: 1.5 }}>
+            MACRO REGIME: {regime}
+          </span>
+        </div>
+        <div style={{ color: T.dim, fontSize: 10, marginBottom: 12, letterSpacing: 0.5 }}>
+          {asOfDate} — Real-time Macro Intelligence
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+          {narratives.map((n, i) => (
+            <div key={i} style={{ display: 'flex', gap: 10 }}>
+              <span style={{ color: T.green, fontSize: 11, flexShrink: 0, marginTop: 2 }}>{'>'}</span>
+              <span style={{ color: T.green, fontSize: 11, lineHeight: 1.65, opacity: 0.85 }}>{n}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ─ MARKET SNAPSHOT ─ */}
+      <div style={{ background: T.surface, border: `1px solid ${T.border}`, padding: '10px 14px' }}>
+        <div style={{ color: T.dim, fontSize: 9, letterSpacing: 1.5, marginBottom: 10 }}>{snapLabel}</div>
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${etfs.length + (vix ? 1 : 0)}, 1fr)`, gap: 2 }}>
+          {etfs.map((etf: any) => {
+            const up = (etf.change_pct ?? 0) >= 0;
+            const col = up ? T.green : T.red;
+            const far = Math.abs(etf.pct_from_52w_high ?? 0) > 10;
             return (
-              <div key={etf.ticker} className="text-center">
-                <div className="text-[10px] text-[hsl(var(--term-dim))] tracking-wider">{etf.ticker}</div>
-                <div className={`text-sm font-semibold tabular-nums ${up ? 'text-[hsl(var(--term-green))] glow-green' : 'text-[hsl(var(--term-red))] glow-red'}`}>
-                  ${etf.price?.toFixed(2)}
-                </div>
-                <div className={`flex items-center justify-center gap-1 text-[10px] tabular-nums ${up ? 'text-[hsl(var(--term-green))]' : 'text-[hsl(var(--term-red))]'}`}>
-                  {up ? <TrendingUp className="w-2.5 h-2.5" /> : <TrendingDown className="w-2.5 h-2.5" />}
-                  {up ? '+' : ''}{etf.change_pct?.toFixed(2)}%
-                </div>
-                <div className="text-[9px] text-[hsl(var(--term-dim))]">{etfNames[etf.ticker] || etf.ticker}</div>
-                <div className={`text-[9px] ${etf.pct_from_52w_high >= -5 ? 'text-[hsl(var(--term-dim))]' : 'text-[hsl(var(--term-amber))]'}`}>
+              <div key={etf.ticker} style={{ textAlign: 'center', padding: '4px 2px' }}>
+                <div style={{ color: T.dim, fontSize: 9, letterSpacing: 1.5, marginBottom: 4 }}>{etf.ticker}</div>
+                <div style={{ color: col, fontSize: 15, fontWeight: 700, lineHeight: 1.1 }}>${etf.price?.toFixed(2)}</div>
+                <div style={{ color: col, fontSize: 10, marginTop: 3 }}>{up ? '+' : ''}{etf.change_pct?.toFixed(2)}%</div>
+                <div style={{ color: far ? T.amber : T.dim, fontSize: 9, marginTop: 3 }}>
                   {etf.pct_from_52w_high?.toFixed(1)}% from 52WH
                 </div>
               </div>
             );
           })}
-          {/* VIX Card */}
-          {data.vix && (() => {
-            const v = data.vix;
-            const level = v.current >= 30 ? 'high' : v.current >= 20 ? 'elevated' : 'low';
-            const color = level === 'high' ? '--term-red' : level === 'elevated' ? '--term-amber' : '--term-green';
-            const glow = level === 'high' ? 'glow-red' : level === 'elevated' ? 'glow-amber' : 'glow-green';
-            const down = v.change_pct < 0;
+          {vix && (() => {
+            const vc = vix.current ?? 0;
+            const vixCol = vc >= 30 ? T.red : vc >= 20 ? T.amber : T.green;
+            const vixLbl = vc >= 30 ? 'High' : vc >= 20 ? 'Elevated' : 'Normal';
+            const vixChgDown = (vix.change_pct ?? 0) < 0;
             return (
-              <div className="text-center">
-                <div className="text-[10px] text-[hsl(var(--term-dim))] tracking-wider">VIX</div>
-                <div className={`text-sm font-semibold tabular-nums text-[hsl(var(${color}))] ${glow}`}>{v.current?.toFixed(2)}</div>
-                <div className={`flex items-center justify-center gap-1 text-[10px] tabular-nums ${down ? 'text-[hsl(var(--term-green))]' : 'text-[hsl(var(--term-red))]'}`}>
-                  {down ? <TrendingDown className="w-2.5 h-2.5" /> : <TrendingUp className="w-2.5 h-2.5" />}
-                  {v.change_pct >= 0 ? '+' : ''}{v.change_pct?.toFixed(2)}%
+              <div style={{ textAlign: 'center', padding: '4px 2px' }}>
+                <div style={{ color: T.dim, fontSize: 9, letterSpacing: 1.5, marginBottom: 4 }}>VIX</div>
+                <div style={{ color: vixCol, fontSize: 15, fontWeight: 700, lineHeight: 1.1 }}>{vc.toFixed(2)}</div>
+                <div style={{ color: vixChgDown ? T.green : T.red, fontSize: 10, marginTop: 3 }}>
+                  {vix.change_pct != null ? `${vix.change_pct >= 0 ? '+' : ''}${vix.change_pct.toFixed(2)}%` : '—'}
                 </div>
-                <div className="text-[9px] text-[hsl(var(--term-dim))]">Volatility</div>
-                <div className={`text-[9px] text-[hsl(var(${color}))] capitalize`}>{level}</div>
+                <div style={{ color: vixCol, fontSize: 9, marginTop: 3 }}>{vixLbl}</div>
               </div>
             );
           })()}
         </div>
       </div>
 
-      {/* Yield Snapshot */}
-      {data.yield_snapshot && (
-        <div className={card}>
-          <div className={sectionTitle} style={{ color: T.cyan }}>$ YIELD SNAPSHOT</div>
-          <div className="grid grid-cols-4 gap-4">
-            {Object.entries(data.yield_snapshot).map(([mat, val]: [string, any]) => (
-              <div key={mat} className="text-center">
-                <div className="text-[10px] text-[hsl(var(--term-dim))] uppercase mb-1">{mat}</div>
-                <div className="text-sm font-semibold text-[hsl(var(--term-green))] glow-green tabular-nums">
-                  {val ? `${val.toFixed(2)}%` : '—'}
+      {/* ─ CHARTS ROW ─ */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+
+        {/* SPY 1-YEAR */}
+        <div style={{ background: T.surface, border: `1px solid ${T.border}`, padding: '10px 12px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+            <div>
+              <div style={{ color: T.dim, fontSize: 9, letterSpacing: 1, marginBottom: 3 }}>S&P 500 (SPY) — 1 YEAR</div>
+              {spy && (
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                  <span style={{ color: T.green, fontSize: 15, fontWeight: 700 }}>${spy.price?.toFixed(2)}</span>
+                  <span style={{ color: (spy.change_pct ?? 0) >= 0 ? T.green : T.red, fontSize: 11 }}>
+                    {(spy.change_pct ?? 0) >= 0 ? '+' : ''}{spy.change_pct?.toFixed(2)}%
+                  </span>
                 </div>
+              )}
+            </div>
+            {spy52wHigh && spy52wLow && (
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ color: T.dim, fontSize: 9 }}>52W Range</div>
+                <div style={{ color: T.dim, fontSize: 10, marginTop: 2 }}>${spy52wLow.toFixed(2)} – ${spy52wHigh.toFixed(2)}</div>
+              </div>
+            )}
+          </div>
+          <div style={{ height: 200 }}>
+            {spyChartData.length > 4 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={spyChartData} margin={{ top: 4, right: 4, bottom: 0, left: 2 }}>
+                  <defs>
+                    <linearGradient id="spyGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={T.green} stopOpacity={0.25} />
+                      <stop offset="95%" stopColor={T.green} stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="2 6" stroke={T.border} strokeOpacity={0.35} />
+                  <XAxis dataKey="date" tick={{ fill: T.dim, fontSize: 9 }} interval="preserveStartEnd" tickLine={false} axisLine={false} />
+                  <YAxis tick={{ fill: T.dim, fontSize: 9 }} tickLine={false} axisLine={false} domain={['auto','auto']} tickFormatter={(v) => `$${v}`} width={52} />
+                  <Tooltip
+                    content={({ active, payload }: any) =>
+                      active && payload?.[0] ? (
+                        <div style={{ background: T.surface, border: `1px solid ${T.border}`, padding: '6px 10px', fontSize: 11 }}>
+                          <div style={{ color: T.dim, marginBottom: 2 }}>{payload[0].payload.date}</div>
+                          <div style={{ color: T.green }}>${(payload[0].value as number)?.toFixed(2)}</div>
+                        </div>
+                      ) : null
+                    }
+                  />
+                  <Area type="monotone" dataKey="close" stroke={T.green} strokeWidth={1.5} fill="url(#spyGrad)" dot={false} name="SPY" />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ color: T.dim, fontSize: 11 }}>Loading chart…</div>
+                  {spy && <div style={{ color: T.green, fontSize: 20, fontWeight: 700, marginTop: 8 }}>${spy.price?.toFixed(2)}</div>}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* TREASURY YIELD CURVE */}
+        <div style={{ background: T.surface, border: `1px solid ${T.border}`, padding: '10px 12px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+            <div>
+              <div style={{ color: T.dim, fontSize: 9, letterSpacing: 1 }}>U.S. TREASURY YIELD CURVE</div>
+              <div style={{ color: T.dim, fontSize: 10, marginTop: 3 }}>As of {asOfDate}</div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 3, alignItems: 'flex-end' }}>
+              {[['Current', T.green], ['FF Rate', T.amber]] .map(([lbl, col]) => (
+                <div key={lbl as string} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <span style={{ width: 14, height: 1.5, background: col as string, display: 'inline-block' }} />
+                  <span style={{ color: T.dim, fontSize: 9 }}>{lbl as string}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{ height: 200 }}>
+            {yieldCurve.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={yieldCurve} margin={{ top: 4, right: 32, bottom: 0, left: 2 }}>
+                  <defs>
+                    <linearGradient id="yieldGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={T.green} stopOpacity={0.2} />
+                      <stop offset="95%" stopColor={T.green} stopOpacity={0.01} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="2 6" stroke={T.border} strokeOpacity={0.35} />
+                  <XAxis dataKey="maturity" tick={{ fill: T.dim, fontSize: 9 }} tickLine={false} axisLine={false} />
+                  <YAxis tick={{ fill: T.dim, fontSize: 9 }} tickLine={false} axisLine={false} domain={['auto','auto']} tickFormatter={(v) => `${v.toFixed(1)}%`} width={36} />
+                  <Tooltip content={<ChartTooltipContent />} />
+                  <ReferenceLine
+                    y={ffRate}
+                    stroke={T.amber}
+                    strokeDasharray="3 4"
+                    strokeOpacity={0.7}
+                    label={{ value: 'FF Rate', position: 'insideRight', fill: T.amber, fontSize: 8 }}
+                  />
+                  <Line type="monotone" dataKey="yield" stroke={T.green} strokeWidth={2} dot={{ fill: T.green, r: 3, strokeWidth: 0 }} name="Current" />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ color: T.dim, fontSize: 11 }}>Loading yield data…</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ─ BOTTOM 3 COLUMNS ─ */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+
+        {/* KEY RISKS */}
+        <div style={{ border: `1px solid ${T.red}35`, background: `${T.red}07`, padding: '12px 14px' }}>
+          <div style={{ color: T.red, fontSize: 9, letterSpacing: 1.5, fontWeight: 700, marginBottom: 10 }}>KEY RISKS</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+            {keyRisks.map((risk, i) => (
+              <div key={i} style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
+                <span style={{ color: T.red, fontSize: 10, flexShrink: 0, marginTop: 1 }}>▶</span>
+                <span style={{ color: T.dim, fontSize: 11, lineHeight: 1.5 }}>{risk}</span>
               </div>
             ))}
           </div>
         </div>
-      )}
 
-      {/* Indicator Cards */}
-      {data.indicators && (
-        <div className="grid grid-cols-3 gap-3">
-          {data.indicators.map((ind: any) => (
-            <IndicatorCard key={ind.name} {...ind} />
-          ))}
+        {/* KEY OPPORTUNITIES */}
+        <div style={{ border: `1px solid ${T.green}35`, background: `${T.green}07`, padding: '12px 14px' }}>
+          <div style={{ color: T.green, fontSize: 9, letterSpacing: 1.5, fontWeight: 700, marginBottom: 10 }}>KEY OPPORTUNITIES</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+            {keyOpps.map((opp, i) => (
+              <div key={i} style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
+                <span style={{ color: T.green, fontSize: 10, flexShrink: 0, marginTop: 1 }}>▶</span>
+                <span style={{ color: T.dim, fontSize: 11, lineHeight: 1.5 }}>{opp}</span>
+              </div>
+            ))}
+          </div>
         </div>
-      )}
+
+        {/* UPCOMING EVENTS */}
+        <div style={{ border: `1px solid ${T.border}`, background: T.surface, padding: '12px 14px' }}>
+          <div style={{ color: T.dim, fontSize: 9, letterSpacing: 1.5, fontWeight: 700, marginBottom: 10 }}>UPCOMING EVENTS</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+            {upcomingEvents.map((ev, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ color: ev.impact === 'high' ? T.red : T.amber, fontSize: 8, flexShrink: 0 }}>●</span>
+                <span style={{ color: T.dim, fontSize: 10, minWidth: 44, flexShrink: 0 }}>{ev.dateLabel}</span>
+                <span style={{ color: 'rgba(255,255,255,0.75)', fontSize: 10 }}>{ev.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
     </div>
   );
 }
@@ -576,9 +841,20 @@ function RiskTab({ data }: { data: any }) {
   );
 }
 
+// ─── Live clock hook ─────────────────────────────────────────────────────────
+function useLiveClock() {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  return now;
+}
+
 // ─── MAIN COMPONENT ──────────────────────────────────────────────────────────
 export function MacroTerminalLive() {
   const [activeTab, setActiveTab] = useState<TabId>('overview');
+  const now = useLiveClock();
 
   useEffect(() => { injectTerminalStyles(); }, []);
 
@@ -593,7 +869,7 @@ export function MacroTerminalLive() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleKeyDown]);
 
-  const { data, isLoading, dataUpdatedAt } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: [API_MAP[activeTab]],
     refetchInterval: 120_000,
     staleTime: 60_000,
@@ -610,14 +886,8 @@ export function MacroTerminalLive() {
     sentiment: <RiskTab data={data} />,
   };
 
-  const tabColor: Record<TabId, string> = {
-    overview: '--term-green',
-    rates: '--term-cyan',
-    inflation: '--term-amber',
-    growth: '--term-green',
-    labor: '--term-red',
-    sentiment: '--term-red',
-  };
+  const clockStr = now.toLocaleTimeString('en-US', { hour12: false });
+  const dateStr = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
 
   return (
     <div
@@ -625,56 +895,56 @@ export function MacroTerminalLive() {
       style={{ background: T.bg, color: 'white', fontFamily: "'JetBrains Mono', 'SF Mono', 'Fira Code', monospace" }}
     >
       {/* Terminal Title Bar */}
-      <div className="flex items-center gap-3 px-4 py-2 border-b border-[hsl(var(--term-border))] shrink-0">
-        <div className="flex gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-[hsl(var(--term-red))] opacity-80" />
-          <span className="w-2.5 h-2.5 rounded-full bg-[hsl(var(--term-amber))] opacity-80" />
-          <span className="w-2.5 h-2.5 rounded-full bg-[hsl(var(--term-green))] opacity-80" />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 14px', borderBottom: `1px solid ${T.border}`, flexShrink: 0 }}>
+        <div style={{ display: 'flex', gap: 5 }}>
+          <span style={{ width: 10, height: 10, borderRadius: '50%', background: T.red, opacity: 0.8, display: 'inline-block' }} />
+          <span style={{ width: 10, height: 10, borderRadius: '50%', background: T.amber, opacity: 0.8, display: 'inline-block' }} />
+          <span style={{ width: 10, height: 10, borderRadius: '50%', background: T.green, opacity: 0.8, display: 'inline-block' }} />
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-[hsl(var(--term-green))]">&#9608;</span>
-          <span className="text-sm font-semibold text-[hsl(var(--term-green))] glow-green tracking-wider">MACRO TERMINAL</span>
-          <span className="text-[10px] text-[hsl(var(--term-dim))] ml-1">v2.0</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ color: T.green, fontSize: 13 }}>■</span>
+          <span style={{ color: T.green, fontSize: 12, fontWeight: 700, letterSpacing: 2 }}>MACRO TERMINAL</span>
+          <span style={{ color: T.dim, fontSize: 10, marginLeft: 2 }}>v2.6.0</span>
         </div>
-        <div className="flex items-center gap-6 ml-auto">
-          <div className="text-[10px] text-[hsl(var(--term-dim))] tracking-wider">
-            {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase()}
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-[hsl(var(--term-dim))]">UPD</span>
-            <span className="text-xs text-[hsl(var(--term-green))] tabular-nums glow-green">
-              {dataUpdatedAt ? new Date(dataUpdatedAt).toLocaleTimeString() : '--:--:--'}
-            </span>
-            <span className={`w-2 h-2 rounded-full bg-[hsl(var(--term-green))] ${isLoading ? 'animate-pulse' : 'cursor-blink'}`} />
-          </div>
+        <div style={{ color: T.dim, fontSize: 10, letterSpacing: 1, marginLeft: 'auto', marginRight: 'auto' }}>
+          FRED / BLS / BEA / ISM / TREASURY
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ color: T.dim, fontSize: 10 }}>{dateStr.toUpperCase()}</span>
+          <span style={{ color: T.green, fontSize: 11, fontWeight: 600, minWidth: 56 }}>{clockStr}</span>
+          <span style={{ width: 7, height: 7, borderRadius: '50%', background: isLoading ? T.amber : T.green, display: 'inline-block', animation: isLoading ? 'blink 0.8s infinite' : undefined }} />
         </div>
       </div>
 
       {/* Tab Bar */}
-      <div className="flex border-b border-[hsl(var(--term-border))] px-4 shrink-0">
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`relative px-4 py-2.5 text-[10px] font-bold tracking-wider whitespace-nowrap transition-colors ${
-              activeTab === tab.id
-                ? 'text-white'
-                : 'text-[hsl(var(--term-dim))] hover:text-[hsl(var(--term-dim)/0.7)]'
-            }`}
-          >
-            <span className="text-[hsl(var(--term-dim))] mr-1 text-[10px]">[{tab.shortcut}]</span>
-            {tab.label}
-            {activeTab === tab.id && (
-              <span
-                className="absolute bottom-0 left-0 right-0 h-px"
-                style={{ background: `hsl(var(${tabColor[tab.id]}))` }}
-              />
-            )}
-          </button>
-        ))}
-        <div className="flex items-center gap-3 ml-auto text-[10px] text-[hsl(var(--term-dim))]">
-          <span>AUTO-REFRESH 2m</span>
-          <span>KEYS [1-6]</span>
+      <div style={{ display: 'flex', alignItems: 'stretch', borderBottom: `1px solid ${T.border}`, padding: '0 14px', flexShrink: 0 }}>
+        {TABS.map((tab) => {
+          const active = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              style={{
+                padding: '7px 14px',
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: 1,
+                color: active ? 'white' : T.dim,
+                border: active ? `1px solid ${T.border}` : '1px solid transparent',
+                borderBottom: active ? `1px solid ${T.bg}` : '1px solid transparent',
+                background: active ? T.surface : 'transparent',
+                marginBottom: active ? -1 : 0,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                fontFamily: 'inherit',
+              }}
+            >
+              {tab.shortcut} {tab.label}
+            </button>
+          );
+        })}
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', color: T.dim, fontSize: 10 }}>
+          KEYS [1-6] TO NAVIGATE
         </div>
       </div>
 
