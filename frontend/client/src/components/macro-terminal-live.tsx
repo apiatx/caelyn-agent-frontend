@@ -1768,74 +1768,335 @@ function LaborTab({ data }: { data: any }) {
 // ─── TAB 6: SENTIMENT & RISK ─────────────────────────────────────────────────
 function RiskTab({ data }: { data: any }) {
   if (!data) return null;
-  const levelColors: Record<string, string> = {
-    red: 'text-[hsl(var(--term-red))] border-[hsl(var(--term-red)/0.3)] bg-[hsl(var(--term-red)/0.06)]',
-    amber: 'text-[hsl(var(--term-amber))] border-[hsl(var(--term-amber)/0.3)] bg-[hsl(var(--term-amber)/0.08)]',
-    green: 'text-[hsl(var(--term-green))] border-[hsl(var(--term-green)/0.2)] bg-[hsl(var(--term-green)/0.06)]',
+
+  /* ── Pull backend fields ─────────────────────────────────────────────── */
+  const volatility          = data.volatility        || {};
+  const creditSpreads       = data.credit_spreads    || {};
+  const fearGreed           = data.fear_greed        || {};
+  const dollar              = data.dollar            || {};
+  const yieldCurveRisk      = data.yield_curve_risk  || {};
+  const riskFramework: any[]= data.risk_framework    || [];
+  const indicators: any[]   = data.indicators        || [];
+  const commentary: string  = data.commentary        || '';
+  // history.vix: array of {date, value} — 261 daily points
+  const vixHistory: any[]   = (data.history?.vix) || [];
+  const fgComponents        = fearGreed.components   || {};
+
+  /* ── VIX history: format date labels for X-axis ──────────────────────── */
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const fmtDateLabel = (s: string) => {
+    try {
+      const [y, m] = s.split('-');
+      return `${MONTHS[parseInt(m) - 1]} ${y.slice(2)}`;
+    } catch { return s; }
   };
+  // Sample ~every 20 points to keep chart readable (261 pts → ~13 ticks)
+  const vixChartData = vixHistory.map((v: any) => ({
+    value: v.value,
+    label: fmtDateLabel(v.date),
+  }));
+
+  /* ── Alert condition: extreme fear or any red risk framework item ────── */
+  const hasExtremeFear  = fearGreed.rating === 'extreme fear';
+  const hasRedRisk      = riskFramework.some((r: any) => r.color === 'red');
+  const showAlert       = hasExtremeFear || hasRedRisk;
+  const alertRiskItem   = riskFramework.find((r: any) => r.color === 'red');
+
+  /* ── Color helpers for risk framework items ──────────────────────────── */
+  const riskColor = (color: string) => {
+    if (color === 'red')   return { fg: T.red,   bg: `${T.red}12`,   border: `${T.red}40`   };
+    if (color === 'amber') return { fg: T.amber, bg: `${T.amber}12`, border: `${T.amber}40` };
+    return                        { fg: T.green, bg: `${T.green}08`, border: `${T.green}35` };
+  };
+
+  /* ── Badge helpers ───────────────────────────────────────────────────── */
+  type RBadge = { label: string; bg: string; color: string; border: string };
+  const riskBadge = (status: string): RBadge => {
+    const s = (status || '').toLowerCase();
+    if (s === 'elevated' || s === 'negative' || s === 'bearish')
+      return { label: 'BEARISH', bg: `${T.red}20`,   color: T.red,   border: `${T.red}50`   };
+    if (s === 'positive' || s === 'bullish')
+      return { label: 'BULLISH', bg: `${T.green}20`, color: T.green, border: `${T.green}50` };
+    return { label: 'NEUTRAL',   bg: `${T.amber}20`, color: T.amber, border: `${T.amber}50` };
+  };
+  const rBadgeStyle = (status: string) => {
+    const b = riskBadge(status);
+    return { fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', padding: '2px 6px', borderRadius: 2, background: b.bg, color: b.color, border: `1px solid ${b.border}` };
+  };
+  const rNumColor = (status: string) => {
+    const s = (status || '').toLowerCase();
+    if (s === 'elevated' || s === 'negative' || s === 'bearish') return T.red;
+    if (s === 'positive' || s === 'bullish') return T.green;
+    return T.amber;
+  };
+
+  // Indicator status lookup
+  const indSt = (kw: string) =>
+    (indicators.find((i: any) => i.name.toLowerCase().includes(kw.toLowerCase()))?.status) ?? 'neutral';
+
+  /* ── 6 metric cards ──────────────────────────────────────────────────── */
+  const vixSt    = indSt('vix');
+  const hyoasSt  = creditSpreads.hy_signal === 'normal' ? 'neutral' : 'elevated';
+  const fgSt     = fearGreed.rating === 'extreme fear' ? 'negative' : fearGreed.rating === 'greed' ? 'positive' : 'neutral';
+
+  const cardRows = [
+    [
+      {
+        title: 'VIX',
+        // volatility.vix from backend
+        value: volatility.vix != null ? `${Number(volatility.vix).toFixed(2)}` : '—',
+        status: vixSt,
+        change: volatility.interpretation ? volatility.interpretation : null as string | null,
+        date: '',
+      },
+      {
+        title: 'FEAR & GREED INDEX',
+        // fear_greed.score + rating from backend
+        value: fearGreed.score != null ? `${Number(fearGreed.score).toFixed(1)}` : '—',
+        status: fgSt,
+        change: fearGreed.rating ? fearGreed.rating.toUpperCase() : null,
+        date: '',
+      },
+      {
+        title: 'HY OAS SPREAD',
+        // credit_spreads.hy_oas from backend
+        value: creditSpreads.hy_oas != null ? `${Number(creditSpreads.hy_oas).toFixed(2)}%` : '—',
+        status: hyoasSt,
+        change: creditSpreads.hy_signal ? `Signal: ${creditSpreads.hy_signal}` : null,
+        date: '',
+      },
+    ],
+    [
+      {
+        title: 'BBB OAS SPREAD',
+        // credit_spreads.bbb_oas from backend
+        value: creditSpreads.bbb_oas != null ? `${Number(creditSpreads.bbb_oas).toFixed(2)}%` : '—',
+        status: 'neutral',
+        change: null as string | null,
+        date: '',
+      },
+      {
+        title: '2s10s YIELD SPREAD',
+        // yield_curve_risk.spread_2s10s + inverted from backend
+        value: yieldCurveRisk.spread_2s10s != null
+          ? `${yieldCurveRisk.spread_2s10s >= 0 ? '+' : ''}${Number(yieldCurveRisk.spread_2s10s).toFixed(2)}%`
+          : '—',
+        status: yieldCurveRisk.inverted ? 'elevated' : 'neutral',
+        change: yieldCurveRisk.inverted != null
+          ? (yieldCurveRisk.inverted ? 'Inverted — recession signal' : 'Not inverted')
+          : null,
+        date: '',
+      },
+      {
+        title: 'VIX SIGNAL',
+        // volatility.signal from backend
+        value: volatility.signal ? volatility.signal.toUpperCase() : '—',
+        status: volatility.signal === 'elevated' ? 'elevated' : 'neutral',
+        change: fearGreed.momentum_shift ? fearGreed.momentum_shift : null,
+        date: '',
+      },
+    ],
+  ];
+
+  /* ── Render ──────────────────────────────────────────────────────────── */
   return (
-    <div className="space-y-4">
-      {data.risk_framework?.length > 0 && (
-        <div className={card}>
-          <div className={sectionTitle} style={{ color: T.red }}>DRUCKENMILLER RISK FRAMEWORK</div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {data.risk_framework.map((r: any) => (
-              <div key={r.label} className={`border p-3 text-center ${levelColors[r.color] || levelColors.green}`}>
-                <div className="text-[10px] uppercase tracking-wide opacity-80 mb-1">{r.label}</div>
-                <div className="text-sm font-bold mb-1">{r.level}</div>
-                <div className="text-[9px] opacity-60">{r.detail}</div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+      {/* ── ALERT BANNER — extreme fear or red risk item ──────────────── */}
+      {showAlert && (
+        <div style={{
+          border: `1px solid ${T.red}60`, background: `${T.red}08`, borderRadius: 2,
+          padding: '10px 16px',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+            <span style={{ color: T.amber, fontSize: 13 }}>⚠</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: T.red, letterSpacing: '0.06em' }}>
+              {alertRiskItem
+                ? `${alertRiskItem.label}: ${alertRiskItem.level}`
+                : 'EXTREME MARKET FEAR DETECTED'}
+            </span>
+          </div>
+          {fearGreed.signal && (
+            <div style={{ fontSize: 11, color: '#ccc', lineHeight: 1.6 }}>
+              {/* fear_greed.signal from backend */}
+              {fearGreed.signal}
+            </div>
+          )}
+          {alertRiskItem && (
+            <div style={{ fontSize: 11, color: '#bbb', marginTop: 4 }}>
+              {alertRiskItem.detail}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── TWO SIDE-BY-SIDE CHARTS ────────────────────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+
+        {/* LEFT: VIX chart — from history.vix[] */}
+        <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 2, padding: '12px 14px' }}>
+          {/* Header */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: '#ccc', marginBottom: 2 }}>
+                CBOE VOLATILITY INDEX (VIX)
               </div>
-            ))}
+              {volatility.vix != null && (
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                  <span style={{ fontSize: 20, fontWeight: 700, color: T.amber }} className="tabular-nums">
+                    {Number(volatility.vix).toFixed(2)}
+                  </span>
+                  <span style={{ fontSize: 10, color: T.dim }}>
+                    {volatility.signal ? `(${volatility.signal})` : ''}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+          {/* VIX line chart using history.vix */}
+          {vixChartData.length > 0 && (
+            <div style={{ height: 190 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={vixChartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={chartGrid} vertical={false} />
+                  <XAxis
+                    dataKey="label"
+                    tick={chartTick}
+                    interval={Math.floor(vixChartData.length / 6)}
+                    height={35}
+                  />
+                  <YAxis tick={chartTick} width={32} domain={[10, 'auto']} />
+                  {/* "F" = elevated fear threshold */}
+                  <ReferenceLine y={28} stroke={T.red} strokeDasharray="4 3" strokeWidth={1}
+                    label={{ value: 'F', position: 'right', fill: T.red, fontSize: 10 }} />
+                  {/* "N" = normal/neutral threshold */}
+                  <ReferenceLine y={20} stroke={T.green} strokeDasharray="4 3" strokeWidth={1}
+                    label={{ value: 'N', position: 'right', fill: T.green, fontSize: 10 }} />
+                  <Tooltip
+                    contentStyle={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 2, fontSize: 11 }}
+                    labelStyle={{ color: T.dim }}
+                    formatter={(v: any) => [`${Number(v).toFixed(2)}`, 'VIX']}
+                  />
+                  <Line type="monotone" dataKey="value" stroke={T.amber} strokeWidth={1.5} dot={false} name="VIX" />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </div>
+
+        {/* RIGHT: Fear & Greed components — from fear_greed.components */}
+        <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 2, padding: '12px 14px' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: '#ccc', marginBottom: 6 }}>
+            FEAR & GREED INDEX
+          </div>
+          {fearGreed.score != null && (
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 10 }}>
+              <span style={{ fontSize: 20, fontWeight: 700, color: fearGreed.score < 25 ? T.red : fearGreed.score > 75 ? T.green : T.amber }} className="tabular-nums">
+                {Number(fearGreed.score).toFixed(1)}
+              </span>
+              <span style={{ fontSize: 10, color: T.dim, textTransform: 'uppercase' }}>
+                {fearGreed.rating}
+              </span>
+            </div>
+          )}
+          {/* Component breakdown — from fear_greed.components */}
+          {Object.keys(fgComponents).length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+              {Object.entries(fgComponents).map(([key, comp]: [string, any]) => {
+                const label = key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                const score = comp?.score ?? 0;
+                const pct   = Math.min(Math.max(score, 0), 100);
+                const col   = score < 25 ? T.red : score > 75 ? T.green : T.amber;
+                return (
+                  <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                    <span style={{ fontSize: 9, color: T.dim, width: 140, flexShrink: 0 }}>{label}</span>
+                    <div style={{ flex: 1, height: 4, background: `${T.border}40`, borderRadius: 1, overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${pct}%`, background: col, borderRadius: 1 }} />
+                    </div>
+                    <span style={{ fontSize: 9, color: col, minWidth: 28, textAlign: 'right' }} className="tabular-nums">
+                      {Number(score).toFixed(0)}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          {/* Momentum shift */}
+          {fearGreed.momentum_shift && (
+            <div style={{ marginTop: 8, fontSize: 10, color: T.dim, borderTop: `1px solid ${T.border}40`, paddingTop: 6 }}>
+              {fearGreed.momentum_shift}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── RISK HEAT MAP — DRUCKENMILLER FRAMEWORK ──────────────────────── */}
+      {riskFramework.length > 0 && (
+        <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 2, padding: '12px 16px' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: '#ccc', marginBottom: 10 }}>
+            RISK HEAT MAP — DRUCKENMILLER FRAMEWORK
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+            {riskFramework.map((r: any) => {
+              const { fg, bg, border } = riskColor(r.color || 'green');
+              return (
+                <div
+                  key={r.label}
+                  style={{ border: `1px solid ${border}`, background: bg, borderRadius: 2, padding: '10px 12px' }}
+                >
+                  <div style={{ fontSize: 9, color: fg, letterSpacing: '0.1em', opacity: 0.8, marginBottom: 4 }}>
+                    {r.label}
+                  </div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: fg, marginBottom: 4 }}>
+                    {r.level}
+                  </div>
+                  <div style={{ fontSize: 9, color: fg, opacity: 0.65, lineHeight: 1.4 }}>
+                    {r.detail}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
 
-      {data.vix_history?.length > 0 && (
-        <div className={card}>
-          <div className={sectionTitle} style={{ color: T.amber }}>VIX HISTORY</div>
-          <div className="h-56">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data.vix_history}>
-                <CartesianGrid strokeDasharray="3 3" stroke={chartGrid} />
-                <XAxis dataKey="month" tick={chartTick} />
-                <YAxis tick={chartTick} domain={[10, 45]} />
-                <Tooltip content={<ChartTooltipContent />} />
-                <Line type="monotone" dataKey="vix" stroke={T.amber} strokeWidth={2} dot={{ r: 2 }} name="VIX" />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+      {/* ── 6 METRIC CARDS (2 rows × 3) ──────────────────────────────────── */}
+      {cardRows.map((row, ri) => (
+        <div key={ri} style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+          {row.map((c) => {
+            const b      = riskBadge(c.status);
+            const nColor = rNumColor(c.status);
+            return (
+              <div
+                key={c.title}
+                style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 2, padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 6 }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 10, color: T.dim, letterSpacing: '0.08em', fontWeight: 600 }}>{c.title}</span>
+                  <span style={rBadgeStyle(c.status)}>{b.label}</span>
+                </div>
+                <div className="tabular-nums" style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em', color: nColor, lineHeight: 1.1 }}>
+                  {c.value}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 2 }}>
+                  <span style={{ fontSize: 10, color: T.dim }}>{c.change ?? ''}</span>
+                  <span style={{ fontSize: 10, color: T.dim }}>{c.date}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ))}
+
+      {/* ── COMMENTARY ───────────────────────────────────────────────────── */}
+      {commentary && (
+        <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 2, padding: '10px 14px', fontSize: 11, color: T.dim, lineHeight: 1.6 }}>
+          <span style={{ color: T.green, fontWeight: 700, marginRight: 6 }}>&gt;</span>
+          {/* commentary from backend */}
+          {commentary}
         </div>
       )}
 
-      {data.confidence?.length > 0 && (
-        <div className={card}>
-          <div className={sectionTitle} style={{ color: T.cyan }}>CONSUMER CONFIDENCE & SENTIMENT</div>
-          <div className="h-56">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data.confidence}>
-                <CartesianGrid strokeDasharray="3 3" stroke={chartGrid} />
-                <XAxis dataKey="month" tick={chartTick} />
-                <YAxis tick={chartTick} domain={[50, 105]} />
-                <Tooltip content={<ChartTooltipContent />} />
-                <Line type="monotone" dataKey="conf" stroke={T.cyan} strokeWidth={2} dot={false} name="Conference Board" />
-                <Line type="monotone" dataKey="umich" stroke={T.amber} strokeWidth={2} dot={false} name="UMich" />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="flex gap-4 mt-2 text-[10px]">
-            <span className="flex items-center gap-1"><span className="w-3 h-0.5" style={{ background: T.cyan }} /> Conference Board</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-0.5" style={{ background: T.amber }} /> UMich</span>
-          </div>
-        </div>
-      )}
-
-      {data.indicators && (
-        <div className="grid grid-cols-3 gap-3">
-          {data.indicators.map((ind: any) => (
-            <IndicatorCard key={ind.name} {...ind} />
-          ))}
-        </div>
-      )}
     </div>
   );
 }
