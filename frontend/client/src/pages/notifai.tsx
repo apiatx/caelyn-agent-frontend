@@ -548,14 +548,14 @@ export default function NotifAIPage() {
           </div>
         </div>
 
-        {/* Right column: Ask Caelyn + Top Stories — starts at the very top */}
-        <div style={{ width: 420, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 16, paddingTop: '1.25rem' }}>
+        {/* Right column: Ask Caelyn + Top Stories — starts at the very top, scrollable */}
+        <div style={{ width: 420, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 16, paddingTop: '1.25rem', overflowY: 'auto' }}>
           {/* Ask Caelyn */}
           <NewsAgent />
 
-          {/* Top Stories widget — fills remaining vertical space */}
+          {/* Top Stories widget — fixed height so TradingView iframe renders fully */}
           <div style={{
-            flex: 1, minHeight: 0, borderRadius: 12, overflow: 'hidden',
+            height: 600, flexShrink: 0, borderRadius: 12, overflow: 'hidden',
             border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)',
           }}>
             <div style={{ padding: '10px 14px 8px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
@@ -563,7 +563,7 @@ export default function NotifAIPage() {
                 TOP STORIES
               </span>
             </div>
-            <div style={{ height: 'calc(100% - 39px)' }}>
+            <div style={{ height: 561 }}>
               <TopStoriesWidget />
             </div>
           </div>
