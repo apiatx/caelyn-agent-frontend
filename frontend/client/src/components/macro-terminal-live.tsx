@@ -478,88 +478,380 @@ function OverviewTab({ data }: { data: any }) {
 // ─── TAB 2: RATES ────────────────────────────────────────────────────────────
 function RatesTab({ data }: { data: any }) {
   if (!data) return null;
+
+  // ── Data prep ──────────────────────────────────────────────────────────────
+  const MATS = ['1M', '3M', '6M', '1Y', '2Y', '5Y', '7Y', '10Y', '20Y', '30Y'];
+
+  // yield_curve comes as numeric-keyed object; convert & filter to our 10 maturities
+  const ycMap: Record<string, any> = {};
+  for (const e of Object.values(data.yield_curve || {}) as any[]) {
+    if (MATS.includes(e.maturity)) ycMap[e.maturity] = e;
+  }
+
+  // History arrays (sorted ascending by date)
+  const hist = data.history || {};
+  const h10y: { date: string; value: number }[] = hist.us_10y || [];
+  const h2y:  { date: string; value: number }[] = hist.us_2y  || [];
+  const hSpr: { date: string; value: number }[] = hist.spread_2s10s || [];
+
+  const getHist = (arr: { date: string; value: number }[], daysBack: number) => {
+    const idx = arr.length - 1 - daysBack;
+    return idx >= 0 ? (arr[idx]?.value ?? null) : null;
+  };
+
+  // 1W ≈ 5 trading days, 1M ≈ 21 trading days
+  const prev1w: Record<string, number | null> = { '2Y': getHist(h2y, 5),  '10Y': getHist(h10y, 5)  };
+  const prev1m: Record<string, number | null> = { '2Y': getHist(h2y, 21), '10Y': getHist(h10y, 21) };
+
+  // Card-level values
+  const curr10y  = h10y[h10y.length - 1]?.value ?? null;
+  const curr2y   = h2y[h2y.length   - 1]?.value ?? null;
+  const p10y1w   = getHist(h10y, 5);
+  const p2y1w    = getHist(h2y,  5);
+  const pSpr1w   = getHist(hSpr, 5);
+  const chg10y1w = curr10y != null && p10y1w  != null ? curr10y - p10y1w  : null;
+  const chg2y1w  = curr2y  != null && p2y1w   != null ? curr2y  - p2y1w   : null;
+  const currSpr  = data.spreads?.['2s10s'] ?? null;
+  const chgSpr1w = currSpr != null && pSpr1w  != null ? currSpr - pSpr1w  : null;
+
+  const fed      = data.fed_policy || {};
+  const spreads  = data.spreads    || {};
+  const mortgage = data.mortgage   || {};
+
+  // Indicators → status lookup
+  const indicators: { name: string; value: string; status: string }[] = data.indicators || [];
+  const getStatus = (name: string) =>
+    (indicators.find(i => i.name === name)?.status || 'neutral').toLowerCase();
+
+  // Date helpers
+  const asOf = data.last_updated
+    ? new Date(data.last_updated).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+    : '';
+  const lastDate = h10y[h10y.length - 1]?.date || '';
+  const fmtCardDate = (d: string) =>
+    d ? new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+
+  // Time-series data: last ~50 calendar days
+  const cutoff = new Date(Date.now() - 50 * 86400000).toISOString().split('T')[0];
+  const tsMap: Record<string, { date: string; us_2y?: number; us_10y?: number }> = {};
+  for (const e of h2y)  if (e.date >= cutoff) tsMap[e.date] = { ...tsMap[e.date], date: e.date, us_2y:  e.value };
+  for (const e of h10y) if (e.date >= cutoff) tsMap[e.date] = { ...tsMap[e.date], date: e.date, us_10y: e.value };
+  const tsData = Object.values(tsMap).sort((a, b) => a.date.localeCompare(b.date));
+
+  const tsFirst = tsData[0]?.date || '';
+  const tsLast  = tsData[tsData.length - 1]?.date || '';
+  const fmtMon  = (d: string) => d
+    ? new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short' }).toUpperCase()
+    : '';
+  const tsYear  = tsLast ? new Date(tsLast + 'T12:00:00').getFullYear() : '';
+  const tsTitle = tsFirst
+    ? `YIELD TIME SERIES — ${fmtMon(tsFirst)} TO ${fmtMon(tsLast)} ${tsYear}`
+    : 'YIELD TIME SERIES';
+
+  // Yield-curve chart data
+  const curveData = MATS
+    .map(m => ({ maturity: m, yield: ycMap[m]?.yield ?? null }))
+    .filter(d => d.yield != null);
+  const ffRate = fed.funds_rate ?? null;
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+  const fmtYld = (v: number | null | undefined) =>
+    v != null ? v.toFixed(2) + '%' : '—';
+
+  const fmtBps = (chg: number | null | undefined) => {
+    if (chg == null) return null;
+    const b = Math.round(chg * 100);
+    return (b > 0 ? '+' : '') + b + 'bp';
+  };
+
+  const bpColor = (chg: number | null | undefined) => {
+    if (chg == null || Math.round((chg || 0) * 100) === 0) return T.dim;
+    return chg > 0 ? T.red : T.green;
+  };
+
+  const badgeStyle = (status: string) => {
+    const s = status.toLowerCase();
+    const color = (s === 'bearish' || s === 'elevated') ? T.red : s === 'bullish' ? T.green : T.amber;
+    return {
+      fontSize: 9, color, border: `1px solid ${color}`, padding: '1px 5px',
+      borderRadius: 2, letterSpacing: '0.06em', fontWeight: 700, flexShrink: 0,
+    };
+  };
+  const badgeLabel = (s: string) => {
+    const sl = s.toLowerCase();
+    if (sl === 'elevated') return 'BEARISH';
+    return sl.toUpperCase();
+  };
+
+  const numColor = (status: string) => {
+    const s = status.toLowerCase();
+    return (s === 'bearish' || s === 'elevated') ? T.red : T.green;
+  };
+
+  const fmtXDate = (d: string) => d ? d.slice(5) : ''; // MM-DD
+
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-4">
-      {/* Yield Curve Chart */}
-      {data.yield_curve?.length > 0 && (
-        <div className={card}>
-          <div className={sectionTitle} style={{ color: T.cyan }}>YIELD CURVE</div>
-          <div className="h-64">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+      {/* Page title */}
+      <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.04em' }}>
+        <span style={{ color: T.green }}>$ </span>
+        <span style={{ color: 'rgba(255,255,255,0.9)' }}>RATES &amp; YIELD CURVE</span>
+        <span style={{ color: T.dim, fontSize: 11, fontWeight: 400 }}> — Click any card for analysis</span>
+      </div>
+
+      {/* ── YIELD CURVE SNAPSHOT TABLE ────────────────────────────────────── */}
+      <div style={{ background: T.surface, border: `1px solid ${T.border}`, padding: '12px 16px', borderRadius: 2 }}>
+        <div style={{ fontSize: 9, color: T.dim, letterSpacing: 1.5, fontWeight: 700, marginBottom: 10 }}>YIELD CURVE SNAPSHOT</div>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr style={{ borderBottom: `1px solid ${T.border}` }}>
+              <th style={{ textAlign: 'left', padding: '4px 0', fontSize: 10, color: T.dim, fontWeight: 600, minWidth: 68 }}>Maturity</th>
+              {MATS.map(m => (
+                <th key={m} style={{ textAlign: 'right', padding: '4px 3px', fontSize: 10, color: T.dim, fontWeight: 600 }}>{m}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {/* Current */}
+            <tr style={{ borderBottom: `1px solid ${T.border}40` }}>
+              <td style={{ padding: '6px 0', color: T.green, fontWeight: 700, fontSize: 11 }}>Current</td>
+              {MATS.map(m => (
+                <td key={m} className="tabular-nums" style={{ textAlign: 'right', padding: '6px 3px', color: T.green, fontWeight: 700, fontSize: 11 }}>
+                  {fmtYld(ycMap[m]?.yield)}
+                </td>
+              ))}
+            </tr>
+            {/* 1W Ago */}
+            <tr style={{ borderBottom: `1px solid ${T.border}40` }}>
+              <td style={{ padding: '5px 0', color: T.dim, fontSize: 11 }}>1W Ago</td>
+              {MATS.map(m => (
+                <td key={m} className="tabular-nums" style={{ textAlign: 'right', padding: '5px 3px', color: T.dim, fontSize: 11 }}>
+                  {fmtYld(prev1w[m] ?? null)}
+                </td>
+              ))}
+            </tr>
+            {/* 1M Ago */}
+            <tr style={{ borderBottom: `1px solid ${T.border}40` }}>
+              <td style={{ padding: '5px 0', color: T.dim, fontSize: 11 }}>1M Ago</td>
+              {MATS.map(m => (
+                <td key={m} className="tabular-nums" style={{ textAlign: 'right', padding: '5px 3px', color: T.dim, fontSize: 11 }}>
+                  {fmtYld(prev1m[m] ?? null)}
+                </td>
+              ))}
+            </tr>
+            {/* Chg (1M) */}
+            <tr>
+              <td style={{ padding: '5px 0', color: T.amber, fontWeight: 600, fontSize: 11 }}>Chg (1M)</td>
+              {MATS.map(m => {
+                const curr = ycMap[m]?.yield ?? null;
+                const prev = prev1m[m] ?? null;
+                const chg  = curr != null && prev != null ? curr - prev : null;
+                const txt  = fmtBps(chg);
+                return (
+                  <td key={m} className="tabular-nums" style={{ textAlign: 'right', padding: '5px 3px', color: bpColor(chg), fontWeight: 600, fontSize: 11 }}>
+                    {txt ?? '—'}
+                  </td>
+                );
+              })}
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      {/* ── TWO CHARTS ────────────────────────────────────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '55% 1fr', gap: 12 }}>
+
+        {/* LEFT: Yield Curve Snapshot */}
+        <div style={{ background: T.surface, border: `1px solid ${T.border}`, padding: '12px 16px', borderRadius: 2 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+            <div>
+              <div style={{ fontSize: 9, color: T.dim, letterSpacing: 1.5, fontWeight: 700 }}>U.S. TREASURY YIELD CURVE</div>
+              <div style={{ fontSize: 10, color: T.green, marginTop: 2 }}>As of {asOf}</div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: T.green }}>
+              <span style={{ width: 16, height: 2, background: T.green, display: 'inline-block' }} />
+              Current
+            </div>
+          </div>
+          <div style={{ height: 220 }}>
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data.yield_curve}>
-                <CartesianGrid strokeDasharray="3 3" stroke={chartGrid} />
-                <XAxis dataKey="maturity" tick={chartTick} />
-                <YAxis tick={chartTick} domain={['auto', 'auto']} />
-                <Tooltip content={<ChartTooltipContent />} />
-                <Line type="monotone" dataKey="yield" stroke={T.cyan} strokeWidth={2} dot={{ fill: T.cyan, r: 3 }} name="Current" />
-              </LineChart>
+              <AreaChart data={curveData} margin={{ top: 8, right: 40, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="ratesGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%"  stopColor={T.green} stopOpacity={0.22} />
+                    <stop offset="95%" stopColor={T.green} stopOpacity={0.02} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke={chartGrid} vertical={false} />
+                <XAxis dataKey="maturity" tick={chartTick} axisLine={false} tickLine={false} />
+                <YAxis
+                  tick={chartTick}
+                  domain={['auto', 'auto']}
+                  tickFormatter={(v: number) => v.toFixed(1) + '%'}
+                  axisLine={false} tickLine={false} width={38}
+                />
+                <Tooltip
+                  contentStyle={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 2, fontSize: 11 }}
+                  labelStyle={{ color: T.dim }}
+                  formatter={(v: any) => [Number(v).toFixed(2) + '%', 'Yield']}
+                />
+                {ffRate != null && (
+                  <ReferenceLine
+                    y={ffRate}
+                    stroke={T.dim}
+                    strokeDasharray="4 3"
+                    label={{ value: 'FF Rate', fill: T.dim, fontSize: 9, position: 'insideBottomRight' }}
+                  />
+                )}
+                <Area
+                  type="monotone"
+                  dataKey="yield"
+                  stroke={T.green}
+                  strokeWidth={2}
+                  fill="url(#ratesGrad)"
+                  dot={{ fill: T.green, r: 3, strokeWidth: 0 }}
+                  activeDot={{ r: 5, fill: T.green }}
+                  name="Current"
+                />
+              </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
-      )}
 
-      {/* Yield Table */}
-      {data.yield_curve?.length > 0 && (
-        <div className={card}>
-          <div className={sectionTitle} style={{ color: T.cyan }}>YIELD CURVE SNAPSHOT</div>
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="text-[hsl(var(--term-dim))] border-b border-[hsl(var(--term-border))]">
-                <th className="text-left py-2 text-[10px] tracking-wider">Maturity</th>
-                <th className="text-right py-2 text-[10px] tracking-wider">Current</th>
-                <th className="text-right py-2 text-[10px] tracking-wider">Change</th>
-                <th className="text-right py-2 text-[10px] tracking-wider">Prior Close</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.yield_curve.map((y: any) => (
-                <tr key={y.maturity} className="border-b border-[hsl(var(--term-border))]/50">
-                  <td className="py-2 text-[hsl(var(--term-dim))]">{y.maturity}</td>
-                  <td className="py-2 text-right text-[hsl(var(--term-green))] glow-green tabular-nums font-semibold">
-                    {y.yield ? y.yield.toFixed(2) + '%' : '—'}
-                  </td>
-                  <td className={`py-2 text-right tabular-nums font-medium ${y.change > 0 ? 'text-[hsl(var(--term-red))]' : y.change < 0 ? 'text-[hsl(var(--term-green))]' : 'text-[hsl(var(--term-dim))]'}`}>
-                    {y.change ? (y.change > 0 ? '+' : '') + y.change.toFixed(2) : '—'}
-                  </td>
-                  <td className="py-2 text-right text-[hsl(var(--term-dim))] tabular-nums">
-                    {y.previousClose ? y.previousClose.toFixed(2) + '%' : '—'}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* Spreads */}
-      {data.spreads && (
-        <div className={card}>
-          <div className={sectionTitle} style={{ color: T.cyan }}>KEY SPREADS</div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <div className="text-[10px] text-[hsl(var(--term-dim))] mb-1">2s10s Spread</div>
-              <div className={`text-lg font-bold tabular-nums ${data.spreads['2s10s'] < 0 ? 'text-[hsl(var(--term-red))] glow-red' : 'text-[hsl(var(--term-green))] glow-green'}`}>
-                {data.spreads['2s10s'] >= 0 ? '+' : ''}{(data.spreads['2s10s'] * 100).toFixed(0)} bps
-              </div>
-              {data.spreads['2s10s'] < 0 && <div className="text-[10px] text-[hsl(var(--term-red))]">INVERTED</div>}
-            </div>
-            <div>
-              <div className="text-[10px] text-[hsl(var(--term-dim))] mb-1">10Y-3M Spread</div>
-              <div className={`text-lg font-bold tabular-nums ${data.spreads['10y3m'] < 0 ? 'text-[hsl(var(--term-red))] glow-red' : 'text-[hsl(var(--term-green))] glow-green'}`}>
-                {data.spreads['10y3m'] >= 0 ? '+' : ''}{(data.spreads['10y3m'] * 100).toFixed(0)} bps
-              </div>
-            </div>
+        {/* RIGHT: Yield Time Series */}
+        <div style={{ background: T.surface, border: `1px solid ${T.border}`, padding: '12px 16px', borderRadius: 2 }}>
+          <div style={{ fontSize: 9, color: T.dim, letterSpacing: 1.5, fontWeight: 700, marginBottom: 8 }}>
+            {tsTitle}
+          </div>
+          <div style={{ height: 200 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={tsData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={chartGrid} vertical={false} />
+                <XAxis
+                  dataKey="date"
+                  tick={{ ...chartTick, fontSize: 9 }}
+                  tickFormatter={fmtXDate}
+                  interval="preserveStartEnd"
+                  axisLine={false} tickLine={false}
+                />
+                <YAxis
+                  tick={chartTick}
+                  domain={['auto', 'auto']}
+                  tickFormatter={(v: number) => v.toFixed(1) + '%'}
+                  axisLine={false} tickLine={false} width={36}
+                />
+                <Tooltip
+                  contentStyle={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 2, fontSize: 11 }}
+                  labelStyle={{ color: T.dim }}
+                  formatter={(v: any, n: string) => [Number(v).toFixed(2) + '%', n]}
+                />
+                <Line type="monotone" dataKey="us_2y"  stroke={T.cyan}  strokeWidth={1.5} dot={false} name="2Y"  />
+                <Line type="monotone" dataKey="us_10y" stroke={T.amber} strokeWidth={1.5} dot={false} name="10Y" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+          {/* Legend */}
+          <div style={{ display: 'flex', gap: 14, justifyContent: 'center', marginTop: 8 }}>
+            {[{ label: '2Y', color: T.cyan }, { label: '10Y', color: T.amber }].map(({ label, color }) => (
+              <span key={label} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                  <span style={{ fontSize: 8 }}>◇</span>
+                  <span style={{ width: 12, height: 2, background: color, display: 'inline-block' }} />
+                </span>
+                {label}
+              </span>
+            ))}
           </div>
         </div>
-      )}
+      </div>
 
-      {data.indicators && (
-        <div className="grid grid-cols-3 gap-3">
-          {data.indicators.map((ind: any) => (
-            <IndicatorCard key={ind.name} {...ind} />
+      {/* ── 6 METRIC CARDS (3 + 3) ────────────────────────────────────────── */}
+      {[
+        // Row 1
+        [
+          {
+            title: 'FED FUNDS RATE',
+            value: fed.funds_rate_range ? fed.funds_rate_range + '%' : (fed.funds_rate != null ? fed.funds_rate.toFixed(2) + '%' : '—'),
+            status: getStatus('Fed Funds Rate'),
+            changeText: null as string | null,
+            date: asOf,
+          },
+          {
+            title: '10Y TREASURY YIELD',
+            value: curr10y != null ? curr10y.toFixed(2) + '%' : (data.key_rates?.us_10y != null ? data.key_rates.us_10y.toFixed(2) + '%' : '—'),
+            status: getStatus('10Y Yield'),
+            changeText: chg10y1w != null && p10y1w != null
+              ? `${chg10y1w > 0 ? '▲' : chg10y1w < 0 ? '▼' : '◆'} ${fmtBps(chg10y1w)} from ${p10y1w.toFixed(2)}%`
+              : null,
+            date: fmtCardDate(lastDate),
+          },
+          {
+            title: '2Y TREASURY YIELD',
+            value: curr2y != null ? curr2y.toFixed(2) + '%' : (data.key_rates?.us_2y != null ? data.key_rates.us_2y.toFixed(2) + '%' : '—'),
+            status: getStatus('2Y Yield'),
+            changeText: chg2y1w != null && p2y1w != null
+              ? `${chg2y1w > 0 ? '▲' : chg2y1w < 0 ? '▼' : '◆'} ${fmtBps(chg2y1w)} from ${p2y1w.toFixed(2)}%`
+              : null,
+            date: fmtCardDate(lastDate),
+          },
+        ],
+        // Row 2
+        [
+          {
+            title: '2S10S SPREAD',
+            value: currSpr != null ? (currSpr >= 0 ? '+' : '') + Math.round(currSpr * 100) + ' bps' : '—',
+            status: currSpr != null ? (currSpr < 0 ? 'bearish' : 'neutral') : 'neutral',
+            changeText: chgSpr1w != null && pSpr1w != null
+              ? `${chgSpr1w > 0 ? '▲' : chgSpr1w < 0 ? '▼' : '◆'} ${fmtBps(chgSpr1w)} from ${pSpr1w >= 0 ? '+' : ''}${Math.round(pSpr1w * 100)} bps`
+              : null,
+            date: fmtCardDate(lastDate),
+          },
+          {
+            title: '10Y3M SPREAD',
+            value: spreads['10y3m'] != null ? (spreads['10y3m'] >= 0 ? '+' : '') + Math.round(spreads['10y3m'] * 100) + ' bps' : '—',
+            status: spreads['10y3m'] != null ? (spreads['10y3m'] < 0 ? 'bearish' : 'neutral') : 'neutral',
+            changeText: null as string | null,
+            date: fmtCardDate(lastDate),
+          },
+          {
+            title: '30Y MORTGAGE RATE',
+            value: mortgage.rate_30y != null ? mortgage.rate_30y.toFixed(2) + '%' : '—',
+            status: getStatus('30Y Mortgage'),
+            changeText: null as string | null,
+            date: fmtCardDate(lastDate),
+          },
+        ],
+      ].map((row, ri) => (
+        <div key={ri} style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+          {row.map((c) => (
+            <div
+              key={c.title}
+              style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 2, padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 6 }}
+            >
+              {/* Title + badge */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 10, color: T.dim, letterSpacing: '0.08em', fontWeight: 600 }}>{c.title}</span>
+                <span style={badgeStyle(c.status)}>{badgeLabel(c.status)}</span>
+              </div>
+              {/* Big number */}
+              <div
+                className="tabular-nums"
+                style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em', color: numColor(c.status), lineHeight: 1.1 }}
+              >
+                {c.value}
+              </div>
+              {/* Change + date */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 2 }}>
+                <span style={{ fontSize: 10, color: T.dim }}>{c.changeText ?? ''}</span>
+                <span style={{ fontSize: 10, color: T.dim }}>{c.date}</span>
+              </div>
+            </div>
           ))}
         </div>
-      )}
+      ))}
+
     </div>
   );
 }
