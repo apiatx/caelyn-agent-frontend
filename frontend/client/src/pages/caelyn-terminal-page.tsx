@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
-  LineChart, Line, XAxis, YAxis, Tooltip as RCTooltip, ResponsiveContainer,
+  ComposedChart, Line, Area, XAxis, YAxis, Tooltip as RCTooltip, ResponsiveContainer,
   PieChart, Pie, Cell,
 } from 'recharts';
 
@@ -172,7 +172,7 @@ function SuggCard({ s }: { s: CTRiskSuggestion }) {
         <span style={{ fontSize:8, fontWeight:800, color:clr, background:`${clr}22`, borderRadius:3, padding:'1px 5px', letterSpacing:1 }}>{s.level}</span>
         <span style={{ fontSize:10, fontWeight:700, color:C.text }}>{s.title}</span>
       </div>
-      <p style={{ fontSize:9, color:C.dim, margin:0, lineHeight:1.5 }}>{s.body}</p>
+      <p style={{ fontSize:10, color:C.dim, margin:0, lineHeight:1.55 }}>{s.body}</p>
     </div>
   );
 }
@@ -241,13 +241,16 @@ export default function CaelynTerminalPage() {
               {ph ? '— today' : `${sign(p.change_today)}${fmt$(p.change_today)} today`}
             </div>
           </div>
-          <div style={{ display:'flex', gap:12, borderLeft:`1px solid ${C.border}`, paddingLeft:18, flexShrink:0 }}>
-            {(['1D','5D','1M','6M','1Y'] as const).map(k => (
-              <div key={k} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:1 }}>
-                <span style={{ fontSize:9, color:C.dim, letterSpacing:1 }}>{k}</span>
-                <span style={{ fontSize:11, fontWeight:700, color: ph ? C.dim : pctClr(perfMap[k]) }}>{DPct(perfMap[k])}</span>
-              </div>
-            ))}
+          <div style={{ borderLeft:`1px solid ${C.border}`, paddingLeft:18, flexShrink:0 }}>
+            <div style={{ fontSize:7, color:C.dim, letterSpacing:2, marginBottom:3, textTransform:'uppercase' }}>Change</div>
+            <div style={{ display:'flex', gap:12 }}>
+              {(['1D','5D','1M','6M','1Y'] as const).map(k => (
+                <div key={k} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:1 }}>
+                  <span style={{ fontSize:9, color:C.dim, letterSpacing:1 }}>{k}</span>
+                  <span style={{ fontSize:11, fontWeight:700, color: ph ? C.dim : pctClr(perfMap[k]) }}>{DPct(perfMap[k])}</span>
+                </div>
+              ))}
+            </div>
           </div>
           <div style={{ borderLeft:`1px solid ${C.border}`, paddingLeft:18, flexShrink:0 }}>
             <div style={{ fontSize:9, color:C.dim, letterSpacing:1 }}>TOTAL RETURN</div>
@@ -268,14 +271,17 @@ export default function CaelynTerminalPage() {
       </div>
 
       {/* ── TICKER TAPE ──────────────────────────────────────────────── */}
-      <div style={{ background:'#07101a', borderBottom:`1px solid ${C.border}`, padding:'4px 10px', display:'flex', gap:20, overflowX:'auto', flexShrink:0, scrollbarWidth:'none' }}>
-        {d.ticker_tape.map((t, i) => (
-          <div key={i} style={{ display:'flex', gap:6, alignItems:'center', whiteSpace:'nowrap', flexShrink:0 }}>
-            <span style={{ color:C.dim, fontSize:10 }}>{t.symbol}</span>
-            <span style={{ color:C.text, fontSize:10, fontWeight:600 }}>{ph ? '—' : fmtN(t.price, 2)}</span>
-            <span style={{ fontSize:10, color: ph ? C.dim : pctClr(t.change_pct) }}>{ph ? '—' : `${sign(t.change_pct)}${fmtN(t.change_pct)}%`}</span>
-          </div>
-        ))}
+      <div style={{ background:'#07101a', borderBottom:`1px solid ${C.border}`, padding:'4px 0', display:'flex', alignItems:'center', overflowX:'auto', flexShrink:0, scrollbarWidth:'none' }}>
+        <div style={{ fontSize:9, fontWeight:800, color:C.red, background:`${C.red}22`, padding:'0 10px', height:'100%', display:'flex', alignItems:'center', letterSpacing:1.5, borderRight:`1px solid ${C.border}`, flexShrink:0, minHeight:22 }}>MARKETS</div>
+        <div style={{ display:'flex', gap:20, padding:'0 14px', overflowX:'auto', scrollbarWidth:'none' }}>
+          {d.ticker_tape.map((t, i) => (
+            <div key={i} style={{ display:'flex', gap:6, alignItems:'center', whiteSpace:'nowrap', flexShrink:0 }}>
+              <span style={{ color:C.dim, fontSize:10 }}>{t.symbol}</span>
+              <span style={{ color:C.text, fontSize:10, fontWeight:600 }}>{ph ? '—' : fmtN(t.price, 2)}</span>
+              <span style={{ fontSize:10, color: ph ? C.dim : pctClr(t.change_pct) }}>{ph ? '—' : `${sign(t.change_pct)}${fmtN(t.change_pct)}%`}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* ── MAIN GRID ─────────────────────────────────────────────────── */}
@@ -346,32 +352,41 @@ export default function CaelynTerminalPage() {
           {/* Performance Chart */}
           <div style={{ background:C.card, borderBottom:`1px solid ${C.border}`, flex:'0 0 auto' }}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'7px 10px', borderBottom:`1px solid ${C.border}`, background:'#0d1623' }}>
-              <span style={{ fontSize:10, fontWeight:700, letterSpacing:1.5, color:C.dim, textTransform:'uppercase' }}>Portfolio vs S&P 500</span>
+              <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                <span style={{ fontSize:10, fontWeight:700, letterSpacing:1.5, color:C.dim, textTransform:'uppercase' }}>Portfolio vs S&amp;P 500</span>
+                <div style={{ display:'flex', gap:12, marginLeft:6 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:4 }}><div style={{ width:14, height:2, background: ph ? C.dimLow : C.teal, opacity: ph ? 0.3 : 1 }} /><span style={{ fontSize:9, color:C.dim }}>Portfolio</span></div>
+                  <div style={{ display:'flex', alignItems:'center', gap:4 }}><div style={{ width:12, height:2, background: ph ? C.dimLow : C.dim, opacity: ph ? 0.3 : 1, backgroundImage: ph ? undefined : `repeating-linear-gradient(90deg,${C.dim} 0 4px,transparent 4px 7px)` }} /><span style={{ fontSize:9, color:C.dim }}>S&amp;P 500</span></div>
+                </div>
+              </div>
               <div style={{ display:'flex', gap:4 }}>
                 {(['1D','5D','1M','6M','1Y'] as const).map(k => (
                   <button key={k} onClick={() => setPerfPeriod(k)} style={{ fontSize:9, fontWeight:700, padding:'2px 7px', borderRadius:3, cursor:'pointer', border:`1px solid ${perfPeriod===k?C.teal:C.border}`, background: perfPeriod===k?`${C.teal}20`:'transparent', color: perfPeriod===k?C.teal:C.dim, letterSpacing:0.5 }}>{k}</button>
                 ))}
+                <span style={{ fontSize:9, fontWeight:700, padding:'2px 7px', borderRadius:3, border:`1px solid ${C.teal}`, color:C.teal, letterSpacing:0.5, marginLeft:2 }}>{perfPeriod} PERFORMANCE</span>
               </div>
             </div>
-            <div style={{ height:155, padding:'8px 4px 4px 0', position:'relative' }}>
+            <div style={{ height:165, padding:'8px 4px 4px 0', position:'relative' }}>
               {ph && (
                 <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', zIndex:2 }}>
                   <span style={{ fontSize:9, color:C.dim, letterSpacing:2 }}>AWAITING DATA</span>
                 </div>
               )}
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={d.performance_charts?.[perfPeriod] ?? d.performance_chart ?? PH_CHART} margin={{ top:4, right:8, bottom:0, left:-10 }}>
+                <ComposedChart data={d.performance_charts?.[perfPeriod] ?? d.performance_chart ?? PH_CHART} margin={{ top:4, right:8, bottom:0, left:-10 }}>
+                  <defs>
+                    <linearGradient id="portfolioGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={C.teal} stopOpacity={ph ? 0.08 : 0.28} />
+                      <stop offset="95%" stopColor={C.teal} stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
                   <XAxis dataKey="date" tick={{ fontSize:8, fill:C.dim }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
                   <YAxis tick={{ fontSize:8, fill:C.dim }} tickLine={false} axisLine={false} tickFormatter={v => `${v>0?'+':''}${v}%`} />
                   {!ph && <RCTooltip contentStyle={{ background:C.card, border:`1px solid ${C.border}`, fontSize:10, color:C.text, borderRadius:4 }} formatter={(v:number, name:string) => [`${sign(v)}${fmtN(v,1)}%`, name==='portfolio'?'Portfolio':'S&P 500']} />}
-                  <Line type="monotone" dataKey="portfolio" stroke={ph ? C.dimLow : C.teal} dot={false} strokeWidth={2} strokeOpacity={ph ? 0.3 : 1} />
+                  <Area type="monotone" dataKey="portfolio" stroke={ph ? C.dimLow : C.teal} strokeWidth={2} fill="url(#portfolioGrad)" dot={false} strokeOpacity={ph ? 0.3 : 1} />
                   <Line type="monotone" dataKey="sp500" stroke={ph ? C.dimLow : C.dim} dot={false} strokeWidth={1.5} strokeDasharray="4 3" strokeOpacity={ph ? 0.3 : 1} />
-                </LineChart>
+                </ComposedChart>
               </ResponsiveContainer>
-            </div>
-            <div style={{ display:'flex', gap:14, padding:'2px 10px 6px', justifyContent:'flex-end' }}>
-              <div style={{ display:'flex', alignItems:'center', gap:4 }}><div style={{ width:14, height:2, background:C.teal, opacity: ph ? 0.3 : 1 }} /><span style={{ fontSize:9, color:C.dim }}>Portfolio</span></div>
-              <div style={{ display:'flex', alignItems:'center', gap:4 }}><div style={{ width:14, height:2, background:C.dim, opacity: ph ? 0.3 : 1 }} /><span style={{ fontSize:9, color:C.dim }}>S&P 500</span></div>
             </div>
           </div>
 
@@ -379,10 +394,10 @@ export default function CaelynTerminalPage() {
           <div style={{ background:C.card, borderBottom:`1px solid ${C.border}`, flex:'0 0 auto' }}>
             <CardHdr label="Asset Allocation" badge="Breakdown" />
             <div style={{ display:'flex', alignItems:'center', padding:'8px 10px', gap:10 }}>
-              <div style={{ width:90, height:90, flexShrink:0, opacity: ph ? 0.4 : 1 }}>
+              <div style={{ width:108, height:108, flexShrink:0, opacity: ph ? 0.4 : 1 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={d.asset_allocation} cx="50%" cy="50%" innerRadius={24} outerRadius={42} dataKey="pct" strokeWidth={0}>
+                    <Pie data={d.asset_allocation} cx="50%" cy="50%" innerRadius={28} outerRadius={48} dataKey="pct" strokeWidth={0}>
                       {d.asset_allocation.map((a, i) => <Cell key={i} fill={a.color} />)}
                     </Pie>
                   </PieChart>
@@ -433,7 +448,7 @@ export default function CaelynTerminalPage() {
         </div>
 
         {/* ── COL 3: Risk Analysis + Volatility ──────────────── */}
-        <div style={{ flex:'0 0 270px', borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column', overflow:'hidden', height:'100%' }}>
+        <div style={{ flex:'0 0 210px', borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column', overflow:'hidden', height:'100%' }}>
 
           {/* Risk Metrics */}
           <div style={{ background:C.card, borderBottom:`1px solid ${C.border}`, flex:'0 0 auto' }}>
@@ -467,7 +482,7 @@ export default function CaelynTerminalPage() {
                 return (
                   <div key={i} style={{ display:'flex', alignItems:'center', gap:6 }}>
                     <span style={{ width:38, fontSize:9, color:C.teal, fontWeight:700, flexShrink:0 }}>{v.ticker}</span>
-                    <div style={{ flex:1, height:12, background:C.dimLow, borderRadius:2, overflow:'hidden' }}>
+                    <div style={{ flex:1, height:14, background:C.dimLow, borderRadius:2, overflow:'hidden' }}>
                       <div style={{ height:'100%', width:`${barPct}%`, background: ph ? C.dimLow : color, borderRadius:2, transition:'width 0.6s' }} />
                     </div>
                     <span style={{ width:38, fontSize:9, color: ph ? C.dim : color, fontWeight:700, textAlign:'right', flexShrink:0 }}>{DN(v.vol,1)}{ph ? '' : '%'}</span>
@@ -479,7 +494,7 @@ export default function CaelynTerminalPage() {
         </div>
 
         {/* ── COL 4: Suggestions + Movers ─────────────────────── */}
-        <div style={{ flex:'0 0 260px', display:'flex', flexDirection:'column', overflow:'hidden', height:'100%' }}>
+        <div style={{ flex:'0 0 245px', display:'flex', flexDirection:'column', overflow:'hidden', height:'100%' }}>
 
           {/* Risk Suggestions */}
           <div style={{ background:C.card, borderBottom:`1px solid ${C.border}`, flex:'0 0 auto', maxHeight:'55%', display:'flex', flexDirection:'column', overflow:'hidden' }}>
@@ -502,12 +517,13 @@ export default function CaelynTerminalPage() {
                 {[...d.top_movers.gainers.slice(0,2).map(m => ({...m, isGainer:true})), ...d.top_movers.losers.slice(0,2).map(m => ({...m, isGainer:false}))].map((m, i) => {
                   const color = m.isGainer ? C.green : C.red;
                   return (
-                    <div key={i} style={{ border:`1px solid ${color}33`, borderRadius:5, padding:'8px 9px', background:`${color}08` }}>
+                    <div key={i} style={{ border:`1px solid ${color}33`, borderRadius:5, padding:'7px 9px', background:`${color}08` }}>
+                      <div style={{ fontSize:7, fontWeight:800, color, letterSpacing:1, marginBottom:3 }}>{m.isGainer ? '↑ GAINER' : '↓ LOSER'}</div>
                       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline' }}>
                         <span style={{ fontSize:11, fontWeight:800, color: ph ? C.dim : C.text }}>{m.ticker}</span>
                         <span style={{ fontSize:10, fontWeight:700, color: ph ? C.dim : color }}>{ph ? '—' : `${m.isGainer?'+':''}${fmtN(m.change_pct,2)}%`}</span>
                       </div>
-                      <div style={{ fontSize:9, color:C.dim, marginTop:2 }}>{ph ? '—' : fmt$(m.price)}</div>
+                      <div style={{ fontSize:9, color:C.dim, marginTop:1 }}>{ph ? '—' : fmt$(m.price)}</div>
                       <RangeBar low={m.w52_low} high={m.w52_high} price={m.price} ph={ph} />
                       <div style={{ display:'flex', justifyContent:'space-between', marginTop:2 }}>
                         <span style={{ fontSize:8, color:C.dim }}>{ph ? '—' : fmtN(m.w52_low,0)}</span>
