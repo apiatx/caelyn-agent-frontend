@@ -1,0 +1,186 @@
+You are updating the FRONTEND Replit for Caelyn AI.
+
+Important constraint:
+KEEP THE TOP HEADER BAR EXACTLY AS IT IS NOW. Do not change the structure, copy, labels, spacing, or styling intent of this header:
+- HL SCREENER
+- HYPERLIQUID MARKETS
+- Search coin...
+- All Markets
+- All Signals
+- Filters
+- Live
+- Auto-rank
+- Advanced
+- Compact
+- Refresh
+- Agent
+- Reset
+- LIVE
+
+Do not redesign or replace that top bar. Keep it exactly as-is.
+
+Goal:
+Redesign the Hyperliquid Screener page so it is NOT a generic ranked screener clone. It must become a Bloomberg-terminal-style Hyperliquid signal terminal built around distinct signal sections and real market intelligence panels.
+
+Current problem:
+The current page is basically an empty generic table. That is not useful. We do NOT want to recreate Hyperliquid’s basic screener. We want a premium signal dashboard that organizes Hyperliquid market data into visually distinct ranked sections.
+
+Page structure:
+1. Keep the existing top header bar exactly as-is.
+2. Under the header, build a compact top summary strip of market-wide signal cards.
+3. Under that, build a responsive signal-board layout using multiple cards/panels.
+4. Under that, keep a smarter full market matrix table.
+5. Add a right-side or bottom detail/agent panel for selected asset intelligence.
+
+Design target:
+- Dark premium terminal aesthetic
+- Bloomberg / institutional market terminal feel
+- Dense but elegant
+- Strong information hierarchy
+- Modular cards/panels
+- Great use of spacing and borders
+- Feels like a serious signal workstation, not a CRUD dashboard
+
+Primary content sections to build:
+
+A. Market Summary Strip
+Build compact KPI/signal cards for:
+- strongest 24h gainer
+- strongest 24h loser
+- largest OI expansion
+- largest OI unwind
+- highest funding
+- most negative funding
+- largest mark/oracle dislocation
+- largest short-term volume impulse
+- biggest order book imbalance
+- highest agent score
+- last update timestamp
+
+B. Signal Boards Grid
+Build dedicated ranked panels/cards for:
+1. Top OI Increases
+2. Top OI Decreases
+3. Top Volume Increases
+4. Top Price Increases
+5. Top Price Decreases
+6. Highest Positive Funding
+7. Most Negative Funding
+8. Largest Mark vs Oracle Dislocations
+9. Largest Premium / Discount vs Mid
+10. Highest Trade Flow Imbalance
+11. Largest Order Book Imbalance
+12. Highest Volatility Expansion
+13. Breakout Candidates
+14. Mean Reversion Candidates
+15. Short Squeeze Watchlist
+16. Long Liquidation / Flush Watchlist
+17. Crowded Longs
+18. Crowded Shorts
+19. Illiquid Danger Zone
+20. Agent Top Signals
+
+Each signal board should:
+- be visually distinct
+- have a title, short subtitle, and ranked mini-list
+- show the top 5-10 assets for that signal
+- show primary metric, secondary metric, and directional context
+- support clicking an asset to sync selection with the main table/detail panel
+
+C. Main Market Matrix
+Keep a full table below the signal boards, but it is secondary, not the hero.
+Columns should support:
+- Coin
+- Market type
+- Mark
+- 24h %
+- Funding
+- OI
+- OI Δ 5m
+- OI Δ 1h
+- Vol 24h
+- Volume impulse
+- Mark vs Oracle %
+- Mark vs Mid %
+- Spread bps
+- Bid depth
+- Ask depth
+- Book imbalance
+- Trade imbalance
+- Volatility score
+- Breakout score
+- Mean reversion score
+- Composite signal
+- Agent score
+- Agent rank movement
+
+D. Selected Asset Intelligence Panel
+Build a detail panel that shows:
+- selected coin header
+- mark / oracle / mid relationship
+- funding + OI summary
+- volume impulse
+- order book depth and imbalance
+- trade flow summary
+- volatility / momentum / breakout / mean reversion scores
+- backend-provided rationale
+- agent commentary
+- recent score/rank movement if available
+
+E. Agent Results Panel
+When the user clicks Agent:
+- show top longs
+- top shorts
+- top breakouts
+- top mean reversions
+- avoid list
+- show rank movement vs prior order
+- show why each top name moved up/down
+- animate or visually highlight changed names
+
+Data assumptions:
+The backend will provide normalized Hyperliquid-derived signal sections and rows.
+Frontend should be built to consume section-oriented data, not just a single flat table.
+
+Expected frontend data shape:
+- summaryCards[]
+- signalSections[]
+- marketRows[]
+- selectedAssetDetail
+- agentBuckets
+- rankChanges
+- backendTimestamp / freshness metadata
+
+Important:
+Do not hardcode fake values.
+Create clean reusable components for:
+- summary strip cards
+- signal section cards
+- ranked lists
+- full market matrix
+- asset detail panel
+- agent bucket panels
+
+Use good loading and empty states:
+- if data is missing, show meaningful placeholders, not dead empty cells everywhere
+- show “Awaiting backend signal snapshot” or similar
+- preserve layout while loading
+
+Interaction requirements:
+- clicking a signal-card asset selects it everywhere
+- clicking Agent should not freeze UI
+- keep live update badges / status visible
+- support compact and advanced modes using existing top-bar toggles
+- preserve current top-bar look and behavior
+
+Deliverables:
+- redesign the page into a signal-terminal layout
+- keep the existing top bar exactly as-is
+- add all needed components
+- wire the layout to backend-ready props/types
+- do not break existing routes/pages
+
+At the end, give:
+1. files changed
+2. new components created
+3. expected backend payload structure for summaryCards, signalSections, marketRows, selectedAssetDetail, and agentBuckets
