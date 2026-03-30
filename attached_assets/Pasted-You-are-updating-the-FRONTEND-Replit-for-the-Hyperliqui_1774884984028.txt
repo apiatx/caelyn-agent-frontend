@@ -1,0 +1,146 @@
+You are updating the FRONTEND Replit for the Hyperliquid Screener page.
+
+Important:
+Keep the existing top header bar exactly as-is visually.
+The top-right Agent button in the header must remain the primary and only clickable Agent trigger.
+
+Current problems to fix:
+1. The Agent action is duplicated on the page.
+2. The top-right header Agent button does not properly control the main hero output.
+3. The current Agent hero output is too shallow and useless:
+   - it only shows simple ticker arrows like:
+     DOOD, GOAT, ENA, MEGA
+   - it does not explain what the user should trade or watch
+4. The dashboard is still confusing because the user is forced to interpret all the signal cards manually.
+
+Required frontend changes:
+
+1. Remove duplicate Agent action
+- The only clickable Agent trigger should be the top-right header Agent button.
+- If the page has an "Agent Top Signals" hero section, that section should be display-only, not a second trigger.
+- Do not show two Agent buttons.
+
+2. Make header Agent button drive the entire page
+When the top-right header Agent button is clicked:
+- trigger the backend agent analysis endpoint
+- show a loading/briefing state in the hero section
+- update the hero section first and most prominently
+- update selected asset thesis panel
+- update rank movement indicators if returned
+- optionally highlight changed rows/sections
+
+3. Redesign the hero section into an Agent Briefing panel
+The hero section should become the main interpretation layer for the whole page.
+
+Hero title:
+Agent Market Brief
+
+Hero subtitle:
+Live interpretation of the strongest Hyperliquid setups
+
+The hero panel should be significantly more useful than a list of tickers.
+It should contain:
+
+A. Summary strip
+- Best Long Right Now
+- Best Short / Collapse Watch
+- Best Early Breakout Watch
+- Best Exhaustion / Fade Watch
+- Market tone / regime
+- Updated timestamp
+
+B. Ranked actionable ideas list
+Show the top 4-6 ideas with:
+- ticker
+- side (long / short / watch)
+- setup type
+- score
+- confidence
+- one-line thesis
+- rank movement if available
+
+C. Detailed thesis panel for selected idea
+When a top idea is selected, show:
+- direction
+- setup type
+- score and confidence
+- thesis summary
+- reasons / why now
+- what to watch next
+- invalidation / risk notes
+- key metrics:
+  - mark
+  - 24h %
+  - funding
+  - OI
+  - volume
+  - premium/discount
+  - mark/oracle gap
+  - trade flow
+  - book imbalance
+  - volatility regime
+
+D. Guidance blocks
+Add clear labeled sections in the hero:
+- What to trade now
+- What to watch for bigger breakout
+- What to watch for collapse after run-up
+- What to avoid
+
+4. Keep the rest of the dashboard on screen
+Do not remove the existing signal cards or the smaller dashboard sections.
+The user wants to keep the full screen populated.
+But those sections are now secondary.
+The hero briefing must be visually dominant and explain how to read the dashboard.
+
+5. Improve interaction flow
+- Clicking any ticker anywhere should update the hero thesis/detail context
+- Agent briefing output should feel like a guide to the rest of the screen
+- Use smooth transitions and strong visual hierarchy
+- Keep the premium dark terminal aesthetic
+
+6. Required backend payload assumptions
+Refactor frontend to expect richer hero payloads, not just a tiny list of tickers.
+
+Expected hero payload shape:
+{
+  "market_regime": "...",
+  "updated_at": "...",
+  "best_long": {...},
+  "best_short": {...},
+  "best_breakout_watch": {...},
+  "best_exhaustion_watch": {...},
+  "actionable_ideas": [...],
+  "guidance": {
+    "trade_now": [...],
+    "watch_breakout": [...],
+    "watch_collapse": [...],
+    "avoid": [...]
+  },
+  "selected_thesis": {...}
+}
+
+Each actionable idea should include:
+- coin
+- side
+- setup_type
+- score
+- confidence
+- thesis_title
+- thesis_summary
+- reasons[]
+- what_to_watch[]
+- invalidation_notes[]
+- metrics { ... }
+
+Deliverables:
+- remove duplicate Agent button/action
+- wire top-right Agent button to hero briefing refresh
+- redesign hero into a true market briefing panel
+- keep other dashboard sections visible but secondary
+- do not break existing layout or top header styling
+
+At the end provide:
+1. files changed
+2. components changed/added
+3. expected backend payload for the hero briefing
