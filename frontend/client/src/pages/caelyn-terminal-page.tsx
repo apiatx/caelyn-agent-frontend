@@ -280,12 +280,39 @@ export default function CaelynTerminalPage() {
             </div>
           </div>
         ) : (
-          <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
-            <span style={{ width:6, height:6, borderRadius:'50%', background:liveColor, boxShadow:`0 0 6px ${liveColor}`, display:'inline-block' }} />
-            <span style={{ fontSize:10, color:C.dim }}>{liveLabel}</span>
-            <span style={{ fontSize:10, color:mktColor, background:`${mktColor}18`, border:`1px solid ${mktColor}55`, borderRadius:3, padding:'1px 7px', fontWeight:700 }}>
-              MARKET: {ph ? '—' : p.market_status}
-            </span>
+          <div style={{ display:'flex', alignItems:'center', gap:18 }}>
+            <div style={{ textAlign:'center', flexShrink:0 }}>
+              <div style={{ fontSize:16, fontWeight:900, color:C.text }}>{ph ? '—' : fmt$(p.value)}</div>
+              <div style={{ fontSize:9, color: ph ? C.dim : pctClr(p.change_today) }}>
+                {ph ? '— today' : `${sign(p.change_today)}${fmt$(p.change_today)} today`}
+              </div>
+            </div>
+            <div style={{ borderLeft:`1px solid ${C.border}`, paddingLeft:18, flexShrink:0 }}>
+              <div style={{ fontSize:7, color:C.dim, letterSpacing:2, marginBottom:3, textTransform:'uppercase' }}>Change</div>
+              <div style={{ display:'flex', gap:12 }}>
+                {(['1D','5D','1M','6M','1Y'] as const).map(k => (
+                  <div key={k} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:1 }}>
+                    <span style={{ fontSize:9, color:C.dim, letterSpacing:1 }}>{k}</span>
+                    <span style={{ fontSize:11, fontWeight:700, color: ph ? C.dim : pctClr(perfMap[k]) }}>{DPct(perfMap[k])}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div style={{ borderLeft:`1px solid ${C.border}`, paddingLeft:18, flexShrink:0 }}>
+              <div style={{ fontSize:9, color:C.dim, letterSpacing:1 }}>TOTAL RETURN</div>
+              <div style={{ fontSize:13, fontWeight:800, color: ph ? C.dim : pctClr(p.total_return_pct) }}>{DPct(p.total_return_pct)}</div>
+            </div>
+            <div style={{ borderLeft:`1px solid ${C.border}`, paddingLeft:18, flexShrink:0 }}>
+              <div style={{ fontSize:9, color:C.dim, letterSpacing:1 }}>SENTIMENT</div>
+              <div style={{ fontSize:11, fontWeight:700, color: ph ? C.dim : sentColor }}>{DS(p.sentiment)}</div>
+            </div>
+            <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
+              <span style={{ width:6, height:6, borderRadius:'50%', background:liveColor, boxShadow:`0 0 6px ${liveColor}`, display:'inline-block' }} />
+              <span style={{ fontSize:10, color:C.dim }}>{liveLabel}</span>
+              <span style={{ fontSize:10, color:mktColor, background:`${mktColor}18`, border:`1px solid ${mktColor}55`, borderRadius:3, padding:'1px 7px', fontWeight:700 }}>
+                MARKET: {ph ? '—' : p.market_status}
+              </span>
+            </div>
           </div>
         )}
       </div>

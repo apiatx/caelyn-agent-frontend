@@ -701,42 +701,6 @@ export default function StocksPortfolioPage() {
       <main className="max-w-[95vw] mx-auto px-2 sm:px-3 py-4">
         <div className="space-y-4 lg:space-y-6">
 
-          {/* AI Review Button + Summary Stats */}
-          <div style={{ borderBottom: '1px solid transparent', borderImage: 'linear-gradient(90deg, transparent, #2090d0, #5cc8f0, #80d8f8, transparent) 1', paddingBottom: 16, marginBottom: 24 }}>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div>
-                <h1 style={{ fontSize: '1.75rem', fontWeight: 700, background: 'linear-gradient(135deg, #e2e8f0, #5cc8f0)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Portfolio Dashboard</h1>
-                {holdings.length > 0 && totalPortfolioValue > 0 && (
-                  <div className="flex items-center gap-3 text-sm">
-                    <span className="text-crypto-silver">Total: <span style={{ color: '#5cc8f0', fontWeight: 700, textShadow: '0 0 10px rgba(92, 200, 240, 0.3)' }}>{fmt(totalPortfolioValue)}</span></span>
-                    <span className={totalDailyPL >= 0 ? 'text-green-400' : 'text-red-400'}>
-                      Day: {fmtPL(totalDailyPL)}
-                    </span>
-                    <span className={totalOverallPL >= 0 ? 'text-green-400' : 'text-red-400'}>
-                      Total: {fmtPL(totalOverallPL)} ({pctPL(totalOverallPL, totalCostBasis)})
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {holdings.length > 0 && (
-                <>
-                  <button onClick={() => fetchQuotes(holdings)} disabled={loadingQuotes} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-slate-200 transition-all disabled:opacity-50" style={{ background: 'rgba(32, 144, 208, 0.1)', border: '1px solid rgba(32, 144, 208, 0.3)' }}>
-                    <RefreshCw className={`w-3.5 h-3.5 ${loadingQuotes ? 'animate-spin' : ''}`} />
-                    Refresh
-                  </button>
-                  <button onClick={runAIReview} disabled={aiLoading} className="flex items-center gap-1.5 text-sm font-medium text-white transition-all disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #2090d0, #5cc8f0, #80d8f8)', boxShadow: '0 0 20px rgba(32, 144, 208, 0.4), 0 0 40px rgba(92, 200, 240, 0.2)', borderRadius: 8, padding: '10px 24px' }}>
-                    <Bot className="w-4 h-4" />
-                    {aiLoading ? aiStage || 'Analyzing...' : 'AI Portfolio Review'}
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-          </div>
-
           {/* AI Review Result */}
           {aiReview && (() => {
             const parsed = parsePortfolioReview(aiReview);
@@ -767,7 +731,7 @@ export default function StocksPortfolioPage() {
               <Plus className="w-4 h-4 text-green-400" />
               <h3 className="text-sm font-semibold text-white">Add Holding</h3>
             </div>
-            <div className="flex flex-col sm:flex-row gap-2">
+            <div className="flex flex-col sm:flex-row gap-2 flex-wrap">
               <input type="text" placeholder="Ticker (e.g. NVDA)" value={newTicker} onChange={e => setNewTicker(e.target.value.toUpperCase())} onKeyDown={e => e.key === 'Enter' && addHolding()} className="rounded-lg px-3 py-2 text-sm text-white placeholder-crypto-silver/50 focus:outline-none focus:border-cyan-500/50 w-full sm:w-36" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }} />
               <select value={selectedAssetType} onChange={e => setSelectedAssetType(e.target.value)} className="rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500/50 w-full sm:w-32 appearance-none cursor-pointer" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E\")", backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center' }}>
                 <option value="stock" style={{ background: 'rgba(255,255,255,0.02)' }}>Stock</option>
@@ -781,6 +745,18 @@ export default function StocksPortfolioPage() {
                 <Plus className="w-4 h-4" />
                 Add
               </button>
+              {holdings.length > 0 && (
+                <>
+                  <button onClick={() => fetchQuotes(holdings)} disabled={loadingQuotes} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-slate-200 transition-all disabled:opacity-50" style={{ background: 'rgba(32, 144, 208, 0.1)', border: '1px solid rgba(32, 144, 208, 0.3)' }}>
+                    <RefreshCw className={`w-3.5 h-3.5 ${loadingQuotes ? 'animate-spin' : ''}`} />
+                    Refresh
+                  </button>
+                  <button onClick={runAIReview} disabled={aiLoading} className="flex items-center gap-1.5 text-sm font-medium text-white transition-all disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #2090d0, #5cc8f0, #80d8f8)', boxShadow: '0 0 20px rgba(32, 144, 208, 0.4), 0 0 40px rgba(92, 200, 240, 0.2)', borderRadius: 8, padding: '8px 18px' }}>
+                    <Bot className="w-4 h-4" />
+                    {aiLoading ? aiStage || 'Analyzing...' : 'AI Portfolio Review'}
+                  </button>
+                </>
+              )}
             </div>
             {newTicker.trim() && INDEX_TO_ETF[newTicker.trim()] && (
               <div className="mt-2 flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-500/10 border border-blue-500/20 text-xs">
