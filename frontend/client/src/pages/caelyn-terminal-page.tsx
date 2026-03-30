@@ -53,16 +53,12 @@ interface CaelynTerminalData {
   as_of: string;
 }
 
-// ─── Placeholder Data ─────────────────────────────────────────────────────────
-const PH_TICKERS = ['SCHB','SCHF','VWO','IEMG','DGRO','VCIT','SCHP','VTI','LQD','VEA'];
-const PH_CORR_TICKERS = ['SCHB','SCHF','VWO','IEMG','DGRO','VCIT','SCHP'];
-const PH_ALLOC_COLORS = ['#38bdf8','#6366f1','#f59e0b','#22c55e','#a78bfa'];
-const PH_ALLOC_LABELS = ['US Equity','Intl Developed','Emerging Markets','Fixed Income','Individual Stocks'];
-const PH_ALLOC_PCTS   = [52.2, 19.7, 17.8, 10.2, 0.1];
+// ─── Placeholder Data (mirrors actual portfolio: NVDA, OSS, BUZZ, GOLD, BTC) ──
 const PH_CHART = Array.from({ length: 8 }, (_, i) => ({
-  date: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug'][i],
+  date: ['Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar'][i],
   portfolio: 0, sp500: 0,
 }));
+const PH_CORR_TICKERS = ['NVDA','OSS','BUZZ'];
 const PH_CORR_VALUES = PH_CORR_TICKERS.map((_, ri) =>
   PH_CORR_TICKERS.map((_, ci) => (ri === ci ? 1.0 : 0))
 );
@@ -75,12 +71,18 @@ const PLACEHOLDER: CaelynTerminalData = {
     sentiment: '—', market_status: '—',
   },
   positions_count: 0,
-  holdings: PH_TICKERS.map(t => ({ ticker: t, price: 0, change: 0, change_pct: 0, allocation_pct: 0 })),
+  holdings: ['NVDA','OSS','BUZZ','GOLD','BTC'].map(t => ({ ticker: t, price: 0, change: 0, change_pct: 0, allocation_pct: 0 })),
   performance_chart: PH_CHART,
-  asset_allocation: PH_ALLOC_LABELS.map((label, i) => ({ label, pct: PH_ALLOC_PCTS[i], color: PH_ALLOC_COLORS[i] })),
+  asset_allocation: [
+    { label: 'Tech Equity',  pct: 52, color: '#38bdf8' },
+    { label: 'Small Cap',    pct: 5,  color: '#6366f1' },
+    { label: 'Thematic ETF', pct: 26, color: '#f59e0b' },
+    { label: 'Commodities',  pct: 12, color: '#22c55e' },
+    { label: 'Crypto',       pct: 5,  color: '#a78bfa' },
+  ],
   correlation_matrix: { tickers: PH_CORR_TICKERS, values: PH_CORR_VALUES },
   risk_metrics: { weighted_volatility: 0, max_drawdown: 0, top_concentration: 0, top_concentration_label: '—', portfolio_beta: 0, sharpe_ratio: 0, sortino_ratio: 0 },
-  volatility: ['TSLA','NVDA','META','GOOGL','AAPL','IEMG','SCHF','VEA','VWO','DGRO'].map(t => ({ ticker: t, vol: 0 })),
+  volatility: ['NVDA','OSS','BUZZ','BTC','GOLD'].map(t => ({ ticker: t, vol: 0 })),
   risk_suggestions: [
     { level: 'RISK', title: 'Awaiting Analysis', body: 'Risk suggestions will appear here once the backend data feed is connected.' },
     { level: 'RISK', title: 'Awaiting Analysis', body: 'Portfolio concentration analysis will be shown when market data loads.' },
@@ -97,19 +99,15 @@ const PLACEHOLDER: CaelynTerminalData = {
     ],
   },
   earnings_calendar: [
-    { ticker: 'JPM',  company: 'JPMorgan',  wtd: '—', last_eps: 0, next_date: '—', est_eps: 0 },
-    { ticker: 'NFLX', company: 'Netflix',   wtd: '—', last_eps: 0, next_date: '—', est_eps: 0 },
-    { ticker: 'TSLA', company: 'Tesla',     wtd: '—', last_eps: 0, next_date: '—', est_eps: 0 },
-    { ticker: 'GOOGL',company: 'Alphabet',  wtd: '—', last_eps: 0, next_date: '—', est_eps: 0 },
-    { ticker: 'V',    company: 'Visa',      wtd: '—', last_eps: 0, next_date: '—', est_eps: 0 },
-    { ticker: 'MSFT', company: 'Microsoft', wtd: '—', last_eps: 0, next_date: '—', est_eps: 0 },
-    { ticker: 'META', company: 'Meta',      wtd: '—', last_eps: 0, next_date: '—', est_eps: 0 },
-    { ticker: 'AAPL', company: 'Apple',     wtd: '—', last_eps: 0, next_date: '—', est_eps: 0 },
-    { ticker: 'AMZN', company: 'Amazon',    wtd: '—', last_eps: 0, next_date: '—', est_eps: 0 },
-    { ticker: 'LLY',  company: 'Eli Lilly', wtd: '—', last_eps: 0, next_date: '—', est_eps: 0 },
     { ticker: 'NVDA', company: 'NVIDIA',    wtd: '—', last_eps: 0, next_date: '—', est_eps: 0 },
+    { ticker: 'MSFT', company: 'Microsoft', wtd: '—', last_eps: 0, next_date: '—', est_eps: 0 },
+    { ticker: 'AAPL', company: 'Apple',     wtd: '—', last_eps: 0, next_date: '—', est_eps: 0 },
+    { ticker: 'GOOGL',company: 'Alphabet',  wtd: '—', last_eps: 0, next_date: '—', est_eps: 0 },
+    { ticker: 'META', company: 'Meta',      wtd: '—', last_eps: 0, next_date: '—', est_eps: 0 },
+    { ticker: 'AMZN', company: 'Amazon',    wtd: '—', last_eps: 0, next_date: '—', est_eps: 0 },
+    { ticker: 'OSS',  company: 'One Stop',  wtd: '—', last_eps: 0, next_date: '—', est_eps: 0 },
   ],
-  ticker_tape: ['SPY','QQQ','IWM','DIA','VIX','GLD','TLT','DXY','BTC','ETH'].map(s => ({ symbol: s, price: 0, change_pct: 0 })),
+  ticker_tape: ['SPY','QQQ','NVDA','GLD','BTC-USD','ETH-USD','IWM','VIX','TLT','DXY'].map(s => ({ symbol: s, price: 0, change_pct: 0 })),
   news_ticker: [
     { symbol: '—', headline: 'Awaiting live news feed — connect backend to populate market intelligence', time_ago: '—' },
     { symbol: '—', headline: 'Portfolio analytics will appear here once the data service is online', time_ago: '—' },
