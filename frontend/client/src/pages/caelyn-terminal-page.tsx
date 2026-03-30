@@ -435,21 +435,25 @@ export default function CaelynTerminalPage() {
           {/* Correlation Matrix */}
           <div style={{ background:C.card, flex:1, overflow:'hidden', display:'flex', flexDirection:'column' }}>
             <CardHdr label="Correlation Matrix" badge="Heat Map" />
-            <div style={{ padding:8, overflowX:'auto', overflowY:'auto', flex:1 }}>
+            <div style={{ padding:'8px 10px', overflowY:'auto', flex:1 }}>
               {cm.tickers.length > 0 && (
-                <table style={{ borderCollapse:'collapse', fontSize:8, tableLayout:'fixed', width:'100%' }}>
+                <table style={{ borderCollapse:'separate', borderSpacing:2, fontSize:8, tableLayout:'fixed', width:'100%' }}>
+                  <colgroup>
+                    <col style={{ width:'12%' }} />
+                    {cm.tickers.map((_,i) => <col key={i} style={{ width:`${88 / cm.tickers.length}%` }} />)}
+                  </colgroup>
                   <thead>
                     <tr>
-                      <th style={{ width:32 }} />
-                      {cm.tickers.map(t => <th key={t} style={{ padding:'2px 2px', color:C.dim, fontWeight:600, textAlign:'center', minWidth:0, width:36, fontSize:7 }}>{t}</th>)}
+                      <th />
+                      {cm.tickers.map(t => <th key={t} style={{ padding:'2px 2px', color:C.dim, fontWeight:600, textAlign:'center', fontSize:7, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{t}</th>)}
                     </tr>
                   </thead>
                   <tbody>
                     {cm.tickers.map((row, ri) => (
                       <tr key={ri}>
-                        <td style={{ padding:'2px 3px', color:C.dim, fontWeight:600, textAlign:'right', fontSize:7, width:32, overflow:'hidden' }}>{row}</td>
+                        <td style={{ padding:'2px 3px', color:C.dim, fontWeight:700, textAlign:'right', fontSize:7, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{row}</td>
                         {cm.values[ri]?.map((v, ci) => (
-                          <td key={ci} style={{ padding:'1px 2px', background: ph && ri !== ci ? C.dimLow + '44' : corrBg(v), textAlign:'center', borderRadius:2, color: ph && ri !== ci ? C.dimLow : corrTxt(v), fontWeight:600, width:36, height:18, fontSize:8 }}>
+                          <td key={ci} style={{ padding:'3px 2px', background: ph && ri !== ci ? C.dimLow + '44' : corrBg(v), textAlign:'center', borderRadius:3, color: ph && ri !== ci ? C.dimLow : corrTxt(v), fontWeight:700, fontSize:8, height:22 }}>
                             {ph && ri !== ci ? '—' : fmtN(v, 2)}
                           </td>
                         ))}
