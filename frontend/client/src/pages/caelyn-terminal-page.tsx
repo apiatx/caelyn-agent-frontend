@@ -40,7 +40,8 @@ interface CaelynTerminalData {
   };
   positions_count: N;
   holdings: CTHolding[];
-  performance_chart: CTChartPoint[];
+  performance_chart?: CTChartPoint[];
+  performance_charts?: { '1D': CTChartPoint[]; '5D': CTChartPoint[]; '1M': CTChartPoint[]; '6M': CTChartPoint[]; '1Y': CTChartPoint[] };
   asset_allocation: CTAllocationItem[];
   correlation_matrix: CTCorrelationMatrix;
   risk_metrics: CTRiskMetrics;
@@ -54,11 +55,17 @@ interface CaelynTerminalData {
 }
 
 // ─── Placeholder Data (mirrors actual portfolio: NVDA, OSS, BUZZ, GOLD, BTC) ──
-const PH_CHART = Array.from({ length: 8 }, (_, i) => ({
-  date: ['Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar'][i],
-  portfolio: 0, sp500: 0,
-}));
-const PH_CORR_TICKERS = ['NVDA','OSS','BUZZ'];
+const PH_CHART_DATES: Record<string, string[]> = {
+  '1D': ['10:00','11:00','12:00','13:00','14:00','15:00','16:00'],
+  '5D': ['Mon','Tue','Wed','Thu','Fri'],
+  '1M': Array.from({length:6},(_,i)=>`W${i+1}`),
+  '6M': ['Oct','Nov','Dec','Jan','Feb','Mar'],
+  '1Y': ['Apr','Jun','Aug','Oct','Dec','Feb','Mar'],
+};
+const mkPH = (dates: string[]) => dates.map(date => ({ date, portfolio: 0, sp500: 0 }));
+const PH_CHARTS = { '1D': mkPH(PH_CHART_DATES['1D']), '5D': mkPH(PH_CHART_DATES['5D']), '1M': mkPH(PH_CHART_DATES['1M']), '6M': mkPH(PH_CHART_DATES['6M']), '1Y': mkPH(PH_CHART_DATES['1Y']) };
+const PH_CHART = PH_CHARTS['1Y'];
+const PH_CORR_TICKERS = ['NVDA','OSS','BUZZ','BTC','GOLD'];
 const PH_CORR_VALUES = PH_CORR_TICKERS.map((_, ri) =>
   PH_CORR_TICKERS.map((_, ci) => (ri === ci ? 1.0 : 0))
 );
@@ -73,6 +80,7 @@ const PLACEHOLDER: CaelynTerminalData = {
   positions_count: 0,
   holdings: ['NVDA','OSS','BUZZ','GOLD','BTC'].map(t => ({ ticker: t, price: 0, change: 0, change_pct: 0, allocation_pct: 0 })),
   performance_chart: PH_CHART,
+  performance_charts: PH_CHARTS,
   asset_allocation: [
     { label: 'Tech Equity',  pct: 52, color: '#38bdf8' },
     { label: 'Small Cap',    pct: 5,  color: '#6366f1' },
@@ -352,7 +360,7 @@ export default function CaelynTerminalPage() {
                 </div>
               )}
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={d.performance_chart} margin={{ top:4, right:8, bottom:0, left:-10 }}>
+                <LineChart data={d.performance_charts?.[perfPeriod] ?? d.performance_chart ?? PH_CHART} margin={{ top:4, right:8, bottom:0, left:-10 }}>
                   <XAxis dataKey="date" tick={{ fontSize:8, fill:C.dim }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
                   <YAxis tick={{ fontSize:8, fill:C.dim }} tickLine={false} axisLine={false} tickFormatter={v => `${v>0?'+':''}${v}%`} />
                   {!ph && <RCTooltip contentStyle={{ background:C.card, border:`1px solid ${C.border}`, fontSize:10, color:C.text, borderRadius:4 }} formatter={(v:number, name:string) => [`${sign(v)}${fmtN(v,1)}%`, name==='portfolio'?'Portfolio':'S&P 500']} />}
