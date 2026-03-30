@@ -1,0 +1,132 @@
+You are updating the FRONTEND Replit for the Hyperliquid Screener page.
+
+Important:
+KEEP THE TOP HEADER BAR EXACTLY AS IT IS.
+Do not change:
+- HL SCREENER
+- HYPERLIQUID MARKETS
+- Search coin...
+- All Markets
+- All Signals
+- Filters
+- Live
+- Auto-rank
+- Advanced
+- Compact
+- Refresh
+- Agent
+- Reset
+- LIVE
+
+Do not redesign or restyle that header. Keep it exactly as-is.
+
+Goal:
+Redesign the page so it is no longer a grid of equal-weight widgets. It must become a signal-first terminal where the highest-value information is shown first.
+
+Current problem:
+The existing layout buries the most important section, Agent Top Signals, as a small tile near the bottom. Many sections are empty and should not dominate the page if the backend does not support them yet. The page currently looks like a dashboard, but it does not direct attention to the best trade ideas.
+
+New page hierarchy:
+1. Keep the current top header unchanged.
+2. Immediately below it, create a large hero section called:
+   Agent Top Signals
+   Subtitle: AI-ranked top opportunities from live Hyperliquid market data
+3. Below the hero, show a secondary grid of signal boards.
+4. Below that, show the full market matrix table.
+5. Add a detail/thesis panel tied to selected assets.
+
+Hero section requirements:
+- This must be the largest section on the page.
+- It should span most or all of the page width.
+- Left side: ranked list of top 3-5 highest-signal ideas.
+- Right side: detailed thesis panel for the selected top idea.
+- Each top idea row should show:
+  - ticker
+  - direction (long / short / neutral watch)
+  - overall score
+  - setup type (breakout / mean reversion / trend continuation / crowding unwind / avoid)
+  - confidence
+  - one-line thesis
+- Detailed thesis panel should show:
+  - mark price
+  - 24h %
+  - funding
+  - open interest
+  - day volume
+  - mark/oracle gap
+  - premium/discount
+  - trade-flow bias
+  - order book imbalance
+  - volatility regime
+  - backend-provided reasoning bullets
+  - invalidation / risk notes
+- When the Agent button in the top bar is clicked, this hero section should update first and most prominently.
+- Highlight rank movement and new ideas.
+
+Secondary signal boards:
+Keep only the signal boards that can be supported now or that are backend-ready. Prioritize:
+- Top Gainers
+- Top Losers
+- High Funding
+- Negative Funding
+- Mark/Oracle Gap
+- Premium/Discount
+- Volume Leaders
+- Trade Flow
+- Book Imbalance
+- Volatility Leaders
+
+Conditional signal boards:
+Render these only if the backend provides data for them:
+- OI Expansion
+- OI Unwind
+- Volume Impulse
+- Short Squeeze
+- Long Flush Watch
+- Crowded Longs
+- Crowded Shorts
+
+If the backend does not provide a supported payload for these sections, do not show empty shells. Either hide them entirely or show a subtle “Backend signal not enabled” state.
+
+Market matrix:
+Move the full table below the signal boards.
+It is secondary, not the hero.
+Columns should support:
+- Coin
+- Mark
+- 24h %
+- Funding
+- OI
+- Volume
+- Premium
+- Mark/Oracle %
+- Book Imbalance
+- Trade Flow
+- Volatility Score
+- Composite Score
+- Agent Score
+- Setup Type
+
+Interaction requirements:
+- Clicking a ticker anywhere selects it globally.
+- Selected ticker updates the thesis/detail panel.
+- Agent refresh should not freeze the UI.
+- Use smooth transitions for reranks.
+- Preserve the current dark premium terminal styling.
+
+Data contract expectations:
+Frontend should now be built around:
+- heroAgentSignals
+- summaryCards
+- signalSections
+- marketRows
+- selectedAssetDetail
+- optional rankChanges
+
+Important:
+Do not keep dead empty cards on-screen just to preserve symmetry. This page should prioritize useful signal and hide unsupported sections.
+
+At the end provide:
+1. files changed
+2. new components created
+3. expected backend payload for heroAgentSignals, signalSections, marketRows, selectedAssetDetail
