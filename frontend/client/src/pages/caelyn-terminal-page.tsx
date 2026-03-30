@@ -268,10 +268,10 @@ export default function CaelynTerminalPage() {
       </div>
 
       {/* ── MAIN GRID ─────────────────────────────────────────────────── */}
-      <div style={{ flex:1, display:'grid', gridTemplateColumns:'200px 1fr 270px 260px', overflow:'hidden' }}>
+      <div style={{ flex:1, display:'flex', flexDirection:'row', overflow:'hidden', minHeight:0 }}>
 
         {/* ── COL 1: Holdings + Earnings ──────────────────────────── */}
-        <div style={{ borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column', overflow:'hidden' }}>
+        <div style={{ flex:'0 0 200px', borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column', overflow:'hidden', height:'100%' }}>
 
           {/* Holdings */}
           <div style={{ background:C.card, borderBottom:`1px solid ${C.border}`, display:'flex', flexDirection:'column', flex:'0 0 auto', maxHeight:'55%', overflow:'hidden' }}>
@@ -330,7 +330,7 @@ export default function CaelynTerminalPage() {
         </div>
 
         {/* ── COL 2: Charts ─────────────────────────────────────── */}
-        <div style={{ borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column', overflow:'hidden' }}>
+        <div style={{ flex:1, minWidth:0, borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column', overflow:'hidden', height:'100%' }}>
 
           {/* Performance Chart */}
           <div style={{ background:C.card, borderBottom:`1px solid ${C.border}`, flex:'0 0 auto' }}>
@@ -396,19 +396,19 @@ export default function CaelynTerminalPage() {
             <CardHdr label="Correlation Matrix" badge="Heat Map" />
             <div style={{ padding:8, overflowX:'auto', overflowY:'auto', flex:1 }}>
               {cm.tickers.length > 0 && (
-                <table style={{ borderCollapse:'collapse', fontSize:9 }}>
+                <table style={{ borderCollapse:'collapse', fontSize:8, tableLayout:'fixed', width:'100%' }}>
                   <thead>
                     <tr>
-                      <th style={{ width:36 }} />
-                      {cm.tickers.map(t => <th key={t} style={{ padding:'2px 3px', color:C.dim, fontWeight:600, textAlign:'center', minWidth:32 }}>{t}</th>)}
+                      <th style={{ width:32 }} />
+                      {cm.tickers.map(t => <th key={t} style={{ padding:'2px 2px', color:C.dim, fontWeight:600, textAlign:'center', minWidth:0, width:36, fontSize:7 }}>{t}</th>)}
                     </tr>
                   </thead>
                   <tbody>
                     {cm.tickers.map((row, ri) => (
                       <tr key={ri}>
-                        <td style={{ padding:'2px 4px', color:C.dim, fontWeight:600, textAlign:'right', fontSize:8 }}>{row}</td>
+                        <td style={{ padding:'2px 3px', color:C.dim, fontWeight:600, textAlign:'right', fontSize:7, width:32, overflow:'hidden' }}>{row}</td>
                         {cm.values[ri]?.map((v, ci) => (
-                          <td key={ci} style={{ padding:'2px 3px', background: ph && ri !== ci ? C.dimLow + '44' : corrBg(v), textAlign:'center', borderRadius:2, color: ph && ri !== ci ? C.dimLow : corrTxt(v), fontWeight:600, minWidth:32, height:22, fontSize:9 }}>
+                          <td key={ci} style={{ padding:'1px 2px', background: ph && ri !== ci ? C.dimLow + '44' : corrBg(v), textAlign:'center', borderRadius:2, color: ph && ri !== ci ? C.dimLow : corrTxt(v), fontWeight:600, width:36, height:18, fontSize:8 }}>
                             {ph && ri !== ci ? '—' : fmtN(v, 2)}
                           </td>
                         ))}
@@ -422,7 +422,7 @@ export default function CaelynTerminalPage() {
         </div>
 
         {/* ── COL 3: Risk Analysis + Volatility ──────────────── */}
-        <div style={{ borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column', overflow:'hidden' }}>
+        <div style={{ flex:'0 0 270px', borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column', overflow:'hidden', height:'100%' }}>
 
           {/* Risk Metrics */}
           <div style={{ background:C.card, borderBottom:`1px solid ${C.border}`, flex:'0 0 auto' }}>
@@ -468,7 +468,7 @@ export default function CaelynTerminalPage() {
         </div>
 
         {/* ── COL 4: Suggestions + Movers ─────────────────────── */}
-        <div style={{ display:'flex', flexDirection:'column', overflow:'hidden' }}>
+        <div style={{ flex:'0 0 260px', display:'flex', flexDirection:'column', overflow:'hidden', height:'100%' }}>
 
           {/* Risk Suggestions */}
           <div style={{ background:C.card, borderBottom:`1px solid ${C.border}`, flex:'0 0 auto', maxHeight:'55%', display:'flex', flexDirection:'column', overflow:'hidden' }}>
