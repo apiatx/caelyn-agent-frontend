@@ -1,0 +1,218 @@
+You are working on the FRONTEND Replit for Caelyn AI.
+
+Goal:
+Build a new full-page Hyperliquid market terminal called "Hyperliquid Screener" that connects to my separate FastAPI backend. This page is a comprehensive real-time screener/dashboard for Hyperliquid markets and must feel like a professional trading terminal, not a basic table.
+
+Context:
+- Frontend and backend are separate Replits.
+- The backend FastAPI server will provide all Hyperliquid market data and agent scoring/ranking.
+- Build the full page, layout, components, state management, field mapping, loading states, error states, and websocket/live update handling from the frontend side.
+- Do NOT hardcode fake business logic into the frontend. The frontend should display backend-provided data cleanly and support live resorting/re-ranking.
+- The frontend must be ready for my backend to populate all fields from Hyperliquid APIs/websockets.
+
+Primary UX:
+This page should pre-display the full Hyperliquid market screener immediately when opened.
+Then when the user clicks an "Agent" button, the agent uses all current screener data and reorders the assets from highest signal to lowest signal in real time right in front of the user.
+
+Core product requirements:
+1. Add a new left-sidebar navigation item:
+   - Label: Hyperliquid Screener
+   - Icon: something terminal/trading appropriate
+   - Route/path should fit the current frontend routing conventions
+
+2. The page should have these major sections:
+   A. Top control bar
+   B. Market breadth / summary strip
+   C. Main screener table
+   D. Right-side or bottom details panel for selected asset
+   E. Agent output / signal rationale panel
+   F. Optional floating/live activity strip for realtime updates
+
+3. Top control bar requirements:
+   - Search box for ticker/coin
+   - Filters:
+     - Market type (Perps / Spot / All supported by backend)
+     - Category / sector / dex grouping if backend provides it
+     - Min volume
+     - Min open interest
+     - Max funding / Min funding
+     - Only positive signal / only negative signal / all
+     - Sort mode dropdown
+   - Toggles:
+     - Live updates on/off
+     - Auto re-rank on/off
+     - Show advanced columns
+     - Compact / comfortable density
+   - Buttons:
+     - Refresh
+     - Agent
+     - Reset filters
+   - Agent button behavior:
+     - Calls backend agent-ranking endpoint
+     - Shows loading/progress state
+     - Preserves smooth UI
+     - Reorders rows live when response arrives
+     - Displays ranking rationale and score deltas
+
+4. Market breadth / summary strip:
+   Build KPI cards / compact tiles showing:
+   - total assets shown
+   - number of gainers vs losers
+   - top 24h mover
+   - largest notional volume
+   - largest open interest
+   - highest positive funding
+   - most negative funding
+   - widest premium dislocation
+   - strongest recent agent signal
+   - current backend/server timestamp / last updated timestamp
+
+5. Main screener table:
+   Build a powerful sortable data grid, virtualized if needed, with sticky header and sticky first columns.
+   It should support live updates without janky rerenders.
+
+   Required baseline columns:
+   - Rank
+   - Coin / symbol
+   - Display name
+   - Market type
+   - Category / tags
+   - Mark price
+   - Mid price
+   - Oracle price
+   - BBO bid
+   - BBO ask
+   - Spread (absolute and %)
+   - 24h change %
+   - Premium
+   - Funding
+   - Predicted funding (if backend sends it)
+   - Open interest
+   - OI change % (if backend computes it)
+   - 24h notional volume
+   - 24h base volume
+   - Recent trade count / activity proxy
+   - Order book bid depth
+   - Order book ask depth
+   - Bid/ask imbalance
+   - Impact bid px
+   - Impact ask px
+   - Distance mark to oracle %
+   - Distance mark to prev day %
+   - Volatility proxies from backend
+   - Momentum scores from backend
+   - Liquidity score
+   - Crowd / flow score
+   - Composite signal score
+   - Signal direction (bullish / bearish / neutral)
+   - Signal confidence
+   - Last update time
+
+   Advanced columns section:
+   - max leverage
+   - isolated only / margin mode
+   - szDecimals
+   - margin table id
+   - growth mode
+   - market status
+   - open interest cap flag
+   - dex name
+   - any backend-computed technical features
+   - any backend-computed microstructure features
+
+6. Row behavior:
+   - Clicking a row selects that asset
+   - Selected row populates details panel
+   - Double-click or action button can pin the asset
+   - Highlight rows whose score changed materially after Agent run
+   - Animate row moves when ranking changes after Agent run
+   - Green/red is okay but keep it tasteful and terminal-like, not clown casino
+
+7. Details panel for selected asset:
+   Show richer drill-down cards for the selected ticker:
+   - price summary
+   - funding / premium / oracle relationship
+   - order book snapshot metrics
+   - recent trades summary
+   - candle-derived momentum / volatility summary
+   - liquidity/depth summary
+   - market structure notes
+   - backend-provided agent rationale
+   - mini sparkline / recent trend line if available from backend
+   - recent score history if available
+
+8. Agent panel:
+   When user clicks Agent:
+   - show a ranked summary list like:
+     - strongest longs
+     - strongest shorts
+     - highest conviction dislocations
+     - illiquid / avoid
+   - show why each top-ranked coin moved in rank
+   - show the feature contribution summary from backend if provided
+   - include natural language rationale per top asset
+   - allow clicking a rationale item to jump to that asset row
+
+9. State management and data flow:
+   - Build clean types/interfaces for all screener rows and details payloads
+   - Separate:
+     - initial snapshot fetch
+     - incremental live updates
+     - agent rerank results
+     - filter/sort UI state
+   - Frontend must merge websocket updates into existing rows efficiently
+   - Preserve client-side selection, scroll, and pinned rows during updates
+   - Do not rebuild the whole table on every tick
+
+10. Networking assumptions:
+   Assume backend exposes endpoints like:
+   - GET /api/hyperliquid/screener/snapshot
+   - GET /api/hyperliquid/screener/filters
+   - GET /api/hyperliquid/screener/asset/{coin}
+   - WS  /api/hyperliquid/screener/ws
+   - POST /api/hyperliquid/screener/agent-rank
+   But adapt these names to the actual frontend conventions if needed.
+   Centralize the API client so backend URL/base path is configurable via env.
+
+11. Performance requirements:
+   - Must handle a lot of rows and frequent updates smoothly
+   - Use virtualization for the grid if needed
+   - Debounce search/filter inputs where appropriate
+   - Minimize rerenders
+   - Do not block the UI while agent ranking is running
+
+12. Design requirements:
+   - Make it look like a premium trading terminal / quant dashboard inside Caelyn AI
+   - Dark theme first
+   - Dense but readable
+   - Strong hierarchy
+   - Clean typography
+   - Good spacing
+   - Sticky controls
+   - Strong hover/selection states
+   - Responsive enough for laptop screens
+   - Use cards/panels consistent with the rest of the app
+   - This should look like one of the best pages in the product
+
+13. Empty / loading / error states:
+   - Skeleton loading for summary strip, table, and details panel
+   - Clear websocket disconnected / reconnecting banners
+   - Friendly error states with retry
+   - Last successful update should remain visible if partial updates fail
+
+14. Deliverables:
+   - Implement the new page and route
+   - Implement all components needed
+   - Implement typed models/interfaces for the incoming data
+   - Implement API client hooks/services
+   - Stub the backend payload shapes cleanly if needed, but keep them realistic and backend-ready
+   - Add comments showing the expected backend contract for each data structure
+   - Do not break existing pages
+
+15. Important constraint:
+   The frontend should be built to display a truly comprehensive Hyperliquid market screener and live agent reranking terminal. Think full dashboard, not just a list.
+
+At the end, give me:
+- a concise summary of what files were added/changed
+- the exact expected backend payload shapes/interfaces this page now requires
+- any env vars or config entries needed

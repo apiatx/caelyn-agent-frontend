@@ -1591,5 +1591,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // === Hyperliquid Screener (proxy to FastAPI backend) ===
+  const HL_URL  = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
+  const HL_KEY  = 'hippo_ak_7f3x9k2m4p8q1w5t';
+  const hlHdr   = () => ({ 'X-API-Key': HL_KEY, 'Content-Type': 'application/json' });
+
+  app.get('/api/hyperliquid/screener', async (req, res) => {
+    try {
+      const { market_type = 'all', limit = 200 } = req.query;
+      const r = await fetch(
+        `${HL_URL}/api/hyperliquid/screener/snapshot?market_type=${market_type}&limit=${limit}`,
+        { headers: hlHdr() }
+      );
+      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
+      res.json(await r.json());
+    } catch (e: any) {
+      res.status(500).json({ error: 'Failed to fetch Hyperliquid screener' });
+    }
+  });
+
+  app.get('/api/hyperliquid/asset/:coin', async (req, res) => {
+    try {
+      const r = await fetch(
+        `${HL_URL}/api/hyperliquid/screener/asset/${encodeURIComponent(req.params.coin)}`,
+        { headers: hlHdr() }
+      );
+      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
+      res.json(await r.json());
+    } catch (e: any) {
+      res.status(500).json({ error: 'Failed to fetch asset details' });
+    }
+  });
+
+  app.post('/api/hyperliquid/agent-rank', async (req, res) => {
+    try {
+      const controller = new AbortController();
+      const tid = setTimeout(() => controller.abort(), 60000);
+      const r = await fetch(`${HL_URL}/api/hyperliquid/screener/agent-rank`, {
+        method: 'POST',
+        headers: hlHdr(),
+        body: JSON.stringify(req.body),
+        signal: controller.signal,
+      });
+      clearTimeout(tid);
+      if (!r.ok) return res.status(r.status).json({ error: `Agent ${r.status}` });
+      res.json(await r.json());
+    } catch (e: any) {
+      res.status(500).json({ error: e?.name === 'AbortError' ? 'Agent timed out' : 'Agent rank failed' });
+    }
+  });
+
   return httpServer;
 }
