@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import StocksPortfolioPage from './stocks-portfolio';
 import { useQuery } from '@tanstack/react-query';
 import {
   ComposedChart, Line, Area, XAxis, YAxis, Tooltip as RCTooltip, ResponsiveContainer,
@@ -180,6 +181,7 @@ function SuggCard({ s }: { s: CTRiskSuggestion }) {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function CaelynTerminalPage() {
   const [perfPeriod, setPerfPeriod] = useState<'1D'|'5D'|'1M'|'6M'|'1Y'>('1Y');
+  const [view, setView] = useState<'terminal'|'dashboard'>('terminal');
 
   const { data, isLoading, isFetching } = useQuery<CaelynTerminalData>({
     queryKey: ['caelyn-terminal'],
@@ -232,34 +234,53 @@ export default function CaelynTerminalPage() {
             <div style={{ fontSize:13, fontWeight:800, letterSpacing:1.5, color:C.text }}>CAELYN TERMINAL</div>
             <div style={{ fontSize:8, color:C.dim, letterSpacing:2 }}>PERSONAL PORTFOLIO</div>
           </div>
+          {/* ── View Toggle ── */}
+          <div style={{ display:'flex', background:'#0d1623', borderRadius:5, padding:2, border:`1px solid ${C.border}`, marginLeft:8 }}>
+            {(['TERMINAL','DASHBOARD'] as const).map(v => {
+              const isActive = view === v.toLowerCase();
+              return (
+                <button key={v} onClick={() => setView(v.toLowerCase() as 'terminal'|'dashboard')} style={{ fontSize:9, fontWeight:800, padding:'3px 12px', borderRadius:4, cursor:'pointer', border:'none', background: isActive ? C.teal : 'transparent', color: isActive ? '#fff' : C.dim, letterSpacing:1, transition:'all 0.15s' }}>{v}</button>
+              );
+            })}
+          </div>
         </div>
 
-        <div style={{ display:'flex', alignItems:'center', gap:18 }}>
-          <div style={{ textAlign:'center', flexShrink:0 }}>
-            <div style={{ fontSize:16, fontWeight:900, color:C.text }}>{ph ? '—' : fmt$(p.value)}</div>
-            <div style={{ fontSize:9, color: ph ? C.dim : pctClr(p.change_today) }}>
-              {ph ? '— today' : `${sign(p.change_today)}${fmt$(p.change_today)} today`}
+        {view === 'terminal' ? (
+          <div style={{ display:'flex', alignItems:'center', gap:18 }}>
+            <div style={{ textAlign:'center', flexShrink:0 }}>
+              <div style={{ fontSize:16, fontWeight:900, color:C.text }}>{ph ? '—' : fmt$(p.value)}</div>
+              <div style={{ fontSize:9, color: ph ? C.dim : pctClr(p.change_today) }}>
+                {ph ? '— today' : `${sign(p.change_today)}${fmt$(p.change_today)} today`}
+              </div>
+            </div>
+            <div style={{ borderLeft:`1px solid ${C.border}`, paddingLeft:18, flexShrink:0 }}>
+              <div style={{ fontSize:7, color:C.dim, letterSpacing:2, marginBottom:3, textTransform:'uppercase' }}>Change</div>
+              <div style={{ display:'flex', gap:12 }}>
+                {(['1D','5D','1M','6M','1Y'] as const).map(k => (
+                  <div key={k} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:1 }}>
+                    <span style={{ fontSize:9, color:C.dim, letterSpacing:1 }}>{k}</span>
+                    <span style={{ fontSize:11, fontWeight:700, color: ph ? C.dim : pctClr(perfMap[k]) }}>{DPct(perfMap[k])}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div style={{ borderLeft:`1px solid ${C.border}`, paddingLeft:18, flexShrink:0 }}>
+              <div style={{ fontSize:9, color:C.dim, letterSpacing:1 }}>TOTAL RETURN</div>
+              <div style={{ fontSize:13, fontWeight:800, color: ph ? C.dim : pctClr(p.total_return_pct) }}>{DPct(p.total_return_pct)}</div>
+            </div>
+            <div style={{ borderLeft:`1px solid ${C.border}`, paddingLeft:18, flexShrink:0 }}>
+              <div style={{ fontSize:9, color:C.dim, letterSpacing:1 }}>SENTIMENT</div>
+              <div style={{ fontSize:11, fontWeight:700, color: ph ? C.dim : sentColor }}>{DS(p.sentiment)}</div>
+            </div>
+            <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
+              <span style={{ width:6, height:6, borderRadius:'50%', background:liveColor, boxShadow:`0 0 6px ${liveColor}`, display:'inline-block' }} />
+              <span style={{ fontSize:10, color:C.dim }}>{liveLabel}</span>
+              <span style={{ fontSize:10, color:mktColor, background:`${mktColor}18`, border:`1px solid ${mktColor}55`, borderRadius:3, padding:'1px 7px', fontWeight:700 }}>
+                MARKET: {ph ? '—' : p.market_status}
+              </span>
             </div>
           </div>
-          <div style={{ borderLeft:`1px solid ${C.border}`, paddingLeft:18, flexShrink:0 }}>
-            <div style={{ fontSize:7, color:C.dim, letterSpacing:2, marginBottom:3, textTransform:'uppercase' }}>Change</div>
-            <div style={{ display:'flex', gap:12 }}>
-              {(['1D','5D','1M','6M','1Y'] as const).map(k => (
-                <div key={k} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:1 }}>
-                  <span style={{ fontSize:9, color:C.dim, letterSpacing:1 }}>{k}</span>
-                  <span style={{ fontSize:11, fontWeight:700, color: ph ? C.dim : pctClr(perfMap[k]) }}>{DPct(perfMap[k])}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div style={{ borderLeft:`1px solid ${C.border}`, paddingLeft:18, flexShrink:0 }}>
-            <div style={{ fontSize:9, color:C.dim, letterSpacing:1 }}>TOTAL RETURN</div>
-            <div style={{ fontSize:13, fontWeight:800, color: ph ? C.dim : pctClr(p.total_return_pct) }}>{DPct(p.total_return_pct)}</div>
-          </div>
-          <div style={{ borderLeft:`1px solid ${C.border}`, paddingLeft:18, flexShrink:0 }}>
-            <div style={{ fontSize:9, color:C.dim, letterSpacing:1 }}>SENTIMENT</div>
-            <div style={{ fontSize:11, fontWeight:700, color: ph ? C.dim : sentColor }}>{DS(p.sentiment)}</div>
-          </div>
+        ) : (
           <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
             <span style={{ width:6, height:6, borderRadius:'50%', background:liveColor, boxShadow:`0 0 6px ${liveColor}`, display:'inline-block' }} />
             <span style={{ fontSize:10, color:C.dim }}>{liveLabel}</span>
@@ -267,8 +288,10 @@ export default function CaelynTerminalPage() {
               MARKET: {ph ? '—' : p.market_status}
             </span>
           </div>
-        </div>
+        )}
       </div>
+
+      {view === 'terminal' && (<>
 
       {/* ── TICKER TAPE ──────────────────────────────────────────────── */}
       <div style={{ background:'#07101a', borderBottom:`1px solid ${C.border}`, padding:'4px 0', display:'flex', alignItems:'center', overflowX:'auto', flexShrink:0, scrollbarWidth:'none' }}>
@@ -573,6 +596,15 @@ export default function CaelynTerminalPage() {
         </div>
         <style>{`@keyframes ctscroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}`}</style>
       </div>
+
+      </>)}
+
+      {/* ── DASHBOARD VIEW ───────────────────────────────────────────── */}
+      {view === 'dashboard' && (
+        <div style={{ flex:1, overflow:'auto', background:'#050608' }}>
+          <StocksPortfolioPage />
+        </div>
+      )}
 
     </div>
   );
