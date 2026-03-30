@@ -288,28 +288,35 @@ export default function CaelynTerminalPage() {
       <div style={{ flex:1, display:'flex', flexDirection:'row', overflow:'hidden', minHeight:0 }}>
 
         {/* ── COL 1: Holdings + Earnings ──────────────────────────── */}
-        <div style={{ flex:'0 0 200px', borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column', overflow:'hidden', height:'100%' }}>
+        <div style={{ flex:'0 0 235px', borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column', overflow:'hidden', height:'100%' }}>
 
           {/* Holdings */}
           <div style={{ background:C.card, borderBottom:`1px solid ${C.border}`, display:'flex', flexDirection:'column', flex:'0 0 auto', maxHeight:'55%', overflow:'hidden' }}>
             <CardHdr label="Holdings" badge={posLabel} />
             <div style={{ overflowY:'auto' }}>
-              <table style={{ width:'100%', borderCollapse:'collapse', fontSize:10 }}>
+              <table style={{ width:'100%', borderCollapse:'collapse', fontSize:9, tableLayout:'fixed' }}>
+                <colgroup>
+                  <col style={{ width:'22%' }} />
+                  <col style={{ width:'22%' }} />
+                  <col style={{ width:'19%' }} />
+                  <col style={{ width:'19%' }} />
+                  <col style={{ width:'18%' }} />
+                </colgroup>
                 <thead>
                   <tr style={{ borderBottom:`1px solid ${C.border}`, position:'sticky', top:0, background:'#0d1623' }}>
                     {['TICKER','PRICE','CHG','CHG%','ALLOC'].map(h => (
-                      <th key={h} style={{ padding:'4px 5px', color:C.dim, fontWeight:600, textAlign:h==='TICKER'?'left':'right', fontSize:8, letterSpacing:0.5 }}>{h}</th>
+                      <th key={h} style={{ padding:'4px 3px', color:C.dim, fontWeight:600, textAlign:h==='TICKER'?'left':'right', fontSize:8, letterSpacing:0.3, overflow:'hidden' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {d.holdings.map((h, i) => (
                     <tr key={i} style={{ borderBottom:`1px solid ${C.dimLow}22` }}>
-                      <td style={{ padding:'4px 5px', color:C.teal, fontWeight:700 }}>{h.ticker}</td>
-                      <td style={{ padding:'4px 5px', textAlign:'right', color:C.text }}>{D$(h.price)}</td>
-                      <td style={{ padding:'4px 5px', textAlign:'right', color: ph ? C.dim : pctClr(h.change) }}>{ph ? '—' : `${sign(h.change)}${fmtN(h.change,2)}`}</td>
-                      <td style={{ padding:'4px 5px', textAlign:'right', color: ph ? C.dim : pctClr(h.change_pct) }}>{DPct(h.change_pct)}</td>
-                      <td style={{ padding:'4px 5px', textAlign:'right', color:C.purple }}>{ph ? '—' : `${fmtN(h.allocation_pct,1)}%`}</td>
+                      <td style={{ padding:'4px 3px', color:C.teal, fontWeight:700, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{h.ticker}</td>
+                      <td style={{ padding:'4px 3px', textAlign:'right', color:C.text, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{D$(h.price)}</td>
+                      <td style={{ padding:'4px 3px', textAlign:'right', color: ph ? C.dim : pctClr(h.change), overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{ph ? '—' : `${sign(h.change)}${fmtN(h.change,2)}`}</td>
+                      <td style={{ padding:'4px 3px', textAlign:'right', color: ph ? C.dim : pctClr(h.change_pct), overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{DPct(h.change_pct)}</td>
+                      <td style={{ padding:'4px 3px', textAlign:'right', color:C.purple, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{ph ? '—' : `${fmtN(h.allocation_pct,1)}%`}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -321,23 +328,31 @@ export default function CaelynTerminalPage() {
           <div style={{ background:C.card, flex:1, display:'flex', flexDirection:'column', overflow:'hidden' }}>
             <CardHdr label="Earnings Calendar" badge="Upcoming" />
             <div style={{ overflowY:'auto', flex:1 }}>
-              <table style={{ width:'100%', borderCollapse:'collapse', fontSize:9 }}>
+              <table style={{ width:'100%', borderCollapse:'collapse', fontSize:8, tableLayout:'fixed' }}>
+                <colgroup>
+                  <col style={{ width:'14%' }} />
+                  <col style={{ width:'22%' }} />
+                  <col style={{ width:'14%' }} />
+                  <col style={{ width:'14%' }} />
+                  <col style={{ width:'18%' }} />
+                  <col style={{ width:'18%' }} />
+                </colgroup>
                 <thead>
                   <tr style={{ borderBottom:`1px solid ${C.border}`, position:'sticky', top:0, background:'#0d1623' }}>
-                    {['TICKER','COMPANY','WTD','LAST','DATE','EST'].map(h => (
-                      <th key={h} style={{ padding:'3px 5px', color:C.dim, fontWeight:600, textAlign:h==='COMPANY'?'left':'right', fontSize:8 }}>{h}</th>
+                    {['TKR','NAME','WTD','LAST','DATE','EST'].map(h => (
+                      <th key={h} style={{ padding:'3px 3px', color:C.dim, fontWeight:600, textAlign:h==='NAME'?'left':'right', fontSize:7, letterSpacing:0.2 }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {d.earnings_calendar.map((e, i) => (
                     <tr key={i} style={{ borderBottom:`1px solid ${C.dimLow}22` }}>
-                      <td style={{ padding:'3px 5px', color:C.teal, fontWeight:700 }}>{e.ticker}</td>
-                      <td style={{ padding:'3px 5px', color:C.dim, maxWidth:55, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{e.company}</td>
-                      <td style={{ padding:'3px 5px', textAlign:'right', color:C.text }}>{e.wtd}</td>
-                      <td style={{ padding:'3px 5px', textAlign:'right', color:C.dim }}>{ph ? '—' : e.last_eps}</td>
-                      <td style={{ padding:'3px 5px', textAlign:'right', color:C.amber }}>{e.next_date}</td>
-                      <td style={{ padding:'3px 5px', textAlign:'right', color:C.dim }}>{ph ? '—' : e.est_eps}</td>
+                      <td style={{ padding:'3px 3px', color:C.teal, fontWeight:700, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{e.ticker}</td>
+                      <td style={{ padding:'3px 3px', color:C.dim, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{e.company}</td>
+                      <td style={{ padding:'3px 3px', textAlign:'right', color: ph ? C.dim : pctClr(parseFloat(e.wtd)), overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{e.wtd}</td>
+                      <td style={{ padding:'3px 3px', textAlign:'right', color:C.dim, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{ph ? '—' : e.last_eps}</td>
+                      <td style={{ padding:'3px 3px', textAlign:'right', color:C.amber, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{e.next_date}</td>
+                      <td style={{ padding:'3px 3px', textAlign:'right', color:C.dim, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{ph ? '—' : e.est_eps}</td>
                     </tr>
                   ))}
                 </tbody>
