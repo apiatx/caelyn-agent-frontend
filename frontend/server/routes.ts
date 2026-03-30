@@ -1571,5 +1571,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/caelyn-terminal', async (req, res) => {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 25000);
+      const response = await fetch(`${AGENT_URL}/api/caelyn-terminal`, {
+        headers: { 'X-API-Key': AGENT_KEY },
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      if (!response.ok) {
+        const text = await response.text();
+        return res.status(response.status).json({ error: `Backend returned ${response.status}`, detail: text.slice(0, 200) });
+      }
+      res.json(await response.json());
+    } catch (error: any) {
+      console.error('Caelyn Terminal proxy error:', error);
+      res.status(500).json({ error: error?.name === 'AbortError' ? 'Request timed out' : 'Failed to fetch Caelyn Terminal data' });
+    }
+  });
+
   return httpServer;
 }

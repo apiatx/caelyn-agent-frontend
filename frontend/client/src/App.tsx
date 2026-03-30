@@ -53,6 +53,7 @@ import PredictPage from "@/pages/predict";
 import NotifAIPage from "@/pages/notifai";
 import OptionsPage from "@/pages/options";
 import MacroTerminalPage from "@/pages/macro-terminal";
+import CaelynTerminalPage from "@/pages/caelyn-terminal-page";
 import AboutPage from "@/pages/about";
 
 import NotFound from "@/pages/not-found";
@@ -151,6 +152,7 @@ function Router() {
       <Route path="/app/stocks/sectors" component={StocksSectorsPage} />
       <Route path="/app/stocks/fundamentals" component={StocksFundamentalsPage} />
       <Route path="/app/stocks/portfolio" component={StocksPortfolioPage} />
+      <Route path="/app/caelyn-terminal" component={CaelynTerminalPage} />
       <Route path="/app/crypto-stonks" component={CryptoStonks} />
       <Route path="/app/commodities" component={CommoditiesPage} />
       <Route path="/commodities" component={CommoditiesPage} />
