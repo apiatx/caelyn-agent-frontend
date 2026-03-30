@@ -330,17 +330,16 @@ export default function CaelynTerminalPage() {
             <div style={{ overflowY:'auto', flex:1 }}>
               <table style={{ width:'100%', borderCollapse:'collapse', fontSize:8, tableLayout:'fixed' }}>
                 <colgroup>
-                  <col style={{ width:'14%' }} />
                   <col style={{ width:'22%' }} />
-                  <col style={{ width:'14%' }} />
-                  <col style={{ width:'14%' }} />
+                  <col style={{ width:'20%' }} />
                   <col style={{ width:'18%' }} />
+                  <col style={{ width:'22%' }} />
                   <col style={{ width:'18%' }} />
                 </colgroup>
                 <thead>
                   <tr style={{ borderBottom:`1px solid ${C.border}`, position:'sticky', top:0, background:'#0d1623' }}>
-                    {['TKR','NAME','WTD','LAST','DATE','EST'].map(h => (
-                      <th key={h} style={{ padding:'3px 3px', color:C.dim, fontWeight:600, textAlign:h==='NAME'?'left':'right', fontSize:7, letterSpacing:0.2 }}>{h}</th>
+                    {['TICKER','WTD','LAST','DATE','EST'].map(h => (
+                      <th key={h} style={{ padding:'3px 3px', color:C.dim, fontWeight:600, textAlign:h==='TICKER'?'left':'right', fontSize:7, letterSpacing:0.2 }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -348,7 +347,6 @@ export default function CaelynTerminalPage() {
                   {d.earnings_calendar.map((e, i) => (
                     <tr key={i} style={{ borderBottom:`1px solid ${C.dimLow}22` }}>
                       <td style={{ padding:'3px 3px', color:C.teal, fontWeight:700, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{e.ticker}</td>
-                      <td style={{ padding:'3px 3px', color:C.dim, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{e.company}</td>
                       <td style={{ padding:'3px 3px', textAlign:'right', color: ph ? C.dim : pctClr(parseFloat(e.wtd)), overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{e.wtd}</td>
                       <td style={{ padding:'3px 3px', textAlign:'right', color:C.dim, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{ph ? '—' : e.last_eps}</td>
                       <td style={{ padding:'3px 3px', textAlign:'right', color:C.amber, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{e.next_date}</td>
