@@ -1,0 +1,72 @@
+Let me explore the existing codebase to understand the holdings endpoint and data sources before building anything:
+
+Let me look at the holdings endpoint, the portfolio data, and how live quotes are fetched:
+
+Let me look at the existing Tradier provider and how historical data and quotes are fetched:
+
+Let me look at Tradier's get_quotes and get_history, and also the auth method pattern:
+
+Let me look at the Tradier history method and the FMP earnings calendar:
+
+Let me check FMP's earnings capabilities and the data_service initialization:
+
+I have everything I need. Now I'll build the provider and wire up the endpoint. The key insight: one batch Tradier call for all holding quotes + tape tickers, parallel history calls (cached 1h), one market-wide Finnhub earnings call, and one FMP news call.
+
+Good, the provider is created. Now let me add the endpoint to main.py. First let me find where to insert it cleanly:
+
+The max drawdown calculation in _build_risk has an inefficient nested loop. Let me optimize it before restarting:
+
+Now restart and test:
+
+App is running. Let me test the endpoint:
+
+The portfolio returned empty - let me check which portfolio file the endpoint is reading:
+
+The user-specific file doesn't exist yet — only the legacy file does. Let me update _load_holdings to fall back to the legacy file, matching the existing pattern in the codebase:
+
+The cache holds the empty result for 90 seconds. Let me bump the cache key and restart so the fix takes effect cleanly:
+
+The app is already running (no port conflict). Let me test directly — the new cache key means no stale result:
+
+The app needs a restart to pick up the code changes (Python caches modules after first import):
+
+The endpoint is working. Let me fix the news filter — currently if FMP returns empty symbol items (general market news) they'd pass through but there might be an issue with how I'm filtering:
+
+FMP's API key doesn't cover news, so news comes up empty. Let me switch news to use Finnhub's get_company_news (which is working throughout the codebase). Also let me also check the earnings status:
+
+Good — Finnhub returns news with a Unix datetime field. Let me update the news fetcher and builder to use Finnhub instead of FMP:
+
+Now update _build_news to handle the Finnhub format (Unix datetime + _sym field):
+
+Bump the cache key one more time to ensure the updated code runs fresh:
+
+App needs a full restart to reload the updated module:
+
+Excellent — everything is live and computing correctly. Let me do one final full schema validation against the spec:
+
+All 14 top-level fields present. All 12 portfolio sub-fields populated with live data. Performance chart normalized to 0% at start. Correlation matrix is square with 1.0 diagonal. Let me update the docs:
+
+The /api/caelyn-terminal endpoint is complete and fully tested. Here's what was built:
+
+New file: backend/data/caelyn_terminal.py — a self-contained CaelynTerminalProvider that orchestrates all data fetching and computation.
+
+New endpoint: GET /api/caelyn-terminal (with X-API-Key auth matching the rest of the API) — wired in main.py just before the portfolio events endpoint.
+
+What it computes with live data:
+
+Field	Source
+Portfolio value, change, total return	Tradier batch quotes
+Perf 1d/5d/1m/6m/1y	Tradier 400-day daily history
+Holdings with allocation %	Tradier quotes × shares on file
+Performance chart (normalized to 0%)	Portfolio + SPY history, 8 sampled points
+Asset allocation with colors	Ticker → class taxonomy (US/Intl/EM/Fixed/Stock)
+Correlation matrix (top 5 holdings)	Daily returns from history, NxN symmetric
+Risk metrics (vol, drawdown, beta, Sharpe, Sortino)	Computed from rolling daily returns
+Per-holding annualized volatility	Tradier history
+Rule-based risk suggestions	Concentration, fixed income, EM, beta
+Top movers (2 gainers / 2 losers)	Today's quotes with 52W range
+Ticker tape	Tradier: SPY, QQQ, IWM, GLD, DIA
+News ticker	Finnhub company news for top 4 holdings
+Earnings calendar	Finnhub market-wide calendar filtered to holdings
+Market status	Eastern time clock (no API call)
+Confirmed live with your current test holdings (NVDA + AAPL): $33,256 portfolio, -1.76% today, all 14 top-level fields present, schema matches the spec exactly.

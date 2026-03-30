@@ -14,30 +14,31 @@ const C = {
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-interface CTHolding { ticker: string; price: number; change: number; change_pct: number; allocation_pct: number; }
-interface CTChartPoint { date: string; portfolio: number; sp500: number; }
-interface CTAllocationItem { label: string; pct: number; color: string; }
-interface CTCorrelationMatrix { tickers: string[]; values: number[][]; }
+type N = number | null | undefined;
+interface CTHolding { ticker: string; price: N; change: N; change_pct: N; allocation_pct: N; }
+interface CTChartPoint { date: string; portfolio: N; sp500: N; }
+interface CTAllocationItem { label: string; pct: N; color: string; }
+interface CTCorrelationMatrix { tickers: string[]; values: (N)[][]; }
 interface CTRiskMetrics {
-  weighted_volatility: number; max_drawdown: number;
-  top_concentration: number; top_concentration_label: string;
-  portfolio_beta: number; sharpe_ratio: number; sortino_ratio: number;
+  weighted_volatility: N; max_drawdown: N;
+  top_concentration: N; top_concentration_label: string;
+  portfolio_beta: N; sharpe_ratio: N; sortino_ratio: N;
 }
-interface CTVolatilityItem { ticker: string; vol: number; }
-interface CTRiskSuggestion { level: 'RISK' | 'WARN' | 'INFO'; title: string; body: string; }
-interface CTMover { ticker: string; change_pct: number; price: number; w52_low: number; w52_high: number; }
-interface CTEarningsItem { ticker: string; company: string; wtd: string; last_eps: number; next_date: string; est_eps: number; }
+interface CTVolatilityItem { ticker: string; vol: N; }
+interface CTRiskSuggestion { level: string; title: string; body: string; }
+interface CTMover { ticker: string; change_pct: N; price: N; w52_low: N; w52_high: N; }
+interface CTEarningsItem { ticker: string; company: string; wtd: string; last_eps: N; next_date: string; est_eps: N; }
 interface CTNewsItem { symbol: string; headline: string; time_ago: string; }
-interface CTTickerItem { symbol: string; price: number; change_pct: number; }
+interface CTTickerItem { symbol: string; price: N; change_pct: N; }
 interface CaelynTerminalData {
   is_placeholder?: boolean;
   portfolio: {
-    value: number; change_today: number; change_pct_today: number;
-    perf_1d: number; perf_5d: number; perf_1m: number; perf_6m: number; perf_1y: number;
-    total_return_pct: number; total_return_value: number;
+    value: N; change_today: N; change_pct_today: N;
+    perf_1d: N; perf_5d: N; perf_1m: N; perf_6m: N; perf_1y: N;
+    total_return_pct: N; total_return_value: N;
     sentiment: string; market_status: string;
   };
-  positions_count: number;
+  positions_count: N;
   holdings: CTHolding[];
   performance_chart: CTChartPoint[];
   asset_allocation: CTAllocationItem[];
@@ -117,18 +118,22 @@ const PLACEHOLDER: CaelynTerminalData = {
 };
 
 // ─── Format helpers ───────────────────────────────────────────────────────────
-const fmt$   = (n: number) => '$' + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const fmtN   = (n: number, d = 2) => n.toFixed(d);
-const sign   = (n: number) => n >= 0 ? '+' : '';
-const pctClr = (n: number) => n >= 0 ? C.green : C.red;
+const coerce = (n: N): number => (n == null || !isFinite(n as number)) ? 0 : (n as number);
+const fmt$   = (n: N) => '$' + Math.abs(coerce(n)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmtN   = (n: N, d = 2) => coerce(n).toFixed(d);
+const sign   = (n: N) => coerce(n) >= 0 ? '+' : '';
+const pctClr = (n: N) => coerce(n) >= 0 ? C.green : C.red;
+const isNull = (n: N) => n == null;
 
-function corrBg(v: number): string {
-  if (v >= 0.8) return '#0c3b2e'; if (v >= 0.5) return '#0a3328'; if (v >= 0.2) return '#0d2b22';
-  if (v >= -0.2) return '#151f2e'; if (v >= -0.5) return '#331212'; return '#4a1010';
+function corrBg(v: N): string {
+  const n = coerce(v);
+  if (n >= 0.8) return '#0c3b2e'; if (n >= 0.5) return '#0a3328'; if (n >= 0.2) return '#0d2b22';
+  if (n >= -0.2) return '#151f2e'; if (n >= -0.5) return '#331212'; return '#4a1010';
 }
-function corrTxt(v: number): string {
-  if (v >= 0.5) return '#4ade80'; if (v >= 0.2) return '#86efac';
-  if (v >= -0.2) return C.dim; if (v >= -0.5) return '#fca5a5'; return '#f87171';
+function corrTxt(v: N): string {
+  const n = coerce(v);
+  if (n >= 0.5) return '#4ade80'; if (n >= 0.2) return '#86efac';
+  if (n >= -0.2) return C.dim; if (n >= -0.5) return '#fca5a5'; return '#f87171';
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -189,16 +194,16 @@ export default function CaelynTerminalPage() {
   const cm  = d.correlation_matrix;
 
   // Placeholder-aware formatters
-  const D$   = (n: number) => ph ? '—' : fmt$(n);
-  const DN   = (n: number, dec = 2) => ph ? '—' : fmtN(n, dec);
-  const DPct = (n: number, dec = 2) => ph ? '—' : `${sign(n)}${fmtN(n, dec)}%`;
-  const DS   = (s: string) => (ph && s === '—') ? '—' : s;
+  const D$   = (n: N) => (ph || isNull(n)) ? '—' : fmt$(n);
+  const DN   = (n: N, dec = 2) => (ph || isNull(n)) ? '—' : fmtN(n, dec);
+  const DPct = (n: N, dec = 2) => (ph || isNull(n)) ? '—' : `${sign(n)}${fmtN(n, dec)}%`;
+  const DS   = (s: string) => s === '—' ? '—' : s;
 
   const sentColor = p.sentiment === 'BULLISH' ? C.green : p.sentiment === 'BEARISH' ? C.red : C.amber;
   const mktColor  = p.market_status === 'OPEN' ? C.green : p.market_status === 'PRE-MARKET' ? C.amber : C.red;
-  const perfMap: Record<string, number> = { '1D':p.perf_1d,'5D':p.perf_5d,'1M':p.perf_1m,'6M':p.perf_6m,'1Y':p.perf_1y };
+  const perfMap: Record<string, N> = { '1D':p.perf_1d,'5D':p.perf_5d,'1M':p.perf_1m,'6M':p.perf_6m,'1Y':p.perf_1y };
 
-  const posLabel  = ph ? '— Positions' : `${d.positions_count} Positions`;
+  const posLabel  = (ph || isNull(d.positions_count)) ? '— Positions' : `${d.positions_count} Positions`;
   const liveColor = (isLoading || isFetching) ? C.amber : ph ? C.red : C.green;
   const liveLabel = (isLoading || isFetching) ? 'CONNECTING' : ph ? 'OFFLINE' : 'LIVE';
 
