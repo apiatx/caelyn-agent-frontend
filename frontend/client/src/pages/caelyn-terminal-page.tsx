@@ -229,10 +229,9 @@ export default function CaelynTerminalPage() {
       {/* ── HEADER ─────────────────────────────────────────────────────── */}
       <div style={{ background:'#060b14', borderBottom:`1px solid ${C.border}`, padding:'0 14px', height:46, display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0, gap:12 }}>
         <div style={{ display:'flex', alignItems:'center', gap:10, flexShrink:0 }}>
-          <div style={{ width:28, height:28, borderRadius:5, background:`linear-gradient(135deg, ${C.teal}, #0369a1)`, display:'flex', alignItems:'center', justifyContent:'center', fontWeight:900, fontSize:11, color:'#fff', letterSpacing:0.5 }}>CT</div>
+          <div style={{ width:28, height:28, borderRadius:5, background:`linear-gradient(135deg, ${C.teal}, #0369a1)`, display:'flex', alignItems:'center', justifyContent:'center', fontWeight:900, fontSize:11, color:'#fff', letterSpacing:0.5 }}>{view === 'terminal' ? 'PT' : 'PD'}</div>
           <div>
-            <div style={{ fontSize:13, fontWeight:800, letterSpacing:1.5, color:C.text }}>CAELYN TERMINAL</div>
-            <div style={{ fontSize:8, color:C.dim, letterSpacing:2 }}>PERSONAL PORTFOLIO</div>
+            <div style={{ fontSize:13, fontWeight:800, letterSpacing:1.5, color:C.text }}>{view === 'terminal' ? 'PORTFOLIO TERMINAL' : 'PORTFOLIO DASHBOARD'}</div>
           </div>
           {/* ── View Toggle ── */}
           <div style={{ display:'flex', background:'#0d1623', borderRadius:5, padding:2, border:`1px solid ${C.border}`, marginLeft:8 }}>

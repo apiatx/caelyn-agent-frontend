@@ -73,15 +73,9 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
     },
     {
       id: 'caelyn-terminal',
-      label: 'Caelyn Terminal',
+      label: 'Portfolio',
       icon: <Monitor className="w-4 h-4" />,
       path: '/app/caelyn-terminal'
-    },
-    {
-      id: 'stocks-portfolio',
-      label: 'Portfolio',
-      icon: <Wallet className="w-4 h-4" />,
-      path: '/app/stocks/portfolio'
     },
     {
       id: 'crypto-stocks',

@@ -24,7 +24,6 @@ import SUIPage from "@/pages/sui";
 import CaelynAIPage from "@/pages/hippo-ai";
 import CryptoStocks from "@/pages/crypto-stocks";
 import StocksSectorsPage from "@/pages/stocks-sectors";
-import StocksPortfolioPage from "@/pages/stocks-portfolio";
 import StocksFundamentalsPage from "@/pages/stocks-fundamentals";
 import StocksScreeningPage from "@/pages/stocks-screening";
 import StocksEarningsCalendarPage from "@/pages/stocks-earnings-calendar";
@@ -151,7 +150,6 @@ function Router() {
       <Route path="/app/stocks/dashboard"><Redirect to="/app/macro-terminal" /></Route>
       <Route path="/app/stocks/sectors" component={StocksSectorsPage} />
       <Route path="/app/stocks/fundamentals" component={StocksFundamentalsPage} />
-      <Route path="/app/stocks/portfolio" component={StocksPortfolioPage} />
       <Route path="/app/caelyn-terminal" component={CaelynTerminalPage} />
       <Route path="/app/crypto-stonks" component={CryptoStonks} />
       <Route path="/app/commodities" component={CommoditiesPage} />
