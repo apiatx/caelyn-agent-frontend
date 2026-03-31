@@ -404,7 +404,6 @@ function SectorPerformanceTable({
               <Th label="7D" k="change_7d" /><Th label="30D" k="change_30d" />
               <Th label="YTD" k="change_ytd" /><Th label="1Y" k="change_1y" />
               <Th label="Score" k="rotation_score" /><Th label="Trend" /><Th label="Status" />
-              <Th label="Chart" />
             </tr>
           </thead>
           <tbody>
@@ -417,8 +416,8 @@ function SectorPerformanceTable({
               const spkPos    = (row.change_7d ?? 0) >= 0;
               return (
                 <React.Fragment key={row.ticker}>
-                  <tr onClick={() => onSelectTicker(row.ticker)}
-                    className={`border-b border-white/[0.03] cursor-pointer transition-colors ${sel ? "bg-white/[0.06]" : "hover:bg-white/[0.03]"}`}>
+                  <tr onClick={() => { onSelectTicker(row.ticker); toggleExpand(row.ticker); }}
+                    className={`border-b border-white/[0.03] cursor-pointer transition-colors ${expanded ? "bg-white/[0.08]" : sel ? "bg-white/[0.06]" : "hover:bg-white/[0.03]"}`}>
                     <td className="px-3 py-2.5">
                       {row.relative_strength_rank != null
                         ? <span className="text-xs text-gray-500 font-mono">#{row.relative_strength_rank}</span>
@@ -453,18 +452,10 @@ function SectorPerformanceTable({
                         ? <Badge className={`border text-[10px] px-1.5 py-0 ${tagCls}`}>{row.regime_tag}</Badge>
                         : <span className="text-gray-600 text-xs">—</span>}
                     </td>
-                    <td className="px-3 py-2.5">
-                      <button
-                        onClick={e => { e.stopPropagation(); toggleExpand(row.ticker); }}
-                        className={`flex items-center justify-center w-6 h-6 rounded transition-colors ${expanded ? "bg-teal-500/20 text-teal-400" : "bg-white/5 text-gray-500 hover:text-gray-300"}`}
-                        title={expanded ? "Collapse chart" : "Expand chart"}>
-                        {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                      </button>
-                    </td>
                   </tr>
                   {expanded && (
                     <tr key={`${row.ticker}-chart`} className="bg-black/30">
-                      <td colSpan={13} className="px-4 py-3">
+                      <td colSpan={12} className="px-4 py-3">
                         <div className="flex items-center gap-2 mb-2">
                           <div className="w-2 h-2 rounded-full" style={{ background: color }} />
                           <span className="text-xs font-mono font-bold text-white">{row.ticker}</span>
@@ -478,7 +469,7 @@ function SectorPerformanceTable({
               );
             })}
             {sorted.length === 0 && (
-              <tr><td colSpan={13} className="px-3 py-8 text-center text-gray-500 text-sm">No sector data available</td></tr>
+              <tr><td colSpan={12} className="px-3 py-8 text-center text-gray-500 text-sm">No sector data available</td></tr>
             )}
           </tbody>
         </table>
