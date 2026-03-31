@@ -66,6 +66,12 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
       path: '/app/macro-terminal'
     },
     {
+      id: 'stocks-sectors',
+      label: 'Sector Rotation',
+      icon: <Layers className="w-4 h-4" />,
+      path: '/app/stocks/sectors'
+    },
+    {
       id: 'notifai',
       label: 'NotifAI',
       icon: <Newspaper className="w-4 h-4" />,
@@ -105,12 +111,6 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
           label: 'Options Flow',
           icon: <Zap className="w-4 h-4" />,
           path: '/app/options'
-        },
-        {
-          id: 'stocks-sectors',
-          label: 'Sectors + ETFs',
-          icon: <Layers className="w-4 h-4" />,
-          path: '/app/stocks/sectors'
         },
         {
           id: 'stocks-fundamentals',
