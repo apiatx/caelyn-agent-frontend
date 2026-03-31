@@ -84,12 +84,6 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
       path: '/app/caelyn-terminal'
     },
     {
-      id: 'hyperliquid-screener',
-      label: 'HL Screener',
-      icon: <Activity className="w-4 h-4" />,
-      path: '/app/hyperliquid-screener'
-    },
-    {
       id: 'crypto-stocks',
       label: 'Stocks',
       icon: <TrendingUp className="w-4 h-4" />,
@@ -142,6 +136,12 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
           label: 'Screening',
           icon: <TrendingUp className="w-4 h-4" />,
           path: '/app/onchain/analytics'
+        },
+        {
+          id: 'hyperliquid-screener',
+          label: 'HL Screener',
+          icon: <Activity className="w-4 h-4" />,
+          path: '/app/hyperliquid-screener'
         },
         {
           id: 'onchain-analyze',
