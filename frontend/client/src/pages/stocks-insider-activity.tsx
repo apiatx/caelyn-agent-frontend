@@ -23,10 +23,17 @@ interface InsiderTransaction {
   total_value:      number | null;
   pct_change_since: number | null;
   cluster_size:     number | null;
+  cluster_type:     string | null;
   context_tags:     string[];
   score:            number;
   pct_of_holdings:  number | null;
   post_tx_holdings: number | null;
+}
+interface ClusterMember {
+  insider_name:     string;
+  insider_role:     string;
+  transaction_type: string;
+  total_value:      number | null;
 }
 interface InsiderStats {
   total_transactions?: number;
@@ -56,11 +63,17 @@ interface RecentTx {
   score:            number;
 }
 interface InsiderDetail extends InsiderTransaction {
-  return_30d:     number | null;
-  return_90d:     number | null;
-  vs_52w_high:    number | null;
-  score_breakdown: ScoreBreakdown;
-  recent_transactions: RecentTx[];
+  return_30d:               number | null;
+  return_90d:               number | null;
+  vs_52w_high:              number | null;
+  score_breakdown:          ScoreBreakdown;
+  recent_transactions:      RecentTx[];
+  cluster_start_date?:      string | null;
+  cluster_end_date?:        string | null;
+  cluster_members?:         ClusterMember[];
+  date_spread_days?:        number | null;
+  role_diversity?:          number | null;
+  position_impact_variance?: string | null;
 }
 interface ApiResponse {
   transactions: InsiderTransaction[];
@@ -126,6 +139,36 @@ const clusterCls = (n: number | null) => {
   if (!n || n <= 2) return "bg-gray-500/20 text-gray-400";
   if (n <= 5)       return "bg-blue-500/20 text-blue-400";
   return "bg-purple-500/20 text-purple-400";
+};
+const CLUSTER_TYPE_LABEL: Record<string, string> = {
+  coordinated_buy:  "BUY",
+  coordinated_sell: "SELL",
+  lockup_expiry:    "LOCK",
+  mixed:            "MIX",
+};
+const CLUSTER_TYPE_TEXT_CLS: Record<string, string> = {
+  coordinated_buy:  "text-emerald-400",
+  coordinated_sell: "text-red-400",
+  lockup_expiry:    "text-gray-400",
+  mixed:            "text-amber-400",
+};
+const CLUSTER_TYPE_FULL: Record<string, string> = {
+  coordinated_buy:  "Coordinated Buy",
+  coordinated_sell: "Coordinated Sell",
+  lockup_expiry:    "Likely Lockup Expiry",
+  mixed:            "Mixed Activity",
+};
+const CLUSTER_TYPE_BADGE_CLS: Record<string, string> = {
+  coordinated_buy:  "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+  coordinated_sell: "bg-red-500/20 text-red-400 border-red-500/30",
+  lockup_expiry:    "bg-gray-500/20 text-gray-400 border-gray-500/30",
+  mixed:            "bg-amber-500/20 text-amber-400 border-amber-500/30",
+};
+const CLUSTER_PANEL_BORDER: Record<string, string> = {
+  coordinated_buy:  "border-emerald-500/30",
+  coordinated_sell: "border-red-500/30",
+  lockup_expiry:    "border-white/10",
+  mixed:            "border-amber-500/30",
 };
 
 const fmtTs = (s: string | null): string => {
@@ -194,6 +237,7 @@ function StatsBar({ stats, loading, onRefresh, refreshing }: {
 
 // ─── Quick Filters ────────────────────────────────────────────────────────────
 type QuickFilter = "all" | "high-buy" | "high-sell" | "clustered" | "large";
+type ClusterSubFilter = "all" | "coordinated_buy" | "coordinated_sell" | "lockup_expiry" | "mixed";
 const QUICK_FILTERS: { id: QuickFilter; label: string; icon: any; cls: string }[] = [
   { id: "all",       label: "All",                  icon: Filter,     cls: "border-white/10 text-gray-400 hover:text-white" },
   { id: "high-buy",  label: "High-Conviction Buys",  icon: TrendingUp, cls: "border-emerald-500/20 text-emerald-400" },
@@ -201,21 +245,48 @@ const QUICK_FILTERS: { id: QuickFilter; label: string; icon: any; cls: string }[
   { id: "clustered", label: "Clustered",             icon: Link2,      cls: "border-blue-500/20 text-blue-400" },
   { id: "large",     label: "Large Trades",          icon: Gem,        cls: "border-purple-500/20 text-purple-400" },
 ];
+const CLUSTER_SUB_FILTERS: { id: ClusterSubFilter; label: string; cls: string }[] = [
+  { id: "all",              label: "All Clusters",      cls: "border-white/10 text-gray-400" },
+  { id: "coordinated_buy",  label: "Coordinated Buys",  cls: "border-emerald-500/20 text-emerald-400" },
+  { id: "coordinated_sell", label: "Coordinated Sells", cls: "border-red-500/20 text-red-400" },
+  { id: "lockup_expiry",    label: "Lockup Expiry",     cls: "border-gray-500/20 text-gray-400" },
+  { id: "mixed",            label: "Mixed",             cls: "border-amber-500/20 text-amber-400" },
+];
 
-function QuickFilters({ active, onChange }: { active: QuickFilter; onChange: (f: QuickFilter) => void }) {
+function QuickFilters({
+  active, onChange, clusterSub, onClusterSub,
+}: {
+  active: QuickFilter; onChange: (f: QuickFilter) => void;
+  clusterSub: ClusterSubFilter; onClusterSub: (f: ClusterSubFilter) => void;
+}) {
   return (
-    <div className="flex flex-wrap gap-2">
-      {QUICK_FILTERS.map(f => {
-        const on = active === f.id;
-        const Icon = f.icon;
-        return (
-          <button key={f.id} onClick={() => onChange(f.id)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${on ? "bg-white/10 border-white/20 text-white" : `bg-transparent ${f.cls}`}`}>
-            <Icon className="w-3 h-3" />
-            {f.label}
-          </button>
-        );
-      })}
+    <div className="space-y-2">
+      <div className="flex flex-wrap gap-2">
+        {QUICK_FILTERS.map(f => {
+          const on = active === f.id;
+          const Icon = f.icon;
+          return (
+            <button key={f.id} onClick={() => onChange(f.id)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${on ? "bg-white/10 border-white/20 text-white" : `bg-transparent ${f.cls}`}`}>
+              <Icon className="w-3 h-3" />
+              {f.label}
+            </button>
+          );
+        })}
+      </div>
+      {active === "clustered" && (
+        <div className="flex flex-wrap gap-1.5 pl-1">
+          {CLUSTER_SUB_FILTERS.map(sf => {
+            const on = clusterSub === sf.id;
+            return (
+              <button key={sf.id} onClick={() => onClusterSub(sf.id)}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium border transition-all ${on ? "bg-white/10 border-white/20 text-white" : `bg-transparent ${sf.cls}`}`}>
+                {sf.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -387,9 +458,16 @@ function InsiderTable({
                 </td>
                 <td className="px-3 py-2.5 hidden xl:table-cell">
                   {row.cluster_size != null && (
-                    <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-[10px] font-bold ${clusterCls(row.cluster_size)}`}>
-                      {row.cluster_size}
-                    </span>
+                    <div className="flex flex-col items-center gap-0.5">
+                      <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-[10px] font-bold ${clusterCls(row.cluster_size)}`}>
+                        {row.cluster_size}
+                      </span>
+                      {row.cluster_type && CLUSTER_TYPE_LABEL[row.cluster_type] && (
+                        <span className={`text-[8px] font-bold leading-none ${CLUSTER_TYPE_TEXT_CLS[row.cluster_type] ?? "text-gray-400"}`}>
+                          {CLUSTER_TYPE_LABEL[row.cluster_type]}
+                        </span>
+                      )}
+                    </div>
                   )}
                 </td>
                 <td className="px-3 py-2.5 hidden xl:table-cell max-w-[200px]">
@@ -563,6 +641,62 @@ function DetailPanel({ accession, onClose }: { accession: string; onClose: () =>
               </div>
             )}
 
+            {/* Cluster Analysis */}
+            {(detail.cluster_size ?? 0) >= 2 && (
+              <div className={`border rounded-xl p-4 space-y-3 ${CLUSTER_PANEL_BORDER[detail.cluster_type ?? ""] ?? "border-white/10"}`}>
+                <div className="text-[10px] text-gray-500 uppercase tracking-wider">Cluster Analysis</div>
+                {detail.cluster_type && (
+                  <Badge className={`border text-[10px] px-2 py-0.5 ${CLUSTER_TYPE_BADGE_CLS[detail.cluster_type] ?? ""}`}>
+                    {CLUSTER_TYPE_FULL[detail.cluster_type] ?? detail.cluster_type}
+                  </Badge>
+                )}
+                {(detail.cluster_start_date || detail.cluster_end_date) && (
+                  <p className="text-[11px] text-gray-400">
+                    {detail.cluster_size} insiders active
+                    {detail.cluster_start_date && <> between <span className="text-white">{fmtDate(detail.cluster_start_date)}</span></>}
+                    {detail.cluster_end_date   && <> and <span className="text-white">{fmtDate(detail.cluster_end_date)}</span></>}
+                  </p>
+                )}
+                {(detail.cluster_members ?? []).length > 0 && (
+                  <div className="space-y-1">
+                    {detail.cluster_members!.map((m, i) => {
+                      const mt = normType(m.transaction_type);
+                      return (
+                        <div key={i} className="flex items-center gap-2 text-[10px] bg-white/[0.02] border border-white/[0.04] rounded-lg px-3 py-1.5">
+                          <span className="text-gray-300 font-medium flex-1 truncate">{m.insider_name}</span>
+                          <span className="text-gray-500 truncate max-w-[80px]">{m.insider_role}</span>
+                          <Badge className={`border text-[9px] px-1 py-0 flex-shrink-0 ${TYPE_BADGE[mt] ?? ""}`}>{mt}</Badge>
+                          <span className="font-mono text-gray-300 flex-shrink-0">{fmtVal(m.total_value)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                {detail.cluster_type === "coordinated_sell" && (
+                  <div className="grid grid-cols-3 gap-2 pt-1">
+                    {detail.date_spread_days != null && (
+                      <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-2 text-center">
+                        <div className="text-[9px] text-gray-600 uppercase tracking-wider mb-0.5">Date Spread</div>
+                        <div className="text-xs font-mono text-gray-300">{detail.date_spread_days}d</div>
+                      </div>
+                    )}
+                    {detail.role_diversity != null && (
+                      <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-2 text-center">
+                        <div className="text-[9px] text-gray-600 uppercase tracking-wider mb-0.5">Role Diversity</div>
+                        <div className="text-xs font-mono text-gray-300">{detail.role_diversity} roles</div>
+                      </div>
+                    )}
+                    {detail.position_impact_variance && (
+                      <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-2 text-center">
+                        <div className="text-[9px] text-gray-600 uppercase tracking-wider mb-0.5">Impact Var.</div>
+                        <div className="text-xs font-mono text-gray-300 capitalize">{detail.position_impact_variance}</div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Recent Activity */}
             {(detail.recent_transactions ?? []).length > 0 && (
               <div>
@@ -598,9 +732,10 @@ function DetailPanel({ accession, onClose }: { accession: string; onClose: () =>
 const DEFAULT_FILTERS: Filters = { search: "", type: "", sector: "", timeframe: "1m", min_score: "" };
 
 export default function InsiderActivityPage() {
-  const [filters,      setFilters]      = useState<Filters>(DEFAULT_FILTERS);
-  const [quickFilter,  setQuickFilter]  = useState<QuickFilter>("all");
-  const [sortKey,      setSortKey]      = useState<SortKey>("score");
+  const [filters,        setFilters]        = useState<Filters>(DEFAULT_FILTERS);
+  const [quickFilter,    setQuickFilter]    = useState<QuickFilter>("all");
+  const [clusterSubFilter, setClusterSubFilter] = useState<ClusterSubFilter>("all");
+  const [sortKey,        setSortKey]        = useState<SortKey>("score");
   const [sortDir,      setSortDir]      = useState<"asc" | "desc">("desc");
   const [offset,       setOffset]       = useState(0);
   const [selectedTx,   setSelectedTx]   = useState<InsiderTransaction | null>(null);
@@ -620,10 +755,13 @@ export default function InsiderActivityPage() {
     // Quick filter overrides
     if (quickFilter === "high-buy")  { p.type = "P"; p.min_score = "70"; }
     if (quickFilter === "high-sell") { p.type = "S"; p.min_score = "70"; }
-    if (quickFilter === "clustered") { p.min_cluster = "2"; }
+    if (quickFilter === "clustered") {
+      p.clustered_only = "true";
+      if (clusterSubFilter !== "all") p.cluster_type = clusterSubFilter;
+    }
     if (quickFilter === "large")     { p.min_value = "1000000"; }
     return new URLSearchParams(p).toString();
-  }, [filters, quickFilter, sortKey, sortDir, offset]);
+  }, [filters, quickFilter, clusterSubFilter, sortKey, sortDir, offset]);
 
   const { data: apiData, isLoading, isFetching } = useQuery<ApiResponse>({
     queryKey: ["insider-activity", qp],
@@ -682,6 +820,12 @@ export default function InsiderActivityPage() {
 
   const handleQuickFilter = (f: QuickFilter) => {
     setQuickFilter(f);
+    setClusterSubFilter("all");
+    setOffset(0);
+  };
+
+  const handleClusterSubFilter = (f: ClusterSubFilter) => {
+    setClusterSubFilter(f);
     setOffset(0);
   };
 
@@ -717,7 +861,7 @@ export default function InsiderActivityPage() {
 
       {/* Filters */}
       <GlassCard className="p-3 sm:p-4 space-y-3">
-        <QuickFilters active={quickFilter} onChange={handleQuickFilter} />
+        <QuickFilters active={quickFilter} onChange={handleQuickFilter} clusterSub={clusterSubFilter} onClusterSub={handleClusterSubFilter} />
         <FilterRow filters={filters} onChange={handleFilterChange} />
       </GlassCard>
 

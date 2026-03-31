@@ -1,0 +1,267 @@
+BUILD: Insider Activity Dashboard — Frontend Page
+
+Build a new page at /app/stocks/insider-activity that displays an "Insider Activity" dashboard. This dashboard shows SEC Form 4 insider trading data ranked by a "conviction score" that measures how unusual each transaction is.
+
+YOU ARE JUST DOING THE FRONTEND DESIGN. Do NOT fetch data yourself. Do NOT use any data API. Do NOT calculate scores. The backend handles ALL data fetching, scoring, and caching. You are a passthrough that displays data from the backend API.
+
+=== DESIGN REFERENCE ===
+
+This should look like the reference screenshots — a clean, professional data table with:
+- Light/white background (NOT dark terminal style)
+- Clean sans-serif font
+- Green for buys, red/coral for sells
+- Subtle row borders
+- Professional financial terminal aesthetic
+
+=== TOP SECTION: Summary Stats Bar ===
+
+A horizontal bar across the top with 6 stat badges, each in a rounded rectangle with subtle background:
+1. TOTAL TRANSACTIONS — icon: activity/chart icon, value: number formatted with commas (e.g., "32,291")
+2. BUYS — icon: trending-up, value: green number (e.g., "2,305")
+3. SALES — icon: trending-down, value: red/coral number (e.g., "29,986")
+4. AVG BUY SCORE — icon: gauge/meter, value: number with 1 decimal (e.g., "64.2")
+5. TOP BUY — icon: crown/star, value: ticker symbol in green (e.g., "TPL")
+6. TOP SELL — icon: alert/flag, value: ticker symbol in red (e.g., "CRWV")
+7. LAST REFRESH — icon: clock, value: date + time (e.g., "Mar 22, 10:51 AM")
+
+Also add a "Refresh" button in the top-right corner with a refresh icon.
+
+These values come from: GET /api/insider-activity/stats
+
+=== HEADER: Title + Status ===
+
+Left side:
+- Icon (chart/activity icon)
+- Title: "INSIDER ACTIVITY" in bold
+- Subtitle: "SEC FORM 4 FILINGS" in smaller gray text
+- Green dot + "LIVE" badge
+
+Right side:
+- Refresh button
+
+=== QUICK FILTERS BAR ===
+
+A row of pill/toggle buttons:
+- "All" (with filter icon, selected by default, shows all transaction types)
+- "High-Conviction Buys" (green dot icon, filters to buys with score >= 70)
+- "High-Conviction Sells" (red dot icon, filters to sells with score >= 70)
+- "Clustered" (link/chain icon, filters to transactions where cluster_size >= 2. When this filter is active, show a SECONDARY row of sub-filter pills below it:
+    - "All Clusters" (default)
+    - "Coordinated Buys" (green, filters cluster_type = "coordinated_buy") 
+    - "Coordinated Sells" (red, filters cluster_type = "coordinated_sell")
+    - "Lockup Expiry" (gray, filters cluster_type = "lockup_expiry")
+    - "Mixed" (amber, filters cluster_type = "mixed")
+  These sub-filters only appear when the "Clustered" main filter is active.)
+- "Large Trades" (diamond icon, filters to transactions where total_value >= 1,000,000)
+
+Only ONE can be active at a time. The active one gets a filled/highlighted background.
+
+=== FILTER DROPDOWNS ROW ===
+
+Below the quick filters, a row of dropdown selects:
+1. Search box: "Search ticker, company, insider..." — text input with search icon
+2. Transaction type dropdown: "All Types" / "Buys" / "Sales" / "Exercises" / "Gifts"
+3. Sector dropdown: "All Sectors" (populate with standard GICS sectors)
+4. Timeframe dropdown: "1 Week" / "1 Month" / "3 Months" / "6 Months"
+5. Score filter dropdown: "Any Score" / "80+" / "70+" / "60+" / "50+"
+6. A "Filtered:" label on the right showing if any filters are active
+
+=== MAIN DATA TABLE ===
+
+Columns (left to right):
+1. SCORE — The conviction score (0-100), displayed as a number with a small horizontal colored bar next to it:
+   - 80-100: green bar, green text
+   - 60-79: amber/yellow bar
+   - 40-59: gray bar  
+   - 0-39: light gray bar
+   The bar length is proportional to the score (100 = full width of the cell).
+
+2. TICKER — Stock symbol in bold monospace font, colored green for buys, red for sells. Clickable.
+
+3. COMPANY — Company name, truncated with "..." if too long
+
+4. INSIDER — Insider name, truncated with "..." if too long
+
+5. ROLE — Insider title (CEO, Director, 10% Owner, etc.), truncated
+
+6. DATE — Transaction date formatted as "Mon DD, YY" (e.g., "Mar 6, 26"). Sortable.
+
+7. TYPE — "Buy" or "Sale" or "Exercise" or "Gift" displayed as a colored pill/badge:
+   - Buy = green background, white text
+   - Sale = red/coral background, white text
+   - Exercise = blue background
+   - Gift = gray background
+
+8. SHARES — Number of shares, formatted with commas (e.g., "200,000"). Sortable.
+
+9. PRICE — Price per share in USD (e.g., "$18.42")
+
+10. VALUE — Total value, formatted with K/M suffix and colored:
+    - Green text for buys (e.g., "$3.7M")
+    - Red text for sells
+    Sortable.
+
+11. % CHG — Percentage change since the transaction date. Green for positive, red for negative (e.g., "+200.0%" in green, "-55.0%" in red). Sortable.
+
+12. CLUSTER — Number showing how many insiders filed for this company in a 14-day window. Display as a colored circle/badge with the number inside:
+    - 1-2: gray circle
+    - 3-5: blue circle
+    - 6+: purple circle
+    If cluster_type is available, show a small label BELOW the number:
+    - "coordinated_buy" → small green text "BUY" below the number
+    - "coordinated_sell" → small red text "SELL" below the number
+    - "lockup_expiry" → small gray text "LOCK" below the number
+    - "mixed" → small amber text "MIX" below the number
+    This way users can immediately see both the cluster SIZE and TYPE at a glance.
+
+13. CONTEXT — Tags displayed as small text labels separated by spaces. Tags include things like: "open-market sell", "11 insiders", "large trade", "C-suite", "major stake change"
+
+Column headers should be sortable (click to sort). Show a small up/down arrow next to the currently sorted column. Default sort: Score descending.
+
+Table rows should:
+- Have alternating very subtle background colors (white / very light gray)
+- Highlight on hover
+- Be clickable — clicking a row opens the detail side panel
+
+=== DETAIL SIDE PANEL (slides in from right when you click a row) ===
+
+A slide-out panel on the right side of the screen (about 400px wide) that shows details for the selected transaction. Include a close X button in the top-right.
+
+Panel contents (top to bottom):
+
+1. HEADER:
+   - Ticker in large bold text + Type badge (Buy/Sale) next to it
+   - Example: "GME" followed by green "Buy" pill
+
+2. CONVICTION SCORE:
+   - Label: "CONVICTION SCORE"
+   - Large number: "78" in big text
+   - "/ 100" in smaller gray text next to it
+   - Horizontal progress bar below, colored by score range (green/amber/red)
+
+3. TRANSACTION INFO (grid of label-value pairs):
+   - Company: "GameStop Corp."
+   - Insider: "Cohen Ryan"
+   - Role: "President, CEO and Chairman"
+   - Filed: "Jan 22, 26"
+   - Shares: "500,000"
+   - Price: "$21.60"
+   - Total Value: "$10.8M"
+   - Post-Tx Holdings: "38,347,842"
+   - % of Holdings: "1.3%"
+   - Cluster Size: "4"
+
+4. CONTEXT TAGS:
+   - Label: "CONTEXT TAGS"
+   - Row of pill/badge tags: "open-market buy", "4 insiders", "large trade", "C-suite"
+
+5. PRICE CONTEXT:
+   - Three mini stat boxes in a row:
+     - "30D RETURN" with value (or "—" if not available yet)
+     - "90D RETURN" with value (or "—")
+     - "VS 52W HIGH" with value (e.g., "-38.4%")
+
+6. SCORE BREAKDOWN:
+   - Label: "SCORE BREAKDOWN"
+   - Horizontal stacked bar chart showing each scoring factor:
+     - Size (15) — show actual score with a bar proportional to max
+     - Role (20) — same
+     - Type (10) — same
+     - Context (15) — same
+     - Cluster (15) — same (this is the most important factor — highlight it)
+     - Position (10) — same
+     - Track Record (10) — same
+     - Event (5) — same
+   - Each bar should be labeled with its name and weight
+   - Bars colored by how full they are (green if >70% filled, amber if 40-70%, gray if <40%)
+   - Show a small x-axis with numbers (0, 5, 10, 15, 20)
+
+7. CLUSTER ANALYSIS (only show this section if cluster_size >= 2):
+   - Label: "CLUSTER ANALYSIS"
+   - Cluster Type badge: Display the cluster_type as a colored pill:
+     - "coordinated_buy" → green pill reading "Coordinated Buy"
+     - "coordinated_sell" → red pill reading "Coordinated Sell"
+     - "lockup_expiry" → gray pill reading "Likely Lockup Expiry"
+     - "mixed" → amber pill reading "Mixed Activity"
+   - Cluster summary line: "{N} insiders active between {start_date} and {end_date}"
+   - Insiders list: Show each insider in the cluster as a small row:
+     - Name | Role | Buy/Sell badge | Value
+     - Example: "Cohen Ryan | CEO | Buy | $10.8M"
+   - If cluster_type is "coordinated_sell", show additional context:
+     - "Date spread: {N} days" (how staggered the sells were)
+     - "Role diversity: {N} distinct roles" 
+     - "Position impact variance: {low/medium/high}" based on stdev
+   - This section is the key differentiator of the dashboard — make it visually prominent with a subtle colored border (green border for buy clusters, red for sell clusters, gray for lockup)
+
+8. RECENT INSIDER ACTIVITY (for this company):
+   - Label: "RECENT {TICKER} INSIDER ACTIVITY"
+   - A mini table showing the last 5 transactions for this ticker:
+     - Columns: Type (Buy/Sale badge), Date, Insider Name, Value, Score
+   - Example rows:
+     - Buy | Jan 23, 26 | Cheng Lawrence | $114K | 67
+     - Buy | Jan 21, 26 | Attal Alain | $260K | 69
+
+=== DATA FETCHING ===
+
+The page should fetch data from these backend endpoints:
+
+1. Page load: GET /api/insider-activity?sort=score&order=desc&limit=50
+2. Stats bar: GET /api/insider-activity/stats
+3. When a row is clicked: GET /api/insider-activity/detail/{accession_number}
+4. When filters change: GET /api/insider-activity?type={type}&timeframe={timeframe}&min_score={score}&search={search}&sort={sort}&order={order}&clustered_only={bool}&cluster_type={cluster_type}&limit=50&offset={offset}
+5. Refresh button: POST /api/insider-activity/refresh
+
+=== PAGINATION ===
+
+At the bottom of the table, show:
+- "Showing 1-50 of 32,291 results"
+- Previous / Next buttons
+- Page number display
+
+Load 50 rows at a time. Use offset-based pagination with the API's offset parameter.
+
+=== STATE MANAGEMENT ===
+
+Use React state to manage:
+- Current filter selections (type, sector, timeframe, score, search query)
+- Sort column and direction
+- Selected transaction (for detail panel)
+- Loading state
+- Current page / offset
+- Stats data
+
+=== AUTO-REFRESH ===
+
+- Auto-refresh the data every 5 minutes (300 seconds)
+- Show a countdown or "last updated X seconds ago" near the LIVE badge
+- Don't auto-refresh if the user has the detail panel open (to avoid disrupting their view)
+
+=== RESPONSIVE BEHAVIOR ===
+
+- On smaller screens, hide the CONTEXT and CLUSTER columns
+- The detail side panel should overlay on mobile (full width)
+- The stats bar should wrap to 2 rows on mobile
+
+=== LOADING STATES ===
+
+- Show skeleton loading rows while data is being fetched
+- Show a spinner on the Refresh button while refresh is in progress
+- Show "No results found" message if filters return empty results
+
+=== ADD TO SIDEBAR ===
+
+Add "Insider Activity" to the sidebar navigation under the Stocks section:
+- Icon: Use an appropriate icon (like Activity, Eye, Users, or Shield from lucide-react)
+- Text: "Insider Activity"  
+- Route: /app/stocks/insider-activity
+- Add it near the other stock-related pages
+
+=== IMPORTANT NOTES ===
+
+- ALL data comes from the backend API. The frontend does ZERO calculations.
+- ALL scores are pre-calculated by the backend.
+- Do NOT try to call SEC EDGAR, Polygon, Finnhub, or any data API directly.
+- The frontend is a pure display/passthrough layer.
+- Format numbers nicely: commas for thousands, K/M suffix for large values, 2 decimal places for prices.
+- Format dates as "Mon DD, YY" (short month, day, 2-digit year).
+- Color coding: green = buy/positive, red = sell/negative, amber = caution, gray = neutral.
