@@ -61,7 +61,7 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
     },
     {
       id: 'macro-terminal',
-      label: 'Macro',
+      label: 'Macro Dashboard',
       icon: <ChartLine className="w-4 h-4" />,
       path: '/app/macro-terminal'
     },
