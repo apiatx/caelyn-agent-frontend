@@ -298,6 +298,40 @@ function RegimeSummaryHeader({ data, loading }: { data: DashboardData | undefine
   );
 }
 
+// ─── TradingView per-ticker chart (loads on demand) ──────────────────────────
+const TVTickerChart = memo(function TVTickerChart({ ticker }: { ticker: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!ref.current) return;
+    ref.current.innerHTML = "";
+    const script = document.createElement("script");
+    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
+    script.async = true;
+    script.innerHTML = JSON.stringify({
+      autosize: true,
+      symbol: `AMEX:${ticker}`,
+      interval: "D",
+      timezone: "Etc/UTC",
+      theme: "dark",
+      style: "1",
+      locale: "en",
+      enable_publishing: false,
+      hide_top_toolbar: false,
+      hide_legend: false,
+      save_image: false,
+      calendar: false,
+      support_host: "https://www.tradingview.com",
+    });
+    ref.current.appendChild(script);
+    return () => { if (ref.current) ref.current.innerHTML = ""; };
+  }, [ticker]);
+  return (
+    <div ref={ref} className="tradingview-widget-container w-full" style={{ height: 360 }}>
+      <div className="tradingview-widget-container__widget" style={{ height: "100%", width: "100%" }} />
+    </div>
+  );
+});
+
 // ─── B: Sector Performance Table ──────────────────────────────────────────────
 type SortKey = "ticker" | "price" | "change_1d" | "change_7d" | "change_30d" | "change_ytd" | "change_1y" | "rotation_score";
 
@@ -309,6 +343,11 @@ function SectorPerformanceTable({
 }) {
   const [sortKey, setSortKey] = useState<SortKey>("rotation_score");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [expandedTicker, setExpandedTicker] = useState<string | null>(null);
+
+  const toggleExpand = (ticker: string) => {
+    setExpandedTicker(prev => prev === ticker ? null : ticker);
+  };
 
   const handleSort = (key: SortKey) => {
     if (key === sortKey) setSortDir(d => d === "asc" ? "desc" : "asc");
@@ -363,57 +402,81 @@ function SectorPerformanceTable({
               <Th label="7D" k="change_7d" /><Th label="30D" k="change_30d" />
               <Th label="YTD" k="change_ytd" /><Th label="1Y" k="change_1y" />
               <Th label="Score" k="rotation_score" /><Th label="Trend" /><Th label="Status" />
+              <Th label="Chart" />
             </tr>
           </thead>
           <tbody>
             {sorted.map(row => {
-              const sel    = selectedTickers.has(row.ticker);
-              const color  = SECTOR_COLOR[row.ticker] ?? "#64748b";
-              const tagCls = row.regime_tag ? (TAG_STYLES[row.regime_tag] ?? "") : "";
+              const sel       = selectedTickers.has(row.ticker);
+              const expanded  = expandedTicker === row.ticker;
+              const color     = SECTOR_COLOR[row.ticker] ?? "#64748b";
+              const tagCls    = row.regime_tag ? (TAG_STYLES[row.regime_tag] ?? "") : "";
               const spkPrices = row.series?.["7d"]?.prices ?? [];
               const spkPos    = (row.change_7d ?? 0) >= 0;
               return (
-                <tr key={row.ticker} onClick={() => onSelectTicker(row.ticker)}
-                  className={`border-b border-white/[0.03] cursor-pointer transition-colors ${sel ? "bg-white/[0.06]" : "hover:bg-white/[0.03]"}`}>
-                  <td className="px-3 py-2.5">
-                    {row.relative_strength_rank != null
-                      ? <span className="text-xs text-gray-500 font-mono">#{row.relative_strength_rank}</span>
-                      : <span className="text-gray-600 text-xs">—</span>}
-                  </td>
-                  <td className="px-3 py-2.5">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: color }} />
-                      <span className="font-mono font-bold text-white text-sm">{row.ticker}</span>
-                    </div>
-                  </td>
-                  <td className="px-3 py-2.5 text-xs text-gray-400 max-w-[130px] truncate">{row.name}</td>
-                  <td className="px-3 py-2.5 text-sm font-mono text-white tabular-nums">{fmtPx(row.price)}</td>
-                  <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(row.change_1d)}`}>{fmtPct(row.change_1d)}</td>
-                  <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(row.change_7d)}`}>{fmtPct(row.change_7d)}</td>
-                  <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(row.change_30d)}`}>{fmtPct(row.change_30d)}</td>
-                  <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(row.change_ytd)}`}>{fmtPct(row.change_ytd)}</td>
-                  <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(row.change_1y)}`}>{fmtPct(row.change_1y)}</td>
-                  <td className="px-3 py-2.5">
-                    {row.rotation_score != null ? (
-                      <div className="flex items-center gap-2 min-w-[72px]">
-                        <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                          <div className="h-full rounded-full" style={{ width: `${row.rotation_score}%`, background: color }} />
-                        </div>
-                        <span className="text-xs text-gray-400 tabular-nums">{row.rotation_score.toFixed(0)}</span>
+                <>
+                  <tr key={row.ticker} onClick={() => onSelectTicker(row.ticker)}
+                    className={`border-b border-white/[0.03] cursor-pointer transition-colors ${sel ? "bg-white/[0.06]" : "hover:bg-white/[0.03]"}`}>
+                    <td className="px-3 py-2.5">
+                      {row.relative_strength_rank != null
+                        ? <span className="text-xs text-gray-500 font-mono">#{row.relative_strength_rank}</span>
+                        : <span className="text-gray-600 text-xs">—</span>}
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: color }} />
+                        <span className="font-mono font-bold text-white text-sm">{row.ticker}</span>
                       </div>
-                    ) : <span className="text-gray-600 text-xs">—</span>}
-                  </td>
-                  <td className="px-3 py-2.5"><Sparkline prices={spkPrices} positive={spkPos} /></td>
-                  <td className="px-3 py-2.5">
-                    {row.regime_tag
-                      ? <Badge className={`border text-[10px] px-1.5 py-0 ${tagCls}`}>{row.regime_tag}</Badge>
-                      : <span className="text-gray-600 text-xs">—</span>}
-                  </td>
-                </tr>
+                    </td>
+                    <td className="px-3 py-2.5 text-xs text-gray-400 max-w-[130px] truncate">{row.name}</td>
+                    <td className="px-3 py-2.5 text-sm font-mono text-white tabular-nums">{fmtPx(row.price)}</td>
+                    <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(row.change_1d)}`}>{fmtPct(row.change_1d)}</td>
+                    <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(row.change_7d)}`}>{fmtPct(row.change_7d)}</td>
+                    <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(row.change_30d)}`}>{fmtPct(row.change_30d)}</td>
+                    <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(row.change_ytd)}`}>{fmtPct(row.change_ytd)}</td>
+                    <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(row.change_1y)}`}>{fmtPct(row.change_1y)}</td>
+                    <td className="px-3 py-2.5">
+                      {row.rotation_score != null ? (
+                        <div className="flex items-center gap-2 min-w-[72px]">
+                          <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                            <div className="h-full rounded-full" style={{ width: `${row.rotation_score}%`, background: color }} />
+                          </div>
+                          <span className="text-xs text-gray-400 tabular-nums">{row.rotation_score.toFixed(0)}</span>
+                        </div>
+                      ) : <span className="text-gray-600 text-xs">—</span>}
+                    </td>
+                    <td className="px-3 py-2.5"><Sparkline prices={spkPrices} positive={spkPos} /></td>
+                    <td className="px-3 py-2.5">
+                      {row.regime_tag
+                        ? <Badge className={`border text-[10px] px-1.5 py-0 ${tagCls}`}>{row.regime_tag}</Badge>
+                        : <span className="text-gray-600 text-xs">—</span>}
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <button
+                        onClick={e => { e.stopPropagation(); toggleExpand(row.ticker); }}
+                        className={`flex items-center justify-center w-6 h-6 rounded transition-colors ${expanded ? "bg-teal-500/20 text-teal-400" : "bg-white/5 text-gray-500 hover:text-gray-300"}`}
+                        title={expanded ? "Collapse chart" : "Expand chart"}>
+                        {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                      </button>
+                    </td>
+                  </tr>
+                  {expanded && (
+                    <tr key={`${row.ticker}-chart`} className="bg-black/30">
+                      <td colSpan={13} className="px-4 py-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-2 h-2 rounded-full" style={{ background: color }} />
+                          <span className="text-xs font-mono font-bold text-white">{row.ticker}</span>
+                          <span className="text-xs text-gray-500">{row.name}</span>
+                        </div>
+                        <TVTickerChart ticker={row.ticker} />
+                      </td>
+                    </tr>
+                  )}
+                </>
               );
             })}
             {sorted.length === 0 && (
-              <tr><td colSpan={12} className="px-3 py-8 text-center text-gray-500 text-sm">No sector data available</td></tr>
+              <tr><td colSpan={13} className="px-3 py-8 text-center text-gray-500 text-sm">No sector data available</td></tr>
             )}
           </tbody>
         </table>
@@ -451,7 +514,7 @@ function SectorRotationChart({
   const topLaggards = laggards.slice(0, 3);
 
   return (
-    <GlassCard className="p-4 sm:p-6">
+    <GlassCard className="p-4 sm:p-6 h-full flex flex-col">
       <SectionHeader icon={TrendingUp} title="Relative Strength" badge="Normalised" color="blue"
         right={
           <div className="flex gap-1 bg-white/5 rounded-lg p-0.5">
@@ -503,7 +566,7 @@ function SectorRotationChart({
       </div>
       {/* Chart */}
       {chartData.length > 0 ? (
-        <div className="h-52">
+        <div className="flex-1 min-h-[208px]">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData} margin={{ top: 4, right: 10, left: -20, bottom: 0 }}>
               <XAxis dataKey="date" tick={{ fontSize: 9, fill: "#64748b" }} tickLine={false} axisLine={false} />
@@ -520,7 +583,7 @@ function SectorRotationChart({
           </ResponsiveContainer>
         </div>
       ) : (
-        <div className="h-52 flex items-center justify-center text-gray-600 text-sm">
+        <div className="flex-1 min-h-[208px] flex items-center justify-center text-gray-600 text-sm">
           Series data not yet available for {tf.toUpperCase()} timeframe
         </div>
       )}
@@ -529,6 +592,8 @@ function SectorRotationChart({
 }
 
 // ─── D: Compact heatmap side panel ───────────────────────────────────────────
+const TAG_ORDER: Record<string, number> = { Leading: 0, Improving: 1, Weakening: 2, Lagging: 3 };
+
 function SectorSnapshotPanel({ sectors, loading, selectedTickers, onSelectTicker }: {
   sectors: SectorRow[]; loading: boolean;
   selectedTickers: Set<string>; onSelectTicker: (t: string) => void;
@@ -537,10 +602,17 @@ function SectorSnapshotPanel({ sectors, loading, selectedTickers, onSelectTicker
   const pctByTf = (row: SectorRow) =>
     tf === "1d" ? row.change_1d : tf === "7d" ? row.change_7d : tf === "30d" ? row.change_30d : tf === "ytd" ? row.change_ytd : row.change_1y;
 
-  const sorted = useMemo(() => [...sectors].sort((a, b) => (pctByTf(b) ?? -999) - (pctByTf(a) ?? -999)), [sectors, tf]);
+  const sorted = useMemo(() =>
+    [...sectors].sort((a, b) => {
+      const ao = TAG_ORDER[a.regime_tag ?? ""] ?? 4;
+      const bo = TAG_ORDER[b.regime_tag ?? ""] ?? 4;
+      return ao - bo;
+    }),
+    [sectors],
+  );
 
   return (
-    <GlassCard className="p-4 sm:p-6 h-full">
+    <GlassCard className="p-4 sm:p-6 h-full flex flex-col">
       <SectionHeader icon={Layers} title="Snapshot" color="amber"
         right={
           <div className="flex gap-1 bg-white/5 rounded-lg p-0.5">
@@ -553,27 +625,29 @@ function SectorSnapshotPanel({ sectors, loading, selectedTickers, onSelectTicker
           </div>
         }
       />
-      {loading
-        ? <div className="grid grid-cols-2 gap-2">{Array.from({length:11}).map((_,i)=><Skel key={i} h={56} />)}</div>
-        : (
-          <div className="grid grid-cols-2 gap-2">
-            {sorted.map(row => {
-              const val   = pctByTf(row);
-              const color = SECTOR_COLOR[row.ticker] ?? "#64748b";
-              const sel   = selectedTickers.has(row.ticker);
-              return (
-                <div key={row.ticker} onClick={() => onSelectTicker(row.ticker)}
-                  className={`rounded-lg p-2.5 border cursor-pointer transition-all ${sel ? "border-white/20 scale-[1.02]" : "border-white/[0.04] hover:border-white/10"}`}
-                  style={{ background: `${color}${sel ? "18" : "0c"}` }}>
-                  <div className="font-mono font-bold text-white text-xs">{row.ticker}</div>
-                  <div className={`text-sm font-bold font-mono tabular-nums mt-0.5 ${pctCls(val)}`}>{fmtPct(val, 1)}</div>
-                  {row.regime_tag && <Badge className={`border text-[9px] px-1 py-0 mt-1 leading-3 ${TAG_STYLES[row.regime_tag] ?? ""}`}>{row.regime_tag}</Badge>}
-                </div>
-              );
-            })}
-          </div>
-        )
-      }
+      <div className="flex-1 overflow-y-auto min-h-0">
+        {loading
+          ? <div className="grid grid-cols-2 gap-2">{Array.from({length:11}).map((_,i)=><Skel key={i} h={56} />)}</div>
+          : (
+            <div className="grid grid-cols-2 gap-2">
+              {sorted.map(row => {
+                const val   = pctByTf(row);
+                const color = SECTOR_COLOR[row.ticker] ?? "#64748b";
+                const sel   = selectedTickers.has(row.ticker);
+                return (
+                  <div key={row.ticker} onClick={() => onSelectTicker(row.ticker)}
+                    className={`rounded-lg p-2.5 border cursor-pointer transition-all ${sel ? "border-white/20 scale-[1.02]" : "border-white/[0.04] hover:border-white/10"}`}
+                    style={{ background: `${color}${sel ? "18" : "0c"}` }}>
+                    <div className="font-mono font-bold text-white text-xs">{row.ticker}</div>
+                    <div className={`text-sm font-bold font-mono tabular-nums mt-0.5 ${pctCls(val)}`}>{fmtPct(val, 1)}</div>
+                    {row.regime_tag && <Badge className={`border text-[9px] px-1 py-0 mt-1 leading-3 ${TAG_STYLES[row.regime_tag] ?? ""}`}>{row.regime_tag}</Badge>}
+                  </div>
+                );
+              })}
+            </div>
+          )
+        }
+      </div>
     </GlassCard>
   );
 }
@@ -881,16 +955,16 @@ export default function StocksSectorsPage() {
           selectedTickers={selectedTickers} onSelectTicker={selectTicker}
         />
 
-        {/* C + D: Chart + Snapshot side by side */}
-        <div className="grid xl:grid-cols-3 gap-4 lg:gap-6">
-          <div className="xl:col-span-2">
+        {/* C + D: Chart + Snapshot side by side — equal height */}
+        <div className="grid xl:grid-cols-3 gap-4 lg:gap-6 items-stretch">
+          <div className="xl:col-span-2 h-full">
             <SectorRotationChart
               sectors={sectors} leaders={leaders} laggards={laggards}
               loading={dashLoading && !dash}
               selectedTickers={selectedTickers} onToggleTicker={toggleTicker}
             />
           </div>
-          <div className="xl:col-span-1">
+          <div className="xl:col-span-1 h-full">
             <SectorSnapshotPanel
               sectors={sectors} loading={dashLoading && !dash}
               selectedTickers={selectedTickers} onSelectTicker={selectTicker}
