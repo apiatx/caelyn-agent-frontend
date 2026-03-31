@@ -1641,5 +1641,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // === Sector Rotation (proxy to FastAPI backend) ===
+  const SR_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
+  const SR_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+  const srHdr  = () => ({ 'X-API-Key': SR_KEY, 'Content-Type': 'application/json' });
+
+  app.get('/api/sector-rotation/dashboard', async (req, res) => {
+    try {
+      const controller = new AbortController();
+      const tid = setTimeout(() => controller.abort(), 30000);
+      const qs  = req.query.include_analysis === 'false' ? '?include_analysis=false' : '';
+      const r   = await fetch(`${SR_URL}/api/sector-rotation/dashboard${qs}`, {
+        headers: srHdr(),
+        signal: controller.signal,
+      });
+      clearTimeout(tid);
+      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
+      res.json(await r.json());
+    } catch (e: any) {
+      res.status(500).json({ error: e?.name === 'AbortError' ? 'Request timed out (30s)' : 'Sector rotation dashboard unavailable' });
+    }
+  });
+
+  app.get('/api/sector-rotation/analysis', async (req, res) => {
+    try {
+      const r = await fetch(`${SR_URL}/api/sector-rotation/analysis`, { headers: srHdr() });
+      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
+      res.json(await r.json());
+    } catch (e: any) {
+      res.status(500).json({ error: 'Sector rotation analysis unavailable' });
+    }
+  });
+
+  app.get('/api/sector-rotation/history', async (req, res) => {
+    try {
+      const range = req.query.range || '7d';
+      const r     = await fetch(`${SR_URL}/api/sector-rotation/history?range=${range}`, { headers: srHdr() });
+      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
+      res.json(await r.json());
+    } catch (e: any) {
+      res.status(500).json({ error: 'Sector rotation history unavailable' });
+    }
+  });
+
+  app.post('/api/sector-rotation/refresh-analysis', async (req, res) => {
+    try {
+      const controller = new AbortController();
+      const tid = setTimeout(() => controller.abort(), 60000);
+      const r   = await fetch(`${SR_URL}/api/sector-rotation/refresh-analysis`, {
+        method: 'POST',
+        headers: srHdr(),
+        signal: controller.signal,
+      });
+      clearTimeout(tid);
+      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
+      res.json(await r.json());
+    } catch (e: any) {
+      res.status(500).json({ error: e?.name === 'AbortError' ? 'Refresh timed out' : 'Refresh failed' });
+    }
+  });
+
   return httpServer;
 }

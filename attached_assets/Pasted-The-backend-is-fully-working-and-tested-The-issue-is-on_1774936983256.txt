@@ -1,0 +1,115 @@
+The backend is fully working and tested. The issue is one of two things (likely both): wrong backend URL and possibly CORS not being set on the frontend request (though CORS is allow_origins=["*"] on the backend).
+
+Step 1 — Fix the Backend URL
+The frontend must hit the deployed production backend URL. Find wherever the backend base URL is configured (usually an environment variable like VITE_API_URL, NEXT_PUBLIC_API_URL, or API_BASE_URL) and confirm it points to the correct deployed backend — something like https://workspace.aidanpilon.replit.app. Do not use localhost:5000 or the dev Replit domain.
+
+Step 2 — Verify the Exact Endpoints and Response Shape
+The backend exposes exactly these endpoints:
+
+GET {BACKEND_URL}/api/sector-rotation/dashboard
+Optional query param: ?include_analysis=false (skip AI analysis to load faster)
+
+Response shape:
+
+{
+  "updated_at": "2026-03-31T05:44:44Z",
+  "analysis_updated_at": "March 31, 2026",
+  "regime": {
+    "market_posture": "Neutral",
+    "cyclical_vs_defensive": 0.91,
+    "breadth_pct_above_spy": 63.6,
+    "leadership_style": "Mixed",
+    "macro_overlay": {
+      "fed_rate": 3.64,
+      "cpi_yoy": 2.43,
+      "yield_10y": 4.44,
+      "yield_2y": 3.88,
+      "yield_curve_spread": 0.56,
+      "spy_change_30d": -8.07
+    }
+  },
+  "leaders": [ /* array of SectorSnapshot objects */ ],
+  "laggards": [ /* array of SectorSnapshot objects */ ],
+  "sectors": [
+    {
+      "ticker": "XLE",
+      "name": "Energy",
+      "price": 61.96,
+      "change_1d": -0.96,
+      "change_7d": 3.91,
+      "change_30d": 12.55,
+      "change_ytd": 38.58,
+      "change_1y": 36.82,
+      "ma_50d": 54.91,
+      "ma_200d": 46.53,
+      "pct_from_50d": 12.84,
+      "pct_from_200d": 33.17,
+      "rotation_score": 94.0,
+      "relative_strength_rank": 1,
+      "regime_tag": "Leading",
+      "is_cyclical": true,
+      "series": {
+        "1d": { "dates": ["2026-03-30"], "prices": [61.96] },
+        "7d": { "dates": ["2026-03-24","2026-03-25","2026-03-26","2026-03-27","2026-03-30"], "prices": [60.84,60.57,61.52,62.56,61.96] },
+        "30d": { "dates": [...22 dates...], "prices": [...22 prices...] },
+        "ytd": { "dates": [...~65 dates...], "prices": [...] },
+        "1y": { "dates": [...~252 dates...], "prices": [...] }
+      }
+    }
+    // ... 10 more sectors: XLC, XLY, XLP, XLF, XLV, XLI, XLB, XLRE, XLK, XLU
+  ],
+  "analysis": null  // or AIAnalysis object if cached
+}
+The regime_tag values are: "Leading", "Improving", "Weakening", or "Lagging". Not "rotation_regime" — the field is regime_tag.
+
+The Relative Strength chart needs sector.series["7d"] — this IS present in the response. The frontend code checking for it should access sector.series["7d"].prices and sector.series["7d"].dates.
+
+GET {BACKEND_URL}/api/sector-rotation/analysis
+Returns null if not cached yet, or this object:
+
+{
+  "market_regime": "Transitioning",
+  "macro_regime": "Inflationary",
+  "leadership_style": "Value",
+  "summary": "...(long text)...",
+  "current_leadership": {
+    "leaders": ["XLE", "XLU", "XLB"],
+    "laggards": ["XLK", "XLY", "XLF"],
+    "explanation": "..."
+  },
+  "outlook_1_4_weeks": "...",
+  "outlook_1_3_months": "...",
+  "scenarios": [
+    {
+      "name": "Energy Supercycle / Conflict Escalation",
+      "timeframe": "1-8 weeks",
+      "probability": "high",
+      "sector_winners": ["XLE", "XLB", "XLU"],
+      "sector_losers": ["XLY", "XLI", "XLK"],
+      "analysis": "..."
+    }
+  ],
+  "watch_items": ["...", "...", "...", "..."],
+  "sources": [{ "title": "...", "url": "...", "publisher": "..." }],
+  "generated_at": "March 31, 2026"
+}
+GET {BACKEND_URL}/api/sector-rotation/history?range=7d
+Supported ranges: 1d, 7d, 30d, ytd, 1y
+
+{
+  "range": "7d",
+  "tickers": ["XLC","XLY","XLP","XLE","XLF","XLV","XLI","XLB","XLRE","XLK","XLU"],
+  "series": {
+    "XLE": { "dates": ["2026-03-24",...], "prices": [60.84,...] },
+    "XLK": { ... }
+  }
+}
+POST {BACKEND_URL}/api/sector-rotation/refresh-analysis
+Force-regenerates the AI analysis (takes ~30 seconds). Returns:
+
+{ "status": "ok", "generated_at": "March 31, 2026" }
+Step 3 — Timeout Configuration
+Recommend a 30-second timeout on the dashboard fetch. The backend now pre-warms on startup, but in a cold-start edge case (first boot), it can take up to 15 seconds. Showing a loading skeleton while waiting is the right UX rather than a hard error.
+
+Step 4 — Analysis Null Handling
+/api/sector-rotation/analysis returns null (JSON null) if no analysis has been generated yet. The frontend should gracefully handle this — showing a "No analysis yet — click Refresh to generate" state rather than an error.
