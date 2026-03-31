@@ -326,7 +326,7 @@ const TVTickerChart = memo(function TVTickerChart({ ticker }: { ticker: string }
     return () => { if (ref.current) ref.current.innerHTML = ""; };
   }, [ticker]);
   return (
-    <div ref={ref} className="tradingview-widget-container w-full" style={{ height: 360 }}>
+    <div ref={ref} className="tradingview-widget-container w-full" style={{ height: 520 }}>
       <div className="tradingview-widget-container__widget" style={{ height: "100%", width: "100%" }} />
     </div>
   );
@@ -574,6 +574,7 @@ function SectorRotationChart({
                 tickFormatter={v => `${v > 0 ? "+" : ""}${Number(v).toFixed(1)}%`} />
               <Tooltip contentStyle={{ background: "#0d1623", border: "1px solid #1a2540", borderRadius: 6, fontSize: 11 }}
                 labelStyle={{ color: "#94a3b8" }}
+                itemSorter={(item: any) => -(item.value ?? 0)}
                 formatter={(v: any, name: string) => [`${Number(v) > 0 ? "+" : ""}${Number(v).toFixed(2)}%`, name]} />
               {displayedTickers.map(t => (
                 <Line key={t} type="monotone" dataKey={t} dot={false} strokeWidth={1.5}
