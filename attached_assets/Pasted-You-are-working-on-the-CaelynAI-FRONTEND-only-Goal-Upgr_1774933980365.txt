@@ -1,0 +1,163 @@
+You are working on the CaelynAI FRONTEND only.
+
+Goal:
+Upgrade the existing "Sector Rotation" page into a beautiful smart dashboard while PRESERVING any existing content/components that are still useful. Do NOT delete the current page and do NOT break existing routes, styling, or shared layout patterns. This should be an additive enhancement and a thoughtful refactor, not a reckless rewrite.
+
+Context:
+- Backend FastAPI will provide all logic and data.
+- Frontend should focus on layout, rendering, polling, loading states, error states, and reusable UI components.
+- This page should feel premium, modern, data-dense, and readable.
+- The dashboard is for sector ETF rotation analysis using tickers like XLE, XLI, XLK, XLV, etc.
+- The backend will return real-time sector data plus a weekly agent-generated outlook.
+
+Requirements:
+1. Keep any current Sector Rotation page content that still adds value.
+2. Build a clean dashboard layout with these sections:
+
+A) Header / Regime Summary
+- Page title: Sector Rotation
+- Subtitle: Real-time sector leadership, macro regime, and forward-looking rotation analysis
+- Show last updated timestamps:
+  - market data updated at
+  - AI outlook updated at
+- Regime badges:
+  - Risk-On / Neutral / Risk-Off
+  - Inflationary / Disinflationary / Mixed
+  - Cyclical leadership / Defensive leadership / Balanced
+
+B) Sector Performance Table
+- Display rows for:
+  XLC, XLY, XLP, XLE, XLF, XLV, XLI, XLB, XLRE, XLK, XLU
+- Columns:
+  ticker
+  sector name
+  price
+  1D %
+  7D %
+  30D %
+  YTD %
+  1Y %
+  momentum score
+  regime tag
+- Add sortable columns
+- Add color coding for positive/negative returns
+- Add hover row highlight
+- Add small sparkline or mini-trend visual if data is available
+- Responsive behavior for smaller screens
+
+C) Relative Strength / Rotation Visual
+- Create a dedicated chart card for comparing sector performance
+- Show a multi-line chart for selected timeframe
+- Timeframe toggles:
+  1D / 7D / 30D / YTD / 1Y
+- Allow user to select/deselect sectors
+- Include a “Top 3 Leaders” and “Bottom 3 Laggards” summary card
+
+D) Sector Heatmap / Snapshot Cards
+- Grid of sector cards showing:
+  ticker
+  sector name
+  selected timeframe performance
+  rank
+  short label like “Leading”, “Improving”, “Weakening”, “Lagging”
+- Clicking a card should highlight that sector in the chart/table if possible
+
+E) Agent Analysis Panel
+- Dedicated section for backend AI narrative
+- Render:
+  current regime summary
+  what is leading now
+  what is weakening now
+  1–4 week outlook
+  1–3 month outlook
+  scenario analysis
+  geopolitical / tariff / policy watch items
+  cited sources list if provided
+- This should look polished and readable, not like a raw JSON dump
+- Support structured sections and bullet summaries
+- Add a visible “Updated weekly” badge
+
+F) Loading / Error / Empty States
+- Elegant skeleton loading for table/cards/chart/analysis
+- Friendly error state with retry
+- Empty state fallback if backend response is incomplete
+
+Data contract expectations:
+Assume backend endpoint(s) such as:
+- GET /api/sector-rotation/dashboard
+- GET /api/sector-rotation/analysis
+- GET /api/sector-rotation/history?range=30d
+
+Expected JSON shape can be adapted, but design components around something like:
+
+{
+  "updated_at": "...",
+  "analysis_updated_at": "...",
+  "regime": {
+    "market_regime": "Risk-On",
+    "macro_regime": "Disinflationary",
+    "leadership_style": "Cyclicals"
+  },
+  "sectors": [
+    {
+      "ticker": "XLK",
+      "name": "Technology",
+      "price": 0,
+      "change_1d": 0,
+      "change_7d": 0,
+      "change_30d": 0,
+      "change_ytd": 0,
+      "change_1y": 0,
+      "momentum_score": 0,
+      "regime_tag": "Leading",
+      "series": {
+        "1d": [],
+        "7d": [],
+        "30d": [],
+        "ytd": [],
+        "1y": []
+      }
+    }
+  ],
+  "leaders": ["XLK", "XLI", "XLE"],
+  "laggards": ["XLU", "XLP", "XLRE"],
+  "analysis": {
+    "summary": "...",
+    "current_leadership": "...",
+    "weakening_areas": "...",
+    "outlook_1_4_weeks": "...",
+    "outlook_1_3_months": "...",
+    "scenarios": [
+      {
+        "name": "Tariff escalation",
+        "probability": "medium",
+        "impact": "..."
+      }
+    ],
+    "watch_items": ["...", "..."],
+    "sources": [
+      {"title": "...", "url": "..."}
+    ]
+  }
+}
+
+UI / implementation details:
+- Use existing CaelynAI design language where possible
+- Keep styling consistent with current dashboard pages
+- Prefer modular components:
+  - SectorPerformanceTable
+  - SectorRotationChart
+  - SectorHeatmap
+  - RegimeSummaryCards
+  - SectorAnalysisPanel
+- Do not hardcode fake data beyond temporary placeholders
+- Add a typed API client layer if project supports TypeScript
+- Add polling or revalidation for market data (example every 60–300 seconds), but AI analysis should not refetch aggressively
+- Make sure the page degrades gracefully if only table data is available and AI analysis is temporarily missing
+
+Important:
+- Do not touch unrelated pages
+- Do not break Macro Dashboard, Portfolio Dashboard, or shared navigation
+- Preserve the existing Sector Rotation page route
+- Prefer maintainable code over flashy nonsense
+- Return a clean summary of files created/modified and the expected backend response contract
