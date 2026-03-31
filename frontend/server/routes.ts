@@ -1701,5 +1701,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ── Insider Activity proxy ───────────────────────────────────────────────────
+  const IA_URL = "https://fast-api-server-trading-agent-aidanpilon.replit.app";
+  const iaHdr  = () => ({ "X-API-Key": "hippo_ak_7f3x9k2m4p8q1w5t", "Content-Type": "application/json" });
+
+  app.get('/api/insider-activity/stats', async (req, res) => {
+    try {
+      const r = await fetch(`${IA_URL}/api/insider-activity/stats`, { headers: iaHdr() });
+      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
+      res.json(await r.json());
+    } catch (e: any) {
+      res.status(500).json({ error: 'Insider activity stats unavailable' });
+    }
+  });
+
+  app.get('/api/insider-activity/detail/:accession', async (req, res) => {
+    try {
+      const r = await fetch(`${IA_URL}/api/insider-activity/detail/${req.params.accession}`, { headers: iaHdr() });
+      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
+      res.json(await r.json());
+    } catch (e: any) {
+      res.status(500).json({ error: 'Insider activity detail unavailable' });
+    }
+  });
+
+  app.get('/api/insider-activity', async (req, res) => {
+    try {
+      const qs = new URLSearchParams(req.query as Record<string, string>).toString();
+      const r  = await fetch(`${IA_URL}/api/insider-activity${qs ? `?${qs}` : ""}`, { headers: iaHdr() });
+      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
+      res.json(await r.json());
+    } catch (e: any) {
+      res.status(500).json({ error: 'Insider activity data unavailable' });
+    }
+  });
+
+  app.post('/api/insider-activity/refresh', async (req, res) => {
+    try {
+      const controller = new AbortController();
+      const tid = setTimeout(() => controller.abort(), 60000);
+      const r   = await fetch(`${IA_URL}/api/insider-activity/refresh`, {
+        method: 'POST', headers: iaHdr(), signal: controller.signal,
+      });
+      clearTimeout(tid);
+      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
+      res.json(await r.json());
+    } catch (e: any) {
+      res.status(500).json({ error: e?.name === 'AbortError' ? 'Refresh timed out' : 'Refresh failed' });
+    }
+  });
+
   return httpServer;
 }

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef, memo, useCallback } from "react";
+import React, { useState, useMemo, useEffect, useRef, memo, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -414,8 +414,8 @@ function SectorPerformanceTable({
               const spkPrices = row.series?.["7d"]?.prices ?? [];
               const spkPos    = (row.change_7d ?? 0) >= 0;
               return (
-                <>
-                  <tr key={row.ticker} onClick={() => onSelectTicker(row.ticker)}
+                <React.Fragment key={row.ticker}>
+                  <tr onClick={() => onSelectTicker(row.ticker)}
                     className={`border-b border-white/[0.03] cursor-pointer transition-colors ${sel ? "bg-white/[0.06]" : "hover:bg-white/[0.03]"}`}>
                     <td className="px-3 py-2.5">
                       {row.relative_strength_rank != null
@@ -472,7 +472,7 @@ function SectorPerformanceTable({
                       </td>
                     </tr>
                   )}
-                </>
+                </React.Fragment>
               );
             })}
             {sorted.length === 0 && (
