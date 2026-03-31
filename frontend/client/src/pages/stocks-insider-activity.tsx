@@ -29,14 +29,16 @@ interface InsiderTransaction {
   post_tx_holdings: number | null;
 }
 interface InsiderStats {
-  total_transactions: number;
-  total_buys:         number;
-  total_sales:        number;
-  avg_buy_score:      number;
-  top_buy_ticker:     string;
-  top_sell_ticker:    string;
-  last_refresh:       string | null;
-  total_results:      number;
+  total_transactions?: number;
+  total_buys?:         number;
+  buys?:               number;
+  total_sales?:        number;
+  sales?:              number;
+  avg_buy_score?:      number;
+  top_buy_ticker?:     string;
+  top_sell_ticker?:    string;
+  last_refresh?:       string | null;
+  total_results?:      number;
 }
 interface ScoreBreakdown {
   size:         number;
@@ -151,14 +153,18 @@ function GlassCard({ children, className = "" }: { children: React.ReactNode; cl
 function StatsBar({ stats, loading, onRefresh, refreshing }: {
   stats: InsiderStats | undefined; loading: boolean; onRefresh: () => void; refreshing: boolean;
 }) {
+  const totalTx   = stats?.total_transactions;
+  const totalBuys = stats?.total_buys ?? stats?.buys;
+  const totalSales= stats?.total_sales ?? stats?.sales;
+  const avgScore  = stats?.avg_buy_score;
   const items = [
-    { icon: Activity,     label: "TOTAL",        val: stats ? stats.total_transactions.toLocaleString() : "—",     cls: "text-white" },
-    { icon: TrendingUp,   label: "BUYS",          val: stats ? stats.total_buys.toLocaleString() : "—",             cls: "text-emerald-400" },
-    { icon: TrendingDown, label: "SALES",         val: stats ? stats.total_sales.toLocaleString() : "—",            cls: "text-red-400" },
-    { icon: Gauge,        label: "AVG BUY SCORE", val: stats ? stats.avg_buy_score.toFixed(1) : "—",               cls: "text-amber-400" },
-    { icon: Crown,        label: "TOP BUY",       val: stats?.top_buy_ticker ?? "—",                               cls: "text-emerald-400" },
-    { icon: AlertTriangle,label: "TOP SELL",      val: stats?.top_sell_ticker ?? "—",                              cls: "text-red-400" },
-    { icon: Clock,        label: "LAST REFRESH",  val: fmtTs(stats?.last_refresh ?? null),                         cls: "text-gray-400" },
+    { icon: Activity,     label: "TOTAL",        val: totalTx    != null ? totalTx.toLocaleString()   : "—", cls: "text-white" },
+    { icon: TrendingUp,   label: "BUYS",          val: totalBuys  != null ? totalBuys.toLocaleString()  : "—", cls: "text-emerald-400" },
+    { icon: TrendingDown, label: "SALES",         val: totalSales != null ? totalSales.toLocaleString() : "—", cls: "text-red-400" },
+    { icon: Gauge,        label: "AVG BUY SCORE", val: avgScore   != null ? avgScore.toFixed(1)         : "—", cls: "text-amber-400" },
+    { icon: Crown,        label: "TOP BUY",       val: stats?.top_buy_ticker  ?? "—",                          cls: "text-emerald-400" },
+    { icon: AlertTriangle,label: "TOP SELL",      val: stats?.top_sell_ticker ?? "—",                          cls: "text-red-400" },
+    { icon: Clock,        label: "LAST REFRESH",  val: fmtTs(stats?.last_refresh ?? null),                     cls: "text-gray-400" },
   ];
   return (
     <GlassCard className="p-3 sm:p-4">
