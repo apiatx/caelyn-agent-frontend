@@ -308,7 +308,9 @@ const TVTickerChart = memo(function TVTickerChart({ ticker }: { ticker: string }
     script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
     script.async = true;
     script.innerHTML = JSON.stringify({
-      autosize: true,
+      autosize: false,
+      width: "100%",
+      height: 550,
       symbol: `AMEX:${ticker}`,
       interval: "D",
       timezone: "Etc/UTC",
@@ -326,8 +328,8 @@ const TVTickerChart = memo(function TVTickerChart({ ticker }: { ticker: string }
     return () => { if (ref.current) ref.current.innerHTML = ""; };
   }, [ticker]);
   return (
-    <div ref={ref} className="tradingview-widget-container w-full" style={{ height: 680 }}>
-      <div className="tradingview-widget-container__widget" style={{ height: "100%", width: "100%" }} />
+    <div ref={ref} className="tradingview-widget-container w-full" style={{ height: 550 }}>
+      <div className="tradingview-widget-container__widget" style={{ height: 550, width: "100%" }} />
     </div>
   );
 });
