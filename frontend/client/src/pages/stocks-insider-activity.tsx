@@ -47,12 +47,19 @@ interface InsiderStats {
   last_refresh?:       string | null;
   total_results?:      number;
 }
+interface ScoreField {
+  score: number;
+  max:   number;
+  detail?: string;
+}
+type ScoreFieldValue = number | ScoreField;
 interface ScoreBreakdown {
-  size:         number;
-  role:         number;
-  context:      number;
-  cluster:      number;
-  track_record: number;
+  size?:         ScoreFieldValue;
+  role?:         ScoreFieldValue;
+  context?:      ScoreFieldValue;
+  cluster?:      ScoreFieldValue;
+  track_record?: ScoreFieldValue;
+  [key: string]: ScoreFieldValue | undefined;
 }
 interface RecentTx {
   accession_number: string;
@@ -513,14 +520,20 @@ function Pagination({ total, offset, limit, onChange }: {
 }
 
 // ─── Score Bar (detail panel) ─────────────────────────────────────────────────
-function DetailScoreBar({ label, value, max }: { label: string; value: number; max: number }) {
-  const pct = max > 0 ? (value / max) * 100 : 0;
+function resolveScoreField(v: ScoreFieldValue | undefined, fallbackMax: number): { num: number; max: number } {
+  if (v == null)              return { num: 0, max: fallbackMax };
+  if (typeof v === "number")  return { num: v, max: fallbackMax };
+  return { num: v.score ?? 0, max: v.max ?? fallbackMax };
+}
+function DetailScoreBar({ label, value, max }: { label: string; value: ScoreFieldValue | undefined; max: number }) {
+  const { num, max: resolvedMax } = resolveScoreField(value, max);
+  const pct = resolvedMax > 0 ? (num / resolvedMax) * 100 : 0;
   const cls = pct >= 70 ? "bg-emerald-500" : pct >= 40 ? "bg-amber-500" : "bg-gray-600";
   return (
     <div className="mb-2">
       <div className="flex items-center justify-between mb-1">
         <span className="text-[10px] text-gray-500 uppercase tracking-wider">{label}</span>
-        <span className="text-[10px] font-mono text-gray-300">{value} / {max}</span>
+        <span className="text-[10px] font-mono text-gray-300">{num} / {resolvedMax}</span>
       </div>
       <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
         <div className={`h-full rounded-full ${cls}`} style={{ width: `${pct}%` }} />
