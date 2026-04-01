@@ -720,6 +720,8 @@ interface EdgeMarket {
   question: string;
   yes_pct?: number;
   edge_pct?: number;
+  spread_pct_of_price?: number;
+  price_change_1d?: number;
   market_efficiency_score?: number;
   slug?: string;
   slug_url?: string;
@@ -728,6 +730,12 @@ interface SurgingMarket {
   question: string;
   volume_24h?: number;
   volume_momentum?: string;
+  slug?: string;
+}
+interface MoverMarket {
+  question: string;
+  price_change_1d?: number;
+  yes_pct?: number;
   slug?: string;
 }
 interface WhaleMkt {
@@ -743,18 +751,20 @@ interface SignalsData {
   top_mispricings?: EdgeMarket[];
   surging_markets?: SurgingMarket[];
   whale_markets?: WhaleMkt[];
+  top_movers?: MoverMarket[];
 }
 interface EnhancedMarket {
   id?: string;
   question: string;
   slug?: string;
   yes_pct?: number;
+  price_change_1d?: number;
   volume_24h?: number;
   volume_momentum?: string;
   whale_activity?: boolean;
   market_efficiency_score?: number;
-  kelly_fraction_pct?: number;
   days_to_expiry?: number;
+  is_expired?: boolean;
   tags?: string[];
 }
 interface CategoryItem {
@@ -845,9 +855,10 @@ function MarketIntelligence() {
     { icon: Zap,        label: "Surging",        val: s?.surging_count      != null ? s.surging_count.toLocaleString()       : "—", cls: "text-emerald-400" },
     { icon: Waves,      label: "Whale Active",   val: s?.whale_active_count != null ? s.whale_active_count.toLocaleString()  : "—", cls: "text-purple-400" },
   ];
-  const edges    = [...(data?.top_edges ?? []), ...(data?.top_mispricings ?? [])].slice(0, 8);
+  const edges    = (data?.top_edges ?? []).slice(0, 8);
   const surging  = data?.surging_markets?.slice(0, 6) ?? [];
   const whales   = data?.whale_markets?.slice(0, 5) ?? [];
+  const movers   = data?.top_movers?.slice(0, 6) ?? [];
 
   return (
     <GlassCard className="p-5 mb-5">
@@ -884,21 +895,25 @@ function MarketIntelligence() {
       {loading ? (
         <div className="flex items-center justify-center py-8 text-xs text-white/20"><Loader2 className="w-4 h-4 animate-spin mr-2" />Loading intelligence data…</div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Top Edges / Mispricings */}
-          <div className="lg:col-span-1">
-            <div className="flex items-center gap-1.5 mb-2.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          {/* Top Edges */}
+          <div>
+            <div className="flex items-center gap-1.5 mb-2.5" title="Spread as % of YES price — higher = wider bid-ask relative to price, more pricing inefficiency">
               <Target className="w-3.5 h-3.5 text-amber-400" />
               <span className="text-[11px] font-bold text-white/80 uppercase tracking-wider">Top Edges</span>
+              <span className="text-[9px] text-white/25 ml-0.5 cursor-help">ⓘ</span>
             </div>
             <div className="space-y-1.5">
-              {edges.length === 0 ? <div className="text-[11px] text-white/20 py-3 text-center">No edge data</div>
+              {edges.length === 0 ? <div className="text-[11px] text-white/20 py-3 text-center">No edges detected</div>
               : edges.map((e, i) => (
                 <div key={i} className="bg-white/[0.02] border border-white/[0.05] rounded-lg px-2.5 py-2 flex items-center gap-2">
                   <p className="flex-1 text-[10px] text-white/70 leading-tight truncate">{e.question?.slice(0, 50) || "—"}</p>
                   <span className="text-[10px] font-mono text-blue-400 flex-shrink-0">{e.yes_pct != null ? `${e.yes_pct}%` : "—"}</span>
-                  {e.edge_pct != null && <span className={`text-[10px] font-bold font-mono flex-shrink-0 ${e.edge_pct > 0 ? "text-red-400" : "text-emerald-400"}`}>{e.edge_pct > 0 ? "+" : ""}{e.edge_pct.toFixed(1)}%</span>}
-                  {effBadge(e.market_efficiency_score)}
+                  {(e.edge_pct ?? e.spread_pct_of_price) != null && (
+                    <span className="text-[10px] font-bold font-mono text-amber-400 flex-shrink-0 whitespace-nowrap">
+                      {(e.edge_pct ?? e.spread_pct_of_price)!.toFixed(1)}% spread
+                    </span>
+                  )}
                 </div>
               ))}
             </div>
@@ -937,6 +952,29 @@ function MarketIntelligence() {
                   <span className="text-[10px] text-white/30 font-mono flex-shrink-0">{w.volume_24h != null ? formatVolume(w.volume_24h) : ""}</span>
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* 24H Movers */}
+          <div>
+            <div className="flex items-center gap-1.5 mb-2.5">
+              <Zap className="w-3.5 h-3.5 text-orange-400" />
+              <span className="text-[11px] font-bold text-white/80 uppercase tracking-wider">24H Movers</span>
+            </div>
+            <div className="space-y-1.5">
+              {movers.length === 0 ? <div className="text-[11px] text-white/20 py-3 text-center">No mover data</div>
+              : movers.map((m, i) => {
+                const chg = m.price_change_1d;
+                const chgCls = chg == null ? "text-white/25" : chg > 0 ? "text-emerald-400" : chg < 0 ? "text-red-400" : "text-white/25";
+                const chgStr = chg == null ? "—" : `${chg > 0 ? "+" : ""}${chg.toFixed(1)}%`;
+                return (
+                  <div key={i} className="bg-white/[0.02] border border-white/[0.05] rounded-lg px-2.5 py-2 flex items-center gap-2">
+                    <p className="flex-1 text-[10px] text-white/70 leading-tight truncate">{m.question?.slice(0, 50) || "—"}</p>
+                    <span className={`text-[10px] font-bold font-mono flex-shrink-0 ${chgCls}`}>{chgStr}</span>
+                    <span className="text-[10px] font-mono text-blue-400 flex-shrink-0">{m.yes_pct != null ? `${m.yes_pct}%` : "—"}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -1010,7 +1048,7 @@ function EnhancedMarketsTable() {
           <table className="w-full min-w-[700px]">
             <thead>
               <tr className="border-b border-white/[0.06]">
-                {["Market", "YES%", "Vol 24h", "Momentum", "Whale", "Efficiency", "Kelly", "Expires"].map((h) => (
+                {["Market", "YES%", "24H Δ", "Vol 24h", "Momentum", "Whale", "Efficiency", "Expires"].map((h) => (
                   <th key={h} className="px-2 py-2 text-left text-[10px] font-semibold text-white/30 uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
@@ -1027,11 +1065,17 @@ function EnhancedMarketsTable() {
                   <td className="px-2 py-2.5">
                     {m.yes_pct != null && <span className={`text-sm font-bold ${m.yes_pct >= 60 ? "text-emerald-400" : m.yes_pct <= 40 ? "text-red-400" : "text-blue-400"}`}>{m.yes_pct}%</span>}
                   </td>
+                  <td className="px-2 py-2.5">
+                    {m.is_expired ? <span className="text-[11px] text-white/20">—</span>
+                    : m.price_change_1d == null ? <span className="text-[11px] text-white/20">—</span>
+                    : <span className={`text-[11px] font-bold font-mono ${m.price_change_1d > 0 ? "text-emerald-400" : m.price_change_1d < 0 ? "text-red-400" : "text-white/25"}`}>
+                        {m.price_change_1d > 0 ? "+" : ""}{m.price_change_1d.toFixed(1)}%
+                      </span>}
+                  </td>
                   <td className="px-2 py-2.5 text-[11px] text-white/40 font-mono">{m.volume_24h != null ? formatVolume(m.volume_24h) : "—"}</td>
                   <td className="px-2 py-2.5">{momentumBadge(m.volume_momentum)}</td>
                   <td className="px-2 py-2.5 text-center">{m.whale_activity && <span title="Whale active" className="text-base">🐋</span>}</td>
                   <td className="px-2 py-2.5">{effBadge(m.market_efficiency_score)}</td>
-                  <td className="px-2 py-2.5 text-[11px] text-white/40">{m.kelly_fraction_pct != null && m.kelly_fraction_pct > 0 ? `${m.kelly_fraction_pct.toFixed(1)}% Kelly` : "—"}</td>
                   <td className="px-2 py-2.5 text-[11px] text-white/40">{m.days_to_expiry != null ? `${m.days_to_expiry}d` : "—"}</td>
                 </tr>
               ))}

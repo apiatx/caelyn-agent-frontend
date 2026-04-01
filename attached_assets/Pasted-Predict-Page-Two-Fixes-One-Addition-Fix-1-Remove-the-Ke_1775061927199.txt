@@ -1,0 +1,45 @@
+Predict Page — Two Fixes + One Addition
+Fix 1: Remove the Kelly column
+The Kelly column always showed "—" because Kelly Criterion only produces a meaningful number when you have an AI-estimated fair value to compare against the market price. Without running the full analysis, it's always zero. Remove the Kelly column entirely from the Intelligence Markets table. Kelly is still present in the deep /analyze response where it actually means something.
+
+Fix 2: Top Edges panel — now populated, update the display
+The Top Edges section is now working. The edge signal has changed from the original broken approach to a real one: spread as a percentage of the YES price. A $0.01 spread on a $0.20 market = 5% — that's a real cost/opportunity for anyone transacting.
+
+The top_edges array in /api/predict/signals now returns entries like:
+
+{
+  "question": "EdgeX FDV above $1B one day after launch?",
+  "edge_pct": 50.0,
+  "spread_pct_of_price": 50.0,
+  "price_change_1d": 1.5,
+  "yes_pct": 6.0,
+  "volume_24h": 442562
+}
+Display for each edge row:
+
+Market question (truncated)
+edge_pct formatted as "50.0% spread" — this is the bid-ask width as a fraction of the YES price
+yes_pct — current probability
+Add a tooltip on the panel header: "Spread as % of YES price — higher = wider bid-ask relative to price, more pricing inefficiency"
+Replace the current "No edge data" empty state with: "No edges detected" (it won't be empty anymore but keep the fallback).
+
+Addition: New "Top Movers" section in the Market Intelligence panel
+The response from /api/predict/signals now includes a top_movers array — markets with the biggest absolute 24h price change. Add a fourth column next to Top Edges, Surging Markets, and Whale Watch:
+
+"24H MOVERS" panel, each row:
+
+Market question (truncated)
+price_change_1d formatted with sign and color: +6.5% in green, -3.0% in red
+yes_pct — current probability after the move
+Example data:
+
+Will Israel strike 3 countries in 2026?   +6.5%  27%
+Will the Fed decrease rates after meeting?  -3.0%  42%
+US forces enter Iran by December 31?       -3.0%  19%
+Addition: 24h Change column in the Intelligence Markets table
+Add a "24H Δ" column to the market table (between YES% and VOL 24H, or after YES%). Source: price_change_1d field now returned on every market. Format: +6.5% green, -3.0% red, 0.0% gray dash. Markets with is_expired: true should show "—" instead.
+
+The full updated column order for the table should be:
+MARKET | YES% | 24H Δ | VOL 24H | MOMENTUM | WHALE | EFFICIENCY | EXPIRES
+
+(Kelly column removed, 24H Δ added)
