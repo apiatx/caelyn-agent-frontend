@@ -116,8 +116,8 @@ interface CongressionalStats {
   total_trades?:  number;
   purchases?:     number;
   sales?:         number;
-  est_volume?:    string;
-  most_active?:   string;
+  est_volume?:    unknown;
+  most_active?:   unknown;
   late_filings?:  number;
   last_refresh?:  string | null;
 }
@@ -581,6 +581,17 @@ function InsiderDetailPanel({ accession, onClose }: { accession:string; onClose:
 // ═══════════════════════════════════════════════════════════════════════════════
 // CONGRESSIONAL TRADES — Components
 // ═══════════════════════════════════════════════════════════════════════════════
+function resolveStr(v: unknown, fallback = "—"): string {
+  if (v == null) return fallback;
+  if (typeof v === "string") return v || fallback;
+  if (typeof v === "number") return String(v);
+  if (typeof v === "object") {
+    const o = v as Record<string, unknown>;
+    return String(o.name ?? o.politician_name ?? o.label ?? o.value ?? fallback);
+  }
+  return fallback;
+}
+
 function CongressStatsBar({ stats, loading, onRefresh, refreshing }: {
   stats: CongressionalStats|undefined; loading: boolean; onRefresh:()=>void; refreshing: boolean;
 }) {
@@ -588,8 +599,8 @@ function CongressStatsBar({ stats, loading, onRefresh, refreshing }: {
     { icon: Activity,      label:"TOTAL TRADES",  val: stats?.total_trades  != null ? stats.total_trades.toLocaleString()  : "—", cls:"text-white" },
     { icon: TrendingUp,    label:"PURCHASES",     val: stats?.purchases     != null ? stats.purchases.toLocaleString()     : "—", cls:"text-emerald-400" },
     { icon: TrendingDown,  label:"SALES",         val: stats?.sales         != null ? stats.sales.toLocaleString()         : "—", cls:"text-red-400" },
-    { icon: DollarSign,    label:"EST. VOLUME",   val: stats?.est_volume    ?? "—",                                               cls:"text-amber-400" },
-    { icon: User,          label:"MOST ACTIVE",   val: stats?.most_active   ?? "—",                                               cls:"text-blue-400" },
+    { icon: DollarSign,    label:"EST. VOLUME",   val: resolveStr(stats?.est_volume),                                             cls:"text-amber-400" },
+    { icon: User,          label:"MOST ACTIVE",   val: resolveStr(stats?.most_active),                                            cls:"text-blue-400" },
     { icon: AlertTriangle, label:"LATE FILINGS",  val: stats?.late_filings  != null ? stats.late_filings.toLocaleString()  : "—", cls:"text-red-400" },
     { icon: Clock,         label:"LAST REFRESH",  val: fmtTs(stats?.last_refresh ?? null),                                        cls:"text-gray-400" },
   ];
