@@ -1751,5 +1751,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ── Congressional Trades proxy ────────────────────────────────────────────────
+  app.get('/api/congressional-trades/stats', async (req, res) => {
+    try {
+      const r = await fetch(`${IA_URL}/api/congressional-trades/stats`, { headers: iaHdr() });
+      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
+      res.json(await r.json());
+    } catch (e: any) {
+      res.status(500).json({ error: 'Congressional trades stats unavailable' });
+    }
+  });
+
+  app.get('/api/congressional-trades', async (req, res) => {
+    try {
+      const qs = new URLSearchParams(req.query as Record<string, string>).toString();
+      const r  = await fetch(`${IA_URL}/api/congressional-trades${qs ? `?${qs}` : ""}`, { headers: iaHdr() });
+      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
+      res.json(await r.json());
+    } catch (e: any) {
+      res.status(500).json({ error: 'Congressional trades data unavailable' });
+    }
+  });
+
+  app.post('/api/congressional-trades/refresh', async (req, res) => {
+    try {
+      const controller = new AbortController();
+      const tid = setTimeout(() => controller.abort(), 60000);
+      const r   = await fetch(`${IA_URL}/api/congressional-trades/refresh`, {
+        method: 'POST', headers: iaHdr(), signal: controller.signal,
+      });
+      clearTimeout(tid);
+      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
+      res.json(await r.json());
+    } catch (e: any) {
+      res.status(500).json({ error: e?.name === 'AbortError' ? 'Refresh timed out' : 'Refresh failed' });
+    }
+  });
+
   return httpServer;
 }
