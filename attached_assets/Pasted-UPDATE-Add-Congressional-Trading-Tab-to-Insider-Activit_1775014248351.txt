@@ -1,0 +1,170 @@
+UPDATE: Add Congressional Trading Tab to Insider Activity Page
+
+Add a tab/toggle at the TOP of the /app/stocks/insider-activity page so the user can switch between two views. Do NOT create a new page — this is a toggle within the existing page.
+
+=== TAB/TOGGLE DESIGN ===
+
+At the very top of the page (above the stats bar, below the page header), add two toggle buttons side by side:
+
+1. "Last 30 Days" — Shows the existing insider activity transactions table (everything already built). This is the DEFAULT active tab.
+
+2. "Congressional Trades" — Shows a new congressional trading dashboard (described below).
+
+Style the toggle as two pill buttons next to each other:
+- Active tab: filled background (dark text on light bg, or your theme's active style)
+- Inactive tab: outlined/ghost style
+- Smooth transition when switching
+
+When the user clicks a tab, swap the entire content area below (stats bar, filters, table, everything). Each tab has its own stats, filters, and data.
+
+=== CONGRESSIONAL TRADES TAB CONTENT ===
+
+When "Congressional Trades" tab is active, show this layout:
+
+--- TOP SECTION: Summary Stats Bar ---
+
+A horizontal bar with stat badges (same style as the insider activity stats bar):
+1. TOTAL TRADES — icon: activity, value: number with commas (e.g., "847")
+2. PURCHASES — icon: trending-up, value: green number
+3. SALES — icon: trending-down, value: red number  
+4. EST. VOLUME — icon: dollar-sign, value: range string (e.g., "$125M - $340M")
+5. MOST ACTIVE — icon: user, value: politician name (e.g., "Tuberville")
+6. LATE FILINGS — icon: alert-triangle, value: red number (e.g., "37")
+7. LAST REFRESH — icon: clock, value: date + time
+
+These values come from: GET /api/congressional-trades/stats
+
+--- HEADER ---
+Left side:
+- Icon (landmark/building icon — suggesting Capitol)
+- Title: "CONGRESSIONAL TRADES" in bold
+- Subtitle: "STOCK ACT DISCLOSURES" in smaller gray text
+- Green dot + "LIVE" badge
+
+Right side:
+- Refresh button
+
+--- QUICK FILTERS BAR ---
+Pill/toggle buttons:
+- "All" (default)
+- "Senate" (filters chamber=senate)
+- "House" (filters chamber=house)
+- "Democrats" (blue dot, filters party=democrat)
+- "Republicans" (red dot, filters party=republican)
+- "Late Filings" (warning icon, filters to trades where is_late_filing=true)
+
+Only ONE active at a time.
+
+--- FILTER DROPDOWNS ROW ---
+1. Search box: "Search politician, ticker, company..."
+2. Transaction type dropdown: "All Types" / "Purchase" / "Sale" / "Exchange"
+3. Chamber dropdown: "All Chambers" / "Senate" / "House"
+4. Party dropdown: "All Parties" / "Democrat" / "Republican" / "Independent"
+5. Timeframe dropdown: "1 Week" / "1 Month" / "3 Months" / "6 Months"
+6. Amount filter: "Any Amount" / "$100K+" / "$500K+" / "$1M+" / "$5M+"
+
+--- MAIN DATA TABLE ---
+
+Columns (left to right):
+
+1. POLITICIAN — Name displayed in bold, with party color indicator:
+   - Small colored dot next to name: Blue for Democrat, Red for Republican, Gray for Independent
+   - Below the name in smaller gray text: Chamber + State (e.g., "Senate · CA")
+
+2. TICKER — Stock symbol in bold monospace font, colored green for purchases, red for sales. Clickable.
+
+3. ASSET — Asset description, truncated (e.g., "NVIDIA Corporation - Common Stock")
+
+4. TYPE — Transaction type as a colored pill/badge:
+   - Purchase = green badge
+   - Sale = red badge
+   - Exchange = blue badge
+
+5. TRADE DATE — Date formatted as "Mon DD, YY". Sortable.
+
+6. DISCLOSED — Disclosure date formatted as "Mon DD, YY". 
+   If is_late_filing is true, show the date in RED with a small warning icon (⚠️) next to it.
+   Sortable.
+
+7. DAYS TO FILE — Number of days between trade and disclosure. 
+   Color coded:
+   - 0-30 days: green text
+   - 31-45 days: amber text
+   - 46+ days: red text + bold (STOCK Act violation)
+   Sortable.
+
+8. AMOUNT — Display the amount range string (e.g., "$1M - $5M"). 
+   Color: green for purchases, red for sales.
+   Sortable (sort by amount_midpoint).
+
+9. OWNER — Who made the trade: "Self", "Spouse", "Joint", "Child"
+   Display as small text.
+
+10. RETURN — Return since trade date.
+    Green for positive (e.g., "+8.9%"), red for negative (e.g., "-3.2%"), gray for "—" if not available.
+    Sortable.
+
+Column headers should be sortable. Default sort: disclosure_date descending (newest filings first).
+
+Table rows should:
+- Have alternating subtle backgrounds
+- Highlight on hover  
+- Be clickable — clicking opens a detail side panel
+
+--- DETAIL SIDE PANEL (slides in from right) ---
+
+When a row is clicked, show a detail panel (same style as the insider activity panel):
+
+1. HEADER:
+   - Politician name in large bold text
+   - Party badge: blue "Democrat" pill or red "Republican" pill
+   - Chamber + State: "House · CA"
+
+2. TRADE SUMMARY (grid of label-value pairs):
+   - Ticker: "NVDA"
+   - Asset: "NVIDIA Corporation - Common Stock"
+   - Type: Purchase/Sale badge
+   - Trade Date: "Feb 15, 26"
+   - Disclosure Date: "Mar 10, 26"
+   - Days to Disclose: "23 days" (colored green/amber/red)
+   - Amount: "$1,000,001 - $5,000,000"
+   - Owner: "Spouse"
+   - Filing URL: clickable link "View Original Filing" (opens in new tab)
+
+3. PRICE CONTEXT:
+   - Three mini stat boxes:
+     - "PRICE AT TRADE" — e.g., "$142.50"
+     - "CURRENT PRICE" — e.g., "$155.20"
+     - "RETURN" — e.g., "+8.9%" in green
+
+4. FILING COMPLIANCE:
+   - Label: "STOCK ACT COMPLIANCE"
+   - Visual indicator:
+     - If on time (<=45 days): Green checkmark + "Filed on time (23 days)"
+     - If late (>45 days): Red warning + "LATE FILING (62 days — STOCK Act requires ≤45 days)"
+
+5. RECENT TRADES BY THIS POLITICIAN:
+   - Label: "RECENT TRADES BY {POLITICIAN NAME}"
+   - Mini table showing their last 5 trades:
+     - Columns: Ticker, Type badge, Date, Amount, Return
+
+--- DATA FETCHING ---
+
+1. Tab load: GET /api/congressional-trades?sort=date&order=desc&limit=50
+2. Stats: GET /api/congressional-trades/stats
+3. Row click detail: Use the data already in the row (no separate detail endpoint needed since all fields are in the list response)
+4. When filters change: GET /api/congressional-trades?chamber={chamber}&party={party}&type={type}&timeframe={timeframe}&min_amount={amount}&politician={search}&sort={sort}&order={order}&limit=50&offset={offset}
+5. Refresh: POST /api/congressional-trades/refresh
+
+--- PAGINATION ---
+Same style as insider activity tab: "Showing 1-50 of 847 results" with Previous/Next buttons.
+
+--- AUTO-REFRESH ---
+Auto-refresh every 10 minutes (congressional data updates less frequently than insider filings).
+
+--- IMPORTANT NOTES ---
+- ALL data comes from the backend API. The frontend does ZERO data fetching from FMP or any external source.
+- The frontend just displays what the backend sends.
+- Reuse the same component patterns (stat badges, table, detail panel, filters) from the insider activity tab for visual consistency.
+- Party colors: Democrat = blue (#3B82F6), Republican = red (#EF4444), Independent = gray (#6B7280)
+- The tab toggle state should be stored in React state (or URL query param like ?tab=congress so the URL is shareable).
