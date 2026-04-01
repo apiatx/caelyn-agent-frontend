@@ -113,13 +113,18 @@ interface CongressionalTrade {
   recent_trades?:   CongressionalTrade[];
 }
 interface CongressionalStats {
-  total_trades?:  number;
-  purchases?:     number;
-  sales?:         number;
-  est_volume?:    unknown;
-  most_active?:   unknown;
-  late_filings?:  number;
-  last_refresh?:  string | null;
+  total_trades?:            number;
+  purchases?:               number;
+  sales?:                   number;
+  est_volume?:              unknown;
+  est_volume_low?:          number | null;
+  est_volume_high?:         number | null;
+  most_active?:             unknown;
+  most_active_politician?:  { name?: string; party?: string; chamber?: string; count?: number } | null;
+  late_filings?:            number;
+  late_filings_count?:      number;
+  avg_days_to_disclose?:    number | null;
+  last_refresh?:            string | null;
 }
 interface CongressionalApiResponse {
   trades:   CongressionalTrade[];
@@ -595,14 +600,22 @@ function resolveStr(v: unknown, fallback = "—"): string {
 function CongressStatsBar({ stats, loading, onRefresh, refreshing }: {
   stats: CongressionalStats|undefined; loading: boolean; onRefresh:()=>void; refreshing: boolean;
 }) {
+  const estVol     = resolveStr(stats?.est_volume) !== "—"
+    ? resolveStr(stats?.est_volume)
+    : (stats?.est_volume_low != null && stats?.est_volume_high != null)
+      ? `${fmtVal(stats.est_volume_low)} – ${fmtVal(stats.est_volume_high)}`
+      : "—";
+  const mostActive = stats?.most_active_politician?.name
+    ?? resolveStr(stats?.most_active);
+  const lateCount  = stats?.late_filings_count ?? stats?.late_filings;
   const items = [
-    { icon: Activity,      label:"TOTAL TRADES",  val: stats?.total_trades  != null ? stats.total_trades.toLocaleString()  : "—", cls:"text-white" },
-    { icon: TrendingUp,    label:"PURCHASES",     val: stats?.purchases     != null ? stats.purchases.toLocaleString()     : "—", cls:"text-emerald-400" },
-    { icon: TrendingDown,  label:"SALES",         val: stats?.sales         != null ? stats.sales.toLocaleString()         : "—", cls:"text-red-400" },
-    { icon: DollarSign,    label:"EST. VOLUME",   val: resolveStr(stats?.est_volume),                                             cls:"text-amber-400" },
-    { icon: User,          label:"MOST ACTIVE",   val: resolveStr(stats?.most_active),                                            cls:"text-blue-400" },
-    { icon: AlertTriangle, label:"LATE FILINGS",  val: stats?.late_filings  != null ? stats.late_filings.toLocaleString()  : "—", cls:"text-red-400" },
-    { icon: Clock,         label:"LAST REFRESH",  val: fmtTs(stats?.last_refresh ?? null),                                        cls:"text-gray-400" },
+    { icon: Activity,      label:"TOTAL TRADES",  val: stats?.total_trades != null ? stats.total_trades.toLocaleString() : "—", cls:"text-white" },
+    { icon: TrendingUp,    label:"PURCHASES",     val: stats?.purchases    != null ? stats.purchases.toLocaleString()    : "—", cls:"text-emerald-400" },
+    { icon: TrendingDown,  label:"SALES",         val: stats?.sales        != null ? stats.sales.toLocaleString()        : "—", cls:"text-red-400" },
+    { icon: DollarSign,    label:"EST. VOLUME",   val: estVol,                                                                  cls:"text-amber-400" },
+    { icon: User,          label:"MOST ACTIVE",   val: mostActive,                                                               cls:"text-blue-400" },
+    { icon: AlertTriangle, label:"LATE FILINGS",  val: lateCount           != null ? lateCount.toLocaleString()          : "—", cls:"text-red-400" },
+    { icon: Clock,         label:"LAST REFRESH",  val: fmtTs(stats?.last_refresh ?? null),                                       cls:"text-gray-400" },
   ];
   return (
     <div className="flex flex-wrap gap-2 items-stretch">
