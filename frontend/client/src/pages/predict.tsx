@@ -25,7 +25,6 @@ function authHeaders(extra: Record<string, string> = {}): Record<string, string>
 }
 const POLYMARKET_PROXY = `${AGENT_BACKEND_URL}/api/polymarket/events`;
 const GAMMA_API = "https://gamma-api.polymarket.com/events";
-const REFRESH_INTERVAL = 60_000;
 
 const MACRO_INCLUDE = [
   "fed", "rate", "rates", "inflation", "gdp", "recession", "bitcoin", "btc",
@@ -530,8 +529,8 @@ function PolymarketDashboard() {
   }, [tagCache]);
 
   useEffect(() => {
-    fetchData();
-    const iv = setInterval(fetchData, REFRESH_INTERVAL);
+    fetchData(); // initial load — shows spinner
+    const iv = setInterval(fetchData, 90_000); // silent refresh every 90s
     return () => clearInterval(iv);
   }, [fetchData]);
 
@@ -542,17 +541,6 @@ function PolymarketDashboard() {
       fetchTagData(activeTab);
     }
   }, [activeTab, fetchTagData]);
-
-  const handleRefresh = () => {
-    setLoading(true);
-    fetchData();
-    const tagSlug = TAG_SLUG_CATEGORIES[activeTab];
-    if (tagSlug) {
-      // Clear cache for active tag to force reload
-      setTagCache((prev) => { const n = { ...prev }; delete n[tagSlug]; return n; });
-      fetchTagData(activeTab);
-    }
-  };
 
   // For tag-slug categories, use cached tag data; for others, filter the main markets
   const isTagCategory = activeTab in TAG_SLUG_CATEGORIES;
@@ -586,10 +574,16 @@ function PolymarketDashboard() {
               Prediction Markets Dashboard
               <LiveBadge />
             </h2>
-            <p className="text-[10px] text-white/30">
-              Live prediction market odds for macro, economics & investing
+            <p className="text-[10px] text-white/30 flex items-center gap-2 flex-wrap">
+              Live prediction market odds for macro, economics &amp; investing
               {lastUpdated && (
-                <> &middot; Updated {lastUpdated.toLocaleTimeString()}</>
+                <span className="flex items-center gap-1 text-white/25">
+                  &middot; Updated {lastUpdated.toLocaleTimeString()}
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 ml-1">
+                    <span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="text-[9px] text-emerald-400 font-semibold uppercase tracking-widest">Live</span>
+                  </span>
+                </span>
               )}
             </p>
           </div>
@@ -604,13 +598,6 @@ function PolymarketDashboard() {
             <ExternalLink className="w-3 h-3" />
             Open Polymarket
           </a>
-          <button
-            onClick={handleRefresh}
-            disabled={loading}
-            className="p-2 rounded-lg border border-white/10 hover:bg-white/5 transition-colors disabled:opacity-40"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 text-white/50 ${loading ? "animate-spin" : ""}`} />
-          </button>
         </div>
       </div>
 
@@ -1430,11 +1417,26 @@ interface AgentMessage {
   timestamp: number;
 }
 
-const SUGGESTED_PROMPTS = [
-  "How do the current Fed rate cut odds affect equity sectors?",
-  "If the top crypto events play out, what's the best positioning?",
-  "Which prediction market events have the biggest cross-asset implications?",
-  "What are the most mispriced prediction markets right now?",
+const SUGGESTED_PROMPT_GROUPS = [
+  {
+    label: "Markets",
+    prompts: [
+      "How do the current Fed rate cut odds affect equity sectors?",
+      "If the top crypto events play out, what's the best positioning?",
+      "Which prediction market events have the biggest cross-asset implications?",
+      "What are the most mispriced prediction markets right now?",
+    ],
+  },
+  {
+    label: "Analysis",
+    prompts: [
+      "Will the Fed cut rates this year? Analyze the current odds.",
+      "Will Bitcoin hit $100K? What do the markets imply?",
+      "Will there be a US recession in 2025? Break down the signals.",
+      "Which surging markets have the best risk/reward right now?",
+      "What is whale activity signaling about near-term crypto direction?",
+    ],
+  },
 ];
 
 function PredictionAgent() {
@@ -1556,17 +1558,24 @@ function PredictionAgent() {
 
       {/* Suggested prompts (only show when no messages) */}
       {messages.length === 0 && (
-        <div className="flex flex-col gap-2 mb-4">
-          {SUGGESTED_PROMPTS.map((prompt) => (
-            <button
-              key={prompt}
-              onClick={() => sendMessage(prompt)}
-              disabled={loading}
-              className="text-left text-[11px] text-white/45 bg-white/[0.03] border border-white/[0.06] rounded-lg px-3 py-2.5 hover:bg-white/[0.06] hover:text-white/65 hover:border-white/10 transition-all disabled:opacity-40"
-            >
-              <MessageSquare className="w-3 h-3 inline mr-1.5 opacity-40" />
-              {prompt}
-            </button>
+        <div className="flex flex-col gap-3 mb-4 max-h-[340px] overflow-y-auto scrollbar-hide">
+          {SUGGESTED_PROMPT_GROUPS.map((group) => (
+            <div key={group.label}>
+              <div className="text-[9px] text-white/20 uppercase tracking-widest font-semibold mb-1.5 px-0.5">{group.label}</div>
+              <div className="flex flex-col gap-1.5">
+                {group.prompts.map((prompt) => (
+                  <button
+                    key={prompt}
+                    onClick={() => sendMessage(prompt)}
+                    disabled={loading}
+                    className="text-left text-[11px] text-white/45 bg-white/[0.03] border border-white/[0.06] rounded-lg px-3 py-2 hover:bg-white/[0.06] hover:text-white/65 hover:border-white/10 transition-all disabled:opacity-40"
+                  >
+                    <MessageSquare className="w-3 h-3 inline mr-1.5 opacity-40" />
+                    {prompt}
+                  </button>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       )}
@@ -1745,9 +1754,6 @@ export default function PredictPage() {
 
             {/* ═══ Enhanced Markets Table ═══ */}
             <EnhancedMarketsTable />
-
-            {/* ═══ TradingAgents Analysis ═══ */}
-            <AnalysisPanel />
 
             {/* ═══ Whale Watch ═══ */}
             <WhaleWatchPanel />

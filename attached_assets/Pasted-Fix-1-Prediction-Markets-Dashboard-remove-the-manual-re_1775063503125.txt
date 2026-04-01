@@ -1,0 +1,32 @@
+Fix 1: Prediction Markets Dashboard — remove the manual refresh button, add auto-refresh
+The expired markets (Netanyahu out by March 31, US x Iran ceasefire by March 31) are now filtered at the backend. The dashboard data is real-time Polymarket data — there is no need for a manual refresh button at all.
+
+Changes to make:
+
+Remove the manual refresh button (the circular arrow icon in the top-right of the Prediction Markets Dashboard). The data doesn't need manual refresh.
+
+Add automatic polling on the dashboard component. Every 90 seconds, silently re-fetch /api/polymarket/events in the background and update the state. Do NOT show a loading spinner on refetch — only show loading on the initial mount. The Cache-Control: no-store header is now set on the endpoint, so browsers won't cache stale data.
+
+useEffect(() => {
+  fetchData(); // initial load
+  const interval = setInterval(fetchData, 90_000); // silent refresh every 90s
+  return () => clearInterval(interval);
+}, []);
+Update the "Updated at" timestamp to refresh automatically each time the auto-poll completes (since you're already showing "Updated 11:58:35 AM" on the dashboard header).
+
+Add a small "LIVE" indicator badge next to the timestamp (similar to the one you have on the Market Intelligence panel) to communicate that data auto-refreshes, replacing the manual refresh button.
+
+Fix 2: Consolidate "Caelyn Analyzes" and "Caelyn Predicts" into one agent section
+Both sections go to the same backend agent — the distinction is only visual in the frontend. Merge them into a single "Caelyn Predicts" section (keep that name, it's on the Predict page where it belongs).
+
+Rules for the consolidation:
+
+Keep the location of "Caelyn Predicts" — it stays where it currently is on the Predict page.
+
+Remove the "Caelyn Analyzes" section entirely as a separate UI panel.
+
+Merge ALL preset prompt chips from both sections into the single "Caelyn Predicts" section. Show them all as clickable preset prompt buttons under the input. The combined set should include every preset from both groups — do not drop any. If there are too many to show at once, show them in two scrollable rows or group them with soft category dividers ("Markets", "Analysis", etc.).
+
+The agent input, submit button, and response panel all stay the same — just one instance, not two.
+
+The system behavior is already correct — the backend Caelyn agent has full combined context including real-time Polymarket signals (surging markets, whale activity, edge detections, top movers) AND all the financial analysis data. So merging the UI is all that's needed.
