@@ -83,9 +83,13 @@ interface InsiderDetail extends InsiderTransaction {
 }
 interface ApiResponse {
   transactions: InsiderTransaction[];
-  total:        number;
-  offset:       number;
-  limit:        number;
+  total?:       number;
+  offset?:      number;
+  limit?:       number;
+  summary?: {
+    total_transactions?: number;
+    total?:              number;
+  };
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -532,24 +536,31 @@ function InsiderTable({
 function Pagination({ total, offset, limit, onChange }: {
   total: number; offset: number; limit: number; onChange: (o: number) => void;
 }) {
+  if (total <= 0) return null;
   const page     = Math.floor(offset / limit) + 1;
-  const totalPgs = Math.ceil(total / limit);
-  const from     = offset + 1;
+  const totalPgs = Math.max(1, Math.ceil(total / limit));
+  const from     = Math.min(offset + 1, total);
   const to       = Math.min(offset + limit, total);
+  const canPrev  = offset > 0;
+  const canNext  = page < totalPgs;
   return (
     <div className="flex items-center justify-between text-xs text-gray-500 pt-3 border-t border-white/[0.06] mt-3 flex-wrap gap-2">
-      <span>Showing {from.toLocaleString()}–{to.toLocaleString()} of {total.toLocaleString()} results</span>
-      <div className="flex items-center gap-2">
-        <button onClick={() => onChange(Math.max(0, offset - limit))} disabled={offset === 0}
-          className="px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.06] text-gray-400 hover:text-white disabled:opacity-30 transition-colors">
-          ← Prev
-        </button>
-        <span className="px-2 text-gray-400">Page {page} of {totalPgs}</span>
-        <button onClick={() => onChange(offset + limit)} disabled={page >= totalPgs}
-          className="px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.06] text-gray-400 hover:text-white disabled:opacity-30 transition-colors">
-          Next →
-        </button>
-      </div>
+      <span>
+        Showing {from.toLocaleString()}–{to.toLocaleString()} of {total.toLocaleString()} results
+      </span>
+      {totalPgs > 1 && (
+        <div className="flex items-center gap-2">
+          <button onClick={() => onChange(Math.max(0, offset - limit))} disabled={!canPrev}
+            className="px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.06] text-gray-400 hover:text-white disabled:opacity-30 transition-colors">
+            ← Prev
+          </button>
+          <span className="px-2 text-gray-400">Page {page} of {totalPgs}</span>
+          <button onClick={() => onChange(offset + limit)} disabled={!canNext}
+            className="px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.06] text-gray-400 hover:text-white disabled:opacity-30 transition-colors">
+            Next →
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -873,7 +884,13 @@ export default function InsiderActivityPage() {
   const handleClusterSubFilter = (f: ClusterSubFilter) => { setClusterSubFilter(f); setOffset(0); };
 
   const rows  = apiData?.transactions ?? [];
-  const total = apiData?.total ?? stats?.total_results ?? 0;
+  const total =
+    apiData?.summary?.total_transactions ??
+    apiData?.summary?.total ??
+    apiData?.total ??
+    stats?.total_transactions ??
+    stats?.total_results ??
+    rows.length;
 
   return (
     <div className="min-h-screen bg-[#06080f] p-3 sm:p-4 lg:p-6 space-y-4">
