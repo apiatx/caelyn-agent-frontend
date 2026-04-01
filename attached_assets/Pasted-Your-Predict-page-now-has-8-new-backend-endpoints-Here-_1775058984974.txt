@@ -1,0 +1,86 @@
+Your Predict page now has 8 new backend endpoints. Here is exactly what to build for each:
+
+1. Market Intelligence Dashboard Panel
+Endpoint: GET /api/predict/signals
+
+Add a new "Market Intelligence" section at the top of the Predict page. It returns a summary object and 5 ranked lists. Build these widgets:
+
+4 stat cards from summary:
+
+total_volume_24h → "24h Volume" (format as $87.9M)
+market_count → "Active Markets"
+surging_count → "Surging" (with an up-arrow indicator)
+whale_active_count → "Whale Active" (with a whale icon)
+"Top Edges / Mispricings" table from top_edges and top_mispricings. Each row: market question (truncated 50 chars), YES%, edge_pct (show in red if positive), market_efficiency_score badge (green >85, yellow 70-85, red <70).
+
+"Surging Markets" list from surging_markets: question + volume_24h + volume_momentum badge ("SURGING" in green, "ACCELERATING" in teal).
+
+"Whale Watch" list from whale_markets: question + vol_liq_ratio formatted as "34.7x ratio" + volume_24h.
+
+2. Enhanced Market Table
+Endpoint: GET /api/predict/markets?limit=50
+
+Replace or extend your existing Polymarket markets table with these new columns pulled from the enriched response:
+
+Column	Field	Display
+YES%	yes_pct	Large green number
+Volume 24h	volume_24h	$1.2M formatted
+Momentum	volume_momentum	Badge: SURGING=green, ACCELERATING=teal, STABLE=gray, FADING=red
+Whale	whale_activity	🐋 icon if true
+Efficiency	market_efficiency_score	0-100 score with color coding
+Kelly	kelly_fraction_pct	"2.1% Kelly" — only show if > 0
+Expires	days_to_expiry	"14d"
+Filtering: add a tag dropdown using data from /api/predict/categories (pass as ?tag=slug). Add min_volume filter.
+
+3. Category Breakdown Chart
+Endpoint: GET /api/predict/categories
+
+Returns { categories: [{tag, count, volume_24h, liquidity}] }. Build a horizontal bar chart or bubble chart showing top 10-15 categories by volume_24h. Labels: Sports, Geopolitics, Politics, Crypto, Fed, etc.
+
+4. TradingAgents Analysis Panel (star feature)
+Endpoint: GET /api/predict/context?question=... + POST /api/predict/analyze body: {"question":"..."}
+
+Build a panel with:
+
+Question input field — user types any prediction market question ("Will the Fed cut rates in June?")
+On submit: first call /api/predict/context to show relevant matching markets while the analysis runs in the background
+Then POST to /api/predict/analyze — this takes 30-90 seconds
+Show a streaming-style loading state with: "Fundamentals agent analyzing...", "Sentiment agent analyzing...", "Bull & Bear debating...", "Risk Manager deciding..." (timed fake steps work fine since it's a single long call).
+
+Final output layout — the response has a final object and an agents object:
+
+final.recommendation  → Large badge: LONG_YES (green) | LONG_NO (red) | PASS (gray)
+final.conviction      → "HIGH CONVICTION" subtitle
+final.final_yes_probability_pct  → "Caelyn says: 72% YES"
+final.market_price_pct           → "Market says: 65% YES"
+final.edge_pct                   → "+7.0% edge" (positive = YES trade, negative = NO trade)
+final.debate_winner  → "Bull case won"
+final.thesis         → Full paragraph
+final.key_risk       → Risk callout box
+final.position_sizing → "2-3% of risk capital"
+final.entry_note / final.exit_note → Entry/exit guidance
+Agent reasoning accordion — collapsible cards for each agent in agents.*:
+
+Fundamentals → shows summary, base_rate_estimate, confidence
+Sentiment → shows summary, media_sentiment, crowd_wisdom
+Technical → shows summary, trend, smart_money_signal
+Bull → shows primary_argument, key_catalyst, supporting_evidence (list)
+Bear → shows primary_argument, key_risk, supporting_evidence (list)
+Risk Manager → shows bull_points_adopted, bear_points_adopted
+Relevant markets section below — from relevant_markets[] — shows which Polymarket markets Caelyn used to inform the analysis. Each card: question + yes_pct + volume_24h + market_efficiency_score.
+
+5. Whale Watch Feed
+Endpoint: GET /api/predict/whale-watch?limit=20
+
+Add a "Whale Watch" tab or sidebar widget. Each row:
+
+Market question (50 chars)
+vol_liq_ratio formatted as "34.7× liquidity"
+volume_24h formatted as $334K
+yes_pct as current probability
+A tooltip: "Volume is X times the available liquidity — signals large coordinated position"
+6. Caelyn AI Chat on Predict Page
+No change needed to the chat interface — the existing Polymarket chat now automatically receives the intelligence signals (surging markets, whale alerts, edge detections) and Caelyn's system prompt has been updated to reference them. Users asking "what's moving on Polymarket?" or "show me whale activity" will get answers that cite the specific signals.
+
+API base URL note
+All new endpoints are at the same base URL as your existing /api/polymarket/events. The new ones are under /api/predict/* and /api/polymarket/intelligence.

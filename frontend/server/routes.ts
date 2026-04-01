@@ -1751,6 +1751,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ── Predict / Polymarket Intelligence proxy ───────────────────────────────────
+  const PREDICT_URL  = "https://fast-api-server-trading-agent-aidanpilon.replit.app";
+  const PREDICT_KEY  = "hippo_ak_7f3x9k2m4p8q1w5t";
+  const predictHdr  = () => ({ "Content-Type":"application/json", "X-API-Key": PREDICT_KEY });
+
+  const proxyPredict = async (path: string, req: any, res: any, method = "GET") => {
+    try {
+      const qs = method === "GET" ? new URLSearchParams(req.query as Record<string,string>).toString() : "";
+      const url = `${PREDICT_URL}${path}${qs ? `?${qs}` : ""}`;
+      const opts: RequestInit = { method, headers: predictHdr() };
+      if (method === "POST") opts.body = JSON.stringify(req.body ?? {});
+      const r = await fetch(url, opts);
+      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
+      res.json(await r.json());
+    } catch (e: any) { res.status(500).json({ error: e?.message ?? "Proxy error" }); }
+  };
+
+  app.get("/api/predict/signals",    (q, s) => proxyPredict("/api/predict/signals",    q, s));
+  app.get("/api/predict/markets",    (q, s) => proxyPredict("/api/predict/markets",    q, s));
+  app.get("/api/predict/categories", (q, s) => proxyPredict("/api/predict/categories", q, s));
+  app.get("/api/predict/whale-watch",(q, s) => proxyPredict("/api/predict/whale-watch",q, s));
+  app.get("/api/predict/context",    (q, s) => proxyPredict("/api/predict/context",    q, s));
+  app.post("/api/predict/analyze",   (q, s) => proxyPredict("/api/predict/analyze",   q, s, "POST"));
+
   // ── Congressional Trades proxy ────────────────────────────────────────────────
   app.get('/api/congressional-trades/stats', async (req, res) => {
     try {

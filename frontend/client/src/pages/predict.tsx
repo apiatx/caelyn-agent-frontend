@@ -1,7 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, ExternalLink, Activity, BarChart3, RefreshCw, Users, DollarSign, MessageSquare, Send, Loader2, Sparkles } from "lucide-react";
+import {
+  TrendingUp, TrendingDown, ExternalLink, Activity, BarChart3, RefreshCw, Users, DollarSign,
+  MessageSquare, Send, Loader2, Sparkles, ChevronDown, ChevronRight,
+  Zap, Eye, Target, AlertTriangle, CheckCircle, Brain, Star, Waves,
+} from "lucide-react";
 import { openSecureLink } from "@/utils/security";
 import diceImage from "@assets/istockphoto-1252690598-612x612_1756665072306.jpg";
 
@@ -703,6 +707,677 @@ function PolymarketDashboard() {
   );
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// MARKET INTELLIGENCE — Types
+// ═══════════════════════════════════════════════════════════════════
+interface SignalsSummary {
+  total_volume_24h?: number;
+  market_count?: number;
+  surging_count?: number;
+  whale_active_count?: number;
+}
+interface EdgeMarket {
+  question: string;
+  yes_pct?: number;
+  edge_pct?: number;
+  market_efficiency_score?: number;
+  slug?: string;
+  slug_url?: string;
+}
+interface SurgingMarket {
+  question: string;
+  volume_24h?: number;
+  volume_momentum?: string;
+  slug?: string;
+}
+interface WhaleMkt {
+  question: string;
+  vol_liq_ratio?: number;
+  volume_24h?: number;
+  yes_pct?: number;
+  slug?: string;
+}
+interface SignalsData {
+  summary?: SignalsSummary;
+  top_edges?: EdgeMarket[];
+  top_mispricings?: EdgeMarket[];
+  surging_markets?: SurgingMarket[];
+  whale_markets?: WhaleMkt[];
+}
+interface EnhancedMarket {
+  id?: string;
+  question: string;
+  slug?: string;
+  yes_pct?: number;
+  volume_24h?: number;
+  volume_momentum?: string;
+  whale_activity?: boolean;
+  market_efficiency_score?: number;
+  kelly_fraction_pct?: number;
+  days_to_expiry?: number;
+  tags?: string[];
+}
+interface CategoryItem {
+  tag: string;
+  count?: number;
+  volume_24h?: number;
+  liquidity?: number;
+}
+interface WhaleWatchItem {
+  question: string;
+  vol_liq_ratio?: number;
+  volume_24h?: number;
+  yes_pct?: number;
+  slug?: string;
+}
+// Analysis types
+interface AgentResult {
+  summary?: string;
+  base_rate_estimate?: string;
+  confidence?: string;
+  media_sentiment?: string;
+  crowd_wisdom?: string;
+  trend?: string;
+  smart_money_signal?: string;
+  primary_argument?: string;
+  key_catalyst?: string;
+  key_risk?: string;
+  supporting_evidence?: string[];
+  bull_points_adopted?: string[];
+  bear_points_adopted?: string[];
+}
+interface AnalysisFinal {
+  recommendation?: string;
+  conviction?: string;
+  final_yes_probability_pct?: number;
+  market_price_pct?: number;
+  edge_pct?: number;
+  debate_winner?: string;
+  thesis?: string;
+  key_risk?: string;
+  position_sizing?: string;
+  entry_note?: string;
+  exit_note?: string;
+}
+interface AnalysisResponse {
+  final?: AnalysisFinal;
+  agents?: Record<string, AgentResult>;
+  relevant_markets?: Array<{ question: string; yes_pct?: number; volume_24h?: number; market_efficiency_score?: number; slug?: string }>;
+}
+
+// ─── Intelligence Helpers ──────────────────────────────────────────
+function effBadge(score: number | undefined) {
+  if (score == null) return null;
+  const cls = score >= 85 ? "bg-emerald-500/20 text-emerald-400" : score >= 70 ? "bg-amber-500/20 text-amber-400" : "bg-red-500/20 text-red-400";
+  return <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold ${cls}`}>{score}</span>;
+}
+function momentumBadge(m: string | undefined) {
+  if (!m) return null;
+  const u = m.toUpperCase();
+  const cls = u === "SURGING" ? "bg-emerald-500/20 text-emerald-400" : u === "ACCELERATING" ? "bg-teal-500/20 text-teal-400" : u === "FADING" ? "bg-red-500/20 text-red-400" : "bg-gray-500/20 text-gray-400";
+  return <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold ${cls}`}>{u}</span>;
+}
+function recoBadge(r: string | undefined) {
+  if (!r) return null;
+  const u = r.toUpperCase();
+  if (u.includes("LONG_YES") || u === "LONG YES") return <span className="inline-flex items-center px-3 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-base font-bold">{u}</span>;
+  if (u.includes("LONG_NO") || u === "LONG NO") return <span className="inline-flex items-center px-3 py-1 rounded-lg bg-red-500/20 text-red-400 border border-red-500/30 text-base font-bold">{u}</span>;
+  return <span className="inline-flex items-center px-3 py-1 rounded-lg bg-gray-500/20 text-gray-400 border border-gray-500/30 text-base font-bold">{u}</span>;
+}
+
+// ─── Market Intelligence Panel ────────────────────────────────────
+function MarketIntelligence() {
+  const [data, setData] = useState<SignalsData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/predict/signals")
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => { if (d) setData(d); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const s = data?.summary;
+  const statCards = [
+    { icon: DollarSign, label: "24h Volume",    val: s?.total_volume_24h   != null ? formatVolume(s.total_volume_24h)        : "—", cls: "text-blue-400" },
+    { icon: Activity,   label: "Active Markets", val: s?.market_count       != null ? s.market_count.toLocaleString()        : "—", cls: "text-white" },
+    { icon: Zap,        label: "Surging",        val: s?.surging_count      != null ? s.surging_count.toLocaleString()       : "—", cls: "text-emerald-400" },
+    { icon: Waves,      label: "Whale Active",   val: s?.whale_active_count != null ? s.whale_active_count.toLocaleString()  : "—", cls: "text-purple-400" },
+  ];
+  const edges    = [...(data?.top_edges ?? []), ...(data?.top_mispricings ?? [])].slice(0, 8);
+  const surging  = data?.surging_markets?.slice(0, 6) ?? [];
+  const whales   = data?.whale_markets?.slice(0, 5) ?? [];
+
+  return (
+    <GlassCard className="p-5 mb-5">
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center flex-shrink-0">
+          <Brain className="w-4 h-4 text-white" />
+        </div>
+        <div>
+          <h2 className="text-sm font-bold text-white flex items-center gap-2">
+            Market Intelligence
+            <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-[10px] text-emerald-400 font-semibold uppercase tracking-widest">Live</span>
+            </span>
+          </h2>
+          <p className="text-[10px] text-white/30">Real-time signals, edges, and whale activity from Polymarket</p>
+        </div>
+      </div>
+
+      {/* Stat cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-5">
+        {statCards.map(({ icon: Icon, label, val, cls }) => (
+          <div key={label} className="bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 flex items-center gap-2.5">
+            <Icon className={`w-4 h-4 flex-shrink-0 ${cls}`} />
+            <div>
+              <div className="text-[9px] text-white/30 uppercase tracking-widest font-semibold leading-none mb-0.5">{label}</div>
+              <div className={`text-sm font-bold font-mono leading-tight ${cls}`}>{loading ? <span className="animate-pulse text-white/20">···</span> : val}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center py-8 text-xs text-white/20"><Loader2 className="w-4 h-4 animate-spin mr-2" />Loading intelligence data…</div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* Top Edges / Mispricings */}
+          <div className="lg:col-span-1">
+            <div className="flex items-center gap-1.5 mb-2.5">
+              <Target className="w-3.5 h-3.5 text-amber-400" />
+              <span className="text-[11px] font-bold text-white/80 uppercase tracking-wider">Top Edges</span>
+            </div>
+            <div className="space-y-1.5">
+              {edges.length === 0 ? <div className="text-[11px] text-white/20 py-3 text-center">No edge data</div>
+              : edges.map((e, i) => (
+                <div key={i} className="bg-white/[0.02] border border-white/[0.05] rounded-lg px-2.5 py-2 flex items-center gap-2">
+                  <p className="flex-1 text-[10px] text-white/70 leading-tight truncate">{e.question?.slice(0, 50) || "—"}</p>
+                  <span className="text-[10px] font-mono text-blue-400 flex-shrink-0">{e.yes_pct != null ? `${e.yes_pct}%` : "—"}</span>
+                  {e.edge_pct != null && <span className={`text-[10px] font-bold font-mono flex-shrink-0 ${e.edge_pct > 0 ? "text-red-400" : "text-emerald-400"}`}>{e.edge_pct > 0 ? "+" : ""}{e.edge_pct.toFixed(1)}%</span>}
+                  {effBadge(e.market_efficiency_score)}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Surging Markets */}
+          <div>
+            <div className="flex items-center gap-1.5 mb-2.5">
+              <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="text-[11px] font-bold text-white/80 uppercase tracking-wider">Surging Markets</span>
+            </div>
+            <div className="space-y-1.5">
+              {surging.length === 0 ? <div className="text-[11px] text-white/20 py-3 text-center">No data</div>
+              : surging.map((m, i) => (
+                <div key={i} className="bg-white/[0.02] border border-white/[0.05] rounded-lg px-2.5 py-2 flex items-center gap-2">
+                  <p className="flex-1 text-[10px] text-white/70 leading-tight truncate">{m.question?.slice(0, 55) || "—"}</p>
+                  <span className="text-[10px] font-mono text-white/40 flex-shrink-0">{m.volume_24h != null ? formatVolume(m.volume_24h) : ""}</span>
+                  {momentumBadge(m.volume_momentum)}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Whale Watch */}
+          <div>
+            <div className="flex items-center gap-1.5 mb-2.5">
+              <Waves className="w-3.5 h-3.5 text-purple-400" />
+              <span className="text-[11px] font-bold text-white/80 uppercase tracking-wider">Whale Watch</span>
+            </div>
+            <div className="space-y-1.5">
+              {whales.length === 0 ? <div className="text-[11px] text-white/20 py-3 text-center">No whale activity</div>
+              : whales.map((w, i) => (
+                <div key={i} className="bg-white/[0.02] border border-white/[0.05] rounded-lg px-2.5 py-2 flex items-center gap-2">
+                  <p className="flex-1 text-[10px] text-white/70 leading-tight truncate">{w.question?.slice(0, 50) || "—"}</p>
+                  {w.vol_liq_ratio != null && <span className="text-[10px] font-bold text-purple-400 font-mono flex-shrink-0">{w.vol_liq_ratio.toFixed(1)}×</span>}
+                  <span className="text-[10px] text-white/30 font-mono flex-shrink-0">{w.volume_24h != null ? formatVolume(w.volume_24h) : ""}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </GlassCard>
+  );
+}
+
+// ─── Enhanced Markets Table ────────────────────────────────────────
+function EnhancedMarketsTable() {
+  const [markets, setMarkets]       = useState<EnhancedMarket[]>([]);
+  const [categories, setCategories] = useState<CategoryItem[]>([]);
+  const [loading, setLoading]       = useState(true);
+  const [tagFilter, setTagFilter]   = useState("");
+  const [minVol, setMinVol]         = useState("");
+
+  const fetchMarkets = useCallback(async () => {
+    setLoading(true);
+    try {
+      const qs = new URLSearchParams({ limit: "50" });
+      if (tagFilter) qs.set("tag", tagFilter);
+      if (minVol)    qs.set("min_volume", minVol);
+      const r = await fetch(`/api/predict/markets?${qs}`);
+      if (r.ok) {
+        const d = await r.json();
+        setMarkets(Array.isArray(d) ? d : (d.markets ?? []));
+      }
+    } catch {} finally { setLoading(false); }
+  }, [tagFilter, minVol]);
+
+  useEffect(() => {
+    fetch("/api/predict/categories")
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => { if (d?.categories) setCategories(d.categories.slice(0, 20)); })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => { fetchMarkets(); }, [fetchMarkets]);
+
+  return (
+    <GlassCard className="p-5 mb-5">
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <BarChart3 className="w-4 h-4 text-blue-400" />
+          <h2 className="text-sm font-bold text-white">Intelligence Markets</h2>
+          <LiveBadge />
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <select value={tagFilter} onChange={(e) => setTagFilter(e.target.value)}
+            className="bg-white/[0.04] border border-white/[0.08] rounded-lg px-2.5 py-1.5 text-[11px] text-white/60 focus:outline-none">
+            <option value="">All Categories</option>
+            {categories.map((c) => <option key={c.tag} value={c.tag}>{c.tag}</option>)}
+          </select>
+          <select value={minVol} onChange={(e) => setMinVol(e.target.value)}
+            className="bg-white/[0.04] border border-white/[0.08] rounded-lg px-2.5 py-1.5 text-[11px] text-white/60 focus:outline-none">
+            <option value="">Any Volume</option>
+            <option value="1000">$1K+</option><option value="10000">$10K+</option>
+            <option value="50000">$50K+</option><option value="100000">$100K+</option>
+          </select>
+          <button onClick={fetchMarkets} className="p-1.5 rounded-lg border border-white/10 hover:bg-white/5 transition-colors">
+            <RefreshCw className={`w-3.5 h-3.5 text-white/40 ${loading ? "animate-spin" : ""}`} />
+          </button>
+        </div>
+      </div>
+      {loading ? (
+        <div className="space-y-2">{[...Array(5)].map((_, i) => <div key={i} className="h-10 rounded-lg bg-white/[0.03] animate-pulse" />)}</div>
+      ) : markets.length === 0 ? (
+        <div className="text-center py-8 text-sm text-white/30">No markets available</div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[700px]">
+            <thead>
+              <tr className="border-b border-white/[0.06]">
+                {["Market", "YES%", "Vol 24h", "Momentum", "Whale", "Efficiency", "Kelly", "Expires"].map((h) => (
+                  <th key={h} className="px-2 py-2 text-left text-[10px] font-semibold text-white/30 uppercase tracking-wider">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {markets.map((m, i) => (
+                <tr key={m.id ?? i} className={`border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors ${i % 2 === 0 ? "" : "bg-white/[0.01]"}`}>
+                  <td className="px-2 py-2.5 max-w-[260px]">
+                    <a href={m.slug ? `https://polymarket.com/event/${m.slug}` : "#"} target="_blank" rel="noopener noreferrer"
+                      className="text-[11px] text-white/75 hover:text-white transition-colors leading-tight line-clamp-2 block">
+                      {m.question}
+                    </a>
+                  </td>
+                  <td className="px-2 py-2.5">
+                    {m.yes_pct != null && <span className={`text-sm font-bold ${m.yes_pct >= 60 ? "text-emerald-400" : m.yes_pct <= 40 ? "text-red-400" : "text-blue-400"}`}>{m.yes_pct}%</span>}
+                  </td>
+                  <td className="px-2 py-2.5 text-[11px] text-white/40 font-mono">{m.volume_24h != null ? formatVolume(m.volume_24h) : "—"}</td>
+                  <td className="px-2 py-2.5">{momentumBadge(m.volume_momentum)}</td>
+                  <td className="px-2 py-2.5 text-center">{m.whale_activity && <span title="Whale active" className="text-base">🐋</span>}</td>
+                  <td className="px-2 py-2.5">{effBadge(m.market_efficiency_score)}</td>
+                  <td className="px-2 py-2.5 text-[11px] text-white/40">{m.kelly_fraction_pct != null && m.kelly_fraction_pct > 0 ? `${m.kelly_fraction_pct.toFixed(1)}% Kelly` : "—"}</td>
+                  <td className="px-2 py-2.5 text-[11px] text-white/40">{m.days_to_expiry != null ? `${m.days_to_expiry}d` : "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </GlassCard>
+  );
+}
+
+// ─── Category Breakdown Chart ──────────────────────────────────────
+function CategoryChart() {
+  const [cats, setCats] = useState<CategoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    fetch("/api/predict/categories")
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => { if (d?.categories) setCats(d.categories.slice(0, 15)); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+  const maxVol = Math.max(...cats.map((c) => c.volume_24h ?? 0), 1);
+  return (
+    <GlassCard className="p-5 mb-5">
+      <div className="flex items-center gap-2 mb-4">
+        <BarChart3 className="w-4 h-4 text-teal-400" />
+        <h2 className="text-sm font-bold text-white">Category Volume</h2>
+        <span className="text-[10px] text-white/30">24h trading volume by category</span>
+      </div>
+      {loading ? (
+        <div className="space-y-2">{[...Array(8)].map((_, i) => <div key={i} className="h-7 rounded bg-white/[0.03] animate-pulse" />)}</div>
+      ) : cats.length === 0 ? (
+        <div className="text-center py-6 text-sm text-white/30">No category data</div>
+      ) : (
+        <div className="space-y-2">
+          {cats.map((c) => {
+            const pct = maxVol > 0 ? ((c.volume_24h ?? 0) / maxVol) * 100 : 0;
+            return (
+              <div key={c.tag} className="flex items-center gap-3">
+                <div className="w-[110px] text-[11px] text-white/60 truncate flex-shrink-0 text-right">{c.tag}</div>
+                <div className="flex-1 h-5 bg-white/[0.04] rounded overflow-hidden">
+                  <div className="h-full rounded bg-gradient-to-r from-blue-500/60 to-purple-500/60 transition-all duration-500 flex items-center pl-2"
+                    style={{ width: `${Math.max(pct, 2)}%` }}>
+                    {pct > 15 && <span className="text-[9px] text-white/70 font-mono">{formatVolume(c.volume_24h ?? 0)}</span>}
+                  </div>
+                </div>
+                <div className="w-[52px] text-[10px] text-white/30 font-mono flex-shrink-0">{formatVolume(c.volume_24h ?? 0)}</div>
+                <div className="w-[28px] text-[10px] text-white/20 flex-shrink-0">{c.count != null ? `×${c.count}` : ""}</div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </GlassCard>
+  );
+}
+
+// ─── Whale Watch Panel ────────────────────────────────────────────
+function WhaleWatchPanel() {
+  const [items, setItems] = useState<WhaleWatchItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    fetch("/api/predict/whale-watch?limit=20")
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => { setItems(Array.isArray(d) ? d : (d?.markets ?? d?.results ?? [])); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+  return (
+    <GlassCard className="p-5 mb-5">
+      <div className="flex items-center gap-2 mb-4">
+        <Waves className="w-4 h-4 text-purple-400" />
+        <h2 className="text-sm font-bold text-white">Whale Watch</h2>
+        <span className="text-[10px] text-white/30">Volume/liquidity ratio — signals large coordinated positions</span>
+      </div>
+      {loading ? (
+        <div className="space-y-2">{[...Array(6)].map((_, i) => <div key={i} className="h-10 rounded-lg bg-white/[0.03] animate-pulse" />)}</div>
+      ) : items.length === 0 ? (
+        <div className="text-center py-8 text-sm text-white/30">No whale activity detected</div>
+      ) : (
+        <div className="space-y-2">
+          {items.map((w, i) => (
+            <div key={i} className="bg-white/[0.02] border border-white/[0.05] rounded-lg px-3 py-2.5 flex items-center gap-3 group"
+              title={`Volume is ${w.vol_liq_ratio?.toFixed(1)}× the available liquidity — signals large coordinated position`}>
+              <div className="flex-1 min-w-0">
+                <a href={w.slug ? `https://polymarket.com/event/${w.slug}` : "#"} target="_blank" rel="noopener noreferrer"
+                  className="text-[11px] text-white/70 hover:text-white transition-colors leading-tight block truncate">
+                  {w.question?.slice(0, 65) || "—"}
+                </a>
+              </div>
+              <span className="text-xs font-bold text-purple-400 font-mono flex-shrink-0 whitespace-nowrap">
+                {w.vol_liq_ratio != null ? `${w.vol_liq_ratio.toFixed(1)}× liquidity` : "—"}
+              </span>
+              <span className="text-[11px] font-mono text-white/40 flex-shrink-0">{w.volume_24h != null ? formatVolume(w.volume_24h) : ""}</span>
+              {w.yes_pct != null && <span className={`text-xs font-bold font-mono flex-shrink-0 ${w.yes_pct >= 60 ? "text-emerald-400" : w.yes_pct <= 40 ? "text-red-400" : "text-blue-400"}`}>{w.yes_pct}%</span>}
+            </div>
+          ))}
+        </div>
+      )}
+    </GlassCard>
+  );
+}
+
+// ─── TradingAgents Analysis Panel ────────────────────────────────
+const ANALYSIS_STEPS = [
+  { label: "Fundamentals agent analyzing…",   ms: 0     },
+  { label: "Sentiment agent analyzing…",      ms: 12000 },
+  { label: "Bull & Bear debating…",           ms: 28000 },
+  { label: "Risk Manager deciding…",          ms: 50000 },
+];
+
+function AnalysisPanel() {
+  const [question, setQuestion] = useState("");
+  const [status, setStatus]     = useState<"idle" | "context" | "analyzing" | "done" | "error">("idle");
+  const [stepIdx, setStepIdx]   = useState(0);
+  const [contextMkts, setContextMkts] = useState<EnhancedMarket[]>([]);
+  const [result, setResult]     = useState<AnalysisResponse | null>(null);
+  const [errMsg, setErrMsg]     = useState("");
+  const [openAgent, setOpenAgent] = useState<string | null>(null);
+  const timerRefs               = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  const clearTimers = () => { timerRefs.current.forEach(clearTimeout); timerRefs.current = []; };
+
+  const runAnalysis = async () => {
+    if (!question.trim() || status === "analyzing") return;
+    clearTimers();
+    setStatus("context"); setStepIdx(0); setResult(null); setErrMsg(""); setContextMkts([]); setOpenAgent(null);
+
+    // Fetch context first
+    try {
+      const ctx = await fetch(`/api/predict/context?question=${encodeURIComponent(question.trim())}`);
+      if (ctx.ok) {
+        const d = await ctx.json();
+        setContextMkts(Array.isArray(d) ? d : (d.markets ?? d.relevant_markets ?? []));
+      }
+    } catch {}
+
+    setStatus("analyzing"); setStepIdx(0);
+    ANALYSIS_STEPS.forEach((step, idx) => {
+      if (idx === 0) return;
+      const id = setTimeout(() => setStepIdx(idx), step.ms);
+      timerRefs.current.push(id);
+    });
+
+    try {
+      const r = await fetch("/api/predict/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: question.trim() }),
+      });
+      clearTimers();
+      if (!r.ok) throw new Error(`Backend ${r.status}`);
+      const d: AnalysisResponse = await r.json();
+      setResult(d); setStatus("done");
+    } catch (e: any) {
+      clearTimers();
+      setErrMsg(e?.message ?? "Analysis failed"); setStatus("error");
+    }
+  };
+
+  const reset = () => { clearTimers(); setStatus("idle"); setResult(null); setContextMkts([]); setOpenAgent(null); };
+
+  const f = result?.final;
+  const agentEntries = Object.entries(result?.agents ?? {});
+
+  return (
+    <GlassCard className="p-5 mb-5">
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
+          <Brain className="w-4 h-4 text-white" />
+        </div>
+        <div>
+          <h2 className="text-sm font-bold text-white flex items-center gap-2">
+            Caelyn Analyzes <Star className="w-3.5 h-3.5 text-amber-400" />
+          </h2>
+          <p className="text-[10px] text-white/30">Multi-agent prediction market analysis — 30-90 seconds</p>
+        </div>
+        {status !== "idle" && (
+          <button onClick={reset} className="ml-auto text-[10px] text-white/30 hover:text-white/60 transition-colors border border-white/[0.06] rounded px-2 py-1">Reset</button>
+        )}
+      </div>
+
+      {/* Input */}
+      {(status === "idle" || status === "error") && (
+        <div className="space-y-3">
+          <div className="relative">
+            <input
+              value={question} onChange={(e) => setQuestion(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") runAnalysis(); }}
+              placeholder="Will the Fed cut rates in June? | Will Bitcoin hit $100K by end of year?"
+              className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white placeholder-white/25 focus:outline-none focus:border-white/20 pr-[90px]"
+            />
+            <button onClick={runAnalysis} disabled={!question.trim()}
+              className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/30 text-amber-300 text-[11px] font-semibold transition-all disabled:opacity-40">
+              Analyze
+            </button>
+          </div>
+          {status === "error" && <p className="text-xs text-red-400 bg-red-500/[0.07] border border-red-500/20 rounded-lg px-3 py-2">Error: {errMsg}</p>}
+          <div className="flex flex-wrap gap-2">
+            {["Will the Fed cut rates in June?", "Will Bitcoin hit $100K?", "Will there be a US recession in 2025?"].map((p) => (
+              <button key={p} onClick={() => setQuestion(p)}
+                className="text-[10px] text-white/35 hover:text-white/60 border border-white/[0.06] rounded-full px-2.5 py-1 hover:border-white/10 transition-all">
+                {p}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Context markets (shown while analysis runs) */}
+      {(status === "context" || status === "analyzing") && (
+        <div className="space-y-3">
+          {/* Loading steps */}
+          <div className="bg-black/20 border border-white/[0.06] rounded-xl p-4 space-y-2.5">
+            {ANALYSIS_STEPS.map((step, idx) => (
+              <div key={idx} className={`flex items-center gap-2.5 transition-opacity ${idx <= stepIdx ? "opacity-100" : "opacity-20"}`}>
+                {idx < stepIdx ? <CheckCircle className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                  : idx === stepIdx ? <Loader2 className="w-4 h-4 text-amber-400 animate-spin flex-shrink-0" />
+                  : <div className="w-4 h-4 rounded-full border border-white/20 flex-shrink-0" />}
+                <span className={`text-xs ${idx === stepIdx ? "text-amber-300 font-semibold" : idx < stepIdx ? "text-white/50" : "text-white/25"}`}>{step.label}</span>
+              </div>
+            ))}
+          </div>
+
+          {contextMkts.length > 0 && (
+            <div>
+              <div className="text-[10px] text-white/30 uppercase tracking-widest mb-2">Relevant markets Caelyn is looking at</div>
+              <div className="space-y-1.5">
+                {contextMkts.slice(0, 4).map((m, i) => (
+                  <div key={i} className="bg-white/[0.02] border border-white/[0.04] rounded-lg px-3 py-2 flex items-center gap-2">
+                    <p className="flex-1 text-[11px] text-white/60 truncate">{m.question}</p>
+                    {m.yes_pct != null && <span className="text-xs font-bold font-mono text-blue-400">{m.yes_pct}%</span>}
+                    {m.volume_24h != null && <span className="text-[10px] text-white/25 font-mono">{formatVolume(m.volume_24h)}</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Results */}
+      {status === "done" && f && (
+        <div className="space-y-4">
+          {/* Main verdict */}
+          <div className="bg-black/25 border border-white/[0.08] rounded-xl p-4">
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div>
+                {recoBadge(f.recommendation)}
+                {f.conviction && <div className="text-[10px] text-white/40 mt-1 uppercase tracking-widest">{f.conviction}</div>}
+              </div>
+              <div className="text-right">
+                {f.final_yes_probability_pct != null && <div className="text-lg font-bold text-white">Caelyn says: <span className="text-blue-400">{f.final_yes_probability_pct}% YES</span></div>}
+                {f.market_price_pct != null && <div className="text-sm text-white/40">Market says: {f.market_price_pct}% YES</div>}
+                {f.edge_pct != null && <div className={`text-sm font-bold ${f.edge_pct >= 0 ? "text-emerald-400" : "text-red-400"}`}>{f.edge_pct >= 0 ? "+" : ""}{f.edge_pct.toFixed(1)}% edge</div>}
+              </div>
+            </div>
+            {f.debate_winner && <div className="text-[11px] text-white/40 mt-2 border-t border-white/[0.06] pt-2">{f.debate_winner}</div>}
+          </div>
+
+          {/* Thesis */}
+          {f.thesis && <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-4"><p className="text-sm text-white/80 leading-relaxed">{f.thesis}</p></div>}
+
+          {/* Risk */}
+          {f.key_risk && (
+            <div className="flex items-start gap-2 bg-red-500/[0.05] border border-red-500/20 rounded-xl p-3">
+              <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-red-300/80">{f.key_risk}</p>
+            </div>
+          )}
+
+          {/* Position/entry/exit */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            {[["Sizing", f.position_sizing], ["Entry", f.entry_note], ["Exit", f.exit_note]].map(([k, v]) => v && (
+              <div key={k} className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-3">
+                <div className="text-[9px] text-white/30 uppercase tracking-widest mb-1 font-semibold">{k}</div>
+                <p className="text-[11px] text-white/70">{v}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Agent accordion */}
+          {agentEntries.length > 0 && (
+            <div>
+              <div className="text-[10px] text-white/30 uppercase tracking-widest mb-2">Agent Reasoning</div>
+              <div className="space-y-1.5">
+                {agentEntries.map(([name, ag]) => (
+                  <div key={name} className="bg-white/[0.02] border border-white/[0.06] rounded-xl overflow-hidden">
+                    <button onClick={() => setOpenAgent(openAgent === name ? null : name)}
+                      className="w-full flex items-center justify-between px-4 py-2.5 text-left hover:bg-white/[0.02] transition-colors">
+                      <span className="text-[11px] font-semibold text-white/70 capitalize">{name.replace(/_/g, " ")}</span>
+                      {openAgent === name ? <ChevronDown className="w-3.5 h-3.5 text-white/30" /> : <ChevronRight className="w-3.5 h-3.5 text-white/30" />}
+                    </button>
+                    {openAgent === name && (
+                      <div className="px-4 pb-3 text-[11px] text-white/60 space-y-1.5 border-t border-white/[0.05]">
+                        {ag.summary && <p className="mt-2 leading-relaxed">{ag.summary}</p>}
+                        {ag.base_rate_estimate && <p><span className="text-white/30 font-semibold">Base rate: </span>{ag.base_rate_estimate}</p>}
+                        {ag.confidence && <p><span className="text-white/30 font-semibold">Confidence: </span>{ag.confidence}</p>}
+                        {ag.media_sentiment && <p><span className="text-white/30 font-semibold">Media sentiment: </span>{ag.media_sentiment}</p>}
+                        {ag.crowd_wisdom && <p><span className="text-white/30 font-semibold">Crowd wisdom: </span>{ag.crowd_wisdom}</p>}
+                        {ag.trend && <p><span className="text-white/30 font-semibold">Trend: </span>{ag.trend}</p>}
+                        {ag.smart_money_signal && <p><span className="text-white/30 font-semibold">Smart money: </span>{ag.smart_money_signal}</p>}
+                        {ag.primary_argument && <p><span className="text-white/30 font-semibold">Argument: </span>{ag.primary_argument}</p>}
+                        {ag.key_catalyst && <p><span className="text-white/30 font-semibold">Catalyst: </span>{ag.key_catalyst}</p>}
+                        {ag.key_risk && <p><span className="text-white/30 font-semibold">Risk: </span>{ag.key_risk}</p>}
+                        {(ag.supporting_evidence ?? []).length > 0 && (
+                          <ul className="list-disc list-inside space-y-0.5">{ag.supporting_evidence!.map((e, i) => <li key={i}>{e}</li>)}</ul>
+                        )}
+                        {(ag.bull_points_adopted ?? []).length > 0 && (
+                          <div><span className="text-emerald-400/70 font-semibold">Bull points: </span>{ag.bull_points_adopted!.join(" · ")}</div>
+                        )}
+                        {(ag.bear_points_adopted ?? []).length > 0 && (
+                          <div><span className="text-red-400/70 font-semibold">Bear points: </span>{ag.bear_points_adopted!.join(" · ")}</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Relevant markets */}
+          {(result?.relevant_markets ?? []).length > 0 && (
+            <div>
+              <div className="text-[10px] text-white/30 uppercase tracking-widest mb-2">Markets Used in Analysis</div>
+              <div className="space-y-1.5">
+                {result!.relevant_markets!.slice(0, 5).map((m, i) => (
+                  <div key={i} className="bg-white/[0.02] border border-white/[0.04] rounded-lg px-3 py-2 flex items-center gap-2">
+                    <p className="flex-1 text-[11px] text-white/60 truncate">{m.question}</p>
+                    {m.yes_pct != null && <span className="text-xs font-bold font-mono text-blue-400">{m.yes_pct}%</span>}
+                    {m.volume_24h != null && <span className="text-[10px] text-white/25 font-mono">{formatVolume(m.volume_24h)}</span>}
+                    {effBadge(m.market_efficiency_score)}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </GlassCard>
+  );
+}
+
 // ─── Prediction Markets Agent ─────────────────────────────────────
 
 interface AgentMessage {
@@ -1018,8 +1693,23 @@ export default function PredictPage() {
           {/* Left: content */}
           <div className="flex-1 min-w-0">
 
+            {/* ═══ Market Intelligence ═══ */}
+            <MarketIntelligence />
+
             {/* ═══ Prediction Markets Dashboard ═══ */}
             <PolymarketDashboard />
+
+            {/* ═══ Enhanced Markets Table ═══ */}
+            <EnhancedMarketsTable />
+
+            {/* ═══ TradingAgents Analysis ═══ */}
+            <AnalysisPanel />
+
+            {/* ═══ Whale Watch ═══ */}
+            <WhaleWatchPanel />
+
+            {/* ═══ Category Volume Chart ═══ */}
+            <CategoryChart />
 
             {/* ═══ Betting Platforms ═══ */}
             <GlassCard className="p-6">
