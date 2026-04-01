@@ -894,7 +894,7 @@ function MarketIntelligence() {
               {edges.length === 0 ? <div className="text-[11px] text-white/20 py-3 text-center">No edges detected</div>
               : edges.map((e, i) => (
                 <div key={i} className="bg-white/[0.02] border border-white/[0.05] rounded-lg px-2.5 py-2 flex items-start gap-2">
-                  <p className="flex-1 text-[10px] text-white/70 leading-snug line-clamp-2">{e.question || "—"}</p>
+                  <p className="flex-1 text-[10px] text-white/70 leading-snug">{e.question || "—"}</p>
                   <div className="flex items-center gap-1 flex-shrink-0 mt-0.5">
                     <span className="text-[10px] font-mono text-blue-400">{e.yes_pct != null ? `${e.yes_pct}%` : "—"}</span>
                     {(e.edge_pct ?? e.spread_pct_of_price) != null && (
@@ -918,7 +918,7 @@ function MarketIntelligence() {
               {surging.length === 0 ? <div className="text-[11px] text-white/20 py-3 text-center">No data</div>
               : surging.map((m, i) => (
                 <div key={i} className="bg-white/[0.02] border border-white/[0.05] rounded-lg px-2.5 py-2 flex items-start gap-2">
-                  <p className="flex-1 text-[10px] text-white/70 leading-snug line-clamp-2">{m.question || "—"}</p>
+                  <p className="flex-1 text-[10px] text-white/70 leading-snug">{m.question || "—"}</p>
                   <div className="flex items-center gap-1 flex-shrink-0 mt-0.5">
                     <span className="text-[10px] font-mono text-white/40">{m.volume_24h != null ? formatVolume(m.volume_24h) : ""}</span>
                     {momentumBadge(m.volume_momentum)}
@@ -938,7 +938,7 @@ function MarketIntelligence() {
               {whales.length === 0 ? <div className="text-[11px] text-white/20 py-3 text-center">No whale activity</div>
               : whales.map((w, i) => (
                 <div key={i} className="bg-white/[0.02] border border-white/[0.05] rounded-lg px-2.5 py-2 flex items-start gap-2">
-                  <p className="flex-1 text-[10px] text-white/70 leading-snug line-clamp-2">{w.question || "—"}</p>
+                  <p className="flex-1 text-[10px] text-white/70 leading-snug">{w.question || "—"}</p>
                   <div className="flex items-center gap-1 flex-shrink-0 mt-0.5">
                     {w.vol_liq_ratio != null && <span className="text-[10px] font-bold text-purple-400 font-mono">{w.vol_liq_ratio.toFixed(1)}×</span>}
                     <span className="text-[10px] text-white/30 font-mono">{w.volume_24h != null ? formatVolume(w.volume_24h) : ""}</span>
@@ -962,7 +962,7 @@ function MarketIntelligence() {
                 const chgStr = chg == null ? "—" : `${chg > 0 ? "+" : ""}${chg.toFixed(1)}%`;
                 return (
                   <div key={i} className="bg-white/[0.02] border border-white/[0.05] rounded-lg px-2.5 py-2 flex items-start gap-2">
-                    <p className="flex-1 text-[10px] text-white/70 leading-snug line-clamp-2">{m.question || "—"}</p>
+                    <p className="flex-1 text-[10px] text-white/70 leading-snug">{m.question || "—"}</p>
                     <div className="flex items-center gap-1 flex-shrink-0 mt-0.5">
                       <span className={`text-[10px] font-bold font-mono ${chgCls}`}>{chgStr}</span>
                       <span className="text-[10px] font-mono text-blue-400">{m.yes_pct != null ? `${m.yes_pct}%` : "—"}</span>
