@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Activity, BarChart3, TrendingUp, ChartLine, Brain, Zap, DollarSign, Building2, Layers, Coins, ChevronRight, ChevronDown, ChevronLeft, Wallet, Users, MessageSquare, Rocket, Globe, ArrowLeftRight, Search, Menu, X, Gamepad2, Gem, CalendarDays, Settings, Info, Newspaper, ScrollText, Monitor, Eye } from "lucide-react";
+import { Activity, BarChart3, TrendingUp, ChartLine, Brain, Zap, DollarSign, Building2, Layers, Coins, ChevronRight, ChevronDown, ChevronLeft, Wallet, Users, MessageSquare, Rocket, Globe, ArrowLeftRight, Search, Menu, X, Gamepad2, Gem, CalendarDays, Settings, Info, Newspaper, ScrollText, Monitor, Eye, Waves } from "lucide-react";
 import { useLocation } from "wouter";
 import caelynLogo from "@assets/ChatGPT_Image_Feb_20,_2026,_01_10_21_AM_1771571543846.png";
 import { SettingsModal } from "@/pages/settings";
@@ -105,6 +105,12 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
           label: 'Insider Activity',
           icon: <Eye className="w-4 h-4" />,
           path: '/app/stocks/insider-activity'
+        },
+        {
+          id: 'whale-watch',
+          label: 'Whale Watch',
+          icon: <Waves className="w-4 h-4" />,
+          path: '/app/stocks/whale-watch'
         },
         {
           id: 'options-flow',

@@ -55,6 +55,7 @@ import MacroTerminalPage from "@/pages/macro-terminal";
 import CaelynTerminalPage from "@/pages/caelyn-terminal-page";
 import HyperliquidScreenerPage from "@/pages/hyperliquid-screener";
 import InsiderActivityPage from "@/pages/stocks-insider-activity";
+import WhaleWatchPage from "@/pages/whale-watch";
 import AboutPage from "@/pages/about";
 
 import NotFound from "@/pages/not-found";
@@ -149,6 +150,8 @@ function Router() {
       <Route path="/app/stocks/screening" component={StocksScreeningPage} />
       <Route path="/app/stocks/earnings-calendar" component={StocksEarningsCalendarPage} />
       <Route path="/app/stocks/insider-activity" component={InsiderActivityPage} />
+      <Route path="/app/stocks/whale-watch" component={WhaleWatchPage} />
+      <Route path="/whales" component={WhaleWatchPage} />
 
       <Route path="/app/stocks/dashboard"><Redirect to="/app/macro-terminal" /></Route>
       <Route path="/app/stocks/sectors" component={StocksSectorsPage} />

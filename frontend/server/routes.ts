@@ -1775,6 +1775,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/predict/context",    (q, s) => proxyPredict("/api/predict/context",    q, s));
   app.post("/api/predict/analyze",   (q, s) => proxyPredict("/api/predict/analyze",   q, s, "POST"));
 
+  // ── Whale Watch proxy ────────────────────────────────────────────────────────
+  const WHALE_URL = "https://fast-api-server-trading-agent-aidanpilon.replit.app";
+  const whaleHdr  = () => ({ "X-API-Key": "hippo_ak_7f3x9k2m4p8q1w5t", "Content-Type": "application/json" });
+
+  app.get("/api/whales", async (req, res) => {
+    try {
+      const qs = new URLSearchParams(req.query as Record<string, string>).toString();
+      const r  = await fetch(`${WHALE_URL}/api/whales${qs ? `?${qs}` : ""}`, { headers: whaleHdr() });
+      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
+      res.json(await r.json());
+    } catch (e: any) { res.status(500).json({ error: e?.message ?? "Whale list unavailable" }); }
+  });
+
+  app.get("/api/whales/:name/holdings", async (req, res) => {
+    try {
+      const name = encodeURIComponent(req.params.name);
+      const r = await fetch(`${WHALE_URL}/api/whales/${name}/holdings`, { headers: whaleHdr() });
+      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
+      res.json(await r.json());
+    } catch (e: any) { res.status(500).json({ error: e?.message ?? "Holdings unavailable" }); }
+  });
+
+  app.get("/api/whales/:name/returns", async (req, res) => {
+    try {
+      const name = encodeURIComponent(req.params.name);
+      const r = await fetch(`${WHALE_URL}/api/whales/${name}/returns`, { headers: whaleHdr() });
+      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
+      res.json(await r.json());
+    } catch (e: any) { res.status(500).json({ error: e?.message ?? "Returns unavailable" }); }
+  });
+
+  app.post("/api/whales/refresh", async (req, res) => {
+    try {
+      const controller = new AbortController();
+      const tid = setTimeout(() => controller.abort(), 60000);
+      const r = await fetch(`${WHALE_URL}/api/whales/refresh`, {
+        method: "POST", headers: whaleHdr(), signal: controller.signal,
+      });
+      clearTimeout(tid);
+      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
+      res.json(await r.json());
+    } catch (e: any) {
+      res.status(500).json({ error: e?.name === "AbortError" ? "Refresh timed out" : "Refresh failed" });
+    }
+  });
+
   // ── Congressional Trades proxy ────────────────────────────────────────────────
   app.get('/api/congressional-trades/stats', async (req, res) => {
     try {

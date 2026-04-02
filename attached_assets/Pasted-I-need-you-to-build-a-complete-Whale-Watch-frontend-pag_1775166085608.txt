@@ -1,0 +1,67 @@
+I need you to build a complete Whale Watch frontend page for my React app. It lives at the route /whales. Use React Router for navigation. The app uses a dark theme (dark backgrounds, light text) — match the exact same styling, fonts, colors, and component patterns used on the existing Insider Activity page.
+STEP 1 — Find the existing patterns first
+Before writing any code, look at these files and understand their patterns:
+
+Find the Insider Activity frontend page (search for a file that uses /insider-activity or similar API call in the src or frontend/src folder)
+Find the main App.jsx or App.js that defines all the React Router routes
+Note the exact CSS classes, color variables, card styles, tab styles, and loading spinner styles used on the Insider Activity page — reuse all of them exactly
+
+STEP 2 — Create the Whale Watch page
+Create a new file at the same folder level as the Insider Activity page component. Call it WhalePage.jsx.
+It must have these sections:
+Section 1 — Page header
+Title: "🐋 Whale Watch" with a subtitle: "Track the world's most profitable institutional investors"
+A "Refresh Data" button in the top right that calls POST /api/whales/refresh
+A small "Last updated" timestamp pulled from the most recently updated whale
+Section 2 — Whale leaderboard (main table)
+Fetch data from GET /api/whales on page load
+Display a sortable table/card list with these columns:
+
+Rank (1, 2, 3... based on current sort)
+Whale Name
+Category badge (color coded: blue for "institution", purple for "individual", green for "congress")
+AI Theme (show as a short italic quote below their name in smaller text)
+1M Return (color green if positive, red if negative)
+3M Return (same)
+6M Return (same)
+1Y Return (same)
+A "View Portfolio" button on each row
+
+The table must be sortable — clicking any return column header sorts by that column. Default sort is 3M return descending.
+Show a loading skeleton while data is fetching. Show a friendly error message if the API fails.
+Section 3 — Whale detail modal/drawer
+When the user clicks "View Portfolio" on any whale row, open a modal or slide-in drawer (whichever pattern is already used elsewhere in the app — check existing components first).
+The modal must have 3 tabs:
+Tab 1 — "Holdings"
+Fetch from GET /api/whales/{whale_name}/holdings
+Show a table with: Rank, Ticker, Company Name, Shares, Value (format as $XM or $XB), Weight % shown as both a number and a small horizontal bar
+Top 20 holdings only (they may have more but cap display at 20)
+Tab 2 — "Returns"
+Fetch from GET /api/whales/{whale_name}/returns
+Show a simple bar chart or table comparing this whale's quarterly returns vs SPY benchmark for the same periods
+Use recharts if it's already used elsewhere in the app, otherwise use a simple HTML/CSS bar visualization
+Tab 3 — "Theme"
+Display the ai_theme text in a large readable format
+Show the whale's name, category, and a one-line description below it
+Style it like a "investor profile card"
+STEP 3 — Add the route to App.jsx
+Open the main App.jsx or App.js file. Find where the other page routes are defined with <Route> tags. Add this route in the same pattern:
+jsx<Route path="/whales" element={<WhalePage />} />
+And add the import at the top of App.jsx with the other page imports.
+STEP 4 — Add to navigation
+Find the sidebar or navbar component (whichever is used for main navigation — check what the Insider Activity page link looks like and where it lives). Add a Whale Watch nav link in the same style:
+
+Icon: use 🐋 or a chart icon if the nav uses icon libraries
+Label: "Whale Watch"
+Route: /whales
+Place it near the Insider Activity link since they are related
+
+STEP 5 — Verify
+After all changes confirm:
+
+/whales route loads without errors
+Whale leaderboard fetches and displays data
+Clicking "View Portfolio" opens the modal with all 3 tabs working
+Nav link navigates correctly
+No existing pages or routes were broken
+All styling matches the dark theme of the rest of the app
