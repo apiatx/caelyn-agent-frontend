@@ -1,0 +1,107 @@
+Whale Watch Page
+The backend is a FastAPI server. All endpoints are prefixed with /api. Here is what needs to be fixed/wired up:
+
+1. Summary Stat Cards — Fix "NOTABLE INVESTORS: 0"
+New endpoint: GET /api/whales/stats
+
+Response:
+
+{
+  "institutions": 40,
+  "individuals": 0,
+  "congress": 0,
+  "notable_investors": 31
+}
+Use this endpoint to populate the four summary cards instead of counting from the leaderboard data. Call it on page load and after refresh.
+
+2. Institutional Leaderboard
+Endpoint: GET /api/whales
+
+Response: Array of whale objects:
+
+[
+  {
+    "name": "Duquesne Family Office",
+    "cik": "1536519",
+    "category": "institution",
+    "description": "...",
+    "ai_theme": "...",
+    "return_1m": 0.7,
+    "return_3m": -3.9,
+    "return_6m": 12.5,
+    "return_1y": 81.5,
+    "last_updated": "2026-04-03T..."
+  }
+]
+Returns come as floats (e.g. 81.5 = +81.5%)
+Format as +81.5% (green) or -3.9% (red)
+If null → show — dash
+The array is already sorted by return_1y DESC NULLS LAST
+Does NOT include famous_investor category entries
+3. Notable Investor Radar — Fix "Discovery failed"
+Fetch data: GET /api/whales/famous
+
+Response: Array sorted by return_1y DESC NULLS LAST:
+
+[
+  {
+    "name": "Robert Friedland",
+    "description": "Billionaire mining mogul...",
+    "ai_theme": null,
+    "investing_themes": "Copper, cobalt, platinum group metals, critical minerals",
+    "return_1y": 700.0,
+    "known_positions": ["IVPAF", "NEXT", "BHP", "FCX", "COPX"],
+    "last_updated": "2026-04-03T..."
+  },
+  {
+    "name": "Stanley Druckenmiller",
+    "return_1y": 223.0,
+    "known_positions": ["NVDA", "AMZN", "GOOGL", "TSM", "CPNG", "INSM", "NTRA", "TEVA", "XLF", "EWZ"],
+    ...
+  }
+]
+Call this on page load to populate cards
+If the array is empty on first load → call POST /api/whales/discover-famous automatically once to seed data, then re-fetch
+Rediscover button: POST /api/whales/discover-famous
+
+Response: Array of investor objects (same format as GET /api/whales/famous)
+After POST completes successfully → re-fetch GET /api/whales/famous to refresh the displayed cards
+The POST calls Perplexity (takes ~15-30s). Show a loading spinner on the button during the request
+Handle errors: if POST returns non-200, show "Discovery failed — try again"
+4. Investor Card Display
+Each card should show:
+
+Name (large, bold)
+1Y Return — format return_1y as +700.0% (gold/green) or — if null
+Description — from description field (1 sentence bio)
+Ticker chips — from known_positions array (e.g. NVDA, AMZN etc.) — show up to 12 chips
+Investing style — from investing_themes field (if non-empty, show in italic below chips)
+Source label — small text: "Public interviews, 13F filings & news"
+5. Whale Holdings Detail
+Endpoint: GET /api/whales/{whale_name}/holdings
+
+Returns holdings for any whale (institution or famous investor):
+
+[
+  {
+    "ticker": "NVDA",
+    "company_name": "NVIDIA Corp",
+    "shares": 1234567,
+    "value_usd": 890000000,
+    "weight_pct": 12.3,
+    "quarter": "2026Q1"
+  }
+]
+shares, value_usd, weight_pct will be null for famous investors (positions sourced from public info, not 13F filings)
+Format value_usd as $890M or $1.2B
+Format weight_pct as 12.3%
+6. Refresh Button
+The top-right "Refresh" button should:
+
+Call GET /api/whales (refresh leaderboard)
+Call GET /api/whales/stats (refresh counts)
+Re-render both sections
+It should NOT call the Perplexity discovery endpoint — that's only for the "Rediscover" button inside the Notable Investor Radar section.
+
+7. CORS / Base URL
+The backend base URL should be your deployed backend domain (e.g. https://caelynai-backend.replit.app). All calls go to /api/... paths. No auth headers are required.

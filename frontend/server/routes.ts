@@ -1779,6 +1779,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const WHALE_URL = "https://fast-api-server-trading-agent-aidanpilon.replit.app";
   const whaleHdr  = () => ({ "X-API-Key": "hippo_ak_7f3x9k2m4p8q1w5t", "Content-Type": "application/json" });
 
+  app.get("/api/whales/stats", async (_req, res) => {
+    try {
+      const r = await fetch(`${WHALE_URL}/api/whales/stats`, { headers: whaleHdr() });
+      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
+      res.json(await r.json());
+    } catch (e: any) { res.status(500).json({ error: e?.message ?? "Stats unavailable" }); }
+  });
+
+  app.get("/api/whales/famous", async (_req, res) => {
+    try {
+      const r = await fetch(`${WHALE_URL}/api/whales/famous`, { headers: whaleHdr() });
+      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
+      res.json(await r.json());
+    } catch (e: any) { res.status(500).json({ error: e?.message ?? "Famous investors unavailable" }); }
+  });
+
+  app.post("/api/whales/discover-famous", async (_req, res) => {
+    try {
+      const controller = new AbortController();
+      const tid = setTimeout(() => controller.abort(), 90000);
+      const r = await fetch(`${WHALE_URL}/api/whales/discover-famous`, {
+        method: "POST", headers: whaleHdr(), signal: controller.signal,
+      });
+      clearTimeout(tid);
+      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
+      res.json(await r.json());
+    } catch (e: any) {
+      res.status(500).json({ error: e?.name === "AbortError" ? "Discovery timed out" : "Discovery failed" });
+    }
+  });
+
   app.get("/api/whales", async (req, res) => {
     try {
       const qs = new URLSearchParams(req.query as Record<string, string>).toString();
