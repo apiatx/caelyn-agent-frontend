@@ -102,10 +102,11 @@ const CAT_ICON: Record<string, React.ReactNode> = {
   congress: <Landmark className="w-3 h-3" />,
   famous_investor: <Zap className="w-3 h-3" />,
 };
-const catBadge = (c: string) => {
-  const cls = CAT_BADGE[c] ?? "bg-gray-500/20 text-gray-400 border border-gray-500/30";
-  const icon = CAT_ICON[c] ?? <User className="w-3 h-3" />;
-  const label = c === "famous_investor" ? "Notable Investor" : c.charAt(0).toUpperCase() + c.slice(1);
+const catBadge = (c: string | undefined | null) => {
+  const key = c ?? "";
+  const cls = CAT_BADGE[key] ?? "bg-gray-500/20 text-gray-400 border border-gray-500/30";
+  const icon = CAT_ICON[key] ?? <User className="w-3 h-3" />;
+  const label = key === "famous_investor" ? "Notable Investor" : key ? key.charAt(0).toUpperCase() + key.slice(1) : "Unknown";
   return (
     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${cls}`}>
       {icon}{label}
@@ -716,7 +717,7 @@ export default function WhaleWatchPage() {
               <FamousInvestorCard
                 key={inv.name}
                 investor={inv}
-                onClick={() => setSelected({ ...inv, return_1m: null, return_3m: null, return_6m: null } as Whale)}
+                onClick={() => setSelected({ ...inv, category: "famous_investor", return_1m: null, return_3m: null, return_6m: null } as Whale)}
               />
             ))}
           </div>
