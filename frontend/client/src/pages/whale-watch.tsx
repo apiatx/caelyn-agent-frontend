@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   RefreshCw, X, ChevronUp, ChevronDown, ChevronsUpDown,
   Waves, Building2, User, Landmark, TrendingDown,
@@ -462,6 +463,7 @@ function FamousInvestorCard({ investor, onClick }: { investor: FamousInvestor; o
 // Main Page
 // ═══════════════════════════════════════════════════════════════════════════════
 export default function WhaleWatchPage() {
+  const { authFetch } = useAuth();
   const [whales, setWhales]               = useState<Whale[]>([]);
   const [famousInvestors, setFamousInvestors] = useState<FamousInvestor[]>([]);
   const [stats, setStats]                 = useState<WhaleStats | null>(null);
@@ -511,7 +513,7 @@ export default function WhaleWatchPage() {
       if (list.length === 0 && autoSeed) {
         // Seed data on first load if empty
         try {
-          await fetch("/api/whales/discover-famous", { method: "POST" });
+          await authFetch("/api/whales/discover-famous", { method: "POST" });
           const r2 = await fetch("/api/whales/famous");
           if (r2.ok) {
             const d2 = await r2.json();
@@ -538,7 +540,7 @@ export default function WhaleWatchPage() {
   const handleDiscover = async () => {
     setDiscovering(true); setDiscoverMsg(null);
     try {
-      const r = await fetch("/api/whales/discover-famous", { method: "POST" });
+      const r = await authFetch("/api/whales/discover-famous", { method: "POST" });
       if (!r.ok) throw new Error("Discovery failed");
       await loadFamous();
       setDiscoverMsg("Notable investors updated");

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 import {
@@ -1184,6 +1185,7 @@ const ANALYSIS_STEPS = [
 ];
 
 function AnalysisPanel() {
+  const { authFetch } = useAuth();
   const [question, setQuestion] = useState("");
   const [status, setStatus]     = useState<"idle" | "context" | "analyzing" | "done" | "error">("idle");
   const [stepIdx, setStepIdx]   = useState(0);
@@ -1217,7 +1219,7 @@ function AnalysisPanel() {
     });
 
     try {
-      const r = await fetch("/api/predict/analyze", {
+      const r = await authFetch("/api/predict/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question: question.trim() }),

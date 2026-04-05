@@ -970,9 +970,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[options/dashboard] tab=${tab} → ${upstreamUrl}`);
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 90000);
+      const fwdHeaders: Record<string,string> = { 'X-API-Key': AGENT_KEY };
+      if (req.headers.authorization) fwdHeaders['Authorization'] = req.headers.authorization as string;
       const response = await fetch(upstreamUrl, {
         method: 'GET',
-        headers: { 'X-API-Key': AGENT_KEY },
+        headers: fwdHeaders,
         signal: controller.signal,
       });
       clearTimeout(timeoutId);
@@ -1688,9 +1690,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const controller = new AbortController();
       const tid = setTimeout(() => controller.abort(), 60000);
+      const srFwdHdr: Record<string,string> = srHdr();
+      if (req.headers.authorization) srFwdHdr['Authorization'] = req.headers.authorization as string;
       const r   = await fetch(`${SR_URL}/api/sector-rotation/refresh-analysis`, {
         method: 'POST',
-        headers: srHdr(),
+        headers: srFwdHdr,
         signal: controller.signal,
       });
       clearTimeout(tid);
@@ -1760,7 +1764,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const qs = method === "GET" ? new URLSearchParams(req.query as Record<string,string>).toString() : "";
       const url = `${PREDICT_URL}${path}${qs ? `?${qs}` : ""}`;
-      const opts: RequestInit = { method, headers: predictHdr() };
+      const hdr: Record<string,string> = predictHdr();
+      if (method === "POST" && req.headers.authorization) hdr['Authorization'] = req.headers.authorization as string;
+      const opts: RequestInit = { method, headers: hdr };
       if (method === "POST") opts.body = JSON.stringify(req.body ?? {});
       const r = await fetch(url, opts);
       if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
@@ -1795,12 +1801,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (e: any) { res.status(500).json({ error: e?.message ?? "Famous investors unavailable" }); }
   });
 
-  app.post("/api/whales/discover-famous", async (_req, res) => {
+  app.post("/api/whales/discover-famous", async (req, res) => {
     try {
       const controller = new AbortController();
       const tid = setTimeout(() => controller.abort(), 90000);
+      const whaleFwdHdr: Record<string,string> = whaleHdr();
+      if (req.headers.authorization) whaleFwdHdr['Authorization'] = req.headers.authorization as string;
       const r = await fetch(`${WHALE_URL}/api/whales/discover-famous`, {
-        method: "POST", headers: whaleHdr(), signal: controller.signal,
+        method: "POST", headers: whaleFwdHdr, signal: controller.signal,
       });
       clearTimeout(tid);
       if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
@@ -1841,8 +1849,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const controller = new AbortController();
       const tid = setTimeout(() => controller.abort(), 60000);
+      const whaleRefreshHdr: Record<string,string> = whaleHdr();
+      if (req.headers.authorization) whaleRefreshHdr['Authorization'] = req.headers.authorization as string;
       const r = await fetch(`${WHALE_URL}/api/whales/refresh`, {
-        method: "POST", headers: whaleHdr(), signal: controller.signal,
+        method: "POST", headers: whaleRefreshHdr, signal: controller.signal,
       });
       clearTimeout(tid);
       if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });

@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Activity, BarChart3, TrendingUp, ChartLine, Brain, Zap, DollarSign, Building2, Layers, Coins, ChevronRight, ChevronDown, ChevronLeft, Wallet, Users, MessageSquare, Rocket, Globe, ArrowLeftRight, Search, Menu, X, Gamepad2, Gem, CalendarDays, Settings, Info, Newspaper, ScrollText, Monitor, Eye, Waves } from "lucide-react";
+import { Activity, BarChart3, TrendingUp, ChartLine, Brain, Zap, DollarSign, Building2, Layers, Coins, ChevronRight, ChevronDown, ChevronLeft, Wallet, Users, MessageSquare, Rocket, Globe, ArrowLeftRight, Search, Menu, X, Gamepad2, Gem, CalendarDays, Settings, Info, Newspaper, ScrollText, Monitor, Eye, Waves, LogOut } from "lucide-react";
 import { useLocation } from "wouter";
 import caelynLogo from "@assets/ChatGPT_Image_Feb_20,_2026,_01_10_21_AM_1771571543846.png";
 import { SettingsModal } from "@/pages/settings";
 import { HistoryPanel } from "@/components/HistoryPanel";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface SidebarNavigationProps {
   className?: string;
@@ -27,6 +28,7 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
   const [expandedItems, setExpandedItems] = useState<string[]>(['crypto-stocks']);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const { logout } = useAuth();
 
   const navigateTo = (url: string) => {
     setLocation(url);
@@ -543,6 +545,15 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
         >
           <Info className="w-4 h-4" />
           {!isCollapsed && <span>About</span>}
+        </button>
+        <button
+          onClick={() => logout()}
+          title={isCollapsed ? "Log out" : undefined}
+          className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-2'} px-2 ${isMobile ? 'py-3' : 'py-1.5'} text-left text-xs font-medium transition-all duration-200 rounded-lg text-white/30 hover:bg-white/[0.04] hover:text-white/60`}
+          data-testid="nav-logout"
+        >
+          <LogOut className="w-4 h-4" />
+          {!isCollapsed && <span>Log out</span>}
         </button>
       </div>
 

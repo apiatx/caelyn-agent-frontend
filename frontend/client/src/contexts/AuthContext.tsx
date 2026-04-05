@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { useLocation } from 'wouter';
+import { toast } from '@/hooks/use-toast';
 
 const AGENT_BACKEND_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
 
@@ -11,6 +12,7 @@ interface AuthContextType {
   login: (username: string, password: string, rememberMe: boolean) => Promise<void>;
   logout: () => void;
   getAuthHeaders: () => Record<string, string>;
+  authFetch: (url: string, options?: RequestInit) => Promise<Response>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -89,7 +91,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUserId(data.user_id);
   }, []);
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+    } catch { }
     clearToken();
     setToken(null);
     setUserId(null);
@@ -107,6 +112,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return headers;
   }, [token]);
 
+  // authFetch — wraps fetch with auth header and handles 402/401 globally
+  const authFetch = useCallback(async (url: string, options: RequestInit = {}): Promise<Response> => {
+    const currentToken = getStoredToken();
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...(options.headers as Record<string, string> ?? {}),
+    };
+    if (currentToken) {
+      headers['Authorization'] = `Bearer ${currentToken}`;
+    }
+
+    const res = await fetch(url, { ...options, headers });
+
+    if (res.status === 401) {
+      clearToken();
+      setToken(null);
+      setUserId(null);
+      navigate('/login');
+      throw new Error('Session expired. Please log in again.');
+    }
+
+    if (res.status === 402) {
+      const body = await res.clone().json().catch(() => ({}));
+      const isSubscriptionRequired =
+        body?.error === 'SUBSCRIPTION_REQUIRED' ||
+        body?.detail?.error === 'SUBSCRIPTION_REQUIRED';
+      if (isSubscriptionRequired) {
+        toast({
+          title: 'Subscription Required',
+          description: 'This feature requires an active subscription. Payments launching soon.',
+          variant: 'destructive',
+        });
+        window.open(`${AGENT_BACKEND_URL}/subscribe`, '_blank');
+      }
+    }
+
+    return res;
+  }, [navigate]);
+
   return (
     <AuthContext.Provider value={{
       token,
@@ -116,6 +161,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       logout,
       getAuthHeaders,
+      authFetch,
     }}>
       {children}
     </AuthContext.Provider>

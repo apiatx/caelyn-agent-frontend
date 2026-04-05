@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef, memo, useCallback } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -861,6 +862,7 @@ const ETFHeatmapWidget = memo(function ETFHeatmapWidget() {
 export default function StocksSectorsPage() {
   const openInNewTab = (url: string) => window.open(url, "_blank", "noopener,noreferrer");
   const qc = useQueryClient();
+  const { authFetch } = useAuth();
 
   const [selectedTickers, setSelectedTickers] = useState<Set<string>>(
     new Set(SECTORS.map(s => s.ticker)),
@@ -902,7 +904,7 @@ export default function StocksSectorsPage() {
   // ── Refresh mutation (POST) ──
   const refreshMutation = useMutation({
     mutationFn: async () => {
-      const r = await fetch("/api/sector-rotation/refresh-analysis", { method: "POST" });
+      const r = await authFetch("/api/sector-rotation/refresh-analysis", { method: "POST" });
       if (!r.ok) throw new Error(`${r.status}`);
       return r.json();
     },

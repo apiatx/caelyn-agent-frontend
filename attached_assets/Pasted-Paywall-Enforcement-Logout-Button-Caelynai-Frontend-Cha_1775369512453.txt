@@ -1,0 +1,95 @@
+Paywall Enforcement + Logout Button — Caelynai Frontend Changes
+The backend now returns HTTP 402 with this JSON body for any AI call made without a valid login token:
+
+{
+  "error": "SUBSCRIPTION_REQUIRED",
+  "message": "This feature requires an active subscription.",
+  "redirect": "/subscribe"
+}
+
+The backend subscribe page lives at: https://<YOUR_BACKEND_DOMAIN>/subscribe
+
+1 — Auth token storage (if not already done)
+When the user logs in via POST /api/auth/login, the backend returns { "access_token": "...", "token_type": "bearer" }. Store this in localStorage under the key caelyn_token. Every authenticated request must include:
+
+Authorization: Bearer <caelyn_token>
+
+2 — Global 402 interceptor
+In your central API/fetch utility (wherever all backend calls go), add a response interceptor:
+
+if (response.status === 402) {
+  const data = await response.json();
+  if (data?.detail?.error === "SUBSCRIPTION_REQUIRED" || data?.error === "SUBSCRIPTION_REQUIRED") {
+    // Show a toast/modal: "This feature requires a subscription. Payments launching soon."
+    // Then redirect or open the subscribe page:
+    window.open("https://<YOUR_BACKEND_DOMAIN>/subscribe", "_blank");
+    return; // stop further processing
+  }
+}
+
+Apply this to every fetch/axios call that hits the backend.
+
+3 — Every prompt submit + every refresh button must send the auth header
+The following actions must always include Authorization: Bearer <token> in the request headers. If the token is missing (user not logged in), show a "Please log in first" message instead of firing the request:
+
+Feature	Action to guard
+Caelyn AI Chat	Submit button / Enter key send
+Whale Watch → Discover Whales	"Refresh / Discover" button
+Whale Watch → Discover Famous Investors	"Refresh Famous" button
+Insider Activity → Refresh AI	"Refresh AI Analysis" button
+Insider Activity → AI Analysis	Page load fetch
+Options Flow Dashboard	Page load fetch + tab switches
+Predict / Polymarket Analyze	"Analyze" button
+Sector Rotation → Refresh Analysis	"Refresh" button
+Portfolio Review	"Review Portfolio" button
+Backtest	"Run Backtest" button
+Social / Grok Query	Submit button
+4 — Logout button under the About page
+In the sidebar or wherever the About section lives, add a small logout control directly beneath the About item. It should look like this (adapt to your existing styles):
+
+// Small, subtle — icon + text
+<button onClick={handleLogout} style={{ display: "flex", alignItems: "center", gap: 6, opacity: 0.6, fontSize: 13 }}>
+  <LogOutIcon size={14} /> {/* or any arrow-right-from-bracket icon */}
+  Log out
+</button>
+
+The handleLogout function should:
+
+async function handleLogout() {
+  await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+  localStorage.removeItem("caelyn_token");
+  // redirect to login page or reload
+  window.location.href = "/login"; // adjust to your app's login route
+}
+
+The backend's POST /api/auth/logout endpoint already exists and clears the server-side session cookie. After calling it, clear the local token and send the user back to login.
+
+5 — 401 handling (session expired)
+If any request returns 401, treat it the same as a logged-out state:
+
+Clear localStorage.removeItem("caelyn_token")
+Redirect to the login page
+Do not try to retry the request
+6 — Non-AI endpoints that do NOT need the auth header
+These are public data endpoints — no token needed:
+
+GET /api/whales (institutional list)
+GET /api/whales/famous (famous investor list + leaderboard)
+GET /api/whales/stats (stats card counts)
+GET /api/congressional-trades and related
+GET /api/earnings/*
+GET /api/portfolio/holdings / POST /api/portfolio/holdings
+GET /api/portfolio/quotes
+GET /api/options/chain/{symbol}
+GET /api/insider-activity (raw data list)
+GET /api/insider-activity/stats
+That's the complete set of changes. Here's the summary of what was done on the backend so you can tell your frontend agent:
+
+Newly gated (added today on top of what was already done):
+
+POST /api/options/dashboard — now requires auth (was missing)
+POST /api/whales/discover-famous — now requires auth (was missing)
+Already gated (from before):
+
+POST /api/query, POST /api/social/query, GET /api/caelyn-terminal, POST /api/portfolio/review, POST /api/backtest, POST /api/options/query, POST /api/predict/analyze, POST /api/sector-rotation/refresh-analysis, POST /api/whales/discover, GET /api/insider-activity/ai-analysis, POST /api/insider-activity/refresh-ai
+Logout endpoint: POST /api/auth/logout — already exists, clears cookie, no auth header required to call it.
