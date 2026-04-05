@@ -190,8 +190,8 @@ export default function CaelynTerminalPage() {
       if (!res.ok) throw new Error('Failed');
       return res.json();
     },
-    refetchInterval: 60000,
-    staleTime: 30000,
+    refetchInterval: 10 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
     retry: 1,
   });
 

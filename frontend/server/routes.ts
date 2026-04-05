@@ -1573,7 +1573,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  let caelynTerminalCache: { data: any; ts: number } | null = null;
+  const CAELYN_CACHE_TTL = 10 * 60 * 1000;
+
   app.get('/api/caelyn-terminal', async (req, res) => {
+    if (caelynTerminalCache && Date.now() - caelynTerminalCache.ts < CAELYN_CACHE_TTL) {
+      return res.json(caelynTerminalCache.data);
+    }
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 25000);
@@ -1586,9 +1592,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const text = await response.text();
         return res.status(response.status).json({ error: `Backend returned ${response.status}`, detail: text.slice(0, 200) });
       }
-      res.json(await response.json());
+      const data = await response.json();
+      caelynTerminalCache = { data, ts: Date.now() };
+      res.json(data);
     } catch (error: any) {
       console.error('Caelyn Terminal proxy error:', error);
+      if (caelynTerminalCache) return res.json(caelynTerminalCache.data);
       res.status(500).json({ error: error?.name === 'AbortError' ? 'Request timed out' : 'Failed to fetch Caelyn Terminal data' });
     }
   });
