@@ -888,6 +888,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const AGENT_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
   const AGENT_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
 
+  // === Auth proxy (avoids CORS on direct browser→FastAPI calls) ===
+  app.post('/api/auth/login', async (req, res) => {
+    try {
+      const response = await fetch(`${AGENT_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-API-Key': AGENT_KEY },
+        body: JSON.stringify(req.body),
+      });
+      const data = await response.json();
+      res.status(response.status).json(data);
+    } catch (err) {
+      res.status(502).json({ detail: 'Auth service unavailable' });
+    }
+  });
+
+  app.get('/api/auth/verify', async (req, res) => {
+    try {
+      const headers: Record<string, string> = { 'X-API-Key': AGENT_KEY };
+      if (req.headers.authorization) headers['Authorization'] = req.headers.authorization as string;
+      const response = await fetch(`${AGENT_URL}/api/auth/verify`, { headers });
+      const data = await response.json();
+      res.status(response.status).json(data);
+    } catch (err) {
+      res.status(502).json({ valid: false, detail: 'Auth service unavailable' });
+    }
+  });
+
+  app.post('/api/auth/logout', async (_req, res) => {
+    res.json({ success: true });
+  });
+
   // === Macro Dashboard — legacy (still uses local fmpService) ===
   app.get('/api/macro/dashboard', async (req, res) => {
     try {

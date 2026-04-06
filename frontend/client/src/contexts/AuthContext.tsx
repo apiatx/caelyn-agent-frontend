@@ -55,8 +55,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
       return;
     }
-    // Validate token server-side
-    fetch(`${AGENT_BACKEND_URL}/api/auth/verify`, {
+    // Validate token server-side (via local proxy to avoid CORS)
+    fetch(`/api/auth/verify`, {
       headers: { Authorization: `Bearer ${stored}` },
     })
       .then(r => r.ok ? r.json() : null)
@@ -76,7 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = useCallback(async (username: string, password: string, rememberMe: boolean) => {
-    const res = await fetch(`${AGENT_BACKEND_URL}/api/auth/login`, {
+    const res = await fetch(`/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password, remember_me: rememberMe }),
