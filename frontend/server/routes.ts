@@ -1213,6 +1213,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/options/contract-detail/:symbol', async (req, res) => {
+    try {
+      const { symbol } = req.params;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+      const fwdHeaders: Record<string,string> = { 'X-API-Key': AGENT_KEY };
+      if (req.headers.authorization) fwdHeaders['Authorization'] = req.headers.authorization as string;
+      const response = await fetch(`${AGENT_URL}/api/options/contract-detail/${encodeURIComponent(symbol)}`, {
+        headers: fwdHeaders,
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      if (!response.ok) return res.status(response.status).json({ error: `Agent returned ${response.status}` });
+      res.json(await response.json());
+    } catch (error: any) {
+      console.error('Options contract-detail error:', error);
+      res.status(500).json({ error: 'Failed to fetch contract detail' });
+    }
+  });
+
+  app.get('/api/options/timesales/:symbol', async (req, res) => {
+    try {
+      const { symbol } = req.params;
+      const interval = (req.query.interval as string) || '5min';
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+      const fwdHeaders: Record<string,string> = { 'X-API-Key': AGENT_KEY };
+      if (req.headers.authorization) fwdHeaders['Authorization'] = req.headers.authorization as string;
+      const response = await fetch(`${AGENT_URL}/api/options/timesales/${encodeURIComponent(symbol)}?interval=${encodeURIComponent(interval)}`, {
+        headers: fwdHeaders,
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      if (!response.ok) return res.status(response.status).json({ error: `Agent returned ${response.status}` });
+      res.json(await response.json());
+    } catch (error: any) {
+      console.error('Options timesales error:', error);
+      res.status(500).json({ error: 'Failed to fetch time & sales' });
+    }
+  });
+
   // === AI Portfolio Review (server-side proxy) ===
   app.post('/api/portfolio-review', async (req, res) => {
     try {

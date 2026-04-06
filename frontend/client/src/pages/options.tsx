@@ -36,15 +36,13 @@ import {
   ReferenceLine,
 } from "recharts";
 
-const AGENT_API_KEY = "hippo_ak_7f3x9k2m4p8q1w5t";
-const AGENT_BACKEND_URL = "https://fast-api-server-trading-agent-aidanpilon.replit.app";
-const API_BASE = `${AGENT_BACKEND_URL}/api/options`;
+const API_BASE = "/api/options";
 
 function getToken(): string | null {
   return localStorage.getItem("caelyn_token") || sessionStorage.getItem("caelyn_token");
 }
 function authHeaders(): Record<string, string> {
-  const h: Record<string, string> = { "Content-Type": "application/json", "X-API-Key": AGENT_API_KEY };
+  const h: Record<string, string> = { "Content-Type": "application/json" };
   const t = getToken();
   if (t) h["Authorization"] = `Bearer ${t}`;
   return h;
@@ -1479,7 +1477,7 @@ export default function OptionsPage() {
       setLoadStage(stages[si]);
     }, 2500) : null;
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 55_000);
+    const timeout = setTimeout(() => controller.abort(), 90_000);
     try {
       const url = `${API_BASE}/dashboard?tab=${encodeURIComponent(activeTab)}`;
       console.log(`[OptionsPage] fetchDashboard → ${url}  (tabOverride=${tabOverride ?? "none"}, scanTabRef=${scanTabRef.current}, background=${hasExistingData})`);
@@ -1511,7 +1509,7 @@ export default function OptionsPage() {
         setTimeout(() => setRefreshError(null), 5000);
       } else {
         if (e.name === "AbortError") {
-          setError("Request timed out (55s). The backend may still be building the cache — click Refresh to try again.");
+          setError("Request timed out (90s). The backend may still be building the cache — click Refresh to try again.");
         } else {
           setError(e.message || "Failed to load options dashboard");
         }
