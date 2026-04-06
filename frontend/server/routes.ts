@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import jwt from "jsonwebtoken";
 import { storage } from "./storage";
 import { realTimeDataService } from './real-time-data-service-new';
 import { debankService } from './debank-service';
@@ -889,30 +890,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const AGENT_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
 
   // === Auth proxy (avoids CORS on direct browser→FastAPI calls) ===
+  const LOCAL_JWT_SECRET = process.env.SESSION_SECRET || 'caelyn-local-secret';
+  const LOCAL_USERNAME = process.env.CAELYN_USERNAME || '';
+  const LOCAL_PASSWORD = process.env.CAELYN_PASSWORD || '';
+
+  function issueLocalToken(username: string): string {
+    return jwt.sign({ user_id: username, source: 'local' }, LOCAL_JWT_SECRET, { expiresIn: '30d' });
+  }
+  function verifyLocalToken(token: string): { user_id: string } | null {
+    try {
+      const payload = jwt.verify(token, LOCAL_JWT_SECRET) as any;
+      if (payload?.user_id) return { user_id: payload.user_id };
+      return null;
+    } catch { return null; }
+  }
+
   app.post('/api/auth/login', async (req, res) => {
+    const { username, password } = req.body || {};
+    // Try FastAPI backend first
     try {
       const response = await fetch(`${AGENT_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-API-Key': AGENT_KEY },
         body: JSON.stringify(req.body),
       });
-      const data = await response.json();
-      res.status(response.status).json(data);
-    } catch (err) {
-      res.status(502).json({ detail: 'Auth service unavailable' });
+      if (response.ok) {
+        const data = await response.json();
+        return res.status(response.status).json(data);
+      }
+    } catch (_) { /* FastAPI unavailable — fall through to local */ }
+    // Local fallback: check CAELYN_USERNAME / CAELYN_PASSWORD secrets
+    if (LOCAL_USERNAME && LOCAL_PASSWORD && username === LOCAL_USERNAME && password === LOCAL_PASSWORD) {
+      const token = issueLocalToken(username);
+      return res.json({ token, user_id: username, message: 'Login successful' });
     }
+    return res.status(401).json({ detail: 'Invalid username or password.' });
   });
 
   app.get('/api/auth/verify', async (req, res) => {
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+    // Try FastAPI backend first
     try {
       const headers: Record<string, string> = { 'X-API-Key': AGENT_KEY };
-      if (req.headers.authorization) headers['Authorization'] = req.headers.authorization as string;
+      if (authHeader) headers['Authorization'] = authHeader;
       const response = await fetch(`${AGENT_URL}/api/auth/verify`, { headers });
-      const data = await response.json();
-      res.status(response.status).json(data);
-    } catch (err) {
-      res.status(502).json({ valid: false, detail: 'Auth service unavailable' });
+      if (response.ok) {
+        const data = await response.json();
+        return res.status(response.status).json(data);
+      }
+    } catch (_) { /* FastAPI unavailable — fall through to local */ }
+    // Local fallback: verify JWT signed by us
+    if (token) {
+      const payload = verifyLocalToken(token);
+      if (payload) return res.json({ valid: true, user_id: payload.user_id });
     }
+    return res.status(401).json({ valid: false, detail: 'Not authenticated.' });
   });
 
   app.post('/api/auth/logout', async (_req, res) => {
