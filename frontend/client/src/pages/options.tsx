@@ -982,12 +982,10 @@ function TickerRows({ t, index, isExp, onToggle }: { t: TickerResult; index: num
 }
 
 function TickerSummaryTab({ tickers }: { tickers: TickerResult[] }) {
-  const [catFilter, setCatFilter] = useState<CatFilter>("all");
   const [expanded, setExpanded] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     return tickers
-      .filter(t => catFilter === "all" || t.category === catFilter)
       .map(t => ({
         ...t,
         _rsi: t.technicals?.rsi_14?.value ?? null,
@@ -1000,7 +998,7 @@ function TickerSummaryTab({ tickers }: { tickers: TickerResult[] }) {
         _composite: normalizeScore(t.composite_score) ?? -1,
       }))
       .sort((a, b) => (b._composite ?? -1) - (a._composite ?? -1));
-  }, [tickers, catFilter]);
+  }, [tickers]);
 
   const TH = ({ label, width, right }: { label: string; width?: string | number; right?: boolean }) => (
     <th style={{ padding: "8px 10px", width, textAlign: right ? "right" : "left", fontSize: 9, fontFamily: font, textTransform: "uppercase", color: C.dim, whiteSpace: "nowrap" }}>{label}</th>
@@ -1008,20 +1006,8 @@ function TickerSummaryTab({ tickers }: { tickers: TickerResult[] }) {
 
   return (
     <div>
-      <div style={{ display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap", alignItems: "center" }}>
-        {(["all", "stock", "etf"] as CatFilter[]).map(f => (
-          <button
-            key={f}
-            onClick={() => {
-              setCatFilter(f);
-              setExpanded(null);
-            }}
-            style={{ padding: "5px 14px", fontSize: 11, fontWeight: 600, fontFamily: font, background: catFilter === f ? `${C.blue}18` : "transparent", color: catFilter === f ? C.blue : C.dim, border: `1px solid ${catFilter === f ? `${C.blue}40` : C.border}`, borderRadius: 6, cursor: "pointer" }}
-          >
-            {f === "all" ? "All" : f === "stock" ? "Stocks" : "ETFs"}
-          </button>
-        ))}
-        <span style={{ marginLeft: "auto", color: C.dim, fontSize: 11, fontFamily: font, alignSelf: "center" }}>{filtered.length} ranked tickers</span>
+      <div style={{ display: "flex", marginBottom: 10, justifyContent: "flex-end" }}>
+        <span style={{ color: C.dim, fontSize: 11, fontFamily: font }}>{filtered.length} ranked tickers</span>
       </div>
 
       <SectionCard>
@@ -1058,7 +1044,6 @@ function TickerSummaryTab({ tickers }: { tickers: TickerResult[] }) {
 }
 
 function FlowTab({ contracts, onContractClick }: { contracts: OptionContract[]; onContractClick?: (occSymbol: string) => void }) {
-  const [catFilter, setCatFilter] = useState<CatFilter>("all");
   const [sideFilter, setSideFilter] = useState<SideFilter>("all");
   const [unusualOnly, setUnusualOnly] = useState(false);
   const [limit, setLimit] = useState(100);
@@ -1085,7 +1070,6 @@ function FlowTab({ contracts, onContractClick }: { contracts: OptionContract[]; 
   }), [contracts]);
 
   const filtered = normalizedContracts.filter(c => {
-    if (catFilter !== "all" && c.category !== catFilter) return false;
     if (sideFilter !== "all" && c.side !== sideFilter) return false;
     if (unusualOnly && (c.volumeToOi == null || c.volumeToOi < 3)) return false;
     return true;
@@ -1102,13 +1086,6 @@ function FlowTab({ contracts, onContractClick }: { contracts: OptionContract[]; 
   return (
     <div>
       <div style={{ display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap", alignItems: "center" }}>
-        <div style={{ display: "flex", gap: 4 }}>
-          {(["all", "stock", "etf"] as CatFilter[]).map(f => (
-            <button key={f} onClick={() => setCatFilter(f)} style={{ padding: "4px 12px", fontSize: 10, fontWeight: 600, fontFamily: font, background: catFilter === f ? `${C.blue}18` : "transparent", color: catFilter === f ? C.blue : C.dim, border: `1px solid ${catFilter === f ? `${C.blue}40` : C.border}`, borderRadius: 5, cursor: "pointer" }}>
-              {f === "all" ? "All" : f === "stock" ? "Stocks" : "ETFs"}
-            </button>
-          ))}
-        </div>
         <div style={{ display: "flex", gap: 4 }}>
           {(["all", "call", "put"] as SideFilter[]).map(f => (
             <button key={f} onClick={() => setSideFilter(f)} style={{ padding: "4px 12px", fontSize: 10, fontWeight: 600, fontFamily: font, background: sideFilter === f ? `${sideColor(f === "all" ? "call" : f)}18` : "transparent", color: sideFilter === f ? sideColor(f === "all" ? "call" : f) : C.dim, border: `1px solid ${sideFilter === f ? `${sideColor(f === "all" ? "call" : f)}40` : C.border}`, borderRadius: 5, cursor: "pointer" }}>
@@ -1406,6 +1383,9 @@ export default function OptionsPage() {
   const [chatLoading, setChatLoading] = useState(false);
   const [showRankingInfo, setShowRankingInfo] = useState(false);
   const [contractDetailSymbol, setContractDetailSymbol] = useState<string | null>(null);
+  const [lastFetchedAt, setLastFetchedAt] = useState<number | null>(null);
+  const [nextRefreshSecs, setNextRefreshSecs] = useState<number | null>(null);
+  const [refreshStatusText, setRefreshStatusText] = useState<string>("");
   const chatBottomRef = useRef<HTMLDivElement>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const tabCacheRef = useRef<Record<string, any>>({});
@@ -1520,6 +1500,8 @@ export default function OptionsPage() {
       }
       if (activeTab === scanTabRef.current) {
         setData(json);
+        setLastFetchedAt(Date.now());
+        if (json.next_refresh_in_seconds != null) setNextRefreshSecs(json.next_refresh_in_seconds);
       }
       setError("");
     } catch (e: any) {
@@ -1566,6 +1548,25 @@ export default function OptionsPage() {
   useEffect(() => {
     chatBottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatMessages]);
+
+  // Live "last refresh / refresh in" countdown
+  useEffect(() => {
+    if (!lastFetchedAt) return;
+    const tick = () => {
+      const ageS = Math.floor((Date.now() - lastFetchedAt) / 1000);
+      const agoText = ageS < 60 ? `${ageS}s ago` : `${Math.floor(ageS / 60)}m ${ageS % 60}s ago`;
+      if (nextRefreshSecs != null) {
+        const remaining = Math.max(0, nextRefreshSecs - ageS);
+        const remText = remaining < 60 ? `${remaining}s` : `${Math.floor(remaining / 60)}m ${remaining % 60}s`;
+        setRefreshStatusText(`Last refresh: ${agoText} · Refresh in ${remText}`);
+      } else {
+        setRefreshStatusText(`Last refresh: ${agoText}`);
+      }
+    };
+    tick();
+    const iv = setInterval(tick, 1000);
+    return () => clearInterval(iv);
+  }, [lastFetchedAt, nextRefreshSecs]);
 
   const askAgent = async () => {
     if (!chatInput.trim() || chatLoading) return;
@@ -1639,13 +1640,16 @@ export default function OptionsPage() {
         </div>
 
         {/* Scan tab switcher */}
-        <div style={{ display: "flex", gap: 4, marginBottom: 10 }}>
+        <div style={{ display: "flex", gap: 4, alignItems: "center", flexWrap: "wrap", marginBottom: 4 }}>
           {availableTabs.map(t => (
             <button key={t} onClick={() => switchScanTab(t)} disabled={loading && !hasData}
               style={{ padding: "5px 16px", fontSize: 11, fontWeight: 700, fontFamily: font, background: scanTab === t ? `${C.green}18` : "transparent", color: scanTab === t ? C.green : C.dim, border: `1px solid ${scanTab === t ? C.green + "40" : C.border}`, borderRadius: 6, cursor: (loading && !hasData) ? "not-allowed" : "pointer", opacity: (loading && !hasData) && scanTab !== t ? 0.5 : 1, transition: "all 0.15s ease" }}>
               {SCAN_TAB_LABELS[t] || toTitleCase(t)}
             </button>
           ))}
+          {refreshStatusText && (
+            <span style={{ marginLeft: "auto", color: C.dim, fontSize: 10, fontFamily: font }}>{refreshStatusText}</span>
+          )}
         </div>
 
         {showRankingInfo && scoreWeightEntries.length ? (
