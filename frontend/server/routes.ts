@@ -1365,6 +1365,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }
 
+  app.get('/api/notifai/weekly-summary', async (req, res) => {
+    try {
+      const fwdHeaders: Record<string,string> = { 'X-API-Key': AGENT_KEY };
+      if (req.headers.authorization) fwdHeaders['Authorization'] = req.headers.authorization as string;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 120000);
+      const response = await fetch(`${AGENT_URL}/api/notifai/weekly-summary`, {
+        headers: fwdHeaders,
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      if (!response.ok) return res.status(response.status).json({ error: `Agent returned ${response.status}` });
+      res.json(await response.json());
+    } catch (error: any) {
+      console.error('NotifAI weekly-summary error:', error);
+      res.status(500).json({ error: 'Failed to fetch weekly summary' });
+    }
+  });
+
+  app.get('/api/notifai/the-brief', async (req, res) => {
+    try {
+      const fwdHeaders: Record<string,string> = { 'X-API-Key': AGENT_KEY };
+      if (req.headers.authorization) fwdHeaders['Authorization'] = req.headers.authorization as string;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+      const response = await fetch(`${AGENT_URL}/api/notifai/the-brief`, {
+        headers: fwdHeaders,
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      if (!response.ok) return res.status(response.status).json({ error: `Agent returned ${response.status}` });
+      res.json(await response.json());
+    } catch (error: any) {
+      console.error('NotifAI the-brief error:', error);
+      res.status(500).json({ error: 'Failed to fetch the brief' });
+    }
+  });
+
   app.get('/api/proxy/news/feed', async (req, res) => {
     try {
       const category = (req.query.category as string || 'finance').toLowerCase();

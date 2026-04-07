@@ -1,0 +1,87 @@
+Goal: Add two new sections to the NotifAI page — a Claude-written weekly summary at the very top, and a structured "The Brief" section below it. All existing page content moves down.
+
+Section 1 — Weekly AI Summary (top of page)
+API: GET /api/notifai/weekly-summary
+
+Response shape:
+
+{
+  "week_label": "Week of April 7, 2026",
+  "headline": "One-sentence punchy market verdict",
+  "summary": "2-3 sentence opening narrative paragraph",
+  "sub_label": "Let's recap and prep you for the week ahead.",
+  "days": [
+    { "day": "Monday", "text": "What happened Monday..." },
+    { "day": "Tuesday", "text": "..." },
+    ...up to Friday
+  ],
+  "closing_note": "One sentence on what to watch next week",
+  "outlook_label": "Cautiously Bullish — Tech Leading",
+  "generated_at": "2026-04-07T07:01:22"
+}
+
+UI layout (match the design in the screenshot):
+
+Small grey all-caps label: CAELYN AI · {week_label}
+Outlook badge (pill): {outlook_label} — color it green if "Bullish", yellow if "Mixed"/"Cautiously", red if "Bearish"
+Headline: Large bold text — {headline}
+Opening paragraph: {summary} in slightly muted colour, readable body font
+Subheader: {sub_label} ("Let's recap and prep you for the week ahead.") — bold, slightly larger
+Day-by-day section: For each item in days, show:
+{day} as a bold inline label
+{text} as the paragraph body after a colon/line break
+Each day separated by a thin divider or spacing
+Closing line in italic: {closing_note}
+Small grey timestamp at bottom: Generated {generated_at formatted as "Sat Apr 5 at 7:02 AM"}
+Loading state: Show a skeleton/spinner while fetching — the Claude call can take 10–20 seconds on a cache miss.
+
+Error state: Show a grey card: "Weekly summary generating — check back in a moment."
+
+When to call: On page mount. The response is cached server-side until next Saturday 7am so subsequent loads are instant (no spinner needed after first render — just check for a cached generated_at).
+
+Section 2 — The Brief (immediately below the weekly summary)
+API: GET /api/notifai/the-brief
+
+Response shape:
+
+{
+  "week_start": "2026-04-06",
+  "week_end": "2026-04-10",
+  "earnings_by_day": {
+    "2026-04-09": {
+      "bmo": [{ "ticker": "NTIC", "eps_estimate": 0.02, "hour": "bmo" }],
+      "amc": [{ "ticker": "WDFC", "eps_estimate": 1.45, "hour": "amc" }]
+    }
+  },
+  "economic_events": [
+    { "event": "CPI (YoY)", "date": "2026-04-10", "time": "08:30 AM" }
+  ]
+}
+
+UI layout (match the screenshot):
+
+Section header: THE BRIEF — all caps, bold, with a small divider line
+Subtext: "Need a concise summary of what's going on this week? Look no further. Here's a summary of this week's earnings and economic data."
+Earnings This Week subsection:
+
+Header: Earnings This Week
+Sub-header: Pre-Market Earnings and After-Hours Earnings as labels within each day
+Group by day (Monday → Friday). For each day that has earnings:
+Day label: Mon, Tue, Wed, Thu, Fri (derived from the date key)
+Under each day, list bmo tickers as "Pre-Market" and amc tickers as "After-Hours"
+Show each ticker in a small chip/pill or inline — $TICK +{eps_estimate}
+If eps_estimate is null, just show the ticker
+Economic Calendar subsection:
+
+Header: Economic Calendar
+List each event from economic_events grouped by day, showing: {time} — {event name}
+If no events: show "No major economic events this week."
+Styling: Dark card/panel consistent with the rest of the CaelynAI design system. Compact and dense — this is a reference section, not the focal point.
+
+Placement
+The final page order should be:
+
+Weekly AI Summary ← NEW, at top
+The Brief ← NEW, below summary
+(all existing NotifAI content — news feed, notifications, etc.)
+Both new sections should be full-width on desktop and stack cleanly on mobile.
