@@ -169,7 +169,7 @@ export function MultiChainPortfolioTracker() {
             <div key={chainData.chain} className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <Badge className={`bg-${getChainColor(chainData.chain)}-500/20 text-${getChainColor(chainData.chain)}-400 border-${getChainColor(chainData.chain)}-500/30`}>
+                  <Badge className={chainData.chain.toLowerCase() === 'ethereum' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' : chainData.chain.toLowerCase() === 'base' ? 'bg-purple-500/20 text-purple-400 border-purple-500/30' : 'bg-gray-500/20 text-gray-400 border-gray-500/30'}>
                     {chainData.chain.toUpperCase()}
                   </Badge>
                   <span className="text-xl font-semibold text-white">

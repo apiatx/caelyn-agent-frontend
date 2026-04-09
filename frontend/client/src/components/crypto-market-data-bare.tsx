@@ -86,7 +86,7 @@ export default function CryptoMarketDataBare({ symbol, className = "" }: CryptoM
   });
 
   // Find the specific crypto data for this symbol
-  const crypto = cryptoData?.find(c => c.symbol === symbol.toUpperCase());
+  const crypto = cryptoData?.find(c => c.symbol === symbol?.toUpperCase());
 
   if (isLoading) {
     return (

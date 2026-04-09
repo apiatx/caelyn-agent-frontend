@@ -360,11 +360,15 @@ export function HistoryPanel({ isOpen, onClose }: { isOpen: boolean; onClose: ()
     const { entry } = view;
     if (!entry.conversation_id) return;
 
+    const abortController = new AbortController();
+    const { signal } = abortController;
+    let cancelled = false;
+
     setMentionLoading(true);
-    fetch(`${AGENT_BACKEND_URL}/api/conversations/${entry.conversation_id}`, { headers: authHeaders() })
+    fetch(`${AGENT_BACKEND_URL}/api/conversations/${entry.conversation_id}`, { headers: authHeaders(), signal })
       .then(r => r.ok ? r.json() : null)
       .then(data => {
-        if (!data) { setMentionLoading(false); return; }
+        if (cancelled || !data) { if (!cancelled) setMentionLoading(false); return; }
         // Collect all ticker_mentions across all messages
         const msgs: any[] = Array.isArray(data.messages) ? data.messages : [];
         const allMentions: TickerMention[] = [];
@@ -380,6 +384,7 @@ export function HistoryPanel({ isOpen, onClose }: { isOpen: boolean; onClose: ()
             }
           }
         }
+        if (cancelled) return;
         setTickerMentions(allMentions);
 
         if (allMentions.length === 0) { setMentionLoading(false); return; }
@@ -390,10 +395,11 @@ export function HistoryPanel({ isOpen, onClose }: { isOpen: boolean; onClose: ()
           method: 'POST',
           headers: authHeaders(),
           body: JSON.stringify({ tickers }),
+          signal,
         })
           .then(r => r.ok ? r.json() : null)
           .then(priceData => {
-            if (!priceData) return;
+            if (cancelled || !priceData) return;
             // Response shape: { "AMSC": 15.23, ... } or { prices: { "AMSC": 15.23 } }
             const priceMap = priceData.prices || priceData;
             const out: Record<string, number> = {};
@@ -403,10 +409,15 @@ export function HistoryPanel({ isOpen, onClose }: { isOpen: boolean; onClose: ()
             }
             setCurrentPrices(out);
           })
-          .catch(() => {})
-          .finally(() => setMentionLoading(false));
+          .catch((e) => { if (e.name !== 'AbortError') {} })
+          .finally(() => { if (!cancelled) setMentionLoading(false); });
       })
-      .catch(() => setMentionLoading(false));
+      .catch((e) => { if (e.name !== 'AbortError' && !cancelled) setMentionLoading(false); });
+
+    return () => {
+      cancelled = true;
+      abortController.abort();
+    };
   }, [view]);
 
   if (!isOpen) return null;

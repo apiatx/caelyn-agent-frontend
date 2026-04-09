@@ -416,13 +416,13 @@ export function CoinMarketCapTop100() {
                     </p>
                   </div>
                   <div className="text-center">
-                    <span className="text-white/35 block">90d</span>
+                    <span className="text-white/35 block">60d</span>
                     <p className={`font-semibold ${getPercentageColor(crypto.quote.USD.percent_change_60d || 0)}`}>
                       {formatPercentage(crypto.quote.USD.percent_change_60d || 0)}
                     </p>
                   </div>
                   <div className="text-center">
-                    <span className="text-white/35 block">YTD</span>
+                    <span className="text-white/35 block">90d</span>
                     <p className={`font-semibold ${getPercentageColor(crypto.quote.USD.percent_change_90d || 0)}`}>
                       {formatPercentage(crypto.quote.USD.percent_change_90d || 0)}
                     </p>

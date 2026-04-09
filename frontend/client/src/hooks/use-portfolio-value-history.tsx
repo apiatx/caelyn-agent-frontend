@@ -20,7 +20,7 @@ export function usePortfolioValueHistory(portfolioId: number, timeframe: string 
   return useQuery<PortfolioValueHistory[]>({
     queryKey: ['/api/portfolio', portfolioId, 'value-history', timeframe, limit],
     queryFn: async () => {
-      const response = await fetch(`/api/portfolio/${portfolioId}/value-history?limit=${limit}`);
+      const response = await fetch(`/api/portfolio/${portfolioId}/value-history?limit=${limit}&timeframe=${timeframe}`);
       if (!response.ok) {
         throw new Error('Failed to fetch portfolio value history');
       }

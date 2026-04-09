@@ -13,13 +13,23 @@ export function useWhaleWatching(userId: number) {
   });
 
   const { data: premiumTransactions } = useQuery<WhaleTransaction[]>({
-    queryKey: ["/api/whale-transactions"],
+    queryKey: ["/api/whale-transactions", "premium"],
+    queryFn: async () => {
+      const res = await fetch("/api/whale-transactions");
+      if (!res.ok) throw new Error(`${res.status}: ${res.statusText}`);
+      return res.json();
+    },
     enabled: accessData?.hasAccess || false,
   });
 
   // Free whale transactions - always available
   const { data: freeTransactions } = useQuery<WhaleTransaction[]>({
-    queryKey: ["/api/whale-transactions"],
+    queryKey: ["/api/whale-transactions", "free"],
+    queryFn: async () => {
+      const res = await fetch("/api/whale-transactions");
+      if (!res.ok) throw new Error(`${res.status}: ${res.statusText}`);
+      return res.json();
+    },
     refetchInterval: 5000, // Refresh every 5 seconds
   });
 

@@ -71,7 +71,7 @@ class RealTimeDataService {
       let allPools: any[] = [];
       let allIncluded: any[] = []; // Store included data (tokens) for contract address lookup
       for (const url of urls) {
-        const data = await this.fetchWithCache(url, `geckoterminal-${Date.now()}-${Math.random()}`);
+        const data = await this.fetchWithCache(url, `geckoterminal-${url}`);
         if (data?.data) {
           allPools = allPools.concat(data.data);
           if (data.included) {

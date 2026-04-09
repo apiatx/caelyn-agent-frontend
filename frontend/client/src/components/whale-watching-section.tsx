@@ -43,7 +43,9 @@ export default function WhaleWatchingSection() {
   };
 
   const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
+    navigator.clipboard.writeText(text).catch(() => {
+      // Fallback: silent fail if clipboard API unavailable
+    });
   };
 
   const getTokenInfo = (symbol: string) => {

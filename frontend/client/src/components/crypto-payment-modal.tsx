@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { X, Copy, CheckCircle, Clock, Wallet } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { GlassCard } from "@/components/ui/glass-card";
@@ -23,6 +23,14 @@ export function CryptoPaymentModal({
   const [paymentStatus, setPaymentStatus] = useState<'pending' | 'confirming' | 'confirmed'>('pending');
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
+  const timersRef = useRef<NodeJS.Timeout[]>([]);
+
+  useEffect(() => {
+    return () => {
+      timersRef.current.forEach(clearTimeout);
+      timersRef.current = [];
+    };
+  }, []);
 
   // Mock wallet addresses - in production these would be your actual receiving addresses
   const walletAddresses = {
@@ -51,16 +59,18 @@ export function CryptoPaymentModal({
   const handlePaymentConfirmation = () => {
     setPaymentStatus('confirming');
     // Simulate payment confirmation delay
-    setTimeout(() => {
+    const t1 = setTimeout(() => {
       setPaymentStatus('confirmed');
-      setTimeout(() => {
+      const t2 = setTimeout(() => {
         toast({
           title: "Payment Confirmed!",
           description: "Premium whale watching access activated",
         });
         onClose();
       }, 2000);
+      timersRef.current.push(t2);
     }, 3000);
+    timersRef.current.push(t1);
   };
 
   if (!paymentType) return null;

@@ -172,10 +172,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
         
-        if (taoWalletAddress && !walletRegex.test(taoWalletAddress)) {
+        // TAO uses SS58 format (alphanumeric, typically 48 chars starting with 5)
+        const taoWalletRegex = /^5[a-zA-Z0-9]{47}$/;
+        if (taoWalletAddress && !walletRegex.test(taoWalletAddress) && !taoWalletRegex.test(taoWalletAddress)) {
           return res.status(400).json({
-            error: "Invalid wallet address format", 
-            message: "TAO wallet address must be a valid Ethereum address"
+            error: "Invalid wallet address format",
+            message: "TAO wallet address must be a valid Ethereum (0x...) or SS58 (5...) address"
           });
         }
         
@@ -1298,19 +1300,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const agentKey = 'hippo_ak_7f3x9k2m4p8q1w5t';
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 75000);
-      const response = await fetch(`${agentUrl}/api/portfolio/review`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-API-Key': agentKey },
-        body: JSON.stringify({ holdings: holdings.slice(0, 25) }),
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
-      if (!response.ok) {
-        return res.status(response.status).json({ error: `Agent returned ${response.status}` });
+      try {
+        const response = await fetch(`${agentUrl}/api/portfolio/review`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-API-Key': agentKey },
+          body: JSON.stringify({ holdings: holdings.slice(0, 25) }),
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        if (!response.ok) {
+          return res.status(response.status).json({ error: `Agent returned ${response.status}` });
+        }
+        const data = await response.json();
+        const message = data?.structured?.message || data?.message || data?.analysis || '';
+        res.json({ message, raw: data });
+      } finally {
+        clearTimeout(timeoutId);
       }
-      const data = await response.json();
-      const message = data?.structured?.message || data?.message || data?.analysis || '';
-      res.json({ message, raw: data });
     } catch (error) {
       console.error('Portfolio review error:', error);
       res.status(500).json({ error: 'Failed to get portfolio review' });

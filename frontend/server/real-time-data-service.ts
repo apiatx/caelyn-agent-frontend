@@ -310,49 +310,6 @@ class RealTimeDataService {
     }
   }
 
-      // Get Ethereum network large transactions for comparison
-      if (process.env.ETHERSCAN_API_KEY) {
-        console.log('🔍 Fetching real Ethereum whale transactions...');
-        const ethData = await this.fetchWithCache(
-          `${this.etherscanApiUrl}?module=account&action=txlist&startblock=0&endblock=99999999&page=1&offset=50&sort=desc&apikey=${process.env.ETHERSCAN_API_KEY}`,
-          'eth-whale-txs'
-        );
-
-        if (ethData?.result && Array.isArray(ethData.result)) {
-          for (const tx of ethData.result.slice(0, 10)) {
-            const valueEth = parseFloat(tx.value || '0') / 1e18;
-            const valueUsd = valueEth * 3000;
-            
-            if (valueUsd > 50000) { // Higher threshold for ETH
-              transactions.push({
-                id: tx.hash,
-                token: 'ETH',
-                amount: valueEth.toFixed(4),
-                amountUsd: valueUsd.toFixed(2),
-                fromAddress: tx.from,
-                toAddress: tx.to,
-                txHash: tx.hash,
-                timestamp: new Date(parseInt(tx.timeStamp) * 1000).toISOString(),
-                network: 'BASE',
-                action: Math.random() > 0.5 ? 'BUY' : 'SELL'
-              });
-            }
-          }
-          console.log(`✅ Found ${transactions.filter(t => t.network === 'BASE').length} ETH whale transactions`);
-        } else {
-          console.log('⚠️ Etherscan API returned invalid data');
-        }
-      } else {
-        console.log('⚠️ ETHERSCAN_API_KEY not found');
-      }
-
-      return transactions;
-    } catch (error) {
-      console.error('Error fetching whale transactions:', error);
-      return [];
-    }
-  }
-
   async getSocialSentimentData(): Promise<SocialMention[]> {
     try {
       // Get trending tokens from DexScreener

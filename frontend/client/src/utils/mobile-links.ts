@@ -39,10 +39,10 @@ export const openCoinMarketCapLink = (path: string): void => {
  */
 export const openDexScreenerLink = (path: string): void => {
   const url = `https://dexscreener.com/${path}`;
-  
+
   if (isMobile()) {
     // Open in same tab on mobile for better UX (DexScreener doesn't have a native app)
-    window.open(url, '_blank');
+    window.location.href = url;
   } else {
     window.open(url, '_blank');
   }

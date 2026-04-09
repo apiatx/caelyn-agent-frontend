@@ -59,11 +59,17 @@ export const queryClient = new QueryClient({
       refetchOnWindowFocus: false,
       staleTime: Infinity,
       retry: (failureCount, error) => {
-        // Don't retry on 4xx errors (client errors)
-        if (error instanceof Error && error.message.includes('4')) {
-          return false;
+        // Don't retry on 4xx errors (client errors), except 429 (rate limit)
+        if (error instanceof Error) {
+          const match = error.message.match(/^(\d{3}):/);
+          if (match) {
+            const status = parseInt(match[1], 10);
+            if (status >= 400 && status < 500 && status !== 429) {
+              return false;
+            }
+          }
         }
-        // Retry network errors up to 3 times
+        // Retry network errors and 429s up to 3 times
         return failureCount < 3;
       },
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),

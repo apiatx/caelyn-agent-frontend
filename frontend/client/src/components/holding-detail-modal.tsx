@@ -87,7 +87,7 @@ export function HoldingDetailModal({ holding, subnets, onClose }: HoldingDetailM
                   </div>
                 </div>
                 <div className={`text-lg font-semibold ${isProfit ? 'text-crypto-success' : 'text-crypto-danger'}`}>
-                  {isProfit ? '+' : ''}3.24%
+                  {isProfit ? '+' : ''}{holding.pnlPercentage}%
                 </div>
               </div>
               
