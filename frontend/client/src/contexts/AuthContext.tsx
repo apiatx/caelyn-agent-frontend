@@ -127,11 +127,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const res = await fetch(url, { ...options, headers });
 
     if (res.status === 401) {
-      clearToken();
-      setToken(null);
-      setUserId(null);
-      navigate('/login');
-      throw new Error('Session expired. Please log in again.');
+      // Only clear the session if the backend explicitly signals the token is invalid
+      // (not just a data endpoint that FastAPI rejected for other reasons)
+      const body = await res.clone().json().catch(() => ({}));
+      const isSessionExpired =
+        body?.detail === 'Not authenticated.' ||
+        body?.detail === 'Invalid token.' ||
+        body?.detail === 'Token expired.' ||
+        body?.code === 'TOKEN_EXPIRED';
+      if (isSessionExpired) {
+        clearToken();
+        setToken(null);
+        setUserId(null);
+        navigate('/login');
+        throw new Error('Session expired. Please log in again.');
+      }
     }
 
     if (res.status === 402) {
