@@ -4,23 +4,26 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   ExternalLink,
-  ArrowUpRight,
-  ArrowDownRight,
   ChevronDown,
   ChevronUp,
   RefreshCw,
   Activity,
   Globe,
   MessageCircle,
+  AlertCircle,
 } from "lucide-react";
 import { openSecureLink } from "@/utils/security";
 import {
   LineChart,
   Line,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   Tooltip,
   ResponsiveContainer,
+  ReferenceLine,
+  CartesianGrid,
 } from "recharts";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -52,8 +55,10 @@ interface DashboardData {
     fear_greed_label: string;
   };
   network_stats: Record<string, any>;
+  block_number?: number;
   subnets: SubnetData[];
   as_of: string;
+  error?: string;
 }
 
 interface MetagraphValidator {
@@ -73,6 +78,12 @@ interface PriceHistoryItem {
   close: number;
 }
 
+interface BlockHistoryItem {
+  label: string;
+  blocks: number;
+  expected: number;
+}
+
 type SortKey =
   | "netuid"
   | "name"
@@ -87,7 +98,7 @@ type SortDir = "asc" | "desc";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function num(v: string | number | undefined): number {
+function num(v: string | number | undefined | null): number {
   if (v === undefined || v === null || v === "") return 0;
   return typeof v === "number" ? v : parseFloat(v) || 0;
 }
@@ -100,12 +111,12 @@ function fmtUsd(v: number): string {
 }
 
 function fmtTao(v: number): string {
-  if (v >= 1e9) return `${(v / 1e9).toFixed(2)}B`;
-  if (v >= 1e6) return `${(v / 1e6).toFixed(2)}M`;
-  if (v >= 1e3) return `${(v / 1e3).toFixed(1)}K`;
-  if (v >= 1) return v.toFixed(2);
-  if (v >= 0.001) return v.toFixed(4);
-  return v.toFixed(6);
+  if (v >= 1e9) return `τ${(v / 1e9).toFixed(2)}B`;
+  if (v >= 1e6) return `τ${(v / 1e6).toFixed(2)}M`;
+  if (v >= 1e3) return `τ${(v / 1e3).toFixed(1)}K`;
+  if (v >= 1) return `τ${v.toFixed(2)}`;
+  if (v >= 0.001) return `τ${v.toFixed(4)}`;
+  return `τ${v.toFixed(6)}`;
 }
 
 function fmtPct(v: number): string {
@@ -120,6 +131,10 @@ function pctColor(v: number): string {
 function truncate(s: string, n = 8): string {
   if (!s || s.length <= n + 4) return s || "";
   return `${s.slice(0, n)}...${s.slice(-4)}`;
+}
+
+function fmtNumber(v: number): string {
+  return v.toLocaleString("en-US");
 }
 
 // ─── Sparkline SVG ───────────────────────────────────────────────────────────
@@ -161,6 +176,8 @@ function Sparkline({ data, positive }: { data: number[]; positive: boolean }) {
 function DashboardSkeleton() {
   return (
     <div className="space-y-4 animate-pulse">
+      {/* Header skeleton */}
+      <div className="h-10 w-full rounded-lg bg-orange-500/20" />
       {/* KPI bar skeleton */}
       <div className="flex gap-3 flex-wrap">
         {[...Array(5)].map((_, i) => (
@@ -170,8 +187,11 @@ function DashboardSkeleton() {
           />
         ))}
       </div>
+      {/* Chart skeleton */}
+      <div className="h-[200px] rounded-lg bg-white/[0.04] border border-white/[0.08]" />
       {/* Table skeleton */}
       <div className="rounded-lg bg-white/[0.04] border border-white/[0.08] p-4 space-y-3">
+        <div className="h-6 w-48 bg-white/[0.06] rounded" />
         {[...Array(10)].map((_, i) => (
           <div key={i} className="h-8 bg-white/[0.06] rounded" />
         ))}
@@ -187,30 +207,36 @@ export default function BittensorDashboardSection() {
   const [showMetagraph, setShowMetagraph] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>("market_cap");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
-  const [showPriceChart, setShowPriceChart] = useState(true);
-  const [showResources, setShowResources] = useState(false);
+  const [showChart, setShowChart] = useState(true);
+  const [showBlocksChart, setShowBlocksChart] = useState(true);
+  const [blockScale, setBlockScale] = useState<"days" | "hours">("days");
 
   // ─── Data Fetching ───────────────────────────────────────────────────────
 
   const {
     data: dashboard,
     isLoading,
-    isError,
+    error,
     refetch,
   } = useQuery<DashboardData>({
     queryKey: ["/api/bittensor/dashboard"],
     refetchInterval: 60000,
+    retry: 2,
   });
 
-  const { data: metagraph, isLoading: metagraphLoading } = useQuery<{
+  const { data: metagraph, isLoading: metaLoading } = useQuery<{
     data?: MetagraphValidator[];
   }>({
     queryKey: [`/api/bittensor/subnet/${selectedNetuid}/metagraph`],
-    enabled: !!selectedNetuid && showMetagraph,
+    enabled: selectedNetuid !== null,
   });
 
   const { data: priceHistory } = useQuery<{ data?: PriceHistoryItem[] }>({
     queryKey: ["/api/bittensor/price/history"],
+  });
+
+  const { data: blocksHistory } = useQuery<{ data?: BlockHistoryItem[] }>({
+    queryKey: [`/api/bittensor/blocks/history?scale=${blockScale}&points=30`],
   });
 
   // ─── Sorting ─────────────────────────────────────────────────────────────
@@ -272,6 +298,16 @@ export default function BittensorDashboardSection() {
     }));
   }, [priceHistory]);
 
+  // ─── Blocks chart data ──────────────────────────────────────────────────
+
+  const blocksData = useMemo(() => {
+    const raw = blocksHistory?.data || (blocksHistory as any);
+    if (!Array.isArray(raw)) return [];
+    return raw;
+  }, [blocksHistory]);
+
+  const blockTarget = blockScale === "days" ? 7200 : 300;
+
   // ─── Top 10 validators from metagraph ────────────────────────────────────
 
   const topValidators = useMemo(() => {
@@ -286,40 +322,49 @@ export default function BittensorDashboardSection() {
 
   if (isLoading) return <DashboardSkeleton />;
 
-  if (isError || !dashboard) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 space-y-4">
-        <Activity className="w-12 h-12 text-white/30" />
-        <p className="text-white/50 text-sm">
-          Failed to load Bittensor dashboard data.
-        </p>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => refetch()}
-          className="border-orange-500/30 text-orange-400 hover:bg-orange-500/10"
-        >
-          <RefreshCw className="w-3 h-3 mr-1.5" /> Retry
-        </Button>
-      </div>
-    );
-  }
+  // ════════════════════ SECTION 1: HEADER ════════════════════
 
-  const taoPrice = num(dashboard.tao_price?.price);
-  const taoChange = num(dashboard.tao_price?.change_24h);
-  const totalSubnets = dashboard.subnets?.length ?? 0;
-  const fearScore = dashboard.total_market?.fear_greed_score ?? 0;
-  const fearLabel = dashboard.total_market?.fear_greed_label ?? "N/A";
+  const taoPrice = num(dashboard?.tao_price?.price);
+  const taoChange = num(dashboard?.tao_price?.change_24h);
+  const totalSubnets = dashboard?.subnets?.length ?? 0;
+  const fearScore = dashboard?.total_market?.fear_greed_score ?? 0;
+  const fearLabel = dashboard?.total_market?.fear_greed_label ?? "N/A";
+  const blockNumber = dashboard?.block_number;
+
+  const hasError = error || dashboard?.error;
 
   return (
     <div className="space-y-4">
-      {/* ════════════════════ 1. TOP KPI BAR ════════════════════ */}
-      <div className="flex flex-wrap gap-2">
+      {/* ════════════════════ 1. HEADER BAR ════════════════════ */}
+      <div className="bg-[#f97316] rounded-lg px-4 py-2.5 flex items-center justify-between">
+        <span className="text-black font-mono font-bold text-sm tracking-wider">
+          TAO DASHBOARD
+        </span>
+        <div className="flex items-center gap-3">
+          <span className="flex items-center gap-1.5">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-black/40 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-black/60" />
+            </span>
+            <span className="text-black font-mono font-bold text-xs">LIVE</span>
+          </span>
+          {dashboard?.as_of && (
+            <span className="text-black/60 font-mono text-xs">
+              {new Date(dashboard.as_of).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+              })}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* ════════════════════ 2. KPI TICKER BAR ════════════════════ */}
+      <div className="flex flex-wrap gap-2 overflow-x-auto">
         {/* TAO Price */}
         <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-white/[0.04] border border-white/[0.08]">
-          <span className="text-white/50 text-xs uppercase tracking-wider">
-            TAO
-          </span>
+          <span className="text-white/50 text-xs uppercase tracking-wider">TAO</span>
           <span className="text-white font-bold font-mono text-sm">
             ${taoPrice.toFixed(2)}
           </span>
@@ -330,67 +375,246 @@ export default function BittensorDashboardSection() {
 
         {/* Total Subnets */}
         <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-white/[0.04] border border-white/[0.08]">
-          <span className="text-white/50 text-xs uppercase tracking-wider">
-            Subnets
-          </span>
-          <span className="text-white font-bold font-mono text-sm">
-            {totalSubnets}
-          </span>
+          <span className="text-white/50 text-xs uppercase tracking-wider">Subnets</span>
+          <span className="text-white font-bold font-mono text-sm">{totalSubnets}</span>
         </div>
 
         {/* Fear & Greed */}
         <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-white/[0.04] border border-white/[0.08]">
-          <span className="text-white/50 text-xs uppercase tracking-wider">
-            Fear & Greed
-          </span>
-          <span className="text-orange-400 font-bold font-mono text-sm">
-            {fearScore}
-          </span>
-          <span className="text-white/40 text-xs">{fearLabel}</span>
+          <span className="text-white/50 text-xs uppercase tracking-wider">Fear & Greed</span>
+          <span className="text-orange-400 font-bold font-mono text-sm">{fearScore}</span>
+          <span className="text-white/40 text-xs">({fearLabel})</span>
         </div>
 
-        {/* LIVE indicator */}
-        <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-white/[0.04] border border-white/[0.08]">
-          <span className="relative flex h-2.5 w-2.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
-          </span>
-          <span className="text-emerald-400 text-xs font-semibold tracking-wider">
-            LIVE
-          </span>
-        </div>
+        {/* Block Number */}
+        {blockNumber && (
+          <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-white/[0.04] border border-white/[0.08]">
+            <span className="text-white/50 text-xs uppercase tracking-wider">Block</span>
+            <span className="text-white font-bold font-mono text-sm">
+              #{fmtNumber(blockNumber)}
+            </span>
+          </div>
+        )}
 
-        {/* Last updated */}
-        {dashboard.as_of && (
-          <div className="flex items-center gap-1.5 px-3 py-2.5 text-white/30 text-xs">
-            Updated{" "}
-            {new Date(dashboard.as_of).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
+        {/* Total Market */}
+        {dashboard?.total_market?.total_price_tao && (
+          <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-white/[0.04] border border-white/[0.08]">
+            <span className="text-white/50 text-xs uppercase tracking-wider">Total Mkt</span>
+            <span className="text-white font-bold font-mono text-sm">
+              τ{fmtNumber(Math.round(num(dashboard.total_market.total_price_tao)))}
+            </span>
           </div>
         )}
       </div>
 
-      {/* ════════════════════ 2. MAIN SUBNET TABLE ════════════════════ */}
+      {/* ════════════════════ 3. ERROR STATE ════════════════════ */}
+      {hasError && (
+        <div className="bg-red-900/20 border border-red-500/40 rounded-lg p-6 text-center">
+          <AlertCircle className="w-8 h-8 text-red-400 mx-auto mb-3" />
+          <p className="text-red-300 font-medium">
+            {dashboard?.error || "Failed to load Bittensor data"}
+          </p>
+          {(dashboard?.error?.includes("TAOSTATS_API_KEY") ||
+            (typeof error === "object" &&
+              error !== null &&
+              "message" in error &&
+              String((error as any).message).includes("TAOSTATS_API_KEY"))) && (
+            <p className="text-white/50 text-sm mt-2">
+              Add TAOSTATS_API_KEY to your Replit backend Secrets and restart.
+            </p>
+          )}
+          <button
+            onClick={() => refetch()}
+            className="mt-4 px-4 py-2 rounded-md bg-red-500/20 border border-red-500/30 text-red-300 text-sm hover:bg-red-500/30 transition-colors"
+          >
+            <RefreshCw className="w-3 h-3 inline mr-1.5" />
+            Retry
+          </button>
+        </div>
+      )}
+
+      {/* ════════════════════ 4. TAO PRICE CHART ════════════════════ */}
       <div className="rounded-lg bg-white/[0.04] border border-white/[0.08] overflow-hidden">
+        <button
+          onClick={() => setShowChart((v) => !v)}
+          className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/[0.02] transition-colors"
+        >
+          <span className="text-white/70 text-sm font-medium font-mono">
+            TAO / USD &nbsp; 30D
+          </span>
+          {showChart ? (
+            <ChevronUp className="w-4 h-4 text-white/40" />
+          ) : (
+            <ChevronDown className="w-4 h-4 text-white/40" />
+          )}
+        </button>
+
+        {showChart && (
+          <div className="px-4 pb-4">
+            {chartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={180}>
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 10 }}
+                    axisLine={{ stroke: "rgba(255,255,255,0.08)" }}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 10 }}
+                    axisLine={false}
+                    tickLine={false}
+                    domain={["auto", "auto"]}
+                    tickFormatter={(v: number) => `$${v.toFixed(0)}`}
+                    width={50}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      background: "#111318",
+                      border: "1px solid rgba(255,255,255,0.1)",
+                      borderRadius: 8,
+                      fontSize: 12,
+                    }}
+                    labelStyle={{ color: "rgba(255,255,255,0.5)" }}
+                    itemStyle={{ color: "#fb923c" }}
+                    formatter={(value: number) => [`$${value.toFixed(2)}`, "Close"]}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="close"
+                    stroke="#f97316"
+                    strokeWidth={2}
+                    dot={false}
+                    activeDot={{ r: 3, fill: "#f97316" }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[180px] flex items-center justify-center text-white/30 text-sm">
+                No price history available.
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ════════════════════ 5. BLOCKS EMITTED CHART ════════════════════ */}
+      <div className="rounded-lg bg-white/[0.04] border border-white/[0.08] overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3">
+          <button
+            onClick={() => setShowBlocksChart((v) => !v)}
+            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+          >
+            <span className="text-white/70 text-sm font-medium font-mono">
+              BLOCKS EMITTED / {blockScale === "days" ? "DAY" : "HOUR"} &nbsp;|&nbsp; Target: {fmtNumber(blockTarget)}
+            </span>
+            {showBlocksChart ? (
+              <ChevronUp className="w-4 h-4 text-white/40" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-white/40" />
+            )}
+          </button>
+          <div className="flex gap-1">
+            <button
+              onClick={() => setBlockScale("days")}
+              className={`px-2.5 py-1 rounded text-xs font-mono font-bold transition-colors ${
+                blockScale === "days"
+                  ? "bg-orange-500/20 text-orange-400 border border-orange-500/40"
+                  : "text-white/40 hover:text-white/60 border border-white/[0.08]"
+              }`}
+            >
+              30D
+            </button>
+            <button
+              onClick={() => setBlockScale("hours")}
+              className={`px-2.5 py-1 rounded text-xs font-mono font-bold transition-colors ${
+                blockScale === "hours"
+                  ? "bg-orange-500/20 text-orange-400 border border-orange-500/40"
+                  : "text-white/40 hover:text-white/60 border border-white/[0.08]"
+              }`}
+            >
+              144H
+            </button>
+          </div>
+        </div>
+
+        {showBlocksChart && (
+          <div className="px-4 pb-4">
+            {blocksData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={160}>
+                <BarChart data={blocksData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                  <XAxis
+                    dataKey="label"
+                    tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 10 }}
+                    axisLine={{ stroke: "rgba(255,255,255,0.08)" }}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 10 }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={50}
+                    tickFormatter={(v: number) => fmtNumber(v)}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      background: "#111318",
+                      border: "1px solid rgba(255,255,255,0.1)",
+                      borderRadius: 8,
+                      fontSize: 12,
+                    }}
+                    labelStyle={{ color: "rgba(255,255,255,0.5)" }}
+                    formatter={(value: number) => [fmtNumber(value), "Blocks"]}
+                  />
+                  <ReferenceLine
+                    y={blockTarget}
+                    stroke="white"
+                    strokeDasharray="4 4"
+                    label={{ value: "Target", fill: "rgba(255,255,255,0.4)", fontSize: 10, position: "right" }}
+                  />
+                  <Bar
+                    dataKey="blocks"
+                    fill="#f97316"
+                    radius={[2, 2, 0, 0]}
+                    isAnimationActive={false}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[160px] flex items-center justify-center text-white/30 text-sm">
+                No block history available.
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ════════════════════ 6. SUBNET SCREENER TABLE ════════════════════ */}
+      <div className="rounded-lg bg-white/[0.04] border border-white/[0.08] overflow-hidden">
+        <div className="px-4 py-3 border-b border-white/[0.08]">
+          <span className="text-white/70 text-sm font-medium font-mono tracking-wider">
+            SUBNET SCREENER — {totalSubnets} SUBNETS
+          </span>
+        </div>
         <div className="overflow-x-auto">
-          <div className="max-h-[600px] overflow-y-auto">
+          <div className="max-h-[500px] overflow-y-auto">
             <table className="w-full text-xs">
-              <thead className="sticky top-0 z-10 bg-[#0a0c10] border-b border-white/[0.08]">
+              <thead className="sticky top-0 z-10 bg-[#0a0a0f] border-b border-white/[0.08]">
                 <tr>
                   {(
                     [
-                      ["netuid", "#"],
-                      ["name", "Name"],
-                      ["price", "Price (τ)"],
-                      ["market_cap", "Mkt Cap"],
-                      ["price_change_24h", "24h%"],
-                      ["price_change_7d", "7d%"],
-                      ["emission", "Emission"],
-                      ["volume_24h", "Vol 24h"],
-                      ["tao_in", "TAO Pool"],
-                    ] as [SortKey, string][]
+                      ["netuid", "#", "3rem"],
+                      ["name", "Name", "12rem"],
+                      ["price", "Price", "7rem"],
+                      ["market_cap", "Mkt Cap", "8rem"],
+                      ["price_change_24h", "24h %", "6rem"],
+                      ["price_change_7d", "7d %", "6rem"],
+                      ["emission", "Emiss", "6rem"],
+                      ["volume_24h", "Vol 24h", "7rem"],
+                      ["tao_in", "TAO Pool", "7rem"],
+                    ] as [SortKey, string, string][]
                   ).map(([key, label]) => (
                     <th
                       key={key}
@@ -401,10 +625,10 @@ export default function BittensorDashboardSection() {
                       <SortIcon col={key} />
                     </th>
                   ))}
-                  <th className="px-3 py-2.5 text-left text-white/50 font-medium whitespace-nowrap">
+                  <th className="px-3 py-2.5 text-left text-white/50 font-medium whitespace-nowrap w-[5rem]">
                     7D
                   </th>
-                  <th className="px-3 py-2.5 text-left text-white/50 font-medium whitespace-nowrap">
+                  <th className="px-3 py-2.5 text-left text-white/50 font-medium whitespace-nowrap w-[5rem]">
                     Status
                   </th>
                 </tr>
@@ -414,6 +638,10 @@ export default function BittensorDashboardSection() {
                   const isSelected = selectedNetuid === s.netuid;
                   const change24h = num(s.price_change_24h);
                   const change7d = num(s.price_change_7d);
+                  const emissionVal = num(s.emission);
+                  const emissionDisplay = emissionVal < 1
+                    ? (emissionVal * 100).toFixed(2) + "%"
+                    : emissionVal.toFixed(2) + "%";
 
                   return (
                     <tr
@@ -431,8 +659,17 @@ export default function BittensorDashboardSection() {
                       <td className="px-3 py-2 text-white/60 font-mono">
                         {s.netuid}
                       </td>
-                      <td className="px-3 py-2 text-white font-medium whitespace-nowrap max-w-[140px] truncate">
-                        {s.name || `Subnet ${s.netuid}`}
+                      <td className="px-3 py-2 text-white font-medium whitespace-nowrap max-w-[12rem] truncate relative group">
+                        <span title={s.name || `Subnet ${s.netuid}`}>
+                          {s.name || `Subnet ${s.netuid}`}
+                        </span>
+                        {s.description && (
+                          <div className="invisible group-hover:visible absolute left-0 top-full z-50 max-w-xs bg-[#1a1a2e] border border-white/[0.15] rounded-md px-3 py-2 text-xs text-white/70 shadow-lg whitespace-normal">
+                            {s.description.length > 200
+                              ? s.description.slice(0, 200) + "..."
+                              : s.description}
+                          </div>
+                        )}
                       </td>
                       <td className="px-3 py-2 text-white font-mono">
                         {fmtTao(num(s.price))}
@@ -447,7 +684,7 @@ export default function BittensorDashboardSection() {
                         {fmtPct(change7d)}
                       </td>
                       <td className="px-3 py-2 text-white/70 font-mono">
-                        {num(s.emission).toFixed(4)}
+                        {emissionDisplay}
                       </td>
                       <td className="px-3 py-2 text-white/70 font-mono">
                         {fmtUsd(num(s.volume_24h))}
@@ -484,7 +721,7 @@ export default function BittensorDashboardSection() {
         </div>
       </div>
 
-      {/* ════════════════════ 3. SUBNET DETAIL PANEL ════════════════════ */}
+      {/* ════════════════════ 7. SUBNET DETAIL PANEL ════════════════════ */}
       {selectedSubnet && (
         <div className="rounded-lg bg-white/[0.04] border border-orange-500/20 p-5 space-y-4">
           {/* Header */}
@@ -529,25 +766,42 @@ export default function BittensorDashboardSection() {
                 )}
               </div>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setSelectedNetuid(null)}
-              className="border-white/[0.08] text-white/50 hover:text-white text-xs"
-            >
-              Close
-            </Button>
+            <div className="flex gap-2">
+              <button
+                onClick={() =>
+                  openSecureLink(
+                    `https://taostats.io/subnets/${selectedSubnet.netuid}`
+                  )
+                }
+                className="text-orange-400 hover:text-orange-300 text-xs flex items-center gap-1"
+              >
+                TaoStats <ExternalLink className="w-3 h-3" />
+              </button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSelectedNetuid(null)}
+                className="border-white/[0.08] text-white/50 hover:text-white text-xs"
+              >
+                Close
+              </Button>
+            </div>
           </div>
 
           {/* Stats Grid */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
             {[
-              ["Price", `${fmtTao(num(selectedSubnet.price))} τ`],
+              ["Price", fmtTao(num(selectedSubnet.price))],
               ["Market Cap", fmtUsd(num(selectedSubnet.market_cap))],
-              ["Emission", num(selectedSubnet.emission).toFixed(4)],
-              ["TAO in Pool", fmtTao(num(selectedSubnet.tao_in))],
-              ["Alpha in Pool", fmtTao(num(selectedSubnet.alpha_in))],
-              ["Volume 24h", fmtUsd(num(selectedSubnet.volume_24h))],
+              [
+                "Emission",
+                num(selectedSubnet.emission) < 1
+                  ? (num(selectedSubnet.emission) * 100).toFixed(2) + "%"
+                  : num(selectedSubnet.emission).toFixed(2) + "%",
+              ],
+              ["TAO Pool", fmtTao(num(selectedSubnet.tao_in))],
+              ["Alpha", fmtTao(num(selectedSubnet.alpha_in))],
+              ["Vol 24h", fmtUsd(num(selectedSubnet.volume_24h))],
             ].map(([label, value]) => (
               <div
                 key={label}
@@ -571,7 +825,7 @@ export default function BittensorDashboardSection() {
               onClick={() => setShowMetagraph((v) => !v)}
               className="border-orange-500/30 text-orange-400 hover:bg-orange-500/10 text-xs"
             >
-              {showMetagraph ? "Hide Metagraph" : "View Metagraph"}
+              {showMetagraph ? "Hide Metagraph" : "View Metagraph ▼"}
               {showMetagraph ? (
                 <ChevronUp className="w-3 h-3 ml-1" />
               ) : (
@@ -583,7 +837,7 @@ export default function BittensorDashboardSection() {
           {/* Metagraph Table */}
           {showMetagraph && (
             <div className="rounded-md bg-black/30 border border-white/[0.06] overflow-hidden">
-              {metagraphLoading ? (
+              {metaLoading ? (
                 <div className="p-4 text-white/40 text-sm text-center animate-pulse">
                   Loading metagraph...
                 </div>
@@ -601,7 +855,7 @@ export default function BittensorDashboardSection() {
                         VTrust
                       </th>
                       <th className="px-3 py-2 text-left text-white/50 font-medium">
-                        Stake
+                        Stake (τ)
                       </th>
                       <th className="px-3 py-2 text-left text-white/50 font-medium">
                         Emission
@@ -624,10 +878,10 @@ export default function BittensorDashboardSection() {
                           {num(v.vtrust).toFixed(4)}
                         </td>
                         <td className="px-3 py-1.5 text-white/70 font-mono">
-                          {fmtTao(num(v.stake))}
+                          {fmtTao(num(v.stake) / 1e9)}
                         </td>
                         <td className="px-3 py-1.5 text-white/70 font-mono">
-                          {num(v.emission).toFixed(6)}
+                          {(num(v.emission) / 1e9).toFixed(6)}
                         </td>
                       </tr>
                     ))}
@@ -643,86 +897,11 @@ export default function BittensorDashboardSection() {
         </div>
       )}
 
-      {/* ════════════════════ 4. TAO PRICE CHART ════════════════════ */}
-      <div className="rounded-lg bg-white/[0.04] border border-white/[0.08] overflow-hidden">
-        <button
-          onClick={() => setShowPriceChart((v) => !v)}
-          className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/[0.02] transition-colors"
-        >
-          <span className="text-white/70 text-sm font-medium">
-            TAO Price — 30D
-          </span>
-          {showPriceChart ? (
-            <ChevronUp className="w-4 h-4 text-white/40" />
-          ) : (
-            <ChevronDown className="w-4 h-4 text-white/40" />
-          )}
-        </button>
-
-        {showPriceChart && (
-          <div className="px-4 pb-4">
-            {chartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={220}>
-                <LineChart data={chartData}>
-                  <XAxis
-                    dataKey="date"
-                    tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 10 }}
-                    axisLine={{ stroke: "rgba(255,255,255,0.08)" }}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 10 }}
-                    axisLine={false}
-                    tickLine={false}
-                    domain={["auto", "auto"]}
-                    tickFormatter={(v: number) => `$${v.toFixed(0)}`}
-                    width={50}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      background: "#111318",
-                      border: "1px solid rgba(255,255,255,0.1)",
-                      borderRadius: 8,
-                      fontSize: 12,
-                    }}
-                    labelStyle={{ color: "rgba(255,255,255,0.5)" }}
-                    itemStyle={{ color: "#fb923c" }}
-                    formatter={(value: number) => [`$${value.toFixed(2)}`, "Close"]}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="close"
-                    stroke="#fb923c"
-                    strokeWidth={2}
-                    dot={false}
-                    activeDot={{ r: 3, fill: "#fb923c" }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-[220px] flex items-center justify-center text-white/30 text-sm">
-                No price history available.
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* ════════════════════ 5. EXTERNAL RESOURCES ════════════════════ */}
-      <details
-        open={showResources}
-        onToggle={(e) =>
-          setShowResources((e.target as HTMLDetailsElement).open)
-        }
-        className="rounded-lg bg-white/[0.04] border border-white/[0.08] overflow-hidden"
-      >
+      {/* ════════════════════ 8. EXTERNAL RESOURCES ════════════════════ */}
+      <details className="mt-6 rounded-lg bg-white/[0.04] border border-white/[0.08] overflow-hidden">
         <summary className="px-4 py-3 cursor-pointer hover:bg-white/[0.02] transition-colors text-white/50 text-sm font-medium select-none list-none flex items-center justify-between">
-          <span>External Resources</span>
-          {showResources ? (
-            <ChevronUp className="w-4 h-4" />
-          ) : (
-            <ChevronDown className="w-4 h-4" />
-          )}
+          <span>External Resources & Tools</span>
+          <ChevronDown className="w-4 h-4" />
         </summary>
 
         <div className="p-4 space-y-6">
