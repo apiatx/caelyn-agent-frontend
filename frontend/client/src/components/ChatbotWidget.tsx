@@ -3,6 +3,7 @@ import { useLocation } from 'wouter';
 import { useChatbot } from '@/contexts/ChatbotContext';
 import cryptoHippoLogo from '@assets/image_1771549651056.png';
 import caelynLogo from '@assets/image_1771541162366.png';
+import WatchlistAnalysis, { tryParseWatchlistAnalysis } from './WatchlistAnalysis';
 
 const C = {
   bg: '#0b0c10', card: '#111318', border: '#1a1d25', text: '#c9cdd6', bright: '#e8eaef',
@@ -51,6 +52,15 @@ function formatChatMarkdown(text: string) {
 }
 
 function ChatboxMessage({ content, structured }: { content: string, structured?: any }) {
+  // Detect csv_watchlist_analysis from structured data or content JSON
+  const watchlistFromStructured = structured?.display_type === 'csv_watchlist_analysis' ? structured : null;
+  const watchlistFromContent = !watchlistFromStructured ? tryParseWatchlistAnalysis(content) : null;
+  const watchlistData = watchlistFromStructured || watchlistFromContent;
+
+  if (watchlistData) {
+    return <WatchlistAnalysis data={watchlistData} />;
+  }
+
   const isChatbox = structured?.display_type === 'chatbox';
   const tickers: string[] = isChatbox ? (structured?.tickers || []) : [];
 

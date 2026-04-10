@@ -8,6 +8,7 @@ import {
   DEFAULT_COLLAB_STATE,
   shouldKeepCollaboratorsOnReasoningChange,
 } from './tradingAgentCollabState';
+import WatchlistAnalysis, { tryParseWatchlistAnalysis } from './WatchlistAnalysis';
 
 const AGENT_BACKEND_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
 const AGENT_API_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
@@ -2548,13 +2549,24 @@ export default function TradingAgent() {
     </div>;
   }
 
-  const knownTypes = ['trades','investments','fundamentals','technicals','analysis','dashboard','sector_rotation','earnings_catalyst','commodities','portfolio','briefing','crypto','trending','screener','trending_now','cross_market','csv_watchlist'];
+  const knownTypes = ['trades','investments','fundamentals','technicals','analysis','dashboard','sector_rotation','earnings_catalyst','commodities','portfolio','briefing','crypto','trending','screener','trending_now','cross_market','csv_watchlist','csv_watchlist_analysis'];
 
   function renderAssistantMessage(msg: {role: string, content: string, parsed?: any}) {
     const s = msg.parsed?.structured || (msg.parsed?.display_type ? msg.parsed : {});
     const displayType = s.display_type;
     const rawAnalysis = msg.parsed?.analysis || msg.parsed?.structured?.message || msg.parsed?.message || msg.content;
     const analysisText = (rawAnalysis && /^Response received\.?\s*(See panel data for details\.?)?$/i.test(rawAnalysis.trim())) ? '' : rawAnalysis;
+
+    // Detect csv_watchlist_analysis from structured data or from raw analysis text
+    const watchlistData = displayType === 'csv_watchlist_analysis' ? s
+      : tryParseWatchlistAnalysis(analysisText || '');
+
+    if (watchlistData) {
+      return <div style={{ padding:22, background:C.card, border:`1px solid ${C.border}`, borderRadius:10 }}>
+        <WatchlistAnalysis data={watchlistData} />
+      </div>;
+    }
+
     return <div>
       {displayType === 'trades' && renderTrades(s)}
       {displayType === 'investments' && renderInvestments(s)}
