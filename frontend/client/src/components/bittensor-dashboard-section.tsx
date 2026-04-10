@@ -80,6 +80,16 @@ interface SubnetData {
   last_analysis_timestamp: string | null;
   tao_needed_to_sustain: number;
   tags: string[];
+  rsi_7d: number;
+  sparkline_slope: number;
+  buy_pct: number;
+  rotation_stage: number;
+  rotation_stage_label: string;
+  rotation_stage_confidence: number;
+  accumulation_score: number;
+  emission_opportunity: number;
+  pool_depth_ratio: number;
+  alpha_circulation_ratio: number;
   discord?: string;
   twitter?: string;
   github?: string;
@@ -124,7 +134,7 @@ interface BlockHistoryItem {
   expected: number;
 }
 
-type TabId = "signal" | "all" | "social" | "sustainability";
+type TabId = "signal" | "all" | "social" | "sustainability" | "rotation";
 type SortDir = "asc" | "desc";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -252,6 +262,52 @@ function SignalScoreBar({ score }: { score: number }) {
   );
 }
 
+// ─── RSI Badge ──────────────────────────────────────────────────────────────
+
+function RSIBadge({ rsi }: { rsi: number }) {
+  if (rsi < 30) return <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">RSI {rsi} OVERSOLD</span>;
+  if (rsi > 70) return <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-red-500/20 text-red-400 border border-red-500/30">RSI {rsi} OVERBOUGHT</span>;
+  if (rsi < 45) return <span className="px-1.5 py-0.5 text-[10px] rounded bg-teal-500/10 text-teal-400 border border-teal-500/20">RSI {rsi}</span>;
+  return <span className="px-1.5 py-0.5 text-[10px] rounded bg-white/5 text-white/40 border border-white/10">RSI {rsi}</span>;
+}
+
+// ─── Stage Badge ────────────────────────────────────────────────────────────
+
+const STAGE_CONFIG: Record<number, { label: string; bg: string; text: string; border: string; glow: string }> = {
+  1: { label: "Accum.", bg: "bg-emerald-500/15", text: "text-emerald-400", border: "border-emerald-500/30", glow: "shadow-emerald-500/20" },
+  2: { label: "Breakout", bg: "bg-green-400/15", text: "text-green-300", border: "border-green-400/30", glow: "shadow-green-400/30" },
+  3: { label: "Momentum", bg: "bg-orange-500/15", text: "text-orange-400", border: "border-orange-500/30", glow: "" },
+  4: { label: "Distrib.", bg: "bg-amber-500/15", text: "text-amber-400", border: "border-amber-500/30", glow: "" },
+  5: { label: "Declining", bg: "bg-red-500/15", text: "text-red-400", border: "border-red-500/30", glow: "" },
+  6: { label: "Recovery", bg: "bg-violet-500/15", text: "text-violet-400", border: "border-violet-500/30", glow: "" },
+};
+
+function StageBadge({ stage }: { stage: number }) {
+  const cfg = STAGE_CONFIG[stage] ?? STAGE_CONFIG[1];
+  return (
+    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded border ${cfg.bg} ${cfg.text} ${cfg.border}`}>
+      {cfg.label}
+    </span>
+  );
+}
+
+// ─── Emission Opportunity Bar ───────────────────────────────────────────────
+
+function EmissionOpportunityBar({ score }: { score: number }) {
+  const clamped = Math.max(0, Math.min(3, score));
+  const pct = (clamped / 3) * 100;
+  const color = score > 1.5 ? '#10b981' : score > 1.1 ? '#6ee7b7' : score > 0.8 ? '#94a3b8' : '#f87171';
+  return (
+    <div className="flex items-center gap-1.5">
+      <div className="relative w-14 h-1 bg-white/10 rounded-full overflow-hidden">
+        <div className="absolute h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: color }} />
+        <div className="absolute w-px h-full bg-white/30" style={{ left: '33.3%' }} />
+      </div>
+      <span className="text-[10px] font-mono" style={{ color }}>{score.toFixed(2)}x</span>
+    </div>
+  );
+}
+
 // ─── Price Range Bar (60d) ───────────────────────────────────────────────────
 
 function PriceRangeBar({
@@ -312,32 +368,64 @@ function SignalBreakdownPanel({
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 px-4 py-3 bg-white/[0.02] border-t border-white/[0.06]">
-      {components.map((c) => (
-        <div key={c.label} className="space-y-1">
-          <div className="flex items-center justify-between">
-            <span className="text-white/50 text-[10px] uppercase tracking-wider">
-              {c.label} ({c.weight})
-            </span>
-            <span
-              className="text-xs font-mono"
-              style={{ color: signalColor(c.score) }}
-            >
-              {c.score.toFixed(0)}
-            </span>
+    <div className="px-4 py-3 bg-white/[0.02] border-t border-white/[0.06] space-y-3">
+      <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
+        {components.map((c) => (
+          <div key={c.label} className="space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-white/50 text-[10px] uppercase tracking-wider">
+                {c.label} ({c.weight})
+              </span>
+              <span
+                className="text-xs font-mono"
+                style={{ color: signalColor(c.score) }}
+              >
+                {c.score.toFixed(0)}
+              </span>
+            </div>
+            <div className="relative w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+              <div
+                className="absolute h-full rounded-full transition-all"
+                style={{
+                  width: `${c.score}%`,
+                  background: signalColor(c.score),
+                }}
+              />
+            </div>
+            <span className="text-white/30 text-[10px]">{c.detail}</span>
           </div>
-          <div className="relative w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
-            <div
-              className="absolute h-full rounded-full transition-all"
-              style={{
-                width: `${c.score}%`,
-                background: signalColor(c.score),
-              }}
-            />
+        ))}
+      </div>
+      {/* Rotation Analysis */}
+      <div className="border-t border-white/[0.06] pt-3">
+        <div className="text-white/50 text-[10px] uppercase tracking-wider mb-2">Rotation Analysis</div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="space-y-1">
+            <span className="text-white/30 text-[10px]">Stage</span>
+            <div className="flex items-center gap-1.5">
+              <StageBadge stage={subnet.rotation_stage ?? 1} />
+              <span className="text-white/50 text-[10px]">{(subnet.rotation_stage_confidence ?? 0).toFixed(0)}%</span>
+            </div>
           </div>
-          <span className="text-white/30 text-[10px]">{c.detail}</span>
+          <div className="space-y-1">
+            <span className="text-white/30 text-[10px]">Accumulation Score</span>
+            <div className="flex items-center gap-1.5">
+              <div className="relative w-14 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                <div className="absolute h-full rounded-full bg-emerald-500" style={{ width: `${subnet.accumulation_score ?? 0}%` }} />
+              </div>
+              <span className="text-emerald-400 text-[10px] font-mono">{(subnet.accumulation_score ?? 0).toFixed(0)}</span>
+            </div>
+          </div>
+          <div className="space-y-1">
+            <span className="text-white/30 text-[10px]">Emission Opportunity</span>
+            <EmissionOpportunityBar score={subnet.emission_opportunity ?? 1} />
+          </div>
+          <div className="space-y-1">
+            <span className="text-white/30 text-[10px]">Pool Depth</span>
+            <span className="text-white/60 text-xs font-mono">{(subnet.pool_depth_ratio ?? 0).toFixed(4)}</span>
+          </div>
         </div>
-      ))}
+      </div>
     </div>
   );
 }
@@ -478,6 +566,8 @@ export default function BittensorDashboardSection() {
     "tao_needed_to_sustain"
   );
   const [sustainSortDir, setSustainSortDir] = useState<SortDir>("desc");
+
+  const [rotationSubView, setRotationSubView] = useState<"board" | "opportunities" | "emission">("board");
 
   // ─── Data Fetching ───────────────────────────────────────────────────────
 
@@ -674,6 +764,11 @@ export default function BittensorDashboardSection() {
       label: "Sustainability",
       icon: <Shield className="w-3.5 h-3.5" />,
     },
+    {
+      id: "rotation" as TabId,
+      label: "Rotation Intel",
+      icon: <Activity className="w-3.5 h-3.5" />,
+    },
   ];
 
   return (
@@ -819,6 +914,49 @@ export default function BittensorDashboardSection() {
         </div>
       )}
 
+      {/* ════════════════════ NETWORK CYCLE SNAPSHOT ════════════════════ */}
+      {subnets.length > 0 && (() => {
+        const stageCounts = subnets.reduce<Record<number, number>>((acc, s) => {
+          acc[s.rotation_stage] = (acc[s.rotation_stage] || 0) + 1;
+          return acc;
+        }, {});
+        const stageInfo: { stage: number; label: string; color: string }[] = [
+          { stage: 1, label: "Accumulating", color: "emerald" },
+          { stage: 2, label: "Early Breakout", color: "green" },
+          { stage: 3, label: "Momentum", color: "orange" },
+          { stage: 4, label: "Distributing", color: "amber" },
+          { stage: 5, label: "Declining", color: "red" },
+          { stage: 6, label: "Recovery", color: "violet" },
+        ];
+        const colorMap: Record<string, { bg: string; text: string; border: string }> = {
+          emerald: { bg: "bg-emerald-500/10", text: "text-emerald-400", border: "border-emerald-500/20" },
+          green: { bg: "bg-green-400/10", text: "text-green-300", border: "border-green-400/20" },
+          orange: { bg: "bg-orange-500/10", text: "text-orange-400", border: "border-orange-500/20" },
+          amber: { bg: "bg-amber-500/10", text: "text-amber-400", border: "border-amber-500/20" },
+          red: { bg: "bg-red-500/10", text: "text-red-400", border: "border-red-500/20" },
+          violet: { bg: "bg-violet-500/10", text: "text-violet-400", border: "border-violet-500/20" },
+        };
+        return (
+          <div className="rounded-lg bg-white/[0.02] border border-white/[0.06] p-3">
+            <div className="flex items-center gap-2 mb-2">
+              <Activity className="w-3.5 h-3.5 text-white/40" />
+              <span className="text-white/50 text-[10px] font-mono uppercase tracking-wider">Network Cycle Snapshot</span>
+            </div>
+            <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+              {stageInfo.map(({ stage, label, color }) => {
+                const c = colorMap[color];
+                return (
+                  <div key={stage} className={`${c.bg} border ${c.border} rounded-md px-3 py-2 text-center`}>
+                    <div className={`text-lg font-bold font-mono ${c.text}`}>{stageCounts[stage] || 0}</div>
+                    <div className="text-[10px] text-white/40">{label}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* ════════════════════ 5. TAB BAR ════════════════════ */}
       <div className="flex gap-1 border-b border-white/[0.08] pb-0">
         {tabs.map((tab) => (
@@ -853,6 +991,8 @@ export default function BittensorDashboardSection() {
                     </th>
                     {([
                       ["signal_score", "Signal"],
+                      ["rotation_stage", "Stage"],
+                      ["rsi_7d", "RSI"],
                       ["price", "Price (τ)"],
                       ["price_change_1h", "1h%"],
                       ["price_change_24h", "24h%"],
@@ -919,6 +1059,12 @@ export default function BittensorDashboardSection() {
                             <td className="px-3 py-2">
                               <SignalScoreBar score={s.signal_score ?? 0} />
                             </td>
+                            <td className="px-3 py-2">
+                              <StageBadge stage={s.rotation_stage ?? 1} />
+                            </td>
+                            <td className="px-3 py-2">
+                              <RSIBadge rsi={s.rsi_7d ?? 50} />
+                            </td>
                             <td className="px-3 py-2 font-mono text-white text-xs">
                               {fmtTao(num(s.price))}
                             </td>
@@ -951,7 +1097,7 @@ export default function BittensorDashboardSection() {
                           </tr>
                           {isExpanded && s.signal_breakdown && (
                             <tr>
-                              <td colSpan={11} className="p-0">
+                              <td colSpan={13} className="p-0">
                                 <SignalBreakdownPanel
                                   breakdown={s.signal_breakdown}
                                   subnet={s}
@@ -1032,6 +1178,9 @@ export default function BittensorDashboardSection() {
                           ["market_cap", "Mkt Cap"],
                           ["emission_pct", "Emiss%"],
                           ["tao_in", "TAO In"],
+                          ["rotation_stage", "Stage"],
+                          ["rsi_7d", "RSI"],
+                          ["emission_opportunity", "Em.Opp"],
                         ] as [string, string][]
                       ).map(([key, label]) => (
                         <th
@@ -1131,6 +1280,15 @@ export default function BittensorDashboardSection() {
                           </td>
                           <td className="px-2 py-2 text-white/70 font-mono">
                             {fmtTao(num(s.tao_in))}
+                          </td>
+                          <td className="px-2 py-2">
+                            <StageBadge stage={s.rotation_stage ?? 1} />
+                          </td>
+                          <td className="px-2 py-2">
+                            <RSIBadge rsi={s.rsi_7d ?? 50} />
+                          </td>
+                          <td className="px-2 py-2">
+                            <EmissionOpportunityBar score={s.emission_opportunity ?? 1} />
                           </td>
                           <td className="px-2 py-2">
                             <PriceRangeBar pct={s.price_vs_ath_60d_pct ?? 50} />
@@ -1367,6 +1525,199 @@ export default function BittensorDashboardSection() {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ════════════════════ ROTATION INTEL TAB ════════════════════ */}
+      {activeTab === "rotation" && (
+        <div className="space-y-4">
+          {/* Sub-view selector */}
+          <div className="flex gap-1 bg-white/[0.04] rounded-lg p-1 w-fit">
+            {([
+              ["board", "Stage Board"],
+              ["opportunities", "Opportunities"],
+              ["emission", "Emission Value"],
+            ] as [typeof rotationSubView, string][]).map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => setRotationSubView(key)}
+                className={`px-3 py-1.5 rounded-md text-xs font-mono font-medium transition-colors ${
+                  rotationSubView === key
+                    ? "bg-orange-500/20 text-orange-400 border border-orange-500/40"
+                    : "text-white/40 hover:text-white/60"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {/* Stage Board sub-view */}
+          {rotationSubView === "board" && (() => {
+            const byStage: Record<number, SubnetData[]> = { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] };
+            subnets.forEach(s => {
+              const st = s.rotation_stage ?? 1;
+              if (byStage[st]) byStage[st].push(s);
+            });
+            Object.values(byStage).forEach(arr => arr.sort((a, b) => (b.rotation_stage_confidence ?? 0) - (a.rotation_stage_confidence ?? 0)));
+            const stageLabels: Record<number, string> = { 1: "Accumulating", 2: "Early Breakout", 3: "Momentum", 4: "Distributing", 5: "Declining", 6: "Recovery" };
+            return (
+              <div className="overflow-x-auto">
+                <div className="grid grid-cols-6 gap-2 min-w-[900px]">
+                  {[1, 2, 3, 4, 5, 6].map(stage => {
+                    const cfg = STAGE_CONFIG[stage] ?? STAGE_CONFIG[1];
+                    const isOpportunity = stage <= 2;
+                    return (
+                      <div key={stage} className="flex flex-col">
+                        <div className={`rounded-t-lg px-2 py-2 border ${cfg.bg} ${cfg.border} ${isOpportunity ? "ring-1 ring-emerald-500/30 shadow-lg shadow-emerald-500/10" : ""}`}>
+                          <div className={`text-xs font-medium ${cfg.text}`}>{stageLabels[stage]}</div>
+                          <div className="text-white/50 text-[10px]">{byStage[stage].length} subnets</div>
+                        </div>
+                        <div className="flex-1 max-h-[500px] overflow-y-auto space-y-1 py-1">
+                          {byStage[stage].map(s => {
+                            const ch24h = num(s.price_change_24h);
+                            return (
+                              <div
+                                key={s.netuid}
+                                onClick={() => { setSelectedNetuid(s.netuid); setActiveTab("signal"); }}
+                                className="bg-white/[0.03] border border-white/[0.06] rounded-md p-2 cursor-pointer hover:bg-white/[0.06] transition-colors"
+                              >
+                                <div className="flex items-center gap-1 mb-1">
+                                  <span className="text-white text-[11px] font-medium truncate">{s.name}</span>
+                                  <span className="text-white/20 text-[9px]">{s.symbol}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 mb-1">
+                                  <span className="text-white/80 text-[10px] font-mono">{fmtTao(num(s.price))}</span>
+                                  <span className={`text-[10px] font-mono ${pctColor(ch24h)}`}>{fmtPct(ch24h)}</span>
+                                </div>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="text-white/30 text-[9px]">Conf: {(s.rotation_stage_confidence ?? 0).toFixed(0)}%</span>
+                                  <RSIBadge rsi={s.rsi_7d ?? 50} />
+                                </div>
+                                <SignalScoreBar score={s.signal_score ?? 0} />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Opportunities sub-view */}
+          {rotationSubView === "opportunities" && (() => {
+            const opps = subnets
+              .filter(s => (s.rotation_stage ?? 0) <= 2)
+              .sort((a, b) => (b.accumulation_score ?? 0) - (a.accumulation_score ?? 0));
+            return (
+              <div className="space-y-3">
+                <div className="rounded-lg bg-white/[0.04] border border-white/[0.08] overflow-hidden">
+                  <div className="px-4 py-3 border-b border-white/[0.06]">
+                    <span className="text-white/70 text-sm font-mono font-medium">Best Entry Setups — Stage 1 & 2 Subnets</span>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead className="bg-[#0a0a0f] border-b border-white/[0.08]">
+                        <tr>
+                          <th className="px-3 py-2.5 text-left text-white/50 font-medium">#</th>
+                          <th className="px-3 py-2.5 text-left text-white/50 font-medium">Subnet</th>
+                          <th className="px-3 py-2.5 text-left text-white/50 font-medium">Stage</th>
+                          <th className="px-3 py-2.5 text-left text-white/50 font-medium">Accum. Score</th>
+                          <th className="px-3 py-2.5 text-left text-white/50 font-medium">RSI</th>
+                          <th className="px-3 py-2.5 text-left text-white/50 font-medium">Price (τ)</th>
+                          <th className="px-3 py-2.5 text-left text-white/50 font-medium">24h%</th>
+                          <th className="px-3 py-2.5 text-left text-white/50 font-medium">7d%</th>
+                          <th className="px-3 py-2.5 text-left text-white/50 font-medium">Emiss%</th>
+                          <th className="px-3 py-2.5 text-left text-white/50 font-medium">Em. Opp.</th>
+                          <th className="px-3 py-2.5 text-left text-white/50 font-medium">7D</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {opps.map((s, idx) => (
+                          <tr key={s.netuid} className="border-b border-white/[0.04] hover:bg-white/[0.04] cursor-pointer" onClick={() => { setSelectedNetuid(s.netuid); setActiveTab("signal"); }}>
+                            <td className="px-3 py-2 text-white/40 font-mono">{idx + 1}</td>
+                            <td className="px-3 py-2 text-white font-medium whitespace-nowrap">{s.name} <span className="text-white/30 text-[10px] ml-1">{s.symbol}</span></td>
+                            <td className="px-3 py-2"><StageBadge stage={s.rotation_stage ?? 1} /></td>
+                            <td className="px-3 py-2">
+                              <div className="flex items-center gap-1.5">
+                                <div className="relative w-12 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                                  <div className="absolute h-full rounded-full bg-emerald-500" style={{ width: `${s.accumulation_score ?? 0}%` }} />
+                                </div>
+                                <span className="text-emerald-400 font-mono">{(s.accumulation_score ?? 0).toFixed(0)}</span>
+                              </div>
+                            </td>
+                            <td className="px-3 py-2"><RSIBadge rsi={s.rsi_7d ?? 50} /></td>
+                            <td className="px-3 py-2 text-white font-mono">{fmtTao(num(s.price))}</td>
+                            <td className={`px-3 py-2 font-mono ${pctColor(num(s.price_change_24h))}`}>{fmtPct(num(s.price_change_24h))}</td>
+                            <td className={`px-3 py-2 font-mono ${pctColor(num(s.price_change_7d))}`}>{fmtPct(num(s.price_change_7d))}</td>
+                            <td className="px-3 py-2 text-white/70 font-mono">{num(s.emission_pct).toFixed(2)}%</td>
+                            <td className="px-3 py-2"><EmissionOpportunityBar score={s.emission_opportunity ?? 1} /></td>
+                            <td className="px-3 py-2"><Sparkline data={s.seven_day_price_history} positive={num(s.price_change_7d) >= 0} /></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-lg px-4 py-3">
+                  <p className="text-emerald-400/80 text-xs">
+                    <span className="font-medium">What to look for:</span> High Accumulation Score (&gt;70) + Stage 1 + RSI &lt; 50 + Emission Opportunity &gt; 1.2 = highest-conviction setup.
+                  </p>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Emission Value sub-view */}
+          {rotationSubView === "emission" && (() => {
+            const emSorted = [...subnets].sort((a, b) => (b.emission_opportunity ?? 1) - (a.emission_opportunity ?? 1)).slice(0, 20);
+            return (
+              <div className="space-y-3">
+                <div className="rounded-lg bg-white/[0.04] border border-white/[0.08] px-4 py-3">
+                  <p className="text-white/50 text-xs">
+                    <span className="font-medium text-white/70">Emission Opportunity</span> measures how much TAO emission a subnet captures relative to its market cap, compared to peers. A score &gt;1.0 means the subnet is emitting more than average for its size — potentially undervalued.
+                  </p>
+                </div>
+                <div className="rounded-lg bg-white/[0.04] border border-white/[0.08] overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead className="sticky top-0 z-10 bg-[#0a0a0f] border-b border-white/[0.08]">
+                        <tr>
+                          <th className="px-3 py-2.5 text-left text-white/50 font-medium">#</th>
+                          <th className="px-3 py-2.5 text-left text-white/50 font-medium">Subnet</th>
+                          <th className="px-3 py-2.5 text-left text-white/50 font-medium">Em. Opportunity</th>
+                          <th className="px-3 py-2.5 text-left text-white/50 font-medium">Emiss%</th>
+                          <th className="px-3 py-2.5 text-left text-white/50 font-medium">Mkt Cap</th>
+                          <th className="px-3 py-2.5 text-left text-white/50 font-medium">TAO In</th>
+                          <th className="px-3 py-2.5 text-left text-white/50 font-medium">Pool Depth</th>
+                          <th className="px-3 py-2.5 text-left text-white/50 font-medium">Price (τ)</th>
+                          <th className="px-3 py-2.5 text-left text-white/50 font-medium">7d%</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {emSorted.map((s, idx) => (
+                          <tr key={s.netuid} className="border-b border-white/[0.04] hover:bg-white/[0.04] cursor-pointer" onClick={() => { setSelectedNetuid(s.netuid); setActiveTab("signal"); }}>
+                            <td className="px-3 py-2 text-white/40 font-mono">{idx + 1}</td>
+                            <td className="px-3 py-2 text-white font-medium whitespace-nowrap">{s.name} <span className="text-white/30 text-[10px] ml-1">{s.symbol}</span></td>
+                            <td className="px-3 py-2"><EmissionOpportunityBar score={s.emission_opportunity ?? 1} /></td>
+                            <td className="px-3 py-2 text-white/70 font-mono">{num(s.emission_pct).toFixed(2)}%</td>
+                            <td className="px-3 py-2 text-white/80 font-mono">{fmtTao(num(s.market_cap))}</td>
+                            <td className="px-3 py-2 text-white/70 font-mono">{fmtTao(num(s.tao_in))}</td>
+                            <td className="px-3 py-2 text-white/60 font-mono">{(s.pool_depth_ratio ?? 0).toFixed(4)}</td>
+                            <td className="px-3 py-2 text-white font-mono">{fmtTao(num(s.price))}</td>
+                            <td className={`px-3 py-2 font-mono ${pctColor(num(s.price_change_7d))}`}>{fmtPct(num(s.price_change_7d))}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
 
