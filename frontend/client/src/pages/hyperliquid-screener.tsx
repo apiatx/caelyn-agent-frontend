@@ -226,46 +226,60 @@ const topNA  = (arr: ScreenerRow[], key: keyof ScreenerRow, n = 6) =>
   dedup([...arr].filter(r => r[key] != null).sort((a,b) => Math.abs(b[key] as number)-Math.abs(a[key] as number))).slice(0,n);
 
 function deriveSignalSections(rows: ScreenerRow[]): DerivedSection[] {
+  // Perps-only signal board — filter to perp rows for all sections
+  const src = rows.filter(r => r.marketType === 'perp');
+  const base = src.length > 0 ? src : rows; // fallback if marketType not populated yet
+
   const mk = (
     id: string, title: string, subtitle: string, color: string, always: boolean,
-    src: ScreenerRow[], pF: (r: ScreenerRow) => string, sF?: (r: ScreenerRow) => string,
+    items: ScreenerRow[], pF: (r: ScreenerRow) => string, sF?: (r: ScreenerRow) => string,
     dF?: (r: ScreenerRow) => 'up'|'down'|'neutral',
-  ): DerivedSection => ({ id, title, subtitle, color, always, items: src.map(r => ({ coin:r.coin, primary:pF(r), secondary:sF?.(r), direction:dF?.(r)?? 'neutral' })) });
+  ): DerivedSection => ({ id, title, subtitle, color, always, items: items.map(r => ({ coin:r.coin, primary:pF(r), secondary:sF?.(r), direction:dF?.(r)?? 'neutral' })) });
 
   const up = () => 'up' as const; const dn = () => 'down' as const;
   const aD = (r: ScreenerRow) => (r.change24hPct??0) >= 0 ? 'up' as const : 'down' as const;
   const fD = (r: ScreenerRow) => (r.funding??0) >= 0 ? 'up' as const : 'down' as const;
-  const iD = (r: ScreenerRow) => (r.bidAskImbalance??0) >= 0 ? 'up' as const : 'down' as const;
-  const tD = (r: ScreenerRow) => (r.tradeImbalance??0) >= 0 ? 'up' as const : 'down' as const;
   const oD = (r: ScreenerRow) => (r.distMarkOracle??0) >= 0 ? 'up' as const : 'down' as const;
-  const pD = (r: ScreenerRow) => (r.premium??0) >= 0 ? 'up' as const : 'down' as const;
 
-  const sq  = rows.filter(r => (r.funding??0)>0.02 && r.signalDirection==='bearish').sort((a,b)=>(b.funding??0)-(a.funding??0)).slice(0,6);
-  const ll  = rows.filter(r => (r.funding??0)<-0.02 && r.signalDirection==='bullish').sort((a,b)=>(a.funding??0)-(b.funding??0)).slice(0,6);
-  const cl  = rows.filter(r => r.signalDirection==='bullish').sort((a,b)=>(b.compositeSignal??0)-(a.compositeSignal??0)).slice(0,6);
-  const cs  = rows.filter(r => r.signalDirection==='bearish').sort((a,b)=>(a.compositeSignal??1)-(b.compositeSignal??1)).slice(0,6);
-  const oi_u= topN(rows,'oiChangePct',6);
-  const oi_d= topN(rows,'oiChangePct',6,true);
-  const vi  = topN(rows,'volumeImpulse',6);
+  // Conditional sections — only shown when data is available
+  const oi_u = topN(base,'oiChangePct',6);
+  const oi_d = topN(base,'oiChangePct',6,true);
+  const vi   = topN(base,'volumeImpulse',6);
+
+  // Short squeeze: positive funding (longs paying) + bearish signal = crowded long, fuel for squeeze
+  const sq = base.filter(r => (r.funding??0)>0.0001 && r.signalDirection==='bearish')
+    .sort((a,b)=>(b.funding??0)-(a.funding??0)).slice(0,6);
+
+  // Long flush: negative funding (shorts paying) + bullish signal = crowded short, fuel for flush
+  const ll = base.filter(r => (r.funding??0)<-0.0001 && r.signalDirection==='bullish')
+    .sort((a,b)=>(a.funding??0)-(b.funding??0)).slice(0,6);
+
+  // Funding carry extremes: annualized rate > 20% either direction
+  const fundExtreme = base.filter(r => Math.abs((r.funding??0)*8760) > 0.20)
+    .sort((a,b) => Math.abs(b.funding??0)-Math.abs(a.funding??0)).slice(0,6);
+
+  // OI + momentum aligned: both OI growing and bullish signal (accumulation)
+  const oiAccum = base.filter(r => (r.oiChangePct??0)>0 && r.signalDirection==='bullish')
+    .sort((a,b)=>(b.oiChangePct??0)-(a.oiChangePct??0)).slice(0,6);
 
   return [
-    mk('gainers',    'Top Gainers',       'Strongest 24h price movers',      C.green,  true, topN(rows,'change24hPct',6),      r=>pct(r.change24hPct),  r=>px(r.markPrice), up),
-    mk('losers',     'Top Losers',        'Sharpest 24h price declines',     C.red,    true, topN(rows,'change24hPct',6,true), r=>pct(r.change24hPct),  r=>px(r.markPrice), dn),
-    mk('fund-hi',    'High Funding',      'Longs paying — squeeze watch',    C.green,  true, topN(rows,'funding',6),           r=>fmtF(r.funding),      r=>$$(r.openInterest), fD),
-    mk('fund-lo',    'Neg Funding',       'Shorts paying — flush watch',     C.blue,   true, topN(rows,'funding',6,true),      r=>fmtF(r.funding),      r=>$$(r.openInterest), fD),
-    mk('disloc',     'Mark/Oracle Gap',   'Largest mark vs oracle delta',    C.amber,  true, topNA(rows,'distMarkOracle',6),   r=>fmtD(r.distMarkOracle), r=>px(r.markPrice), oD),
-    mk('premium',    'Premium/Discount',  'Mark vs mid price dislocation',   C.cyan,   true, topNA(rows,'premium',6),          r=>fmtD(r.premium),      r=>fmtF(r.funding), pD),
-    mk('vol-top',    'Volume Leaders',    'Largest 24h notional volume',     C.teal,   true, topN(rows,'volume24h',6),         r=>$$(r.volume24h),      r=>$$(r.openInterest), aD),
-    mk('trade-imbl', 'Trade Flow',        'Buy vs sell trade pressure',      C.teal,   true, topNA(rows,'tradeImbalance',6),   r=>r.tradeImbalance==null?'—':r.tradeImbalance.toFixed(3), r=>nn(r.tradeCount), tD),
-    mk('book-imbl',  'Book Imbalance',    'Order book bid/ask skew',         C.purple, true, topNA(rows,'bidAskImbalance',6),  r=>r.bidAskImbalance==null?'—':r.bidAskImbalance.toFixed(3), r=>$$(r.bidDepth), iD),
-    mk('volscore',   'Volatility Leaders','Highest realized vol score',      C.amber,  true, topN(rows,'volatility',6),        r=>sc(r.volatility),     r=>pct(r.change24hPct), aD),
-    mk('oi-expand',  'OI Expansion',      'Largest open interest build',     C.amber,  false, oi_u, r=>pct(r.oiChangePct),   r=>$$(r.openInterest), up),
-    mk('oi-unwind',  'OI Unwind',         'Largest OI liquidation',          C.red,    false, oi_d, r=>pct(r.oiChangePct),   r=>$$(r.openInterest), dn),
-    mk('vol-imp',    'Vol Impulse',       'Recent volume spike vs avg',      C.teal,   false, vi,   r=>sc(r.volumeImpulse),  r=>$$(r.volume24h), up),
-    mk('short-sqz',  'Short Squeeze',     'High funding + bearish OI',       C.red,    false, sq,   r=>fmtF(r.funding),      r=>pct(r.oiChangePct), up),
-    mk('long-liq',   'Long Flush',        'Negative funding + bull OI',      C.red,    false, ll,   r=>fmtF(r.funding),      r=>pct(r.oiChangePct), dn),
-    mk('crowd-long', 'Crowded Longs',     'High signal + bullish crowd',     C.amber,  false, cl,   r=>sc(r.compositeSignal),r=>$$(r.openInterest), up),
-    mk('crowd-short','Crowded Shorts',    'Low signal + bearish crowd',      C.purple, false, cs,   r=>sc(r.compositeSignal),r=>$$(r.openInterest), dn),
+    // ── Always-on: core perps signals ──────────────────────────────────────────
+    mk('gainers',   'Top Gainers',     'Strongest 24h price movers',        C.green,  true, topN(base,'change24hPct',6),     r=>pct(r.change24hPct),    r=>$$(r.volume24h), up),
+    mk('losers',    'Top Losers',      'Sharpest 24h price declines',       C.red,    true, topN(base,'change24hPct',6,true),r=>pct(r.change24hPct),    r=>$$(r.volume24h), dn),
+    mk('fund-hi',   'High Funding',    'Longs paying — squeeze watch',      C.amber,  true, topN(base,'funding',6),          r=>fmtF(r.funding),        r=>$$(r.openInterest), up),
+    mk('fund-lo',   'Neg Funding',     'Shorts paying — flush watch',       C.blue,   true, topN(base,'funding',6,true),     r=>fmtF(r.funding),        r=>$$(r.openInterest), dn),
+    mk('oi-top',    'OI Leaders',      'Largest open interest by USD',      C.purple, true, topN(base,'openInterest',6),     r=>$$(r.openInterest),     r=>pct(r.change24hPct), aD),
+    mk('vol-top',   'Volume Leaders',  'Largest 24h notional volume',       C.teal,   true, topN(base,'volume24h',6),        r=>$$(r.volume24h),        r=>$$(r.openInterest), aD),
+    mk('breakout',  'Breakout Watch',  'Highest breakout readiness score',  C.green,  true, topN(base,'breakoutScore',6),    r=>sc(r.breakoutScore),    r=>pct(r.change24hPct), up),
+    mk('disloc',    'Mark/Oracle Gap', 'Mark vs oracle dislocation signal', C.amber,  true, topNA(base,'distMarkOracle',6),  r=>fmtD(r.distMarkOracle), r=>fmtF(r.funding), oD),
+    // ── Conditional: require history / real-time data ─────────────────────────
+    mk('oi-expand', 'OI Expansion',    'Open interest building — new money', C.green, false, oi_u, r=>pct(r.oiChangePct),  r=>$$(r.openInterest), up),
+    mk('oi-unwind', 'OI Unwind',       'OI unwinding — positions closing',   C.red,   false, oi_d, r=>pct(r.oiChangePct),  r=>$$(r.openInterest), dn),
+    mk('oi-accum',  'OI + Bullish',    'OI growing + bullish signal',        C.teal,  false, oiAccum, r=>pct(r.oiChangePct), r=>$$(r.openInterest), up),
+    mk('vol-imp',   'Vol Impulse',     'Volume spike vs recent baseline',    C.teal,  false, vi,   r=>sc(r.volumeImpulse), r=>$$(r.volume24h), up),
+    mk('short-sqz', 'Short Squeeze',   'Longs paying + bearish — fuel lit',  C.red,   false, sq,   r=>fmtF(r.funding),     r=>$$(r.openInterest), up),
+    mk('long-liq',  'Long Flush',      'Shorts paying + bullish — fuel lit', C.blue,  false, ll,   r=>fmtF(r.funding),     r=>$$(r.openInterest), dn),
+    mk('fund-ext',  'Funding Extremes','Annualized carry > 20% either side', C.amber, false, fundExtreme, r=>fmtF(r.funding), r=>$$(r.openInterest), fD),
   ].filter(s => s.always || s.items.length > 0);
 }
 
@@ -556,7 +570,7 @@ function AgentMarketBrief({ agentResult, agentLoading, agentStage, rows, selecte
       bestShort:   bearish[0]  ? { coin:bearish[0].coin,  side:'short' as const, score:bearish[0].compositeSignal??0,  thesisSummary:`Composite ${sc(bearish[0].compositeSignal)}` } : null,
       bestBreakout:brk[0]      ? { coin:brk[0].coin,      side:'watch' as const, score:brk[0].breakoutScore??0,        thesisSummary:`Breakout score ${sc(brk[0].breakoutScore)}` } : null,
       bestExhaust: exh[0]      ? { coin:exh[0].coin,      side:'watch' as const, score:exh[0].funding??0,              thesisSummary:`High funding ${fmtF(exh[0].funding)}` } : null,
-      regime: rows.length ? `${pctBull}% bullish · ${rows.length} assets scanned` : null,
+      regime: rows.length ? `${pctBull}% bullish · ${rows.length} perps scanned` : null,
     };
   }, [briefing, rows]);
 
@@ -748,7 +762,7 @@ const MAT_COLS: Col[] = [
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function HyperliquidScreenerPage() {
   const [search,        setSearch]        = useState('');
-  const [marketType,    setMarketType]    = useState<'all'|'perp'|'spot'>('all');
+  const [marketType,    setMarketType]    = useState<'all'|'perp'|'spot'>('perp');
   const [minVolume,     setMinVolume]     = useState('');
   const [minOI,         setMinOI]         = useState('');
   const [signalFilter,  setSignalFilter]  = useState<'all'|'bullish'|'bearish'>('all');
@@ -819,7 +833,7 @@ export default function HyperliquidScreenerPage() {
     if (!rows.length && !meta) return [];
     const top  = (key: keyof ScreenerRow, asc=false) => [...rows].filter(r=>r[key]!=null).sort((a,b)=>asc?(a[key] as number)-(b[key] as number):(b[key] as number)-(a[key] as number))[0];
     const topA = (key: keyof ScreenerRow) => [...rows].filter(r=>r[key]!=null).sort((a,b)=>Math.abs(b[key] as number)-Math.abs(a[key] as number))[0];
-    const g=top('change24hPct'), l=top('change24hPct',true), fh=top('funding'), fl=top('funding',true), d=topA('distMarkOracle'), v=top('volume24h'), bi=topA('bidAskImbalance');
+    const g=top('change24hPct'), l=top('change24hPct',true), fh=top('funding'), fl=top('funding',true), d=topA('distMarkOracle'), v=top('volume24h'), topOI=top('openInterest');
     return [
       { id:'g',  label:'Top Gainer',   coin:g?.coin,  value:g?pct(g.change24hPct):'—',    color:C.green  },
       { id:'l',  label:'Top Loser',    coin:l?.coin,  value:l?pct(l.change24hPct):'—',    color:C.red    },
@@ -827,7 +841,7 @@ export default function HyperliquidScreenerPage() {
       { id:'fl', label:'Neg Funding',  coin:fl?.coin, value:fl?fmtF(fl.funding):'—',      color:C.blue   },
       { id:'d',  label:'Mk/Oracle Δ',  coin:d?.coin,  value:d?fmtD(d.distMarkOracle):'—', color:C.amber  },
       { id:'v',  label:'Vol Leader',   coin:v?.coin,  value:v?$$(v.volume24h):'—',         color:C.teal   },
-      { id:'bi', label:'Book Imbal',   coin:bi?.coin, value:bi?(bi.bidAskImbalance!).toFixed(3):'—', color:C.purple },
+      { id:'oi', label:'OI Leader',   coin:topOI?.coin, value:topOI?$$(topOI.openInterest):'—', color:C.purple },
       { id:'ag', label:'Agent Top',    coin:agentResult?.longs[0]?.coin, value:agentResult?.longs[0]?agentResult.longs[0].agentScore.toFixed(2):'—', color:C.purple },
       { id:'ts', label:'Updated',      coin:null, value:raw?.meta?.lastUpdated?new Date(raw.meta.lastUpdated).toLocaleTimeString():dataUpdatedAt?new Date(dataUpdatedAt).toLocaleTimeString():'—', color:C.dim },
     ];
