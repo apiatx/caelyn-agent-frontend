@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -74,11 +74,10 @@ interface SubnetData {
   signal_breakdown: SignalBreakdown;
   price_vs_ath_60d_pct: number;
   social_score: number;
-  twitter_mentions_24h: number;
-  discord_members: number;
-  discord_active_24h: number;
-  sentiment_score: number;
-  twitter_followers?: number;
+  latest_unique_authors: number;
+  latest_total_messages: number;
+  total_analyses_24h: number;
+  last_analysis_timestamp: string | null;
   tao_needed_to_sustain: number;
   tags: string[];
   discord?: string;
@@ -185,12 +184,6 @@ function riskLabel(taoNeeded: number): string {
   if (taoNeeded < 50) return "Low";
   if (taoNeeded < 200) return "Medium";
   return "High";
-}
-
-function sentimentColor(score: number): string {
-  if (score > 0.6) return "text-emerald-400";
-  if (score >= 0.4) return "text-amber-400";
-  return "text-red-400";
 }
 
 // ─── Sparkline SVG ───────────────────────────────────────────────────────────
@@ -307,7 +300,7 @@ function SignalBreakdownPanel({
     {
       label: "Social",
       score: breakdown.social_score,
-      detail: `${fmtNumber(subnet.twitter_mentions_24h)} mentions`,
+      detail: `${fmtNumber(subnet.latest_total_messages)} messages`,
       weight: "15%",
     },
     {
@@ -372,8 +365,8 @@ function SignalCard({
       (num(subnet.buy_volume_24h) + num(subnet.sell_volume_24h) || 1)) *
     100;
   if (buyPct > 65) drivers.push(`💰 ${buyPct.toFixed(0)}% buy`);
-  if (subnet.social_score > 50 && drivers.length < 2)
-    drivers.push(`📊 Social ${subnet.social_score.toFixed(0)}`);
+  if (subnet.latest_total_messages > 50 && drivers.length < 2)
+    drivers.push(`📊 ${fmtNumber(subnet.latest_total_messages)} msgs`);
   if (Math.abs(ch24h) > 3 && drivers.length < 2)
     drivers.push(`${ch24h > 0 ? "📈" : "📉"} ${fmtPct(ch24h)} 24h`);
 
@@ -475,9 +468,11 @@ export default function BittensorDashboardSection() {
   const [blockScale, setBlockScale] = useState<"days" | "hours">("days");
 
   // Sort state per tab
+  const [signalSortKey, setSignalSortKey] = useState<string>("signal_score");
+  const [signalSortDir, setSignalSortDir] = useState<SortDir>("desc");
   const [allSortKey, setAllSortKey] = useState<string>("market_cap");
   const [allSortDir, setAllSortDir] = useState<SortDir>("desc");
-  const [socialSortKey, setSocialSortKey] = useState<string>("social_score");
+  const [socialSortKey, setSocialSortKey] = useState<string>("latest_total_messages");
   const [socialSortDir, setSocialSortDir] = useState<SortDir>("desc");
   const [sustainSortKey, setSustainSortKey] = useState<string>(
     "tao_needed_to_sustain"
@@ -571,7 +566,20 @@ export default function BittensorDashboardSection() {
     });
   }, [subnets, sustainSortKey, sustainSortDir]);
 
+  // Signal feed sorted
+  const signalSubnets = useMemo(() => {
+    return [...subnets].sort((a, b) => {
+      const av = num((a as any)[signalSortKey]);
+      const bv = num((b as any)[signalSortKey]);
+      return signalSortDir === "asc" ? av - bv : bv - av;
+    });
+  }, [subnets, signalSortKey, signalSortDir]);
+
   // Sort helpers
+  const handleSignalSort = (key: string) => {
+    if (signalSortKey === key) setSignalSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSignalSortKey(key); setSignalSortDir("desc"); }
+  };
   const handleAllSort = (key: string) => {
     if (allSortKey === key) setAllSortDir((d) => (d === "asc" ? "desc" : "asc"));
     else { setAllSortKey(key); setAllSortDir("desc"); }
@@ -843,27 +851,24 @@ export default function BittensorDashboardSection() {
                     <th className="px-3 py-2.5 text-left text-white/50 font-medium">
                       Subnet
                     </th>
-                    <th className="px-3 py-2.5 text-left text-white/50 font-medium">
-                      Signal
-                    </th>
-                    <th className="px-3 py-2.5 text-left text-white/50 font-medium">
-                      Price (τ)
-                    </th>
-                    <th className="px-3 py-2.5 text-left text-white/50 font-medium">
-                      1h%
-                    </th>
-                    <th className="px-3 py-2.5 text-left text-white/50 font-medium">
-                      24h%
-                    </th>
-                    <th className="px-3 py-2.5 text-left text-white/50 font-medium">
-                      7d%
-                    </th>
-                    <th className="px-3 py-2.5 text-left text-white/50 font-medium">
-                      Vol 24h
-                    </th>
-                    <th className="px-3 py-2.5 text-left text-white/50 font-medium">
-                      Emission%
-                    </th>
+                    {([
+                      ["signal_score", "Signal"],
+                      ["price", "Price (τ)"],
+                      ["price_change_1h", "1h%"],
+                      ["price_change_24h", "24h%"],
+                      ["price_change_7d", "7d%"],
+                      ["volume_24h", "Vol 24h"],
+                      ["emission_pct", "Emission%"],
+                    ] as [string, string][]).map(([key, label]) => (
+                      <th
+                        key={key}
+                        onClick={() => handleSignalSort(key)}
+                        className="px-3 py-2.5 text-left text-white/50 font-medium cursor-pointer hover:text-white/80 select-none whitespace-nowrap"
+                      >
+                        {label}
+                        <SortIcon active={signalSortKey === key} dir={signalSortDir} />
+                      </th>
+                    ))}
                     <th className="px-3 py-2.5 text-left text-white/50 font-medium">
                       Flow
                     </th>
@@ -873,12 +878,7 @@ export default function BittensorDashboardSection() {
                   </tr>
                 </thead>
                 <tbody>
-                  {[...subnets]
-                    .sort(
-                      (a, b) =>
-                        (b.signal_score ?? 0) - (a.signal_score ?? 0)
-                    )
-                    .map((s, idx) => {
+                  {signalSubnets.map((s, idx) => {
                       const ch1h = num(s.price_change_1h);
                       const ch24h = num(s.price_change_24h);
                       const ch7d = num(s.price_change_7d);
@@ -891,78 +891,75 @@ export default function BittensorDashboardSection() {
                       const isExpanded = expandedSignalRow === s.netuid;
 
                       return (
-                        <tr key={s.netuid} className="group">
-                          <td colSpan={11} className="p-0">
-                            <div
-                              onClick={() =>
-                                setExpandedSignalRow(
-                                  isExpanded ? null : s.netuid
-                                )
-                              }
-                              className={`grid grid-cols-[2.5rem_1fr_5rem_5rem_4.5rem_4.5rem_4.5rem_5rem_5rem_4rem_5rem] items-center cursor-pointer border-b border-white/[0.04] transition-colors ${
-                                isExpanded
-                                  ? "bg-orange-500/10"
-                                  : "hover:bg-white/[0.04]"
-                              }`}
-                            >
-                              <span className="px-3 py-2 text-white/40 font-mono">
-                                {idx + 1}
-                              </span>
-                              <span className="px-3 py-2 text-white font-medium truncate">
-                                {s.name}
-                                {s.symbol && (
-                                  <span className="text-white/30 ml-1 text-[10px]">
-                                    {s.symbol}
-                                  </span>
-                                )}
-                              </span>
-                              <span className="px-3 py-2">
-                                <SignalScoreBar score={s.signal_score ?? 0} />
-                              </span>
-                              <span className="px-3 py-2 text-white font-mono">
-                                {fmtTao(num(s.price))}
-                              </span>
-                              <span
-                                className={`px-3 py-2 font-mono ${pctColor(ch1h)}`}
-                              >
-                                {fmtPct(ch1h)}
-                              </span>
-                              <span
-                                className={`px-3 py-2 font-mono ${pctColor(ch24h)}`}
-                              >
-                                {fmtPct(ch24h)}
-                              </span>
-                              <span
-                                className={`px-3 py-2 font-mono ${pctColor(ch7d)}`}
-                              >
-                                {fmtPct(ch7d)}
-                              </span>
-                              <span className="px-3 py-2 text-white/70 font-mono">
-                                {fmtTao(num(s.volume_24h))}
-                              </span>
-                              <span className="px-3 py-2 text-white/70 font-mono">
-                                {num(s.emission_pct).toFixed(2)}%
-                              </span>
-                              <span
-                                className={`px-3 py-2 font-mono ${buyPct >= 55 ? "text-emerald-400" : buyPct <= 45 ? "text-red-400" : "text-white/60"}`}
-                              >
-                                {buyPct.toFixed(0)}%
-                              </span>
-                              <span className="px-3 py-2">
-                                <Sparkline
-                                  data={s.seven_day_price_history}
-                                  positive={ch7d >= 0}
-                                />
-                              </span>
-                            </div>
-                            {isExpanded && s.signal_breakdown && (
-                              <SignalBreakdownPanel
-                                breakdown={s.signal_breakdown}
-                                subnet={s}
+                        <React.Fragment key={s.netuid}>
+                          <tr
+                            onClick={() => setExpandedSignalRow(isExpanded ? null : s.netuid)}
+                            className={`cursor-pointer border-b border-white/[0.04] transition-colors ${
+                              isExpanded
+                                ? "bg-orange-500/10"
+                                : "hover:bg-white/[0.04]"
+                            }`}
+                          >
+                            <td className="px-3 py-2 text-white/40 font-mono text-xs">
+                              {idx + 1}
+                            </td>
+                            <td className="px-3 py-2">
+                              <span className="text-white font-medium text-xs">{s.name}</span>
+                              {s.symbol && (
+                                <Badge className="ml-1.5 bg-white/10 text-white/60 border-white/10 text-[9px] px-1 py-0">
+                                  {s.symbol}
+                                </Badge>
+                              )}
+                              {isExpanded ? (
+                                <ChevronUp className="w-3 h-3 inline ml-1 text-white/30" />
+                              ) : (
+                                <ChevronDown className="w-3 h-3 inline ml-1 text-white/30" />
+                              )}
+                            </td>
+                            <td className="px-3 py-2">
+                              <SignalScoreBar score={s.signal_score ?? 0} />
+                            </td>
+                            <td className="px-3 py-2 font-mono text-white text-xs">
+                              {fmtTao(num(s.price))}
+                            </td>
+                            <td className={`px-3 py-2 font-mono text-xs ${pctColor(ch1h)}`}>
+                              {fmtPct(ch1h)}
+                            </td>
+                            <td className={`px-3 py-2 font-mono text-xs ${pctColor(ch24h)}`}>
+                              {fmtPct(ch24h)}
+                            </td>
+                            <td className={`px-3 py-2 font-mono text-xs ${pctColor(ch7d)}`}>
+                              {fmtPct(ch7d)}
+                            </td>
+                            <td className="px-3 py-2 font-mono text-white/60 text-xs">
+                              {fmtTao(num(s.volume_24h))}
+                            </td>
+                            <td className="px-3 py-2 font-mono text-white/60 text-xs">
+                              {num(s.emission_pct).toFixed(2)}%
+                            </td>
+                            <td className={`px-3 py-2 font-mono text-xs ${buyPct >= 55 ? "text-emerald-400" : buyPct <= 45 ? "text-red-400" : "text-white/60"}`}>
+                              {buyPct.toFixed(0)}%
+                            </td>
+                            <td className="px-3 py-2">
+                              <Sparkline
+                                data={s.seven_day_price_history}
+                                positive={ch7d >= 0}
+                                width={60}
+                                height={20}
                               />
-                            )}
-                          </td>
-                        </tr>
+                            </td>
+                          </tr>
+                          {isExpanded && s.signal_breakdown && (
+                            <tr>
+                              <td colSpan={11} className="p-0">
+                                <SignalBreakdownPanel
+                                  breakdown={s.signal_breakdown}
+                                  subnet={s}
+                                />
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
                       );
                     })}
                 </tbody>
@@ -1197,16 +1194,15 @@ export default function BittensorDashboardSection() {
               <table className="w-full text-xs">
                 <thead className="sticky top-0 z-10 bg-[#0a0a0f] border-b border-white/[0.08]">
                   <tr>
-                    {(
-                      [
-                        ["name", "Subnet"],
-                        ["social_score", "Social Score"],
-                        ["twitter_mentions_24h", "Twitter 24h"],
-                        ["discord_members", "Discord Members"],
-                        ["discord_active_24h", "Discord Active"],
-                        ["sentiment_score", "Sentiment"],
-                      ] as [string, string][]
-                    ).map(([key, label]) => (
+                    <th className="px-3 py-2.5 text-left text-white/50 font-medium w-10">
+                      #
+                    </th>
+                    {([
+                      ["name", "Subnet"],
+                      ["latest_total_messages", "Total Messages"],
+                      ["latest_unique_authors", "Unique Authors"],
+                      ["total_analyses_24h", "Analyses (24h)"],
+                    ] as [string, string][]).map(([key, label]) => (
                       <th
                         key={key}
                         onClick={() => handleSocialSort(key)}
@@ -1220,18 +1216,22 @@ export default function BittensorDashboardSection() {
                       </th>
                     ))}
                     <th className="px-3 py-2.5 text-left text-white/50 font-medium">
-                      Status
+                      Last Analysis
+                    </th>
+                    <th className="px-3 py-2.5 text-left text-white/50 font-medium">
+                      Signal
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {socialSubnets.map((s) => {
-                    const isTrending = s.twitter_mentions_24h > 50;
-                    return (
+                  {socialSubnets.map((s, idx) => (
                       <tr
                         key={s.netuid}
                         className="border-b border-white/[0.04] hover:bg-white/[0.04]"
                       >
+                        <td className="px-3 py-2 text-white/40 font-mono text-xs">
+                          {idx + 1}
+                        </td>
                         <td className="px-3 py-2 text-white font-medium whitespace-nowrap">
                           <span className="text-white/40 font-mono mr-1.5">
                             {s.netuid}
@@ -1243,33 +1243,25 @@ export default function BittensorDashboardSection() {
                             </span>
                           )}
                         </td>
-                        <td className="px-3 py-2">
-                          <SignalScoreBar score={s.social_score ?? 0} />
+                        <td className="px-3 py-2 text-white/70 font-mono">
+                          {fmtNumber(s.latest_total_messages ?? 0)}
                         </td>
                         <td className="px-3 py-2 text-white/70 font-mono">
-                          {fmtNumber(s.twitter_mentions_24h ?? 0)}
+                          {fmtNumber(s.latest_unique_authors ?? 0)}
                         </td>
                         <td className="px-3 py-2 text-white/70 font-mono">
-                          {fmtNumber(s.discord_members ?? 0)}
+                          {fmtNumber(s.total_analyses_24h ?? 0)}
                         </td>
-                        <td className="px-3 py-2 text-white/70 font-mono">
-                          {fmtNumber(s.discord_active_24h ?? 0)}
-                        </td>
-                        <td
-                          className={`px-3 py-2 font-mono ${sentimentColor(s.sentiment_score ?? 0)}`}
-                        >
-                          {(s.sentiment_score ?? 0).toFixed(2)}
+                        <td className="px-3 py-2 text-white/50 font-mono text-[10px]">
+                          {s.last_analysis_timestamp
+                            ? new Date(s.last_analysis_timestamp).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
+                            : "—"}
                         </td>
                         <td className="px-3 py-2">
-                          {isTrending && (
-                            <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 text-[10px] px-1.5 py-0">
-                              🔥 Trending
-                            </Badge>
-                          )}
+                          <SignalScoreBar score={s.signal_score ?? 0} />
                         </td>
                       </tr>
-                    );
-                  })}
+                    ))}
                 </tbody>
               </table>
             </div>
