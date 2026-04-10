@@ -2142,5 +2142,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // === Watchlist (proxy to FastAPI backend) ===
+  const WL_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
+  const WL_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+  const wlHdr = () => ({ 'X-API-Key': WL_KEY, 'Content-Type': 'application/json' });
+
+  app.get('/api/watchlist', async (req, res) => {
+    try {
+      const controller = new AbortController();
+      const tid = setTimeout(() => controller.abort(), 30000);
+      const r = await fetch(`${WL_URL}/watchlist`, { headers: wlHdr(), signal: controller.signal });
+      clearTimeout(tid);
+      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
+      res.json(await r.json());
+    } catch (e: any) {
+      res.status(500).json({ error: e?.name === 'AbortError' ? 'Request timed out' : 'Watchlist unavailable' });
+    }
+  });
+
+  app.get('/api/watchlist/news', async (req, res) => {
+    try {
+      const controller = new AbortController();
+      const tid = setTimeout(() => controller.abort(), 30000);
+      const r = await fetch(`${WL_URL}/watchlist/news`, { headers: wlHdr(), signal: controller.signal });
+      clearTimeout(tid);
+      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
+      res.json(await r.json());
+    } catch (e: any) {
+      res.status(500).json({ error: e?.name === 'AbortError' ? 'Request timed out' : 'Watchlist news unavailable' });
+    }
+  });
+
+  app.post('/api/watchlist/refresh', async (req, res) => {
+    try {
+      const controller = new AbortController();
+      const tid = setTimeout(() => controller.abort(), 120000);
+      const r = await fetch(`${WL_URL}/watchlist/refresh`, {
+        method: 'POST', headers: wlHdr(), signal: controller.signal,
+      });
+      clearTimeout(tid);
+      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
+      res.json(await r.json());
+    } catch (e: any) {
+      res.status(500).json({ error: e?.name === 'AbortError' ? 'Refresh timed out (120s)' : 'Watchlist refresh failed' });
+    }
+  });
+
+  app.get('/api/watchlist/stock/:ticker', async (req, res) => {
+    try {
+      const controller = new AbortController();
+      const tid = setTimeout(() => controller.abort(), 60000);
+      const r = await fetch(`${WL_URL}/watchlist/stock/${encodeURIComponent(req.params.ticker)}`, {
+        headers: wlHdr(), signal: controller.signal,
+      });
+      clearTimeout(tid);
+      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
+      res.json(await r.json());
+    } catch (e: any) {
+      res.status(500).json({ error: e?.name === 'AbortError' ? 'Request timed out' : 'Stock detail unavailable' });
+    }
+  });
+
   return httpServer;
 }

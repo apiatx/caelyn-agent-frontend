@@ -85,7 +85,7 @@ function ValMetric({ label, value }: { label: string; value?: number | string })
 }
 
 /* ── stock card ──────────────────────────────────────────────────────────── */
-function StockCard({ stock, accent }: { stock: Stock; accent: string }) {
+function StockCard({ stock, accent, onTickerClick }: { stock: Stock; accent: string; onTickerClick?: (ticker: string) => void }) {
   const [expanded, setExpanded] = useState(false);
   const sigCol = signalColor(stock.signal);
   const catalysts = stock.catalysts || [];
@@ -118,7 +118,10 @@ function StockCard({ stock, accent }: { stock: Stock; accent: string }) {
         {/* ticker + company */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 15, fontWeight: 800, fontFamily: font, color: C.bright }}>{stock.ticker || '???'}</span>
+            <span
+              onClick={onTickerClick && stock.ticker ? (e) => { e.stopPropagation(); onTickerClick(stock.ticker!); } : undefined}
+              style={{ fontSize: 15, fontWeight: 800, fontFamily: font, color: C.bright, cursor: onTickerClick && stock.ticker ? 'pointer' : undefined, textDecoration: onTickerClick && stock.ticker ? 'underline' : undefined, textDecorationColor: `${accent}50`, textUnderlineOffset: 3 }}
+            >{stock.ticker || '???'}</span>
             {stock.company && <span style={{ fontSize: 11, color: C.dim, fontFamily: sansFont }}>{stock.company}</span>}
           </div>
         </div>
@@ -225,7 +228,7 @@ function StockCard({ stock, accent }: { stock: Stock; accent: string }) {
 }
 
 /* ── avoid card ─────────────────────────────────────────────────────────── */
-function AvoidCard({ item }: { item: AvoidItem }) {
+function AvoidCard({ item, onTickerClick }: { item: AvoidItem; onTickerClick?: (ticker: string) => void }) {
   return (
     <div style={{
       padding: '8px 12px',
@@ -236,7 +239,10 @@ function AvoidCard({ item }: { item: AvoidItem }) {
       alignItems: 'center',
       gap: 10,
     }}>
-      <span style={{ fontSize: 13, fontWeight: 800, fontFamily: font, color: C.red, flexShrink: 0 }}>{item.ticker || '???'}</span>
+      <span
+        onClick={onTickerClick && item.ticker ? () => onTickerClick(item.ticker!) : undefined}
+        style={{ fontSize: 13, fontWeight: 800, fontFamily: font, color: C.red, flexShrink: 0, cursor: onTickerClick && item.ticker ? 'pointer' : undefined, textDecoration: onTickerClick && item.ticker ? 'underline' : undefined, textDecorationColor: `${C.red}50`, textUnderlineOffset: 3 }}
+      >{item.ticker || '???'}</span>
       {item.company && <span style={{ fontSize: 10, color: C.dim, fontFamily: sansFont, flexShrink: 0 }}>{item.company}</span>}
       <span style={{ fontSize: 11, color: C.text, fontFamily: sansFont, flex: 1 }}>{item.reason || ''}</span>
     </div>
@@ -244,7 +250,7 @@ function AvoidCard({ item }: { item: AvoidItem }) {
 }
 
 /* ── main component ─────────────────────────────────────────────────────── */
-export default function WatchlistAnalysis({ data }: { data: WatchlistData }) {
+export default function WatchlistAnalysis({ data, onTickerClick }: { data: WatchlistData; onTickerClick?: (ticker: string) => void }) {
   const avoidList = data.avoid_list || [];
 
   return (
@@ -302,7 +308,7 @@ export default function WatchlistAnalysis({ data }: { data: WatchlistData }) {
             {/* stock cards grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 8 }}>
               {items.map((stock, i) => (
-                <StockCard key={`${key}-${stock.ticker || i}`} stock={stock} accent={meta.accent} />
+                <StockCard key={`${key}-${stock.ticker || i}`} stock={stock} accent={meta.accent} onTickerClick={onTickerClick} />
               ))}
             </div>
           </div>
@@ -335,7 +341,7 @@ export default function WatchlistAnalysis({ data }: { data: WatchlistData }) {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {avoidList.map((item, i) => (
-              <AvoidCard key={`avoid-${item.ticker || i}`} item={item} />
+              <AvoidCard key={`avoid-${item.ticker || i}`} item={item} onTickerClick={onTickerClick} />
             ))}
           </div>
         </div>

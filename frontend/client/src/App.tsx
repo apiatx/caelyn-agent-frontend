@@ -57,6 +57,7 @@ import HyperliquidScreenerPage from "@/pages/hyperliquid-screener";
 import InsiderActivityPage from "@/pages/stocks-insider-activity";
 import WhaleWatchPage from "@/pages/whale-watch";
 import AboutPage from "@/pages/about";
+import WatchlistPage from "@/pages/watchlist";
 
 import NotFound from "@/pages/not-found";
 
@@ -175,6 +176,8 @@ function Router() {
       <Route path="/predict" component={PredictPage} />
       <Route path="/app/portfolio" component={PortfolioPage} />
       <Route path="/portfolio" component={PortfolioPage} />
+      <Route path="/app/watchlist" component={WatchlistPage} />
+      <Route path="/watchlist" component={WatchlistPage} />
       <Route path="/app/about" component={AboutPage} />
       <Route path="/about" component={AboutPage} />
       <Route component={NotFound} />

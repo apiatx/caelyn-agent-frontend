@@ -80,6 +80,12 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
       path: '/app/notifai'
     },
     {
+      id: 'watchlist',
+      label: 'Watchlist',
+      icon: <Eye className="w-4 h-4" />,
+      path: '/app/watchlist'
+    },
+    {
       id: 'caelyn-terminal',
       label: 'Portfolio',
       icon: <Monitor className="w-4 h-4" />,
