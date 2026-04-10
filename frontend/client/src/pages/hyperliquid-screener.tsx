@@ -169,6 +169,9 @@ export interface AgentResult {
   summary:        string;
   generatedAt:    string;
   briefing?:      AgentBriefing;
+  // LLM-generated analysis + macro context
+  llmAnalysis?:   string;
+  fearGreed?:     { value: string; value_classification: string; timestamp?: string };
 }
 
 // Asset detail (unchanged)
@@ -656,6 +659,26 @@ function AgentMarketBrief({ agentResult, agentLoading, agentStage, rows, selecte
         )}
       </div>
 
+      {/* ── LLM Analysis strip (shown only after Agent button is run) ── */}
+      {agentResult?.llmAnalysis && (
+        <div style={{ display:'flex', gap:12, alignItems:'flex-start', padding:'8px 14px', background:'#050c16', borderBottom:`1px solid ${C.dimLow}` }}>
+          {agentResult.fearGreed && (() => {
+            const fgVal = parseInt(agentResult.fearGreed!.value, 10);
+            const fgColor = fgVal >= 60 ? C.green : fgVal <= 40 ? C.red : C.amber;
+            return (
+              <div style={{ flexShrink:0, display:'flex', flexDirection:'column', alignItems:'center', gap:2, background:C.card, border:`1px solid ${C.border}`, borderRadius:5, padding:'5px 10px', minWidth:72, textAlign:'center' }}>
+                <span style={{ fontSize:7, color:C.dim, letterSpacing:1.5, textTransform:'uppercase' }}>Fear &amp; Greed</span>
+                <span style={{ fontSize:20, fontWeight:800, color:fgColor, fontFamily:C.font, lineHeight:1 }}>{agentResult.fearGreed!.value}</span>
+                <span style={{ fontSize:7.5, color:fgColor, lineHeight:1.3 }}>{agentResult.fearGreed!.value_classification}</span>
+              </div>
+            );
+          })()}
+          <div style={{ flex:1, fontSize:10, color:'#c8d8e8', lineHeight:1.65, fontFamily:'"Inter","Segoe UI",sans-serif' }}>
+            {agentResult.llmAnalysis}
+          </div>
+        </div>
+      )}
+
       {/* ── A: Quick-look tiles ── */}
       <div style={{ display:'flex', borderBottom:`1px solid ${C.dimLow}`, background:'#070d19' }}>
         <QuickLookTile label="Best Long"         coin={ql.bestLong?.coin??null}    sub={ql.bestLong?.thesisSummary??'No signal yet'} color={C.green}  preview={isPreview} />
@@ -805,7 +828,8 @@ function MomentumPanel({ selectedCoin, onSelect }: {
     },
     refetchInterval: 60_000,
     staleTime: 55_000,
-    retry: 1,
+    retry: 3,
+    retryDelay: 8000,
   });
 
   const signals = data?.signals ?? [];
@@ -861,7 +885,9 @@ function MomentumPanel({ selectedCoin, onSelect }: {
           {/* Signal rows */}
           {display.length === 0 && !isLoading && (
             <div style={{ padding: '16px', textAlign: 'center', fontSize: 9, color: C.dim }}>
-              No signals yet — 1d candle data loads on first refresh cycle (~5 min after boot)
+              {isError
+                ? 'Error loading TSMOM signals — retrying in 8s…'
+                : 'Computing momentum signals — 1d candle data loading in background. Auto-refreshes every 60s.'}
             </div>
           )}
           {display.map((sig, i) => {
@@ -998,6 +1024,8 @@ export default function HyperliquidScreenerPage() {
     refetchInterval: liveUpdates ? 10000 : false,
     staleTime: 6000,
     retry: 2,
+    // Keep previous data visible during refetch — prevents blank screen on marketType change or interval refresh
+    placeholderData: (previousData: any) => previousData,
   });
 
   // Merge agent results into rows for matrix colouring
@@ -1179,7 +1207,7 @@ export default function HyperliquidScreenerPage() {
             Loading Hyperliquid signal snapshot…
           </div>
         )}
-        {isError && !isLoading && (
+        {isError && !isLoading && !raw && (
           <div style={{ padding:32, textAlign:'center' }}>
             <AlertTriangle style={{ width:22, height:22, color:C.amber, marginBottom:8 }} />
             <div style={{ fontSize:11, color:C.amber, marginBottom:5 }}>Failed to load screener data</div>
@@ -1187,8 +1215,15 @@ export default function HyperliquidScreenerPage() {
             <button onClick={() => refetch()} style={{ background:C.teal, color:'#fff', border:'none', borderRadius:4, padding:'5px 14px', fontSize:10, cursor:'pointer' }}>Retry</button>
           </div>
         )}
+        {/* Subtle refresh indicator — shown when background fetch is in progress but data is already visible */}
+        {isFetching && !isLoading && raw && (
+          <div style={{ position:'sticky', top:0, zIndex:20, background:`${C.teal}18`, borderBottom:`1px solid ${C.teal}33`, padding:'3px 14px', fontSize:8.5, color:C.teal, display:'flex', alignItems:'center', gap:6 }}>
+            <div style={{ width:7, height:7, borderRadius:'50%', border:`1.5px solid ${C.teal}`, borderTopColor:'transparent', animation:'spin 0.7s linear infinite', flexShrink:0 }} />
+            Refreshing data…
+          </div>
+        )}
 
-        {!isLoading && (
+        {(raw || !isLoading) && (
           <>
             {/* ── HERO: AGENT MARKET BRIEF ─────────────────────────── */}
             <AgentMarketBrief
