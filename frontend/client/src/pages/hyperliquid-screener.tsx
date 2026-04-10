@@ -815,10 +815,14 @@ function MomentumPanel({ selectedCoin, onSelect }: {
       if (!r.ok) throw new Error(`TSMOM ${r.status}`);
       return r.json();
     },
-    refetchInterval: 60_000,
-    staleTime: 55_000,
-    retry: 3,
-    retryDelay: 8000,
+    // Poll every 15s so signals appear quickly after boot; back off once data arrives
+    refetchInterval: (query: any) => {
+      const d = query?.state?.data as TsmomResult | undefined;
+      return !d || d.signals.length === 0 ? 15_000 : 60_000;
+    },
+    staleTime: 10_000,
+    retry: 2,
+    retryDelay: 5000,
   });
 
   const signals = data?.signals ?? [];
@@ -1011,19 +1015,25 @@ export default function HyperliquidScreenerPage() {
       return r.json();
     },
     refetchInterval: liveUpdates ? 10000 : false,
-    staleTime: 6000,
+    staleTime: 8000,
+    gcTime: 30 * 60 * 1000,   // keep cache 30 min across navigations
     retry: 2,
-    // Keep previous data visible during refetch — prevents blank screen on marketType change or interval refresh
     placeholderData: (previousData: any) => previousData,
   });
 
+  // Permanent last-good-data ref — NEVER cleared, so the screen never goes
+  // blank during refetches, backend restarts, or transient error states.
+  const _lastGood = useRef<{ rows: ScreenerRow[]; meta: ScreenerMeta } | null>(null);
+  if (raw != null) _lastGood.current = raw;
+  const displayData = raw ?? _lastGood.current;
+
   // Merge agent results into rows for matrix colouring
   const rows: ScreenerRow[] = useMemo(() => {
-    const base = raw?.rows ?? [];
+    const base = displayData?.rows ?? [];
     if (!agentResult) return base;
     const am = new Map(agentResult.rankedCoins.map(a=>[a.coin,a]));
     return base.map(row => { const ag=am.get(row.coin); if(!ag) return row; return {...row, agentRank:ag.agentRank, agentScore:ag.agentScore, agentRationale:ag.rationale, rankDelta:row.rank-ag.agentRank}; });
-  }, [raw, agentResult]);
+  }, [displayData, agentResult]);
 
   const filtered = useMemo(() => {
     let r = rows;
@@ -1049,7 +1059,7 @@ export default function HyperliquidScreenerPage() {
   const signalSections = useMemo(() => deriveSignalSections(sorted), [sorted]);
 
   const summaryItems = useMemo(() => {
-    const meta = raw?.meta;
+    const meta = displayData?.meta;
     if (!rows.length && !meta) return [];
     const top  = (key: keyof ScreenerRow, asc=false) => [...rows].filter(r=>r[key]!=null).sort((a,b)=>asc?(a[key] as number)-(b[key] as number):(b[key] as number)-(a[key] as number))[0];
     const topA = (key: keyof ScreenerRow) => [...rows].filter(r=>r[key]!=null).sort((a,b)=>Math.abs(b[key] as number)-Math.abs(a[key] as number))[0];
@@ -1063,9 +1073,9 @@ export default function HyperliquidScreenerPage() {
       { id:'v',  label:'Vol Leader',   coin:v?.coin,  value:v?$$(v.volume24h):'—',         color:C.teal   },
       { id:'oi', label:'OI Leader',   coin:topOI?.coin, value:topOI?$$(topOI.openInterest):'—', color:C.purple },
       { id:'ag', label:'Agent Top',    coin:agentResult?.longs[0]?.coin, value:agentResult?.longs[0]?agentResult.longs[0].agentScore.toFixed(2):'—', color:C.purple },
-      { id:'ts', label:'Updated',      coin:null, value:raw?.meta?.lastUpdated?new Date(raw.meta.lastUpdated).toLocaleTimeString():dataUpdatedAt?new Date(dataUpdatedAt).toLocaleTimeString():'—', color:C.dim },
+      { id:'ts', label:'Updated',      coin:null, value:displayData?.meta?.lastUpdated?new Date(displayData.meta.lastUpdated).toLocaleTimeString():dataUpdatedAt?new Date(dataUpdatedAt).toLocaleTimeString():'—', color:C.dim },
     ];
-  }, [raw, rows, agentResult, dataUpdatedAt]);
+  }, [displayData, rows, agentResult, dataUpdatedAt]);
 
   const handleSort = useCallback((key: CK) => {
     setSortKey(prev => { if(prev===key){setSortDir(d=>d==='asc'?'desc':'asc');return key;}setSortDir('asc');return key; });
@@ -1177,7 +1187,7 @@ export default function HyperliquidScreenerPage() {
 
       {/* ── SUMMARY STRIP ────────────────────────────────────────────── */}
       <div style={{ background:'#07101a', borderBottom:`1px solid ${C.border}`, padding:'5px 12px', display:'flex', gap:7, overflowX:'auto', flexShrink:0, scrollbarWidth:'none', alignItems:'stretch' }}>
-        {isLoading
+        {(isLoading && !displayData)
           ? Array.from({length:9}).map((_,i) => <div key={i} style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:5, padding:'5px 11px', flexShrink:0, minWidth:96, height:40, opacity:0.3 }} />)
           : summaryItems.map(item => (
               <SummaryChip key={item.id} label={item.label} coin={item.coin} value={item.value} color={item.color}
@@ -1190,13 +1200,15 @@ export default function HyperliquidScreenerPage() {
       {/* ── SCROLLABLE BODY ───────────────────────────────────────────── */}
       <div style={{ flex:1, overflowY:'auto', overflowX:'hidden' }}>
 
-        {isLoading && (
+        {/* Initial load spinner — only shown when there is truly no data yet */}
+        {isLoading && !displayData && (
           <div style={{ padding:40, textAlign:'center', color:C.dim, fontSize:11 }}>
             <div style={{ width:22, height:22, border:`2px solid ${C.border}`, borderTopColor:C.teal, borderRadius:'50%', animation:'spin 0.9s linear infinite', margin:'0 auto 10px' }} />
             Loading Hyperliquid signal snapshot…
           </div>
         )}
-        {isError && !isLoading && !raw && (
+        {/* Error only shown when there is no cached data to fall back on */}
+        {isError && !displayData && (
           <div style={{ padding:32, textAlign:'center' }}>
             <AlertTriangle style={{ width:22, height:22, color:C.amber, marginBottom:8 }} />
             <div style={{ fontSize:11, color:C.amber, marginBottom:5 }}>Failed to load screener data</div>
@@ -1204,15 +1216,15 @@ export default function HyperliquidScreenerPage() {
             <button onClick={() => refetch()} style={{ background:C.teal, color:'#fff', border:'none', borderRadius:4, padding:'5px 14px', fontSize:10, cursor:'pointer' }}>Retry</button>
           </div>
         )}
-        {/* Subtle refresh indicator — shown when background fetch is in progress but data is already visible */}
-        {isFetching && !isLoading && raw && (
+        {/* Subtle refresh indicator — only shown when data is on screen and a background fetch is running */}
+        {isFetching && displayData && (
           <div style={{ position:'sticky', top:0, zIndex:20, background:`${C.teal}18`, borderBottom:`1px solid ${C.teal}33`, padding:'3px 14px', fontSize:8.5, color:C.teal, display:'flex', alignItems:'center', gap:6 }}>
             <div style={{ width:7, height:7, borderRadius:'50%', border:`1.5px solid ${C.teal}`, borderTopColor:'transparent', animation:'spin 0.7s linear infinite', flexShrink:0 }} />
             Refreshing data…
           </div>
         )}
 
-        {(raw || !isLoading) && (
+        {displayData && (
           <>
             {/* ── HERO: AGENT MARKET BRIEF ─────────────────────────── */}
             <AgentMarketBrief
