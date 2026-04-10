@@ -659,21 +659,10 @@ function AgentMarketBrief({ agentResult, agentLoading, agentStage, rows, selecte
         )}
       </div>
 
-      {/* ── LLM Analysis strip (shown only after Agent button is run) ── */}
+      {/* ── LLM Analysis strip (shown only after Agent button is clicked) ── */}
       {agentResult?.llmAnalysis && (
-        <div style={{ display:'flex', gap:12, alignItems:'flex-start', padding:'8px 14px', background:'#050c16', borderBottom:`1px solid ${C.dimLow}` }}>
-          {agentResult.fearGreed && (() => {
-            const fgVal = parseInt(agentResult.fearGreed!.value, 10);
-            const fgColor = fgVal >= 60 ? C.green : fgVal <= 40 ? C.red : C.amber;
-            return (
-              <div style={{ flexShrink:0, display:'flex', flexDirection:'column', alignItems:'center', gap:2, background:C.card, border:`1px solid ${C.border}`, borderRadius:5, padding:'5px 10px', minWidth:72, textAlign:'center' }}>
-                <span style={{ fontSize:7, color:C.dim, letterSpacing:1.5, textTransform:'uppercase' }}>Fear &amp; Greed</span>
-                <span style={{ fontSize:20, fontWeight:800, color:fgColor, fontFamily:C.font, lineHeight:1 }}>{agentResult.fearGreed!.value}</span>
-                <span style={{ fontSize:7.5, color:fgColor, lineHeight:1.3 }}>{agentResult.fearGreed!.value_classification}</span>
-              </div>
-            );
-          })()}
-          <div style={{ flex:1, fontSize:10, color:'#c8d8e8', lineHeight:1.65, fontFamily:'"Inter","Segoe UI",sans-serif' }}>
+        <div style={{ padding:'10px 14px', background:'#050c16', borderBottom:`1px solid ${C.dimLow}` }}>
+          <div style={{ fontSize:10, color:'#c8d8e8', lineHeight:1.7, fontFamily:'"Inter","Segoe UI",sans-serif' }}>
             {agentResult.llmAnalysis}
           </div>
         </div>
