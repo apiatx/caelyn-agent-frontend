@@ -954,6 +954,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ success: true });
   });
 
+  // === Bittensor / TAO Dashboard — proxy to FastAPI backend ===
+  app.get('/api/bittensor/dashboard', async (req, res) => {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+      const response = await fetch(`${AGENT_URL}/api/bittensor/dashboard`, {
+        headers: { 'X-API-Key': AGENT_KEY },
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      const data = await response.json();
+      return res.status(response.status).json(data);
+    } catch (error) {
+      console.error('[bittensor] dashboard proxy error:', error);
+      res.status(503).json({ error: 'Failed to load Bittensor data' });
+    }
+  });
+
+  app.get('/api/bittensor/subnet/:netuid/metagraph', async (req, res) => {
+    try {
+      const { netuid } = req.params;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 20000);
+      const response = await fetch(`${AGENT_URL}/api/bittensor/subnet/${netuid}/metagraph`, {
+        headers: { 'X-API-Key': AGENT_KEY },
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      return res.status(response.status).json(await response.json());
+    } catch (error) {
+      console.error('[bittensor] metagraph proxy error:', error);
+      res.status(503).json({ error: 'Failed to load metagraph data' });
+    }
+  });
+
+  app.get('/api/bittensor/price/history', async (req, res) => {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      const response = await fetch(`${AGENT_URL}/api/bittensor/price/history`, {
+        headers: { 'X-API-Key': AGENT_KEY },
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      return res.status(response.status).json(await response.json());
+    } catch (error) {
+      console.error('[bittensor] price history proxy error:', error);
+      res.status(503).json({ error: 'Failed to load price history' });
+    }
+  });
+
+  app.get('/api/bittensor/blocks/history', async (req, res) => {
+    try {
+      const { scale, points } = req.query;
+      const qs = new URLSearchParams();
+      if (scale) qs.set('scale', String(scale));
+      if (points) qs.set('points', String(points));
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      const response = await fetch(`${AGENT_URL}/api/bittensor/blocks/history?${qs}`, {
+        headers: { 'X-API-Key': AGENT_KEY },
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      return res.status(response.status).json(await response.json());
+    } catch (error) {
+      console.error('[bittensor] blocks history proxy error:', error);
+      res.status(503).json({ error: 'Failed to load block history' });
+    }
+  });
+
   // === Macro Dashboard — legacy (still uses local fmpService) ===
   app.get('/api/macro/dashboard', async (req, res) => {
     try {
