@@ -9,6 +9,7 @@ import {
   shouldKeepCollaboratorsOnReasoningChange,
 } from './tradingAgentCollabState';
 import WatchlistAnalysis, { tryParseWatchlistAnalysis } from './WatchlistAnalysis';
+import { StockDetailModal } from './StockDetailModal';
 
 const AGENT_BACKEND_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
 const AGENT_API_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
@@ -324,6 +325,8 @@ export default function TradingAgent() {
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [signalPopup, setSignalPopup] = useState<{ ticker: string; signal: string; scannerName: string; color: string; icon: string } | null>(null);
   const [signalChartInterval, setSignalChartInterval] = useState('D');
+  const [modalTicker, setModalTicker] = useState<string | null>(null);
+  const [modalWatchlistData, setModalWatchlistData] = useState<any>(null);
   const scrollAnchorRef = useRef<HTMLDivElement>(null);
   const commandInputRef = useRef<HTMLInputElement>(null);
   const loadingRef = useRef(false);
@@ -2563,7 +2566,7 @@ export default function TradingAgent() {
 
     if (watchlistData) {
       return <div style={{ padding:22, background:C.card, border:`1px solid ${C.border}`, borderRadius:10 }}>
-        <WatchlistAnalysis data={watchlistData} />
+        <WatchlistAnalysis data={watchlistData} onTickerClick={(ticker: string) => { setModalTicker(ticker); setModalWatchlistData(watchlistData); }} />
       </div>;
     }
 
@@ -3231,6 +3234,15 @@ export default function TradingAgent() {
         </div>
       </div>
 
+      {/* Stock Detail Modal (triggered from watchlist analysis in chat) */}
+      {modalTicker && (
+        <StockDetailModal
+          ticker={modalTicker}
+          analysis={modalWatchlistData}
+          newsItems={[]}
+          onClose={() => { setModalTicker(null); setModalWatchlistData(null); }}
+        />
+      )}
     </div>
   );
 }
