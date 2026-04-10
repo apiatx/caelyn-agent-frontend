@@ -1854,6 +1854,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/hyperliquid/tsmom-signals', async (req, res) => {
+    try {
+      const { top_n = 60 } = req.query;
+      const r = await fetch(
+        `${HL_URL}/api/hyperliquid/screener/tsmom-signals?top_n=${top_n}`,
+        { headers: hlHdr() }
+      );
+      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
+      res.json(await r.json());
+    } catch (e: any) {
+      res.status(500).json({ error: 'Failed to fetch TSMOM signals' });
+    }
+  });
+
   app.post('/api/hyperliquid/agent-rank', async (req, res) => {
     try {
       const controller = new AbortController();

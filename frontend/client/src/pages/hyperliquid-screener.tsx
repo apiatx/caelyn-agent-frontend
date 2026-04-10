@@ -186,6 +186,8 @@ export interface AssetDetail {
 
 // ─── Formatters ───────────────────────────────────────────────────────────────
 const pct  = (v: number | null, dec = 2) => v == null ? '—' : `${v >= 0 ? '+' : ''}${v.toFixed(dec)}%`;
+// pctD: for fields sent as decimals (0.40 = 40%) — multiplies by 100 before display
+const pctD = (v: number | null, dec = 2) => pct(v == null ? null : v * 100, dec);
 const $$   = (v: number | null) => v == null ? '—' : v >= 1e9 ? `$${(v/1e9).toFixed(2)}B` : v >= 1e6 ? `$${(v/1e6).toFixed(2)}M` : v >= 1e3 ? `$${(v/1e3).toFixed(1)}K` : `$${v.toFixed(2)}`;
 const px   = (v: number | null) => v == null ? '—' : v >= 1000 ? v.toLocaleString('en-US', { minimumFractionDigits:1, maximumFractionDigits:1 }) : v >= 1 ? v.toFixed(3) : v.toFixed(6);
 const sc   = (v: number | null) => v == null ? '—' : v.toFixed(2);
@@ -264,18 +266,18 @@ function deriveSignalSections(rows: ScreenerRow[]): DerivedSection[] {
 
   return [
     // ── Always-on: core perps signals ──────────────────────────────────────────
-    mk('gainers',   'Top Gainers',     'Strongest 24h price movers',        C.green,  true, topN(base,'change24hPct',6),     r=>pct(r.change24hPct),    r=>$$(r.volume24h), up),
-    mk('losers',    'Top Losers',      'Sharpest 24h price declines',       C.red,    true, topN(base,'change24hPct',6,true),r=>pct(r.change24hPct),    r=>$$(r.volume24h), dn),
+    mk('gainers',   'Top Gainers',     'Strongest 24h price movers',        C.green,  true, topN(base,'change24hPct',6),     r=>pctD(r.change24hPct),   r=>$$(r.volume24h), up),
+    mk('losers',    'Top Losers',      'Sharpest 24h price declines',       C.red,    true, topN(base,'change24hPct',6,true),r=>pctD(r.change24hPct),   r=>$$(r.volume24h), dn),
     mk('fund-hi',   'High Funding',    'Longs paying — squeeze watch',      C.amber,  true, topN(base,'funding',6),          r=>fmtF(r.funding),        r=>$$(r.openInterest), up),
     mk('fund-lo',   'Neg Funding',     'Shorts paying — flush watch',       C.blue,   true, topN(base,'funding',6,true),     r=>fmtF(r.funding),        r=>$$(r.openInterest), dn),
-    mk('oi-top',    'OI Leaders',      'Largest open interest by USD',      C.purple, true, topN(base,'openInterest',6),     r=>$$(r.openInterest),     r=>pct(r.change24hPct), aD),
+    mk('oi-top',    'OI Leaders',      'Largest open interest by USD',      C.purple, true, topN(base,'openInterest',6),     r=>$$(r.openInterest),     r=>pctD(r.change24hPct), aD),
     mk('vol-top',   'Volume Leaders',  'Largest 24h notional volume',       C.teal,   true, topN(base,'volume24h',6),        r=>$$(r.volume24h),        r=>$$(r.openInterest), aD),
-    mk('breakout',  'Breakout Watch',  'Highest breakout readiness score',  C.green,  true, topN(base,'breakoutScore',6),    r=>sc(r.breakoutScore),    r=>pct(r.change24hPct), up),
+    mk('breakout',  'Breakout Watch',  'Highest breakout readiness score',  C.green,  true, topN(base,'breakoutScore',6),    r=>sc(r.breakoutScore),    r=>pctD(r.change24hPct), up),
     mk('disloc',    'Mark/Oracle Gap', 'Mark vs oracle dislocation signal', C.amber,  true, topNA(base,'distMarkOracle',6),  r=>fmtD(r.distMarkOracle), r=>fmtF(r.funding), oD),
     // ── Conditional: require history / real-time data ─────────────────────────
-    mk('oi-expand', 'OI Expansion',    'Open interest building — new money', C.green, false, oi_u, r=>pct(r.oiChangePct),  r=>$$(r.openInterest), up),
-    mk('oi-unwind', 'OI Unwind',       'OI unwinding — positions closing',   C.red,   false, oi_d, r=>pct(r.oiChangePct),  r=>$$(r.openInterest), dn),
-    mk('oi-accum',  'OI + Bullish',    'OI growing + bullish signal',        C.teal,  false, oiAccum, r=>pct(r.oiChangePct), r=>$$(r.openInterest), up),
+    mk('oi-expand', 'OI Expansion',    'Open interest building — new money', C.green, false, oi_u, r=>pctD(r.oiChangePct), r=>$$(r.openInterest), up),
+    mk('oi-unwind', 'OI Unwind',       'OI unwinding — positions closing',   C.red,   false, oi_d, r=>pctD(r.oiChangePct), r=>$$(r.openInterest), dn),
+    mk('oi-accum',  'OI + Bullish',    'OI growing + bullish signal',        C.teal,  false, oiAccum, r=>pctD(r.oiChangePct), r=>$$(r.openInterest), up),
     mk('vol-imp',   'Vol Impulse',     'Volume spike vs recent baseline',    C.teal,  false, vi,   r=>sc(r.volumeImpulse), r=>$$(r.volume24h), up),
     mk('short-sqz', 'Short Squeeze',   'Longs paying + bearish — fuel lit',  C.red,   false, sq,   r=>fmtF(r.funding),     r=>$$(r.openInterest), up),
     mk('long-liq',  'Long Flush',      'Shorts paying + bullish — fuel lit', C.blue,  false, ll,   r=>fmtF(r.funding),     r=>$$(r.openInterest), dn),
@@ -437,7 +439,7 @@ function RichThesisPanel({ idea, row }: { idea: BriefingIdea | AgentRankedItem |
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0 14px', marginTop:6 }}>
           {row ? <>
             <Metric label="Mark"        value={px(row.markPrice)} />
-            <Metric label="24H Chg"     value={pct(row.change24hPct)} vc={pctC(row.change24hPct)} />
+            <Metric label="24H Chg"     value={pctD(row.change24hPct)} vc={pctC(row.change24hPct)} />
             <Metric label="Funding/hr"  value={fmtF(row.funding)} vc={fC(row.funding)} />
             <Metric label="OI"          value={$$(row.openInterest)} />
             <Metric label="Volume"      value={$$(row.volume24h)} />
@@ -503,7 +505,7 @@ function RichThesisPanel({ idea, row }: { idea: BriefingIdea | AgentRankedItem |
         {row && (
           <div style={{ fontSize:7, color:C.dimLow, marginTop:10, display:'flex', gap:10, flexWrap:'wrap' }}>
             {row.maxLeverage!=null&&<span>Max lev {row.maxLeverage}×</span>}
-            {row.oiChangePct!=null&&<span>OI Δ <span style={{ color:pctC(row.oiChangePct) }}>{pct(row.oiChangePct)}</span></span>}
+            {row.oiChangePct!=null&&<span>OI Δ <span style={{ color:pctC(row.oiChangePct) }}>{pctD(row.oiChangePct)}</span></span>}
             {row.updatedAt&&<span>Updated {new Date(row.updatedAt).toLocaleTimeString()}</span>}
           </div>
         )}
@@ -745,7 +747,7 @@ interface Col { key: CK; label: string; w: number; fmt: (v:any)=>string; vc?: (v
 const MAT_COLS: Col[] = [
   { key:'coin',            label:'COIN',    w:90,  fmt: v=>v??'—',                            align:'left' },
   { key:'markPrice',       label:'MARK',    w:100, fmt: px },
-  { key:'change24hPct',    label:'24H%',    w:72,  fmt: pct,   vc: pctC },
+  { key:'change24hPct',    label:'24H%',    w:72,  fmt: pctD,  vc: pctC },
   { key:'funding',         label:'FUND%',   w:80,  fmt: fmtF,  vc: fC },
   { key:'openInterest',    label:'OI',      w:90,  fmt: $$ },
   { key:'volume24h',       label:'VOL',     w:90,  fmt: $$ },
@@ -758,6 +760,207 @@ const MAT_COLS: Col[] = [
   { key:'agentScore',      label:'A-SCR',   w:68,  fmt: sc,    vc: scC },
   { key:'agentRank',       label:'A-RNK',   w:60,  fmt: v=>v??'—' },
 ];
+
+
+// ─── TSMOM Types ──────────────────────────────────────────────────────────────
+interface TsmomSignal {
+  coin:           string;
+  s_raw:          number;
+  s_adj:          number;
+  sigma:          number;    // annualized vol %
+  funding_bps:    number;    // bps/hr
+  funding_ann_pct: number;
+  w_scaled:       number;    // target weight %
+  side:           'long' | 'short' | 'flat';
+  momentum_10d:   number | null;
+  momentum_30d:   number | null;
+  bars_used:      number;
+}
+interface TsmomMeta {
+  total_signals: number;
+  long_count:    number;
+  short_count:   number;
+  flat_count:    number;
+  generated_at:  string;
+}
+interface TsmomResult {
+  signals: TsmomSignal[];
+  meta:    TsmomMeta;
+}
+
+// ─── Momentum Panel (TSMOM) ───────────────────────────────────────────────────
+function MomentumPanel({ selectedCoin, onSelect }: {
+  selectedCoin: string | null;
+  onSelect: (coin: string) => void;
+}) {
+  const [open, setOpen] = useState(true);
+  const [showAll, setShowAll] = useState(false);
+
+  const { data, isLoading, isError } = useQuery<TsmomResult>({
+    queryKey: ['tsmom-signals'],
+    queryFn: async () => {
+      const r = await fetch('/api/hyperliquid/tsmom-signals?top_n=60');
+      if (!r.ok) throw new Error(`TSMOM ${r.status}`);
+      return r.json();
+    },
+    refetchInterval: 60_000,
+    staleTime: 55_000,
+    retry: 1,
+  });
+
+  const signals = data?.signals ?? [];
+  const meta    = data?.meta;
+  const display = showAll ? signals : signals.slice(0, 20);
+
+  // Signal bar: -2 to +2 mapped to 0%..100%
+  const sigBar = (s: number) => ((s + 2) / 4) * 100;
+
+  return (
+    <div style={{ margin: '0 14px 14px', border: `1px solid ${C.border}`, borderRadius: 6, overflow: 'hidden' }}>
+      {/* Header */}
+      <button onClick={() => setOpen(o => !o)}
+        style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px',
+          background: C.card2, border: 'none', cursor: 'pointer', color: C.text,
+          borderBottom: open ? `1px solid ${C.border}` : 'none' }}>
+        <TrendingUp style={{ width: 11, height: 11, color: C.purple }} />
+        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.5, color: C.purple, textTransform: 'uppercase' }}>
+          Time-Series Momentum
+        </span>
+        <span style={{ fontSize: 8, color: C.dim, marginLeft: 2 }}>TSMOM · Multi-Lookback z-Score</span>
+        {meta && (
+          <span style={{ fontSize: 8, color: C.dim, marginLeft: 6 }}>
+            <span style={{ color: C.green }}>{meta.long_count}↑</span>
+            {' / '}
+            <span style={{ color: C.red }}>{meta.short_count}↓</span>
+            {' / '}
+            <span style={{ color: C.dim }}>{meta.flat_count}·</span>
+            {' · '}
+            {meta.total_signals} signals
+          </span>
+        )}
+        {isLoading && <span style={{ fontSize: 8, color: C.amber, marginLeft: 6 }}>Loading…</span>}
+        {isError  && <span style={{ fontSize: 8, color: C.red,   marginLeft: 6 }}>No data yet — loading 1d candles</span>}
+        <span style={{ marginLeft: 'auto', color: C.dim }}>
+          {open ? <ChevronUp style={{ width: 11, height: 11 }} /> : <ChevronDown style={{ width: 11, height: 11 }} />}
+        </span>
+      </button>
+
+      {open && (
+        <div>
+          {/* Column headers */}
+          <div style={{ display: 'grid', gridTemplateColumns: '24px 72px 140px 80px 60px 60px 60px 60px 60px',
+            padding: '4px 12px', background: '#060b14', borderBottom: `1px solid ${C.border}`,
+            gap: 0 }}>
+            {['#','COIN','SIGNAL','SIDE','VOL%','10D%','30D%','FUND','W%'].map((h, i) => (
+              <span key={i} style={{ fontSize: 7.5, fontWeight: 700, letterSpacing: 1, color: C.dim,
+                textAlign: i >= 4 ? 'right' : i === 2 ? 'center' : 'left',
+                paddingRight: i >= 4 ? 8 : 0 }}>{h}</span>
+            ))}
+          </div>
+
+          {/* Signal rows */}
+          {display.length === 0 && !isLoading && (
+            <div style={{ padding: '16px', textAlign: 'center', fontSize: 9, color: C.dim }}>
+              No signals yet — 1d candle data loads on first refresh cycle (~5 min after boot)
+            </div>
+          )}
+          {display.map((sig, i) => {
+            const isSel  = selectedCoin === sig.coin;
+            const sColor = sig.s_adj > 0.15 ? C.green : sig.s_adj < -0.15 ? C.red : C.dim;
+            const barPct = sigBar(sig.s_adj);
+            return (
+              <div key={sig.coin} onClick={() => onSelect(sig.coin)}
+                style={{ display: 'grid',
+                  gridTemplateColumns: '24px 72px 140px 80px 60px 60px 60px 60px 60px',
+                  padding: '3px 12px',
+                  background: isSel ? `${C.purple}18` : i % 2 === 0 ? C.bg : C.card2,
+                  cursor: 'pointer', borderBottom: `1px solid ${C.dimLow}`,
+                  alignItems: 'center', gap: 0 }}
+                onMouseEnter={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background = `${C.purple}0c`; }}
+                onMouseLeave={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background = i % 2 === 0 ? C.bg : C.card2; }}>
+                {/* Rank */}
+                <span style={{ fontSize: 7.5, color: C.dimLow, fontFamily: C.font }}>{i + 1}</span>
+                {/* Coin */}
+                <span style={{ fontSize: 9.5, fontWeight: 700, color: isSel ? C.purple : C.text, fontFamily: C.font }}>{sig.coin}</span>
+                {/* Signal bar */}
+                <div style={{ position: 'relative', height: 12, background: C.dimLow, borderRadius: 2, overflow: 'hidden' }}>
+                  {/* Center line */}
+                  <div style={{ position: 'absolute', left: '50%', top: 0, width: 1, height: '100%', background: C.border, zIndex: 1 }} />
+                  {/* Signal fill */}
+                  <div style={{
+                    position: 'absolute',
+                    left:   sig.s_adj >= 0 ? '50%' : `${barPct}%`,
+                    width:  `${Math.abs(sig.s_adj) / 4 * 100}%`,
+                    top: 0, height: '100%',
+                    background: sColor, opacity: 0.85, borderRadius: 1,
+                  }} />
+                  {/* Label */}
+                  <span style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 7.5, fontWeight: 700, color: '#fff', fontFamily: C.font, zIndex: 2,
+                    textShadow: '0 0 4px rgba(0,0,0,0.8)' }}>
+                    {sig.s_adj >= 0 ? '+' : ''}{sig.s_adj.toFixed(2)}
+                  </span>
+                </div>
+                {/* Side badge */}
+                <span style={{ fontSize: 8, fontWeight: 700, color: sColor, fontFamily: C.font,
+                  textAlign: 'center', letterSpacing: 0.5 }}>
+                  {sig.side === 'long' ? '▲ LONG' : sig.side === 'short' ? '▼ SHORT' : '· FLAT'}
+                </span>
+                {/* Vol */}
+                <span style={{ fontSize: 8.5, color: C.amber, fontFamily: C.font, textAlign: 'right', paddingRight: 8 }}>
+                  {sig.sigma.toFixed(0)}%
+                </span>
+                {/* 10d */}
+                <span style={{ fontSize: 8.5, color: sig.momentum_10d == null ? C.dim : sig.momentum_10d >= 0 ? C.green : C.red,
+                  fontFamily: C.font, textAlign: 'right', paddingRight: 8 }}>
+                  {sig.momentum_10d == null ? '—' : `${sig.momentum_10d >= 0 ? '+' : ''}${sig.momentum_10d.toFixed(1)}%`}
+                </span>
+                {/* 30d */}
+                <span style={{ fontSize: 8.5, color: sig.momentum_30d == null ? C.dim : sig.momentum_30d >= 0 ? C.green : C.red,
+                  fontFamily: C.font, textAlign: 'right', paddingRight: 8 }}>
+                  {sig.momentum_30d == null ? '—' : `${sig.momentum_30d >= 0 ? '+' : ''}${sig.momentum_30d.toFixed(1)}%`}
+                </span>
+                {/* Funding bps */}
+                <span style={{ fontSize: 8.5, color: sig.funding_bps > 1 ? C.red : sig.funding_bps < -1 ? C.blue : C.dim,
+                  fontFamily: C.font, textAlign: 'right', paddingRight: 8 }}>
+                  {sig.funding_bps >= 0 ? '+' : ''}{sig.funding_bps.toFixed(2)}
+                </span>
+                {/* Weight */}
+                <span style={{ fontSize: 8.5, fontWeight: 700, color: sColor,
+                  fontFamily: C.font, textAlign: 'right', paddingRight: 8 }}>
+                  {sig.w_scaled >= 0 ? '+' : ''}{sig.w_scaled.toFixed(1)}%
+                </span>
+              </div>
+            );
+          })}
+
+          {/* Show more / legend footer */}
+          {signals.length > 0 && (
+            <div style={{ padding: '5px 12px', display: 'flex', alignItems: 'center', gap: 12,
+              background: '#060b14', borderTop: `1px solid ${C.dimLow}` }}>
+              {signals.length > 20 && (
+                <button onClick={() => setShowAll(s => !s)}
+                  style={{ fontSize: 8.5, color: C.teal, background: 'none', border: `1px solid ${C.border}`,
+                    borderRadius: 3, padding: '2px 8px', cursor: 'pointer' }}>
+                  {showAll ? 'Show Top 20' : `Show All ${signals.length}`}
+                </button>
+              )}
+              <span style={{ fontSize: 7.5, color: C.dim }}>
+                Signal = avg z-score (10d/30d/90d) adjusted for funding carry · Vol-targeted weight at 40% target
+              </span>
+              {meta && (
+                <span style={{ fontSize: 7.5, color: C.dimLow, marginLeft: 'auto' }}>
+                  {new Date(meta.generated_at).toLocaleTimeString()}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function HyperliquidScreenerPage() {
@@ -835,8 +1038,8 @@ export default function HyperliquidScreenerPage() {
     const topA = (key: keyof ScreenerRow) => [...rows].filter(r=>r[key]!=null).sort((a,b)=>Math.abs(b[key] as number)-Math.abs(a[key] as number))[0];
     const g=top('change24hPct'), l=top('change24hPct',true), fh=top('funding'), fl=top('funding',true), d=topA('distMarkOracle'), v=top('volume24h'), topOI=top('openInterest');
     return [
-      { id:'g',  label:'Top Gainer',   coin:g?.coin,  value:g?pct(g.change24hPct):'—',    color:C.green  },
-      { id:'l',  label:'Top Loser',    coin:l?.coin,  value:l?pct(l.change24hPct):'—',    color:C.red    },
+      { id:'g',  label:'Top Gainer',   coin:g?.coin,  value:g?pctD(g.change24hPct):'—',   color:C.green  },
+      { id:'l',  label:'Top Loser',    coin:l?.coin,  value:l?pctD(l.change24hPct):'—',   color:C.red    },
       { id:'fh', label:'High Funding', coin:fh?.coin, value:fh?fmtF(fh.funding):'—',      color:C.green  },
       { id:'fl', label:'Neg Funding',  coin:fl?.coin, value:fl?fmtF(fl.funding):'—',      color:C.blue   },
       { id:'d',  label:'Mk/Oracle Δ',  coin:d?.coin,  value:d?fmtD(d.distMarkOracle):'—', color:C.amber  },
@@ -1000,6 +1203,12 @@ export default function HyperliquidScreenerPage() {
                     onSelect={setSelectedCoin} />
                 ))}
               </div>
+            )}
+
+
+            {/* ── TSMOM MOMENTUM PANEL ──────────────────────────────── */}
+            {sorted.length > 0 && (
+              <MomentumPanel selectedCoin={selectedCoin} onSelect={setSelectedCoin} />
             )}
 
             {/* ── MARKET MATRIX (collapsible) ────────────────────────── */}
