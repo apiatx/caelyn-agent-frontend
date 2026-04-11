@@ -1577,6 +1577,100 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // === Ticker-specific News Proxy (RSS per ticker — same rss-parser pattern as above) ===
+  const TICKER_NEWS_CACHE = new Map<string, { articles: any; ts: number }>();
+  const TICKER_NEWS_TTL = 5 * 60 * 1000; // 5 minutes
+
+  app.get('/api/proxy/news/ticker', async (req, res) => {
+    try {
+      const tickersParam = (req.query.tickers as string || '').toUpperCase();
+      if (!tickersParam) return res.json({});
+
+      const tickers = tickersParam.split(',').map(t => t.trim()).filter(Boolean).slice(0, 30);
+      const cacheKey = tickers.sort().join(',');
+
+      const cached = TICKER_NEWS_CACHE.get(cacheKey);
+      if (cached && Date.now() - cached.ts < TICKER_NEWS_TTL) {
+        return res.json(cached.articles);
+      }
+
+      const Parser = (await import('rss-parser')).default;
+      const parser = new Parser({
+        timeout: 12000,
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; CaelynAI/1.0)' },
+        customFields: { item: [['media:content', 'mediaContent'], ['media:thumbnail', 'mediaThumbnail']] },
+      });
+
+      // For each ticker, try Yahoo Finance RSS first, then Google News RSS
+      const results = await Promise.allSettled(
+        tickers.map(async (ticker) => {
+          const urls = [
+            `https://feeds.finance.yahoo.com/rss/2.0/headline?s=${ticker}&region=US&lang=en-US`,
+            `https://news.google.com/rss/search?q=${encodeURIComponent(ticker + ' stock')}&hl=en-US&gl=US&ceid=US:en`,
+          ];
+
+          for (const feedUrl of urls) {
+            try {
+              const feed = await parser.parseURL(feedUrl);
+              const articles = (feed.items || []).slice(0, 10).map((item: any) => ({
+                ticker,
+                title: item.title || '',
+                summary: (item.contentSnippet || item.content || item.summary || '').slice(0, 300),
+                source: feed.title || item.creator || '',
+                url: item.link || '',
+                published_at: item.isoDate || item.pubDate || new Date().toISOString(),
+              }));
+              if (articles.length > 0) return { ticker, articles };
+            } catch {
+              // try next URL
+            }
+          }
+          return { ticker, articles: [] };
+        })
+      );
+
+      // Build { TICKER: [articles] } map
+      const newsMap: Record<string, any[]> = {};
+      for (const result of results) {
+        if (result.status === 'fulfilled') {
+          newsMap[result.value.ticker] = result.value.articles;
+        }
+      }
+
+      TICKER_NEWS_CACHE.set(cacheKey, { articles: newsMap, ts: Date.now() });
+      console.log(`[WatchlistNews] Fetched news for tickers: ${tickers.join(', ')}`);
+      res.json(newsMap);
+    } catch (error) {
+      console.error('Ticker news proxy error:', error);
+      res.status(500).json({});
+    }
+  });
+
+  app.get('/api/proxy/news/ticker-context', async (req, res) => {
+    // Returns a flat text summary for AI context injection
+    try {
+      const tickersParam = (req.query.tickers as string || '').toUpperCase();
+      if (!tickersParam) return res.json({ context: '' });
+      const tickers = tickersParam.split(',').map(t => t.trim()).filter(Boolean).slice(0, 30);
+
+      // Reuse same cache logic via internal fetch
+      const newsRes = await fetch(`http://localhost:${process.env.PORT || 5000}/api/proxy/news/ticker?tickers=${tickersParam}`);
+      const newsMap = await newsRes.json();
+
+      // Format as text context for AI
+      const lines: string[] = [];
+      for (const [ticker, articles] of Object.entries(newsMap as Record<string, any[]>)) {
+        if (articles.length > 0) {
+          const headlines = articles.slice(0, 5).map((a: any) => a.title).join(' | ');
+          lines.push(`${ticker}: ${headlines}`);
+        }
+      }
+      res.json({ context: lines.join('\n'), tickers, article_count: Object.values(newsMap).flat().length });
+    } catch (error) {
+      res.status(500).json({ context: '' });
+    }
+  });
+
   // === Stock Portfolio Holdings (JSON file storage) ===
   app.get('/api/stock-holdings', (req, res) => {
     try {
@@ -2162,14 +2256,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/watchlist/news', async (req, res) => {
     try {
+      // Get tickers from the saved watchlist first
       const controller = new AbortController();
-      const tid = setTimeout(() => controller.abort(), 30000);
-      const r = await fetch(`${WL_URL}/api/watchlist/news`, { headers: wlHdr(), signal: controller.signal });
+      const tid = setTimeout(() => controller.abort(), 10000);
+      const wlRes = await fetch(`${WL_URL}/api/watchlist`, { headers: wlHdr(), signal: controller.signal });
       clearTimeout(tid);
-      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
-      res.json(await r.json());
-    } catch (e: any) {
-      res.status(500).json({ error: e?.name === 'AbortError' ? 'Request timed out' : 'Watchlist news unavailable' });
+
+      if (!wlRes.ok) return res.json({});
+      const wlData = await wlRes.json();
+      if (wlData.empty || !wlData.tickers?.length) return res.json({});
+
+      const tickers = wlData.tickers.join(',');
+      // Use our working Express RSS proxy instead of the Python backend
+      const newsRes = await fetch(`http://localhost:${process.env.PORT || 5000}/api/proxy/news/ticker?tickers=${tickers}`);
+      const newsMap = await newsRes.json();
+      res.json(newsMap);
+    } catch (error) {
+      console.error('Watchlist news error:', error);
+      res.json({});
     }
   });
 
