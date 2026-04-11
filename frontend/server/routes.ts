@@ -2254,6 +2254,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete('/api/watchlist', async (req, res) => {
+    try {
+      const controller = new AbortController();
+      setTimeout(() => controller.abort(), 10000);
+      const r = await fetch(`${WL_URL}/api/watchlist`, {
+        method: 'DELETE',
+        headers: wlHdr(),
+        signal: controller.signal,
+      });
+      if (!r.ok) return res.status(r.status).json({ error: 'Failed to clear watchlist' });
+      res.json(await r.json());
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   app.get('/api/watchlist/news', async (req, res) => {
     try {
       // Get tickers from the saved watchlist first

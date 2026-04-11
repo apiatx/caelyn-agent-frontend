@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import WatchlistAnalysis from '@/components/WatchlistAnalysis';
 import { StockDetailModal } from '@/components/StockDetailModal';
-import { RefreshCw, ExternalLink } from 'lucide-react';
+import { RefreshCw, ExternalLink, Trash2 } from 'lucide-react';
 
 /* ── color tokens (Hyperliquid style) ──────────────────────────────── */
 const C = {
@@ -138,6 +138,19 @@ export default function WatchlistPage() {
     enabled: !!(watchlist?.analysis),
   });
 
+  /* ── clear mutation ──────────────────────────────────────────────── */
+  const clearMut = useMutation({
+    mutationFn: async () => {
+      const res = await fetch('/api/watchlist', { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to clear');
+      return res.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['/api/watchlist'] });
+      qc.invalidateQueries({ queryKey: ['/api/watchlist/news'] });
+    },
+  });
+
   /* ── refresh mutation ────────────────────────────────────────────── */
   const refreshMut = useMutation({
     mutationFn: async () => {
@@ -219,13 +232,37 @@ export default function WatchlistPage() {
           {analysis?.summary || ''}
         </div>
 
-        {/* Right: last analyzed + refresh */}
+        {/* Right: last analyzed + clear + refresh */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
           {watchlist?.saved_at && (
             <span style={{ fontSize: 10, color: C.dim }}>
               Last analyzed: {timeAgo(watchlist.saved_at)}
             </span>
           )}
+          <button
+            onClick={() => {
+              if (window.confirm('Clear watchlist? This cannot be undone.')) {
+                clearMut.mutate();
+              }
+            }}
+            disabled={clearMut.isPending || !watchlist?.analysis}
+            style={{
+              background: 'transparent',
+              border: '1px solid #ef4444',
+              color: '#ef4444',
+              padding: '4px 12px',
+              borderRadius: 4,
+              cursor: 'pointer',
+              fontSize: 11,
+              fontFamily: 'inherit',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+              opacity: (!watchlist?.analysis) ? 0.4 : 1,
+            }}
+          >
+            <Trash2 size={12} /> CLEAR
+          </button>
           <button
             onClick={() => refreshMut.mutate()}
             disabled={refreshMut.isPending}
