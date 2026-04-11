@@ -2151,7 +2151,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const controller = new AbortController();
       const tid = setTimeout(() => controller.abort(), 30000);
-      const r = await fetch(`${WL_URL}/watchlist`, { headers: wlHdr(), signal: controller.signal });
+      const r = await fetch(`${WL_URL}/api/watchlist`, { headers: wlHdr(), signal: controller.signal });
       clearTimeout(tid);
       if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
       res.json(await r.json());
@@ -2164,7 +2164,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const controller = new AbortController();
       const tid = setTimeout(() => controller.abort(), 30000);
-      const r = await fetch(`${WL_URL}/watchlist/news`, { headers: wlHdr(), signal: controller.signal });
+      const r = await fetch(`${WL_URL}/api/watchlist/news`, { headers: wlHdr(), signal: controller.signal });
       clearTimeout(tid);
       if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
       res.json(await r.json());
@@ -2177,7 +2177,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const controller = new AbortController();
       const tid = setTimeout(() => controller.abort(), 120000);
-      const r = await fetch(`${WL_URL}/watchlist/refresh`, {
+      const r = await fetch(`${WL_URL}/api/watchlist/refresh`, {
         method: 'POST', headers: wlHdr(), signal: controller.signal,
       });
       clearTimeout(tid);
@@ -2192,7 +2192,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const controller = new AbortController();
       const tid = setTimeout(() => controller.abort(), 60000);
-      const r = await fetch(`${WL_URL}/watchlist/stock/${encodeURIComponent(req.params.ticker)}`, {
+      const r = await fetch(`${WL_URL}/api/watchlist/stock/${encodeURIComponent(req.params.ticker)}`, {
         headers: wlHdr(), signal: controller.signal,
       });
       clearTimeout(tid);
