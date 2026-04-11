@@ -885,14 +885,6 @@ export default function NotifAIPage() {
           background: 'linear-gradient(135deg, #2090d0, #5cc8f0, #80d8f8)',
         }} />
 
-        {/* ── Section 1: Weekly AI Summary ── */}
-        <WeeklySummary />
-
-        {/* ── Section 2: The Brief ── */}
-        <div style={{ marginTop: 14 }}>
-          <TheBrief />
-        </div>
-
         {/* ── Existing: 2-column news layout ── */}
         <div style={{ display: 'flex', gap: 24, marginTop: 24, alignItems: 'flex-start' }}>
 
