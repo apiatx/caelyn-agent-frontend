@@ -1,9 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
 import WatchlistAnalysis from '@/components/WatchlistAnalysis';
 import { StockDetailModal } from '@/components/StockDetailModal';
-import { RefreshCw, ExternalLink, Trash2 } from 'lucide-react';
+import { RefreshCw, ExternalLink } from 'lucide-react';
 
 /* ── color tokens (Hyperliquid style) ──────────────────────────────── */
 const C = {
@@ -50,6 +49,7 @@ interface WatchlistResponse {
   csv_data?: any[];
   analysis?: any;
   saved_at?: string;
+  empty?: boolean;
 }
 
 interface NewsItem {
@@ -63,6 +63,14 @@ interface NewsItem {
 
 interface NewsResponse {
   [ticker: string]: NewsItem[];
+}
+
+interface WatchlistMeta {
+  id: string;
+  name: string;
+  ticker_count: number;
+  saved_at: string;
+  updated_at?: string;
 }
 
 /* ── extract all stocks from analysis ───────────────────────────────── */
@@ -121,49 +129,80 @@ function ensureBlinkStyle() {
 export default function WatchlistPage() {
   const qc = useQueryClient();
   const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
 
   useEffect(() => { ensureBlinkStyle(); }, []);
 
-  /* ── fetch watchlist ─────────────────────────────────────────────── */
+  /* ── list of all watchlists ──────────────────────────────────────── */
+  const { data: wlMetas, refetch: refetchMetas } = useQuery<WatchlistMeta[]>({
+    queryKey: ['/api/watchlist/list'],
+    queryFn: async () => {
+      const r = await fetch('/api/watchlist/list');
+      if (!r.ok) return [];
+      return r.json();
+    },
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+  });
+
+  /* ── auto-select first on load ───────────────────────────────────── */
+  useEffect(() => {
+    if (wlMetas?.length && !activeId) {
+      setActiveId(wlMetas[0].id);
+    }
+  }, [wlMetas, activeId]);
+
+  /* ── active watchlist data ───────────────────────────────────────── */
   const { data: watchlist, isLoading: wlLoading } = useQuery<WatchlistResponse>({
-    queryKey: ['/api/watchlist'],
+    queryKey: ['/api/watchlist', activeId],
+    queryFn: async () => {
+      if (!activeId) return null;
+      const r = await fetch(`/api/watchlist/${activeId}`);
+      if (!r.ok) return null;
+      return r.json();
+    },
+    enabled: !!activeId,
     staleTime: 60_000,
   });
 
-  /* ── fetch news (poll every 5 min) ───────────────────────────────── */
+  /* ── news for active watchlist ───────────────────────────────────── */
   const { data: newsData } = useQuery<NewsResponse>({
-    queryKey: ['/api/watchlist/news'],
+    queryKey: ['/api/watchlist/news', activeId],
+    queryFn: async () => {
+      if (!activeId) return {};
+      const r = await fetch(`/api/watchlist/${activeId}/news`);
+      if (!r.ok) return {};
+      return r.json();
+    },
     staleTime: 60_000,
     refetchInterval: 5 * 60 * 1000,
-    enabled: !!(watchlist?.analysis),
+    enabled: !!activeId && !!watchlist?.analysis,
   });
 
-  /* ── clear mutation ──────────────────────────────────────────────── */
-  const clearMut = useMutation({
-    mutationFn: async () => {
-      const res = await fetch('/api/watchlist', { method: 'DELETE' });
-      if (!res.ok) throw new Error('Failed to clear');
-      return res.json();
+  /* ── delete specific watchlist ───────────────────────────────────── */
+  const deleteMut = useMutation({
+    mutationFn: async (id: string) => {
+      const r = await fetch(`/api/watchlist/${id}`, { method: 'DELETE' });
+      if (!r.ok) throw new Error('Failed to delete');
+      return r.json();
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['/api/watchlist'] });
-      qc.invalidateQueries({ queryKey: ['/api/watchlist/news'] });
+    onSuccess: (_, deletedId) => {
+      qc.invalidateQueries({ queryKey: ['/api/watchlist/list'] });
+      const remaining = (wlMetas || []).filter(w => w.id !== deletedId);
+      setActiveId(remaining[0]?.id ?? null);
     },
   });
 
-  /* ── refresh mutation ────────────────────────────────────────────── */
+  /* ── refresh active watchlist ────────────────────────────────────── */
   const refreshMut = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest('POST', '/api/watchlist/refresh');
-      return res.json();
+      const r = await fetch(`/api/watchlist/${activeId}/refresh`, { method: 'POST' });
+      return r.json();
     },
     onSuccess: (data) => {
-      qc.setQueryData(['/api/watchlist'], (old: any) => ({
-        ...old,
-        analysis: data.analysis || data,
-        saved_at: data.saved_at || new Date().toISOString(),
-      }));
-      qc.invalidateQueries({ queryKey: ['/api/watchlist/news'] });
+      qc.invalidateQueries({ queryKey: ['/api/watchlist', activeId] });
+      qc.invalidateQueries({ queryKey: ['/api/watchlist/news', activeId] });
+      qc.invalidateQueries({ queryKey: ['/api/watchlist/list'] });
     },
   });
 
@@ -186,13 +225,71 @@ export default function WatchlistPage() {
   }
 
   /* ── empty state — terminal prompt ───────────────────────────────── */
-  if (!hasAnalysis) {
+  if (!activeId || (!wlLoading && (!watchlist || watchlist.empty))) {
     return (
-      <div style={{ minHeight: '100vh', background: C.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 40 }}>
-        <div style={{ fontFamily: C.font, fontSize: 14, color: C.dim, lineHeight: 2.2 }}>
-          <div><span style={{ color: C.teal }}>&gt;</span> No watchlist loaded.</div>
-          <div><span style={{ color: C.teal }}>&gt;</span> Upload a CSV on the AI Terminal page to initialize.</div>
-          <div><span style={{ color: C.teal }}>&gt;</span> <span className="wl-blink" style={{ color: C.text }}>_</span></div>
+      <div style={{ minHeight: '100vh', background: C.bg, color: C.text, fontFamily: C.font, display: 'flex', flexDirection: 'column' }}>
+        {/* ── Watchlist Tabs (even in empty state) ── */}
+        <div style={{
+          display: 'flex', alignItems: 'flex-end', gap: 2,
+          padding: '8px 16px 0', background: '#080c13',
+          borderBottom: '1px solid #1a2540', flexWrap: 'wrap',
+        }}>
+          {(wlMetas || []).map((meta) => {
+            const isActive = activeId === meta.id;
+            return (
+              <div
+                key={meta.id}
+                onClick={() => setActiveId(meta.id)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  padding: '5px 10px 5px 12px',
+                  borderRadius: '4px 4px 0 0',
+                  background: isActive ? '#0d1623' : 'transparent',
+                  border: `1px solid ${isActive ? '#1a2540' : 'transparent'}`,
+                  borderBottom: isActive ? '1px solid #0d1623' : '1px solid transparent',
+                  cursor: 'pointer', marginBottom: -1,
+                  fontFamily: "'JetBrains Mono','Fira Code',monospace",
+                  fontSize: 11,
+                  color: isActive ? '#e2e8f0' : '#475569',
+                  transition: 'color 0.15s',
+                }}
+              >
+                <span style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {meta.name}
+                </span>
+                <span style={{ fontSize: 9, color: '#475569', flexShrink: 0 }}>
+                  ({meta.ticker_count})
+                </span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (window.confirm(`Delete "${meta.name}"?`)) deleteMut.mutate(meta.id);
+                  }}
+                  disabled={deleteMut.isPending}
+                  style={{
+                    background: 'transparent', border: 'none',
+                    color: '#475569', cursor: 'pointer',
+                    fontSize: 14, lineHeight: 1, padding: '0 1px',
+                    display: 'flex', alignItems: 'center',
+                    borderRadius: 2,
+                  }}
+                  title="Delete watchlist"
+                >×</button>
+              </div>
+            );
+          })}
+          {(!wlMetas || wlMetas.length === 0) && !wlLoading && (
+            <span style={{ padding: '5px 12px', fontSize: 11, color: '#334155', fontFamily: 'inherit' }}>
+              Upload a CSV in AI Terminal to create a watchlist
+            </span>
+          )}
+        </div>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 40 }}>
+          <div style={{ fontFamily: C.font, fontSize: 14, color: C.dim, lineHeight: 2.2 }}>
+            <div><span style={{ color: C.teal }}>&gt;</span> No watchlist loaded.</div>
+            <div><span style={{ color: C.teal }}>&gt;</span> Upload a CSV on the AI Terminal page to initialize.</div>
+            <div><span style={{ color: C.teal }}>&gt;</span> <span className="wl-blink" style={{ color: C.text }}>_</span></div>
+          </div>
         </div>
       </div>
     );
@@ -200,6 +297,63 @@ export default function WatchlistPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: C.bg, color: C.text, fontFamily: C.font, display: 'flex', flexDirection: 'column' }}>
+
+      {/* ── Watchlist Tabs ── */}
+      <div style={{
+        display: 'flex', alignItems: 'flex-end', gap: 2,
+        padding: '8px 16px 0', background: '#080c13',
+        borderBottom: '1px solid #1a2540', flexWrap: 'wrap',
+      }}>
+        {(wlMetas || []).map((meta) => {
+          const isActive = activeId === meta.id;
+          return (
+            <div
+              key={meta.id}
+              onClick={() => setActiveId(meta.id)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: '5px 10px 5px 12px',
+                borderRadius: '4px 4px 0 0',
+                background: isActive ? '#0d1623' : 'transparent',
+                border: `1px solid ${isActive ? '#1a2540' : 'transparent'}`,
+                borderBottom: isActive ? '1px solid #0d1623' : '1px solid transparent',
+                cursor: 'pointer', marginBottom: -1,
+                fontFamily: "'JetBrains Mono','Fira Code',monospace",
+                fontSize: 11,
+                color: isActive ? '#e2e8f0' : '#475569',
+                transition: 'color 0.15s',
+              }}
+            >
+              <span style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {meta.name}
+              </span>
+              <span style={{ fontSize: 9, color: '#475569', flexShrink: 0 }}>
+                ({meta.ticker_count})
+              </span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (window.confirm(`Delete "${meta.name}"?`)) deleteMut.mutate(meta.id);
+                }}
+                disabled={deleteMut.isPending}
+                style={{
+                  background: 'transparent', border: 'none',
+                  color: '#475569', cursor: 'pointer',
+                  fontSize: 14, lineHeight: 1, padding: '0 1px',
+                  display: 'flex', alignItems: 'center',
+                  borderRadius: 2,
+                }}
+                title="Delete watchlist"
+              >×</button>
+            </div>
+          );
+        })}
+        {(!wlMetas || wlMetas.length === 0) && !wlLoading && (
+          <span style={{ padding: '5px 12px', fontSize: 11, color: '#334155', fontFamily: 'inherit' }}>
+            Upload a CSV in AI Terminal to create a watchlist
+          </span>
+        )}
+      </div>
 
       {/* ═══ HEADER BAR (fixed, 44px) ═══ */}
       <div style={{
@@ -232,37 +386,13 @@ export default function WatchlistPage() {
           {analysis?.summary || ''}
         </div>
 
-        {/* Right: last analyzed + clear + refresh */}
+        {/* Right: last analyzed + refresh */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
           {watchlist?.saved_at && (
             <span style={{ fontSize: 10, color: C.dim }}>
               Last analyzed: {timeAgo(watchlist.saved_at)}
             </span>
           )}
-          <button
-            onClick={() => {
-              if (window.confirm('Clear watchlist? This cannot be undone.')) {
-                clearMut.mutate();
-              }
-            }}
-            disabled={clearMut.isPending || !watchlist?.analysis}
-            style={{
-              background: 'transparent',
-              border: '1px solid #ef4444',
-              color: '#ef4444',
-              padding: '4px 12px',
-              borderRadius: 4,
-              cursor: 'pointer',
-              fontSize: 11,
-              fontFamily: 'inherit',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-              opacity: (!watchlist?.analysis) ? 0.4 : 1,
-            }}
-          >
-            <Trash2 size={12} /> CLEAR
-          </button>
           <button
             onClick={() => refreshMut.mutate()}
             disabled={refreshMut.isPending}

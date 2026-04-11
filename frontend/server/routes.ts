@@ -2270,6 +2270,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // List all watchlists
+  app.get('/api/watchlist/list', async (req, res) => {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 10000);
+      const r = await fetch(`${WL_URL}/api/watchlist/list`, { headers: wlHdr(), signal: ctrl.signal });
+      if (!r.ok) return res.json([]);
+      res.json(await r.json());
+    } catch { res.json([]); }
+  });
+
   app.get('/api/watchlist/news', async (req, res) => {
     try {
       // Get tickers from the saved watchlist first
@@ -2321,6 +2332,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (e: any) {
       res.status(500).json({ error: e?.name === 'AbortError' ? 'Request timed out' : 'Stock detail unavailable' });
     }
+  });
+
+  // Get specific watchlist
+  app.get('/api/watchlist/:wid', async (req, res, next) => {
+    const { wid } = req.params;
+    // Don't intercept these — they have their own routes
+    if (['news','list','debug'].includes(wid)) return next();
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 10000);
+      const r = await fetch(`${WL_URL}/api/watchlist/${wid}`, { headers: wlHdr(), signal: ctrl.signal });
+      if (!r.ok) return res.json({ empty: true });
+      res.json(await r.json());
+    } catch { res.json({ empty: true }); }
+  });
+
+  // Delete specific watchlist
+  app.delete('/api/watchlist/:wid', async (req, res) => {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 10000);
+      const r = await fetch(`${WL_URL}/api/watchlist/${req.params.wid}`, { method: 'DELETE', headers: wlHdr(), signal: ctrl.signal });
+      if (!r.ok) return res.status(r.status).json({ error: 'Failed to delete' });
+      res.json(await r.json());
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  // Refresh specific watchlist
+  app.post('/api/watchlist/:wid/refresh', async (req, res) => {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 180000);
+      const r = await fetch(`${WL_URL}/api/watchlist/${req.params.wid}/refresh`, { method: 'POST', headers: wlHdr(), signal: ctrl.signal });
+      if (!r.ok) return res.status(r.status).json({ error: `Agent returned ${r.status}` });
+      res.json(await r.json());
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  // News for specific watchlist — get tickers from that watchlist, then use Express RSS proxy
+  app.get('/api/watchlist/:wid/news', async (req, res) => {
+    try {
+      const { wid } = req.params;
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 10000);
+      // Get tickers for this watchlist
+      const wlRes = await fetch(`${WL_URL}/api/watchlist/${wid}`, { headers: wlHdr(), signal: ctrl.signal });
+      if (!wlRes.ok) return res.json({});
+      const wlData = await wlRes.json();
+      if (wlData.empty || !wlData.tickers?.length) return res.json({});
+      const tickers = wlData.tickers.join(',');
+      // Use our working Express RSS proxy
+      const port = process.env.PORT || 5000;
+      const newsRes = await fetch(`http://localhost:${port}/api/proxy/news/ticker?tickers=${tickers}`);
+      res.json(await newsRes.json());
+    } catch { res.json({}); }
   });
 
   return httpServer;
