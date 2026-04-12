@@ -1,0 +1,85 @@
+These are the 4 changes needed for the Hyperliquid Screener page. The backend API (/api/hyperliquid/screener/...) has already been updated to support these changes.
+
+Fix 1 — Replace the non-functional top toolbar with filter tabs
+What to do:
+
+Delete the entire top toolbar row (the row containing: Search, Perps Only, All Signals, Filters, Live, Auto-rank, Advanced, Compact buttons). These buttons have never been wired up to any backend action.
+
+Replace them with the filter tab buttons that are currently in the second row. These tabs should be the primary navigation for the screener. The tabs are:
+
+Tab Label	Backend section_id	What it shows
+Top Gainers	top_gainers	Largest 24h price gainers
+Top Losers	top_losers	Largest 24h declines
+High Funding	high_funding	Highest positive funding (longs paying)
+Neg Funding	negative_funding	Most negative funding (shorts paying)
+Mk/Oracle Δ	mark_oracle_gap	Largest mark vs oracle divergence
+Vol Leader	volume_leaders	Largest 24h volume
+OI Leader	oi_leaders	Largest open interest
+Agent Top	agent_top	AI-ranked top setups
+Keep a "Refresh" button combined with a live "Updated X sec ago" timestamp in the top-right corner of the toolbar area. Remove the duplicate second row.
+
+The active/selected tab should be visually highlighted (e.g. white background on dark toolbar, or your brand accent colour). Clicking a tab scrolls to or reveals only that section's table/cards.
+
+Fix 2 — Sections must never disappear during reload
+What to do:
+
+The screener currently clears the signal section content whenever it fetches fresh data, causing a blank flash.
+
+Fix: always keep the last successfully fetched data visible while a reload is in progress. Show a subtle loading indicator (e.g. a small spinner or "Refreshing…" badge next to the timestamp) rather than blanking the content.
+
+Implementation pattern:
+
+// On refresh start — do NOT clear state
+setLoading(true);   // show spinner
+// ... fetch new data ...
+// On success — replace data with new data
+setData(freshData);
+setLoading(false);
+// On error — keep old data visible, show error badge
+setLoading(false);
+setError("Could not refresh. Showing last data.");
+
+The section tables/cards should always have data if at least one successful fetch has completed.
+
+Fix 3 — Add hover tooltips to section header titles
+What to do:
+
+Each signal section header should show a tooltip when the user hovers the title or a small ⓘ icon next to it. Use a native title attribute or a lightweight tooltip component.
+
+Here are the tooltip texts to use for each section:
+
+Section	Tooltip
+Top Gainers	"Perps with the largest positive 24h price change. Momentum candidates — watch for follow-through or exhaustion."
+Top Losers	"Perps with the largest negative 24h price change. Potential bounce setups or continuation shorts."
+High Funding	"Positive funding = longs paying shorts. High funding often signals a crowded long trade and elevated squeeze risk."
+Negative Funding	"Negative funding = shorts paying longs. Crowded short signal — watch for short-squeeze potential."
+Mk/Oracle Gap	"Large mark vs oracle price divergence can signal temporary mispricing or directional pressure from liquidations."
+Vol Leader	"Highest 24h notional volume perps. Where the real activity and liquidity is concentrated."
+OI Leader	"Largest open interest in USD. High OI coins have the most leveraged positioning and are susceptible to cascading liquidations."
+Agent Top	"AI-ranked setups based on composite signal score (momentum, funding, OI, volume, orderbook). Highest-conviction trade ideas."
+Funding Extremes	"Annualized funding rate exceeds ±20%. These coins carry the highest funding cost/benefit — key inputs for carry trades."
+Crowded Longs	"High positive funding + bullish OI skew. Longs are overextended — elevated risk of a forced unwind."
+Crowded Shorts	"Negative funding + bearish OI skew. Shorts are overextended — watch for a squeeze if price rallies."
+Fix 4 — Fix the funding rate display (decimal point off)
+What to do:
+
+The backend previously sent funding as the raw hourly rate (e.g. 0.000935). Multiplying by 100 gave the hourly percentage (0.0935%/hr), which is ~8× too small — Hyperliquid displays the 8-hour funding rate.
+
+The backend now sends a new field called funding8hPct in both the /api/hyperliquid/screener/snapshot and /api/hyperliquid/screener/sections responses.
+
+funding8hPct is already the 8-hour funding rate expressed as a percentage. Display it directly with a % suffix.
+
+Example values:
+
+BRENTOIL: funding8hPct = 0.8061 → display as +0.81%
+USOIL: funding8hPct = 0.7978 → display as +0.80%
+Negative: funding8hPct = -0.094 → display as -0.09%
+Replacement rules:
+
+Anywhere you currently display (funding * 100).toFixed(4) + "%" → replace with funding8hPct.toFixed(4) + "%"
+Anywhere you currently display funding * 100 → replace with funding8hPct
+Use green colour for positive values, red for negative
+Format to 4 decimal places for the section tables (e.g. +0.8061%) and 2 decimal places for summary cards (e.g. +0.81%)
+The fundingAnnPct field (already sent previously) is the annualized funding rate as a percentage and is still correct — use it for the "ann." / annualized display in detail views (e.g. +105.2% ann.).
+
+That's all 4 fixes. The backend changes (Fix 4) are already deployed. Fixes 1–3 are pure frontend changes.
