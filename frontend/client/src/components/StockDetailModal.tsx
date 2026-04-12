@@ -133,7 +133,17 @@ export function StockDetailModal({ ticker, analysis, csvData, newsItems, onClose
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ models, report_model: reportModel }),
     })
-      .then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); })
+      .then(async r => {
+        if (!r.ok) {
+          const body = await r.json().catch(() => ({}));
+          const msg = body.detail || body.error || body.message
+            || (r.status === 502 ? 'Backend service unavailable — the deep-dive endpoint is not yet implemented on the server.'
+              : r.status === 504 ? 'Request timed out — LLM calls are slow, try again.'
+              : `Server error ${r.status}`);
+          throw new Error(msg);
+        }
+        return r.json();
+      })
       .then(data => { setDeepDive(data); setDeepDiveLoading(false); })
       .catch(err => { setDeepDiveError(err.message); setDeepDiveLoading(false); });
   };
@@ -662,8 +672,17 @@ function DeepDiveTab({
   if (error) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <div style={{ color: C.red, fontSize: 12, fontFamily: C.sansFont }}>
-          Failed to generate report: {error}
+        <div style={{
+          padding: '10px 14px', borderRadius: 6,
+          background: `${C.red}10`, border: `1px solid ${C.red}30`,
+          display: 'flex', flexDirection: 'column', gap: 4,
+        }}>
+          <span style={{ fontSize: 10, fontWeight: 800, color: C.red, fontFamily: C.font, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Generation Failed
+          </span>
+          <span style={{ fontSize: 11, color: C.red, fontFamily: C.sansFont, lineHeight: 1.5 }}>
+            {error}
+          </span>
         </div>
         <ModelPicker
           ticker={ticker}
@@ -719,15 +738,18 @@ function ModelPicker({ ticker, selectedModels, toggleModel, reportModel, setRepo
         {MODEL_OPTIONS.map(opt => {
           const checked = selectedModels.includes(opt.id);
           return (
-            <button
+            <div
               key={opt.id}
+              role="button"
+              tabIndex={0}
               onClick={() => toggleModel(opt.id)}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') toggleModel(opt.id); }}
               style={{
                 display: 'flex', alignItems: 'center', gap: 12,
                 padding: '12px 14px', borderRadius: 6, cursor: 'pointer',
                 background: checked ? `${opt.color}08` : C.card,
                 border: `1px solid ${checked ? opt.color + '40' : C.border}`,
-                textAlign: 'left', transition: 'all 0.15s',
+                textAlign: 'left', transition: 'all 0.15s', userSelect: 'none',
               }}
             >
               {checked
@@ -764,7 +786,7 @@ function ModelPicker({ ticker, selectedModels, toggleModel, reportModel, setRepo
                   ))}
                 </div>
               )}
-            </button>
+            </div>
           );
         })}
       </div>
