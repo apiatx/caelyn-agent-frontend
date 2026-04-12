@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import WatchlistAnalysis from '@/components/WatchlistAnalysis';
 import { StockDetailModal } from '@/components/StockDetailModal';
-import { RefreshCw, ExternalLink } from 'lucide-react';
+import { RefreshCw, ExternalLink, Plus, Upload, FileText } from 'lucide-react';
 
 /* ── color tokens (Hyperliquid style) ──────────────────────────────── */
 const C = {
@@ -130,6 +130,11 @@ export default function WatchlistPage() {
   const qc = useQueryClient();
   const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [showAddPanel, setShowAddPanel] = useState(false);
+  const [plainTextInput, setPlainTextInput] = useState('');
+  const [uploadLoading, setUploadLoading] = useState(false);
+  const [uploadStage, setUploadStage] = useState('');
+  const csvInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { ensureBlinkStyle(); }, []);
 
@@ -210,13 +215,231 @@ export default function WatchlistPage() {
     setSelectedTicker(ticker);
   }, []);
 
+  /* ── upload handlers ────────────────────────────────────────────── */
+  const AGENT_BACKEND_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
+
+  async function handleUpload(csvText: string, _fileName?: string) {
+    setUploadLoading(true);
+    setShowAddPanel(false);
+    setUploadStage('Analyzing watchlist...');
+    try {
+      await fetch(`${AGENT_BACKEND_URL}/api/query`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: 'Analyze this watchlist CSV and give me a buy/hold/sell for every asset, plus the top 2-3 best investments right now based on the data.',
+          csv_data: csvText,
+        }),
+      });
+      qc.invalidateQueries({ queryKey: ['/api/watchlist/list'] });
+      setTimeout(() => {
+        qc.invalidateQueries({ queryKey: ['/api/watchlist/list'] });
+        setUploadLoading(false);
+        setUploadStage('');
+      }, 2000);
+    } catch (err: any) {
+      console.error('Upload failed:', err);
+      setUploadLoading(false);
+      setUploadStage('');
+      alert('Upload failed: ' + (err.message || 'Unknown error'));
+    }
+  }
+
+  function handleCsvFile(file: File) {
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = ev.target?.result as string;
+      if (text) handleUpload(text, file.name);
+    };
+    reader.readAsText(file);
+  }
+
+  function handlePlainTextSubmit() {
+    if (!plainTextInput.trim()) return;
+    const tickers = plainTextInput.split(/[\n,;\s]+/).map(t => t.trim().toUpperCase()).filter(Boolean);
+    const csvText = 'Ticker\n' + tickers.join('\n');
+    handleUpload(csvText, 'manual-watchlist.csv');
+    setPlainTextInput('');
+  }
+
   const analysis = watchlist?.analysis;
   const hasAnalysis = analysis && (analysis.top_buys?.length || analysis.most_undervalued?.length || analysis.best_catalysts?.length || analysis.hidden_gems?.length || analysis.most_revolutionary?.length || analysis.right_sector?.length);
   const allStocks = extractAllStocks(analysis);
   const allNews = flattenNews(newsData);
 
+  /* ── tab bar renderer (shared between empty + main states) ─────── */
+  const renderTabBar = () => (
+    <div style={{
+      display: 'flex', alignItems: 'flex-end', gap: 2,
+      padding: '8px 16px 0', background: C.bg,
+      borderBottom: `1px solid ${C.border}`, flexWrap: 'wrap',
+    }}>
+      {(wlMetas || []).map((meta) => {
+        const isActive = activeId === meta.id;
+        return (
+          <div
+            key={meta.id}
+            onClick={() => { setActiveId(meta.id); setShowAddPanel(false); }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '5px 10px 5px 12px',
+              borderRadius: '4px 4px 0 0',
+              background: isActive ? C.card : 'transparent',
+              border: `1px solid ${isActive ? C.border : 'transparent'}`,
+              borderBottom: isActive ? `1px solid ${C.card}` : '1px solid transparent',
+              cursor: 'pointer', marginBottom: -1,
+              fontFamily: C.font, fontSize: 11,
+              color: isActive ? C.text : '#475569',
+              transition: 'color 0.15s',
+            }}
+          >
+            <span style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {meta.name}
+            </span>
+            <span style={{ fontSize: 9, color: '#475569', flexShrink: 0 }}>
+              ({meta.ticker_count})
+            </span>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (window.confirm(`Delete "${meta.name}"?`)) deleteMut.mutate(meta.id);
+              }}
+              disabled={deleteMut.isPending}
+              style={{
+                background: 'transparent', border: 'none',
+                color: '#475569', cursor: 'pointer',
+                fontSize: 14, lineHeight: 1, padding: '0 1px',
+                display: 'flex', alignItems: 'center',
+                borderRadius: 2,
+              }}
+              title="Delete watchlist"
+            >×</button>
+          </div>
+        );
+      })}
+
+      {/* + ADD TAB */}
+      <button
+        onClick={() => setShowAddPanel(!showAddPanel)}
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          width: 28, height: 26,
+          borderRadius: '4px 4px 0 0',
+          background: showAddPanel ? C.card : 'transparent',
+          border: `1px solid ${showAddPanel ? C.border : 'transparent'}`,
+          borderBottom: showAddPanel ? `1px solid ${C.card}` : '1px solid transparent',
+          cursor: 'pointer', marginBottom: -1,
+          color: showAddPanel ? C.teal : '#475569',
+          fontSize: 16, fontWeight: 700,
+          transition: 'color 0.15s',
+          fontFamily: C.font,
+        }}
+        title="Add new watchlist"
+      >
+        <Plus size={14} />
+      </button>
+
+      {uploadLoading && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', marginBottom: -1 }}>
+          <div className="wl-spin" style={{ width: 12, height: 12, border: `2px solid ${C.teal}30`, borderTopColor: C.teal, borderRadius: '50%' }} />
+          <span style={{ fontSize: 10, color: C.teal }}>{uploadStage}</span>
+        </div>
+      )}
+    </div>
+  );
+
+  /* ── add panel renderer ──────────────────────────────────────────── */
+  const renderAddPanel = () => showAddPanel ? (
+    <div style={{
+      padding: '20px 20px 16px',
+      background: C.card,
+      borderBottom: `1px solid ${C.border}`,
+      display: 'flex', flexDirection: 'column', gap: 16,
+    }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: C.text, letterSpacing: '0.05em' }}>
+        ADD NEW WATCHLIST
+      </div>
+
+      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+        {/* Option 1: CSV Upload */}
+        <div style={{
+          flex: 1, minWidth: 260,
+          padding: 16, borderRadius: 6,
+          background: C.card2, border: `1px solid ${C.border}`,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
+          cursor: 'pointer',
+          transition: 'border-color 0.15s',
+        }}
+          onClick={() => csvInputRef.current?.click()}
+          onMouseEnter={e => e.currentTarget.style.borderColor = C.teal}
+          onMouseLeave={e => e.currentTarget.style.borderColor = C.border}
+        >
+          <Upload size={20} style={{ color: C.teal }} />
+          <div style={{ fontSize: 11, fontWeight: 700, color: C.text }}>Upload CSV File</div>
+          <div style={{ fontSize: 10, color: C.dim, textAlign: 'center' }}>
+            Drag & drop or click to select a .csv file with stock tickers and data
+          </div>
+        </div>
+
+        {/* Option 2: Plain Text */}
+        <div style={{
+          flex: 1, minWidth: 260,
+          padding: 16, borderRadius: 6,
+          background: C.card2, border: `1px solid ${C.border}`,
+          display: 'flex', flexDirection: 'column', gap: 10,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <FileText size={16} style={{ color: C.purple }} />
+            <span style={{ fontSize: 11, fontWeight: 700, color: C.text }}>Enter Tickers</span>
+          </div>
+          <textarea
+            value={plainTextInput}
+            onChange={e => setPlainTextInput(e.target.value)}
+            placeholder="AAPL, NVDA, CRDO, PLTR, ARM..."
+            style={{
+              width: '100%', minHeight: 60, padding: 10, borderRadius: 4,
+              background: C.bg, border: `1px solid ${C.border}`,
+              color: C.text, fontFamily: C.font, fontSize: 11,
+              resize: 'vertical', outline: 'none',
+            }}
+            onFocus={e => e.currentTarget.style.borderColor = C.purple}
+            onBlur={e => e.currentTarget.style.borderColor = C.border}
+          />
+          <button
+            onClick={handlePlainTextSubmit}
+            disabled={!plainTextInput.trim()}
+            style={{
+              alignSelf: 'flex-end',
+              padding: '5px 16px', borderRadius: 4,
+              background: plainTextInput.trim() ? C.purple : 'transparent',
+              border: `1px solid ${plainTextInput.trim() ? C.purple : C.border}`,
+              color: plainTextInput.trim() ? '#fff' : C.dim,
+              fontSize: 10, fontWeight: 700, fontFamily: C.font,
+              cursor: plainTextInput.trim() ? 'pointer' : 'not-allowed',
+              letterSpacing: '0.04em',
+            }}
+          >
+            ANALYZE
+          </button>
+        </div>
+      </div>
+
+      <input
+        type="file"
+        ref={csvInputRef}
+        accept=".csv,.tsv,.txt"
+        style={{ display: 'none' }}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) handleCsvFile(file);
+          e.target.value = '';
+        }}
+      />
+    </div>
+  ) : null;
+
   /* ── loading state ───────────────────────────────────────────────── */
-  if (wlLoading) {
+  if (wlLoading && !wlMetas?.length) {
     return (
       <div style={{ minHeight: '100vh', background: C.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div className="wl-spin" style={{ width: 24, height: 24, border: `2px solid ${C.teal}30`, borderTopColor: C.teal, borderRadius: '50%' }} />
@@ -228,66 +451,12 @@ export default function WatchlistPage() {
   if (!activeId || (!wlLoading && (!watchlist || watchlist.empty))) {
     return (
       <div style={{ minHeight: '100vh', background: C.bg, color: C.text, fontFamily: C.font, display: 'flex', flexDirection: 'column' }}>
-        {/* ── Watchlist Tabs (even in empty state) ── */}
-        <div style={{
-          display: 'flex', alignItems: 'flex-end', gap: 2,
-          padding: '8px 16px 0', background: '#080c13',
-          borderBottom: '1px solid #1a2540', flexWrap: 'wrap',
-        }}>
-          {(wlMetas || []).map((meta) => {
-            const isActive = activeId === meta.id;
-            return (
-              <div
-                key={meta.id}
-                onClick={() => setActiveId(meta.id)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 6,
-                  padding: '5px 10px 5px 12px',
-                  borderRadius: '4px 4px 0 0',
-                  background: isActive ? '#0d1623' : 'transparent',
-                  border: `1px solid ${isActive ? '#1a2540' : 'transparent'}`,
-                  borderBottom: isActive ? '1px solid #0d1623' : '1px solid transparent',
-                  cursor: 'pointer', marginBottom: -1,
-                  fontFamily: "'JetBrains Mono','Fira Code',monospace",
-                  fontSize: 11,
-                  color: isActive ? '#e2e8f0' : '#475569',
-                  transition: 'color 0.15s',
-                }}
-              >
-                <span style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {meta.name}
-                </span>
-                <span style={{ fontSize: 9, color: '#475569', flexShrink: 0 }}>
-                  ({meta.ticker_count})
-                </span>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (window.confirm(`Delete "${meta.name}"?`)) deleteMut.mutate(meta.id);
-                  }}
-                  disabled={deleteMut.isPending}
-                  style={{
-                    background: 'transparent', border: 'none',
-                    color: '#475569', cursor: 'pointer',
-                    fontSize: 14, lineHeight: 1, padding: '0 1px',
-                    display: 'flex', alignItems: 'center',
-                    borderRadius: 2,
-                  }}
-                  title="Delete watchlist"
-                >×</button>
-              </div>
-            );
-          })}
-          {(!wlMetas || wlMetas.length === 0) && !wlLoading && (
-            <span style={{ padding: '5px 12px', fontSize: 11, color: '#334155', fontFamily: 'inherit' }}>
-              Upload a CSV in AI Terminal to create a watchlist
-            </span>
-          )}
-        </div>
+        {renderTabBar()}
+        {renderAddPanel()}
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 40 }}>
-          <div style={{ fontFamily: C.font, fontSize: 14, color: C.dim, lineHeight: 2.2 }}>
+          <div style={{ fontFamily: C.font, fontSize: 14, color: C.dim, lineHeight: 2.2, textAlign: 'center' }}>
             <div><span style={{ color: C.teal }}>&gt;</span> No watchlist loaded.</div>
-            <div><span style={{ color: C.teal }}>&gt;</span> Upload a CSV on the AI Terminal page to initialize.</div>
+            <div><span style={{ color: C.teal }}>&gt;</span> Click <span style={{ color: C.teal }}>+</span> above to add one, or upload a CSV in AI Terminal.</div>
             <div><span style={{ color: C.teal }}>&gt;</span> <span className="wl-blink" style={{ color: C.text }}>_</span></div>
           </div>
         </div>
@@ -299,61 +468,8 @@ export default function WatchlistPage() {
     <div style={{ minHeight: '100vh', background: C.bg, color: C.text, fontFamily: C.font, display: 'flex', flexDirection: 'column' }}>
 
       {/* ── Watchlist Tabs ── */}
-      <div style={{
-        display: 'flex', alignItems: 'flex-end', gap: 2,
-        padding: '8px 16px 0', background: '#080c13',
-        borderBottom: '1px solid #1a2540', flexWrap: 'wrap',
-      }}>
-        {(wlMetas || []).map((meta) => {
-          const isActive = activeId === meta.id;
-          return (
-            <div
-              key={meta.id}
-              onClick={() => setActiveId(meta.id)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                padding: '5px 10px 5px 12px',
-                borderRadius: '4px 4px 0 0',
-                background: isActive ? '#0d1623' : 'transparent',
-                border: `1px solid ${isActive ? '#1a2540' : 'transparent'}`,
-                borderBottom: isActive ? '1px solid #0d1623' : '1px solid transparent',
-                cursor: 'pointer', marginBottom: -1,
-                fontFamily: "'JetBrains Mono','Fira Code',monospace",
-                fontSize: 11,
-                color: isActive ? '#e2e8f0' : '#475569',
-                transition: 'color 0.15s',
-              }}
-            >
-              <span style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {meta.name}
-              </span>
-              <span style={{ fontSize: 9, color: '#475569', flexShrink: 0 }}>
-                ({meta.ticker_count})
-              </span>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (window.confirm(`Delete "${meta.name}"?`)) deleteMut.mutate(meta.id);
-                }}
-                disabled={deleteMut.isPending}
-                style={{
-                  background: 'transparent', border: 'none',
-                  color: '#475569', cursor: 'pointer',
-                  fontSize: 14, lineHeight: 1, padding: '0 1px',
-                  display: 'flex', alignItems: 'center',
-                  borderRadius: 2,
-                }}
-                title="Delete watchlist"
-              >×</button>
-            </div>
-          );
-        })}
-        {(!wlMetas || wlMetas.length === 0) && !wlLoading && (
-          <span style={{ padding: '5px 12px', fontSize: 11, color: '#334155', fontFamily: 'inherit' }}>
-            Upload a CSV in AI Terminal to create a watchlist
-          </span>
-        )}
-      </div>
+      {renderTabBar()}
+      {renderAddPanel()}
 
       {/* ═══ HEADER BAR (fixed, 44px) ═══ */}
       <div style={{
