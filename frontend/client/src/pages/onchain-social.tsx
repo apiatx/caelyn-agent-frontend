@@ -498,13 +498,14 @@ function ConsensusBriefingCard({ data }: { data: any }) {
 
                   {/* Key tickers as clickable chips */}
                   {Array.isArray(h.key_tickers) && h.key_tickers.length > 0 && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
-                      {h.key_tickers.map((ticker: string, j: number) => {
-                        const chipKey = `${themeKey}-${ticker}`;
-                        const isExpanded = expandedHypeTicker === chipKey;
-                        return (
-                          <div key={j} style={{ display: 'flex', flexDirection: 'column' }}>
+                    <>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                        {h.key_tickers.map((ticker: string, j: number) => {
+                          const chipKey = `${themeKey}-${ticker}`;
+                          const isExpanded = expandedHypeTicker === chipKey;
+                          return (
                             <button
+                              key={j}
                               onClick={() => handleHypeTickerClick(themeKey, ticker)}
                               style={{
                                 padding: '3px 10px', borderRadius: 6, fontSize: '0.7rem', fontWeight: 700,
@@ -516,11 +517,17 @@ function ConsensusBriefingCard({ data }: { data: any }) {
                               onMouseOver={e => { (e.currentTarget).style.background = `${C.blue}20`; }}
                               onMouseOut={e => { (e.currentTarget).style.background = isExpanded ? `${C.blue}30` : `${C.blue}10`; }}
                             >${ticker}</button>
-                            {isExpanded && <TradingViewChart symbol={`NASDAQ:${ticker}`} />}
-                          </div>
-                        );
+                          );
+                        })}
+                      </div>
+                      {/* Full-width chart outside the flex row */}
+                      {h.key_tickers.map((ticker: string) => {
+                        const chipKey = `${themeKey}-${ticker}`;
+                        return expandedHypeTicker === chipKey
+                          ? <TradingViewChart key={ticker} symbol={`NASDAQ:${ticker}`} />
+                          : null;
                       })}
-                    </div>
+                    </>
                   )}
                 </div>
               );
@@ -727,7 +734,7 @@ function GrokSocialAgent() {
   };
 
   return (
-    <section style={{ maxWidth: 880, margin: '0 auto', padding: '0 3rem 2rem', position: 'relative', zIndex: 1 }}>
+    <section style={{ maxWidth: 1400, margin: '0 auto', padding: '0 1.5rem 2rem', position: 'relative', zIndex: 1 }}>
       <div style={{
         background: '#0a0b1e',
         border: '1px solid rgba(255,255,255,0.06)',
@@ -804,93 +811,98 @@ function GrokSocialAgent() {
           >{loading ? '...' : 'SEND'}</button>
         </form>
 
-        {/* ── Social preset button ── */}
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.6rem' }}>
-          <button
-            onClick={() => sendMessage('Concensus tickers among select X traders', 'x_select_trader_consensus')}
-            disabled={loading}
-            style={{
-              width: '100%',
-              fontFamily: font,
-              fontSize: '0.68rem',
-              fontWeight: 700,
-              color: '#38bdf8',
-              background: 'rgba(56,189,248,0.08)',
-              border: '1px solid rgba(56,189,248,0.3)',
-              borderRadius: 8,
-              padding: '0.45rem 1rem',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              opacity: loading ? 0.4 : 1,
-              transition: 'all 0.2s',
-              letterSpacing: '0.02em',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.4rem',
-            }}
-            onMouseOver={e => {
-              if (!loading) {
-                (e.currentTarget as HTMLButtonElement).style.background = 'rgba(56,189,248,0.15)';
-                (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(56,189,248,0.5)';
-              }
-            }}
-            onMouseOut={e => {
-              (e.currentTarget as HTMLButtonElement).style.background = 'rgba(56,189,248,0.08)';
-              (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(56,189,248,0.3)';
-            }}
-          >
-            <span style={{ fontSize: '0.7rem' }}>𝕏</span>
-            Concensus tickers among select X traders
-          </button>
-        </div>
-
-        {/* Pre-prompt chips */}
-        <div style={{
-          display: 'flex', flexWrap: 'wrap', gap: '0.4rem',
-          marginBottom: messages.length > 0 || loading ? '1rem' : 0,
-        }}>
-          {SUGGESTED_PROMPTS.map(prompt => (
+        {/* ── Social preset button — shown above messages only when no messages yet ── */}
+        {messages.length === 0 && (
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.6rem' }}>
             <button
-              key={prompt}
-              onClick={() => sendMessage(prompt)}
+              onClick={() => sendMessage('Concensus tickers among select X traders', 'x_select_trader_consensus')}
               disabled={loading}
               style={{
-                fontFamily: "'JetBrains Mono', monospace",
-                fontSize: '0.65rem',
-                color: '#64748b',
-                background: 'rgba(32,144,208,0.06)',
-                border: '1px solid rgba(32,144,208,0.2)',
-                borderRadius: 100,
-                padding: '0.35rem 0.75rem',
+                width: '100%',
+                fontFamily: font,
+                fontSize: '0.68rem',
+                fontWeight: 700,
+                color: '#38bdf8',
+                background: 'rgba(56,189,248,0.08)',
+                border: '1px solid rgba(56,189,248,0.3)',
+                borderRadius: 8,
+                padding: '0.45rem 1rem',
                 cursor: loading ? 'not-allowed' : 'pointer',
-                transition: 'all 0.2s',
                 opacity: loading ? 0.4 : 1,
-                whiteSpace: 'nowrap',
+                transition: 'all 0.2s',
+                letterSpacing: '0.02em',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.4rem',
               }}
               onMouseOver={e => {
                 if (!loading) {
-                  (e.currentTarget as HTMLButtonElement).style.background = 'rgba(32,144,208,0.15)';
-                  (e.currentTarget as HTMLButtonElement).style.color = '#94a3b8';
-                  (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(32,144,208,0.4)';
+                  (e.currentTarget as HTMLButtonElement).style.background = 'rgba(56,189,248,0.15)';
+                  (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(56,189,248,0.5)';
                 }
               }}
               onMouseOut={e => {
-                (e.currentTarget as HTMLButtonElement).style.background = 'rgba(32,144,208,0.06)';
-                (e.currentTarget as HTMLButtonElement).style.color = '#64748b';
-                (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(32,144,208,0.2)';
+                (e.currentTarget as HTMLButtonElement).style.background = 'rgba(56,189,248,0.08)';
+                (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(56,189,248,0.3)';
               }}
-            >{prompt}</button>
-          ))}
-        </div>
+            >
+              <span style={{ fontSize: '0.7rem' }}>𝕏</span>
+              Concensus tickers among select X traders
+            </button>
+          </div>
+        )}
+
+        {/* Pre-prompt chips — shown above messages only when no messages yet */}
+        {messages.length === 0 && (
+          <div style={{
+            display: 'flex', flexWrap: 'wrap', gap: '0.4rem',
+            marginBottom: '0.5rem',
+          }}>
+            {SUGGESTED_PROMPTS.map(prompt => (
+              <button
+                key={prompt}
+                onClick={() => sendMessage(prompt)}
+                disabled={loading}
+                style={{
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: '0.65rem',
+                  color: '#64748b',
+                  background: 'rgba(32,144,208,0.06)',
+                  border: '1px solid rgba(32,144,208,0.2)',
+                  borderRadius: 100,
+                  padding: '0.35rem 0.75rem',
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.2s',
+                  opacity: loading ? 0.4 : 1,
+                  whiteSpace: 'nowrap',
+                }}
+                onMouseOver={e => {
+                  if (!loading) {
+                    (e.currentTarget as HTMLButtonElement).style.background = 'rgba(32,144,208,0.15)';
+                    (e.currentTarget as HTMLButtonElement).style.color = '#94a3b8';
+                    (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(32,144,208,0.4)';
+                  }
+                }}
+                onMouseOut={e => {
+                  (e.currentTarget as HTMLButtonElement).style.background = 'rgba(32,144,208,0.06)';
+                  (e.currentTarget as HTMLButtonElement).style.color = '#64748b';
+                  (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(32,144,208,0.2)';
+                }}
+              >{prompt}</button>
+            ))}
+          </div>
+        )}
 
         {/* Messages / Response area */}
         {(messages.length > 0 || loading) && (
           <div ref={messagesContainerRef} style={{
-            maxHeight: 520,
+            maxHeight: 600,
             overflowY: 'auto',
             display: 'flex',
             flexDirection: 'column',
             gap: '0.6rem',
+            marginBottom: '1rem',
           }}>
             {messages.map((msg, i) => (
               <div key={i} style={{
@@ -957,24 +969,98 @@ function GrokSocialAgent() {
           </div>
         )}
 
-        {/* Clear button */}
+        {/* After-response prompts — shown below messages once there are messages */}
         {messages.length > 0 && (
-          <button
-            onClick={() => setMessages([])}
-            style={{
-              fontFamily: "'JetBrains Mono', monospace",
-              fontSize: '0.6rem',
-              color: '#334155',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              marginTop: '0.5rem',
-              padding: 0,
-              transition: 'color 0.2s',
-            }}
-            onMouseOver={e => { (e.currentTarget as HTMLButtonElement).style.color = '#64748b'; }}
-            onMouseOut={e => { (e.currentTarget as HTMLButtonElement).style.color = '#334155'; }}
-          >Clear conversation</button>
+          <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <button
+              onClick={() => sendMessage('Concensus tickers among select X traders', 'x_select_trader_consensus')}
+              disabled={loading}
+              style={{
+                width: '100%',
+                fontFamily: font,
+                fontSize: '0.68rem',
+                fontWeight: 700,
+                color: '#38bdf8',
+                background: 'rgba(56,189,248,0.08)',
+                border: '1px solid rgba(56,189,248,0.3)',
+                borderRadius: 8,
+                padding: '0.45rem 1rem',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                opacity: loading ? 0.4 : 1,
+                transition: 'all 0.2s',
+                letterSpacing: '0.02em',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.4rem',
+              }}
+              onMouseOver={e => {
+                if (!loading) {
+                  (e.currentTarget as HTMLButtonElement).style.background = 'rgba(56,189,248,0.15)';
+                  (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(56,189,248,0.5)';
+                }
+              }}
+              onMouseOut={e => {
+                (e.currentTarget as HTMLButtonElement).style.background = 'rgba(56,189,248,0.08)';
+                (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(56,189,248,0.3)';
+              }}
+            >
+              <span style={{ fontSize: '0.7rem' }}>𝕏</span>
+              Concensus tickers among select X traders
+            </button>
+
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+              {SUGGESTED_PROMPTS.map(prompt => (
+                <button
+                  key={prompt}
+                  onClick={() => sendMessage(prompt)}
+                  disabled={loading}
+                  style={{
+                    fontFamily: "'JetBrains Mono', monospace",
+                    fontSize: '0.65rem',
+                    color: '#64748b',
+                    background: 'rgba(32,144,208,0.06)',
+                    border: '1px solid rgba(32,144,208,0.2)',
+                    borderRadius: 100,
+                    padding: '0.35rem 0.75rem',
+                    cursor: loading ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.2s',
+                    opacity: loading ? 0.4 : 1,
+                    whiteSpace: 'nowrap',
+                  }}
+                  onMouseOver={e => {
+                    if (!loading) {
+                      (e.currentTarget as HTMLButtonElement).style.background = 'rgba(32,144,208,0.15)';
+                      (e.currentTarget as HTMLButtonElement).style.color = '#94a3b8';
+                      (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(32,144,208,0.4)';
+                    }
+                  }}
+                  onMouseOut={e => {
+                    (e.currentTarget as HTMLButtonElement).style.background = 'rgba(32,144,208,0.06)';
+                    (e.currentTarget as HTMLButtonElement).style.color = '#64748b';
+                    (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(32,144,208,0.2)';
+                  }}
+                >{prompt}</button>
+              ))}
+            </div>
+
+            <button
+              onClick={() => setMessages([])}
+              style={{
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: '0.6rem',
+                color: '#334155',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: 0,
+                transition: 'color 0.2s',
+                alignSelf: 'flex-start',
+              }}
+              onMouseOver={e => { (e.currentTarget as HTMLButtonElement).style.color = '#64748b'; }}
+              onMouseOut={e => { (e.currentTarget as HTMLButtonElement).style.color = '#334155'; }}
+            >Clear conversation</button>
+          </div>
         )}
       </div>
 
