@@ -309,7 +309,8 @@ function CategorySection({ catKey, items, meta, onTickerClick, defaultExpanded }
 }
 
 /* ── main component ─────────────────────────────────────────────────────── */
-export default function WatchlistAnalysis({ data, onTickerClick }: { data: WatchlistData; onTickerClick?: (ticker: string) => void }) {
+export default function WatchlistAnalysis({ data, onTickerClick }: { data: WatchlistData | undefined | null; onTickerClick?: (ticker: string) => void }) {
+  if (!data) return null;
   const avoidList = data.avoid_list || [];
   const [avoidExpanded, setAvoidExpanded] = useState(true);
 
