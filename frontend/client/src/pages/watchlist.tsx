@@ -366,9 +366,20 @@ export default function WatchlistPage() {
   const refreshMut = useMutation({
     mutationFn: async () => {
       const r = await fetch(`/api/watchlist/${activeId}/refresh`, { method: 'POST' });
+      if (!r.ok) throw new Error('Refresh failed');
       return r.json();
     },
     onSuccess: (data) => {
+      // If the response contains the new analysis directly, update cache immediately
+      if (data && (data.analysis || data.sections)) {
+        qc.setQueryData(['/api/watchlist', activeId], (old: any) => {
+          if (!old) return old;
+          // Response may wrap analysis in an `analysis` key, or be the analysis itself
+          const newAnalysis = data.analysis ?? (data.sections ? data : undefined);
+          return newAnalysis ? { ...old, analysis: newAnalysis } : old;
+        });
+      }
+      // Also invalidate to refetch the canonical state from the server
       qc.invalidateQueries({ queryKey: ['/api/watchlist', activeId] });
       qc.invalidateQueries({ queryKey: ['/api/watchlist/news', activeId] });
       qc.invalidateQueries({ queryKey: ['/api/watchlist/list'] });
@@ -734,6 +745,53 @@ export default function WatchlistPage() {
             {theme}
           </span>
         ))}
+      </div>
+    );
+  };
+
+  /* ── upgrade banner for legacy format ─────────────────────────────── */
+  const renderUpgradeBanner = () => {
+    if (newFmt || !hasAnalysis || refreshMut.isPending) return null;
+    return (
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        gap: 16, padding: '10px 20px',
+        background: `linear-gradient(90deg, ${C.teal}08, ${C.purple}08)`,
+        borderBottom: `1px solid ${C.border}`,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
+          <span style={{ fontSize: 14 }}>{'\u26A1'}</span>
+          <div>
+            <div style={{
+              fontSize: 11, fontWeight: 700, color: C.text,
+              fontFamily: C.sansFont,
+            }}>
+              Multi-source deep analysis available
+            </div>
+            <div style={{
+              fontSize: 10, color: C.dim, fontFamily: C.sansFont, marginTop: 1,
+            }}>
+              Upgrade this watchlist with technical, sentiment, and catalyst data from multiple AI sources.
+            </div>
+          </div>
+        </div>
+        <button
+          onClick={() => refreshMut.mutate()}
+          style={{
+            flexShrink: 0,
+            display: 'flex', alignItems: 'center', gap: 6,
+            padding: '6px 18px', borderRadius: 5,
+            background: `linear-gradient(135deg, ${C.teal}, ${C.blue})`,
+            border: 'none',
+            color: '#fff', fontSize: 10, fontWeight: 800,
+            fontFamily: C.font, cursor: 'pointer',
+            letterSpacing: '0.05em',
+            boxShadow: `0 0 12px ${C.teal}30`,
+          }}
+        >
+          <RefreshCw style={{ width: 11, height: 11 }} />
+          RUN DEEP ANALYSIS
+        </button>
       </div>
     );
   };
@@ -1119,11 +1177,14 @@ export default function WatchlistPage() {
             {/* ── Market Themes Banner ── */}
             {renderMarketThemes()}
 
+            {/* ── Upgrade Banner (legacy → new format) ── */}
+            {renderUpgradeBanner()}
+
             {/* ── Row 1: Signal Summary Strip ── */}
             {newFmt ? renderNewFormatSignalStrip() : renderLegacySignalStrip()}
 
             {/* ── Row 2: WatchlistAnalysis section panels ── */}
-            <div style={{ padding: '16px 20px', position: 'relative' }}>
+            <div style={{ padding: '16px 20px', position: 'relative', minHeight: refreshMut.isPending ? 280 : undefined }}>
               {refreshMut.isPending && <AnalysisLoadingOverlay />}
               <WatchlistAnalysis data={analysis} onTickerClick={handleTickerClick} />
             </div>
