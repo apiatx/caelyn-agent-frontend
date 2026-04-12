@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import WatchlistAnalysis from '@/components/WatchlistAnalysis';
+import type { AnalysisSection, TickerCard } from '@/components/WatchlistAnalysis';
 import { StockDetailModal } from '@/components/StockDetailModal';
 import { RefreshCw, ExternalLink, Plus, Upload, FileText } from 'lucide-react';
 
@@ -11,9 +12,10 @@ const C = {
   teal: '#0ea5e9', green: '#22c55e', red: '#ef4444',
   amber: '#f59e0b', blue: '#3b82f6', purple: '#a855f7',
   font: "'JetBrains Mono','Fira Code',monospace",
+  sansFont: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
 };
 
-/* ── signal color helper ────────────────────────────────────────────── */
+/* ── signal color helper (for legacy data) ─────────────────────────── */
 function signalColor(signal?: string): string {
   if (!signal) return C.dim;
   const s = signal.toUpperCase().replace(/[^A-Z]/g, '');
@@ -73,9 +75,40 @@ interface WatchlistMeta {
   updated_at?: string;
 }
 
-/* ── extract all stocks from analysis ───────────────────────────────── */
+/* ── extract all stocks from analysis (supports both formats) ──────── */
 function extractAllStocks(analysis: any): any[] {
   if (!analysis) return [];
+
+  // New format: sections array with tickers
+  if (Array.isArray(analysis.sections)) {
+    const stocks: any[] = [];
+    for (const section of analysis.sections) {
+      if (Array.isArray(section.tickers)) {
+        for (const t of section.tickers) {
+          stocks.push({
+            ticker: t.symbol,
+            company: t.name,
+            price: t.price,
+            change_pct: t.change_pct,
+            signal: t.change_pct != null ? (t.change_pct >= 0 ? 'BUY' : 'HOLD') : undefined,
+            risk_level: t.risk_level,
+            key_insight: t.key_insight,
+            section_id: section.id,
+            section_title: section.title,
+          });
+        }
+      }
+    }
+    // Deduplicate by ticker
+    const seen = new Set<string>();
+    return stocks.filter(s => {
+      if (!s.ticker || seen.has(s.ticker)) return false;
+      seen.add(s.ticker);
+      return true;
+    });
+  }
+
+  // Legacy format
   const cats = ['top_buys', 'most_undervalued', 'best_catalysts', 'hidden_gems', 'most_revolutionary', 'right_sector'];
   const stocks: any[] = [];
   for (const cat of cats) {
@@ -101,6 +134,53 @@ function flattenNews(newsMap: NewsResponse | null | undefined): (NewsItem & { ti
   return items;
 }
 
+/* ── check if analysis is new format ───────────────────────────────── */
+function isNewFormat(analysis: any): boolean {
+  return analysis && Array.isArray(analysis.sections);
+}
+
+/* ── risk level color ──────────────────────────────────────────────── */
+function riskColor(level?: string): string {
+  if (!level) return C.dim;
+  const l = level.toLowerCase();
+  if (l === 'low') return C.green;
+  if (l === 'moderate') return C.amber;
+  if (l === 'high') return C.red;
+  return C.dim;
+}
+
+/* ── change percent color ──────────────────────────────────────────── */
+function changeColor(pct?: number): string {
+  if (pct === undefined || pct === null) return C.dim;
+  if (pct > 0) return C.green;
+  if (pct < 0) return C.red;
+  return C.dim;
+}
+
+/* ── section accent color ──────────────────────────────────────────── */
+const SECTION_ACCENTS: Record<string, string> = {
+  best_entries: '#22c55e',
+  momentum_plays: '#f59e0b',
+  catalyst_watch: '#3b82f6',
+  sector_rotation: '#14b8a6',
+  high_conviction: '#a855f7',
+  contrarian_value: '#ec4899',
+};
+
+function sectionAccent(id: string): string {
+  return SECTION_ACCENTS[id] || C.teal;
+}
+
+/* ── loading stage messages ────────────────────────────────────────── */
+const LOADING_STAGES = [
+  'Fetching technical indicators...',
+  'Scanning X/Twitter sentiment via Grok...',
+  'Searching news & catalysts via Gemini...',
+  'Analyzing fundamentals with Claude...',
+  'Checking SEC filings & insider activity...',
+  'Synthesizing multi-source intelligence...',
+];
+
 /* ── blinking cursor CSS (injected once) ────────────────────────────── */
 const BLINK_STYLE_ID = 'watchlist-blink-css';
 function ensureBlinkStyle() {
@@ -112,15 +192,96 @@ function ensureBlinkStyle() {
     @keyframes wl-blink { 0%,49%{opacity:1} 50%,100%{opacity:0} }
     @keyframes wl-pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
     @keyframes wl-spin  { to{transform:rotate(360deg)} }
+    @keyframes wl-shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+    @keyframes wl-stage-in { 0%{opacity:0;transform:translateY(6px)} 100%{opacity:1;transform:translateY(0)} }
     .wl-blink { animation: wl-blink 1s step-end infinite; }
     .wl-pulse { animation: wl-pulse 2s ease-in-out infinite; }
     .wl-spin  { animation: wl-spin 1s linear infinite; }
+    .wl-shimmer { background: linear-gradient(90deg, ${C.border}00, ${C.border}40, ${C.border}00); background-size: 200% 100%; animation: wl-shimmer 1.5s ease-in-out infinite; }
+    .wl-stage-in { animation: wl-stage-in 0.3s ease-out forwards; }
     .wl-scrollbar::-webkit-scrollbar { width:4px; height:4px; }
     .wl-scrollbar::-webkit-scrollbar-track { background:transparent; }
     .wl-scrollbar::-webkit-scrollbar-thumb { background:${C.border}; border-radius:2px; }
     .wl-chip-strip::-webkit-scrollbar { height:0; }
   `;
   document.head.appendChild(style);
+}
+
+/* ── loading overlay component ─────────────────────────────────────── */
+function AnalysisLoadingOverlay() {
+  const [stageIdx, setStageIdx] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setStageIdx(prev => (prev + 1) % LOADING_STAGES.length);
+    }, 3500);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div style={{
+      position: 'absolute', inset: 0, zIndex: 10,
+      background: 'rgba(8,12,19,0.85)',
+      borderRadius: 8,
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      gap: 20,
+    }}>
+      {/* spinner */}
+      <div style={{ position: 'relative', width: 48, height: 48 }}>
+        <div className="wl-spin" style={{
+          position: 'absolute', inset: 0,
+          border: `2px solid ${C.teal}15`,
+          borderTopColor: C.teal,
+          borderRadius: '50%',
+        }} />
+        <div className="wl-spin" style={{
+          position: 'absolute', inset: 6,
+          border: `2px solid ${C.purple}15`,
+          borderBottomColor: C.purple,
+          borderRadius: '50%',
+          animationDuration: '1.5s',
+          animationDirection: 'reverse',
+        }} />
+      </div>
+
+      {/* stage text */}
+      <div style={{ textAlign: 'center' }}>
+        <div style={{
+          fontSize: 12, fontWeight: 700, color: C.teal,
+          fontFamily: C.font, letterSpacing: '0.04em',
+          marginBottom: 8,
+        }}>
+          MULTI-SOURCE ANALYSIS
+        </div>
+        <div
+          key={stageIdx}
+          className="wl-stage-in"
+          style={{
+            fontSize: 11, color: C.text, fontFamily: C.sansFont,
+            minHeight: 18,
+          }}
+        >
+          {LOADING_STAGES[stageIdx]}
+        </div>
+      </div>
+
+      {/* progress dots */}
+      <div style={{ display: 'flex', gap: 6 }}>
+        {LOADING_STAGES.map((_, i) => (
+          <div
+            key={i}
+            style={{
+              width: 6, height: 6, borderRadius: '50%',
+              background: i <= stageIdx ? C.teal : `${C.border}`,
+              transition: 'background 0.3s',
+              boxShadow: i === stageIdx ? `0 0 6px ${C.teal}60` : 'none',
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -251,7 +412,6 @@ export default function WatchlistPage() {
           csv_data: csvText,
         }),
       });
-      // Refresh list to get the new watchlist
       qc.invalidateQueries({ queryKey: ['/api/watchlist/list'] });
       setTimeout(async () => {
         const listRes = await fetch('/api/watchlist/list');
@@ -259,8 +419,7 @@ export default function WatchlistPage() {
         qc.setQueryData(['/api/watchlist/list'], list);
 
         if (list.length > 0) {
-          const newest = list[0]; // sorted by updated_at desc
-          // Rename if user provided a name
+          const newest = list[0];
           if (nameToSet) {
             await fetch(`/api/watchlist/${newest.id}/rename`, {
               method: 'PATCH',
@@ -300,9 +459,14 @@ export default function WatchlistPage() {
   }
 
   const analysis = watchlist?.analysis;
-  const hasAnalysis = analysis && (analysis.top_buys?.length || analysis.most_undervalued?.length || analysis.best_catalysts?.length || analysis.hidden_gems?.length || analysis.most_revolutionary?.length || analysis.right_sector?.length);
+  const newFmt = isNewFormat(analysis);
+  const hasAnalysis = newFmt
+    ? (analysis?.sections?.length > 0)
+    : (analysis && (analysis.top_buys?.length || analysis.most_undervalued?.length || analysis.best_catalysts?.length || analysis.hidden_gems?.length || analysis.most_revolutionary?.length || analysis.right_sector?.length));
   const allStocks = extractAllStocks(analysis);
   const allNews = flattenNews(newsData);
+  const marketThemes: string[] = newFmt ? (analysis?.market_themes || []) : [];
+  const lastUpdated: string | undefined = newFmt ? analysis?.last_updated : watchlist?.saved_at;
 
   /* ── tab bar renderer (shared between empty + main states) ─────── */
   const renderTabBar = () => (
@@ -386,7 +550,7 @@ export default function WatchlistPage() {
                 borderRadius: 2,
               }}
               title="Delete watchlist"
-            >×</button>
+            >{'\u00D7'}</button>
           </div>
         );
       })}
@@ -443,7 +607,7 @@ export default function WatchlistPage() {
           type="text"
           value={watchlistName}
           onChange={e => setWatchlistName(e.target.value)}
-          placeholder="My Watchlist (optional — auto-generated from tickers if blank)"
+          placeholder="My Watchlist (optional)"
           style={{
             flex: 1, padding: '6px 10px', borderRadius: 4,
             background: C.bg, border: `1px solid ${C.border}`,
@@ -533,6 +697,322 @@ export default function WatchlistPage() {
     </div>
   ) : null;
 
+  /* ── market themes banner ────────────────────────────────────────── */
+  const renderMarketThemes = () => {
+    if (!marketThemes.length) return null;
+    return (
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 8,
+        padding: '8px 20px',
+        background: C.card2,
+        borderBottom: `1px solid ${C.border}`,
+        overflowX: 'auto',
+      }}
+        className="wl-chip-strip"
+      >
+        <span style={{
+          fontSize: 8, fontWeight: 800, color: C.dim,
+          fontFamily: C.font, letterSpacing: '0.08em',
+          textTransform: 'uppercase', flexShrink: 0,
+        }}>
+          THEMES
+        </span>
+        {marketThemes.map((theme, i) => (
+          <span
+            key={i}
+            style={{
+              flexShrink: 0,
+              padding: '3px 10px', borderRadius: 4,
+              fontSize: 10, fontWeight: 600,
+              fontFamily: C.sansFont,
+              color: C.teal,
+              background: `${C.teal}10`,
+              border: `1px solid ${C.teal}20`,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {theme}
+          </span>
+        ))}
+      </div>
+    );
+  };
+
+  /* ── signal strip for new format ─────────────────────────────────── */
+  const renderNewFormatSignalStrip = () => {
+    if (!newFmt || !allStocks.length) return null;
+    return (
+      <div className="wl-chip-strip" style={{
+        display: 'flex', gap: 6,
+        padding: '10px 20px',
+        overflowX: 'auto',
+        borderBottom: `1px solid ${C.border}`,
+        background: C.card2,
+      }}>
+        {allStocks.map((stock, i) => {
+          const col = stock.section_id ? sectionAccent(stock.section_id) : C.teal;
+          const cCol = changeColor(stock.change_pct);
+          return (
+            <button
+              key={`chip-${stock.ticker || i}`}
+              onClick={() => stock.ticker && handleTickerClick(stock.ticker)}
+              style={{
+                flexShrink: 0,
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: '5px 12px', borderRadius: 4,
+                background: col + '10',
+                border: `1px solid ${col}25`,
+                cursor: 'pointer',
+                transition: 'background 0.15s',
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = col + '22'}
+              onMouseLeave={e => e.currentTarget.style.background = col + '10'}
+            >
+              <span style={{ fontSize: 11, fontWeight: 800, color: '#fff', fontFamily: C.font }}>
+                {stock.ticker || '\u2014'}
+              </span>
+              {stock.price != null && (
+                <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font }}>
+                  ${stock.price.toFixed(2)}
+                </span>
+              )}
+              {stock.change_pct != null && (
+                <span style={{
+                  fontSize: 8, fontWeight: 800, fontFamily: C.font,
+                  padding: '1px 5px', borderRadius: 3,
+                  color: cCol,
+                  background: cCol + '15',
+                }}>
+                  {stock.change_pct > 0 ? '+' : ''}{stock.change_pct.toFixed(1)}%
+                </span>
+              )}
+              {stock.risk_level && (
+                <span style={{
+                  width: 5, height: 5, borderRadius: '50%',
+                  background: riskColor(stock.risk_level),
+                  boxShadow: `0 0 3px ${riskColor(stock.risk_level)}60`,
+                  flexShrink: 0,
+                }} />
+              )}
+            </button>
+          );
+        })}
+      </div>
+    );
+  };
+
+  /* ── legacy signal strip ─────────────────────────────────────────── */
+  const renderLegacySignalStrip = () => {
+    if (newFmt) return null;
+    return (
+      <div className="wl-chip-strip" style={{
+        display: 'flex', gap: 6,
+        padding: '10px 20px',
+        overflowX: 'auto',
+        borderBottom: `1px solid ${C.border}`,
+        background: C.card2,
+      }}>
+        {allStocks.map((stock, i) => {
+          const col = signalColor(stock.signal);
+          return (
+            <button
+              key={`chip-${stock.ticker || i}`}
+              onClick={() => stock.ticker && handleTickerClick(stock.ticker)}
+              style={{
+                flexShrink: 0,
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: '5px 12px', borderRadius: 4,
+                background: col + '12',
+                border: `1px solid ${col}30`,
+                cursor: 'pointer',
+                transition: 'background 0.15s',
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = col + '25'}
+              onMouseLeave={e => e.currentTarget.style.background = col + '12'}
+            >
+              <span style={{ fontSize: 11, fontWeight: 800, color: '#fff', fontFamily: C.font }}>
+                {stock.ticker || '\u2014'}
+              </span>
+              <span style={{
+                fontSize: 8, fontWeight: 800, fontFamily: C.font,
+                padding: '1px 6px', borderRadius: 3,
+                color: '#000', background: col,
+                textTransform: 'uppercase' as const, letterSpacing: '0.04em',
+                whiteSpace: 'nowrap' as const,
+              }}>
+                {stock.signal || '\u2014'}
+              </span>
+            </button>
+          );
+        })}
+        {allStocks.length === 0 && (
+          <span style={{ fontSize: 10, color: C.dim }}>No signals</span>
+        )}
+      </div>
+    );
+  };
+
+  /* ── ticker table for new format ─────────────────────────────────── */
+  const renderNewFormatTickerTable = () => (
+    <div style={{
+      background: C.card, border: `1px solid ${C.border}`, borderRadius: 6,
+      display: 'flex', flexDirection: 'column', overflow: 'hidden',
+    }}>
+      <div style={{
+        padding: '10px 14px', borderBottom: `1px solid ${C.border}`,
+        display: 'flex', alignItems: 'center', gap: 8,
+      }}>
+        <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: '0.1em' }}>
+          TICKERS
+        </span>
+        <span style={{ fontSize: 9, color: C.dim }}>({allStocks.length})</span>
+      </div>
+
+      {/* table header */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '62px 1fr 72px 52px 62px',
+        padding: '6px 14px',
+        borderBottom: `1px solid ${C.border}`,
+        fontSize: 8, fontWeight: 700, color: C.dim,
+        textTransform: 'uppercase' as const, letterSpacing: '0.08em',
+      }}>
+        <span>Ticker</span><span>Company</span><span>Price</span><span>Chg%</span><span>Risk</span>
+      </div>
+
+      {/* table rows */}
+      <div style={{ flex: 1, overflowY: 'auto' }} className="wl-scrollbar">
+        {allStocks.map((stock, i) => {
+          const cCol = changeColor(stock.change_pct);
+          const rCol = riskColor(stock.risk_level);
+          return (
+            <div
+              key={`row-${stock.ticker}-${i}`}
+              onClick={() => stock.ticker && handleTickerClick(stock.ticker)}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '62px 1fr 72px 52px 62px',
+                padding: '7px 14px',
+                borderBottom: `1px solid ${C.border}`,
+                background: i % 2 === 0 ? 'transparent' : `${C.border}08`,
+                cursor: 'pointer',
+                transition: 'background 0.1s',
+                alignItems: 'center',
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = `${C.teal}0c`}
+              onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : `${C.border}08`}
+            >
+              <span style={{ fontSize: 11, fontWeight: 800, color: '#fff' }}>
+                {stock.ticker || '\u2014'}
+              </span>
+              <span style={{ fontSize: 10, color: C.dim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
+                {stock.company || '\u2014'}
+              </span>
+              <span style={{ fontSize: 10, fontWeight: 700, color: C.text, fontFamily: C.font }}>
+                {stock.price != null ? `$${stock.price.toFixed(2)}` : '\u2014'}
+              </span>
+              <span style={{ fontSize: 10, fontWeight: 700, color: cCol, fontFamily: C.font }}>
+                {stock.change_pct != null ? `${stock.change_pct > 0 ? '+' : ''}${stock.change_pct.toFixed(1)}%` : '\u2014'}
+              </span>
+              <span style={{
+                fontSize: 7, fontWeight: 800, fontFamily: C.font,
+                padding: '2px 5px', borderRadius: 3,
+                color: rCol, background: rCol + '15',
+                textTransform: 'uppercase' as const, letterSpacing: '0.04em',
+                textAlign: 'center' as const, whiteSpace: 'nowrap' as const,
+                justifySelf: 'start',
+              }}>
+                {stock.risk_level ? stock.risk_level.toUpperCase() : '\u2014'}
+              </span>
+            </div>
+          );
+        })}
+        {allStocks.length === 0 && (
+          <div style={{ padding: 20, textAlign: 'center', fontSize: 11, color: C.dim }}>No stocks</div>
+        )}
+      </div>
+    </div>
+  );
+
+  /* ── legacy ticker table ─────────────────────────────────────────── */
+  const renderLegacyTickerTable = () => (
+    <div style={{
+      background: C.card, border: `1px solid ${C.border}`, borderRadius: 6,
+      display: 'flex', flexDirection: 'column', overflow: 'hidden',
+    }}>
+      <div style={{
+        padding: '10px 14px', borderBottom: `1px solid ${C.border}`,
+        display: 'flex', alignItems: 'center', gap: 8,
+      }}>
+        <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: '0.1em' }}>
+          TICKERS
+        </span>
+        <span style={{ fontSize: 9, color: C.dim }}>({allStocks.length})</span>
+      </div>
+
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '62px 1fr 72px 40px 50px 50px',
+        padding: '6px 14px',
+        borderBottom: `1px solid ${C.border}`,
+        fontSize: 8, fontWeight: 700, color: C.dim,
+        textTransform: 'uppercase' as const, letterSpacing: '0.08em',
+      }}>
+        <span>Ticker</span><span>Company</span><span>Signal</span><span>Score</span><span>P/S</span><span>P/E</span>
+      </div>
+
+      <div style={{ flex: 1, overflowY: 'auto' }} className="wl-scrollbar">
+        {allStocks.map((stock, i) => (
+          <div
+            key={`row-${stock.ticker}-${i}`}
+            onClick={() => stock.ticker && handleTickerClick(stock.ticker)}
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '62px 1fr 72px 40px 50px 50px',
+              padding: '7px 14px',
+              borderBottom: `1px solid ${C.border}`,
+              background: i % 2 === 0 ? 'transparent' : `${C.border}08`,
+              cursor: 'pointer',
+              transition: 'background 0.1s',
+              alignItems: 'center',
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = `${C.teal}0c`}
+            onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : `${C.border}08`}
+          >
+            <span style={{ fontSize: 11, fontWeight: 800, color: '#fff' }}>
+              {stock.ticker || '\u2014'}
+            </span>
+            <span style={{ fontSize: 10, color: C.dim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
+              {stock.company || '\u2014'}
+            </span>
+            <span style={{
+              fontSize: 7, fontWeight: 800,
+              padding: '2px 6px', borderRadius: 3,
+              color: '#000', background: signalColor(stock.signal),
+              textTransform: 'uppercase' as const, letterSpacing: '0.04em',
+              textAlign: 'center' as const, whiteSpace: 'nowrap' as const,
+              justifySelf: 'start',
+            }}>
+              {stock.signal || '\u2014'}
+            </span>
+            <span style={{ fontSize: 10, fontWeight: 700, color: signalColor(stock.signal), textAlign: 'center' as const }}>
+              {stock.score ?? '\u2014'}
+            </span>
+            <span style={{ fontSize: 10, color: C.text, textAlign: 'right' as const }}>
+              {stock.ps_ratio != null ? (typeof stock.ps_ratio === 'number' ? stock.ps_ratio.toFixed(1) : stock.ps_ratio) : '\u2014'}
+            </span>
+            <span style={{ fontSize: 10, color: C.text, textAlign: 'right' as const }}>
+              {stock.pe_ratio != null ? (typeof stock.pe_ratio === 'number' ? stock.pe_ratio.toFixed(1) : stock.pe_ratio) : '\u2014'}
+            </span>
+          </div>
+        ))}
+        {allStocks.length === 0 && (
+          <div style={{ padding: 20, textAlign: 'center', fontSize: 11, color: C.dim }}>No stocks</div>
+        )}
+      </div>
+    </div>
+  );
+
   /* ── loading state ───────────────────────────────────────────────── */
   if (wlLoading && !wlMetas?.length) {
     return (
@@ -596,14 +1076,18 @@ export default function WatchlistPage() {
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const,
               fontSize: 11, color: C.dim, textAlign: 'center' as const,
             }}>
-              {analysis?.summary || ''}
+              {newFmt
+                ? (analysis?.sections?.length
+                  ? `${analysis.sections.length} sections \u00B7 ${allStocks.length} tickers analyzed`
+                  : '')
+                : (analysis?.summary || '')}
             </div>
 
             {/* Right: last analyzed + refresh */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-              {watchlist?.saved_at && (
+              {lastUpdated && (
                 <span style={{ fontSize: 10, color: C.dim }}>
-                  Last analyzed: {timeAgo(watchlist.saved_at)}
+                  Last analyzed: {timeAgo(lastUpdated)}
                 </span>
               )}
               <button
@@ -624,7 +1108,7 @@ export default function WatchlistPage() {
                   style={{ width: 11, height: 11 }}
                   className={refreshMut.isPending ? 'wl-spin' : ''}
                 />
-                {refreshMut.isPending ? 'REFRESHING' : '\u27F3 REFRESH'}
+                {refreshMut.isPending ? 'ANALYZING...' : '\u27F3 REFRESH'}
               </button>
             </div>
           </div>
@@ -632,63 +1116,15 @@ export default function WatchlistPage() {
           {/* ═══ MAIN BODY (scrollable) ═══ */}
           <div style={{ flex: 1, overflowY: 'auto' }} className="wl-scrollbar">
 
-            {/* ── Row 1: Signal Summary Strip ── */}
-            <div className="wl-chip-strip" style={{
-              display: 'flex', gap: 6,
-              padding: '10px 20px',
-              overflowX: 'auto',
-              borderBottom: `1px solid ${C.border}`,
-              background: C.card2,
-            }}>
-              {allStocks.map((stock, i) => {
-                const col = signalColor(stock.signal);
-                return (
-                  <button
-                    key={`chip-${stock.ticker || i}`}
-                    onClick={() => stock.ticker && handleTickerClick(stock.ticker)}
-                    style={{
-                      flexShrink: 0,
-                      display: 'flex', alignItems: 'center', gap: 6,
-                      padding: '5px 12px', borderRadius: 4,
-                      background: col + '12',
-                      border: `1px solid ${col}30`,
-                      cursor: 'pointer',
-                      transition: 'background 0.15s',
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.background = col + '25'}
-                    onMouseLeave={e => e.currentTarget.style.background = col + '12'}
-                  >
-                    <span style={{ fontSize: 11, fontWeight: 800, color: '#fff', fontFamily: C.font }}>
-                      {stock.ticker || '—'}
-                    </span>
-                    <span style={{
-                      fontSize: 8, fontWeight: 800, fontFamily: C.font,
-                      padding: '1px 6px', borderRadius: 3,
-                      color: '#000', background: col,
-                      textTransform: 'uppercase' as const, letterSpacing: '0.04em',
-                      whiteSpace: 'nowrap' as const,
-                    }}>
-                      {stock.signal || '—'}
-                    </span>
-                  </button>
-                );
-              })}
-              {allStocks.length === 0 && (
-                <span style={{ fontSize: 10, color: C.dim }}>No signals</span>
-              )}
-            </div>
+            {/* ── Market Themes Banner ── */}
+            {renderMarketThemes()}
 
-            {/* ── Row 2: WatchlistAnalysis category panels ── */}
+            {/* ── Row 1: Signal Summary Strip ── */}
+            {newFmt ? renderNewFormatSignalStrip() : renderLegacySignalStrip()}
+
+            {/* ── Row 2: WatchlistAnalysis section panels ── */}
             <div style={{ padding: '16px 20px', position: 'relative' }}>
-              {refreshMut.isPending && (
-                <div style={{
-                  position: 'absolute', inset: 0, zIndex: 10,
-                  background: 'rgba(8,12,19,0.75)', borderRadius: 8,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <div className="wl-spin" style={{ width: 28, height: 28, border: `2px solid ${C.teal}30`, borderTopColor: C.teal, borderRadius: '50%' }} />
-                </div>
-              )}
+              {refreshMut.isPending && <AnalysisLoadingOverlay />}
               <WatchlistAnalysis data={analysis} onTickerClick={handleTickerClick} />
             </div>
 
@@ -701,83 +1137,7 @@ export default function WatchlistPage() {
               minHeight: 300,
             }}>
               {/* ── Ticker Table ── */}
-              <div style={{
-                background: C.card, border: `1px solid ${C.border}`, borderRadius: 6,
-                display: 'flex', flexDirection: 'column', overflow: 'hidden',
-              }}>
-                <div style={{
-                  padding: '10px 14px', borderBottom: `1px solid ${C.border}`,
-                  display: 'flex', alignItems: 'center', gap: 8,
-                }}>
-                  <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: '0.1em' }}>
-                    TICKERS
-                  </span>
-                  <span style={{ fontSize: 9, color: C.dim }}>({allStocks.length})</span>
-                </div>
-
-                {/* table header */}
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: '62px 1fr 72px 40px 50px 50px',
-                  padding: '6px 14px',
-                  borderBottom: `1px solid ${C.border}`,
-                  fontSize: 8, fontWeight: 700, color: C.dim,
-                  textTransform: 'uppercase' as const, letterSpacing: '0.08em',
-                }}>
-                  <span>Ticker</span><span>Company</span><span>Signal</span><span>Score</span><span>P/S</span><span>P/E</span>
-                </div>
-
-                {/* table rows */}
-                <div style={{ flex: 1, overflowY: 'auto' }} className="wl-scrollbar">
-                  {allStocks.map((stock, i) => (
-                    <div
-                      key={`row-${stock.ticker}-${i}`}
-                      onClick={() => stock.ticker && handleTickerClick(stock.ticker)}
-                      style={{
-                        display: 'grid',
-                        gridTemplateColumns: '62px 1fr 72px 40px 50px 50px',
-                        padding: '7px 14px',
-                        borderBottom: `1px solid ${C.border}`,
-                        background: i % 2 === 0 ? 'transparent' : `${C.border}08`,
-                        cursor: 'pointer',
-                        transition: 'background 0.1s',
-                        alignItems: 'center',
-                      }}
-                      onMouseEnter={e => e.currentTarget.style.background = `${C.teal}0c`}
-                      onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : `${C.border}08`}
-                    >
-                      <span style={{ fontSize: 11, fontWeight: 800, color: '#fff' }}>
-                        {stock.ticker || '—'}
-                      </span>
-                      <span style={{ fontSize: 10, color: C.dim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
-                        {stock.company || '—'}
-                      </span>
-                      <span style={{
-                        fontSize: 7, fontWeight: 800,
-                        padding: '2px 6px', borderRadius: 3,
-                        color: '#000', background: signalColor(stock.signal),
-                        textTransform: 'uppercase' as const, letterSpacing: '0.04em',
-                        textAlign: 'center' as const, whiteSpace: 'nowrap' as const,
-                        justifySelf: 'start',
-                      }}>
-                        {stock.signal || '—'}
-                      </span>
-                      <span style={{ fontSize: 10, fontWeight: 700, color: signalColor(stock.signal), textAlign: 'center' as const }}>
-                        {stock.score ?? '—'}
-                      </span>
-                      <span style={{ fontSize: 10, color: C.text, textAlign: 'right' as const }}>
-                        {stock.ps_ratio != null ? (typeof stock.ps_ratio === 'number' ? stock.ps_ratio.toFixed(1) : stock.ps_ratio) : '—'}
-                      </span>
-                      <span style={{ fontSize: 10, color: C.text, textAlign: 'right' as const }}>
-                        {stock.pe_ratio != null ? (typeof stock.pe_ratio === 'number' ? stock.pe_ratio.toFixed(1) : stock.pe_ratio) : '—'}
-                      </span>
-                    </div>
-                  ))}
-                  {allStocks.length === 0 && (
-                    <div style={{ padding: 20, textAlign: 'center', fontSize: 11, color: C.dim }}>No stocks</div>
-                  )}
-                </div>
-              </div>
+              {newFmt ? renderNewFormatTickerTable() : renderLegacyTickerTable()}
 
               {/* ── News Feed ── */}
               <div style={{
@@ -796,8 +1156,10 @@ export default function WatchlistPage() {
 
                 <div style={{ flex: 1, overflowY: 'auto', padding: '2px 0' }} className="wl-scrollbar">
                   {allNews.map((item, i) => {
-                    const tickerStock = allStocks.find(s => s.ticker?.toUpperCase() === item.ticker?.toUpperCase());
-                    const col = signalColor(tickerStock?.signal);
+                    const tickerStock = allStocks.find(s => (s.ticker || '').toUpperCase() === (item.ticker || '').toUpperCase());
+                    const col = newFmt
+                      ? (tickerStock?.section_id ? sectionAccent(tickerStock.section_id) : C.teal)
+                      : signalColor(tickerStock?.signal);
                     return (
                       <a
                         key={`news-${item.ticker}-${i}`}
@@ -815,7 +1177,6 @@ export default function WatchlistPage() {
                         onMouseEnter={e => e.currentTarget.style.background = `${C.teal}08`}
                         onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                       >
-                        {/* ticker pill in signal color */}
                         <span style={{
                           flexShrink: 0,
                           fontSize: 8, fontWeight: 800, fontFamily: C.font,
