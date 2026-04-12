@@ -1,8 +1,8 @@
-import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Activity, Search, RefreshCw, Bot, X, ChevronDown, ChevronUp,
-  ChevronsUpDown, AlertTriangle, Pin, Filter, Settings2, BarChart2,
+  ChevronsUpDown, AlertTriangle, Pin, BarChart2,
   TrendingUp, TrendingDown, Eye, ShieldAlert, Zap,
 } from 'lucide-react';
 
@@ -82,8 +82,6 @@ export interface ScreenerRow {
   agentScore:        number | null;
   agentRationale:    string | null;
   rankDelta:         number | null;
-  funding8hPct:      number | null;
-  fundingAnnPct:     number | null;
 }
 
 export interface ScreenerMeta {
@@ -197,41 +195,11 @@ const $$   = (v: number | null) => v == null ? '—' : v >= 1e9 ? `$${(v/1e9).to
 const px   = (v: number | null) => v == null ? '—' : v >= 1000 ? v.toLocaleString('en-US', { minimumFractionDigits:1, maximumFractionDigits:1 }) : v >= 1 ? v.toFixed(3) : v.toFixed(6);
 const sc   = (v: number | null) => v == null ? '—' : v.toFixed(2);
 const nn   = (v: number | null) => v == null ? '—' : v.toLocaleString();
-const fmtF    = (v: number | null) => v == null ? '—' : `${(v*100).toFixed(4)}%`;
-const fmtF8h  = (v: number | null, dec = 4) => v == null ? '—' : `${v >= 0 ? '+' : ''}${v.toFixed(dec)}%`;
-const fmtF8h2 = (v: number | null) => fmtF8h(v, 2);
-const fmtD    = (v: number | null) => pct(v == null ? null : v*100, 4);
-const pctC    = (v: number | null) => v == null ? C.dim : v > 0 ? C.green : v < 0 ? C.red : C.dim;
-const scC     = (v: number | null) => v == null ? C.dim : v >= 0.6 ? C.green : v <= 0.35 ? C.red : C.amber;
-const fC      = (v: number | null) => v == null ? C.dim : v > 0.001 ? C.green : v < -0.001 ? C.red : C.dim;
-const f8hC    = (v: number | null) => v == null ? C.dim : v > 0 ? C.green : v < 0 ? C.red : C.dim;
-
-// ─── Section tooltips ─────────────────────────────────────────────────────────
-const SECTION_TIPS: Record<string, string> = {
-  'gainers':    'Perps with the largest positive 24h price change. Momentum candidates — watch for follow-through or exhaustion.',
-  'losers':     'Perps with the largest negative 24h price change. Potential bounce setups or continuation shorts.',
-  'fund-hi':    'Positive funding = longs paying shorts. High funding often signals a crowded long trade and elevated squeeze risk.',
-  'fund-lo':    'Negative funding = shorts paying longs. Crowded short signal — watch for short-squeeze potential.',
-  'disloc':     'Large mark vs oracle price divergence can signal temporary mispricing or directional pressure from liquidations.',
-  'vol-top':    'Highest 24h notional volume perps. Where the real activity and liquidity is concentrated.',
-  'oi-top':     'Largest open interest in USD. High OI coins have the most leveraged positioning and are susceptible to cascading liquidations.',
-  'breakout':   'AI-ranked setups based on composite signal score (momentum, funding, OI, volume, orderbook). Highest-conviction trade ideas.',
-  'fund-ext':   'Annualized funding rate exceeds ±20%. These coins carry the highest funding cost/benefit — key inputs for carry trades.',
-  'short-sqz':  'High positive funding + bullish OI skew. Longs are overextended — elevated risk of a forced unwind.',
-  'long-liq':   'Negative funding + bearish OI skew. Shorts are overextended — watch for a squeeze if price rallies.',
-};
-
-// ─── Tab definitions ──────────────────────────────────────────────────────────
-const SCREENER_TABS = [
-  { id: 'top_gainers',      label: 'Top Gainers',  sectionId: 'gainers',  color: C.green  },
-  { id: 'top_losers',       label: 'Top Losers',   sectionId: 'losers',   color: C.red    },
-  { id: 'high_funding',     label: 'High Funding', sectionId: 'fund-hi',  color: C.amber  },
-  { id: 'negative_funding', label: 'Neg Funding',  sectionId: 'fund-lo',  color: C.blue   },
-  { id: 'mark_oracle_gap',  label: 'Mk/Oracle Δ',  sectionId: 'disloc',   color: C.amber  },
-  { id: 'volume_leaders',   label: 'Vol Leader',   sectionId: 'vol-top',  color: C.teal   },
-  { id: 'oi_leaders',       label: 'OI Leader',    sectionId: 'oi-top',   color: C.purple },
-  { id: 'agent_top',        label: 'Agent Top',    sectionId: 'agent',    color: C.purple },
-] as const;
+const fmtF = (v: number | null) => v == null ? '—' : `${(v*100).toFixed(4)}%`;
+const fmtD = (v: number | null) => pct(v == null ? null : v*100, 4);
+const pctC = (v: number | null) => v == null ? C.dim : v > 0 ? C.green : v < 0 ? C.red : C.dim;
+const scC  = (v: number | null) => v == null ? C.dim : v >= 0.6 ? C.green : v <= 0.35 ? C.red : C.amber;
+const fC   = (v: number | null) => v == null ? C.dim : v > 0.001 ? C.green : v < -0.001 ? C.red : C.dim;
 
 // ─── Setup / direction maps ───────────────────────────────────────────────────
 const SETUP_MAP: Record<string, { label: string; color: string }> = {
@@ -301,22 +269,22 @@ function deriveSignalSections(rows: ScreenerRow[]): DerivedSection[] {
 
   return [
     // ── Always-on: core perps signals ──────────────────────────────────────────
-    mk('gainers',   'Top Gainers',     'Strongest 24h price movers',        C.green,  true, topN(base,'change24hPct',6),     r=>pctD(r.change24hPct),      r=>$$(r.volume24h), up),
-    mk('losers',    'Top Losers',      'Sharpest 24h price declines',       C.red,    true, topN(base,'change24hPct',6,true),r=>pctD(r.change24hPct),      r=>$$(r.volume24h), dn),
-    mk('fund-hi',   'High Funding',    'Longs paying — squeeze watch',      C.amber,  true, topN(base,'funding',6),          r=>fmtF8h(r.funding8hPct),    r=>$$(r.openInterest), up),
-    mk('fund-lo',   'Neg Funding',     'Shorts paying — flush watch',       C.blue,   true, topN(base,'funding',6,true),     r=>fmtF8h(r.funding8hPct),    r=>$$(r.openInterest), dn),
-    mk('oi-top',    'OI Leaders',      'Largest open interest by USD',      C.purple, true, topN(base,'openInterest',6),     r=>$$(r.openInterest),         r=>pctD(r.change24hPct), aD),
-    mk('vol-top',   'Volume Leaders',  'Largest 24h notional volume',       C.teal,   true, topN(base,'volume24h',6),        r=>$$(r.volume24h),            r=>$$(r.openInterest), aD),
-    mk('breakout',  'Breakout Watch',  'Highest breakout readiness score',  C.green,  true, topN(base,'breakoutScore',6),    r=>sc(r.breakoutScore),        r=>pctD(r.change24hPct), up),
-    mk('disloc',    'Mark/Oracle Gap', 'Mark vs oracle dislocation signal', C.amber,  true, topNA(base,'distMarkOracle',6),  r=>fmtD(r.distMarkOracle),     r=>fmtF8h(r.funding8hPct), oD),
+    mk('gainers',   'Top Gainers',     'Strongest 24h price movers',        C.green,  true, topN(base,'change24hPct',6),     r=>pctD(r.change24hPct),   r=>$$(r.volume24h), up),
+    mk('losers',    'Top Losers',      'Sharpest 24h price declines',       C.red,    true, topN(base,'change24hPct',6,true),r=>pctD(r.change24hPct),   r=>$$(r.volume24h), dn),
+    mk('fund-hi',   'High Funding',    'Longs paying — squeeze watch',      C.amber,  true, topN(base,'funding',6),          r=>fmtF(r.funding),        r=>$$(r.openInterest), up),
+    mk('fund-lo',   'Neg Funding',     'Shorts paying — flush watch',       C.blue,   true, topN(base,'funding',6,true),     r=>fmtF(r.funding),        r=>$$(r.openInterest), dn),
+    mk('oi-top',    'OI Leaders',      'Largest open interest by USD',      C.purple, true, topN(base,'openInterest',6),     r=>$$(r.openInterest),     r=>pctD(r.change24hPct), aD),
+    mk('vol-top',   'Volume Leaders',  'Largest 24h notional volume',       C.teal,   true, topN(base,'volume24h',6),        r=>$$(r.volume24h),        r=>$$(r.openInterest), aD),
+    mk('breakout',  'Breakout Watch',  'Highest breakout readiness score',  C.green,  true, topN(base,'breakoutScore',6),    r=>sc(r.breakoutScore),    r=>pctD(r.change24hPct), up),
+    mk('disloc',    'Mark/Oracle Gap', 'Mark vs oracle dislocation signal', C.amber,  true, topNA(base,'distMarkOracle',6),  r=>fmtD(r.distMarkOracle), r=>fmtF(r.funding), oD),
     // ── Conditional: require history / real-time data ─────────────────────────
-    mk('oi-expand', 'OI Expansion',    'Open interest building — new money', C.green, false, oi_u, r=>pctD(r.oiChangePct),    r=>$$(r.openInterest), up),
-    mk('oi-unwind', 'OI Unwind',       'OI unwinding — positions closing',   C.red,   false, oi_d, r=>pctD(r.oiChangePct),    r=>$$(r.openInterest), dn),
+    mk('oi-expand', 'OI Expansion',    'Open interest building — new money', C.green, false, oi_u, r=>pctD(r.oiChangePct), r=>$$(r.openInterest), up),
+    mk('oi-unwind', 'OI Unwind',       'OI unwinding — positions closing',   C.red,   false, oi_d, r=>pctD(r.oiChangePct), r=>$$(r.openInterest), dn),
     mk('oi-accum',  'OI + Bullish',    'OI growing + bullish signal',        C.teal,  false, oiAccum, r=>pctD(r.oiChangePct), r=>$$(r.openInterest), up),
-    mk('vol-imp',   'Vol Impulse',     'Volume spike vs recent baseline',    C.teal,  false, vi,   r=>sc(r.volumeImpulse),    r=>$$(r.volume24h), up),
-    mk('short-sqz', 'Short Squeeze',   'Longs paying + bearish — fuel lit',  C.red,   false, sq,   r=>fmtF8h(r.funding8hPct), r=>$$(r.openInterest), up),
-    mk('long-liq',  'Long Flush',      'Shorts paying + bullish — fuel lit', C.blue,  false, ll,   r=>fmtF8h(r.funding8hPct), r=>$$(r.openInterest), dn),
-    mk('fund-ext',  'Funding Extremes','Annualized carry > 20% either side', C.amber, false, fundExtreme, r=>fmtF8h(r.funding8hPct), r=>$$(r.openInterest), fD),
+    mk('vol-imp',   'Vol Impulse',     'Volume spike vs recent baseline',    C.teal,  false, vi,   r=>sc(r.volumeImpulse), r=>$$(r.volume24h), up),
+    mk('short-sqz', 'Short Squeeze',   'Longs paying + bearish — fuel lit',  C.red,   false, sq,   r=>fmtF(r.funding),     r=>$$(r.openInterest), up),
+    mk('long-liq',  'Long Flush',      'Shorts paying + bullish — fuel lit', C.blue,  false, ll,   r=>fmtF(r.funding),     r=>$$(r.openInterest), dn),
+    mk('fund-ext',  'Funding Extremes','Annualized carry > 20% either side', C.amber, false, fundExtreme, r=>fmtF(r.funding), r=>$$(r.openInterest), fD),
   ].filter(s => s.always || s.items.length > 0);
 }
 
@@ -759,16 +727,10 @@ function AgentMarketBrief({ agentResult, agentLoading, agentStage, rows, selecte
 function SignalBoard({ section, selectedCoin, onSelect }: {
   section: DerivedSection; selectedCoin: string|null; onSelect: (coin: string) => void;
 }) {
-  const tip = SECTION_TIPS[section.id];
   return (
     <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:6, borderTop:`2px solid ${section.color}`, display:'flex', flexDirection:'column', overflow:'hidden' }}>
       <div style={{ padding:'6px 10px 4px', borderBottom:`1px solid ${C.dimLow}`, flexShrink:0 }}>
-        <div style={{ display:'flex', alignItems:'center', gap:5 }}>
-          <div style={{ fontSize:8.5, fontWeight:800, letterSpacing:1.5, color:section.color, textTransform:'uppercase' }}>{section.title}</div>
-          {tip && (
-            <span title={tip} style={{ fontSize:8, color:C.dimLow, cursor:'help', lineHeight:1, flexShrink:0, userSelect:'none' }}>ⓘ</span>
-          )}
-        </div>
+        <div style={{ fontSize:8.5, fontWeight:800, letterSpacing:1.5, color:section.color, textTransform:'uppercase' }}>{section.title}</div>
         <div style={{ fontSize:7.5, color:C.dim, marginTop:1 }}>{section.subtitle}</div>
       </div>
       {section.items.map((item, i) => {
@@ -798,7 +760,7 @@ const MAT_COLS: Col[] = [
   { key:'coin',            label:'COIN',    w:90,  fmt: v=>v??'—',                            align:'left' },
   { key:'markPrice',       label:'MARK',    w:100, fmt: px },
   { key:'change24hPct',    label:'24H%',    w:72,  fmt: pctD,  vc: pctC },
-  { key:'funding8hPct',    label:'FUND 8H%', w:88, fmt: fmtF8h2, vc: f8hC },
+  { key:'funding',         label:'FUND%',   w:80,  fmt: fmtF,  vc: fC },
   { key:'openInterest',    label:'OI',      w:90,  fmt: $$ },
   { key:'volume24h',       label:'VOL',     w:90,  fmt: $$ },
   { key:'premium',         label:'PREM%',   w:80,  fmt: fmtD,  vc: pctC },
@@ -1041,9 +1003,7 @@ export default function HyperliquidScreenerPage() {
   const [showFilters,   setShowFilters]   = useState(false);
   const [rowHighlights, setRowHighlights] = useState<Set<string>>(new Set());
   const [showMatrix,    setShowMatrix]    = useState(false);
-  const [activeTab,     setActiveTab]     = useState<string>('top_gainers');
-  const tableRef    = useRef<HTMLDivElement>(null);
-  const scrollBodyRef = useRef<HTMLDivElement>(null);
+  const tableRef = useRef<HTMLDivElement>(null);
 
   const { data: raw, isLoading, isError, error, refetch, isFetching, dataUpdatedAt } = useQuery<
     { rows: ScreenerRow[]; meta: ScreenerMeta }
@@ -1097,43 +1057,6 @@ export default function HyperliquidScreenerPage() {
   }, [filtered, sortKey, sortDir, pinnedCoins]);
 
   const signalSections = useMemo(() => deriveSignalSections(sorted), [sorted]);
-
-  // ── Scroll-to helper used by tab clicks ──────────────────────────────────
-  const scrollToSection = (sectionId: string) => {
-    const el = document.getElementById(`hl-sec-${sectionId}`);
-    if (el && scrollBodyRef.current) {
-      scrollBodyRef.current.scrollTo({ top: el.offsetTop - 8, behavior: 'smooth' });
-    }
-  };
-
-  // ── IntersectionObserver: keep active tab in sync with scroll position ──
-  useEffect(() => {
-    const root = scrollBodyRef.current;
-    if (!root) return;
-    const obs = new IntersectionObserver(
-      (entries) => {
-        // Find the entry that is most visible
-        let best: IntersectionObserverEntry | null = null;
-        entries.forEach(e => {
-          if (!best || e.intersectionRatio > best.intersectionRatio) best = e;
-        });
-        if (best && (best as IntersectionObserverEntry).isIntersecting) {
-          const id = (best as IntersectionObserverEntry).target.getAttribute('data-section-id');
-          const tab = SCREENER_TABS.find(t => t.sectionId === id);
-          if (tab) setActiveTab(tab.id);
-        }
-      },
-      { root, threshold: [0.15, 0.5] }
-    );
-    // Observe all section anchors after a short paint delay
-    const timer = setTimeout(() => {
-      SCREENER_TABS.forEach(tab => {
-        const el = document.getElementById(`hl-sec-${tab.sectionId}`);
-        if (el) obs.observe(el);
-      });
-    }, 300);
-    return () => { clearTimeout(timer); obs.disconnect(); };
-  }, [signalSections]);
 
   const summaryItems = useMemo(() => {
     const meta = displayData?.meta;
@@ -1196,84 +1119,74 @@ export default function HyperliquidScreenerPage() {
       {children}
     </button>
   );
-  const Toggle = ({ label, value, onChange }: { label:string; value:boolean; onChange:()=>void }) => (
-    <button onClick={onChange} style={{ display:'flex', alignItems:'center', gap:5, padding:'4px 10px', borderRadius:4, border:`1px solid ${value?C.teal:C.border}`, background:value?`${C.teal}18`:C.card, color:value?C.teal:C.dim, fontSize:10, cursor:'pointer', whiteSpace:'nowrap' }}>
-      <span style={{ width:8, height:8, borderRadius:'50%', background:value?C.teal:C.dim, transition:'background 0.15s', flexShrink:0 }} />
-      {label}
-    </button>
-  );
-
-  // Derive seconds-since-update for timestamp display
-  const secsAgo = dataUpdatedAt ? Math.round((Date.now() - dataUpdatedAt) / 1000) : null;
-  const updatedLabel = secsAgo == null ? null : secsAgo < 5 ? 'just now' : secsAgo < 60 ? `${secsAgo}s ago` : `${Math.round(secsAgo/60)}m ago`;
-
 
   return (
     <div style={{ background:C.bg, color:C.text, fontFamily:C.font, fontSize:11, height:'100vh', display:'flex', flexDirection:'column', overflow:'hidden' }}>
 
-      {/* ── TOP BAR: Logo + Filter Tabs + Refresh/Agent ─────────────── */}
-      <div style={{ background:'#060b14', borderBottom:`1px solid ${C.border}`, padding:'0 12px', height:44, display:'flex', alignItems:'center', gap:8, flexShrink:0, overflow:'hidden' }}>
-        {/* Logo */}
+      {/* ── TOP BAR (UNCHANGED) ──────────────────────────────────────── */}
+      <div style={{ background:'#060b14', borderBottom:`1px solid ${C.border}`, padding:'0 12px', height:44, display:'flex', alignItems:'center', gap:8, flexShrink:0, flexWrap:'nowrap', overflowX:'auto' }}>
         <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
           <div style={{ width:26, height:26, borderRadius:5, background:`linear-gradient(135deg,${C.teal},#0369a1)`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
             <Activity style={{ width:14, height:14, color:'#fff' }} />
           </div>
-          <div style={{ flexShrink:0 }}>
+          <div>
             <div style={{ fontSize:12, fontWeight:800, letterSpacing:1.5, color:C.text }}>HL SCREENER</div>
             <div style={{ fontSize:7, color:C.dim, letterSpacing:2 }}>HYPERLIQUID MARKETS</div>
           </div>
         </div>
-        <div style={{ width:1, height:22, background:C.border, flexShrink:0, margin:'0 2px' }} />
-
-        {/* Filter Tabs — scrollable, takes remaining space */}
-        <div style={{ flex:1, display:'flex', alignItems:'center', gap:4, overflowX:'auto', scrollbarWidth:'none', msOverflowStyle:'none' as any }}>
-          {SCREENER_TABS.map(tab => {
-            const active = activeTab === tab.id;
-            return (
-              <button key={tab.id}
-                onClick={() => { setActiveTab(tab.id); scrollToSection(tab.sectionId); }}
-                title={SECTION_TIPS[tab.sectionId] ?? ''}
-                style={{
-                  flexShrink:0, padding:'4px 11px', borderRadius:4, cursor:'pointer',
-                  border:`1px solid ${active ? tab.color : C.border}`,
-                  background: active ? `${tab.color}22` : 'transparent',
-                  color: active ? tab.color : C.dim,
-                  fontSize:10, fontWeight:700, letterSpacing:0.4,
-                  transition:'all 0.12s', whiteSpace:'nowrap',
-                }}>
-                {tab.label}
-              </button>
-            );
-          })}
+        <div style={{ width:1, height:22, background:C.border, flexShrink:0, margin:'0 4px' }} />
+        <div style={{ position:'relative', flexShrink:0 }}>
+          <Search style={{ position:'absolute', left:7, top:'50%', transform:'translateY(-50%)', width:11, height:11, color:C.dim }} />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search coin…"
+            style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:4, padding:'4px 8px 4px 22px', fontSize:10, color:C.text, width:130, outline:'none' }} />
+          {search && <button onClick={() => setSearch('')} style={{ position:'absolute', right:5, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color:C.dim }}><X style={{ width:10, height:10 }} /></button>}
         </div>
-
-        {/* Right: timestamp + refresh + agent + status */}
-        <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
-          {updatedLabel && (
-            <span style={{ fontSize:8.5, color:C.dim, whiteSpace:'nowrap' }}>
-              {isFetching ? (
-                <span style={{ color:C.amber }}>Refreshing…</span>
-              ) : (
-                `Updated ${updatedLabel}`
-              )}
-            </span>
-          )}
-          <button onClick={() => refetch()} style={{ display:'flex', alignItems:'center', gap:5, padding:'4px 10px', borderRadius:4, border:`1px solid ${C.border}`, background:'transparent', color:C.teal, fontSize:10, fontWeight:700, cursor:'pointer', letterSpacing:0.4, transition:'all 0.12s' }}>
-            <RefreshCw style={{ width:10, height:10, ...(isFetching ? { animation:'spin 1s linear infinite' } : {}) }} />
-            Refresh
-          </button>
-          <button onClick={runAgent} disabled={agentLoading} style={{ display:'flex', alignItems:'center', gap:6, padding:'5px 14px', borderRadius:4, background:agentLoading?`${C.purple}33`:`linear-gradient(135deg,${C.purple},#7c3aed)`, border:`1px solid ${C.purple}`, color:'#fff', fontSize:10, fontWeight:700, cursor:agentLoading?'not-allowed':'pointer', letterSpacing:0.5, flexShrink:0, transition:'all 0.15s' }}>
-            <Bot style={{ width:12, height:12 }} />{agentLoading?(agentStage||'Running…'):'Agent'}
-          </button>
-          <div style={{ display:'flex', alignItems:'center', gap:4, flexShrink:0 }}>
-            <span style={{ width:6, height:6, borderRadius:'50%', background:isError?C.red:isFetching?C.amber:C.green, boxShadow:`0 0 5px ${isError?C.red:isFetching?C.amber:C.green}` }} />
-            <span style={{ fontSize:8, color:C.dim }}>{isError?'ERR':liveUpdates?'LIVE':'OFF'}</span>
-          </div>
+        <div style={{ flex:1 }} />
+        <Btn onClick={() => refetch()}>
+          <RefreshCw style={{ width:10, height:10, ...(isFetching?{animation:'spin 1s linear infinite'}:{}) }} /> Refresh
+        </Btn>
+        {dataUpdatedAt > 0 && (
+          <span style={{ fontSize:9, color:C.dim, flexShrink:0 }}>
+            Updated {new Date(dataUpdatedAt).toLocaleTimeString()}
+          </span>
+        )}
+        {/* ── THE ONLY AGENT TRIGGER ── */}
+        <button onClick={runAgent} disabled={agentLoading} style={{ display:'flex', alignItems:'center', gap:6, padding:'5px 14px', borderRadius:4, background:agentLoading?`${C.purple}33`:`linear-gradient(135deg,${C.purple},#7c3aed)`, border:`1px solid ${C.purple}`, color:'#fff', fontSize:10, fontWeight:700, cursor:agentLoading?'not-allowed':'pointer', letterSpacing:0.5, flexShrink:0, transition:'all 0.15s' }}>
+          <Bot style={{ width:12, height:12 }} />{agentLoading?(agentStage||'Running…'):'Agent'}
+        </button>
+        <div style={{ display:'flex', alignItems:'center', gap:5, flexShrink:0 }}>
+          <span style={{ width:6, height:6, borderRadius:'50%', background:isError?C.red:isFetching?C.amber:C.green, boxShadow:`0 0 5px ${isError?C.red:isFetching?C.amber:C.green}` }} />
+          <span style={{ fontSize:9, color:C.dim }}>{isError?'ERROR':isFetching?'LIVE':'LIVE'}</span>
         </div>
       </div>
 
+      {/* ── FILTER BAR ───────────────────────────────────────────────── */}
+      {showFilters && (
+        <div style={{ background:C.card2, borderBottom:`1px solid ${C.border}`, padding:'6px 14px', display:'flex', gap:10, alignItems:'center', flexShrink:0, flexWrap:'wrap' }}>
+          <label style={{ display:'flex', alignItems:'center', gap:5, fontSize:9, color:C.dim }}>
+            Min Vol ($M): <input value={minVolume} onChange={e => setMinVolume(e.target.value)} placeholder="e.g. 10" style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:3, padding:'3px 6px', fontSize:10, color:C.text, width:70, outline:'none' }} />
+          </label>
+          <label style={{ display:'flex', alignItems:'center', gap:5, fontSize:9, color:C.dim }}>
+            Min OI ($M): <input value={minOI} onChange={e => setMinOI(e.target.value)} placeholder="e.g. 5" style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:3, padding:'3px 6px', fontSize:10, color:C.text, width:70, outline:'none' }} />
+          </label>
+          <span style={{ fontSize:9, color:C.dim }}>Showing {sorted.length} / {rows.length} assets{dataUpdatedAt?` · Updated ${new Date(dataUpdatedAt).toLocaleTimeString()}`:''}</span>
+        </div>
+      )}
+
+      {/* ── SUMMARY STRIP ────────────────────────────────────────────── */}
+      <div style={{ background:'#07101a', borderBottom:`1px solid ${C.border}`, padding:'5px 12px', display:'flex', gap:7, overflowX:'auto', flexShrink:0, scrollbarWidth:'none', alignItems:'stretch' }}>
+        {(isLoading && !displayData)
+          ? Array.from({length:9}).map((_,i) => <div key={i} style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:5, padding:'5px 11px', flexShrink:0, minWidth:96, height:40, opacity:0.3 }} />)
+          : summaryItems.map(item => (
+              <SummaryChip key={item.id} label={item.label} coin={item.coin} value={item.value} color={item.color}
+                selected={!!item.coin && selectedCoin===item.coin}
+                onClick={item.coin ? () => setSelectedCoin(item.coin!) : undefined} />
+            ))
+        }
+      </div>
+
       {/* ── SCROLLABLE BODY ───────────────────────────────────────────── */}
-      <div ref={scrollBodyRef} style={{ flex:1, overflowY:'auto', overflowX:'hidden' }}>
+      <div style={{ flex:1, overflowY:'auto', overflowX:'hidden' }}>
 
         {/* Initial load spinner — only shown when there is truly no data yet */}
         {isLoading && !displayData && (
@@ -1301,20 +1214,17 @@ export default function HyperliquidScreenerPage() {
 
         {displayData && (
           <>
-            {/* ── AGENT BRIEF: always visible, scroll anchor for Agent Top tab ── */}
-            <div id="hl-sec-agent" data-section-id="agent">
-              <AgentMarketBrief
-                agentResult={agentResult} agentLoading={agentLoading} agentStage={agentStage}
-                rows={sorted} selectedCoin={selectedCoin} onSelect={setSelectedCoin} />
-            </div>
+            {/* ── HERO: AGENT MARKET BRIEF ─────────────────────────── */}
+            <AgentMarketBrief
+              agentResult={agentResult} agentLoading={agentLoading} agentStage={agentStage}
+              rows={sorted} selectedCoin={selectedCoin} onSelect={setSelectedCoin} />
 
-            {/* ── SIGNAL BOARDS: all sections always visible, tabs scroll to them ── */}
+            {/* ── SIGNAL BOARDS ──────────────────────────────────────── */}
             {sorted.length > 0 && (
               <div style={{ padding:'12px 14px', display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(210px, 1fr))', gap:10 }}>
                 {signalSections.map(sec => (
-                  <div key={sec.id} id={`hl-sec-${sec.id}`} data-section-id={sec.id}>
-                    <SignalBoard section={sec} selectedCoin={selectedCoin} onSelect={setSelectedCoin} />
-                  </div>
+                  <SignalBoard key={sec.id} section={sec} selectedCoin={selectedCoin}
+                    onSelect={setSelectedCoin} />
                 ))}
               </div>
             )}
