@@ -299,6 +299,7 @@ export default function WatchlistPage() {
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const csvInputRef = useRef<HTMLInputElement>(null);
+  const autoTriggeredRef = useRef<Set<string>>(new Set());
 
   useEffect(() => { ensureBlinkStyle(); }, []);
 
@@ -471,6 +472,20 @@ export default function WatchlistPage() {
 
   const analysis = watchlist?.analysis;
   const newFmt = isNewFormat(analysis);
+
+  /* ── auto-trigger new pipeline for old-format watchlists ──────────── */
+  useEffect(() => {
+    if (
+      activeId &&
+      analysis &&
+      !Array.isArray(analysis.sections) &&
+      !refreshMut.isPending &&
+      !autoTriggeredRef.current.has(activeId)
+    ) {
+      autoTriggeredRef.current.add(activeId);
+      refreshMut.mutate();
+    }
+  }, [activeId, analysis]);
   const hasAnalysis = newFmt
     ? (analysis?.sections?.length > 0)
     : (analysis && (analysis.top_buys?.length || analysis.most_undervalued?.length || analysis.best_catalysts?.length || analysis.hidden_gems?.length || analysis.most_revolutionary?.length || analysis.right_sector?.length));
@@ -751,7 +766,10 @@ export default function WatchlistPage() {
 
   /* ── upgrade banner for legacy format ─────────────────────────────── */
   const renderUpgradeBanner = () => {
-    if (newFmt || !hasAnalysis || refreshMut.isPending) return null;
+    if (newFmt || !hasAnalysis) return null;
+    const autoTriggered = activeId ? autoTriggeredRef.current.has(activeId) : false;
+    const isUpgrading = refreshMut.isPending;
+
     return (
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -760,38 +778,46 @@ export default function WatchlistPage() {
         borderBottom: `1px solid ${C.border}`,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
-          <span style={{ fontSize: 14 }}>{'\u26A1'}</span>
+          {isUpgrading ? (
+            <div className="wl-spin" style={{ width: 14, height: 14, border: `2px solid ${C.teal}30`, borderTopColor: C.teal, borderRadius: '50%', flexShrink: 0 }} />
+          ) : (
+            <span style={{ fontSize: 14 }}>{'\u26A1'}</span>
+          )}
           <div>
             <div style={{
               fontSize: 11, fontWeight: 700, color: C.text,
               fontFamily: C.sansFont,
             }}>
-              Multi-source deep analysis available
+              {isUpgrading ? 'Auto-upgrading to multi-source analysis...' : 'Multi-source deep analysis available'}
             </div>
             <div style={{
               fontSize: 10, color: C.dim, fontFamily: C.sansFont, marginTop: 1,
             }}>
-              Upgrade this watchlist with technical, sentiment, and catalyst data from multiple AI sources.
+              {isUpgrading
+                ? 'Fetching technical, sentiment, and catalyst data from multiple AI sources.'
+                : 'Upgrade this watchlist with technical, sentiment, and catalyst data from multiple AI sources.'}
             </div>
           </div>
         </div>
-        <button
-          onClick={() => refreshMut.mutate()}
-          style={{
-            flexShrink: 0,
-            display: 'flex', alignItems: 'center', gap: 6,
-            padding: '6px 18px', borderRadius: 5,
-            background: `linear-gradient(135deg, ${C.teal}, ${C.blue})`,
-            border: 'none',
-            color: '#fff', fontSize: 10, fontWeight: 800,
-            fontFamily: C.font, cursor: 'pointer',
-            letterSpacing: '0.05em',
-            boxShadow: `0 0 12px ${C.teal}30`,
-          }}
-        >
-          <RefreshCw style={{ width: 11, height: 11 }} />
-          RUN DEEP ANALYSIS
-        </button>
+        {!isUpgrading && !autoTriggered && (
+          <button
+            onClick={() => refreshMut.mutate()}
+            style={{
+              flexShrink: 0,
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '6px 18px', borderRadius: 5,
+              background: `linear-gradient(135deg, ${C.teal}, ${C.blue})`,
+              border: 'none',
+              color: '#fff', fontSize: 10, fontWeight: 800,
+              fontFamily: C.font, cursor: 'pointer',
+              letterSpacing: '0.05em',
+              boxShadow: `0 0 12px ${C.teal}30`,
+            }}
+          >
+            <RefreshCw style={{ width: 11, height: 11 }} />
+            RUN DEEP ANALYSIS
+          </button>
+        )}
       </div>
     );
   };
