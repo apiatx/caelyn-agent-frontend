@@ -1,0 +1,23 @@
+URGENT: Revert Fix 1 — Tabs must NOT hide sections
+The current broken behavior: Clicking a tab (Top Gainers, Top Losers, etc.) hides all other sections and shows only the selected one.
+
+The correct behavior: ALL signal sections remain visible on the page simultaneously, exactly as they were before. The tabs are purely a toolbar replacement — they do not control section visibility.
+
+Fix 1 (corrected) — Swap the two toolbar rows, leave all sections untouched
+Exactly what to do:
+
+Delete the very top toolbar row (the one containing: Search bar, "Perps Only" dropdown, "All Signals" dropdown, Filters button, Live toggle, Auto-rank button, Advanced button, Compact button, Refresh button, Agent button, Reset button).
+
+Move the second row (the row containing: Top Gainers | Top Losers | High Funding | Neg Funding | Mk/Oracle Δ | Vol Leader | OI Leader | Agent Top) up to where the deleted toolbar was. Keep "Updated X sec ago", the Refresh button, the Agent button, and the ● LIVE indicator on the right side of this row, exactly as they already appear.
+
+Do not change anything about the sections below — all signal sections (Top Gainers, Top Losers, High Funding, Neg Funding, OI Leaders, Volume Leaders, Breakout Watch, Mark/Oracle Gap, Funding Extremes, etc.) must remain all visible simultaneously on the same page, scrollable, exactly as before.
+
+The tab buttons (Top Gainers, Top Losers, etc.) should work as scroll-to anchors — clicking one smoothly scrolls the page to that section. They do not hide any other section. Nothing is toggled or filtered. The "active" visual highlight on a tab just reflects whichever section is currently in the viewport as you scroll.
+
+Visual reference: See the screenshot from 3:53 PM — that is the correct layout with all sections visible at once. The only change from that screenshot is: remove the top toolbar row entirely, and the second row (tabs) moves up to take its place.
+
+Fixes 2, 3, 4 — Keep all of these exactly as implemented
+Fix 2 (sections never blank during reload) — keep as implemented ✓
+Fix 3 (hover tooltips on section headers) — keep as implemented ✓
+Fix 4 (use funding8hPct field for funding % display) — keep as implemented ✓
+The single goal of Fix 1 is: one toolbar row disappears, one moves up, the sections below are completely untouched.

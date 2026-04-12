@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useRef } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Activity, Search, RefreshCw, Bot, X, ChevronDown, ChevronUp,
@@ -1042,7 +1042,8 @@ export default function HyperliquidScreenerPage() {
   const [rowHighlights, setRowHighlights] = useState<Set<string>>(new Set());
   const [showMatrix,    setShowMatrix]    = useState(false);
   const [activeTab,     setActiveTab]     = useState<string>('top_gainers');
-  const tableRef = useRef<HTMLDivElement>(null);
+  const tableRef    = useRef<HTMLDivElement>(null);
+  const scrollBodyRef = useRef<HTMLDivElement>(null);
 
   const { data: raw, isLoading, isError, error, refetch, isFetching, dataUpdatedAt } = useQuery<
     { rows: ScreenerRow[]; meta: ScreenerMeta }
@@ -1096,6 +1097,43 @@ export default function HyperliquidScreenerPage() {
   }, [filtered, sortKey, sortDir, pinnedCoins]);
 
   const signalSections = useMemo(() => deriveSignalSections(sorted), [sorted]);
+
+  // ── Scroll-to helper used by tab clicks ──────────────────────────────────
+  const scrollToSection = (sectionId: string) => {
+    const el = document.getElementById(`hl-sec-${sectionId}`);
+    if (el && scrollBodyRef.current) {
+      scrollBodyRef.current.scrollTo({ top: el.offsetTop - 8, behavior: 'smooth' });
+    }
+  };
+
+  // ── IntersectionObserver: keep active tab in sync with scroll position ──
+  useEffect(() => {
+    const root = scrollBodyRef.current;
+    if (!root) return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        // Find the entry that is most visible
+        let best: IntersectionObserverEntry | null = null;
+        entries.forEach(e => {
+          if (!best || e.intersectionRatio > best.intersectionRatio) best = e;
+        });
+        if (best && (best as IntersectionObserverEntry).isIntersecting) {
+          const id = (best as IntersectionObserverEntry).target.getAttribute('data-section-id');
+          const tab = SCREENER_TABS.find(t => t.sectionId === id);
+          if (tab) setActiveTab(tab.id);
+        }
+      },
+      { root, threshold: [0.15, 0.5] }
+    );
+    // Observe all section anchors after a short paint delay
+    const timer = setTimeout(() => {
+      SCREENER_TABS.forEach(tab => {
+        const el = document.getElementById(`hl-sec-${tab.sectionId}`);
+        if (el) obs.observe(el);
+      });
+    }, 300);
+    return () => { clearTimeout(timer); obs.disconnect(); };
+  }, [signalSections]);
 
   const summaryItems = useMemo(() => {
     const meta = displayData?.meta;
@@ -1169,9 +1207,6 @@ export default function HyperliquidScreenerPage() {
   const secsAgo = dataUpdatedAt ? Math.round((Date.now() - dataUpdatedAt) / 1000) : null;
   const updatedLabel = secsAgo == null ? null : secsAgo < 5 ? 'just now' : secsAgo < 60 ? `${secsAgo}s ago` : `${Math.round(secsAgo/60)}m ago`;
 
-  // Active tab → section ID mapping
-  const activeTab$ = SCREENER_TABS.find(t => t.id === activeTab);
-  const activeSectionId = activeTab$?.sectionId ?? 'gainers';
 
   return (
     <div style={{ background:C.bg, color:C.text, fontFamily:C.font, fontSize:11, height:'100vh', display:'flex', flexDirection:'column', overflow:'hidden' }}>
@@ -1195,7 +1230,8 @@ export default function HyperliquidScreenerPage() {
           {SCREENER_TABS.map(tab => {
             const active = activeTab === tab.id;
             return (
-              <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+              <button key={tab.id}
+                onClick={() => { setActiveTab(tab.id); scrollToSection(tab.sectionId); }}
                 title={SECTION_TIPS[tab.sectionId] ?? ''}
                 style={{
                   flexShrink:0, padding:'4px 11px', borderRadius:4, cursor:'pointer',
@@ -1237,7 +1273,7 @@ export default function HyperliquidScreenerPage() {
       </div>
 
       {/* ── SCROLLABLE BODY ───────────────────────────────────────────── */}
-      <div style={{ flex:1, overflowY:'auto', overflowX:'hidden' }}>
+      <div ref={scrollBodyRef} style={{ flex:1, overflowY:'auto', overflowX:'hidden' }}>
 
         {/* Initial load spinner — only shown when there is truly no data yet */}
         {isLoading && !displayData && (
@@ -1265,26 +1301,23 @@ export default function HyperliquidScreenerPage() {
 
         {displayData && (
           <>
-            {/* ── AGENT BRIEF: only shown when Agent Top tab is active ─── */}
-            {activeTab === 'agent_top' && (
+            {/* ── AGENT BRIEF: always visible, scroll anchor for Agent Top tab ── */}
+            <div id="hl-sec-agent" data-section-id="agent">
               <AgentMarketBrief
                 agentResult={agentResult} agentLoading={agentLoading} agentStage={agentStage}
                 rows={sorted} selectedCoin={selectedCoin} onSelect={setSelectedCoin} />
-            )}
+            </div>
 
-            {/* ── SIGNAL BOARDS: filtered to the active tab's section ─── */}
-            {activeTab !== 'agent_top' && sorted.length > 0 && (() => {
-              const visibleSections = signalSections.filter(s => s.id === activeSectionId);
-              const fallbackSections = visibleSections.length ? visibleSections : signalSections.filter(s => s.always);
-              return (
-                <div style={{ padding:'12px 14px', display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(280px, 1fr))', gap:10 }}>
-                  {fallbackSections.map(sec => (
-                    <SignalBoard key={sec.id} section={sec} selectedCoin={selectedCoin}
-                      onSelect={setSelectedCoin} />
-                  ))}
-                </div>
-              );
-            })()}
+            {/* ── SIGNAL BOARDS: all sections always visible, tabs scroll to them ── */}
+            {sorted.length > 0 && (
+              <div style={{ padding:'12px 14px', display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(210px, 1fr))', gap:10 }}>
+                {signalSections.map(sec => (
+                  <div key={sec.id} id={`hl-sec-${sec.id}`} data-section-id={sec.id}>
+                    <SignalBoard section={sec} selectedCoin={selectedCoin} onSelect={setSelectedCoin} />
+                  </div>
+                ))}
+              </div>
+            )}
 
 
             {/* ── TSMOM MOMENTUM PANEL ──────────────────────────────── */}
