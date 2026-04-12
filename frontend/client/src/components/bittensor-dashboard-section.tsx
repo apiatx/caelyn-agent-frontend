@@ -871,6 +871,22 @@ export default function BittensorDashboardSection() {
             {subnets.length}
           </span>
         </div>
+
+        {/* Quick-link buttons — top right */}
+        <div className="ml-auto flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => openSecureLink("https://taostats.io/")}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-orange-500/10 border border-orange-500/30 hover:border-orange-400/60 text-orange-400 text-xs font-semibold transition-all"
+          >
+            TaoStats <ExternalLink className="w-3 h-3" />
+          </button>
+          <button
+            onClick={() => openSecureLink("https://www.tao.app/explorer")}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-cyan-500/10 border border-cyan-500/30 hover:border-cyan-500/60 text-cyan-400 text-xs font-semibold transition-all"
+          >
+            Tao.app <ExternalLink className="w-3 h-3" />
+          </button>
+        </div>
       </div>
 
       {/* ════════════════════ 3. ERROR STATE ════════════════════ */}
@@ -2101,39 +2117,11 @@ export default function BittensorDashboardSection() {
             color="text-blue-400"
           />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <ResourceButton
-              label="TaoStats"
-              desc="Bittensor network analytics"
-              url="https://taostats.io/"
-              accent="orange"
-            />
-            <ResourceButton
-              label="Tao.app"
-              desc="Explorer & analytics"
-              url="https://www.tao.app/explorer"
-              accent="cyan"
-            />
-            <ResourceButton
-              label="Bittensor.ai"
-              desc="Official Bittensor hub"
-              url="https://www.bittensor.ai/"
-              accent="purple"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <ResourceEmbed
-              title="TaoTensorLaw"
-              url="https://taotensorlaw.com/"
-              color="text-blue-400"
-            />
-            <ResourceEmbed
-              title="TaoMarketCap"
-              url="https://taomarketcap.com/blockchain/accounts"
-              color="text-orange-400"
-            />
-          </div>
+          <ResourceEmbed
+            title="TaoTensorLaw"
+            url="https://taotensorlaw.com/"
+            color="text-blue-400"
+          />
 
           <ResourceEmbed
             title="TaoYield"
@@ -2154,19 +2142,6 @@ export default function BittensorDashboardSection() {
             />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <ResourceEmbed
-              title="TaoTrack Simulator"
-              url="https://taotrack.com/simulator"
-              color="text-cyan-400"
-            />
-            <ResourceEmbed
-              title="TaoCagr"
-              url="https://taocagr.com/"
-              color="text-amber-400"
-            />
-          </div>
-
           <ResourceEmbed
             title="TaoGalaxy"
             url="https://taogalaxy.com/app"
@@ -2178,29 +2153,18 @@ export default function BittensorDashboardSection() {
             color="text-indigo-400"
           />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <ResourceEmbed
-              title="TaoBridge"
+              title="aoBridge.xyz"
               url="https://taobridge.xyz/"
               color="text-purple-400"
             />
             <ResourceEmbed
-              title="TaoFi Swap"
+              title="TaoFi"
               url="https://www.taofi.com/swap"
               color="text-teal-400"
             />
-            <ResourceEmbed
-              title="VoidAI Bridge"
-              url="https://bridge.voidai.com/bridge-chains"
-              color="text-violet-400"
-            />
           </div>
-
-          <ResourceEmbed
-            title="TaoHub Portfolio"
-            url="https://www.taohub.info/"
-            color="text-white/50"
-          />
         </div>
       </details>
     </div>
