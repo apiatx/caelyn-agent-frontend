@@ -2429,10 +2429,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const ctrl = new AbortController();
       setTimeout(() => ctrl.abort(), 180000);
-      const r = await fetch(`${WL_URL}/api/watchlist/${req.params.wid}/refresh`, { method: 'POST', headers: wlHdr(), signal: ctrl.signal });
-      if (!r.ok) return res.status(r.status).json({ error: `Agent returned ${r.status}` });
+      const r = await fetch(`${WL_URL}/api/watchlist/${req.params.wid}/refresh`, {
+        method: 'POST',
+        headers: { ...wlHdr(), 'Content-Type': 'application/json' },
+        body: JSON.stringify(req.body || {}),
+        signal: ctrl.signal,
+      });
+      if (!r.ok) {
+        const errBody = await r.json().catch(() => ({}));
+        const detail = errBody.detail || errBody.message || errBody.error || `Backend returned ${r.status}`;
+        console.error(`[watchlist refresh] Backend ${r.status}:`, detail);
+        return res.status(r.status).json({ error: detail });
+      }
       res.json(await r.json());
-    } catch (e: any) { res.status(500).json({ error: e.message }); }
+    } catch (e: any) {
+      const msg = e?.name === 'AbortError' ? 'Analysis timed out (3 min). Try again.' : e.message;
+      console.error('[watchlist refresh] error:', msg);
+      res.status(500).json({ error: msg });
+    }
   });
 
   // News for specific watchlist — get tickers from that watchlist, then use Express RSS proxy

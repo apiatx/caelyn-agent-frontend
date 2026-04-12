@@ -463,6 +463,7 @@ export default function WatchlistPage() {
   const [uploadStage, setUploadStage] = useState('');
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
+  const [refreshError, setRefreshError] = useState<string | null>(null);
   const csvInputRef = useRef<HTMLInputElement>(null);
   const autoTriggeredRef = useRef<Set<string>>(new Set());
 
@@ -531,24 +532,29 @@ export default function WatchlistPage() {
   /* ── refresh active watchlist ────────────────────────────────────── */
   const refreshMut = useMutation({
     mutationFn: async () => {
+      setRefreshError(null);
       const r = await fetch(`/api/watchlist/${activeId}/refresh`, { method: 'POST' });
-      if (!r.ok) throw new Error('Refresh failed');
+      if (!r.ok) {
+        const body = await r.json().catch(() => ({}));
+        throw new Error(body.error || body.detail || `Server error ${r.status}`);
+      }
       return r.json();
     },
     onSuccess: (data) => {
-      // If the response contains the new analysis directly, update cache immediately
+      setRefreshError(null);
       if (data && (data.analysis || data.sections)) {
         qc.setQueryData(['/api/watchlist', activeId], (old: any) => {
           if (!old) return old;
-          // Response may wrap analysis in an `analysis` key, or be the analysis itself
           const newAnalysis = data.analysis ?? (data.sections ? data : undefined);
           return newAnalysis ? { ...old, analysis: newAnalysis } : old;
         });
       }
-      // Also invalidate to refetch the canonical state from the server
       qc.invalidateQueries({ queryKey: ['/api/watchlist', activeId] });
       qc.invalidateQueries({ queryKey: ['/api/watchlist/news', activeId] });
       qc.invalidateQueries({ queryKey: ['/api/watchlist/list'] });
+    },
+    onError: (err: any) => {
+      setRefreshError(err?.message || 'Analysis failed');
     },
   });
 
@@ -1371,22 +1377,42 @@ export default function WatchlistPage() {
                 : (analysis?.summary || '')}
             </div>
 
-            {/* Right: last analyzed + refresh */}
+            {/* Right: error + last analyzed + refresh */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-              {lastUpdated && (
+              {refreshError && !refreshMut.isPending && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  padding: '4px 10px', borderRadius: 4,
+                  background: `${C.red}12`, border: `1px solid ${C.red}30`,
+                  maxWidth: 320,
+                }}>
+                  <span style={{ fontSize: 9, color: C.red, fontFamily: C.font, fontWeight: 700 }}>
+                    ✕ ANALYSIS FAILED:
+                  </span>
+                  <span style={{ fontSize: 9, color: C.red, fontFamily: C.sansFont, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
+                    {refreshError}
+                  </span>
+                  <button
+                    onClick={() => setRefreshError(null)}
+                    style={{ background: 'none', border: 'none', color: C.red, cursor: 'pointer', padding: 0, fontSize: 11, lineHeight: 1, flexShrink: 0 }}
+                  >×</button>
+                </div>
+              )}
+              {lastUpdated && !refreshError && (
                 <span style={{ fontSize: 10, color: C.dim }}>
                   Last analyzed: {timeAgo(lastUpdated)}
                 </span>
               )}
               <button
-                onClick={() => refreshMut.mutate()}
+                onClick={() => { setRefreshError(null); refreshMut.mutate(); }}
                 disabled={refreshMut.isPending}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 5,
                   padding: '4px 12px', borderRadius: 4,
-                  background: 'transparent',
-                  border: `1px solid ${C.teal}50`,
-                  color: C.teal, fontSize: 10, fontWeight: 700,
+                  background: refreshError ? `${C.amber}15` : 'transparent',
+                  border: `1px solid ${refreshError ? C.amber : C.teal}50`,
+                  color: refreshError ? C.amber : C.teal,
+                  fontSize: 10, fontWeight: 700,
                   fontFamily: C.font, cursor: refreshMut.isPending ? 'not-allowed' : 'pointer',
                   opacity: refreshMut.isPending ? 0.5 : 1,
                   letterSpacing: '0.04em',
@@ -1396,7 +1422,7 @@ export default function WatchlistPage() {
                   style={{ width: 11, height: 11 }}
                   className={refreshMut.isPending ? 'wl-spin' : ''}
                 />
-                {refreshMut.isPending ? 'ANALYZING...' : '\u27F3 REFRESH'}
+                {refreshMut.isPending ? 'ANALYZING...' : refreshError ? '↺ RETRY' : '⟳ REFRESH'}
               </button>
             </div>
           </div>
