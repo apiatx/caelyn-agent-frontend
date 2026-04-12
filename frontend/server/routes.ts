@@ -2334,6 +2334,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // AI deep dive — multi-model report for a specific ticker
+  app.post('/api/watchlist/stock/:ticker/deep-dive', async (req, res) => {
+    try {
+      const controller = new AbortController();
+      const tid = setTimeout(() => controller.abort(), 120000); // 2min — LLM calls take time
+      const r = await fetch(`${WL_URL}/api/watchlist/stock/${encodeURIComponent(req.params.ticker)}/deep-dive`, {
+        method: 'POST',
+        headers: { ...wlHdr(), 'Content-Type': 'application/json' },
+        body: JSON.stringify(req.body),
+        signal: controller.signal,
+      });
+      clearTimeout(tid);
+      if (!r.ok) {
+        const errBody = await r.json().catch(() => ({}));
+        return res.status(r.status).json({ error: errBody.detail || errBody.message || `Backend ${r.status}` });
+      }
+      res.json(await r.json());
+    } catch (e: any) {
+      res.status(500).json({ error: e?.name === 'AbortError' ? 'Deep dive timed out (120s)' : 'Deep dive generation failed' });
+    }
+  });
+
   // Rename specific watchlist
   app.patch('/api/watchlist/:wid/rename', async (req, res) => {
     try {

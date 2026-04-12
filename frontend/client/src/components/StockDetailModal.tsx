@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { X, TrendingUp, BookOpen, Newspaper, Brain, Loader2 } from 'lucide-react';
+import { X, TrendingUp, BookOpen, Newspaper, Brain, Loader2, Zap, RefreshCw, CheckSquare, Square } from 'lucide-react';
 
-/* ── color tokens (Hyperliquid style) ──────────────────────────────── */
+/* ── color tokens ─────────────────────────────────────────────────── */
 const C = {
   bg: '#080c13', card: '#0d1623', card2: '#0a1020',
   border: '#1a2540', text: '#e2e8f0', dim: '#64748b',
@@ -22,16 +22,24 @@ function signalColor(signal?: string): string {
   return C.dim;
 }
 
-/* ── number formatter ───────────────────────────────────────────────── */
+function riskColor(risk?: string): string {
+  if (!risk) return C.dim;
+  const r = risk.toUpperCase();
+  if (r.includes('HIGH')) return C.red;
+  if (r.includes('MED'))  return C.amber;
+  if (r.includes('LOW'))  return C.green;
+  return C.dim;
+}
+
 function fmtNumber(val: any): string {
   if (val === null || val === undefined || val === '') return '—';
   const num = typeof val === 'string' ? parseFloat(val) : val;
   if (isNaN(num)) return String(val);
   const abs = Math.abs(num);
   if (abs >= 1e12) return (num / 1e12).toFixed(2) + 'T';
-  if (abs >= 1e9) return (num / 1e9).toFixed(2) + 'B';
-  if (abs >= 1e6) return (num / 1e6).toFixed(1) + 'M';
-  if (abs >= 1e3) return (num / 1e3).toFixed(1) + 'K';
+  if (abs >= 1e9)  return (num / 1e9).toFixed(2) + 'B';
+  if (abs >= 1e6)  return (num / 1e6).toFixed(1) + 'M';
+  if (abs >= 1e3)  return (num / 1e3).toFixed(1) + 'K';
   if (Number.isInteger(num)) return num.toLocaleString();
   return num.toFixed(2);
 }
@@ -46,9 +54,9 @@ function timeAgo(dateStr: string): string {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-/* ── types ───────────────────────────────────────────────────────────── */
+/* ── types ───────────────────────────────────────────────────────── */
 interface NewsItem {
-  ticker: string;
+  ticker?: string;
   title: string;
   summary?: string;
   url: string;
@@ -66,29 +74,45 @@ interface StockDetailModalProps {
 
 type TabId = 'overview' | 'fundamentals' | 'news' | 'deep-dive';
 
-/* ═══════════════════════════════════════════════════════════════════════
+/* ── find stock in either format ─────────────────────────────────── */
+function findStockInAnalysis(analysis: any, ticker: string): any | null {
+  if (!analysis) return null;
+  const t = ticker.toUpperCase();
+
+  // New format: sections[*].tickers[*].symbol
+  if (Array.isArray(analysis.sections)) {
+    for (const section of analysis.sections) {
+      const arr = Array.isArray(section.tickers) ? section.tickers : [];
+      const found = arr.find((s: any) => (s.symbol || s.ticker)?.toUpperCase() === t);
+      if (found) return { ...found, _section: section.title, _format: 'new' };
+    }
+  }
+
+  // Old format: top_buys, most_undervalued, best_catalysts, hidden_gems, etc.
+  const cats = ['top_buys', 'most_undervalued', 'best_catalysts', 'hidden_gems', 'most_revolutionary', 'right_sector'];
+  for (const cat of cats) {
+    const arr = analysis[cat];
+    if (Array.isArray(arr)) {
+      const found = arr.find((s: any) => s.ticker?.toUpperCase() === t);
+      if (found) return { ...found, _format: 'old' };
+    }
+  }
+  return null;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    STOCK DETAIL MODAL
-   ═══════════════════════════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════════════ */
 export function StockDetailModal({ ticker, analysis, csvData, newsItems, onClose }: StockDetailModalProps) {
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [deepDive, setDeepDive] = useState<any>(null);
   const [deepDiveLoading, setDeepDiveLoading] = useState(false);
   const [deepDiveError, setDeepDiveError] = useState<string | null>(null);
+  const [selectedModels, setSelectedModels] = useState<string[]>(['grok', 'gemini', 'claude']);
+  const [reportModel, setReportModel] = useState<'claude' | 'gpt'>('claude');
 
-  /* ── find stock in analysis ─────────────────────────────────────── */
-  const findStock = () => {
-    if (!analysis) return null;
-    const cats = ['top_buys', 'most_undervalued', 'best_catalysts', 'hidden_gems', 'most_revolutionary', 'right_sector'];
-    for (const cat of cats) {
-      const arr = analysis[cat];
-      if (Array.isArray(arr)) {
-        const found = arr.find((s: any) => s.ticker?.toUpperCase() === ticker.toUpperCase());
-        if (found) return found;
-      }
-    }
-    return null;
-  };
-  const stock = findStock();
+  /* ── find stock ─────────────────────────────────────────────────── */
+  const stock = findStockInAnalysis(analysis, ticker);
 
   /* ── find CSV row ───────────────────────────────────────────────── */
   const csvRow = csvData?.find((r: any) => {
@@ -96,21 +120,25 @@ export function StockDetailModal({ ticker, analysis, csvData, newsItems, onClose
     return t?.toUpperCase() === ticker.toUpperCase();
   });
 
-  /* ── lazy load deep dive ────────────────────────────────────────── */
-  useEffect(() => {
-    if (activeTab !== 'deep-dive' || deepDive || deepDiveLoading) return;
+  /* ── generate AI deep dive ──────────────────────────────────────── */
+  const generateDeepDive = () => {
+    if (deepDiveLoading) return;
     setDeepDiveLoading(true);
     setDeepDiveError(null);
-    fetch(`/api/watchlist/stock/${encodeURIComponent(ticker)}`, { credentials: 'include' })
-      .then(r => {
-        if (!r.ok) throw new Error(`${r.status}`);
-        return r.json();
-      })
+    setDeepDive(null);
+    const models = selectedModels.map(m => m === 'claude_gpt' ? reportModel : m);
+    fetch(`/api/watchlist/stock/${encodeURIComponent(ticker)}/deep-dive`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ models, report_model: reportModel }),
+    })
+      .then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); })
       .then(data => { setDeepDive(data); setDeepDiveLoading(false); })
       .catch(err => { setDeepDiveError(err.message); setDeepDiveLoading(false); });
-  }, [activeTab, ticker, deepDive, deepDiveLoading]);
+  };
 
-  /* ── close on escape ────────────────────────────────────────────── */
+  /* ── close on escape ─────────────────────────────────────────────── */
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', handler);
@@ -118,12 +146,15 @@ export function StockDetailModal({ ticker, analysis, csvData, newsItems, onClose
   }, [onClose]);
 
   const sigCol = signalColor(stock?.signal);
+
   const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
-    { id: 'overview', label: 'Overview', icon: <TrendingUp style={{ width: 13, height: 13 }} /> },
-    { id: 'fundamentals', label: 'Fundamentals', icon: <BookOpen style={{ width: 13, height: 13 }} /> },
-    { id: 'news', label: 'News', icon: <Newspaper style={{ width: 13, height: 13 }} /> },
-    { id: 'deep-dive', label: 'AI Deep Dive', icon: <Brain style={{ width: 13, height: 13 }} /> },
+    { id: 'overview',    label: 'Overview',    icon: <TrendingUp style={{ width: 13, height: 13 }} /> },
+    { id: 'fundamentals',label: 'Fundamentals',icon: <BookOpen   style={{ width: 13, height: 13 }} /> },
+    { id: 'news',        label: 'News',        icon: <Newspaper  style={{ width: 13, height: 13 }} /> },
+    { id: 'deep-dive',   label: 'AI Deep Dive',icon: <Brain      style={{ width: 13, height: 13 }} /> },
   ];
+
+  const companyName = stock?.name || stock?.company || '';
 
   return (
     <div
@@ -153,8 +184,17 @@ export function StockDetailModal({ ticker, analysis, csvData, newsItems, onClose
           <span style={{ fontSize: 20, fontWeight: 900, fontFamily: C.font, color: C.bright }}>
             {ticker}
           </span>
-          {stock?.company && (
-            <span style={{ fontSize: 12, color: C.dim, fontFamily: C.sansFont }}>{stock.company}</span>
+          {companyName && (
+            <span style={{ fontSize: 12, color: C.dim, fontFamily: C.sansFont }}>{companyName}</span>
+          )}
+          {stock?._section && (
+            <span style={{
+              padding: '2px 8px', borderRadius: 3, fontSize: 9, fontWeight: 700,
+              fontFamily: C.font, color: C.purple, background: `${C.purple}15`,
+              border: `1px solid ${C.purple}30`,
+            }}>
+              {stock._section}
+            </span>
           )}
           {stock?.signal && (
             <span style={{
@@ -166,16 +206,23 @@ export function StockDetailModal({ ticker, analysis, csvData, newsItems, onClose
               {stock.signal}
             </span>
           )}
-          {stock?.score != null && (
-            <div style={{
-              width: 30, height: 30, borderRadius: '50%',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: `${sigCol}18`, border: `2px solid ${sigCol}50`,
+          {stock?.risk_level && (
+            <span style={{
+              padding: '2px 8px', borderRadius: 3, fontSize: 9, fontWeight: 700,
+              fontFamily: C.font, color: riskColor(stock.risk_level),
+              background: `${riskColor(stock.risk_level)}15`,
+              border: `1px solid ${riskColor(stock.risk_level)}30`,
             }}>
-              <span style={{ fontSize: 11, fontWeight: 800, color: sigCol, fontFamily: C.font }}>
-                {stock.score}
-              </span>
-            </div>
+              {stock.risk_level} RISK
+            </span>
+          )}
+          {stock?.change_pct != null && (
+            <span style={{
+              fontSize: 12, fontWeight: 700, fontFamily: C.font,
+              color: stock.change_pct >= 0 ? C.green : C.red,
+            }}>
+              {stock.change_pct >= 0 ? '+' : ''}{typeof stock.change_pct === 'number' ? stock.change_pct.toFixed(2) : stock.change_pct}%
+            </span>
           )}
           <div style={{ flex: 1 }} />
           <button onClick={onClose} style={{ color: C.dim, cursor: 'pointer', padding: 4, background: 'none', border: 'none' }}>
@@ -212,8 +259,20 @@ export function StockDetailModal({ ticker, analysis, csvData, newsItems, onClose
         <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
           {activeTab === 'overview' && <OverviewTab stock={stock} ticker={ticker} />}
           {activeTab === 'fundamentals' && <FundamentalsTab csvRow={csvRow} stock={stock} />}
-          {activeTab === 'news' && <NewsTab items={newsItems} />}
-          {activeTab === 'deep-dive' && <DeepDiveTab data={deepDive} loading={deepDiveLoading} error={deepDiveError} />}
+          {activeTab === 'news' && <NewsTab ticker={ticker} items={newsItems} />}
+          {activeTab === 'deep-dive' && (
+            <DeepDiveTab
+              ticker={ticker}
+              data={deepDive}
+              loading={deepDiveLoading}
+              error={deepDiveError}
+              selectedModels={selectedModels}
+              setSelectedModels={setSelectedModels}
+              reportModel={reportModel}
+              setReportModel={setReportModel}
+              onGenerate={generateDeepDive}
+            />
+          )}
         </div>
       </div>
     </div>
@@ -222,9 +281,10 @@ export function StockDetailModal({ ticker, analysis, csvData, newsItems, onClose
 
 /* ═══ Overview Tab ═══════════════════════════════════════════════════ */
 function OverviewTab({ stock, ticker }: { stock: any; ticker: string }) {
-  /* TradingView chart embed */
   const exchange = ticker.startsWith('BTC') || ticker.startsWith('ETH') ? 'BINANCE' : 'NASDAQ';
   const tvUrl = `https://s.tradingview.com/widgetembed/?frameElementId=tv_${ticker}&symbol=${exchange}:${ticker}&interval=D&hidesidetoolbar=1&symboledit=0&saveimage=0&toolbarbg=0d1623&studies=[]&theme=dark&style=1&timezone=exchange&locale=en`;
+
+  const isNewFmt = stock?._format === 'new';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
@@ -238,35 +298,60 @@ function OverviewTab({ stock, ticker }: { stock: any; ticker: string }) {
         />
       </div>
 
-      {!stock && <div style={{ color: C.dim, fontSize: 12 }}>No analysis available for this ticker.</div>}
+      {/* New format overview */}
+      {isNewFmt && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {/* Catalyst */}
+          {stock.catalyst && (
+            <div>
+              <SectionLabel>Catalyst</SectionLabel>
+              <p style={{ fontSize: 13, color: C.text, lineHeight: 1.7, fontFamily: C.sansFont, margin: 0 }}>
+                {stock.catalyst}
+              </p>
+            </div>
+          )}
 
-      {stock && (
+          {/* Sentiment + Action grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            {stock.sentiment && (
+              <InfoCard label="Sentiment" color={C.blue}>{stock.sentiment}</InfoCard>
+            )}
+            {stock.action_note && (
+              <InfoCard label="Action Note" color={C.amber}>{stock.action_note}</InfoCard>
+            )}
+          </div>
+
+          {/* Price info */}
+          {(stock.price != null) && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))', gap: 6 }}>
+              <MetricBox label="Price" value={`$${typeof stock.price === 'number' ? stock.price.toFixed(2) : stock.price}`} raw />
+              {stock.change_pct != null && (
+                <MetricBox label="Change" value={`${stock.change_pct >= 0 ? '+' : ''}${typeof stock.change_pct === 'number' ? stock.change_pct.toFixed(2) : stock.change_pct}%`} raw colored={stock.change_pct >= 0 ? 'green' : 'red'} />
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Old format overview */}
+      {!isNewFmt && stock && (
         <>
-          {/* thesis */}
           {stock.thesis && (
             <div>
               <SectionLabel>Investment Thesis</SectionLabel>
               <p style={{ fontSize: 13, color: C.text, lineHeight: 1.7, fontFamily: C.sansFont, margin: 0 }}>{stock.thesis}</p>
             </div>
           )}
-
-          {/* grid: why now / sentiment / moat */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10 }}>
-            {stock.why_now && (
-              <InfoCard label="Why Now" color={C.amber}>{stock.why_now}</InfoCard>
-            )}
+            {stock.why_now && <InfoCard label="Why Now" color={C.amber}>{stock.why_now}</InfoCard>}
             {stock.sentiment && (
               <InfoCard label="Sentiment" color={C.blue}>
                 {stock.sentiment}
                 {stock.reason && <div style={{ marginTop: 6, fontSize: 10, color: C.dim }}>{stock.reason}</div>}
               </InfoCard>
             )}
-            {stock.moat && (
-              <InfoCard label="Competitive Moat" color={C.purple}>{stock.moat}</InfoCard>
-            )}
+            {stock.moat && <InfoCard label="Competitive Moat" color={C.purple}>{stock.moat}</InfoCard>}
           </div>
-
-          {/* catalysts */}
           {stock.catalysts?.length > 0 && (
             <div>
               <SectionLabel>Catalysts</SectionLabel>
@@ -276,27 +361,32 @@ function OverviewTab({ stock, ticker }: { stock: any; ticker: string }) {
                     padding: '3px 10px', borderRadius: 4,
                     fontSize: 10, fontWeight: 600, fontFamily: C.font,
                     color: C.teal, background: `${C.teal}12`, border: `1px solid ${C.teal}25`,
-                  }}>
-                    {cat}
-                  </span>
+                  }}>{cat}</span>
                 ))}
               </div>
             </div>
           )}
-
-          {/* valuation metrics */}
           <div>
             <SectionLabel>Valuation Metrics</SectionLabel>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))', gap: 6 }}>
-              <MetricBox label="P/S" value={stock.ps_ratio} />
-              <MetricBox label="P/E" value={stock.pe_ratio} />
-              <MetricBox label="P/FCF" value={stock.pfcf} />
+              <MetricBox label="P/S"        value={stock.ps_ratio} />
+              <MetricBox label="P/E"        value={stock.pe_ratio} />
+              <MetricBox label="P/FCF"      value={stock.pfcf} />
               <MetricBox label="EV/Revenue" value={stock.ev_revenue} />
-              <MetricBox label="PEG" value={stock.peg} />
-              <MetricBox label="vs Peers" value={stock.vs_peers} />
+              <MetricBox label="PEG"        value={stock.peg} />
+              <MetricBox label="vs Peers"   value={stock.vs_peers} />
             </div>
           </div>
         </>
+      )}
+
+      {/* No analysis fallback */}
+      {!stock && (
+        <div style={{ padding: 16, borderRadius: 6, background: C.card, border: `1px solid ${C.border}` }}>
+          <p style={{ color: C.dim, fontSize: 12, margin: 0, fontFamily: C.sansFont }}>
+            No analysis data available for <strong style={{ color: C.text }}>{ticker}</strong>. Generate an AI Deep Dive for a full report.
+          </p>
+        </div>
       )}
     </div>
   );
@@ -305,12 +395,17 @@ function OverviewTab({ stock, ticker }: { stock: any; ticker: string }) {
 /* ═══ Fundamentals Tab ══════════════════════════════════════════════ */
 function FundamentalsTab({ csvRow, stock }: { csvRow: any; stock: any }) {
   const data = csvRow || stock || {};
-  const entries = Object.entries(data).filter(([k]) =>
-    !['display_type', 'catalysts', 'thesis'].includes(k) && typeof data[k] !== 'object'
+  const entries = Object.entries(data).filter(([k, v]) =>
+    !['display_type', 'catalysts', 'thesis', '_format', '_section'].includes(k) &&
+    typeof v !== 'object' && v !== null && v !== undefined && v !== ''
   );
 
   if (entries.length === 0) {
-    return <div style={{ color: C.dim, fontSize: 12 }}>No fundamental data available.</div>;
+    return (
+      <div style={{ color: C.dim, fontSize: 12, fontFamily: C.sansFont }}>
+        No fundamental data available for this ticker.
+      </div>
+    );
   }
 
   return (
@@ -325,7 +420,7 @@ function FundamentalsTab({ csvRow, stock }: { csvRow: any; stock: any }) {
             {key.replace(/_/g, ' ')}
           </span>
           <span style={{ fontSize: 11, color: C.text, fontWeight: 600, fontFamily: C.font, textAlign: 'right' }}>
-            {typeof val === 'number' ? fmtNumber(val) : String(val ?? '—')}
+            {typeof val === 'number' ? fmtNumber(val) : String(val)}
           </span>
         </div>
       ))}
@@ -334,16 +429,56 @@ function FundamentalsTab({ csvRow, stock }: { csvRow: any; stock: any }) {
 }
 
 /* ═══ News Tab ══════════════════════════════════════════════════════ */
-function NewsTab({ items }: { items: NewsItem[] }) {
-  const limited = items.slice(0, 10);
+function NewsTab({ ticker, items }: { ticker: string; items: NewsItem[] }) {
+  const [fetched, setFetched] = useState<NewsItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [tried, setTried] = useState(false);
 
-  if (limited.length === 0) {
-    return <div style={{ color: C.dim, fontSize: 12 }}>No news available for this ticker.</div>;
+  // If parent already provided news, use those. Otherwise fetch on demand.
+  useEffect(() => {
+    if (items.length > 0 || tried) return;
+    setTried(true);
+    setLoading(true);
+    fetch(`/api/proxy/news/ticker?tickers=${encodeURIComponent(ticker)}`, { credentials: 'include' })
+      .then(r => r.ok ? r.json() : {})
+      .then((data: any) => {
+        // data may be { [ticker]: NewsItem[] } or NewsItem[]
+        let arr: NewsItem[] = [];
+        if (Array.isArray(data)) {
+          arr = data;
+        } else if (typeof data === 'object') {
+          const key = Object.keys(data).find(k => k.toUpperCase() === ticker.toUpperCase());
+          if (key && Array.isArray(data[key])) arr = data[key];
+          else arr = Object.values(data).flat() as NewsItem[];
+        }
+        setFetched(arr);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [ticker, items.length, tried]);
+
+  const allItems = items.length > 0 ? items : fetched;
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: C.dim, fontSize: 12 }}>
+        <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} />
+        Fetching latest news for {ticker}...
+      </div>
+    );
+  }
+
+  if (allItems.length === 0) {
+    return (
+      <div style={{ color: C.dim, fontSize: 12, fontFamily: C.sansFont }}>
+        No news available for <strong style={{ color: C.text }}>{ticker}</strong> right now.
+      </div>
+    );
   }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-      {limited.map((item, i) => (
+      {allItems.slice(0, 15).map((item, i) => (
         <a
           key={i}
           href={item.url}
@@ -352,8 +487,7 @@ function NewsTab({ items }: { items: NewsItem[] }) {
           style={{
             display: 'flex', flexDirection: 'column', gap: 4,
             padding: '11px 14px', borderRadius: 4,
-            textDecoration: 'none',
-            transition: 'background 0.1s',
+            textDecoration: 'none', transition: 'background 0.1s',
           }}
           onMouseEnter={e => e.currentTarget.style.background = C.card}
           onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
@@ -361,6 +495,11 @@ function NewsTab({ items }: { items: NewsItem[] }) {
           <span style={{ fontSize: 12, color: C.text, fontFamily: C.sansFont, lineHeight: 1.5 }}>
             {item.title}
           </span>
+          {item.summary && (
+            <span style={{ fontSize: 11, color: C.dim, fontFamily: C.sansFont, lineHeight: 1.4 }}>
+              {item.summary.slice(0, 150)}{item.summary.length > 150 ? '…' : ''}
+            </span>
+          )}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ fontSize: 9, color: C.teal, fontFamily: C.font }}>{item.source}</span>
             <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font }}>{timeAgo(item.published_at)}</span>
@@ -372,103 +511,317 @@ function NewsTab({ items }: { items: NewsItem[] }) {
 }
 
 /* ═══ Deep Dive Tab ═════════════════════════════════════════════════ */
-function DeepDiveTab({ data, loading, error }: { data: any; loading: boolean; error: string | null }) {
-  if (loading) {
+const MODEL_OPTIONS = [
+  { id: 'grok',   label: 'Grok',   desc: 'X/Twitter sentiment, real-time news', color: C.bright },
+  { id: 'gemini', label: 'Gemini', desc: 'Google search headlines, web intelligence', color: C.blue },
+  { id: 'claude_gpt', label: 'Claude / GPT', desc: 'Deep reasoning & report structuring', color: C.purple },
+];
+
+interface DeepDiveTabProps {
+  ticker: string;
+  data: any;
+  loading: boolean;
+  error: string | null;
+  selectedModels: string[];
+  setSelectedModels: (m: string[]) => void;
+  reportModel: 'claude' | 'gpt';
+  setReportModel: (m: 'claude' | 'gpt') => void;
+  onGenerate: () => void;
+}
+
+function DeepDiveTab({
+  ticker, data, loading, error,
+  selectedModels, setSelectedModels,
+  reportModel, setReportModel,
+  onGenerate,
+}: DeepDiveTabProps) {
+
+  const toggleModel = (id: string) => {
+    setSelectedModels(
+      selectedModels.includes(id)
+        ? selectedModels.filter(m => m !== id)
+        : [...selectedModels, id]
+    );
+  };
+
+  /* Show report if we have data */
+  if (data) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        {[1,2,3,4].map(i => (
-          <div key={i} style={{ background: C.card, borderRadius: 6, height: 70 + i * 18, opacity: 0.4 }} />
-        ))}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+        {/* Re-generate button */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <button
+            onClick={onGenerate}
+            disabled={loading}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '6px 14px', borderRadius: 4,
+              fontSize: 10, fontWeight: 700, fontFamily: C.font,
+              cursor: 'pointer', border: `1px solid ${C.border}`,
+              background: C.card, color: C.dim,
+            }}
+          >
+            <RefreshCw style={{ width: 12, height: 12 }} />
+            Regenerate
+          </button>
+        </div>
+
+        {/* Grok section */}
+        {data.grok && (
+          <ReportSection title="Grok — X/Twitter Sentiment" color={C.bright} content={data.grok} />
+        )}
+
+        {/* Gemini section */}
+        {data.gemini && (
+          <ReportSection title="Gemini — Google Headlines" color={C.blue} content={data.gemini} />
+        )}
+
+        {/* Claude/GPT section */}
+        {(data.claude || data.gpt) && (
+          <ReportSection
+            title={data.claude ? 'Claude — Deep Analysis' : 'GPT — Deep Analysis'}
+            color={C.purple}
+            content={data.claude || data.gpt}
+          />
+        )}
+
+        {/* Combined summary */}
+        {data.summary && (
+          <div>
+            <SectionLabel>Combined Summary</SectionLabel>
+            <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, padding: 16 }}>
+              <p style={{ fontSize: 12, color: C.text, lineHeight: 1.7, fontFamily: C.sansFont, margin: 0 }}>{data.summary}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Bull / Bear */}
+        {(data.bull_case || data.bear_case) && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            {data.bull_case && (
+              <div style={{ background: `${C.green}08`, border: `1px solid ${C.green}20`, borderRadius: 6, padding: 14 }}>
+                <span style={{ fontSize: 9, fontWeight: 800, color: C.green, fontFamily: C.font, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Bull Case</span>
+                <p style={{ fontSize: 11, color: C.text, lineHeight: 1.6, fontFamily: C.sansFont, marginTop: 8, marginBottom: 0 }}>{data.bull_case}</p>
+              </div>
+            )}
+            {data.bear_case && (
+              <div style={{ background: `${C.red}08`, border: `1px solid ${C.red}20`, borderRadius: 6, padding: 14 }}>
+                <span style={{ fontSize: 9, fontWeight: 800, color: C.red, fontFamily: C.font, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Bear Case</span>
+                <p style={{ fontSize: 11, color: C.text, lineHeight: 1.6, fontFamily: C.sansFont, marginTop: 8, marginBottom: 0 }}>{data.bear_case}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Risk factors */}
+        {data.risk_factors?.length > 0 && (
+          <div>
+            <SectionLabel>Risk Factors</SectionLabel>
+            <ul style={{ margin: 0, paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {data.risk_factors.map((r: string, i: number) => (
+                <li key={i} style={{ fontSize: 11, color: C.text, fontFamily: C.sansFont, lineHeight: 1.5 }}>{r}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Technical + Analyst */}
+        {data.technical_outlook && (
+          <div>
+            <SectionLabel>Technical Outlook</SectionLabel>
+            <p style={{ fontSize: 11, color: C.text, lineHeight: 1.6, fontFamily: C.sansFont, margin: 0 }}>{data.technical_outlook}</p>
+          </div>
+        )}
+        {data.analyst_sentiment && (
+          <div>
+            <SectionLabel>Analyst Sentiment</SectionLabel>
+            <p style={{ fontSize: 11, color: C.text, lineHeight: 1.6, fontFamily: C.sansFont, margin: 0 }}>{data.analyst_sentiment}</p>
+          </div>
+        )}
       </div>
     );
   }
 
+  /* Loading skeleton */
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: C.teal, fontSize: 12, fontFamily: C.font }}>
+          <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} />
+          Querying {selectedModels.join(', ')} for {ticker}...
+        </div>
+        {[1,2,3,4].map(i => (
+          <div key={i} style={{ background: C.card, borderRadius: 6, height: 70 + i * 18, opacity: 0.35, animation: 'pulse 1.5s infinite' }} />
+        ))}
+        <style>{`@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}} @keyframes pulse{0%,100%{opacity:.35}50%{opacity:.6}}`}</style>
+      </div>
+    );
+  }
+
+  /* Error state */
   if (error) {
-    return <div style={{ color: C.red, fontSize: 12 }}>Failed to load AI analysis: {error}</div>;
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ color: C.red, fontSize: 12, fontFamily: C.sansFont }}>
+          Failed to generate report: {error}
+        </div>
+        <ModelPicker
+          ticker={ticker}
+          selectedModels={selectedModels}
+          toggleModel={toggleModel}
+          reportModel={reportModel}
+          setReportModel={setReportModel}
+          onGenerate={onGenerate}
+          loading={loading}
+        />
+      </div>
+    );
   }
 
-  if (!data) {
-    return <div style={{ color: C.dim, fontSize: 12 }}>Click to load AI deep dive analysis.</div>;
-  }
-
+  /* Initial state — show picker */
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-      {data.extended_thesis && (
-        <div>
-          <SectionLabel>Extended Thesis</SectionLabel>
-          <p style={{ fontSize: 12, color: C.text, lineHeight: 1.7, fontFamily: C.sansFont, margin: 0 }}>{data.extended_thesis}</p>
-        </div>
-      )}
+    <ModelPicker
+      ticker={ticker}
+      selectedModels={selectedModels}
+      toggleModel={toggleModel}
+      reportModel={reportModel}
+      setReportModel={setReportModel}
+      onGenerate={onGenerate}
+      loading={loading}
+    />
+  );
+}
 
-      {(data.bull_case || data.bear_case) && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-          {data.bull_case && (
-            <div style={{ background: `${C.green}08`, border: `1px solid ${C.green}20`, borderRadius: 6, padding: 14 }}>
-              <span style={{ fontSize: 9, fontWeight: 800, color: C.green, fontFamily: C.font, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Bull Case</span>
-              <p style={{ fontSize: 11, color: C.text, lineHeight: 1.6, fontFamily: C.sansFont, marginTop: 8, marginBottom: 0 }}>{data.bull_case}</p>
-            </div>
-          )}
-          {data.bear_case && (
-            <div style={{ background: `${C.red}08`, border: `1px solid ${C.red}20`, borderRadius: 6, padding: 14 }}>
-              <span style={{ fontSize: 9, fontWeight: 800, color: C.red, fontFamily: C.font, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Bear Case</span>
-              <p style={{ fontSize: 11, color: C.text, lineHeight: 1.6, fontFamily: C.sansFont, marginTop: 8, marginBottom: 0 }}>{data.bear_case}</p>
-            </div>
-          )}
+/* ── Model Picker ─────────────────────────────────────────────────── */
+function ModelPicker({ ticker, selectedModels, toggleModel, reportModel, setReportModel, onGenerate, loading }: {
+  ticker: string;
+  selectedModels: string[];
+  toggleModel: (id: string) => void;
+  reportModel: 'claude' | 'gpt';
+  setReportModel: (m: 'claude' | 'gpt') => void;
+  onGenerate: () => void;
+  loading: boolean;
+}) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {/* Header */}
+      <div>
+        <div style={{ fontSize: 14, fontWeight: 800, color: C.bright, fontFamily: C.sansFont, marginBottom: 4 }}>
+          AI Deep Dive — {ticker}
         </div>
-      )}
+        <p style={{ fontSize: 12, color: C.dim, fontFamily: C.sansFont, margin: 0, lineHeight: 1.5 }}>
+          Select which AI models to query. Each plays to its strengths to build a complete picture of this asset.
+        </p>
+      </div>
 
-      {data.risk_factors?.length > 0 && (
-        <div>
-          <SectionLabel>Risk Factors</SectionLabel>
-          <ul style={{ margin: 0, paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 4 }}>
-            {data.risk_factors.map((r: string, i: number) => (
-              <li key={i} style={{ fontSize: 11, color: C.text, fontFamily: C.sansFont, lineHeight: 1.5 }}>{r}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {data.technical_outlook && (
-        <div>
-          <SectionLabel>Technical Outlook</SectionLabel>
-          <p style={{ fontSize: 11, color: C.text, lineHeight: 1.6, fontFamily: C.sansFont, margin: 0 }}>{data.technical_outlook}</p>
-        </div>
-      )}
-
-      {data.analyst_sentiment && (
-        <div>
-          <SectionLabel>Analyst Sentiment Summary</SectionLabel>
-          <p style={{ fontSize: 11, color: C.text, lineHeight: 1.6, fontFamily: C.sansFont, margin: 0 }}>{data.analyst_sentiment}</p>
-        </div>
-      )}
-
-      {data.sector_peers?.length > 0 && (
-        <div>
-          <SectionLabel>Sector Peers Comparison</SectionLabel>
-          <div style={{ borderRadius: 6, overflow: 'hidden', border: `1px solid ${C.border}` }}>
-            <div style={{
-              display: 'grid', gridTemplateColumns: '80px 1fr 100px',
-              padding: '7px 14px', background: C.card,
-              fontSize: 8, fontWeight: 700, color: C.dim, fontFamily: C.font,
-              textTransform: 'uppercase', letterSpacing: '0.06em',
-              borderBottom: `1px solid ${C.border}`,
-            }}>
-              <span>Ticker</span><span>Market Cap</span><span>Key Multiple</span>
-            </div>
-            {data.sector_peers.map((peer: any, i: number) => (
-              <div key={i} style={{
-                display: 'grid', gridTemplateColumns: '80px 1fr 100px',
-                padding: '7px 14px', borderBottom: `1px solid ${C.border}`,
-                background: i % 2 === 0 ? 'transparent' : `${C.border}08`,
-              }}>
-                <span style={{ fontSize: 11, fontWeight: 800, color: C.bright, fontFamily: C.font }}>{peer.ticker}</span>
-                <span style={{ fontSize: 10, color: C.text, fontFamily: C.font }}>{fmtNumber(peer.market_cap)}</span>
-                <span style={{ fontSize: 10, color: C.teal, fontFamily: C.font }}>{peer.key_multiple ?? '—'}</span>
+      {/* Model cards */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {MODEL_OPTIONS.map(opt => {
+          const checked = selectedModels.includes(opt.id);
+          return (
+            <button
+              key={opt.id}
+              onClick={() => toggleModel(opt.id)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 12,
+                padding: '12px 14px', borderRadius: 6, cursor: 'pointer',
+                background: checked ? `${opt.color}08` : C.card,
+                border: `1px solid ${checked ? opt.color + '40' : C.border}`,
+                textAlign: 'left', transition: 'all 0.15s',
+              }}
+            >
+              {checked
+                ? <CheckSquare style={{ width: 16, height: 16, color: opt.color, flexShrink: 0 }} />
+                : <Square      style={{ width: 16, height: 16, color: C.dim,      flexShrink: 0 }} />
+              }
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: checked ? opt.color : C.text, fontFamily: C.font }}>
+                  {opt.label}
+                </div>
+                <div style={{ fontSize: 10, color: C.dim, fontFamily: C.sansFont, marginTop: 2 }}>
+                  {opt.desc}
+                </div>
               </div>
-            ))}
-          </div>
-        </div>
+
+              {/* Claude/GPT sub-selector */}
+              {opt.id === 'claude_gpt' && checked && (
+                <div style={{ display: 'flex', gap: 6 }} onClick={e => e.stopPropagation()}>
+                  {(['claude', 'gpt'] as const).map(m => (
+                    <button
+                      key={m}
+                      onClick={() => setReportModel(m)}
+                      style={{
+                        padding: '3px 10px', borderRadius: 3,
+                        fontSize: 9, fontWeight: 700, fontFamily: C.font,
+                        cursor: 'pointer',
+                        background: reportModel === m ? `${C.purple}30` : 'transparent',
+                        border: `1px solid ${reportModel === m ? C.purple : C.border}`,
+                        color: reportModel === m ? C.purple : C.dim,
+                      }}
+                    >
+                      {m.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Generate button */}
+      <button
+        onClick={onGenerate}
+        disabled={loading || selectedModels.length === 0}
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          padding: '12px 24px', borderRadius: 6,
+          fontSize: 12, fontWeight: 800, fontFamily: C.font,
+          cursor: selectedModels.length === 0 ? 'not-allowed' : 'pointer',
+          background: selectedModels.length === 0 ? C.card : `linear-gradient(135deg, ${C.teal}, ${C.purple})`,
+          border: 'none', color: selectedModels.length === 0 ? C.dim : '#000',
+          opacity: loading ? 0.7 : 1, transition: 'all 0.2s',
+        }}
+      >
+        <Zap style={{ width: 14, height: 14 }} />
+        Generate Deep Dive Report
+      </button>
+
+      {selectedModels.length === 0 && (
+        <p style={{ fontSize: 10, color: C.red, fontFamily: C.font, margin: 0, textAlign: 'center' }}>
+          Select at least one model to generate a report.
+        </p>
       )}
+
+      {/* Info note */}
+      <div style={{ padding: 12, borderRadius: 6, background: C.card, border: `1px solid ${C.border}` }}>
+        <p style={{ fontSize: 10, color: C.dim, fontFamily: C.sansFont, margin: 0, lineHeight: 1.6 }}>
+          <strong style={{ color: C.text }}>How it works:</strong> Grok queries X/Twitter for real-time sentiment and breaking news. 
+          Gemini searches Google for analyst upgrades, headlines, and web intelligence. 
+          Claude/GPT synthesizes everything into a structured analysis with bull/bear cases and risk factors.
+          Generation typically takes 20-40 seconds.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* ── Report Section (for deep dive) ──────────────────────────────── */
+function ReportSection({ title, color, content }: { title: string; color: string; content: any }) {
+  const text = typeof content === 'string' ? content : JSON.stringify(content, null, 2);
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+        <div style={{ width: 3, height: 14, background: color, borderRadius: 2 }} />
+        <span style={{ fontSize: 9, fontWeight: 800, color, fontFamily: C.font, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+          {title}
+        </span>
+      </div>
+      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, padding: 14 }}>
+        <p style={{ fontSize: 11, color: C.text, lineHeight: 1.7, fontFamily: C.sansFont, margin: 0, whiteSpace: 'pre-wrap' }}>
+          {text}
+        </p>
+      </div>
     </div>
   );
 }
@@ -501,9 +854,10 @@ function InfoCard({ label, color, children }: { label: string; color: string; ch
   );
 }
 
-function MetricBox({ label, value }: { label: string; value?: any }) {
+function MetricBox({ label, value, raw, colored }: { label: string; value?: any; raw?: boolean; colored?: 'green' | 'red' }) {
   if (value === undefined || value === null || value === '') return null;
-  const display = typeof value === 'number' ? value.toFixed(1) : String(value);
+  const display = raw ? String(value) : (typeof value === 'number' ? value.toFixed(1) : String(value));
+  const col = colored === 'green' ? C.green : colored === 'red' ? C.red : C.text;
   return (
     <div style={{
       display: 'flex', flexDirection: 'column', alignItems: 'center',
@@ -511,7 +865,7 @@ function MetricBox({ label, value }: { label: string; value?: any }) {
       borderRadius: 4, border: `1px solid ${C.border}`,
     }}>
       <span style={{ fontSize: 8, color: C.dim, fontFamily: C.font, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</span>
-      <span style={{ fontSize: 13, color: C.text, fontWeight: 700, fontFamily: C.font, marginTop: 2 }}>{display}</span>
+      <span style={{ fontSize: 13, color: col, fontWeight: 700, fontFamily: C.font, marginTop: 2 }}>{display}</span>
     </div>
   );
 }
