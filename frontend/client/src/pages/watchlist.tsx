@@ -297,11 +297,23 @@ function parseCsvTickers(csvText: string): string[] {
 }
 
 /* ── new-format sections display ────────────────────────────────────── */
-function NewFormatSections({ analysis, onTickerClick }: { analysis: any; onTickerClick?: (t: string) => void }) {
+function NewFormatSections({ analysis, onTickerClick, allTickerSymbols }: { analysis: any; onTickerClick?: (t: string) => void; allTickerSymbols?: string[] }) {
   const sections: any[] = analysis?.sections || [];
   if (!sections.length) return null;
+
+  // Compute pending tickers
+  const analyzedSymbols = new Set<string>();
+  for (const section of sections) {
+    for (const t of (section.tickers || [])) {
+      const sym = t.symbol || t.ticker;
+      if (sym) analyzedSymbols.add(sym.toUpperCase());
+    }
+  }
+  const pendingSymbols = (allTickerSymbols || []).filter(s => !analyzedSymbols.has(s.toUpperCase()));
+
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 12 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 12 }}>
       {sections.map((section: any) => {
         const accent = SECTION_ACCENTS[section.id] || C.teal;
         const tickers: any[] = section.tickers || [];
@@ -398,6 +410,41 @@ function NewFormatSections({ analysis, onTickerClick }: { analysis: any; onTicke
           </div>
         );
       })}
+      </div>
+
+      {/* Pending analysis card — shown when some tickers haven't been analyzed yet */}
+      {pendingSymbols.length > 0 && (
+        <div style={{
+          background: C.card, border: `1px solid ${C.amber}30`,
+          borderLeft: `3px solid ${C.amber}`,
+          borderRadius: 6, padding: '12px 16px',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+            <span style={{ fontSize: 11, fontWeight: 800, color: C.amber, fontFamily: C.sansFont }}>
+              ⏳ {pendingSymbols.length} Tickers Pending Analysis
+            </span>
+            <span style={{ fontSize: 9, color: C.dim, fontFamily: C.sansFont }}>
+              Hit Refresh to analyze all tickers in batches
+            </span>
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+            {pendingSymbols.slice(0, 60).map(sym => (
+              <span key={sym} style={{
+                fontSize: 9, fontWeight: 700, fontFamily: C.font,
+                padding: '2px 7px', borderRadius: 3,
+                color: C.dim, background: C.border,
+              }}>
+                {sym}
+              </span>
+            ))}
+            {pendingSymbols.length > 60 && (
+              <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font, padding: '2px 7px' }}>
+                +{pendingSymbols.length - 60} more
+              </span>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -604,6 +651,19 @@ export default function WatchlistPage() {
   const allNews = flattenNews(newsData);
   const marketThemes: string[] = newFmt ? (analysis?.market_themes || []) : [];
   const lastUpdated: string | undefined = newFmt ? analysis?.last_updated : watchlist?.saved_at;
+
+  /* ── merged ticker list: all CSV tickers + analysis data where available ── */
+  const allTickerSymbols: string[] = watchlist?.tickers || [];
+  const analyzedMap = new Map<string, any>(allStocks.map(s => [s.ticker?.toUpperCase(), s]));
+  const mergedTickers = allTickerSymbols.length > 0
+    ? allTickerSymbols.map(sym => {
+        const key = sym.toUpperCase();
+        const analyzed = analyzedMap.get(key);
+        return analyzed ? { ...analyzed, _pending: false } : { ticker: sym, _pending: true };
+      })
+    : allStocks.map(s => ({ ...s, _pending: false }));
+  const pendingCount = mergedTickers.filter(t => t._pending).length;
+  const analyzedCount = mergedTickers.length - pendingCount;
 
   /* ── tab bar renderer (shared between empty + main states) ─────── */
   const renderTabBar = () => (
@@ -992,6 +1052,17 @@ export default function WatchlistPage() {
             </button>
           );
         })}
+        {pendingCount > 0 && (
+          <div style={{
+            flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5,
+            padding: '5px 12px', borderRadius: 4,
+            background: C.amber + '10', border: `1px solid ${C.amber}25`,
+          }}>
+            <span style={{ fontSize: 9, fontWeight: 700, color: C.amber, fontFamily: C.font }}>
+              +{pendingCount} pending analysis
+            </span>
+          </div>
+        )}
       </div>
     );
   };
@@ -1060,70 +1131,90 @@ export default function WatchlistPage() {
         <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: '0.1em' }}>
           TICKERS
         </span>
-        <span style={{ fontSize: 9, color: C.dim }}>({allStocks.length})</span>
+        <span style={{ fontSize: 9, color: C.dim }}>
+          {pendingCount > 0
+            ? `${analyzedCount} analyzed · ${pendingCount} pending`
+            : `${mergedTickers.length} total`}
+        </span>
+        {pendingCount > 0 && (
+          <span style={{
+            fontSize: 7, fontWeight: 800, fontFamily: C.font,
+            padding: '2px 6px', borderRadius: 3,
+            color: C.amber, background: C.amber + '18',
+            border: `1px solid ${C.amber}30`,
+            textTransform: 'uppercase' as const, letterSpacing: '0.04em',
+          }}>
+            {pendingCount} PENDING ANALYSIS
+          </span>
+        )}
       </div>
 
       {/* table header */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: '62px 1fr 72px 52px 62px',
+        gridTemplateColumns: '62px 1fr 72px 52px 70px',
         padding: '6px 14px',
         borderBottom: `1px solid ${C.border}`,
         fontSize: 8, fontWeight: 700, color: C.dim,
         textTransform: 'uppercase' as const, letterSpacing: '0.08em',
       }}>
-        <span>Ticker</span><span>Company</span><span>Price</span><span>Chg%</span><span>Risk</span>
+        <span>Ticker</span><span>Company</span><span>Price</span><span>Chg%</span><span>Status</span>
       </div>
 
       {/* table rows */}
       <div style={{ flex: 1, overflowY: 'auto' }} className="wl-scrollbar">
-        {allStocks.map((stock, i) => {
+        {mergedTickers.map((stock, i) => {
+          const isPending = stock._pending;
           const cCol = changeColor(stock.change_pct);
           const rCol = riskColor(stock.risk_level);
           return (
             <div
               key={`row-${stock.ticker}-${i}`}
-              onClick={() => stock.ticker && handleTickerClick(stock.ticker)}
+              onClick={() => !isPending && stock.ticker && handleTickerClick(stock.ticker)}
               style={{
                 display: 'grid',
-                gridTemplateColumns: '62px 1fr 72px 52px 62px',
+                gridTemplateColumns: '62px 1fr 72px 52px 70px',
                 padding: '7px 14px',
                 borderBottom: `1px solid ${C.border}`,
                 background: i % 2 === 0 ? 'transparent' : `${C.border}08`,
-                cursor: 'pointer',
+                cursor: isPending ? 'default' : 'pointer',
                 transition: 'background 0.1s',
                 alignItems: 'center',
+                opacity: isPending ? 0.55 : 1,
               }}
-              onMouseEnter={e => e.currentTarget.style.background = `${C.teal}0c`}
-              onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : `${C.border}08`}
+              onMouseEnter={e => { if (!isPending) e.currentTarget.style.background = `${C.teal}0c`; }}
+              onMouseLeave={e => { e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : `${C.border}08`; }}
             >
-              <span style={{ fontSize: 11, fontWeight: 800, color: '#fff' }}>
+              <span style={{ fontSize: 11, fontWeight: 800, color: isPending ? C.dim : '#fff' }}>
                 {stock.ticker || '\u2014'}
               </span>
               <span style={{ fontSize: 10, color: C.dim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
-                {stock.company || '\u2014'}
+                {isPending ? '' : (stock.company || '\u2014')}
               </span>
               <span style={{ fontSize: 10, fontWeight: 700, color: C.text, fontFamily: C.font }}>
-                {stock.price != null ? `$${stock.price.toFixed(2)}` : '\u2014'}
+                {!isPending && stock.price != null ? `$${stock.price.toFixed(2)}` : '\u2014'}
               </span>
               <span style={{ fontSize: 10, fontWeight: 700, color: cCol, fontFamily: C.font }}>
-                {stock.change_pct != null ? `${stock.change_pct > 0 ? '+' : ''}${stock.change_pct.toFixed(1)}%` : '\u2014'}
+                {!isPending && stock.change_pct != null
+                  ? `${stock.change_pct > 0 ? '+' : ''}${stock.change_pct.toFixed(1)}%`
+                  : '\u2014'}
               </span>
               <span style={{
                 fontSize: 7, fontWeight: 800, fontFamily: C.font,
                 padding: '2px 5px', borderRadius: 3,
-                color: rCol, background: rCol + '15',
+                color: isPending ? C.amber : rCol,
+                background: (isPending ? C.amber : rCol) + '15',
                 textTransform: 'uppercase' as const, letterSpacing: '0.04em',
                 textAlign: 'center' as const, whiteSpace: 'nowrap' as const,
                 justifySelf: 'start',
               }}>
-                {stock.risk_level ? stock.risk_level.toUpperCase() : '\u2014'}
+                {isPending ? 'PENDING' : (stock.risk_level ? stock.risk_level.toUpperCase() : '\u2014')}
               </span>
             </div>
           );
         })}
-        {allStocks.length === 0 && (
-          <div style={{ padding: 20, textAlign: 'center', fontSize: 11, color: C.dim }}>No stocks</div>
+        {mergedTickers.length === 0 && (
+          <div style={{ padding: 20, textAlign: 'center', fontSize: 11, color: C.dim }}>No tickers</div>
         )}
       </div>
     </div>
@@ -1273,7 +1364,9 @@ export default function WatchlistPage() {
             }}>
               {newFmt
                 ? (analysis?.sections?.length
-                  ? `${analysis.sections.length} sections \u00B7 ${allStocks.length} tickers analyzed`
+                  ? pendingCount > 0
+                    ? `${analysis.sections.length} sections · ${analyzedCount}/${mergedTickers.length} analyzed · ${pendingCount} pending`
+                    : `${analysis.sections.length} sections · ${analyzedCount} tickers analyzed`
                   : '')
                 : (analysis?.summary || '')}
             </div>
@@ -1324,7 +1417,7 @@ export default function WatchlistPage() {
             <div style={{ padding: '16px 20px', position: 'relative', minHeight: refreshMut.isPending ? 280 : undefined }}>
               {refreshMut.isPending && <AnalysisLoadingOverlay />}
               {newFmt
-                ? <NewFormatSections analysis={analysis} onTickerClick={handleTickerClick} />
+                ? <NewFormatSections analysis={analysis} onTickerClick={handleTickerClick} allTickerSymbols={allTickerSymbols} />
                 : <WatchlistAnalysis data={analysis} onTickerClick={handleTickerClick} />
               }
             </div>
