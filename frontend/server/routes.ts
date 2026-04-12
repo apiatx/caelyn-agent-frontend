@@ -2350,6 +2350,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
+  // Create / upload a new watchlist (proxied to FastAPI POST /api/watchlist)
+  app.post('/api/watchlist/upload', async (req, res) => {
+    try {
+      const { tickers, name, csv_data } = req.body;
+      if (!tickers || !Array.isArray(tickers) || !tickers.length) {
+        return res.status(400).json({ error: 'tickers array is required' });
+      }
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 60000);
+      const r = await fetch(`${WL_URL}/api/watchlist`, {
+        method: 'POST',
+        headers: { ...wlHdr() },
+        body: JSON.stringify({ tickers, name, csv_data }),
+        signal: ctrl.signal,
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        console.error('[watchlist/upload] FastAPI error:', r.status, JSON.stringify(data).slice(0, 300));
+        return res.status(r.status).json({ error: data.message || data.detail || `Backend ${r.status}` });
+      }
+      res.json(data);
+    } catch (e: any) {
+      const msg = e?.name === 'AbortError' ? 'Watchlist creation timed out' : e?.message || 'Upload failed';
+      res.status(500).json({ error: msg });
+    }
+  });
+
   // Get specific watchlist
   app.get('/api/watchlist/:wid', async (req, res, next) => {
     const { wid } = req.params;

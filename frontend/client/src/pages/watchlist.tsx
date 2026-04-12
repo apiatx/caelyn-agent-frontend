@@ -86,12 +86,15 @@ function extractAllStocks(analysis: any): any[] {
       if (Array.isArray(section.tickers)) {
         for (const t of section.tickers) {
           stocks.push({
-            ticker: t.symbol,
-            company: t.name,
+            ticker: t.symbol || t.ticker,
+            company: t.name || t.company,
             price: t.price,
             change_pct: t.change_pct,
             signal: t.change_pct != null ? (t.change_pct >= 0 ? 'BUY' : 'HOLD') : undefined,
             risk_level: t.risk_level,
+            catalyst: t.catalyst,
+            sentiment: t.sentiment,
+            action_note: t.action_note,
             key_insight: t.key_insight,
             section_id: section.id,
             section_title: section.title,
@@ -284,6 +287,121 @@ function AnalysisLoadingOverlay() {
   );
 }
 
+/* ── parse CSV → tickers (first column, skip header) ───────────────── */
+function parseCsvTickers(csvText: string): string[] {
+  const lines = csvText.split(/\r?\n/).filter(Boolean);
+  if (lines.length < 2) return [];
+  return lines.slice(1)
+    .map(l => l.split(',')[0].trim().replace(/^"(.*)"$/, '$1'))
+    .filter(Boolean);
+}
+
+/* ── new-format sections display ────────────────────────────────────── */
+function NewFormatSections({ analysis, onTickerClick }: { analysis: any; onTickerClick?: (t: string) => void }) {
+  const sections: any[] = analysis?.sections || [];
+  if (!sections.length) return null;
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 12 }}>
+      {sections.map((section: any) => {
+        const accent = SECTION_ACCENTS[section.id] || C.teal;
+        const tickers: any[] = section.tickers || [];
+        return (
+          <div key={section.id} style={{
+            background: C.card,
+            border: `1px solid ${C.border}`,
+            borderLeft: `3px solid ${accent}`,
+            borderRadius: 6,
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+          }}>
+            <div style={{ padding: '10px 14px', borderBottom: `1px solid ${C.border}` }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: '#fff', fontFamily: C.sansFont, letterSpacing: '0.02em' }}>
+                {section.title}
+              </div>
+              {section.subtitle && (
+                <div style={{ fontSize: 9, color: C.dim, marginTop: 3, fontFamily: C.sansFont, lineHeight: 1.4 }}>
+                  {section.subtitle}
+                </div>
+              )}
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', maxHeight: 340 }} className="wl-scrollbar">
+              {tickers.map((stock: any, i: number) => {
+                const sym = stock.symbol || stock.ticker;
+                const chg = stock.change_pct;
+                const chgCol = chg != null ? (chg >= 0 ? C.green : C.red) : C.dim;
+                return (
+                  <div
+                    key={sym || i}
+                    onClick={() => sym && onTickerClick?.(sym)}
+                    style={{
+                      padding: '9px 14px',
+                      borderBottom: i < tickers.length - 1 ? `1px solid ${C.border}` : 'none',
+                      cursor: 'pointer',
+                      transition: 'background 0.1s',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.background = `${accent}0c`)}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 4 }}>
+                      <span style={{ fontSize: 12, fontWeight: 800, color: '#fff', fontFamily: C.font, flexShrink: 0 }}>
+                        {sym || '—'}
+                      </span>
+                      <span style={{ fontSize: 9, color: C.dim, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
+                        {stock.name || stock.company}
+                      </span>
+                      {stock.price != null && (
+                        <span style={{ fontSize: 10, fontWeight: 700, color: C.text, fontFamily: C.font, flexShrink: 0 }}>
+                          ${Number(stock.price).toFixed(2)}
+                        </span>
+                      )}
+                      {chg != null && (
+                        <span style={{
+                          fontSize: 8, fontWeight: 800, fontFamily: C.font,
+                          padding: '1px 5px', borderRadius: 3, flexShrink: 0,
+                          color: chgCol, background: chgCol + '18',
+                        }}>
+                          {chg > 0 ? '+' : ''}{Number(chg).toFixed(1)}%
+                        </span>
+                      )}
+                      {stock.risk_level && (
+                        <span style={{
+                          fontSize: 7, fontWeight: 800, fontFamily: C.font,
+                          padding: '1px 5px', borderRadius: 3, flexShrink: 0,
+                          color: riskColor(stock.risk_level),
+                          background: riskColor(stock.risk_level) + '18',
+                          textTransform: 'uppercase' as const,
+                        }}>
+                          {stock.risk_level}
+                        </span>
+                      )}
+                    </div>
+                    {stock.catalyst && (
+                      <div style={{ fontSize: 9, color: C.dim, lineHeight: 1.4, marginBottom: stock.action_note ? 3 : 0,
+                        overflow: 'hidden', display: '-webkit-box' as any,
+                        WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any }}>
+                        ⚡ {stock.catalyst}
+                      </div>
+                    )}
+                    {stock.action_note && (
+                      <div style={{ fontSize: 9, color: accent, fontWeight: 600, fontFamily: C.sansFont, lineHeight: 1.3 }}>
+                        → {stock.action_note}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              {tickers.length === 0 && (
+                <div style={{ padding: 14, fontSize: 10, color: C.dim, textAlign: 'center' }}>No tickers</div>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 /* ═══════════════════════════════════════════════════════════════════════
    WATCHLIST PAGE — Bloomberg Terminal Style
    ═══════════════════════════════════════════════════════════════════════ */
@@ -407,49 +525,42 @@ export default function WatchlistPage() {
   }, []);
 
   /* ── upload handlers ────────────────────────────────────────────── */
-  const AGENT_BACKEND_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
-
   async function handleUpload(csvText: string, _fileName?: string) {
     setUploadLoading(true);
     setShowAddPanel(false);
-    setUploadStage('Analyzing watchlist...');
+    setUploadStage('Parsing watchlist...');
     const nameToSet = watchlistName.trim();
     setWatchlistName('');
     try {
-      await fetch(`${AGENT_BACKEND_URL}/api/query`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query: 'Analyze this watchlist CSV and give me a buy/hold/sell for every asset, plus the top 2-3 best investments right now based on the data.',
-          csv_data: csvText,
-        }),
-      });
-      qc.invalidateQueries({ queryKey: ['/api/watchlist/list'] });
-      setTimeout(async () => {
-        const listRes = await fetch('/api/watchlist/list');
-        const list: WatchlistMeta[] = await listRes.json();
-        qc.setQueryData(['/api/watchlist/list'], list);
-
-        if (list.length > 0) {
-          const newest = list[0];
-          if (nameToSet) {
-            await fetch(`/api/watchlist/${newest.id}/rename`, {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ name: nameToSet }),
-            });
-            qc.invalidateQueries({ queryKey: ['/api/watchlist/list'] });
-          }
-          setActiveId(newest.id);
-        }
+      const tickers = parseCsvTickers(csvText);
+      if (!tickers.length) {
+        alert('No tickers found in the CSV. Make sure the first column contains ticker symbols.');
         setUploadLoading(false);
         setUploadStage('');
-      }, 2500);
+        return;
+      }
+      setUploadStage(`Creating watchlist (${tickers.length} tickers)...`);
+      const createRes = await fetch('/api/watchlist/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tickers, name: nameToSet || undefined, csv_data: csvText }),
+      });
+      if (!createRes.ok) {
+        const err = await createRes.json().catch(() => ({}));
+        throw new Error(err.error || `Server returned ${createRes.status}`);
+      }
+      const created = await createRes.json();
+      const newId: string = created.id;
+      if (newId) {
+        qc.invalidateQueries({ queryKey: ['/api/watchlist/list'] });
+        setActiveId(newId);
+      }
     } catch (err: any) {
       console.error('Upload failed:', err);
+      alert('Upload failed: ' + (err.message || 'Unknown error'));
+    } finally {
       setUploadLoading(false);
       setUploadStage('');
-      alert('Upload failed: ' + (err.message || 'Unknown error'));
     }
   }
 
@@ -1209,10 +1320,13 @@ export default function WatchlistPage() {
             {/* ── Row 1: Signal Summary Strip ── */}
             {newFmt ? renderNewFormatSignalStrip() : renderLegacySignalStrip()}
 
-            {/* ── Row 2: WatchlistAnalysis section panels ── */}
+            {/* ── Row 2: Section panels (new format) / Category panels (legacy) ── */}
             <div style={{ padding: '16px 20px', position: 'relative', minHeight: refreshMut.isPending ? 280 : undefined }}>
               {refreshMut.isPending && <AnalysisLoadingOverlay />}
-              <WatchlistAnalysis data={analysis} onTickerClick={handleTickerClick} />
+              {newFmt
+                ? <NewFormatSections analysis={analysis} onTickerClick={handleTickerClick} />
+                : <WatchlistAnalysis data={analysis} onTickerClick={handleTickerClick} />
+              }
             </div>
 
             {/* ── Row 3: Bottom Split (Ticker Table + News Feed) ── */}
