@@ -2334,6 +2334,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Rename specific watchlist
+  app.patch('/api/watchlist/:wid/rename', async (req, res) => {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 10000);
+      const r = await fetch(`${WL_URL}/api/watchlist/${req.params.wid}/rename`, {
+        method: 'PATCH',
+        headers: { ...wlHdr(), 'Content-Type': 'application/json' },
+        body: JSON.stringify(req.body),
+        signal: ctrl.signal,
+      });
+      if (!r.ok) return res.status(r.status).json({ error: 'Rename failed' });
+      res.json(await r.json());
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
   // Get specific watchlist
   app.get('/api/watchlist/:wid', async (req, res, next) => {
     const { wid } = req.params;
