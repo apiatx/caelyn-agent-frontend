@@ -1980,6 +1980,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/hyperliquid/signals', async (req, res) => {
+    try {
+      const r = await fetch(
+        `${HL_URL}/api/hyperliquid/screener/signals`,
+        { headers: hlHdr() }
+      );
+      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
+      res.json(await r.json());
+    } catch (e: any) {
+      res.status(500).json({ error: 'Failed to fetch Hyperliquid signals' });
+    }
+  });
+
   // === Sector Rotation (proxy to FastAPI backend) ===
   const SR_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
   const SR_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
