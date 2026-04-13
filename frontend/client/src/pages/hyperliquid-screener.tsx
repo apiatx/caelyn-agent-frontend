@@ -1083,7 +1083,7 @@ function AdvancedSignalCards({ selectedCoin, onSelect, onChartOpen }: {
   onSelect: (coin: string) => void;
   onChartOpen: (title: string, coins: string[]) => void;
 }) {
-  const { data, isLoading, isError } = useQuery<AdvancedSignals>({
+  const { data: rawSignals, isLoading, isError } = useQuery<AdvancedSignals>({
     queryKey: ['hl-advanced-signals'],
     queryFn: async () => {
       const r = await fetch('/api/hyperliquid/signals');
@@ -1093,11 +1093,27 @@ function AdvancedSignalCards({ selectedCoin, onSelect, onChartOpen }: {
     refetchInterval: 30_000,
     staleTime: 29_000,
     gcTime: 60 * 60 * 1000,
-    retry: 2,
-    retryDelay: 5000,
+    retry: 3,
+    retryDelay: (attempt) => Math.min(3000 * (attempt + 1), 15000),
     refetchOnWindowFocus: false,
     placeholderData: (prev: any) => prev,
   });
+
+  // ── Persistent last-good cache ─────────────────────────────────────────────
+  // Ensures sections always show data even when FastAPI is initializing or 503
+  const _lastGoodSig = useRef<AdvancedSignals | null>(null);
+  if (_lastGoodSig.current === null) {
+    try { const c = localStorage.getItem('hl_signals_cache'); if (c) _lastGoodSig.current = JSON.parse(c); } catch {}
+  }
+  const _sigHasContent = (d: AdvancedSignals | null | undefined) =>
+    !!(d && ((d.relative_strength_leaders?.length ?? 0) > 0 ||
+             (d.order_book_pressure?.length ?? 0) > 0 ||
+             (d.oi_regime_shift?.length ?? 0) > 0));
+  if (_sigHasContent(rawSignals)) {
+    _lastGoodSig.current = rawSignals!;
+    try { localStorage.setItem('hl_signals_cache', JSON.stringify(rawSignals)); } catch {}
+  }
+  const data = _sigHasContent(rawSignals) ? rawSignals : (_lastGoodSig.current ?? rawSignals);
 
   const rsLeaders = useMemo(() =>
     [...(data?.relative_strength_leaders ?? [])].sort((a, b) => b.rs_score - a.rs_score).slice(0, 10),
@@ -1129,8 +1145,8 @@ function AdvancedSignalCards({ selectedCoin, onSelect, onChartOpen }: {
     fontSize: 7, fontWeight: 700, letterSpacing: 1, color: C.dim, textTransform: 'uppercase',
   };
 
-  // Loading / empty state
-  if (isLoading) {
+  // Only show skeleton/error when there is truly no data at all (no cache either)
+  if (isLoading && !data) {
     return (
       <div style={{ padding: '0 14px 12px', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
         {[0, 1, 2, 3].map(i => (
@@ -1150,22 +1166,7 @@ function AdvancedSignalCards({ selectedCoin, onSelect, onChartOpen }: {
     );
   }
 
-  if (isError) {
-    return (
-      <div style={{ padding: '0 14px 12px', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
-        {[C.teal, C.purple, C.amber, C.red].map((color, i) => (
-          <div key={i} style={{ ...cardStyle, borderTop: `2px solid ${color}` }}>
-            <div style={{ padding: '16px', textAlign: 'center' }}>
-              <div style={{ fontSize: 9, color: C.dim }}>Signal data loading in background...</div>
-              <div style={{ fontSize: 8, color: C.dimLow, marginTop: 4 }}>Auto-refreshes every 30s</div>
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  if (!data || (rsLeaders.length === 0 && obPressure.length === 0 && oiRegime.length === 0)) return null;
+  if (!data) return null;
 
   return (
     <div style={{ padding: '0 14px 12px', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
@@ -1418,7 +1419,7 @@ function MomentumPanel({ selectedCoin, onSelect, onChartOpen }: {
   const [sortKey, setSortKey] = useState<TsmomSK>('default');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
-  const { data, isLoading, isError } = useQuery<TsmomResult>({
+  const { data: rawTsmom, isLoading, isError } = useQuery<TsmomResult>({
     queryKey: ['tsmom-signals'],
     queryFn: async () => {
       const r = await fetch('/api/hyperliquid/tsmom-signals?top_n=60');
@@ -1427,15 +1428,26 @@ function MomentumPanel({ selectedCoin, onSelect, onChartOpen }: {
     },
     refetchInterval: (query: any) => {
       const d = query?.state?.data as TsmomResult | undefined;
-      return !d || d.signals.length === 0 ? 15_000 : 60_000;
+      return !d || d.signals.length === 0 ? 12_000 : 60_000;
     },
-    staleTime: 14_000,
+    staleTime: 11_000,
     gcTime: 60 * 60 * 1000,
-    retry: 2,
-    retryDelay: 5000,
+    retry: 3,
+    retryDelay: (attempt) => Math.min(3000 * (attempt + 1), 15000),
     refetchOnWindowFocus: false,
     placeholderData: (prev: any) => prev,
   });
+
+  // ── Persistent last-good cache ─────────────────────────────────────────────
+  const _lastGoodTsmom = useRef<TsmomResult | null>(null);
+  if (_lastGoodTsmom.current === null) {
+    try { const c = localStorage.getItem('hl_tsmom_cache'); if (c) _lastGoodTsmom.current = JSON.parse(c); } catch {}
+  }
+  if ((rawTsmom?.signals?.length ?? 0) > 0) {
+    _lastGoodTsmom.current = rawTsmom!;
+    try { localStorage.setItem('hl_tsmom_cache', JSON.stringify(rawTsmom)); } catch {}
+  }
+  const data = (rawTsmom?.signals?.length ?? 0) > 0 ? rawTsmom : (_lastGoodTsmom.current ?? rawTsmom);
 
   const signals = data?.signals ?? [];
   const meta    = data?.meta;

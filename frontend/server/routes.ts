@@ -1959,6 +1959,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const _hlCache: Record<string, { data: any; ts: number; fetching: boolean }> = {};
   const HL_CACHE_TTL = 20_000; // 20 s — serve stale while refreshing behind the scenes
 
+  // Persistent caches for computed signal endpoints — served stale when FastAPI is down/empty
+  let _signalsCache: any = null;
+  let _tsmomCache: any = null;
+
   async function _fetchScreener(market_type: string, limit: string): Promise<any> {
     const r = await fetch(
       `${HL_URL}/api/hyperliquid/screener/snapshot?market_type=${market_type}&limit=${limit}`,
@@ -1982,6 +1986,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const data = await _fetchScreener('all', '200');
       _hlCache['all:200'] = { data, ts: Date.now(), fetching: false };
     } catch { /* silent — will populate on first request */ }
+  })();
+
+  // ── Background pre-warmer for signals + TSMOM caches ──────────────────────
+  // Retries every 20s until FastAPI is ready and returns data, then backs off to 90s
+  (async () => {
+    const warmSignals = async () => {
+      try {
+        const r = await fetch(`${HL_URL}/api/hyperliquid/screener/signals`, { headers: hlHdr(), signal: AbortSignal.timeout(12_000) });
+        if (!r.ok) return false;
+        const json = await r.json();
+        const hasContent = !!(json && ((json.relative_strength_leaders?.length ?? 0) > 0 || (json.order_book_pressure?.length ?? 0) > 0 || (json.oi_regime_shift?.length ?? 0) > 0));
+        if (hasContent) { _signalsCache = json; return true; }
+        return false;
+      } catch { return false; }
+    };
+    const warmTsmom = async () => {
+      try {
+        const r = await fetch(`${HL_URL}/api/hyperliquid/screener/tsmom-signals?top_n=60`, { headers: hlHdr(), signal: AbortSignal.timeout(12_000) });
+        if (!r.ok) return false;
+        const json = await r.json();
+        if ((json?.signals?.length ?? 0) > 0) { _tsmomCache = json; return true; }
+        return false;
+      } catch { return false; }
+    };
+    // Poll until both caches are warm, then slow-poll to keep them fresh
+    let sigWarm = false, tsmomWarm = false;
+    while (true) {
+      if (!sigWarm)   sigWarm   = await warmSignals();
+      if (!tsmomWarm) tsmomWarm = await warmTsmom();
+      const allWarm = sigWarm && tsmomWarm;
+      await new Promise(r => setTimeout(r, allWarm ? 90_000 : 20_000));
+      // After initial warm, keep refreshing both indefinitely
+      if (allWarm) { await warmSignals(); await warmTsmom(); }
+    }
   })();
 
   app.get('/api/hyperliquid/screener', async (req, res) => {
@@ -2026,11 +2064,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { top_n = 60 } = req.query;
       const r = await fetch(
         `${HL_URL}/api/hyperliquid/screener/tsmom-signals?top_n=${top_n}`,
-        { headers: hlHdr() }
+        { headers: hlHdr(), signal: AbortSignal.timeout(12_000) }
       );
-      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
-      res.json(await r.json());
+      if (!r.ok) {
+        if (_tsmomCache) { res.setHeader('X-Cache','STALE'); return res.json(_tsmomCache); }
+        return res.status(r.status).json({ error: `Backend ${r.status}` });
+      }
+      const json = await r.json();
+      const hasContent = (json?.signals?.length ?? 0) > 0;
+      if (hasContent) _tsmomCache = json;
+      if (!hasContent && _tsmomCache) { res.setHeader('X-Cache','STALE'); return res.json(_tsmomCache); }
+      res.json(json);
     } catch (e: any) {
+      if (_tsmomCache) { res.setHeader('X-Cache','STALE'); return res.json(_tsmomCache); }
       res.status(500).json({ error: 'Failed to fetch TSMOM signals' });
     }
   });
@@ -2064,11 +2110,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const r = await fetch(
         `${HL_URL}/api/hyperliquid/screener/signals`,
-        { headers: hlHdr() }
+        { headers: hlHdr(), signal: AbortSignal.timeout(12_000) }
       );
-      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
-      res.json(await r.json());
+      if (!r.ok) {
+        if (_signalsCache) { res.setHeader('X-Cache','STALE'); return res.json(_signalsCache); }
+        return res.status(r.status).json({ error: `Backend ${r.status}` });
+      }
+      const json = await r.json();
+      const hasContent = !!(json && (
+        (json.relative_strength_leaders?.length ?? 0) > 0 ||
+        (json.order_book_pressure?.length ?? 0) > 0 ||
+        (json.oi_regime_shift?.length ?? 0) > 0
+      ));
+      if (hasContent) _signalsCache = json;
+      if (!hasContent && _signalsCache) { res.setHeader('X-Cache','STALE'); return res.json(_signalsCache); }
+      res.json(json);
     } catch (e: any) {
+      if (_signalsCache) { res.setHeader('X-Cache','STALE'); return res.json(_signalsCache); }
       res.status(500).json({ error: 'Failed to fetch Hyperliquid signals' });
     }
   });
