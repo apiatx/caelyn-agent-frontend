@@ -187,6 +187,64 @@ export interface AssetDetail {
   scoreHistory:    { t: number; score: number }[];
 }
 
+// ─── Section Tooltip Descriptions ────────────────────────────────────────────
+const SECTION_TOOLTIPS: Record<string, { short: string; why: string; how: string }> = {
+  'Top Gainers':      { short: 'Strongest 24h price movers.', why: 'Shows which markets had the biggest upside move over the last day. Useful for spotting momentum leaders, but strong gains alone do not confirm sustainability.', how: 'Higher positive % means stronger recent upside performance. Best used with volume, OI, and funding context.' },
+  'Top Losers':       { short: 'Sharpest 24h price declines.', why: 'Helps surface the weakest markets, flushes, or names that may be in capitulation. Can also highlight bounce candidates, but weakness can persist.', how: 'More negative % means heavier recent downside pressure. Check whether the move is trend continuation or exhaustion.' },
+  'High Funding':     { short: 'Longs paying elevated funding.', why: 'Highlights crowded long positioning and potential squeeze or reversal risk if the trade becomes too consensus.', how: 'Higher positive funding means longs are paying shorts more aggressively. Extreme readings can signal overheating.' },
+  'Neg Funding':      { short: 'Shorts paying elevated funding.', why: 'Highlights crowded short positioning and potential flush risk if shorts get trapped.', how: 'More negative funding means shorts are paying longs. Extreme negative funding can set up squeezes.' },
+  'OI Leaders':       { short: 'Largest open interest by USD.', why: 'Shows where the most positioning sits. High OI often means deeper participation, but also bigger crowding and liquidation potential.', how: 'Larger OI means more capital is tied up in that market. Watch whether OI is rising with price or against it.' },
+  'Volume Leaders':   { short: 'Largest 24h notional trading volume.', why: 'Shows where the tape is most active. High volume often confirms attention and tradability.', how: 'Higher volume means heavier recent participation. Strong moves on strong volume usually matter more than moves on thin volume.' },
+  'Breakout Watch':   { short: 'Highest breakout readiness score.', why: 'Surfaces markets that may be setting up for a decisive move rather than simply reacting after the fact.', how: 'Higher score means the market is showing stronger breakout conditions based on the dashboard\'s internal signal logic.' },
+  'Mark/Oracle Gap':  { short: 'Mark price dislocation vs oracle.', why: 'Helps identify when the traded market is stretching away from fair reference pricing, which can signal imbalance, froth, or pressure.', how: 'Positive values mean mark is above oracle; negative values mean mark is below oracle. Larger gaps suggest stronger dislocation.' },
+  'Vol Impulse':      { short: 'Volume spike vs recent baseline.', why: 'Highlights unusual bursts of activity that may confirm a move, a breakout attempt, or a liquidity event.', how: 'Higher values mean current/recent volume is elevated relative to normal conditions.' },
+  'Long Flush':       { short: 'Shorts paying + bullish fuel lit.', why: 'Flags names where the setup may support upside continuation or a squeeze after positioning pressure builds against shorts.', how: 'Treat this as a squeeze/bullish pressure watchlist. Use with price trend and OI context.' },
+  'Funding Extremes': { short: 'Most extreme funding on either side.', why: 'Surfaces markets with the most stretched carry conditions, which can precede volatility, reversals, or squeezes.', how: 'Large absolute funding values matter most. Positive means long crowding; negative means short crowding.' },
+  'Relative Strength Leaders': { short: 'Markets outperforming the benchmark.', why: 'Helps distinguish true leadership from names that are only rising because the whole market is up.', how: 'Higher relative strength means stronger performance versus the benchmark across the chosen lookback windows.' },
+  'Order Book Pressure': { short: 'Bid/ask depth imbalance near the market.', why: 'Shows whether liquidity is leaning bullish or bearish right now, without forcing the user to interpret the DOM manually.', how: 'Positive pressure / bid support suggests stronger buy-side depth; negative pressure / ask pressure suggests heavier sell-side resistance.' },
+  'OI Regime Shift':  { short: 'Trend vs squeeze classification.', why: 'Helps identify whether a move is being driven by fresh positioning, short covering, or liquidation rather than just price alone.', how: 'Read the regime label together with price % and OI %. Price up + OI up often signals fresh longs; price up + OI down often signals short covering.' },
+  'OI Cap Risk':      { short: 'Open interest crowding / cap utilization.', why: 'Highlights markets approaching open interest capacity, where participation constraints and abnormal behavior can increase.', how: 'Higher utilization means a market is closer to its OI cap. "Near Cap" or "Cap Risk" suggests crowding and potential execution/liquidity weirdness.' },
+};
+
+function SectionInfoTooltip({ title }: { title: string }) {
+  const tip = SECTION_TOOLTIPS[title];
+  if (!tip) return null;
+  const [show, setShow] = useState(false);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleEnter = () => {
+    timeoutRef.current = setTimeout(() => setShow(true), 150);
+  };
+  const handleLeave = () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    setShow(false);
+  };
+
+  return (
+    <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', marginLeft: 5, cursor: 'help' }}
+      onMouseEnter={handleEnter} onMouseLeave={handleLeave}>
+      <span style={{ fontSize: 8, color: C.dim, border: `1px solid ${C.dim}`, borderRadius: '50%', width: 13, height: 13,
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1, flexShrink: 0 }}>i</span>
+      {show && (
+        <div style={{
+          position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)',
+          marginBottom: 6, width: 290, padding: '10px 12px', zIndex: 9999,
+          background: '#0c1526', border: `1px solid ${C.teal}44`, borderRadius: 6,
+          boxShadow: `0 4px 20px rgba(0,0,0,0.6), 0 0 8px ${C.teal}18`,
+          pointerEvents: 'none',
+        }}>
+          <div style={{ fontSize: 9.5, fontWeight: 800, color: C.teal, textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 4 }}>{title}</div>
+          <div style={{ fontSize: 8.5, color: C.text, lineHeight: 1.5, marginBottom: 6 }}>{tip.short}</div>
+          <div style={{ fontSize: 8, color: C.cyan, fontWeight: 700, marginBottom: 2 }}>Why it matters:</div>
+          <div style={{ fontSize: 8, color: '#b0bec5', lineHeight: 1.5, marginBottom: 6 }}>{tip.why}</div>
+          <div style={{ fontSize: 8, color: C.cyan, fontWeight: 700, marginBottom: 2 }}>How to read it:</div>
+          <div style={{ fontSize: 8, color: '#b0bec5', lineHeight: 1.5 }}>{tip.how}</div>
+        </div>
+      )}
+    </span>
+  );
+}
+
 // ─── Formatters ───────────────────────────────────────────────────────────────
 const pct  = (v: number | null, dec = 2) => v == null ? '—' : `${v >= 0 ? '+' : ''}${v.toFixed(dec)}%`;
 // pctD: for fields sent as decimals (0.40 = 40%) — multiplies by 100 before display
@@ -730,7 +788,10 @@ function SignalBoard({ section, selectedCoin, onSelect }: {
   return (
     <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:6, borderTop:`2px solid ${section.color}`, display:'flex', flexDirection:'column', overflow:'hidden' }}>
       <div style={{ padding:'6px 10px 4px', borderBottom:`1px solid ${C.dimLow}`, flexShrink:0 }}>
-        <div style={{ fontSize:8.5, fontWeight:800, letterSpacing:1.5, color:section.color, textTransform:'uppercase' }}>{section.title}</div>
+        <div style={{ display:'flex', alignItems:'center' }}>
+          <span style={{ fontSize:8.5, fontWeight:800, letterSpacing:1.5, color:section.color, textTransform:'uppercase' }}>{section.title}</span>
+          <SectionInfoTooltip title={section.title} />
+        </div>
         <div style={{ fontSize:7.5, color:C.dim, marginTop:1 }}>{section.subtitle}</div>
       </div>
       {section.items.map((item, i) => {
@@ -763,14 +824,14 @@ const MAT_COLS: Col[] = [
   { key:'funding',         label:'FUND%',   w:80,  fmt: fmtF,  vc: fC },
   { key:'openInterest',    label:'OI',      w:90,  fmt: $$ },
   { key:'volume24h',       label:'VOL',     w:90,  fmt: $$ },
-  { key:'premium',         label:'PREM%',   w:80,  fmt: fmtD,  vc: pctC },
-  { key:'distMarkOracle',  label:'MK-ORC%', w:80,  fmt: fmtD,  vc: pctC },
-  { key:'bidAskImbalance', label:'BK-IMB',  w:72,  fmt: v=>v==null?'—':v.toFixed(3), vc: pctC },
-  { key:'tradeImbalance',  label:'TR-IMB',  w:72,  fmt: v=>v==null?'—':v.toFixed(3), vc: pctC },
-  { key:'volatility',      label:'VOL-S',   w:68,  fmt: sc,    vc: scC },
-  { key:'compositeSignal', label:'SIG',     w:68,  fmt: sc,    vc: scC },
-  { key:'agentScore',      label:'A-SCR',   w:68,  fmt: sc,    vc: scC },
-  { key:'agentRank',       label:'A-RNK',   w:60,  fmt: v=>v??'—' },
+  { key:'premium',         label:'PREMIUM %',      w:88,  fmt: fmtD,  vc: pctC },
+  { key:'distMarkOracle',  label:'MARK-ORACLE %',  w:104, fmt: fmtD,  vc: pctC },
+  { key:'bidAskImbalance', label:'BOOK IMBAL',     w:84,  fmt: v=>v==null?'—':v.toFixed(3), vc: pctC },
+  { key:'tradeImbalance',  label:'TRADE IMBAL',    w:88,  fmt: v=>v==null?'—':v.toFixed(3), vc: pctC },
+  { key:'volatility',      label:'VOL SCORE',      w:78,  fmt: sc,    vc: scC },
+  { key:'compositeSignal', label:'SIGNAL',          w:72,  fmt: sc,    vc: scC },
+  { key:'agentScore',      label:'AGENT SCORE',    w:88,  fmt: sc,    vc: scC },
+  { key:'agentRank',       label:'AGENT RANK',     w:84,  fmt: v=>v??'—' },
 ];
 
 
@@ -810,8 +871,12 @@ interface OBPressure {
   imbalance: number; spread: number; microprice_bias?: number; direction: string;
 }
 interface OIRegime {
-  symbol: string; regime: string; price_change_pct: number; oi_change_pct: number;
+  symbol: string; regime: string; regime_key?: string;
+  price_change_1h_pct: number; price_change_24h_pct?: number;
+  oi_change_1h_pct: number; oi_change_24h_pct?: number;
   volume_impulse: number; regime_score: number;
+  open_interest_usd?: number; volume_24h?: number;
+  funding_ann_pct?: number; mark_price?: number; display_name?: string;
 }
 interface OICapRisk {
   symbol: string; display_name: string; mark_price: number; current_oi: number;
@@ -936,8 +1001,11 @@ function AdvancedSignalCards({ selectedCoin, onSelect }: {
       {/* ── Relative Strength Leaders ─────────────────── */}
       <div style={cardStyle}>
         <div style={headerStyle(C.teal)}>
-          <div style={{ fontSize: 8.5, fontWeight: 800, letterSpacing: 1.5, color: C.teal, textTransform: 'uppercase' }}>
-            Relative Strength Leaders
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <span style={{ fontSize: 8.5, fontWeight: 800, letterSpacing: 1.5, color: C.teal, textTransform: 'uppercase' }}>
+              Relative Strength Leaders
+            </span>
+            <SectionInfoTooltip title="Relative Strength Leaders" />
           </div>
           <div style={{ fontSize: 7.5, color: C.dim, marginTop: 1 }}>Outperforming benchmark</div>
         </div>
@@ -988,8 +1056,11 @@ function AdvancedSignalCards({ selectedCoin, onSelect }: {
       {/* ── Order Book Pressure ───────────────────────── */}
       <div style={cardStyle}>
         <div style={headerStyle(C.purple)}>
-          <div style={{ fontSize: 8.5, fontWeight: 800, letterSpacing: 1.5, color: C.purple, textTransform: 'uppercase' }}>
-            Order Book Pressure
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <span style={{ fontSize: 8.5, fontWeight: 800, letterSpacing: 1.5, color: C.purple, textTransform: 'uppercase' }}>
+              Order Book Pressure
+            </span>
+            <SectionInfoTooltip title="Order Book Pressure" />
           </div>
           <div style={{ fontSize: 7.5, color: C.dim, marginTop: 1 }}>Bid/ask depth imbalance</div>
         </div>
@@ -1042,8 +1113,11 @@ function AdvancedSignalCards({ selectedCoin, onSelect }: {
       {/* ── OI Regime Shift ───────────────────────────── */}
       <div style={cardStyle}>
         <div style={headerStyle(C.amber)}>
-          <div style={{ fontSize: 8.5, fontWeight: 800, letterSpacing: 1.5, color: C.amber, textTransform: 'uppercase' }}>
-            OI Regime Shift
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <span style={{ fontSize: 8.5, fontWeight: 800, letterSpacing: 1.5, color: C.amber, textTransform: 'uppercase' }}>
+              OI Regime Shift
+            </span>
+            <SectionInfoTooltip title="OI Regime Shift" />
           </div>
           <div style={{ fontSize: 7.5, color: C.dim, marginTop: 1 }}>Trend vs squeeze classification</div>
         </div>
@@ -1073,11 +1147,11 @@ function AdvancedSignalCards({ selectedCoin, onSelect }: {
                 border: `1px solid ${regColor}44`, borderRadius: 3, padding: '1px 5px', whiteSpace: 'nowrap' }}>
                 {r.regime}
               </span>
-              <span style={{ fontSize: 8.5, color: pctC(r.price_change_pct), fontFamily: C.font, textAlign: 'right' }}>
-                {pct(r.price_change_pct, 1)}
+              <span style={{ fontSize: 8.5, color: pctC(r.price_change_1h_pct), fontFamily: C.font, textAlign: 'right' }}>
+                {pct(r.price_change_1h_pct, 1)}
               </span>
-              <span style={{ fontSize: 8.5, color: pctC(r.oi_change_pct), fontFamily: C.font, textAlign: 'right' }}>
-                {pct(r.oi_change_pct, 1)}
+              <span style={{ fontSize: 8.5, color: pctC(r.oi_change_1h_pct), fontFamily: C.font, textAlign: 'right' }}>
+                {pct(r.oi_change_1h_pct, 1)}
               </span>
               <span style={{ fontSize: 8.5, color: r.volume_impulse >= 1.5 ? C.teal : C.dim, fontFamily: C.font, textAlign: 'right' }}>
                 {r.volume_impulse.toFixed(1)}×
@@ -1095,8 +1169,11 @@ function AdvancedSignalCards({ selectedCoin, onSelect }: {
       {/* ── OI Cap Risk ──────────────────────────────── */}
       <div style={cardStyle}>
         <div style={headerStyle(C.red)}>
-          <div style={{ fontSize: 8.5, fontWeight: 800, letterSpacing: 1.5, color: C.red, textTransform: 'uppercase' }}>
-            OI Cap Risk
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <span style={{ fontSize: 8.5, fontWeight: 800, letterSpacing: 1.5, color: C.red, textTransform: 'uppercase' }}>
+              OI Cap Risk
+            </span>
+            <SectionInfoTooltip title="OI Cap Risk" />
           </div>
           <div style={{ fontSize: 7.5, color: C.dim, marginTop: 1 }}>Open interest crowding / cap utilization</div>
         </div>
