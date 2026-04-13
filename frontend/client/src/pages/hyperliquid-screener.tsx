@@ -935,9 +935,12 @@ function AdvancedSignalCards({ selectedCoin, onSelect }: {
       return r.json();
     },
     refetchInterval: 30_000,
-    staleTime: 15_000,
+    staleTime: 29_000,
+    gcTime: 60 * 60 * 1000,
     retry: 2,
     retryDelay: 5000,
+    refetchOnWindowFocus: false,
+    placeholderData: (prev: any) => prev,
   });
 
   const rsLeaders = useMemo(() =>
@@ -1258,9 +1261,12 @@ function MomentumPanel({ selectedCoin, onSelect }: {
       const d = query?.state?.data as TsmomResult | undefined;
       return !d || d.signals.length === 0 ? 15_000 : 60_000;
     },
-    staleTime: 10_000,
+    staleTime: 14_000,
+    gcTime: 60 * 60 * 1000,
     retry: 2,
     retryDelay: 5000,
+    refetchOnWindowFocus: false,
+    placeholderData: (prev: any) => prev,
   });
 
   const signals = data?.signals ?? [];
@@ -1462,8 +1468,18 @@ export default function HyperliquidScreenerPage() {
 
   // Permanent last-good-data ref — NEVER cleared, so the screen never goes
   // blank during refetches, backend restarts, or transient error states.
+  // Seeded from localStorage on first mount so page reloads are instant too.
   const _lastGood = useRef<{ rows: ScreenerRow[]; meta: ScreenerMeta } | null>(null);
-  if (raw != null) _lastGood.current = raw;
+  if (_lastGood.current === null) {
+    try {
+      const cached = localStorage.getItem('hl_screener_cache');
+      if (cached) _lastGood.current = JSON.parse(cached);
+    } catch { /* ignore parse errors */ }
+  }
+  if (raw != null) {
+    _lastGood.current = raw;
+    try { localStorage.setItem('hl_screener_cache', JSON.stringify(raw)); } catch { /* ignore quota errors */ }
+  }
   const displayData = raw ?? _lastGood.current;
 
   // Merge agent results into rows for matrix colouring
@@ -1543,6 +1559,10 @@ export default function HyperliquidScreenerPage() {
       })) };
       setAgentStage('Agent analyzing…');
       const res = await fetch('/api/hyperliquid/agent-rank', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+      if (res.status === 503) {
+        setAgentError('Market data still loading. Please wait a moment and try again.');
+        return;
+      }
       if (!res.ok) throw new Error(`Agent returned ${res.status}`);
       const data: AgentResult = await res.json();
       setAgentResult(data);

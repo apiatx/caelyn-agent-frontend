@@ -1,0 +1,54 @@
+There are two separate issues to fix. Read carefully — they require different solutions.
+
+Issue 1: Page shows blank "Refreshing data..." with no content during refresh cycles
+Root cause: When the frontend starts a new fetch of /api/hyperliquid/screener/sections (or snapshot), it is setting its data state to null or [] before the response arrives, which causes the page to render empty.
+
+The fix is one rule: never clear or replace data state until new data arrives successfully.
+
+Find every place in the code where a fetch/refresh is triggered. The pattern to look for is something like:
+
+// WRONG — this causes the blank:
+const refresh = async () => {
+  setData(null);          // ← THIS LINE IS THE PROBLEM
+  setLoading(true);
+  const res = await fetch('/api/...');
+  setData(await res.json());
+  setLoading(false);
+};
+
+Change it to:
+
+// CORRECT — keep old data visible while refreshing:
+const refresh = async () => {
+  setIsRefreshing(true);  // show a spinner badge only
+  try {
+    const res = await fetch('/api/...');
+    if (res.ok) {
+      setData(await res.json());  // replace only on success
+    }
+  } catch (e) {
+    // keep old data, show error badge
+  } finally {
+    setIsRefreshing(false);
+  }
+};
+
+Apply this pattern to every polling/refresh function on the HL screener page. The content area must always show the last successfully fetched data. A small "Refreshing..." spinner badge near the "Updated" timestamp is fine. Blanking the content is not acceptable.
+
+Also add localStorage caching so data survives a page reload:
+
+// On successful fetch, save to localStorage:
+localStorage.setItem('hl_sections_cache', JSON.stringify(data));
+// On page load, initialize state from cache before first fetch:
+const cached = localStorage.getItem('hl_sections_cache');
+const [data, setData] = useState(cached ? JSON.parse(cached) : null);
+
+Issue 2: Agent button still returns 503 on early page load
+This was a backend bug — it is now fixed on the backend. The backend now serves data within ~8 seconds of startup instead of 30+. However, the frontend should also handle the 503 gracefully with a user-friendly message instead of "Agent error: Agent returned 503":
+
+if (res.status === 503) {
+  setAgentError("Market data still loading. Please wait a moment and try again.");
+  return;
+}
+
+Those are the only two changes needed. Do not modify anything else.
