@@ -1242,12 +1242,16 @@ function AdvancedSignalCards({ selectedCoin, onSelect }: {
 }
 
 // ─── Momentum Panel (TSMOM) ───────────────────────────────────────────────────
+type TsmomSK = 'default' | 'coin' | 's_adj' | 'side' | 'sigma' | 'momentum_10d' | 'momentum_30d' | 'funding_bps' | 'w_scaled';
+
 function MomentumPanel({ selectedCoin, onSelect }: {
   selectedCoin: string | null;
   onSelect: (coin: string) => void;
 }) {
-  const [open, setOpen] = useState(true);
+  const [open,    setOpen]    = useState(true);
   const [showAll, setShowAll] = useState(false);
+  const [sortKey, setSortKey] = useState<TsmomSK>('default');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
   const { data, isLoading, isError } = useQuery<TsmomResult>({
     queryKey: ['tsmom-signals'],
@@ -1256,7 +1260,6 @@ function MomentumPanel({ selectedCoin, onSelect }: {
       if (!r.ok) throw new Error(`TSMOM ${r.status}`);
       return r.json();
     },
-    // Poll every 15s so signals appear quickly after boot; back off once data arrives
     refetchInterval: (query: any) => {
       const d = query?.state?.data as TsmomResult | undefined;
       return !d || d.signals.length === 0 ? 15_000 : 60_000;
@@ -1271,14 +1274,61 @@ function MomentumPanel({ selectedCoin, onSelect }: {
 
   const signals = data?.signals ?? [];
   const meta    = data?.meta;
-  const display = showAll ? signals : signals.slice(0, 20);
+
+  // Sort the signals according to active column
+  const sorted: TsmomSignal[] = useMemo(() => {
+    if (sortKey === 'default') return signals;
+    return [...signals].sort((a, b) => {
+      let av: any = a[sortKey as keyof TsmomSignal];
+      let bv: any = b[sortKey as keyof TsmomSignal];
+      // String sort for coin / side
+      if (typeof av === 'string' && typeof bv === 'string') {
+        const d = av.localeCompare(bv);
+        return sortDir === 'asc' ? d : -d;
+      }
+      // Numeric sort — nulls last
+      if (av == null && bv == null) return 0;
+      if (av == null) return 1;
+      if (bv == null) return -1;
+      const d = av - bv;
+      return sortDir === 'asc' ? d : -d;
+    });
+  }, [signals, sortKey, sortDir]);
+
+  const display = showAll ? sorted : sorted.slice(0, 20);
+
+  // Toggle sort on column click
+  const handleColSort = (key: TsmomSK) => {
+    if (key === 'default') { setSortKey('default'); setSortDir('desc'); return; }
+    setSortKey(prev => {
+      if (prev === key) { setSortDir(d => d === 'asc' ? 'desc' : 'asc'); return key; }
+      setSortDir('desc');
+      return key;
+    });
+  };
 
   // Signal bar: -2 to +2 mapped to 0%..100%
   const sigBar = (s: number) => ((s + 2) / 4) * 100;
 
+  // Grid layout — signal bar takes all available space via 1fr
+  const GRID = '24px 72px 1fr 80px 60px 60px 60px 60px 60px';
+
+  // Column definitions: label, sortKey, alignment
+  const COLS: { label: string; key: TsmomSK; align: 'left' | 'center' | 'right' }[] = [
+    { label: '#',     key: 'default',      align: 'left'   },
+    { label: 'COIN',  key: 'coin',         align: 'left'   },
+    { label: 'SIGNAL',key: 's_adj',        align: 'center' },
+    { label: 'SIDE',  key: 'side',         align: 'center' },
+    { label: 'VOL%',  key: 'sigma',        align: 'right'  },
+    { label: '10D%',  key: 'momentum_10d', align: 'right'  },
+    { label: '30D%',  key: 'momentum_30d', align: 'right'  },
+    { label: 'FUND',  key: 'funding_bps',  align: 'right'  },
+    { label: 'W%',    key: 'w_scaled',     align: 'right'  },
+  ];
+
   return (
-    <div style={{ margin: '0 14px 14px', border: `1px solid ${C.border}`, borderRadius: 6, overflow: 'hidden' }}>
-      {/* Header */}
+    <div style={{ margin: '0 0 14px', border: `1px solid ${C.border}`, borderRadius: 6, overflow: 'hidden' }}>
+      {/* Section header */}
       <button onClick={() => setOpen(o => !o)}
         style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px',
           background: C.card2, border: 'none', cursor: 'pointer', color: C.text,
@@ -1300,7 +1350,7 @@ function MomentumPanel({ selectedCoin, onSelect }: {
           </span>
         )}
         {isLoading && <span style={{ fontSize: 8, color: C.amber, marginLeft: 6 }}>Loading…</span>}
-        {isError  && <span style={{ fontSize: 8, color: C.red,   marginLeft: 6 }}>No data yet — loading 1d candles</span>}
+        {isError   && <span style={{ fontSize: 8, color: C.red,   marginLeft: 6 }}>No data yet — loading 1d candles</span>}
         <span style={{ marginLeft: 'auto', color: C.dim }}>
           {open ? <ChevronUp style={{ width: 11, height: 11 }} /> : <ChevronDown style={{ width: 11, height: 11 }} />}
         </span>
@@ -1308,18 +1358,26 @@ function MomentumPanel({ selectedCoin, onSelect }: {
 
       {open && (
         <div>
-          {/* Column headers */}
-          <div style={{ display: 'grid', gridTemplateColumns: '24px 72px 140px 80px 60px 60px 60px 60px 60px',
-            padding: '4px 12px', background: '#060b14', borderBottom: `1px solid ${C.border}`,
-            gap: 0 }}>
-            {['#','COIN','SIGNAL','SIDE','VOL%','10D%','30D%','FUND','W%'].map((h, i) => (
-              <span key={i} style={{ fontSize: 7.5, fontWeight: 700, letterSpacing: 1, color: C.dim,
-                textAlign: i >= 4 ? 'right' : i === 2 ? 'center' : 'left',
-                paddingRight: i >= 4 ? 8 : 0 }}>{h}</span>
-            ))}
+          {/* Sortable column headers */}
+          <div style={{ display: 'grid', gridTemplateColumns: GRID,
+            padding: '4px 12px', background: '#060b14', borderBottom: `1px solid ${C.border}`, gap: 0 }}>
+            {COLS.map(col => {
+              const isActive = sortKey === col.key;
+              const arrow = isActive ? (sortDir === 'desc' ? ' ▼' : ' ▲') : '';
+              return (
+                <button key={col.key} onClick={() => handleColSort(col.key)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                    fontSize: 7.5, fontWeight: 700, letterSpacing: 1,
+                    color: isActive ? C.teal : C.dim,
+                    textAlign: col.align, paddingRight: col.align === 'right' ? 8 : 0,
+                    fontFamily: C.font, userSelect: 'none' }}>
+                  {col.label}{arrow}
+                </button>
+              );
+            })}
           </div>
 
-          {/* Signal rows */}
+          {/* Empty state */}
           {display.length === 0 && !isLoading && (
             <div style={{ padding: '16px', textAlign: 'center', fontSize: 9, color: C.dim }}>
               {isError
@@ -1327,14 +1385,15 @@ function MomentumPanel({ selectedCoin, onSelect }: {
                 : 'Computing momentum signals — 1d candle data loading in background. Auto-refreshes every 60s.'}
             </div>
           )}
+
+          {/* Signal rows */}
           {display.map((sig, i) => {
             const isSel  = selectedCoin === sig.coin;
             const sColor = sig.s_adj > 0.15 ? C.green : sig.s_adj < -0.15 ? C.red : C.dim;
             const barPct = sigBar(sig.s_adj);
             return (
-              <div key={sig.coin} onClick={() => onSelect(sig.coin)}
-                style={{ display: 'grid',
-                  gridTemplateColumns: '24px 72px 140px 80px 60px 60px 60px 60px 60px',
+              <div key={`${sig.coin}_${i}`} onClick={() => onSelect(sig.coin)}
+                style={{ display: 'grid', gridTemplateColumns: GRID,
                   padding: '3px 12px',
                   background: isSel ? `${C.purple}18` : i % 2 === 0 ? C.bg : C.card2,
                   cursor: 'pointer', borderBottom: `1px solid ${C.dimLow}`,
@@ -1345,19 +1404,16 @@ function MomentumPanel({ selectedCoin, onSelect }: {
                 <span style={{ fontSize: 7.5, color: C.dimLow, fontFamily: C.font }}>{i + 1}</span>
                 {/* Coin */}
                 <span style={{ fontSize: 9.5, fontWeight: 700, color: isSel ? C.purple : C.text, fontFamily: C.font }}>{sig.coin}</span>
-                {/* Signal bar */}
-                <div style={{ position: 'relative', height: 12, background: C.dimLow, borderRadius: 2, overflow: 'hidden' }}>
-                  {/* Center line */}
+                {/* Signal bar — fills 1fr */}
+                <div style={{ position: 'relative', height: 12, background: C.dimLow, borderRadius: 2, overflow: 'hidden', marginRight: 8 }}>
                   <div style={{ position: 'absolute', left: '50%', top: 0, width: 1, height: '100%', background: C.border, zIndex: 1 }} />
-                  {/* Signal fill */}
                   <div style={{
                     position: 'absolute',
-                    left:   sig.s_adj >= 0 ? '50%' : `${barPct}%`,
-                    width:  `${Math.abs(sig.s_adj) / 4 * 100}%`,
+                    left:  sig.s_adj >= 0 ? '50%' : `${barPct}%`,
+                    width: `${Math.abs(sig.s_adj) / 4 * 100}%`,
                     top: 0, height: '100%',
                     background: sColor, opacity: 0.85, borderRadius: 1,
                   }} />
-                  {/* Label */}
                   <span style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: 7.5, fontWeight: 700, color: '#fff', fontFamily: C.font, zIndex: 2,
@@ -1365,31 +1421,30 @@ function MomentumPanel({ selectedCoin, onSelect }: {
                     {sig.s_adj >= 0 ? '+' : ''}{sig.s_adj.toFixed(2)}
                   </span>
                 </div>
-                {/* Side badge */}
-                <span style={{ fontSize: 8, fontWeight: 700, color: sColor, fontFamily: C.font,
-                  textAlign: 'center', letterSpacing: 0.5 }}>
+                {/* Side */}
+                <span style={{ fontSize: 8, fontWeight: 700, color: sColor, fontFamily: C.font, textAlign: 'center', letterSpacing: 0.5 }}>
                   {sig.side === 'long' ? '▲ LONG' : sig.side === 'short' ? '▼ SHORT' : '· FLAT'}
                 </span>
-                {/* Vol */}
+                {/* VOL% */}
                 <span style={{ fontSize: 8.5, color: C.amber, fontFamily: C.font, textAlign: 'right', paddingRight: 8 }}>
                   {sig.sigma.toFixed(0)}%
                 </span>
-                {/* 10d */}
+                {/* 10D% */}
                 <span style={{ fontSize: 8.5, color: sig.momentum_10d == null ? C.dim : sig.momentum_10d >= 0 ? C.green : C.red,
                   fontFamily: C.font, textAlign: 'right', paddingRight: 8 }}>
                   {sig.momentum_10d == null ? '—' : `${sig.momentum_10d >= 0 ? '+' : ''}${sig.momentum_10d.toFixed(1)}%`}
                 </span>
-                {/* 30d */}
+                {/* 30D% */}
                 <span style={{ fontSize: 8.5, color: sig.momentum_30d == null ? C.dim : sig.momentum_30d >= 0 ? C.green : C.red,
                   fontFamily: C.font, textAlign: 'right', paddingRight: 8 }}>
                   {sig.momentum_30d == null ? '—' : `${sig.momentum_30d >= 0 ? '+' : ''}${sig.momentum_30d.toFixed(1)}%`}
                 </span>
-                {/* Funding bps */}
+                {/* FUND */}
                 <span style={{ fontSize: 8.5, color: sig.funding_bps > 1 ? C.red : sig.funding_bps < -1 ? C.blue : C.dim,
                   fontFamily: C.font, textAlign: 'right', paddingRight: 8 }}>
                   {sig.funding_bps >= 0 ? '+' : ''}{sig.funding_bps.toFixed(2)}
                 </span>
-                {/* Weight */}
+                {/* W% */}
                 <span style={{ fontSize: 8.5, fontWeight: 700, color: sColor,
                   fontFamily: C.font, textAlign: 'right', paddingRight: 8 }}>
                   {sig.w_scaled >= 0 ? '+' : ''}{sig.w_scaled.toFixed(1)}%
@@ -1398,7 +1453,7 @@ function MomentumPanel({ selectedCoin, onSelect }: {
             );
           })}
 
-          {/* Show more / legend footer */}
+          {/* Footer — show more + legend */}
           {signals.length > 0 && (
             <div style={{ padding: '5px 12px', display: 'flex', alignItems: 'center', gap: 12,
               background: '#060b14', borderTop: `1px solid ${C.dimLow}` }}>
