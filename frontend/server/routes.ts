@@ -2046,10 +2046,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         signal: controller.signal,
       });
       clearTimeout(tid);
-      if (!r.ok) return res.status(r.status).json({ error: `Agent ${r.status}` });
+      if (!r.ok) {
+        let errBody: any = {};
+        try { errBody = await r.json(); } catch { try { errBody = { detail: await r.text() }; } catch {} }
+        console.error(`[hl-agent] backend ${r.status}:`, JSON.stringify(errBody));
+        return res.status(r.status).json({ error: `Agent backend error ${r.status}`, detail: errBody });
+      }
       res.json(await r.json());
     } catch (e: any) {
-      res.status(500).json({ error: e?.name === 'AbortError' ? 'Agent timed out' : 'Agent rank failed' });
+      const msg = e?.name === 'AbortError' ? 'Agent timed out after 60s' : `Agent rank failed: ${e?.message}`;
+      console.error('[hl-agent] proxy error:', msg);
+      res.status(500).json({ error: msg });
     }
   });
 
