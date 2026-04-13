@@ -955,17 +955,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // === Bittensor / TAO Dashboard — proxy to FastAPI backend ===
-  app.get('/api/bittensor/dashboard', async (req, res) => {
+  // Server-side cache — always returns instantly, refreshes in background
+  const _taoCache: Record<string, { data: any; ts: number; fetching: boolean }> = {};
+  const TAO_DASH_TTL  = 45_000;  // dashboard: 45 s (heavier computation)
+  const TAO_HIST_TTL  = 90_000;  // price/block history: 90 s (less volatile)
+
+  async function _fetchTao(path: string, timeoutMs = 35000): Promise<any> {
+    const response = await fetch(`${AGENT_URL}${path}`, {
+      headers: { 'X-API-Key': AGENT_KEY },
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    if (!response.ok) throw new Error(`Backend ${response.status}`);
+    return response.json();
+  }
+
+  function _bgRefreshTao(key: string, path: string, ttl: number, timeoutMs?: number) {
+    if (_taoCache[key]?.fetching) return;
+    if (_taoCache[key]) _taoCache[key].fetching = true;
+    _fetchTao(path, timeoutMs)
+      .then(data => { _taoCache[key] = { data, ts: Date.now(), fetching: false }; })
+      .catch(() => { if (_taoCache[key]) _taoCache[key].fetching = false; });
+  }
+
+  function _serveTao(res: any, key: string, path: string, ttl: number, timeoutMs?: number) {
+    const entry = _taoCache[key];
+    if (entry) {
+      res.json(entry.data);
+      if (Date.now() - entry.ts > ttl) _bgRefreshTao(key, path, ttl, timeoutMs);
+      return true;
+    }
+    return false; // cache miss — caller must fetch synchronously
+  }
+
+  // Warm dashboard cache on startup
+  (async () => {
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000);
-      const response = await fetch(`${AGENT_URL}/api/bittensor/dashboard`, {
-        headers: { 'X-API-Key': AGENT_KEY },
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
-      const data = await response.json();
-      return res.status(response.status).json(data);
+      const data = await _fetchTao('/api/bittensor/dashboard', 35000);
+      _taoCache['dashboard'] = { data, ts: Date.now(), fetching: false };
+    } catch { /* silent — will populate on first request */ }
+  })();
+
+  // Warm price history cache on startup
+  (async () => {
+    try {
+      const data = await _fetchTao('/api/bittensor/price/history', 15000);
+      _taoCache['price-history'] = { data, ts: Date.now(), fetching: false };
+    } catch { /* silent */ }
+  })();
+
+  app.get('/api/bittensor/dashboard', async (req, res) => {
+    if (_serveTao(res, 'dashboard', '/api/bittensor/dashboard', TAO_DASH_TTL, 35000)) return;
+    // First-ever request: fetch and wait
+    try {
+      const data = await _fetchTao('/api/bittensor/dashboard', 35000);
+      _taoCache['dashboard'] = { data, ts: Date.now(), fetching: false };
+      res.json(data);
     } catch (error) {
       console.error('[bittensor] dashboard proxy error:', error);
       res.status(503).json({ error: 'Failed to load Bittensor data' });
@@ -973,16 +1017,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get('/api/bittensor/subnet/:netuid/metagraph', async (req, res) => {
+    // Metagraph is user-triggered per subnet — cache per netuid, short TTL
+    const { netuid } = req.params;
+    const cacheKey = `metagraph-${netuid}`;
+    if (_serveTao(res, cacheKey, `/api/bittensor/subnet/${netuid}/metagraph`, 30_000, 20000)) return;
     try {
-      const { netuid } = req.params;
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 20000);
-      const response = await fetch(`${AGENT_URL}/api/bittensor/subnet/${netuid}/metagraph`, {
-        headers: { 'X-API-Key': AGENT_KEY },
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
-      return res.status(response.status).json(await response.json());
+      const data = await _fetchTao(`/api/bittensor/subnet/${netuid}/metagraph`, 20000);
+      _taoCache[cacheKey] = { data, ts: Date.now(), fetching: false };
+      res.json(data);
     } catch (error) {
       console.error('[bittensor] metagraph proxy error:', error);
       res.status(503).json({ error: 'Failed to load metagraph data' });
@@ -990,15 +1032,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get('/api/bittensor/price/history', async (req, res) => {
+    if (_serveTao(res, 'price-history', '/api/bittensor/price/history', TAO_HIST_TTL, 15000)) return;
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000);
-      const response = await fetch(`${AGENT_URL}/api/bittensor/price/history`, {
-        headers: { 'X-API-Key': AGENT_KEY },
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
-      return res.status(response.status).json(await response.json());
+      const data = await _fetchTao('/api/bittensor/price/history', 15000);
+      _taoCache['price-history'] = { data, ts: Date.now(), fetching: false };
+      res.json(data);
     } catch (error) {
       console.error('[bittensor] price history proxy error:', error);
       res.status(503).json({ error: 'Failed to load price history' });
@@ -1006,19 +1044,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get('/api/bittensor/blocks/history', async (req, res) => {
+    const { scale = 'hour', points = '30' } = req.query;
+    const qs = new URLSearchParams({ scale: String(scale), points: String(points) });
+    const cacheKey = `blocks-${scale}-${points}`;
+    const path = `/api/bittensor/blocks/history?${qs}`;
+    if (_serveTao(res, cacheKey, path, TAO_HIST_TTL, 15000)) return;
     try {
-      const { scale, points } = req.query;
-      const qs = new URLSearchParams();
-      if (scale) qs.set('scale', String(scale));
-      if (points) qs.set('points', String(points));
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000);
-      const response = await fetch(`${AGENT_URL}/api/bittensor/blocks/history?${qs}`, {
-        headers: { 'X-API-Key': AGENT_KEY },
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
-      return res.status(response.status).json(await response.json());
+      const data = await _fetchTao(path, 15000);
+      _taoCache[cacheKey] = { data, ts: Date.now(), fetching: false };
+      res.json(data);
     } catch (error) {
       console.error('[bittensor] blocks history proxy error:', error);
       res.status(503).json({ error: 'Failed to load block history' });

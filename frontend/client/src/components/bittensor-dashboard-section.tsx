@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -572,29 +572,51 @@ export default function BittensorDashboardSection() {
   // ─── Data Fetching ───────────────────────────────────────────────────────
 
   const {
-    data: dashboard,
+    data: dashboardRaw,
     isLoading,
     error,
     refetch,
+    isFetching,
   } = useQuery<DashboardData>({
     queryKey: ["/api/bittensor/dashboard"],
-    refetchInterval: 60000,
-    retry: 2,
+    refetchInterval: 45000,         // matches server TTL
+    staleTime: 44000,               // treat as fresh until just before next refetch
+    gcTime: 60 * 60 * 1000,        // keep cache 1 hour — navigating away/back is instant
+    retry: 1,
+    refetchOnWindowFocus: false,
+    placeholderData: (prev: any) => prev,
   });
+
+  // Permanent last-good ref — never goes blank during background refreshes or errors
+  const _lastGoodDash = useRef<DashboardData | null>(null);
+  if (dashboardRaw != null) _lastGoodDash.current = dashboardRaw;
+  const dashboard = dashboardRaw ?? _lastGoodDash.current;
 
   const { data: metagraph, isLoading: metaLoading } = useQuery<{
     data?: MetagraphValidator[];
   }>({
     queryKey: [`/api/bittensor/subnet/${selectedNetuid}/metagraph`],
     enabled: selectedNetuid !== null,
+    staleTime: 30000,
+    gcTime: 30 * 60 * 1000,
+    placeholderData: (prev: any) => prev,
+    refetchOnWindowFocus: false,
   });
 
   const { data: priceHistory } = useQuery<{ data?: PriceHistoryItem[] }>({
     queryKey: ["/api/bittensor/price/history"],
+    staleTime: 90000,
+    gcTime: 60 * 60 * 1000,
+    placeholderData: (prev: any) => prev,
+    refetchOnWindowFocus: false,
   });
 
   const { data: blocksHistory } = useQuery<{ data?: BlockHistoryItem[] }>({
     queryKey: [`/api/bittensor/blocks/history?scale=${blockScale}&points=30`],
+    staleTime: 90000,
+    gcTime: 60 * 60 * 1000,
+    placeholderData: (prev: any) => prev,
+    refetchOnWindowFocus: false,
   });
 
   // ─── Derived data ───────────────────────────────────────────────────────
@@ -733,7 +755,9 @@ export default function BittensorDashboardSection() {
 
   // ─── Render ──────────────────────────────────────────────────────────────
 
-  if (isLoading) return <DashboardSkeleton />;
+  // Only show skeleton on the very first load when no data exists at all.
+  // During background refreshes, dashboard is preserved via _lastGoodDash / placeholderData.
+  if (!dashboard) return <DashboardSkeleton />;
 
   const taoPrice = num(dashboard?.tao_price?.price);
   const taoChange = num(dashboard?.tao_price?.change_24h);
@@ -874,6 +898,13 @@ export default function BittensorDashboardSection() {
 
         {/* Quick-link buttons — top right */}
         <div className="ml-auto flex items-center gap-2 shrink-0">
+          {/* Background-refresh indicator — only visible when a silent background update is running */}
+          {isFetching && !isLoading && (
+            <div className="flex items-center gap-1.5 text-xs text-white/30">
+              <RefreshCw className="w-3 h-3 animate-spin" />
+              <span>Updating…</span>
+            </div>
+          )}
           <button
             onClick={() => openSecureLink("https://taostats.io/")}
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-orange-500/10 border border-orange-500/30 hover:border-orange-400/60 text-orange-400 text-xs font-semibold transition-all"
