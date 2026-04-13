@@ -836,9 +836,10 @@ const OB_DIR_COLOR: Record<string, string> = {
 };
 
 // ─── Advanced Signal Cards ───────────────────────────────────────────────────
-function AdvancedSignalCards({ selectedCoin, onSelect }: {
+function AdvancedSignalCards({ selectedCoin, onSelect, compact = false }: {
   selectedCoin: string | null;
   onSelect: (coin: string) => void;
+  compact?: boolean;
 }) {
   const { data, isLoading, isError } = useQuery<AdvancedSignals>({
     queryKey: ['hl-advanced-signals'],
@@ -853,15 +854,16 @@ function AdvancedSignalCards({ selectedCoin, onSelect }: {
     retryDelay: 5000,
   });
 
+  const maxRows = compact ? 5 : 10;
   const rsLeaders = useMemo(() =>
-    [...(data?.relative_strength_leaders ?? [])].sort((a, b) => b.rs_score - a.rs_score).slice(0, 10),
-    [data]);
+    [...(data?.relative_strength_leaders ?? [])].sort((a, b) => b.rs_score - a.rs_score).slice(0, maxRows),
+    [data, maxRows]);
   const obPressure = useMemo(() =>
-    [...(data?.order_book_pressure ?? [])].sort((a, b) => Math.abs(b.pressure_score) - Math.abs(a.pressure_score)).slice(0, 10),
-    [data]);
+    [...(data?.order_book_pressure ?? [])].sort((a, b) => Math.abs(b.pressure_score) - Math.abs(a.pressure_score)).slice(0, maxRows),
+    [data, maxRows]);
   const oiRegime = useMemo(() =>
-    [...(data?.oi_regime_shift ?? [])].sort((a, b) => b.regime_score - a.regime_score).slice(0, 10),
-    [data]);
+    [...(data?.oi_regime_shift ?? [])].sort((a, b) => b.regime_score - a.regime_score).slice(0, maxRows),
+    [data, maxRows]);
 
   const cardStyle: React.CSSProperties = {
     background: C.card, border: `1px solid ${C.border}`, borderRadius: 6,
@@ -876,205 +878,211 @@ function AdvancedSignalCards({ selectedCoin, onSelect }: {
     fontSize: 7, fontWeight: 700, letterSpacing: 1, color: C.dim, textTransform: 'uppercase',
   };
 
+  const skeletonCards = [0, 1, 2].map(i => (
+    <div key={i} style={{ ...cardStyle, borderTop: `2px solid ${C.border}`, height: compact ? 160 : 220 }}>
+      <div style={{ padding: 10 }}>
+        <div style={{ height: 10, width: '60%', background: C.dimLow, borderRadius: 2, marginBottom: 6 }} />
+        <div style={{ height: 8, width: '40%', background: C.dimLow, borderRadius: 2 }} />
+      </div>
+      {[0, 1, 2, 3, 4].slice(0, maxRows).map(j => (
+        <div key={j} style={{ padding: '4px 10px', borderBottom: `1px solid ${C.dimLow}` }}>
+          <div style={{ height: 8, width: `${60 + j * 5}%`, background: C.dimLow, borderRadius: 2 }} />
+        </div>
+      ))}
+    </div>
+  ));
+
   // Loading / empty state
   if (isLoading) {
+    if (compact) return <>{skeletonCards}</>;
     return (
       <div style={{ padding: '0 14px 12px', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
-        {[0, 1, 2].map(i => (
-          <div key={i} style={{ ...cardStyle, borderTop: `2px solid ${C.border}`, height: 220 }}>
-            <div style={{ padding: 10 }}>
-              <div style={{ height: 10, width: '60%', background: C.dimLow, borderRadius: 2, marginBottom: 6 }} />
-              <div style={{ height: 8, width: '40%', background: C.dimLow, borderRadius: 2 }} />
-            </div>
-            {[0, 1, 2, 3, 4].map(j => (
-              <div key={j} style={{ padding: '4px 10px', borderBottom: `1px solid ${C.dimLow}` }}>
-                <div style={{ height: 8, width: `${60 + j * 5}%`, background: C.dimLow, borderRadius: 2 }} />
-              </div>
-            ))}
-          </div>
-        ))}
+        {skeletonCards}
       </div>
     );
   }
 
   if (isError) {
+    const errCards = [C.teal, C.purple, C.amber].map((color, i) => (
+      <div key={i} style={{ ...cardStyle, borderTop: `2px solid ${color}` }}>
+        <div style={{ padding: '16px', textAlign: 'center' }}>
+          <div style={{ fontSize: 9, color: C.dim }}>Signal data loading in background...</div>
+          <div style={{ fontSize: 8, color: C.dimLow, marginTop: 4 }}>Auto-refreshes every 30s</div>
+        </div>
+      </div>
+    ));
+    if (compact) return <>{errCards}</>;
     return (
       <div style={{ padding: '0 14px 12px', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
-        {[C.teal, C.purple, C.amber].map((color, i) => (
-          <div key={i} style={{ ...cardStyle, borderTop: `2px solid ${color}` }}>
-            <div style={{ padding: '16px', textAlign: 'center' }}>
-              <div style={{ fontSize: 9, color: C.dim }}>Signal data loading in background...</div>
-              <div style={{ fontSize: 8, color: C.dimLow, marginTop: 4 }}>Auto-refreshes every 30s</div>
-            </div>
-          </div>
-        ))}
+        {errCards}
       </div>
     );
   }
 
   if (!data || (rsLeaders.length === 0 && obPressure.length === 0 && oiRegime.length === 0)) return null;
 
+  const fs = compact
+    ? { title: 7.5, sub: 6.5, row: 8.5, rankNum: 6.5, colHdr: 6, badge: 7 }
+    : { title: 8.5, sub: 7.5, row: 9.5, rankNum: 7.5, colHdr: 7, badge: 7.5 };
+  const rowPad = compact ? '2px 8px' : '3px 10px';
+  const colPad = compact ? '2px 8px' : '3px 10px';
+
+  const rsCard = (
+    <div style={cardStyle}>
+      <div style={headerStyle(C.teal)}>
+        <div style={{ fontSize: fs.title, fontWeight: 800, letterSpacing: 1.5, color: C.teal, textTransform: 'uppercase' }}>
+          Relative Strength Leaders
+        </div>
+        <div style={{ fontSize: fs.sub, color: C.dim, marginTop: 1 }}>Outperforming benchmark</div>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '16px 46px 1fr 46px 42px 42px', padding: colPad, background: '#060b14', borderBottom: `1px solid ${C.border}`, gap: 0 }}>
+        <span style={{ ...colHeaderStyle, fontSize: fs.colHdr }}>#</span>
+        <span style={{ ...colHeaderStyle, fontSize: fs.colHdr }}>COIN</span>
+        <span style={{ ...colHeaderStyle, fontSize: fs.colHdr, textAlign: 'right' }}>RS</span>
+        <span style={{ ...colHeaderStyle, fontSize: fs.colHdr, textAlign: 'right' }}>24H</span>
+        <span style={{ ...colHeaderStyle, fontSize: fs.colHdr, textAlign: 'right' }}>4H</span>
+        <span style={{ ...colHeaderStyle, fontSize: fs.colHdr, textAlign: 'right' }}>1H</span>
+      </div>
+      {rsLeaders.length === 0 ? (
+        <div style={{ padding: 12, textAlign: 'center', fontSize: 8.5, color: C.dim }}>No data yet</div>
+      ) : rsLeaders.map((r, i) => {
+        const isSel = selectedCoin === r.symbol;
+        return (
+          <div key={r.symbol} onClick={() => onSelect(r.symbol)}
+            style={{ display: 'grid', gridTemplateColumns: '16px 46px 1fr 46px 42px 42px', padding: rowPad, cursor: 'pointer',
+              background: isSel ? `${C.teal}18` : i % 2 === 0 ? C.bg : C.card2,
+              borderBottom: `1px solid ${C.dimLow}`, alignItems: 'center', gap: 0, transition: 'background 0.1s' }}
+            onMouseEnter={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background = `${C.teal}0c`; }}
+            onMouseLeave={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background = i % 2 === 0 ? C.bg : C.card2; }}>
+            <span style={{ fontSize: fs.rankNum, color: C.dimLow, fontFamily: C.font }}>{i + 1}</span>
+            <span style={{ fontSize: fs.row, fontWeight: 700, color: isSel ? C.teal : C.text, fontFamily: C.font }}>{r.symbol}</span>
+            <span style={{ fontSize: fs.row, fontWeight: 600, color: r.rs_score >= 0 ? C.green : C.red, fontFamily: C.font, textAlign: 'right' }}>
+              {r.rs_score >= 0 ? '+' : ''}{r.rs_score.toFixed(2)}
+            </span>
+            <span style={{ fontSize: fs.row - 1, color: pctC(r.return_24h), fontFamily: C.font, textAlign: 'right' }}>{pct(r.return_24h, 1)}</span>
+            <span style={{ fontSize: fs.row - 1, color: pctC(r.return_4h), fontFamily: C.font, textAlign: 'right' }}>{pct(r.return_4h, 1)}</span>
+            <span style={{ fontSize: fs.row - 1, color: pctC(r.return_1h), fontFamily: C.font, textAlign: 'right' }}>{pct(r.return_1h, 1)}</span>
+          </div>
+        );
+      })}
+      {data?.metadata && !compact && (
+        <div style={{ padding: '4px 10px', fontSize: 7, color: C.dimLow, borderTop: `1px solid ${C.dimLow}`, marginTop: 'auto' }}>
+          Benchmark: {data.metadata.benchmark}
+        </div>
+      )}
+    </div>
+  );
+
+  const obCard = (
+    <div style={cardStyle}>
+      <div style={headerStyle(C.purple)}>
+        <div style={{ fontSize: fs.title, fontWeight: 800, letterSpacing: 1.5, color: C.purple, textTransform: 'uppercase' }}>
+          Order Book Pressure
+        </div>
+        <div style={{ fontSize: fs.sub, color: C.dim, marginTop: 1 }}>Bid/ask depth imbalance</div>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '16px 46px 1fr 46px 42px 70px', padding: colPad, background: '#060b14', borderBottom: `1px solid ${C.border}`, gap: 0 }}>
+        <span style={{ ...colHeaderStyle, fontSize: fs.colHdr }}>#</span>
+        <span style={{ ...colHeaderStyle, fontSize: fs.colHdr }}>COIN</span>
+        <span style={{ ...colHeaderStyle, fontSize: fs.colHdr, textAlign: 'right' }}>PRESS</span>
+        <span style={{ ...colHeaderStyle, fontSize: fs.colHdr, textAlign: 'right' }}>IMBAL</span>
+        <span style={{ ...colHeaderStyle, fontSize: fs.colHdr, textAlign: 'right' }}>SPR</span>
+        <span style={{ ...colHeaderStyle, fontSize: fs.colHdr, textAlign: 'right' }}>DIR</span>
+      </div>
+      {obPressure.length === 0 ? (
+        <div style={{ padding: 12, textAlign: 'center', fontSize: 8.5, color: C.dim }}>No data yet</div>
+      ) : obPressure.map((r, i) => {
+        const isSel = selectedCoin === r.symbol;
+        const dirColor = OB_DIR_COLOR[r.direction] ?? C.dim;
+        return (
+          <div key={r.symbol} onClick={() => onSelect(r.symbol)}
+            style={{ display: 'grid', gridTemplateColumns: '16px 46px 1fr 46px 42px 70px', padding: rowPad, cursor: 'pointer',
+              background: isSel ? `${C.purple}18` : i % 2 === 0 ? C.bg : C.card2,
+              borderBottom: `1px solid ${C.dimLow}`, alignItems: 'center', gap: 0, transition: 'background 0.1s' }}
+            onMouseEnter={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background = `${C.purple}0c`; }}
+            onMouseLeave={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background = i % 2 === 0 ? C.bg : C.card2; }}>
+            <span style={{ fontSize: fs.rankNum, color: C.dimLow, fontFamily: C.font }}>{i + 1}</span>
+            <span style={{ fontSize: fs.row, fontWeight: 700, color: isSel ? C.purple : C.text, fontFamily: C.font }}>{r.symbol}</span>
+            <span style={{ fontSize: fs.row, fontWeight: 600, color: r.pressure_score >= 0 ? C.green : C.red, fontFamily: C.font, textAlign: 'right' }}>
+              {r.pressure_score >= 0 ? '+' : ''}{r.pressure_score.toFixed(2)}
+            </span>
+            <span style={{ fontSize: fs.row - 1, color: r.imbalance >= 0 ? C.green : C.red, fontFamily: C.font, textAlign: 'right' }}>
+              {r.imbalance >= 0 ? '+' : ''}{r.imbalance.toFixed(2)}
+            </span>
+            <span style={{ fontSize: fs.row - 1, color: C.dim, fontFamily: C.font, textAlign: 'right' }}>
+              {(r.spread * 100).toFixed(2)}%
+            </span>
+            <span style={{ fontSize: fs.badge, fontWeight: 700, color: dirColor, background: `${dirColor}18`,
+              border: `1px solid ${dirColor}44`, borderRadius: 3, padding: '1px 4px', textAlign: 'center',
+              justifySelf: 'end', whiteSpace: 'nowrap' }}>
+              {r.direction}
+            </span>
+          </div>
+        );
+      })}
+      {data?.metadata && !compact && (
+        <div style={{ padding: '4px 10px', fontSize: 7, color: C.dimLow, borderTop: `1px solid ${C.dimLow}`, marginTop: 'auto' }}>
+          Depth window: {data.metadata.depth_window_bps} bps
+        </div>
+      )}
+    </div>
+  );
+
+  const oiCard = (
+    <div style={cardStyle}>
+      <div style={headerStyle(C.amber)}>
+        <div style={{ fontSize: fs.title, fontWeight: 800, letterSpacing: 1.5, color: C.amber, textTransform: 'uppercase' }}>
+          OI Regime Shift
+        </div>
+        <div style={{ fontSize: fs.sub, color: C.dim, marginTop: 1 }}>Trend vs squeeze classification</div>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '16px 46px 72px 1fr 42px 46px', padding: colPad, background: '#060b14', borderBottom: `1px solid ${C.border}`, gap: 0 }}>
+        <span style={{ ...colHeaderStyle, fontSize: fs.colHdr }}>#</span>
+        <span style={{ ...colHeaderStyle, fontSize: fs.colHdr }}>COIN</span>
+        <span style={{ ...colHeaderStyle, fontSize: fs.colHdr }}>REGIME</span>
+        <span style={{ ...colHeaderStyle, fontSize: fs.colHdr, textAlign: 'right' }}>PRICE</span>
+        <span style={{ ...colHeaderStyle, fontSize: fs.colHdr, textAlign: 'right' }}>OI</span>
+        <span style={{ ...colHeaderStyle, fontSize: fs.colHdr, textAlign: 'right' }}>VOL</span>
+      </div>
+      {oiRegime.length === 0 ? (
+        <div style={{ padding: 12, textAlign: 'center', fontSize: 8.5, color: C.dim }}>No data yet</div>
+      ) : oiRegime.map((r, i) => {
+        const isSel = selectedCoin === r.symbol;
+        const regColor = REGIME_COLOR[r.regime] ?? C.dim;
+        return (
+          <div key={r.symbol} onClick={() => onSelect(r.symbol)}
+            style={{ display: 'grid', gridTemplateColumns: '16px 46px 72px 1fr 42px 46px', padding: rowPad, cursor: 'pointer',
+              background: isSel ? `${C.amber}18` : i % 2 === 0 ? C.bg : C.card2,
+              borderBottom: `1px solid ${C.dimLow}`, alignItems: 'center', gap: 0, transition: 'background 0.1s' }}
+            onMouseEnter={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background = `${C.amber}0c`; }}
+            onMouseLeave={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background = i % 2 === 0 ? C.bg : C.card2; }}>
+            <span style={{ fontSize: fs.rankNum, color: C.dimLow, fontFamily: C.font }}>{i + 1}</span>
+            <span style={{ fontSize: fs.row, fontWeight: 700, color: isSel ? C.amber : C.text, fontFamily: C.font }}>{r.symbol}</span>
+            <span style={{ fontSize: fs.badge, fontWeight: 700, color: regColor, background: `${regColor}18`,
+              border: `1px solid ${regColor}44`, borderRadius: 3, padding: '1px 4px', whiteSpace: 'nowrap' }}>
+              {r.regime}
+            </span>
+            <span style={{ fontSize: fs.row - 1, color: pctC(r.price_change_pct), fontFamily: C.font, textAlign: 'right' }}>{pct(r.price_change_pct, 1)}</span>
+            <span style={{ fontSize: fs.row - 1, color: pctC(r.oi_change_pct), fontFamily: C.font, textAlign: 'right' }}>{pct(r.oi_change_pct, 1)}</span>
+            <span style={{ fontSize: fs.row - 1, color: r.volume_impulse >= 1.5 ? C.teal : C.dim, fontFamily: C.font, textAlign: 'right' }}>
+              {r.volume_impulse.toFixed(1)}×
+            </span>
+          </div>
+        );
+      })}
+      {data?.as_of && !compact && (
+        <div style={{ padding: '4px 10px', fontSize: 7, color: C.dimLow, borderTop: `1px solid ${C.dimLow}`, marginTop: 'auto' }}>
+          As of {new Date(data.as_of).toLocaleTimeString()}
+        </div>
+      )}
+    </div>
+  );
+
+  if (compact) return <>{rsCard}{obCard}{oiCard}</>;
+
   return (
     <div style={{ padding: '0 14px 12px', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
-
-      {/* ── Relative Strength Leaders ─────────────────── */}
-      <div style={cardStyle}>
-        <div style={headerStyle(C.teal)}>
-          <div style={{ fontSize: 8.5, fontWeight: 800, letterSpacing: 1.5, color: C.teal, textTransform: 'uppercase' }}>
-            Relative Strength Leaders
-          </div>
-          <div style={{ fontSize: 7.5, color: C.dim, marginTop: 1 }}>Outperforming benchmark</div>
-        </div>
-        {/* Column headers */}
-        <div style={{ display: 'grid', gridTemplateColumns: '20px 52px 1fr 52px 48px 48px', padding: '3px 10px', background: '#060b14', borderBottom: `1px solid ${C.border}`, gap: 0 }}>
-          <span style={colHeaderStyle}>#</span>
-          <span style={colHeaderStyle}>COIN</span>
-          <span style={{ ...colHeaderStyle, textAlign: 'right' }}>RS</span>
-          <span style={{ ...colHeaderStyle, textAlign: 'right' }}>24H</span>
-          <span style={{ ...colHeaderStyle, textAlign: 'right' }}>4H</span>
-          <span style={{ ...colHeaderStyle, textAlign: 'right' }}>1H</span>
-        </div>
-        {rsLeaders.length === 0 ? (
-          <div style={{ padding: 12, textAlign: 'center', fontSize: 8.5, color: C.dim }}>No data yet</div>
-        ) : rsLeaders.map((r, i) => {
-          const isSel = selectedCoin === r.symbol;
-          return (
-            <div key={r.symbol} onClick={() => onSelect(r.symbol)}
-              style={{ display: 'grid', gridTemplateColumns: '20px 52px 1fr 52px 48px 48px', padding: '3px 10px', cursor: 'pointer',
-                background: isSel ? `${C.teal}18` : i % 2 === 0 ? C.bg : C.card2,
-                borderBottom: `1px solid ${C.dimLow}`, alignItems: 'center', gap: 0, transition: 'background 0.1s' }}
-              onMouseEnter={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background = `${C.teal}0c`; }}
-              onMouseLeave={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background = i % 2 === 0 ? C.bg : C.card2; }}>
-              <span style={{ fontSize: 7.5, color: C.dimLow, fontFamily: C.font }}>{i + 1}</span>
-              <span style={{ fontSize: 9.5, fontWeight: 700, color: isSel ? C.teal : C.text, fontFamily: C.font }}>{r.symbol}</span>
-              <span style={{ fontSize: 9.5, fontWeight: 600, color: r.rs_score >= 0 ? C.green : C.red, fontFamily: C.font, textAlign: 'right' }}>
-                {r.rs_score >= 0 ? '+' : ''}{r.rs_score.toFixed(2)}
-              </span>
-              <span style={{ fontSize: 8.5, color: pctC(r.return_24h), fontFamily: C.font, textAlign: 'right' }}>
-                {pct(r.return_24h, 1)}
-              </span>
-              <span style={{ fontSize: 8.5, color: pctC(r.return_4h), fontFamily: C.font, textAlign: 'right' }}>
-                {pct(r.return_4h, 1)}
-              </span>
-              <span style={{ fontSize: 8.5, color: pctC(r.return_1h), fontFamily: C.font, textAlign: 'right' }}>
-                {pct(r.return_1h, 1)}
-              </span>
-            </div>
-          );
-        })}
-        {data?.metadata && (
-          <div style={{ padding: '4px 10px', fontSize: 7, color: C.dimLow, borderTop: `1px solid ${C.dimLow}`, marginTop: 'auto' }}>
-            Benchmark: {data.metadata.benchmark}
-          </div>
-        )}
-      </div>
-
-      {/* ── Order Book Pressure ───────────────────────── */}
-      <div style={cardStyle}>
-        <div style={headerStyle(C.purple)}>
-          <div style={{ fontSize: 8.5, fontWeight: 800, letterSpacing: 1.5, color: C.purple, textTransform: 'uppercase' }}>
-            Order Book Pressure
-          </div>
-          <div style={{ fontSize: 7.5, color: C.dim, marginTop: 1 }}>Bid/ask depth imbalance</div>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '20px 52px 1fr 52px 48px 80px', padding: '3px 10px', background: '#060b14', borderBottom: `1px solid ${C.border}`, gap: 0 }}>
-          <span style={colHeaderStyle}>#</span>
-          <span style={colHeaderStyle}>COIN</span>
-          <span style={{ ...colHeaderStyle, textAlign: 'right' }}>PRESS</span>
-          <span style={{ ...colHeaderStyle, textAlign: 'right' }}>IMBAL</span>
-          <span style={{ ...colHeaderStyle, textAlign: 'right' }}>SPR</span>
-          <span style={{ ...colHeaderStyle, textAlign: 'right' }}>DIR</span>
-        </div>
-        {obPressure.length === 0 ? (
-          <div style={{ padding: 12, textAlign: 'center', fontSize: 8.5, color: C.dim }}>No data yet</div>
-        ) : obPressure.map((r, i) => {
-          const isSel = selectedCoin === r.symbol;
-          const dirColor = OB_DIR_COLOR[r.direction] ?? C.dim;
-          return (
-            <div key={r.symbol} onClick={() => onSelect(r.symbol)}
-              style={{ display: 'grid', gridTemplateColumns: '20px 52px 1fr 52px 48px 80px', padding: '3px 10px', cursor: 'pointer',
-                background: isSel ? `${C.purple}18` : i % 2 === 0 ? C.bg : C.card2,
-                borderBottom: `1px solid ${C.dimLow}`, alignItems: 'center', gap: 0, transition: 'background 0.1s' }}
-              onMouseEnter={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background = `${C.purple}0c`; }}
-              onMouseLeave={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background = i % 2 === 0 ? C.bg : C.card2; }}>
-              <span style={{ fontSize: 7.5, color: C.dimLow, fontFamily: C.font }}>{i + 1}</span>
-              <span style={{ fontSize: 9.5, fontWeight: 700, color: isSel ? C.purple : C.text, fontFamily: C.font }}>{r.symbol}</span>
-              <span style={{ fontSize: 9.5, fontWeight: 600, color: r.pressure_score >= 0 ? C.green : C.red, fontFamily: C.font, textAlign: 'right' }}>
-                {r.pressure_score >= 0 ? '+' : ''}{r.pressure_score.toFixed(2)}
-              </span>
-              <span style={{ fontSize: 8.5, color: r.imbalance >= 0 ? C.green : C.red, fontFamily: C.font, textAlign: 'right' }}>
-                {r.imbalance >= 0 ? '+' : ''}{r.imbalance.toFixed(2)}
-              </span>
-              <span style={{ fontSize: 8.5, color: C.dim, fontFamily: C.font, textAlign: 'right' }}>
-                {(r.spread * 100).toFixed(2)}%
-              </span>
-              <span style={{ fontSize: 7.5, fontWeight: 700, color: dirColor, background: `${dirColor}18`,
-                border: `1px solid ${dirColor}44`, borderRadius: 3, padding: '1px 5px', textAlign: 'center',
-                justifySelf: 'end', whiteSpace: 'nowrap' }}>
-                {r.direction}
-              </span>
-            </div>
-          );
-        })}
-        {data?.metadata && (
-          <div style={{ padding: '4px 10px', fontSize: 7, color: C.dimLow, borderTop: `1px solid ${C.dimLow}`, marginTop: 'auto' }}>
-            Depth window: {data.metadata.depth_window_bps} bps
-          </div>
-        )}
-      </div>
-
-      {/* ── OI Regime Shift ───────────────────────────── */}
-      <div style={cardStyle}>
-        <div style={headerStyle(C.amber)}>
-          <div style={{ fontSize: 8.5, fontWeight: 800, letterSpacing: 1.5, color: C.amber, textTransform: 'uppercase' }}>
-            OI Regime Shift
-          </div>
-          <div style={{ fontSize: 7.5, color: C.dim, marginTop: 1 }}>Trend vs squeeze classification</div>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '20px 52px 80px 1fr 48px 52px', padding: '3px 10px', background: '#060b14', borderBottom: `1px solid ${C.border}`, gap: 0 }}>
-          <span style={colHeaderStyle}>#</span>
-          <span style={colHeaderStyle}>COIN</span>
-          <span style={colHeaderStyle}>REGIME</span>
-          <span style={{ ...colHeaderStyle, textAlign: 'right' }}>PRICE</span>
-          <span style={{ ...colHeaderStyle, textAlign: 'right' }}>OI</span>
-          <span style={{ ...colHeaderStyle, textAlign: 'right' }}>VOL</span>
-        </div>
-        {oiRegime.length === 0 ? (
-          <div style={{ padding: 12, textAlign: 'center', fontSize: 8.5, color: C.dim }}>No data yet</div>
-        ) : oiRegime.map((r, i) => {
-          const isSel = selectedCoin === r.symbol;
-          const regColor = REGIME_COLOR[r.regime] ?? C.dim;
-          return (
-            <div key={r.symbol} onClick={() => onSelect(r.symbol)}
-              style={{ display: 'grid', gridTemplateColumns: '20px 52px 80px 1fr 48px 52px', padding: '3px 10px', cursor: 'pointer',
-                background: isSel ? `${C.amber}18` : i % 2 === 0 ? C.bg : C.card2,
-                borderBottom: `1px solid ${C.dimLow}`, alignItems: 'center', gap: 0, transition: 'background 0.1s' }}
-              onMouseEnter={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background = `${C.amber}0c`; }}
-              onMouseLeave={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background = i % 2 === 0 ? C.bg : C.card2; }}>
-              <span style={{ fontSize: 7.5, color: C.dimLow, fontFamily: C.font }}>{i + 1}</span>
-              <span style={{ fontSize: 9.5, fontWeight: 700, color: isSel ? C.amber : C.text, fontFamily: C.font }}>{r.symbol}</span>
-              <span style={{ fontSize: 7.5, fontWeight: 700, color: regColor, background: `${regColor}18`,
-                border: `1px solid ${regColor}44`, borderRadius: 3, padding: '1px 5px', whiteSpace: 'nowrap' }}>
-                {r.regime}
-              </span>
-              <span style={{ fontSize: 8.5, color: pctC(r.price_change_pct), fontFamily: C.font, textAlign: 'right' }}>
-                {pct(r.price_change_pct, 1)}
-              </span>
-              <span style={{ fontSize: 8.5, color: pctC(r.oi_change_pct), fontFamily: C.font, textAlign: 'right' }}>
-                {pct(r.oi_change_pct, 1)}
-              </span>
-              <span style={{ fontSize: 8.5, color: r.volume_impulse >= 1.5 ? C.teal : C.dim, fontFamily: C.font, textAlign: 'right' }}>
-                {r.volume_impulse.toFixed(1)}×
-              </span>
-            </div>
-          );
-        })}
-        {data?.as_of && (
-          <div style={{ padding: '4px 10px', fontSize: 7, color: C.dimLow, borderTop: `1px solid ${C.dimLow}`, marginTop: 'auto' }}>
-            As of {new Date(data.as_of).toLocaleTimeString()}
-          </div>
-        )}
-      </div>
+      {rsCard}{obCard}{oiCard}
     </div>
   );
 }
@@ -1501,17 +1509,22 @@ export default function HyperliquidScreenerPage() {
             {/* ── SIGNAL BOARDS ──────────────────────────────────────── */}
             {sorted.length > 0 && (
               <div style={{ padding:'12px 14px', display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(210px, 1fr))', gap:10 }}>
-                {signalSections.map(sec => (
+                {signalSections.filter(s => s.id !== 'long-liq' && s.id !== 'fund-ext').map(sec => (
                   <SignalBoard key={sec.id} section={sec} selectedCoin={selectedCoin}
                     onSelect={setSelectedCoin} />
                 ))}
               </div>
             )}
 
-
-            {/* ── ADVANCED SIGNAL CARDS (RS, Order Book, OI Regime) ── */}
+            {/* ── COMBINED ROW: Long Flush + Funding Extremes + RS / OB / OI ── */}
             {sorted.length > 0 && (
-              <AdvancedSignalCards selectedCoin={selectedCoin} onSelect={setSelectedCoin} />
+              <div style={{ padding:'0 14px 12px', display:'grid', gridTemplateColumns:'repeat(5, 1fr)', gap:10 }}>
+                {signalSections.filter(s => s.id === 'long-liq' || s.id === 'fund-ext').map(sec => (
+                  <SignalBoard key={sec.id} section={sec} selectedCoin={selectedCoin}
+                    onSelect={setSelectedCoin} />
+                ))}
+                <AdvancedSignalCards selectedCoin={selectedCoin} onSelect={setSelectedCoin} compact />
+              </div>
             )}
 
             {/* ── TSMOM MOMENTUM PANEL ──────────────────────────────── */}
