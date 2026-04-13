@@ -209,28 +209,34 @@ const SECTION_TOOLTIPS: Record<string, { short: string; why: string; how: string
 function SectionInfoTooltip({ title }: { title: string }) {
   const tip = SECTION_TOOLTIPS[title];
   if (!tip) return null;
-  const [show, setShow] = useState(false);
+  const [tipPos, setTipPos] = useState<{ x: number; y: number } | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleEnter = () => {
-    timeoutRef.current = setTimeout(() => setShow(true), 150);
+  const handleEnter = (e: React.MouseEvent) => {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top;
+    timeoutRef.current = setTimeout(() => setTipPos({ x, y }), 150);
   };
   const handleLeave = () => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    setShow(false);
+    setTipPos(null);
   };
 
   return (
-    <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', marginLeft: 5, cursor: 'help' }}
+    <span style={{ display: 'inline-flex', alignItems: 'center', marginLeft: 5, cursor: 'help' }}
       onMouseEnter={handleEnter} onMouseLeave={handleLeave}>
       <span style={{ fontSize: 8, color: C.dim, border: `1px solid ${C.dim}`, borderRadius: '50%', width: 13, height: 13,
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1, flexShrink: 0 }}>i</span>
-      {show && (
+      {tipPos && (
         <div style={{
-          position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)',
-          marginBottom: 6, width: 290, padding: '10px 12px', zIndex: 9999,
-          background: '#0c1526', border: `1px solid ${C.teal}44`, borderRadius: 6,
-          boxShadow: `0 4px 20px rgba(0,0,0,0.6), 0 0 8px ${C.teal}18`,
+          position: 'fixed',
+          left: Math.min(tipPos.x, window.innerWidth - 300),
+          top: tipPos.y - 8,
+          transform: 'translateY(-100%)',
+          width: 290, padding: '10px 12px', zIndex: 99999,
+          background: '#0c1526', border: `1px solid ${C.teal}55`, borderRadius: 6,
+          boxShadow: `0 4px 24px rgba(0,0,0,0.75), 0 0 12px ${C.teal}22`,
           pointerEvents: 'none',
         }}>
           <div style={{ fontSize: 9.5, fontWeight: 800, color: C.teal, textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 4 }}>{title}</div>
@@ -244,6 +250,9 @@ function SectionInfoTooltip({ title }: { title: string }) {
     </span>
   );
 }
+
+// ─── Strip exchange prefixes from symbols (e.g. "cash:BTC" → "BTC") ──────────
+const cleanSym = (s: string) => s.replace(/^[a-zA-Z0-9]+:/g, '');
 
 // ─── Formatters ───────────────────────────────────────────────────────────────
 const pct  = (v: number | null, dec = 2) => v == null ? '—' : `${v >= 0 ? '+' : ''}${v.toFixed(dec)}%`;
@@ -1030,7 +1039,7 @@ function AdvancedSignalCards({ selectedCoin, onSelect }: {
               onMouseEnter={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background = `${C.teal}0c`; }}
               onMouseLeave={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background = i % 2 === 0 ? C.bg : C.card2; }}>
               <span style={{ fontSize: 7.5, color: C.dimLow, fontFamily: C.font }}>{i + 1}</span>
-              <span style={{ fontSize: 9.5, fontWeight: 700, color: isSel ? C.teal : C.text, fontFamily: C.font }}>{r.symbol}</span>
+              <span style={{ fontSize: 9.5, fontWeight: 700, color: isSel ? C.teal : C.text, fontFamily: C.font }}>{cleanSym(r.symbol)}</span>
               <span style={{ fontSize: 9.5, fontWeight: 600, color: r.rs_score >= 0 ? C.green : C.red, fontFamily: C.font, textAlign: 'right' }}>
                 {r.rs_score >= 0 ? '+' : ''}{r.rs_score.toFixed(2)}
               </span>
@@ -1085,7 +1094,7 @@ function AdvancedSignalCards({ selectedCoin, onSelect }: {
               onMouseEnter={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background = `${C.purple}0c`; }}
               onMouseLeave={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background = i % 2 === 0 ? C.bg : C.card2; }}>
               <span style={{ fontSize: 7.5, color: C.dimLow, fontFamily: C.font }}>{i + 1}</span>
-              <span style={{ fontSize: 9.5, fontWeight: 700, color: isSel ? C.purple : C.text, fontFamily: C.font }}>{r.symbol}</span>
+              <span style={{ fontSize: 9.5, fontWeight: 700, color: isSel ? C.purple : C.text, fontFamily: C.font }}>{cleanSym(r.symbol)}</span>
               <span style={{ fontSize: 9.5, fontWeight: 600, color: r.pressure_score >= 0 ? C.green : C.red, fontFamily: C.font, textAlign: 'right' }}>
                 {r.pressure_score >= 0 ? '+' : ''}{r.pressure_score.toFixed(2)}
               </span>
@@ -1142,7 +1151,7 @@ function AdvancedSignalCards({ selectedCoin, onSelect }: {
               onMouseEnter={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background = `${C.amber}0c`; }}
               onMouseLeave={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background = i % 2 === 0 ? C.bg : C.card2; }}>
               <span style={{ fontSize: 7.5, color: C.dimLow, fontFamily: C.font }}>{i + 1}</span>
-              <span style={{ fontSize: 9.5, fontWeight: 700, color: isSel ? C.amber : C.text, fontFamily: C.font }}>{r.symbol}</span>
+              <span style={{ fontSize: 9.5, fontWeight: 700, color: isSel ? C.amber : C.text, fontFamily: C.font }}>{cleanSym(r.symbol)}</span>
               <span style={{ fontSize: 7.5, fontWeight: 700, color: regColor, background: `${regColor}18`,
                 border: `1px solid ${regColor}44`, borderRadius: 3, padding: '1px 5px', whiteSpace: 'nowrap' }}>
                 {r.regime}
@@ -1204,7 +1213,7 @@ function AdvancedSignalCards({ selectedCoin, onSelect }: {
               onMouseEnter={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background = `${C.red}0c`; }}
               onMouseLeave={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background = i % 2 === 0 ? C.bg : C.card2; }}>
               <span style={{ fontSize: 7.5, color: C.dimLow, fontFamily: C.font }}>{i + 1}</span>
-              <span style={{ fontSize: 9.5, fontWeight: 700, color: isSel ? C.red : C.text, fontFamily: C.font }}>{r.symbol}</span>
+              <span style={{ fontSize: 9.5, fontWeight: 700, color: isSel ? C.red : C.text, fontFamily: C.font }}>{cleanSym(r.symbol)}</span>
               <span style={{ fontSize: 9.5, fontWeight: 600, color: utilColor, fontFamily: C.font, textAlign: 'right' }}>
                 {r.utilization_pct.toFixed(1)}%
               </span>
@@ -1507,7 +1516,14 @@ export default function HyperliquidScreenerPage() {
   }, [displayData, rows, agentResult, dataUpdatedAt]);
 
   const handleSort = useCallback((key: CK) => {
-    setSortKey(prev => { if(prev===key){setSortDir(d=>d==='asc'?'desc':'asc');return key;}setSortDir('asc');return key; });
+    setSortKey(prev => {
+      if (prev === key) {
+        setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+        return key;
+      }
+      setSortDir('desc');
+      return key;
+    });
   }, []);
 
   // ── Agent run: triggered ONLY by the top-right header button ──
@@ -1552,8 +1568,9 @@ export default function HyperliquidScreenerPage() {
   return (
     <div style={{ background:C.bg, color:C.text, fontFamily:C.font, fontSize:11, height:'100vh', display:'flex', flexDirection:'column', overflow:'hidden' }}>
 
-      {/* ── TOP BAR (UNCHANGED) ──────────────────────────────────────── */}
-      <div style={{ background:'#060b14', borderBottom:`1px solid ${C.border}`, padding:'0 12px', height:44, display:'flex', alignItems:'center', gap:8, flexShrink:0, flexWrap:'nowrap', overflowX:'auto' }}>
+      {/* ── TOP BAR ─────────────────────────────────────────────────── */}
+      <div style={{ background:'#060b14', borderBottom:`1px solid ${C.border}`, padding:'0 12px', display:'flex', alignItems:'center', gap:8, flexShrink:0, flexWrap:'nowrap', overflowX:'auto', scrollbarWidth:'none', minHeight:44 }}>
+        {/* Logo + title */}
         <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
           <div style={{ width:26, height:26, borderRadius:5, background:`linear-gradient(135deg,${C.teal},#0369a1)`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
             <Activity style={{ width:14, height:14, color:'#fff' }} />
@@ -1564,12 +1581,24 @@ export default function HyperliquidScreenerPage() {
           </div>
         </div>
         <div style={{ width:1, height:22, background:C.border, flexShrink:0, margin:'0 4px' }} />
+        {/* Search */}
         <div style={{ position:'relative', flexShrink:0 }}>
           <Search style={{ position:'absolute', left:7, top:'50%', transform:'translateY(-50%)', width:11, height:11, color:C.dim }} />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search coin…"
             style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:4, padding:'4px 8px 4px 22px', fontSize:10, color:C.text, width:130, outline:'none' }} />
           {search && <button onClick={() => setSearch('')} style={{ position:'absolute', right:5, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color:C.dim }}><X style={{ width:10, height:10 }} /></button>}
         </div>
+        <div style={{ width:1, height:22, background:C.border, flexShrink:0, margin:'0 4px' }} />
+        {/* Summary chips — inline in toolbar, "Updated" chip excluded (shown in right rail) */}
+        {(isLoading && !displayData)
+          ? Array.from({length:8}).map((_,i) => <div key={i} style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:5, padding:'5px 11px', flexShrink:0, minWidth:86, height:34, opacity:0.25 }} />)
+          : summaryItems.filter(item => item.id !== 'ts').map(item => (
+              <SummaryChip key={item.id} label={item.label} coin={item.coin} value={item.value} color={item.color}
+                selected={!!item.coin && selectedCoin===item.coin}
+                onClick={item.coin ? () => setSelectedCoin(item.coin!) : undefined} />
+            ))
+        }
+        {/* Right-side controls */}
         <div style={{ flex:1 }} />
         <Btn onClick={() => refetch()}>
           <RefreshCw style={{ width:10, height:10, ...(isFetching?{animation:'spin 1s linear infinite'}:{}) }} /> Refresh
@@ -1587,31 +1616,6 @@ export default function HyperliquidScreenerPage() {
           <span style={{ width:6, height:6, borderRadius:'50%', background:isError?C.red:isFetching?C.amber:C.green, boxShadow:`0 0 5px ${isError?C.red:isFetching?C.amber:C.green}` }} />
           <span style={{ fontSize:9, color:C.dim }}>{isError?'ERROR':isFetching?'LIVE':'LIVE'}</span>
         </div>
-      </div>
-
-      {/* ── FILTER BAR ───────────────────────────────────────────────── */}
-      {showFilters && (
-        <div style={{ background:C.card2, borderBottom:`1px solid ${C.border}`, padding:'6px 14px', display:'flex', gap:10, alignItems:'center', flexShrink:0, flexWrap:'wrap' }}>
-          <label style={{ display:'flex', alignItems:'center', gap:5, fontSize:9, color:C.dim }}>
-            Min Vol ($M): <input value={minVolume} onChange={e => setMinVolume(e.target.value)} placeholder="e.g. 10" style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:3, padding:'3px 6px', fontSize:10, color:C.text, width:70, outline:'none' }} />
-          </label>
-          <label style={{ display:'flex', alignItems:'center', gap:5, fontSize:9, color:C.dim }}>
-            Min OI ($M): <input value={minOI} onChange={e => setMinOI(e.target.value)} placeholder="e.g. 5" style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:3, padding:'3px 6px', fontSize:10, color:C.text, width:70, outline:'none' }} />
-          </label>
-          <span style={{ fontSize:9, color:C.dim }}>Showing {sorted.length} / {rows.length} assets{dataUpdatedAt?` · Updated ${new Date(dataUpdatedAt).toLocaleTimeString()}`:''}</span>
-        </div>
-      )}
-
-      {/* ── SUMMARY STRIP ────────────────────────────────────────────── */}
-      <div style={{ background:'#07101a', borderBottom:`1px solid ${C.border}`, padding:'5px 12px', display:'flex', gap:7, overflowX:'auto', flexShrink:0, scrollbarWidth:'none', alignItems:'stretch' }}>
-        {(isLoading && !displayData)
-          ? Array.from({length:9}).map((_,i) => <div key={i} style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:5, padding:'5px 11px', flexShrink:0, minWidth:96, height:40, opacity:0.3 }} />)
-          : summaryItems.map(item => (
-              <SummaryChip key={item.id} label={item.label} coin={item.coin} value={item.value} color={item.color}
-                selected={!!item.coin && selectedCoin===item.coin}
-                onClick={item.coin ? () => setSelectedCoin(item.coin!) : undefined} />
-            ))
-        }
       </div>
 
       {/* ── SCROLLABLE BODY ───────────────────────────────────────────── */}
