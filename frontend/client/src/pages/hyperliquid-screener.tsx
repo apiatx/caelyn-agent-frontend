@@ -1,10 +1,31 @@
-import { useState, useCallback, useMemo, useRef } from 'react';
+import { useState, useCallback, useMemo, useRef, Component } from 'react';
+import type { ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Activity, Search, RefreshCw, Bot, X, ChevronDown, ChevronUp,
   ChevronsUpDown, AlertTriangle, Pin, BarChart2,
   TrendingUp, TrendingDown, Eye, ShieldAlert, Zap,
 } from 'lucide-react';
+
+// ─── Error Boundary ───────────────────────────────────────────────────────────
+// Prevents a crash inside a signal card / panel from blanking the whole page.
+class SectionErrorBoundary extends Component<
+  { children: ReactNode; label: string },
+  { caught: boolean }
+> {
+  constructor(props: any) { super(props); this.state = { caught: false }; }
+  static getDerivedStateFromError() { return { caught: true }; }
+  render() {
+    if (this.state.caught) {
+      return (
+        <div style={{ padding: '12px 14px', fontSize: 9, color: '#64748b', textAlign: 'center' }}>
+          {this.props.label} data unavailable — will retry next refresh
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 // ─── Palette ──────────────────────────────────────────────────────────────────
 const C = {
@@ -956,6 +977,10 @@ function AdvancedSignalCards({ selectedCoin, onSelect }: {
     [...(data?.oi_cap_risk ?? [])].sort((a, b) => b.utilization - a.utilization).slice(0, 10),
     [data]);
 
+  // Null-safe numeric formatter — prevents crashes when backend fields are null
+  const nf = (v: number | null | undefined, dec: number, suffix = '') =>
+    v == null ? '—' : `${v.toFixed(dec)}${suffix}`;
+
   const cardStyle: React.CSSProperties = {
     background: C.card, border: `1px solid ${C.border}`, borderRadius: 6,
     display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0,
@@ -1043,8 +1068,8 @@ function AdvancedSignalCards({ selectedCoin, onSelect }: {
               onMouseLeave={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background = i % 2 === 0 ? C.bg : C.card2; }}>
               <span style={{ fontSize: 7.5, color: C.dimLow, fontFamily: C.font }}>{i + 1}</span>
               <span style={{ fontSize: 9.5, fontWeight: 700, color: isSel ? C.teal : C.text, fontFamily: C.font }}>{cleanSym(r.symbol)}</span>
-              <span style={{ fontSize: 9.5, fontWeight: 600, color: r.rs_score >= 0 ? C.green : C.red, fontFamily: C.font, textAlign: 'right' }}>
-                {r.rs_score >= 0 ? '+' : ''}{r.rs_score.toFixed(2)}
+              <span style={{ fontSize: 9.5, fontWeight: 600, color: (r.rs_score ?? 0) >= 0 ? C.green : C.red, fontFamily: C.font, textAlign: 'right' }}>
+                {r.rs_score == null ? '—' : `${r.rs_score >= 0 ? '+' : ''}${r.rs_score.toFixed(2)}`}
               </span>
               <span style={{ fontSize: 8.5, color: pctC(r.return_24h), fontFamily: C.font, textAlign: 'right' }}>
                 {pct(r.return_24h, 1)}
@@ -1098,14 +1123,14 @@ function AdvancedSignalCards({ selectedCoin, onSelect }: {
               onMouseLeave={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background = i % 2 === 0 ? C.bg : C.card2; }}>
               <span style={{ fontSize: 7.5, color: C.dimLow, fontFamily: C.font }}>{i + 1}</span>
               <span style={{ fontSize: 9.5, fontWeight: 700, color: isSel ? C.purple : C.text, fontFamily: C.font }}>{cleanSym(r.symbol)}</span>
-              <span style={{ fontSize: 9.5, fontWeight: 600, color: r.pressure_score >= 0 ? C.green : C.red, fontFamily: C.font, textAlign: 'right' }}>
-                {r.pressure_score >= 0 ? '+' : ''}{r.pressure_score.toFixed(2)}
+              <span style={{ fontSize: 9.5, fontWeight: 600, color: (r.pressure_score ?? 0) >= 0 ? C.green : C.red, fontFamily: C.font, textAlign: 'right' }}>
+                {r.pressure_score == null ? '—' : `${r.pressure_score >= 0 ? '+' : ''}${r.pressure_score.toFixed(2)}`}
               </span>
-              <span style={{ fontSize: 8.5, color: r.imbalance >= 0 ? C.green : C.red, fontFamily: C.font, textAlign: 'right' }}>
-                {r.imbalance >= 0 ? '+' : ''}{r.imbalance.toFixed(2)}
+              <span style={{ fontSize: 8.5, color: (r.imbalance ?? 0) >= 0 ? C.green : C.red, fontFamily: C.font, textAlign: 'right' }}>
+                {r.imbalance == null ? '—' : `${r.imbalance >= 0 ? '+' : ''}${r.imbalance.toFixed(2)}`}
               </span>
               <span style={{ fontSize: 8.5, color: C.dim, fontFamily: C.font, textAlign: 'right' }}>
-                {(r.spread * 100).toFixed(2)}%
+                {nf(r.spread != null ? r.spread * 100 : null, 2, '%')}
               </span>
               <span style={{ fontSize: 7.5, fontWeight: 700, color: dirColor, background: `${dirColor}18`,
                 border: `1px solid ${dirColor}44`, borderRadius: 3, padding: '1px 5px', textAlign: 'center',
@@ -1165,8 +1190,8 @@ function AdvancedSignalCards({ selectedCoin, onSelect }: {
               <span style={{ fontSize: 8.5, color: pctC(r.oi_change_1h_pct), fontFamily: C.font, textAlign: 'right' }}>
                 {pct(r.oi_change_1h_pct, 1)}
               </span>
-              <span style={{ fontSize: 8.5, color: r.volume_impulse >= 1.5 ? C.teal : C.dim, fontFamily: C.font, textAlign: 'right' }}>
-                {r.volume_impulse.toFixed(1)}×
+              <span style={{ fontSize: 8.5, color: (r.volume_impulse ?? 0) >= 1.5 ? C.teal : C.dim, fontFamily: C.font, textAlign: 'right' }}>
+                {nf(r.volume_impulse, 1, '×')}
               </span>
             </div>
           );
@@ -1218,7 +1243,7 @@ function AdvancedSignalCards({ selectedCoin, onSelect }: {
               <span style={{ fontSize: 7.5, color: C.dimLow, fontFamily: C.font }}>{i + 1}</span>
               <span style={{ fontSize: 9.5, fontWeight: 700, color: isSel ? C.red : C.text, fontFamily: C.font }}>{cleanSym(r.symbol)}</span>
               <span style={{ fontSize: 9.5, fontWeight: 600, color: utilColor, fontFamily: C.font, textAlign: 'right' }}>
-                {r.utilization_pct.toFixed(1)}%
+                {nf(r.utilization_pct, 1, '%')}
               </span>
               <span style={{ fontSize: 7.5, fontWeight: 700, color: statColor, background: `${statColor}18`,
                 border: `1px solid ${statColor}44`, borderRadius: 3, padding: '1px 5px', textAlign: 'center',
@@ -1531,11 +1556,15 @@ export default function HyperliquidScreenerPage() {
       if (cached) _lastGood.current = JSON.parse(cached);
     } catch { /* ignore parse errors */ }
   }
-  if (raw != null) {
+  // Only persist non-empty snapshots so an empty-row response never
+  // overwrites good cached data (server returns rows:[] during cache warm-up).
+  if (raw != null && raw.rows.length > 0) {
     _lastGood.current = raw;
     try { localStorage.setItem('hl_screener_cache', JSON.stringify(raw)); } catch { /* ignore quota errors */ }
   }
-  const displayData = raw ?? _lastGood.current;
+  // Prefer the live snapshot only when it has rows; fall back to last-good
+  // so the screen never goes blank during background refreshes.
+  const displayData = (raw?.rows?.length ?? 0) > 0 ? raw : (_lastGood.current ?? raw);
 
   // Merge agent results into rows for matrix colouring
   const rows: ScreenerRow[] = useMemo(() => {
@@ -1742,12 +1771,16 @@ export default function HyperliquidScreenerPage() {
 
             {/* ── ADVANCED SIGNAL CARDS (RS, Order Book, OI Regime) ── */}
             {sorted.length > 0 && (
-              <AdvancedSignalCards selectedCoin={selectedCoin} onSelect={setSelectedCoin} />
+              <SectionErrorBoundary label="Advanced Signals">
+                <AdvancedSignalCards selectedCoin={selectedCoin} onSelect={setSelectedCoin} />
+              </SectionErrorBoundary>
             )}
 
             {/* ── TSMOM MOMENTUM PANEL ──────────────────────────────── */}
             {sorted.length > 0 && (
-              <MomentumPanel selectedCoin={selectedCoin} onSelect={setSelectedCoin} />
+              <SectionErrorBoundary label="Time-Series Momentum">
+                <MomentumPanel selectedCoin={selectedCoin} onSelect={setSelectedCoin} />
+              </SectionErrorBoundary>
             )}
 
             {/* ── MARKET MATRIX (collapsible) ────────────────────────── */}
