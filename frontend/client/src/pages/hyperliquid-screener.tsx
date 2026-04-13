@@ -813,10 +813,16 @@ interface OIRegime {
   symbol: string; regime: string; price_change_pct: number; oi_change_pct: number;
   volume_impulse: number; regime_score: number;
 }
+interface OICapRisk {
+  symbol: string; display_name: string; mark_price: number; current_oi: number;
+  oi_cap: number; utilization: number; utilization_pct: number; cap_remaining: number;
+  status: string; funding_ann_pct?: number; price_change_pct?: number;
+}
 interface AdvancedSignals {
   relative_strength_leaders: RSLeader[];
   order_book_pressure: OBPressure[];
   oi_regime_shift: OIRegime[];
+  oi_cap_risk?: OICapRisk[];
   as_of: string;
   metadata: { benchmark: string; depth_window_bps: number; intervals: string[] };
 }
@@ -833,6 +839,13 @@ const OB_DIR_COLOR: Record<string, string> = {
   'Bid Support':  C.green,
   'Ask Pressure': C.red,
   'Balanced':     C.dim,
+};
+
+const CAP_STATUS_COLOR: Record<string, string> = {
+  'Normal':    C.green,
+  'Crowded':   C.amber,
+  'Near Cap':  '#f97316', // orange
+  'Cap Risk':  C.red,
 };
 
 // ─── Advanced Signal Cards ───────────────────────────────────────────────────
@@ -862,6 +875,9 @@ function AdvancedSignalCards({ selectedCoin, onSelect }: {
   const oiRegime = useMemo(() =>
     [...(data?.oi_regime_shift ?? [])].sort((a, b) => b.regime_score - a.regime_score).slice(0, 10),
     [data]);
+  const oiCapRisk = useMemo(() =>
+    [...(data?.oi_cap_risk ?? [])].sort((a, b) => b.utilization - a.utilization).slice(0, 10),
+    [data]);
 
   const cardStyle: React.CSSProperties = {
     background: C.card, border: `1px solid ${C.border}`, borderRadius: 6,
@@ -879,8 +895,8 @@ function AdvancedSignalCards({ selectedCoin, onSelect }: {
   // Loading / empty state
   if (isLoading) {
     return (
-      <div style={{ padding: '0 14px 12px', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
-        {[0, 1, 2].map(i => (
+      <div style={{ padding: '0 14px 12px', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+        {[0, 1, 2, 3].map(i => (
           <div key={i} style={{ ...cardStyle, borderTop: `2px solid ${C.border}`, height: 220 }}>
             <div style={{ padding: 10 }}>
               <div style={{ height: 10, width: '60%', background: C.dimLow, borderRadius: 2, marginBottom: 6 }} />
@@ -899,8 +915,8 @@ function AdvancedSignalCards({ selectedCoin, onSelect }: {
 
   if (isError) {
     return (
-      <div style={{ padding: '0 14px 12px', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
-        {[C.teal, C.purple, C.amber].map((color, i) => (
+      <div style={{ padding: '0 14px 12px', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+        {[C.teal, C.purple, C.amber, C.red].map((color, i) => (
           <div key={i} style={{ ...cardStyle, borderTop: `2px solid ${color}` }}>
             <div style={{ padding: '16px', textAlign: 'center' }}>
               <div style={{ fontSize: 9, color: C.dim }}>Signal data loading in background...</div>
@@ -915,7 +931,7 @@ function AdvancedSignalCards({ selectedCoin, onSelect }: {
   if (!data || (rsLeaders.length === 0 && obPressure.length === 0 && oiRegime.length === 0)) return null;
 
   return (
-    <div style={{ padding: '0 14px 12px', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+    <div style={{ padding: '0 14px 12px', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
 
       {/* ── Relative Strength Leaders ─────────────────── */}
       <div style={cardStyle}>
@@ -1072,6 +1088,63 @@ function AdvancedSignalCards({ selectedCoin, onSelect }: {
         {data?.as_of && (
           <div style={{ padding: '4px 10px', fontSize: 7, color: C.dimLow, borderTop: `1px solid ${C.dimLow}`, marginTop: 'auto' }}>
             As of {new Date(data.as_of).toLocaleTimeString()}
+          </div>
+        )}
+      </div>
+
+      {/* ── OI Cap Risk ──────────────────────────────── */}
+      <div style={cardStyle}>
+        <div style={headerStyle(C.red)}>
+          <div style={{ fontSize: 8.5, fontWeight: 800, letterSpacing: 1.5, color: C.red, textTransform: 'uppercase' }}>
+            OI Cap Risk
+          </div>
+          <div style={{ fontSize: 7.5, color: C.dim, marginTop: 1 }}>Open interest crowding / cap utilization</div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '20px 52px 1fr 74px 60px', padding: '3px 10px', background: '#060b14', borderBottom: `1px solid ${C.border}`, gap: 0 }}>
+          <span style={colHeaderStyle}>#</span>
+          <span style={colHeaderStyle}>COIN</span>
+          <span style={{ ...colHeaderStyle, textAlign: 'right' }}>UTIL %</span>
+          <span style={colHeaderStyle}>STATUS</span>
+          <span style={{ ...colHeaderStyle, textAlign: 'right' }}>REMAIN</span>
+        </div>
+        {oiCapRisk.length === 0 ? (
+          <div style={{ padding: 12, textAlign: 'center', fontSize: 8.5, color: C.dim }}>No cap-eligible markets</div>
+        ) : oiCapRisk.map((r, i) => {
+          const isSel = selectedCoin === r.symbol;
+          const statColor = CAP_STATUS_COLOR[r.status] ?? C.dim;
+          const utilColor = r.utilization >= 0.95 ? C.red : r.utilization >= 0.85 ? '#f97316' : r.utilization >= 0.70 ? C.amber : C.green;
+          const fmtCap = (v: number) => {
+            if (v >= 1e9) return `$${(v / 1e9).toFixed(1)}B`;
+            if (v >= 1e6) return `$${(v / 1e6).toFixed(1)}M`;
+            if (v >= 1e3) return `$${(v / 1e3).toFixed(0)}K`;
+            return `$${v.toFixed(0)}`;
+          };
+          return (
+            <div key={r.symbol} onClick={() => onSelect(r.symbol)}
+              style={{ display: 'grid', gridTemplateColumns: '20px 52px 1fr 74px 60px', padding: '3px 10px', cursor: 'pointer',
+                background: isSel ? `${C.red}18` : i % 2 === 0 ? C.bg : C.card2,
+                borderBottom: `1px solid ${C.dimLow}`, alignItems: 'center', gap: 0, transition: 'background 0.1s' }}
+              onMouseEnter={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background = `${C.red}0c`; }}
+              onMouseLeave={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background = i % 2 === 0 ? C.bg : C.card2; }}>
+              <span style={{ fontSize: 7.5, color: C.dimLow, fontFamily: C.font }}>{i + 1}</span>
+              <span style={{ fontSize: 9.5, fontWeight: 700, color: isSel ? C.red : C.text, fontFamily: C.font }}>{r.symbol}</span>
+              <span style={{ fontSize: 9.5, fontWeight: 600, color: utilColor, fontFamily: C.font, textAlign: 'right' }}>
+                {r.utilization_pct.toFixed(1)}%
+              </span>
+              <span style={{ fontSize: 7.5, fontWeight: 700, color: statColor, background: `${statColor}18`,
+                border: `1px solid ${statColor}44`, borderRadius: 3, padding: '1px 5px', textAlign: 'center',
+                justifySelf: 'start', whiteSpace: 'nowrap' }}>
+                {r.status}
+              </span>
+              <span style={{ fontSize: 8.5, color: C.dim, fontFamily: C.font, textAlign: 'right' }}>
+                {fmtCap(r.cap_remaining)}
+              </span>
+            </div>
+          );
+        })}
+        {data?.as_of && (
+          <div style={{ padding: '4px 10px', fontSize: 7, color: C.dimLow, borderTop: `1px solid ${C.dimLow}`, marginTop: 'auto' }}>
+            Thresholds: 70% / 85% / 95%
           </div>
         )}
       </div>
