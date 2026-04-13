@@ -2073,6 +2073,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Hyperliquid candle data — proxies directly to HL's public API (no auth needed)
+  app.get('/api/hyperliquid/candles', async (req, res) => {
+    const coin     = String(req.query.coin     ?? 'BTC');
+    const interval = String(req.query.interval ?? '1h');
+    const limit    = Math.min(parseInt(String(req.query.limit ?? '200')), 500);
+    const INTERVAL_MS: Record<string, number> = {
+      '1m': 60_000, '5m': 300_000, '15m': 900_000,
+      '1h': 3_600_000, '4h': 14_400_000, '1d': 86_400_000,
+    };
+    const ms  = INTERVAL_MS[interval] ?? 3_600_000;
+    const now = Date.now();
+    try {
+      const r = await fetch('https://api.hyperliquid.xyz/info', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ type: 'candleSnapshot', req: { coin, interval, startTime: now - limit * ms, endTime: now } }),
+        signal:  AbortSignal.timeout(10_000),
+      });
+      if (!r.ok) throw new Error(`HL candles ${r.status}`);
+      const candles = await r.json();
+      res.json({ coin, interval, candles: Array.isArray(candles) ? candles : [] });
+    } catch (e: any) {
+      res.status(503).json({ error: e.message, candles: [] });
+    }
+  });
+
   // === Sector Rotation (proxy to FastAPI backend) ===
   const SR_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
   const SR_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';

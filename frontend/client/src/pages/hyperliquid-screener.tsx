@@ -943,10 +943,145 @@ const CAP_STATUS_COLOR: Record<string, string> = {
   'Cap Risk':  C.red,
 };
 
+// ─── Chart components ─────────────────────────────────────────────────────────
+interface HLCandle { t: number; o: string; h: string; l: string; c: string; v: string; n: number }
+type ChartInterval = '15m' | '1h' | '4h' | '1d';
+const CHART_LIMITS: Record<ChartInterval, number> = { '15m': 200, '1h': 120, '4h': 120, '1d': 200 };
+
+function SvgSparkline({ candles, gradId }: { candles: HLCandle[]; gradId: string }) {
+  if (candles.length < 2) return null;
+  const closes = candles.map(c => parseFloat(c.c));
+  const min = Math.min(...closes), max = Math.max(...closes);
+  const range = max - min || 1;
+  const W = 500, H = 56;
+  const px2 = (i: number) => (i / (closes.length - 1)) * W;
+  const py  = (v: number) => H - ((v - min) / range) * (H * 0.88) - H * 0.06;
+  const pts = closes.map((v, i) => `${px2(i)},${py(v)}`).join(' ');
+  const area = `0,${H} ` + pts + ` ${W},${H}`;
+  const isUp = closes[closes.length - 1] >= closes[0];
+  const col = isUp ? C.green : C.red;
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} preserveAspectRatio="none" style={{ display: 'block' }}>
+      <defs>
+        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stopColor={col} stopOpacity={0.28} />
+          <stop offset="100%" stopColor={col} stopOpacity={0.02} />
+        </linearGradient>
+      </defs>
+      <polygon points={area} fill={`url(#${gradId})`} />
+      <polyline points={pts}  fill="none" stroke={col} strokeWidth={1.5} strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function CoinChartPanel({ coin, interval }: { coin: string; interval: ChartInterval }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ['hl-candles', coin, interval],
+    queryFn: async () => {
+      const r = await fetch(`/api/hyperliquid/candles?coin=${encodeURIComponent(coin)}&interval=${interval}&limit=${CHART_LIMITS[interval]}`);
+      if (!r.ok) throw new Error(`Candles ${r.status}`);
+      return r.json() as Promise<{ candles: HLCandle[] }>;
+    },
+    staleTime: 5 * 60_000,
+    gcTime:    30 * 60_000,
+    retry: 1,
+  });
+  const candles = data?.candles ?? [];
+  const last  = candles.length > 0 ? parseFloat(candles[candles.length - 1].c) : null;
+  const first = candles.length > 0 ? parseFloat(candles[0].c) : null;
+  const chg   = last != null && first != null ? ((last - first) / Math.abs(first)) * 100 : null;
+  const isUp  = chg != null && chg >= 0;
+  const fmtPx = (p: number) =>
+    p >= 1000 ? `$${p.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
+    : p >= 1   ? `$${p.toFixed(2)}`
+    :            `$${p.toFixed(5)}`;
+  const gradId = `sg-${coin.replace(/[^a-z0-9]/gi, '')}-${interval}`;
+  return (
+    <div style={{ borderBottom: `1px solid ${C.dimLow}` }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 12px 2px' }}>
+        <span style={{ fontSize: 10, fontWeight: 700, color: C.text, fontFamily: C.font }}>{coin}</span>
+        {last != null && <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font }}>{fmtPx(last)}</span>}
+        {chg  != null && (
+          <span style={{ fontSize: 9, fontWeight: 700, color: isUp ? C.green : C.red, marginLeft: 'auto', fontFamily: C.font }}>
+            {isUp ? '+' : ''}{chg.toFixed(2)}%
+          </span>
+        )}
+      </div>
+      <div style={{ padding: '0 12px 6px' }}>
+        {isLoading ? (
+          <div style={{ height: 56, background: C.dimLow, borderRadius: 2, opacity: 0.2 }} />
+        ) : candles.length > 1 ? (
+          <SvgSparkline candles={candles} gradId={gradId} />
+        ) : (
+          <div style={{ height: 56, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, color: C.dimLow }}>
+            No chart data
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ChartListModal({ title, coins, onClose }: { title: string; coins: string[]; onClose: () => void }) {
+  const [iv, setIv] = useState<ChartInterval>('1h');
+  return (
+    <div
+      style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.72)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      onClick={onClose}>
+      <div
+        style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, width: 580, maxHeight: '88vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 24px 80px rgba(0,0,0,0.9)' }}
+        onClick={e => e.stopPropagation()}>
+        {/* Modal header */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 14px', borderBottom: `1px solid ${C.border}`, flexShrink: 0, background: C.card2 }}>
+          <BarChart2 style={{ width: 11, height: 11, color: C.teal }} />
+          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.5, color: C.teal, textTransform: 'uppercase' }}>{title}</span>
+          <span style={{ fontSize: 8, color: C.dim }}>· {coins.length} assets</span>
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
+            {(['15m', '1h', '4h', '1d'] as ChartInterval[]).map(t => (
+              <button key={t} onClick={() => setIv(t)}
+                style={{ fontSize: 8, fontWeight: 700, padding: '2px 7px', borderRadius: 3, cursor: 'pointer', fontFamily: C.font,
+                  background: iv === t ? `${C.teal}22` : 'none',
+                  border: `1px solid ${iv === t ? C.teal : C.border}`,
+                  color: iv === t ? C.teal : C.dim }}>
+                {t}
+              </button>
+            ))}
+          </div>
+          <button onClick={onClose}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.dim, padding: 2, marginLeft: 6, display: 'flex' }}>
+            <X style={{ width: 14, height: 14 }} />
+          </button>
+        </div>
+        {/* Scrollable chart list */}
+        <div style={{ overflowY: 'auto', flex: 1 }}>
+          {coins.map(coin => (
+            <CoinChartPanel key={`${coin}-${iv}`} coin={coin} interval={iv} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ChartBtn({ onClick }: { onClick: (e: React.MouseEvent) => void }) {
+  return (
+    <button
+      onClick={e => { e.stopPropagation(); onClick(e); }}
+      title="View charts for this section"
+      style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: 3, cursor: 'pointer',
+        padding: '1px 4px', display: 'flex', alignItems: 'center', color: C.dim, marginLeft: 2 }}
+      onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.color = C.teal; el.style.borderColor = C.teal; }}
+      onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.color = C.dim; el.style.borderColor = C.border; }}>
+      <BarChart2 style={{ width: 9, height: 9 }} />
+    </button>
+  );
+}
+
 // ─── Advanced Signal Cards ───────────────────────────────────────────────────
-function AdvancedSignalCards({ selectedCoin, onSelect }: {
+function AdvancedSignalCards({ selectedCoin, onSelect, onChartOpen }: {
   selectedCoin: string | null;
   onSelect: (coin: string) => void;
+  onChartOpen: (title: string, coins: string[]) => void;
 }) {
   const { data, isLoading, isError } = useQuery<AdvancedSignals>({
     queryKey: ['hl-advanced-signals'],
@@ -1043,6 +1178,7 @@ function AdvancedSignalCards({ selectedCoin, onSelect }: {
               Relative Strength Leaders
             </span>
             <SectionInfoTooltip title="Relative Strength Leaders" />
+            <ChartBtn onClick={() => onChartOpen('RS Leaders', rsLeaders.map(r => cleanSym(r.symbol)))} />
           </div>
           <div style={{ fontSize: 7.5, color: C.dim, marginTop: 1 }}>Outperforming benchmark</div>
         </div>
@@ -1098,6 +1234,7 @@ function AdvancedSignalCards({ selectedCoin, onSelect }: {
               Order Book Pressure
             </span>
             <SectionInfoTooltip title="Order Book Pressure" />
+            <ChartBtn onClick={() => onChartOpen('Order Book Pressure', obPressure.map(r => cleanSym(r.symbol)))} />
           </div>
           <div style={{ fontSize: 7.5, color: C.dim, marginTop: 1 }}>Bid/ask depth imbalance</div>
         </div>
@@ -1155,6 +1292,7 @@ function AdvancedSignalCards({ selectedCoin, onSelect }: {
               OI Regime Shift
             </span>
             <SectionInfoTooltip title="OI Regime Shift" />
+            <ChartBtn onClick={() => onChartOpen('OI Regime Shift', oiRegime.map(r => cleanSym(r.symbol)))} />
           </div>
           <div style={{ fontSize: 7.5, color: C.dim, marginTop: 1 }}>Trend vs squeeze classification</div>
         </div>
@@ -1211,6 +1349,7 @@ function AdvancedSignalCards({ selectedCoin, onSelect }: {
               OI Cap Risk
             </span>
             <SectionInfoTooltip title="OI Cap Risk" />
+            <ChartBtn onClick={() => onChartOpen('OI Cap Risk', oiCapRisk.map(r => cleanSym(r.symbol)))} />
           </div>
           <div style={{ fontSize: 7.5, color: C.dim, marginTop: 1 }}>Open interest crowding / cap utilization</div>
         </div>
@@ -1269,9 +1408,10 @@ function AdvancedSignalCards({ selectedCoin, onSelect }: {
 // ─── Momentum Panel (TSMOM) ───────────────────────────────────────────────────
 type TsmomSK = 'default' | 'coin' | 's_adj' | 'side' | 'sigma' | 'momentum_10d' | 'momentum_30d' | 'funding_bps' | 'w_scaled';
 
-function MomentumPanel({ selectedCoin, onSelect }: {
+function MomentumPanel({ selectedCoin, onSelect, onChartOpen }: {
   selectedCoin: string | null;
   onSelect: (coin: string) => void;
+  onChartOpen: (title: string, coins: string[]) => void;
 }) {
   const [open,    setOpen]    = useState(true);
   const [showAll, setShowAll] = useState(false);
@@ -1353,33 +1493,41 @@ function MomentumPanel({ selectedCoin, onSelect }: {
 
   return (
     <div style={{ margin: '0 0 14px', border: `1px solid ${C.border}`, borderRadius: 6, overflow: 'hidden' }}>
-      {/* Section header */}
-      <button onClick={() => setOpen(o => !o)}
-        style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px',
-          background: C.card2, border: 'none', cursor: 'pointer', color: C.text,
-          borderBottom: open ? `1px solid ${C.border}` : 'none' }}>
-        <TrendingUp style={{ width: 11, height: 11, color: C.purple }} />
-        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.5, color: C.purple, textTransform: 'uppercase' }}>
-          Time-Series Momentum
-        </span>
-        <span style={{ fontSize: 8, color: C.dim, marginLeft: 2 }}>TSMOM · Multi-Lookback z-Score</span>
-        {meta && (
-          <span style={{ fontSize: 8, color: C.dim, marginLeft: 6 }}>
-            <span style={{ color: C.green }}>{meta.long_count}↑</span>
-            {' / '}
-            <span style={{ color: C.red }}>{meta.short_count}↓</span>
-            {' / '}
-            <span style={{ color: C.dim }}>{meta.flat_count}·</span>
-            {' · '}
-            {meta.total_signals} signals
+      {/* Section header — div so ChartBtn can sit alongside the collapse toggle without invalid nesting */}
+      <div style={{ display: 'flex', alignItems: 'center', background: C.card2,
+        borderBottom: open ? `1px solid ${C.border}` : 'none' }}>
+        <div role="button" tabIndex={0} onClick={() => setOpen(o => !o)}
+          onKeyDown={e => e.key === 'Enter' && setOpen(o => !o)}
+          style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, padding: '7px 8px 7px 12px',
+            cursor: 'pointer', color: C.text }}>
+          <TrendingUp style={{ width: 11, height: 11, color: C.purple }} />
+          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.5, color: C.purple, textTransform: 'uppercase' }}>
+            Time-Series Momentum
           </span>
+          <span style={{ fontSize: 8, color: C.dim, marginLeft: 2 }}>TSMOM · Multi-Lookback z-Score</span>
+          {meta && (
+            <span style={{ fontSize: 8, color: C.dim, marginLeft: 6 }}>
+              <span style={{ color: C.green }}>{meta.long_count}↑</span>
+              {' / '}
+              <span style={{ color: C.red }}>{meta.short_count}↓</span>
+              {' / '}
+              <span style={{ color: C.dim }}>{meta.flat_count}·</span>
+              {' · '}
+              {meta.total_signals} signals
+            </span>
+          )}
+          {isLoading && <span style={{ fontSize: 8, color: C.amber, marginLeft: 6 }}>Loading…</span>}
+          {isError   && <span style={{ fontSize: 8, color: C.red,   marginLeft: 6 }}>No data yet — loading 1d candles</span>}
+          <span style={{ marginLeft: 'auto', color: C.dim }}>
+            {open ? <ChevronUp style={{ width: 11, height: 11 }} /> : <ChevronDown style={{ width: 11, height: 11 }} />}
+          </span>
+        </div>
+        {signals.length > 0 && (
+          <div style={{ paddingRight: 10 }}>
+            <ChartBtn onClick={() => onChartOpen('Time-Series Momentum', display.map(s => s.coin))} />
+          </div>
         )}
-        {isLoading && <span style={{ fontSize: 8, color: C.amber, marginLeft: 6 }}>Loading…</span>}
-        {isError   && <span style={{ fontSize: 8, color: C.red,   marginLeft: 6 }}>No data yet — loading 1d candles</span>}
-        <span style={{ marginLeft: 'auto', color: C.dim }}>
-          {open ? <ChevronUp style={{ width: 11, height: 11 }} /> : <ChevronDown style={{ width: 11, height: 11 }} />}
-        </span>
-      </button>
+      </div>
 
       {open && (
         <div>
@@ -1527,6 +1675,7 @@ export default function HyperliquidScreenerPage() {
   const [showFilters,   setShowFilters]   = useState(false);
   const [rowHighlights, setRowHighlights] = useState<Set<string>>(new Set());
   const [showMatrix,    setShowMatrix]    = useState(false);
+  const [chartModal,    setChartModal]    = useState<{ title: string; coins: string[] } | null>(null);
   const tableRef = useRef<HTMLDivElement>(null);
 
   const { data: raw, isLoading, isError, error, refetch, isFetching, dataUpdatedAt } = useQuery<
@@ -1772,14 +1921,16 @@ export default function HyperliquidScreenerPage() {
             {/* ── ADVANCED SIGNAL CARDS (RS, Order Book, OI Regime) ── */}
             {sorted.length > 0 && (
               <SectionErrorBoundary label="Advanced Signals">
-                <AdvancedSignalCards selectedCoin={selectedCoin} onSelect={setSelectedCoin} />
+                <AdvancedSignalCards selectedCoin={selectedCoin} onSelect={setSelectedCoin}
+                  onChartOpen={(title, coins) => setChartModal({ title, coins })} />
               </SectionErrorBoundary>
             )}
 
             {/* ── TSMOM MOMENTUM PANEL ──────────────────────────────── */}
             {sorted.length > 0 && (
               <SectionErrorBoundary label="Time-Series Momentum">
-                <MomentumPanel selectedCoin={selectedCoin} onSelect={setSelectedCoin} />
+                <MomentumPanel selectedCoin={selectedCoin} onSelect={setSelectedCoin}
+                  onChartOpen={(title, coins) => setChartModal({ title, coins })} />
               </SectionErrorBoundary>
             )}
 
@@ -1859,6 +2010,15 @@ export default function HyperliquidScreenerPage() {
           <span style={{ fontSize:9.5, color:C.red }}>Agent error: {agentError}</span>
           <button onClick={() => setAgentError(null)} style={{ marginLeft:'auto', background:'none', border:'none', cursor:'pointer', color:C.red }}><X style={{ width:12, height:12 }} /></button>
         </div>
+      )}
+
+      {/* ── CHART LIST MODAL ──────────────────────────────────────────────── */}
+      {chartModal && (
+        <ChartListModal
+          title={chartModal.title}
+          coins={chartModal.coins}
+          onClose={() => setChartModal(null)}
+        />
       )}
 
       <style>{`
