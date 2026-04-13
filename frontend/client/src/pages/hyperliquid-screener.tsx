@@ -454,6 +454,8 @@ function IdeaRow({ coin, side, setupType, score, confidence, thesisSummary, rank
 
 // ─── Hero: Rich Thesis Panel ──────────────────────────────────────────────────
 function RichThesisPanel({ idea, row }: { idea: BriefingIdea | AgentRankedItem | null; row: ScreenerRow | null }) {
+  const [chartIv, setChartIv] = useState<ChartInterval>('1h');
+
   if (!idea) {
     return (
       <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:8, padding:20, textAlign:'center' }}>
@@ -523,6 +525,22 @@ function RichThesisPanel({ idea, row }: { idea: BriefingIdea | AgentRankedItem |
             <span style={{ fontSize:9, color:scC(confidence) }}>Conf {(confidence*100).toFixed(0)}%</span>
           </div>
         </div>
+      </div>
+
+      {/* ── Inline chart with interval selector ── */}
+      <div style={{ borderBottom: `1px solid ${C.border}`, flexShrink: 0, background: '#050c16' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: '3px 8px', gap: 3 }}>
+          {(['15m', '1h', '4h', '1d'] as ChartInterval[]).map(t => (
+            <button key={t} onClick={() => setChartIv(t)}
+              style={{ fontSize: 7.5, padding: '1px 5px', borderRadius: 2, cursor: 'pointer', fontFamily: C.font,
+                background: chartIv === t ? `${C.teal}22` : 'none',
+                border: `1px solid ${chartIv === t ? C.teal : C.border}`,
+                color: chartIv === t ? C.teal : C.dim }}>
+              {t}
+            </button>
+          ))}
+        </div>
+        <CoinChartPanel coin={coin} interval={chartIv} />
       </div>
 
       <div style={{ flex:1, overflowY:'auto', padding:'0 12px 10px' }}>
@@ -812,8 +830,9 @@ function AgentMarketBrief({ agentResult, agentLoading, agentStage, rows, selecte
 }
 
 // ─── Signal Board ─────────────────────────────────────────────────────────────
-function SignalBoard({ section, selectedCoin, onSelect }: {
+function SignalBoard({ section, selectedCoin, onSelect, onChartOpen }: {
   section: DerivedSection; selectedCoin: string|null; onSelect: (coin: string) => void;
+  onChartOpen?: (title: string, coins: string[]) => void;
 }) {
   return (
     <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:6, borderTop:`2px solid ${section.color}`, display:'flex', flexDirection:'column', overflow:'hidden' }}>
@@ -821,6 +840,9 @@ function SignalBoard({ section, selectedCoin, onSelect }: {
         <div style={{ display:'flex', alignItems:'center' }}>
           <span style={{ fontSize:8.5, fontWeight:800, letterSpacing:1.5, color:section.color, textTransform:'uppercase' }}>{section.title}</span>
           <SectionInfoTooltip title={section.title} />
+          {onChartOpen && (
+            <ChartBtn onClick={() => onChartOpen(section.title, section.items.map(i => i.coin))} />
+          )}
         </div>
         <div style={{ fontSize:7.5, color:C.dim, marginTop:1 }}>{section.subtitle}</div>
       </div>
@@ -959,18 +981,37 @@ function SvgSparkline({ candles, gradId }: { candles: HLCandle[]; gradId: string
   const pts = closes.map((v, i) => `${px2(i)},${py(v)}`).join(' ');
   const area = `0,${H} ` + pts + ` ${W},${H}`;
   const isUp = closes[closes.length - 1] >= closes[0];
-  const col = isUp ? C.green : C.red;
+  const col  = isUp ? C.green : C.red;
+
+  // Date/time axis — smart format based on time span
+  const span   = candles[candles.length - 1].t - candles[0].t;
+  const useTime = span < 3 * 86_400_000;
+  const fmtTick = (ts: number) => {
+    const d = new Date(ts);
+    return useTime
+      ? `${d.getMonth()+1}/${d.getDate()} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`
+      : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+  const mid = Math.floor(candles.length / 2);
+
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} preserveAspectRatio="none" style={{ display: 'block' }}>
-      <defs>
-        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%"   stopColor={col} stopOpacity={0.28} />
-          <stop offset="100%" stopColor={col} stopOpacity={0.02} />
-        </linearGradient>
-      </defs>
-      <polygon points={area} fill={`url(#${gradId})`} />
-      <polyline points={pts}  fill="none" stroke={col} strokeWidth={1.5} strokeLinejoin="round" />
-    </svg>
+    <div>
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} preserveAspectRatio="none" style={{ display: 'block' }}>
+        <defs>
+          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stopColor={col} stopOpacity={0.28} />
+            <stop offset="100%" stopColor={col} stopOpacity={0.02} />
+          </linearGradient>
+        </defs>
+        <polygon points={area} fill={`url(#${gradId})`} />
+        <polyline points={pts}  fill="none" stroke={col} strokeWidth={1.5} strokeLinejoin="round" />
+      </svg>
+      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1px 0 0' }}>
+        <span style={{ fontSize: 7, color: C.dimLow, fontFamily: C.font }}>{fmtTick(candles[0].t)}</span>
+        <span style={{ fontSize: 7, color: C.dimLow, fontFamily: C.font }}>{fmtTick(candles[mid].t)}</span>
+        <span style={{ fontSize: 7, color: C.dimLow, fontFamily: C.font }}>Now</span>
+      </div>
+    </div>
   );
 }
 
@@ -1013,8 +1054,9 @@ function CoinChartPanel({ coin, interval }: { coin: string; interval: ChartInter
         ) : candles.length > 1 ? (
           <SvgSparkline candles={candles} gradId={gradId} />
         ) : (
-          <div style={{ height: 56, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, color: C.dimLow }}>
-            No chart data
+          <div style={{ height: 56, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3 }}>
+            <span style={{ fontSize: 8, color: C.dimLow }}>No {interval} data on Hyperliquid</span>
+            <span style={{ fontSize: 7, color: C.dimLow, opacity: 0.6 }}>Try 1h or 1d</span>
           </div>
         )}
       </div>
@@ -1022,8 +1064,9 @@ function CoinChartPanel({ coin, interval }: { coin: string; interval: ChartInter
   );
 }
 
-function ChartListModal({ title, coins, onClose }: { title: string; coins: string[]; onClose: () => void }) {
+function ChartListModal({ title, coins: rawCoins, onClose }: { title: string; coins: string[]; onClose: () => void }) {
   const [iv, setIv] = useState<ChartInterval>('1h');
+  const coins = [...new Set(rawCoins)]; // deduplicate
   return (
     <div
       style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.72)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
@@ -1924,7 +1967,8 @@ export default function HyperliquidScreenerPage() {
               <div style={{ padding:'12px 14px', display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(210px, 1fr))', gap:10 }}>
                 {signalSections.map(sec => (
                   <SignalBoard key={sec.id} section={sec} selectedCoin={selectedCoin}
-                    onSelect={setSelectedCoin} />
+                    onSelect={setSelectedCoin}
+                    onChartOpen={(title, coins) => setChartModal({ title, coins })} />
                 ))}
               </div>
             )}
