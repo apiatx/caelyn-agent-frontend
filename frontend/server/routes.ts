@@ -1921,15 +1921,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const HL_KEY  = 'hippo_ak_7f3x9k2m4p8q1w5t';
   const hlHdr   = () => ({ 'X-API-Key': HL_KEY, 'Content-Type': 'application/json' });
 
-  app.get('/api/hyperliquid/screener', async (req, res) => {
+  // Server-side screener cache — always returns instantly; background fetch keeps it fresh
+  const _hlCache: Record<string, { data: any; ts: number; fetching: boolean }> = {};
+  const HL_CACHE_TTL = 20_000; // 20 s — serve stale while refreshing behind the scenes
+
+  async function _fetchScreener(market_type: string, limit: string): Promise<any> {
+    const r = await fetch(
+      `${HL_URL}/api/hyperliquid/screener/snapshot?market_type=${market_type}&limit=${limit}`,
+      { headers: hlHdr(), signal: AbortSignal.timeout(25_000) }
+    );
+    if (!r.ok) throw new Error(`Backend ${r.status}`);
+    return r.json();
+  }
+
+  function _bgRefreshScreener(key: string, market_type: string, limit: string) {
+    if (_hlCache[key]?.fetching) return; // already in-flight
+    if (_hlCache[key]) _hlCache[key].fetching = true;
+    _fetchScreener(market_type, limit)
+      .then(data => { _hlCache[key] = { data, ts: Date.now(), fetching: false }; })
+      .catch(() => { if (_hlCache[key]) _hlCache[key].fetching = false; });
+  }
+
+  // Warm the default cache immediately so the very first page load is instant
+  (async () => {
     try {
-      const { market_type = 'all', limit = 200 } = req.query;
-      const r = await fetch(
-        `${HL_URL}/api/hyperliquid/screener/snapshot?market_type=${market_type}&limit=${limit}`,
-        { headers: hlHdr() }
-      );
-      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
-      res.json(await r.json());
+      const data = await _fetchScreener('all', '200');
+      _hlCache['all:200'] = { data, ts: Date.now(), fetching: false };
+    } catch { /* silent — will populate on first request */ }
+  })();
+
+  app.get('/api/hyperliquid/screener', async (req, res) => {
+    const market_type = String(req.query.market_type ?? 'all');
+    const limit       = String(req.query.limit ?? '200');
+    const cacheKey    = `${market_type}:${limit}`;
+    const entry       = _hlCache[cacheKey];
+
+    if (entry) {
+      // Always return cached data immediately — no waiting
+      res.json(entry.data);
+      // If stale, kick off a background refresh (fire-and-forget)
+      if (Date.now() - entry.ts > HL_CACHE_TTL) _bgRefreshScreener(cacheKey, market_type, limit);
+      return;
+    }
+
+    // No cache at all yet — first-ever request for this key: must wait once
+    try {
+      const data = await _fetchScreener(market_type, limit);
+      _hlCache[cacheKey] = { data, ts: Date.now(), fetching: false };
+      res.json(data);
     } catch (e: any) {
       res.status(500).json({ error: 'Failed to fetch Hyperliquid screener' });
     }

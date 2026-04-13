@@ -1422,7 +1422,7 @@ function MomentumPanel({ selectedCoin, onSelect }: {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function HyperliquidScreenerPage() {
   const [search,        setSearch]        = useState('');
-  const [marketType,    setMarketType]    = useState<'all'|'perp'|'spot'>('perp');
+  const [marketType,    setMarketType]    = useState<'all'|'perp'|'spot'>('all');
   const [minVolume,     setMinVolume]     = useState('');
   const [minOI,         setMinOI]         = useState('');
   const [signalFilter,  setSignalFilter]  = useState<'all'|'bullish'|'bearish'>('all');
@@ -1452,10 +1452,11 @@ export default function HyperliquidScreenerPage() {
       if (!r.ok) throw new Error(`Server returned ${r.status}`);
       return r.json();
     },
-    refetchInterval: liveUpdates ? 10000 : false,
-    staleTime: 8000,
-    gcTime: 30 * 60 * 1000,   // keep cache 30 min across navigations
-    retry: 2,
+    refetchInterval: liveUpdates ? 15000 : false,  // server cache refreshes every 20s so 15s frontend polling is plenty
+    staleTime: 14000,           // treat as fresh until just before next refetch fires
+    gcTime: 60 * 60 * 1000,    // keep cache 1 hour so navigating away and back is instant
+    retry: 1,
+    refetchOnWindowFocus: false, // avoid double-fetch on tab switch
     placeholderData: (previousData: any) => previousData,
   });
 
@@ -1476,7 +1477,8 @@ export default function HyperliquidScreenerPage() {
   const filtered = useMemo(() => {
     let r = rows;
     if (search.trim()) { const q=search.trim().toLowerCase(); r=r.filter(row=>row.coin.toLowerCase().includes(q)||(row.displayName??'').toLowerCase().includes(q)); }
-    if (marketType !== 'all') r = r.filter(row => row.marketType === marketType);
+    // Only filter by marketType if the row actually has the field set (backend may omit it)
+    if (marketType !== 'all') r = r.filter(row => !row.marketType || row.marketType === marketType);
     if (minVolume) r = r.filter(row => (row.volume24h??0) >= parseFloat(minVolume)*1e6);
     if (minOI)     r = r.filter(row => (row.openInterest??0) >= parseFloat(minOI)*1e6);
     if (signalFilter !== 'all') r = r.filter(row => row.signalDirection === signalFilter);
@@ -1712,7 +1714,7 @@ export default function HyperliquidScreenerPage() {
                           const isHi    = rowHighlights.has(row.coin);
                           const rowBg   = isSel?`${C.teal}18`:isPinned?`${C.amber}0c`:isHi?`${C.purple}18`:idx%2===0?C.bg:C.card2;
                           return (
-                            <tr key={row.coin} data-coin={row.coin}
+                            <tr key={`${row.coin}_${idx}`} data-coin={row.coin}
                               onClick={() => setSelectedCoin(c => c===row.coin?null:row.coin)}
                               onDoubleClick={e => togglePin(row.coin, e as any)}
                               style={{ background:rowBg, cursor:'pointer', height:rowH, transition:'background 0.15s', borderBottom:`1px solid ${C.dimLow}` }}
