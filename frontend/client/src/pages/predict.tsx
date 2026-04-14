@@ -461,7 +461,7 @@ async function fetchPolymarketByTag(tagSlug: string): Promise<PolyEvent[] | null
 
 // ─── Dashboard Component ──────────────────────────────────────────
 
-function PolymarketDashboard() {
+function PolymarketDashboard({ signals }: { signals: SignalsData | null }) {
   const [markets, setMarkets] = useState<ParsedMarket[]>([]);
   const [tagCache, setTagCache] = useState<Record<string, ParsedMarket[]>>({});
   const [loading, setLoading] = useState(true);
@@ -469,7 +469,6 @@ function PolymarketDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<CategoryTab>("all");
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const [signals, setSignals] = useState<SignalsData | null>(null);
 
   // Fetch the main macro markets (for all/crypto/fed/elections/economy/geopolitics)
   const fetchData = useCallback(async () => {
@@ -543,14 +542,6 @@ function PolymarketDashboard() {
       fetchTagData(activeTab);
     }
   }, [activeTab, fetchTagData]);
-
-  // Fetch signals once on mount
-  useEffect(() => {
-    fetch("/api/predict/signals")
-      .then((r) => r.ok ? r.json() : null)
-      .then((d) => { if (d) setSignals(d); })
-      .catch(() => {});
-  }, []);
 
   // For tag-slug categories, use cached tag data; for others, filter the main markets
   const isTagCategory = activeTab in TAG_SLUG_CATEGORIES;
@@ -1420,7 +1411,47 @@ const SUGGESTED_PROMPT_GROUPS = [
   },
 ];
 
-function PredictionAgent() {
+function buildSignalsContext(signals: SignalsData | null): string {
+  if (!signals) return "";
+  const s = signals.summary;
+  const lines: string[] = [];
+  if (s) {
+    lines.push("=== LIVE POLYMARKET SNAPSHOT ===");
+    if (s.total_volume_24h   != null) lines.push(`Total 24h Volume: ${formatVolume(s.total_volume_24h)}`);
+    if (s.market_count       != null) lines.push(`Active Markets: ${s.market_count}`);
+    if (s.surging_count      != null) lines.push(`Surging Markets: ${s.surging_count}`);
+    if (s.fading_count       != null) lines.push(`Fading Markets: ${s.fading_count}`);
+    if (s.whale_active_count != null) lines.push(`Whale-Active Markets: ${s.whale_active_count}`);
+    if (s.avg_spread_pct     != null) lines.push(`Avg Spread: ${s.avg_spread_pct.toFixed(2)}%`);
+  }
+  if (signals.top_edges?.length) {
+    lines.push("\n--- TOP EDGES (widest bid-ask spread vs YES price) ---");
+    signals.top_edges.slice(0, 5).forEach((e) => {
+      lines.push(`• ${e.question} | YES: ${e.yes_pct ?? "?"}% | Spread: ${(e.edge_pct ?? e.spread_pct_of_price ?? 0).toFixed(1)}%`);
+    });
+  }
+  if (signals.top_mispricings?.length) {
+    lines.push("\n--- ORDER BOOK DIVERGENCE (CLOB mid ≠ displayed price) ---");
+    signals.top_mispricings.slice(0, 5).forEach((m) => {
+      lines.push(`• ${m.question} | YES: ${m.yes_pct ?? "?"}% | Δ ${m.mispricing_score?.toFixed(3) ?? "?"}`);
+    });
+  }
+  if (signals.surging_markets?.length) {
+    lines.push("\n--- SURGING MARKETS (24h vol > 3× 7-day average) ---");
+    signals.surging_markets.slice(0, 5).forEach((m) => {
+      lines.push(`• ${m.question} | Vol: ${m.volume_24h != null ? formatVolume(m.volume_24h) : "?"} | ${m.volume_momentum?.toUpperCase() ?? ""}`);
+    });
+  }
+  if (signals.whale_markets?.length) {
+    lines.push("\n--- WHALE ACTIVITY (high vol/liquidity ratio = large coordinated positions) ---");
+    signals.whale_markets.slice(0, 5).forEach((w) => {
+      lines.push(`• ${w.question} | YES: ${w.yes_pct ?? "?"}% | ${w.vol_liq_ratio?.toFixed(1) ?? "?"}× liquidity`);
+    });
+  }
+  return lines.join("\n");
+}
+
+function PredictionAgent({ signals }: { signals: SignalsData | null }) {
   const [messages, setMessages] = useState<AgentMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -1441,11 +1472,20 @@ function PredictionAgent() {
 
     try {
       const history = messages.map((m) => ({ role: m.role, content: m.content }));
+      const signalsContext = buildSignalsContext(signals);
       const payload: Record<string, unknown> = {
         query: text.trim(),
         preset_intent: "prediction_markets",
         history: history.length > 0 ? history : undefined,
         conversation_id: conversationId,
+        context: signalsContext || undefined,
+        market_context: signalsContext ? {
+          summary: signals?.summary,
+          top_edges: signals?.top_edges?.slice(0, 5),
+          top_mispricings: signals?.top_mispricings?.slice(0, 5),
+          surging_markets: signals?.surging_markets?.slice(0, 5),
+          whale_markets: signals?.whale_markets?.slice(0, 5),
+        } : undefined,
       };
 
       const res = await fetch(`${AGENT_BACKEND_URL}/api/query`, {
@@ -1501,7 +1541,7 @@ function PredictionAgent() {
     } finally {
       setLoading(false);
     }
-  }, [loading, messages, conversationId]);
+  }, [loading, messages, conversationId, signals]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1523,7 +1563,15 @@ function PredictionAgent() {
           <Sparkles className="w-3.5 h-3.5 text-white" />
         </div>
         <div>
-          <h2 className="text-sm font-bold text-white">Caelyn Predicts</h2>
+          <h2 className="text-sm font-bold text-white flex items-center gap-1.5">
+            Caelyn Predicts
+            {signals && (
+              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-[9px] text-emerald-400 font-semibold uppercase tracking-widest">Live data</span>
+              </span>
+            )}
+          </h2>
           <p className="text-[10px] text-white/25">Prediction market odds &amp; investment implications</p>
         </div>
       </div>
@@ -1622,7 +1670,7 @@ function PredictionAgent() {
 
 // ─── Caelyn Predicts Dropdown ─────────────────────────────────────
 
-function CaelynPredictsDropdown() {
+function CaelynPredictsDropdown({ signals }: { signals: SignalsData | null }) {
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -1669,7 +1717,7 @@ function CaelynPredictsDropdown() {
             backdropFilter: 'blur(20px)',
           }}
         >
-          <PredictionAgent />
+          <PredictionAgent signals={signals} />
         </div>
       )}
     </div>
@@ -1728,9 +1776,64 @@ const openInNewTab = (url: string) => {
   openSecureLink(url);
 };
 
+// ─── Deep Dive Panel ──────────────────────────────────────────────
+
+function DeepDivePanel() {
+  const [open, setOpen] = useState(false);
+  return (
+    <GlassCard className="mb-5">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between px-5 py-4 hover:bg-white/[0.02] transition-colors rounded-xl"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
+            <Brain className="w-4 h-4 text-white" />
+          </div>
+          <div className="text-left">
+            <div className="text-sm font-bold text-white flex items-center gap-2">
+              Caelyn Analyzes
+              <Star className="w-3.5 h-3.5 text-amber-400" />
+              <span className="text-[10px] font-normal text-white/30">6-agent deep dive · 30–90s</span>
+            </div>
+            <p className="text-[10px] text-white/30">
+              Ask a specific question — get a structured LONG YES / LONG NO trade recommendation
+            </p>
+            <div className="flex flex-wrap gap-1.5 mt-2" onClick={(e) => e.stopPropagation()}>
+              {["Will the Fed cut rates this year?", "Will Bitcoin hit $100K?", "US recession in 2025?"].map((q) => (
+                <span key={q} className="text-[9px] px-2 py-0.5 rounded-full bg-white/[0.04] border border-white/[0.06] text-white/25">
+                  {q}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+        <ChevronDown
+          className="w-4 h-4 text-white/30 flex-shrink-0 transition-transform duration-200"
+          style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)" }}
+        />
+      </button>
+      {open && (
+        <div className="px-5 pb-5 border-t border-white/[0.06] pt-5">
+          <AnalysisPanel />
+        </div>
+      )}
+    </GlassCard>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────
 
 export default function PredictPage() {
+  const [pageSignals, setPageSignals] = useState<SignalsData | null>(null);
+
+  useEffect(() => {
+    fetch("/api/predict/signals")
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => { if (d) setPageSignals(d); })
+      .catch(() => {});
+  }, []);
+
   return (
     <div className="min-h-screen text-white relative" style={{ background: '#050608', fontFamily: "'Outfit', sans-serif" }}>
       <style>{`
@@ -1763,7 +1866,7 @@ export default function PredictPage() {
             <p className="text-xs text-white/30">Decentralized Casino and Analytics</p>
           </div>
           {/* AI chat dropdown — top right of header */}
-          <CaelynPredictsDropdown />
+          <CaelynPredictsDropdown signals={pageSignals} />
         </div>
         <div className="w-32 h-0.5 rounded-full mt-3 mb-4" style={{ background: 'linear-gradient(135deg, #2090d0, #3b82f6, #80d8f8)' }} />
       </div>
@@ -1775,7 +1878,10 @@ export default function PredictPage() {
           <div className="flex-1 min-w-0">
 
             {/* ═══ Prediction Markets Dashboard ═══ */}
-            <PolymarketDashboard />
+            <PolymarketDashboard signals={pageSignals} />
+
+            {/* ═══ Caelyn Analyzes — Deep Dive ═══ */}
+            <DeepDivePanel />
 
             {/* ═══ Enhanced Markets Table ═══ */}
             <EnhancedMarketsTable />

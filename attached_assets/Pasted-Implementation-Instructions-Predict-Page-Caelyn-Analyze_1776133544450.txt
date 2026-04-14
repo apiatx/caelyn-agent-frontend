@@ -1,0 +1,187 @@
+Implementation Instructions — Predict Page: Caelyn Analyzes + Context-Aware Predicts
+Overview
+Two independent changes to predict.tsx:
+
+Re-add AnalysisPanel as a collapsible "Deep Dive" section on the page
+Enrich the Caelyn Predicts chat with live signals data on every message
+These changes are fully independent. Implement them in any order.
+
+Change 1 — Re-add Caelyn Analyzes as a Deep Dive Section
+1a — Add signals state to AnalysisPanel so it has access to live page context
+AnalysisPanel already fetches /api/predict/context before calling /api/predict/analyze, so it already has full market context for the analysis pipeline. No changes needed to its internal logic.
+
+1b — Wrap AnalysisPanel in a collapsible container and add it to the page
+In PredictPage, add the following between <PolymarketDashboard /> and <EnhancedMarketsTable />:
+
+{/* ═══ Caelyn Analyzes — Deep Dive ═══ */}
+<DeepDivePanel />
+
+Create a new thin wrapper component called DeepDivePanel directly above PredictPage:
+
+function DeepDivePanel() {
+  const [open, setOpen] = useState(false);
+  return (
+    <GlassCard className="mb-5">
+      {/* Collapsed header — always visible */}
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between px-5 py-4 hover:bg-white/[0.02] transition-colors rounded-xl"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
+            <Brain className="w-4 h-4 text-white" />
+          </div>
+          <div className="text-left">
+            <div className="text-sm font-bold text-white flex items-center gap-2">
+              Caelyn Analyzes
+              <Star className="w-3.5 h-3.5 text-amber-400" />
+              <span className="text-[10px] font-normal text-white/30">6-agent deep dive · 30–90s</span>
+            </div>
+            <p className="text-[10px] text-white/30">
+              Ask a specific question — get a structured LONG YES / LONG NO trade recommendation
+            </p>
+          </div>
+        </div>
+        <ChevronDown
+          className="w-4 h-4 text-white/30 flex-shrink-0 transition-transform duration-200"
+          style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)" }}
+        />
+      </button>
+      {/* Expanded body */}
+      {open && (
+        <div className="px-5 pb-5 border-t border-white/[0.06] pt-5">
+          <AnalysisPanel />
+        </div>
+      )}
+    </GlassCard>
+  );
+}
+
+Brain, Star, and ChevronDown are all already imported. GlassCard is already imported. No new imports needed.
+
+1c — Collapsed by default behavior
+The panel opens collapsed (useState(false)). Once a user expands it and submits a question, keep it expanded. The existing AnalysisPanel already manages its own internal state (question input, analysis results, agent accordions) — the wrapper just controls visibility.
+
+1d — Add example questions to the collapsed header (optional enhancement)
+If you want to make it more inviting, add 3 example chips below the description text inside the collapsed button, in a non-clickable display row:
+
+<div className="flex flex-wrap gap-1.5 mt-2" onClick={(e) => e.stopPropagation()}>
+  {["Will the Fed cut rates this year?", "Will Bitcoin hit $100K?", "US recession in 2025?"].map((q) => (
+    <span key={q} className="text-[9px] px-2 py-0.5 rounded-full bg-white/[0.04] border border-white/[0.06] text-white/25">
+      {q}
+    </span>
+  ))}
+</div>
+
+Change 2 — Enrich Caelyn Predicts Chat with Live Signals
+2a — Lift signals state up to a shared location
+Currently signals will be fetched inside PolymarketDashboard (per Change 1 from the previous plan). To share it with PredictionAgent, lift it one level up.
+
+In PredictPage, add:
+
+const [pageSignals, setPageSignals] = useState<SignalsData | null>(null);
+useEffect(() => {
+  fetch("/api/predict/signals")
+    .then((r) => r.ok ? r.json() : null)
+    .then((d) => { if (d) setPageSignals(d); })
+    .catch(() => {});
+}, []);
+
+Pass it down as props wherever needed:
+
+To PolymarketDashboard (replaces its internal signals fetch): <PolymarketDashboard signals={pageSignals} />
+To CaelynPredictsDropdown: <CaelynPredictsDropdown signals={pageSignals} />
+Update PolymarketDashboard to accept signals as a prop and remove its own internal signals fetch. Update CaelynPredictsDropdown to accept and pass it through to PredictionAgent. Update PredictionAgent to accept signals as a prop.
+
+2b — Build the context string in PredictionAgent.sendMessage
+Inside sendMessage, before the fetch call, build a compact context string from the signals prop:
+
+function buildSignalsContext(signals: SignalsData | null): string {
+  if (!signals) return "";
+  const s = signals.summary;
+  const lines: string[] = [];
+  if (s) {
+    lines.push("=== LIVE POLYMARKET SNAPSHOT ===");
+    if (s.total_volume_24h != null) lines.push(`Total 24h Volume: ${formatVolume(s.total_volume_24h)}`);
+    if (s.market_count     != null) lines.push(`Active Markets: ${s.market_count}`);
+    if (s.surging_count    != null) lines.push(`Surging Markets: ${s.surging_count}`);
+    if (s.fading_count     != null) lines.push(`Fading Markets: ${s.fading_count}`);
+    if (s.whale_active_count != null) lines.push(`Whale-Active Markets: ${s.whale_active_count}`);
+    if (s.avg_spread_pct   != null) lines.push(`Avg Spread: ${s.avg_spread_pct.toFixed(2)}%`);
+  }
+  if (signals.top_edges?.length) {
+    lines.push("\n--- TOP EDGES (widest bid-ask spread vs YES price) ---");
+    signals.top_edges.slice(0, 5).forEach((e) => {
+      lines.push(`• ${e.question} | YES: ${e.yes_pct ?? "?"}% | Spread: ${(e.edge_pct ?? e.spread_pct_of_price ?? 0).toFixed(1)}%`);
+    });
+  }
+  if (signals.top_mispricings?.length) {
+    lines.push("\n--- ORDER BOOK DIVERGENCE (CLOB mid ≠ displayed price) ---");
+    signals.top_mispricings.slice(0, 5).forEach((m) => {
+      lines.push(`• ${m.question} | YES: ${m.yes_pct ?? "?"}% | Δ ${m.mispricing_score?.toFixed(3) ?? "?"}`);
+    });
+  }
+  if (signals.surging_markets?.length) {
+    lines.push("\n--- SURGING MARKETS (24h vol > 3× 7-day average) ---");
+    signals.surging_markets.slice(0, 5).forEach((m) => {
+      lines.push(`• ${m.question} | Vol: ${m.volume_24h != null ? formatVolume(m.volume_24h) : "?"} | ${m.volume_momentum?.toUpperCase() ?? ""}`);
+    });
+  }
+  if (signals.whale_markets?.length) {
+    lines.push("\n--- WHALE ACTIVITY (high vol/liquidity ratio = large coordinated positions) ---");
+    (signals.whale_markets as any[]).slice(0, 5).forEach((w: any) => {
+      lines.push(`• ${w.question} | YES: ${w.yes_pct ?? "?"}% | ${w.vol_liq_ratio?.toFixed(1) ?? "?"}× liquidity`);
+    });
+  }
+  return lines.join("\n");
+}
+
+Add whale_markets to the SignalsData type:
+
+whale_markets?: Array<{ question: string; vol_liq_ratio?: number; volume_24h?: number; yes_pct?: number; slug?: string; }>;
+
+2c — Inject context into the payload
+In sendMessage, update the payload construction:
+
+const signalsContext = buildSignalsContext(signals);
+const payload: Record<string, unknown> = {
+  query: text.trim(),
+  preset_intent: "prediction_markets",
+  history: history.length > 0 ? history : undefined,
+  conversation_id: conversationId,
+  // Inject live market context — the agent receives this as additional context
+  context: signalsContext || undefined,
+  market_context: signalsContext ? {
+    summary: signals?.summary,
+    top_edges: signals?.top_edges?.slice(0, 5),
+    top_mispricings: signals?.top_mispricings?.slice(0, 5),
+    surging_markets: signals?.surging_markets?.slice(0, 5),
+    whale_markets: (signals as any)?.whale_markets?.slice(0, 5),
+  } : undefined,
+};
+
+Sending both context (plain text string) and market_context (structured JSON) covers both possibilities for how the external agent backend reads additional context — whichever field it supports, it will find the data.
+
+2d — Show a "Live data loaded" indicator in the chat header
+In PredictionAgent's header, add a small indicator that the agent has page context:
+
+{signals && (
+  <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 ml-1">
+    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+    <span className="text-[9px] text-emerald-400 font-semibold uppercase tracking-widest">Live data</span>
+  </span>
+)}
+
+Place it inline in the header next to "Caelyn Predicts".
+
+Summary of What Changes
+Component	Change
+PredictPage	Add pageSignals state + useEffect fetch; pass as prop to CaelynPredictsDropdown and PolymarketDashboard
+PolymarketDashboard	Accept signals as prop (remove its own internal signals fetch)
+CaelynPredictsDropdown	Accept + forward signals prop to PredictionAgent
+PredictionAgent	Accept signals prop; call buildSignalsContext(); inject into payload
+DeepDivePanel	New wrapper component (collapsible shell around existing AnalysisPanel)
+PredictPage render	Add <DeepDivePanel /> between <PolymarketDashboard /> and <EnhancedMarketsTable />
+SignalsData type	Add whale_markets array
+Nothing else changes. AnalysisPanel internals are untouched. PolymarketDashboard's existing Polymarket fetch, tabs, cards, and all rendering logic are untouched. Only the signals fetch moves from inside PolymarketDashboard up to PredictPage.
+
