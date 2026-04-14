@@ -19,148 +19,252 @@ import {
   Minus,
 } from "lucide-react";
 
-// ─── Types ────────────────────────────────────────────────────────
+// ─── Backend types (exact field names from /api/predict/investor/overview) ────
 
-interface SupportingMarket {
-  title?: string;
+interface BackendSupportingMarket {
+  condition_id?: string;
   question?: string;
-  slug?: string;
   yes_pct?: number;
+  price_change_1d?: number;
+  price_change_1wk?: number;
+  volume_24h?: number;
+  composite_score?: number;
+  equity_relevance_score?: number;
 }
 
-interface EquitySignal {
-  id?: string;
+interface BackendEquitySignal {
+  theme_id?: string;
   title: string;
   summary?: string;
   why_it_matters?: string;
-  odds_move?: string;
-  confidence?: number;
-  regime_implication?: string;
+  supporting_markets?: BackendSupportingMarket[];
+  market_count?: number;
+  odds_move_summary?: string;        // backend key (not odds_move)
+  summary_direction?: string;
   bullish_sectors?: string[];
   bearish_sectors?: string[];
   bullish_stocks?: string[];
   bearish_stocks?: string[];
-  supporting_markets?: SupportingMarket[];
-  tags?: string[];
-  updated_at?: string;
+  asset_baskets?: string[];
+  regime_impact?: string;            // backend key (not regime_implication)
+  confidence?: string;               // e.g. "high", "medium"
+  confidence_score?: number;         // 0-100 number
+  narrative?: string;
+  watchlist_priority?: string;
 }
 
-interface RegimeIndicator {
-  label: string;
+interface BackendRegimeValue {
+  label?: string;
   score?: number;
   direction?: string;
-  confidence?: number;
-  theme_count?: number;
+  confidence?: string;              // "high", "medium", "low"
+  supporting_themes?: string[];
+}
+
+interface BackendSectorEntry {
+  sector: string;
+  mentions?: number;
+  stocks?: string[];
+}
+
+interface BackendSectorRotation {
+  strongest_positive_sectors?: BackendSectorEntry[];
+  strongest_negative_sectors?: BackendSectorEntry[];
+  emerging_leadership?: BackendSectorEntry[];
+  fading_leadership?: BackendSectorEntry[];
+  regime_context_notes?: string[];
+}
+
+interface BackendWatchlistItem {
+  ticker: string;
+  themes?: string[];
+  sectors?: string[];
+  type?: string;
+  note?: string;
+  bullish_themes?: string[];
+  bearish_themes?: string[];
+}
+
+interface BackendWatchlists {
+  bullish_watchlist?: BackendWatchlistItem[];
+  bearish_watchlist?: BackendWatchlistItem[];
+  conditional_watchlist?: BackendWatchlistItem[];
+  watchlist_notes?: string[];
+}
+
+interface BackendThemeCluster {
+  theme_id?: string;
+  theme_name: string;               // backend key (not "theme")
+  theme_emoji?: string;
   description?: string;
-  left_label?: string;
-  right_label?: string;
+  supporting_markets?: BackendSupportingMarket[];
+  market_count?: number;
+  weighted_odds_shift_24h?: number;
+  weighted_odds_shift_7d?: number;
+  weighted_volume?: number;
+  confidence_score?: number;        // 0-100 (not "confidence")
+  consistency_score?: number;
+  contradiction_score?: number;     // > 0 means contradictory signals
+  freshness_score?: number;
+  regime_signal_strength?: number;
+  summary_direction?: string;       // backend key (not "direction")
+  avg_equity_relevance?: number;
+  bullish_sectors?: string[];
+  bearish_sectors?: string[];
+  bullish_stocks?: string[];
+  bearish_stocks?: string[];
+  asset_baskets?: string[];
+  regime_implications?: string;
+  narrative?: string;
+}
+
+interface BackendOverview {
+  generated_at?: string;
+  equity_relevant_market_count?: number;
+  total_market_count?: number;
+  top_equity_signals?: BackendEquitySignal[];     // key: top_equity_signals
+  sector_rotation?: BackendSectorRotation;        // key: sector_rotation (object)
+  watchlists?: BackendWatchlists;                 // key: watchlists
+  regime_scoreboard?: Record<string, BackendRegimeValue>; // key: regime_scoreboard (object)
+  theme_clusters?: BackendThemeCluster[];         // key: theme_clusters
+}
+
+// ─── Normalised view-model types ─────────────────────────────────────────────
+
+interface RegimeRow {
+  key: string;
+  displayName: string;
+  label?: string;
+  score?: number;
+  direction?: string;
+  confidenceStr?: string;
+  supportingThemes?: string[];
 }
 
 interface SectorSignal {
   sector: string;
-  direction?: string;
-  reason?: string;
-  confidence?: number;
-  themes?: string[];
-  type?: string;
+  type: "positive" | "negative" | "emerging" | "fading";
+  stocks?: string[];
+  mentions?: number;
 }
 
-interface StockEntry {
+interface WatchlistEntry {
   ticker: string;
-  name?: string;
-  reason?: string;
   themes?: string[];
-  direction?: string;
+  sectors?: string[];
+  direction: "bullish" | "bearish" | "conditional";
+  note?: string;
 }
 
-interface StockWatchlists {
-  bullish?: StockEntry[];
-  bearish?: StockEntry[];
-  conditional?: StockEntry[];
+// ─── Transform helpers ────────────────────────────────────────────────────────
+
+const REGIME_DISPLAY_NAMES: Record<string, string> = {
+  risk_on_vs_risk_off:                   "Risk On / Risk Off",
+  inflationary_vs_disinflationary:       "Inflation / Disinflation",
+  growth_vs_slowdown:                    "Growth / Slowdown",
+  geopolitical_stress_vs_easing:         "Geopolitical Stress",
+  higher_for_longer_vs_easing:           "Higher-for-Longer",
+  commodity_pressure_vs_relief:          "Commodity Pressure",
+  ai_capex_supportive_vs_restrictive:    "AI Capex / Restrictive",
+};
+
+function transformRegime(rs?: Record<string, BackendRegimeValue>): RegimeRow[] {
+  if (!rs) return [];
+  return Object.entries(rs).map(([key, v]) => ({
+    key,
+    displayName: REGIME_DISPLAY_NAMES[key] ?? key.replace(/_/g, " "),
+    label: v.label,
+    score: v.score,
+    direction: v.direction,
+    confidenceStr: v.confidence,
+    supportingThemes: v.supporting_themes,
+  }));
 }
 
-interface ThemeCluster {
-  theme: string;
-  direction?: string;
-  confidence?: number;
-  consistency?: string;
-  contradiction?: boolean;
-  supporting_markets?: SupportingMarket[];
-  equity_impact?: string;
+function transformSectors(sr?: BackendSectorRotation): SectorSignal[] {
+  if (!sr) return [];
+  const out: SectorSignal[] = [];
+  (sr.strongest_positive_sectors ?? []).forEach(e => out.push({ sector: e.sector, type: "positive", stocks: e.stocks, mentions: e.mentions }));
+  (sr.strongest_negative_sectors ?? []).forEach(e => out.push({ sector: e.sector, type: "negative", stocks: e.stocks, mentions: e.mentions }));
+  (sr.emerging_leadership ?? []).forEach(e => out.push({ sector: e.sector, type: "emerging", stocks: e.stocks }));
+  (sr.fading_leadership ?? []).forEach(e => out.push({ sector: e.sector, type: "fading", stocks: e.stocks }));
+  return out;
 }
 
-interface InvestorData {
-  equity_signals?: EquitySignal[];
-  regime?: RegimeIndicator[];
-  sectors?: SectorSignal[];
-  watchlists?: StockWatchlists;
-  themes?: ThemeCluster[];
-  generated_at?: string;
+function transformWatchlists(wl?: BackendWatchlists): { bullish: WatchlistEntry[]; bearish: WatchlistEntry[]; conditional: WatchlistEntry[] } {
+  const mapItem = (item: BackendWatchlistItem, dir: "bullish" | "bearish" | "conditional"): WatchlistEntry => ({
+    ticker: item.ticker,
+    themes: item.themes ?? item.bullish_themes ?? item.bearish_themes,
+    sectors: item.sectors,
+    direction: dir,
+    note: item.note,
+  });
+  return {
+    bullish:     (wl?.bullish_watchlist    ?? []).map(i => mapItem(i, "bullish")),
+    bearish:     (wl?.bearish_watchlist    ?? []).map(i => mapItem(i, "bearish")),
+    conditional: (wl?.conditional_watchlist ?? []).map(i => mapItem(i, "conditional")),
+  };
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function formatConfidence(c?: number): string {
-  if (c == null) return "";
-  if (c >= 80) return "High";
-  if (c >= 55) return "Moderate";
-  return "Low";
+function confidenceScore(s?: BackendEquitySignal): number | undefined {
+  if (s?.confidence_score != null) return s.confidence_score;
+  if (s?.confidence === "high") return 85;
+  if (s?.confidence === "medium") return 60;
+  if (s?.confidence === "low") return 35;
+  return undefined;
 }
 
-function confidenceColor(c?: number): string {
-  if (c == null) return "text-white/30";
-  if (c >= 80) return "text-emerald-400";
-  if (c >= 55) return "text-blue-400";
-  return "text-amber-400";
+function confidenceLabel(score?: number, str?: string): string {
+  if (str === "high" || (score != null && score >= 75)) return "High";
+  if (str === "medium" || (score != null && score >= 50)) return "Moderate";
+  if (str === "low" || (score != null && score < 50)) return "Low";
+  return "";
 }
 
-function directionIcon(dir?: string, size = "w-3.5 h-3.5") {
+function confidenceColor(score?: number, str?: string): string {
+  const label = confidenceLabel(score, str);
+  if (label === "High") return "text-emerald-400";
+  if (label === "Moderate") return "text-blue-400";
+  if (label === "Low") return "text-amber-400";
+  return "text-white/30";
+}
+
+function directionFromSummary(dir?: string): "bullish" | "bearish" | "neutral" {
   const d = (dir ?? "").toLowerCase();
-  if (d.includes("bull") || d.includes("up") || d.includes("positive") || d.includes("risk_on") || d.includes("growth"))
-    return <TrendingUp className={`${size} text-emerald-400`} />;
-  if (d.includes("bear") || d.includes("down") || d.includes("negative") || d.includes("risk_off") || d.includes("slow"))
-    return <TrendingDown className={`${size} text-red-400`} />;
-  return <Minus className={`${size} text-white/30`} />;
+  if (d.includes("risk_on") || d.includes("bullish") || d.includes("positive") || d.includes("growth") || d.includes("easing") || d.includes("disinflation") || d.includes("relief") || d.includes("support")) return "bullish";
+  if (d.includes("risk_off") || d.includes("bearish") || d.includes("negative") || d.includes("slowdown") || d.includes("stress") || d.includes("pressure") || d.includes("restrict") || d.includes("inflation") || d.includes("longer")) return "bearish";
+  return "neutral";
 }
 
-function directionColor(dir?: string): { text: string; bg: string; border: string } {
-  const d = (dir ?? "").toLowerCase();
-  if (d.includes("bull") || d.includes("up") || d.includes("positive") || d.includes("risk_on") || d.includes("growth"))
-    return { text: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20" };
-  if (d.includes("bear") || d.includes("down") || d.includes("negative") || d.includes("risk_off") || d.includes("slow"))
-    return { text: "text-red-400", bg: "bg-red-500/10", border: "border-red-500/20" };
-  return { text: "text-white/40", bg: "bg-white/[0.04]", border: "border-white/[0.08]" };
+function directionFromRegime(dir?: string, label?: string): "bullish" | "bearish" | "neutral" {
+  const d = (dir ?? label ?? "").toLowerCase();
+  if (d.includes("rising") || d.includes("risk_on") || d.includes("growth") || d.includes("easing") || d.includes("disinflation") || d.includes("relief") || d.includes("support")) return "bullish";
+  if (d.includes("falling") || d.includes("risk_off") || d.includes("slowdown") || d.includes("stress") || d.includes("pressure") || d.includes("restrict") || d.includes("inflation") || d.includes("longer")) return "bearish";
+  return "neutral";
 }
 
-function directionLabel(dir?: string): string {
-  const d = (dir ?? "").toLowerCase();
-  if (d.includes("bull") || d.includes("up") || d.includes("positive") || d.includes("risk_on")) return "Bullish";
-  if (d.includes("bear") || d.includes("down") || d.includes("negative") || d.includes("risk_off")) return "Bearish";
-  return "Neutral";
+function dirIcon(dir: "bullish" | "bearish" | "neutral", cls = "w-3.5 h-3.5") {
+  if (dir === "bullish") return <TrendingUp className={`${cls} text-emerald-400`} />;
+  if (dir === "bearish") return <TrendingDown className={`${cls} text-red-400`} />;
+  return <Minus className={`${cls} text-white/30`} />;
 }
 
-// ─── Skeleton ─────────────────────────────────────────────────────
+function dirColors(dir: "bullish" | "bearish" | "neutral") {
+  if (dir === "bullish") return { text: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20" };
+  if (dir === "bearish") return { text: "text-red-400",     bg: "bg-red-500/10",     border: "border-red-500/20"     };
+  return                         { text: "text-white/40",   bg: "bg-white/[0.04]",   border: "border-white/[0.08]"   };
+}
 
-function Skeleton({ className = "" }: { className?: string }) {
+// ─── Skeleton ─────────────────────────────────────────────────────────────────
+
+function Skel({ className = "" }: { className?: string }) {
   return <div className={`animate-pulse rounded bg-white/[0.05] ${className}`} />;
 }
 
-function SignalSkeleton({ hero = false }: { hero?: boolean }) {
-  return (
-    <div className={`rounded-xl border border-white/[0.06] bg-white/[0.02] p-5 ${hero ? "col-span-full" : ""}`}>
-      <Skeleton className="h-3 w-20 mb-3" />
-      <Skeleton className={`h-5 w-3/4 mb-2 ${hero ? "h-6" : ""}`} />
-      <Skeleton className="h-3 w-full mb-1" />
-      <Skeleton className="h-3 w-2/3 mb-4" />
-      <div className="flex gap-2">
-        <Skeleton className="h-6 w-20 rounded-full" />
-        <Skeleton className="h-6 w-20 rounded-full" />
-      </div>
-    </div>
-  );
-}
+// ─── Section Header ───────────────────────────────────────────────────────────
 
-// ─── Section Header ───────────────────────────────────────────────
 function SectionHeader({ icon, title, subtitle }: { icon: React.ReactNode; title: string; subtitle?: string }) {
   return (
     <div className="flex items-center gap-2.5 mb-4">
@@ -175,19 +279,32 @@ function SectionHeader({ icon, title, subtitle }: { icon: React.ReactNode; title
   );
 }
 
-// ─── Top Equity Signals ───────────────────────────────────────────
+function EmptyState({ text }: { text: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-8 text-center">
+      <div className="w-8 h-8 rounded-lg bg-white/[0.04] flex items-center justify-center mb-2">
+        <BarChart3 className="w-4 h-4 text-white/20" />
+      </div>
+      <p className="text-[11px] text-white/25">{text}</p>
+    </div>
+  );
+}
+
+// ─── Top Equity Signals ───────────────────────────────────────────────────────
 
 const EquitySignalCard = memo(function EquitySignalCard({
   signal,
   hero = false,
 }: {
-  signal: EquitySignal;
+  signal: BackendEquitySignal;
   hero?: boolean;
 }) {
   const [expanded, setExpanded] = useState(hero);
-  const conf = signal.confidence;
-  const confLabel = formatConfidence(conf);
-  const confColor = confidenceColor(conf);
+  const score = confidenceScore(signal);
+  const confLabel = confidenceLabel(score, signal.confidence);
+  const confColor = confidenceColor(score, signal.confidence);
+  const dir = directionFromSummary(signal.summary_direction);
+  const dc = dirColors(dir);
 
   return (
     <div
@@ -196,25 +313,20 @@ const EquitySignalCard = memo(function EquitySignalCard({
         ${hero ? "col-span-full border-blue-500/20 bg-gradient-to-br from-blue-500/[0.04] to-transparent" : ""}
       `}
     >
-      {/* Top row */}
+      {/* Direction badge */}
       <div className="flex items-start justify-between gap-3 mb-2">
         <div className="flex-1 min-w-0">
-          {signal.tags && signal.tags.length > 0 && (
-            <div className="flex gap-1 flex-wrap mb-1.5">
-              {signal.tags.slice(0, 3).map(t => (
-                <span key={t} className="text-[8px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-white/[0.06] text-white/35 border border-white/[0.06]">
-                  {t}
-                </span>
-              ))}
-            </div>
-          )}
+          <div className="flex items-center gap-1.5 mb-1.5">
+            {dirIcon(dir, "w-3 h-3")}
+            <span className={`text-[8px] font-bold uppercase tracking-widest ${dc.text}`}>{dir}</span>
+          </div>
           <h3 className={`font-semibold text-white/90 leading-snug ${hero ? "text-base" : "text-sm"}`}>
             {signal.title}
           </h3>
         </div>
-        {conf != null && (
+        {confLabel && (
           <div className="flex-shrink-0 flex items-center gap-1 px-2 py-1 rounded-lg bg-white/[0.04] border border-white/[0.06]">
-            <span className="text-[9px] text-white/30">Confidence</span>
+            <span className="text-[9px] text-white/30">Conf.</span>
             <span className={`text-[11px] font-bold ${confColor}`}>{confLabel}</span>
           </div>
         )}
@@ -226,11 +338,11 @@ const EquitySignalCard = memo(function EquitySignalCard({
       )}
 
       {/* Odds move */}
-      {signal.odds_move && (
+      {signal.odds_move_summary && (
         <div className="flex items-center gap-1.5 mb-3 text-[10px]">
           <BarChart3 className="w-3 h-3 text-blue-400/60" />
           <span className="text-white/35">Odds:</span>
-          <span className="text-blue-300/80 font-medium">{signal.odds_move}</span>
+          <span className="text-blue-300/80 font-medium">{signal.odds_move_summary}</span>
         </div>
       )}
 
@@ -240,49 +352,41 @@ const EquitySignalCard = memo(function EquitySignalCard({
           {(signal.bullish_sectors?.length ?? 0) > 0 && (
             <div className="rounded-lg bg-emerald-500/[0.06] border border-emerald-500/15 p-2">
               <p className="text-[8px] font-bold uppercase tracking-widest text-emerald-400/60 mb-1.5">↑ Bullish Sectors</p>
-              <div className="space-y-0.5">
-                {signal.bullish_sectors!.map(s => (
-                  <p key={s} className="text-[10px] text-emerald-300/80 font-medium">{s}</p>
-                ))}
-              </div>
+              {signal.bullish_sectors!.map(s => (
+                <p key={s} className="text-[10px] text-emerald-300/80 font-medium">{s}</p>
+              ))}
             </div>
           )}
           {(signal.bearish_sectors?.length ?? 0) > 0 && (
             <div className="rounded-lg bg-red-500/[0.06] border border-red-500/15 p-2">
               <p className="text-[8px] font-bold uppercase tracking-widest text-red-400/60 mb-1.5">↓ Bearish Sectors</p>
-              <div className="space-y-0.5">
-                {signal.bearish_sectors!.map(s => (
-                  <p key={s} className="text-[10px] text-red-300/80 font-medium">{s}</p>
-                ))}
-              </div>
+              {signal.bearish_sectors!.map(s => (
+                <p key={s} className="text-[10px] text-red-300/80 font-medium">{s}</p>
+              ))}
             </div>
           )}
         </div>
       )}
 
-      {/* Stock implications */}
+      {/* Stock tickers */}
       {((signal.bullish_stocks?.length ?? 0) > 0 || (signal.bearish_stocks?.length ?? 0) > 0) && (
         <div className="flex items-start gap-3 mb-3">
           {(signal.bullish_stocks?.length ?? 0) > 0 && (
             <div className="flex-1">
-              <p className="text-[8px] font-semibold uppercase tracking-wider text-emerald-400/50 mb-1">Bullish tickers</p>
+              <p className="text-[8px] font-semibold uppercase tracking-wider text-emerald-400/50 mb-1">Bullish</p>
               <div className="flex flex-wrap gap-1">
                 {signal.bullish_stocks!.map(t => (
-                  <span key={t} className="text-[9px] font-bold font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
-                    {t}
-                  </span>
+                  <span key={t} className="text-[9px] font-bold font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">{t}</span>
                 ))}
               </div>
             </div>
           )}
           {(signal.bearish_stocks?.length ?? 0) > 0 && (
             <div className="flex-1">
-              <p className="text-[8px] font-semibold uppercase tracking-wider text-red-400/50 mb-1">Bearish tickers</p>
+              <p className="text-[8px] font-semibold uppercase tracking-wider text-red-400/50 mb-1">Bearish</p>
               <div className="flex flex-wrap gap-1">
                 {signal.bearish_stocks!.map(t => (
-                  <span key={t} className="text-[9px] font-bold font-mono px-1.5 py-0.5 rounded bg-red-500/10 border border-red-500/20 text-red-400">
-                    {t}
-                  </span>
+                  <span key={t} className="text-[9px] font-bold font-mono px-1.5 py-0.5 rounded bg-red-500/10 border border-red-500/20 text-red-400">{t}</span>
                 ))}
               </div>
             </div>
@@ -290,15 +394,15 @@ const EquitySignalCard = memo(function EquitySignalCard({
         </div>
       )}
 
-      {/* Regime implication */}
-      {signal.regime_implication && (
+      {/* Regime impact (backend: regime_impact, not regime_implication) */}
+      {signal.regime_impact && (
         <div className="mb-3 flex items-start gap-1.5 text-[10px] px-2 py-1.5 rounded bg-white/[0.03] border border-white/[0.05]">
           <Globe2 className="w-3 h-3 text-white/25 mt-0.5 flex-shrink-0" />
-          <span className="text-white/40 leading-snug">{signal.regime_implication}</span>
+          <span className="text-white/40 leading-snug">{signal.regime_impact}</span>
         </div>
       )}
 
-      {/* Expandable: Why it matters + supporting markets */}
+      {/* Expandable detail */}
       {(signal.why_it_matters || (signal.supporting_markets?.length ?? 0) > 0) && (
         <>
           <button
@@ -320,25 +424,15 @@ const EquitySignalCard = memo(function EquitySignalCard({
                 <div>
                   <p className="text-[8px] font-semibold uppercase tracking-wider text-white/25 mb-1.5">Supporting markets</p>
                   <div className="space-y-1">
-                    {signal.supporting_markets!.slice(0, 4).map((m, i) => {
-                      const title = m.title ?? m.question ?? "";
-                      const url = m.slug ? `https://polymarket.com/event/${m.slug}` : null;
-                      return (
-                        <div key={i} className="flex items-center gap-2 text-[10px]">
-                          <CircleDot className="w-2.5 h-2.5 text-white/15 flex-shrink-0" />
-                          {url ? (
-                            <a href={url} target="_blank" rel="noopener noreferrer" className="text-white/45 hover:text-white/70 truncate transition-colors flex-1">
-                              {title}
-                            </a>
-                          ) : (
-                            <span className="text-white/40 truncate flex-1">{title}</span>
-                          )}
-                          {m.yes_pct != null && (
-                            <span className="text-white/40 font-mono flex-shrink-0">{m.yes_pct}%</span>
-                          )}
-                        </div>
-                      );
-                    })}
+                    {signal.supporting_markets!.slice(0, 5).map((m, i) => (
+                      <div key={i} className="flex items-center gap-2 text-[10px]">
+                        <CircleDot className="w-2.5 h-2.5 text-white/15 flex-shrink-0" />
+                        <span className="text-white/40 truncate flex-1">{m.question ?? ""}</span>
+                        {m.yes_pct != null && (
+                          <span className="text-white/40 font-mono flex-shrink-0">{m.yes_pct}%</span>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
@@ -350,7 +444,7 @@ const EquitySignalCard = memo(function EquitySignalCard({
   );
 });
 
-function TopEquitySignals({ signals, loading }: { signals: EquitySignal[]; loading: boolean }) {
+function TopEquitySignals({ signals, loading }: { signals: BackendEquitySignal[]; loading: boolean }) {
   return (
     <GlassCard className="p-5 mb-5">
       <SectionHeader
@@ -360,16 +454,16 @@ function TopEquitySignals({ signals, loading }: { signals: EquitySignal[]; loadi
       />
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          <SignalSkeleton hero />
-          <SignalSkeleton />
-          <SignalSkeleton />
+          <Skel className="h-48 rounded-xl col-span-full md:col-span-2 lg:col-span-3" />
+          <Skel className="h-36 rounded-xl" />
+          <Skel className="h-36 rounded-xl" />
         </div>
       ) : signals.length === 0 ? (
-        <EmptyState text="No equity signals available yet. Backend is still analyzing markets." />
+        <EmptyState text="No equity signals available yet." />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {signals.map((s, i) => (
-            <EquitySignalCard key={s.id ?? i} signal={s} hero={i === 0} />
+            <EquitySignalCard key={s.theme_id ?? i} signal={s} hero={i === 0} />
           ))}
         </div>
       )}
@@ -377,11 +471,11 @@ function TopEquitySignals({ signals, loading }: { signals: EquitySignal[]; loadi
   );
 }
 
-// ─── Regime Scoreboard ────────────────────────────────────────────
+// ─── Regime Scoreboard ────────────────────────────────────────────────────────
 
-function RegimeBar({ score }: { score?: number }) {
+function RegimeBar({ score, dir }: { score?: number; dir: "bullish" | "bearish" | "neutral" }) {
   const pct = Math.min(100, Math.max(0, score ?? 50));
-  const color = pct >= 65 ? "bg-emerald-400" : pct <= 35 ? "bg-red-400" : "bg-blue-400";
+  const color = dir === "bullish" ? "bg-emerald-400" : dir === "bearish" ? "bg-red-400" : "bg-blue-400";
   return (
     <div className="flex-1 h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
       <div className={`h-full rounded-full transition-all duration-500 ${color}`} style={{ width: `${pct}%` }} />
@@ -389,56 +483,38 @@ function RegimeBar({ score }: { score?: number }) {
   );
 }
 
-const RegimeRow = memo(function RegimeRow({ indicator }: { indicator: RegimeIndicator }) {
-  const dir = (indicator.direction ?? "").toLowerCase();
-  const isBullish = dir.includes("on") || dir.includes("bull") || dir.includes("lower") || dir.includes("growth") || dir.includes("easing") || dir.includes("dis") || dir.includes("relief") || dir.includes("support");
-  const isBearish = dir.includes("off") || dir.includes("bear") || dir.includes("higher") || dir.includes("slow") || dir.includes("stress") || dir.includes("pressure") || dir.includes("restrict");
-  const textColor = isBullish ? "text-emerald-400" : isBearish ? "text-red-400" : "text-white/40";
+function RegimeRowCard({ row }: { row: RegimeRow }) {
+  const dir = directionFromRegime(row.direction, row.label);
+  const dc = dirColors(dir);
 
   return (
-    <div className="flex items-center gap-3 py-2 border-b border-white/[0.04] last:border-b-0">
-      {/* Label */}
-      <div className="w-36 flex-shrink-0">
-        <p className="text-[10px] font-semibold text-white/70 leading-tight">{indicator.label}</p>
-        {indicator.description && (
-          <p className="text-[9px] text-white/25 leading-tight mt-0.5 line-clamp-1">{indicator.description}</p>
+    <div className="flex items-center gap-3 py-2.5 border-b border-white/[0.04] last:border-b-0">
+      <div className="w-40 flex-shrink-0">
+        <p className="text-[10px] font-semibold text-white/70">{row.displayName}</p>
+        {row.label && (
+          <p className={`text-[9px] font-medium mt-0.5 ${dc.text}`}>{row.label.replace(/_/g, " ")}</p>
         )}
       </div>
-
-      {/* Left label (optional) */}
-      <span className="text-[8px] text-white/20 w-16 text-right flex-shrink-0 hidden sm:block">
-        {indicator.left_label ?? ""}
-      </span>
-
-      {/* Bar */}
       <div className="flex items-center gap-2 flex-1">
-        <RegimeBar score={indicator.score} />
-      </div>
-
-      {/* Right label (optional) */}
-      <span className="text-[8px] text-white/20 w-16 flex-shrink-0 hidden sm:block">
-        {indicator.right_label ?? ""}
-      </span>
-
-      {/* Direction + confidence */}
-      <div className="flex items-center gap-2 flex-shrink-0 w-32 justify-end">
-        <span className={`text-[10px] font-semibold ${textColor}`}>
-          {indicator.direction ?? "—"}
-        </span>
-        {indicator.confidence != null && (
-          <span className={`text-[8px] font-bold ${confidenceColor(indicator.confidence)}`}>
-            {formatConfidence(indicator.confidence)}
-          </span>
+        <RegimeBar score={row.score} dir={dir} />
+        {row.score != null && (
+          <span className="text-[9px] text-white/30 tabular-nums w-8 text-right flex-shrink-0">{Math.round(row.score)}</span>
         )}
-        {indicator.theme_count != null && (
-          <span className="text-[8px] text-white/20">{indicator.theme_count}m</span>
+      </div>
+      <div className="flex items-center gap-2 flex-shrink-0 w-28 justify-end">
+        {dirIcon(dir, "w-3 h-3")}
+        <span className={`text-[9px] font-semibold ${dc.text}`}>{row.direction ?? "—"}</span>
+        {row.confidenceStr && (
+          <span className={`text-[8px] font-bold ${confidenceColor(undefined, row.confidenceStr)}`}>
+            {confidenceLabel(undefined, row.confidenceStr)}
+          </span>
         )}
       </div>
     </div>
   );
-});
+}
 
-function RegimeScoreboard({ regime, loading }: { regime: RegimeIndicator[]; loading: boolean }) {
+function RegimeScoreboard({ rows, loading }: { rows: RegimeRow[]; loading: boolean }) {
   return (
     <GlassCard className="p-5 mb-5">
       <SectionHeader
@@ -447,72 +523,50 @@ function RegimeScoreboard({ regime, loading }: { regime: RegimeIndicator[]; load
         subtitle="Macro environment implied by prediction market positioning"
       />
       {loading ? (
-        <div className="space-y-3">
-          {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-8 w-full" />)}
+        <div className="space-y-2">
+          {[...Array(7)].map((_, i) => <Skel key={i} className="h-9 w-full rounded" />)}
         </div>
-      ) : regime.length === 0 ? (
+      ) : rows.length === 0 ? (
         <EmptyState text="Regime indicators not yet available." />
       ) : (
-        <div>
-          {regime.map((ind, i) => <RegimeRow key={ind.label + i} indicator={ind} />)}
-        </div>
+        <div>{rows.map(r => <RegimeRowCard key={r.key} row={r} />)}</div>
       )}
     </GlassCard>
   );
 }
 
-// ─── Sector Rotation Signals ──────────────────────────────────────
+// ─── Sector Rotation Signals ──────────────────────────────────────────────────
 
-const SECTOR_TYPE_CONFIG: Record<string, { label: string; color: string; bg: string; border: string }> = {
-  positive:  { label: "Positive",          color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
-  negative:  { label: "Negative",          color: "text-red-400",     bg: "bg-red-500/10",     border: "border-red-500/20" },
-  emerging:  { label: "Emerging Leader",   color: "text-blue-400",    bg: "bg-blue-500/10",    border: "border-blue-500/20" },
-  fader:     { label: "Fading",            color: "text-amber-400",   bg: "bg-amber-500/10",   border: "border-amber-500/20" },
-  leader:    { label: "Leader",            color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
-};
+const TYPE_CONFIG = {
+  positive: { label: "Positive",        text: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
+  negative: { label: "Negative",        text: "text-red-400",     bg: "bg-red-500/10",     border: "border-red-500/20"     },
+  emerging: { label: "Emerging Leader", text: "text-blue-400",    bg: "bg-blue-500/10",    border: "border-blue-500/20"    },
+  fading:   { label: "Fading",          text: "text-amber-400",   bg: "bg-amber-500/10",   border: "border-amber-500/20"   },
+} as const;
 
-const SectorCard = memo(function SectorCard({ signal }: { signal: SectorSignal }) {
-  const type = (signal.type ?? "").toLowerCase();
-  const style = SECTOR_TYPE_CONFIG[type] ?? SECTOR_TYPE_CONFIG[directionLabel(signal.direction).toLowerCase()] ?? { label: "Signal", color: "text-white/40", bg: "bg-white/[0.04]", border: "border-white/[0.08]" };
-  const dc = directionColor(signal.direction);
-
+function SectorCard({ signal }: { signal: SectorSignal }) {
+  const cfg = TYPE_CONFIG[signal.type];
   return (
-    <div className={`rounded-xl p-4 border ${style.border} ${style.bg}`}>
-      {/* Type badge */}
-      <div className="flex items-center justify-between gap-2 mb-2">
-        <span className={`text-[8px] font-bold uppercase tracking-widest ${style.color}`}>{style.label}</span>
-        {signal.confidence != null && (
-          <span className={`text-[9px] font-semibold ${confidenceColor(signal.confidence)}`}>
-            {formatConfidence(signal.confidence)} confidence
-          </span>
+    <div className={`rounded-xl p-4 border ${cfg.border} ${cfg.bg}`}>
+      <div className="flex items-center justify-between mb-2">
+        <span className={`text-[8px] font-bold uppercase tracking-widest ${cfg.text}`}>{cfg.label}</span>
+        {signal.mentions != null && (
+          <span className="text-[8px] text-white/25">{signal.mentions} mentions</span>
         )}
       </div>
-
-      {/* Sector name */}
-      <p className="text-sm font-bold text-white/90 mb-2">{signal.sector}</p>
-
-      {/* Direction */}
-      <div className="flex items-center gap-1.5 mb-2">
-        {directionIcon(signal.direction, "w-3.5 h-3.5")}
-        <span className={`text-[10px] font-semibold ${dc.text}`}>{directionLabel(signal.direction)}</span>
-      </div>
-
-      {/* Reason */}
-      {signal.reason && (
-        <p className="text-[10px] text-white/45 leading-relaxed mb-2">{signal.reason}</p>
-      )}
-
-      {/* Linked themes */}
-      {(signal.themes?.length ?? 0) > 0 && (
+      <p className="text-sm font-bold text-white/90 mb-3">{signal.sector}</p>
+      {(signal.stocks?.length ?? 0) > 0 && (
         <div className="flex flex-wrap gap-1">
-          {signal.themes!.map(t => (
-            <span key={t} className="text-[8px] px-1.5 py-0.5 rounded bg-white/[0.04] border border-white/[0.06] text-white/30">{t}</span>
+          {signal.stocks!.map(t => (
+            <span key={t} className={`text-[8px] font-bold font-mono px-1.5 py-0.5 rounded border ${cfg.border} ${cfg.text} bg-black/20`}>
+              {t}
+            </span>
           ))}
         </div>
       )}
     </div>
   );
-});
+}
 
 function SectorRotationSignals({ sectors, loading }: { sectors: SectorSignal[]; loading: boolean }) {
   return (
@@ -524,94 +578,82 @@ function SectorRotationSignals({ sectors, loading }: { sectors: SectorSignal[]; 
       />
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-32 rounded-xl" />)}
+          {[...Array(4)].map((_, i) => <Skel key={i} className="h-36 rounded-xl" />)}
         </div>
       ) : sectors.length === 0 ? (
         <EmptyState text="Sector signals not yet available." />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {sectors.map((s, i) => <SectorCard key={s.sector + i} signal={s} />)}
+          {sectors.map((s, i) => <SectorCard key={s.sector + s.type + i} signal={s} />)}
         </div>
       )}
     </GlassCard>
   );
 }
 
-// ─── Stock Watchlists ─────────────────────────────────────────────
+// ─── Stock Watchlists ─────────────────────────────────────────────────────────
 
-function StockRow({ entry }: { entry: StockEntry }) {
-  const dir = (entry.direction ?? "bullish").toLowerCase();
-  const isBull = dir.includes("bull");
-  const isBear = dir.includes("bear");
-
+function WatchlistRow({ entry }: { entry: WatchlistEntry }) {
+  const isBull = entry.direction === "bullish";
+  const isBear = entry.direction === "bearish";
   return (
     <div className="flex items-start gap-3 py-2 border-b border-white/[0.04] last:border-b-0">
-      {/* Direction indicator */}
-      <div className="pt-0.5">
-        {isBull ? <ArrowUpRight className="w-3.5 h-3.5 text-emerald-400" /> : isBear ? <ArrowDownRight className="w-3.5 h-3.5 text-red-400" /> : <Minus className="w-3.5 h-3.5 text-white/30" />}
+      <div className="pt-0.5 flex-shrink-0">
+        {isBull ? <ArrowUpRight className="w-3.5 h-3.5 text-emerald-400" /> : isBear ? <ArrowDownRight className="w-3.5 h-3.5 text-red-400" /> : <Minus className="w-3.5 h-3.5 text-amber-400" />}
       </div>
-
-      {/* Ticker */}
-      <div className="flex-shrink-0 w-14">
-        <span className={`text-[11px] font-bold font-mono ${isBull ? "text-emerald-400" : isBear ? "text-red-400" : "text-white/60"}`}>
+      <div className="w-14 flex-shrink-0">
+        <span className={`text-[11px] font-bold font-mono ${isBull ? "text-emerald-400" : isBear ? "text-red-400" : "text-amber-400"}`}>
           {entry.ticker}
         </span>
       </div>
-
-      {/* Name + reason */}
       <div className="flex-1 min-w-0">
-        {entry.name && (
-          <p className="text-[10px] text-white/50 leading-tight mb-0.5">{entry.name}</p>
+        {entry.note && (
+          <p className="text-[10px] text-white/35 leading-snug">{entry.note}</p>
         )}
-        {entry.reason && (
-          <p className="text-[10px] text-white/35 leading-snug">{entry.reason}</p>
+        {(entry.sectors?.length ?? 0) > 0 && (
+          <p className="text-[9px] text-white/25 leading-tight">{entry.sectors!.slice(0, 2).join(", ")}</p>
         )}
       </div>
-
-      {/* Themes */}
-      {(entry.themes?.length ?? 0) > 0 && (
-        <div className="flex-shrink-0 hidden sm:flex gap-1 flex-wrap max-w-[120px] justify-end">
-          {entry.themes!.slice(0, 2).map(t => (
-            <span key={t} className="text-[8px] px-1 py-0.5 rounded bg-white/[0.04] border border-white/[0.06] text-white/25">{t}</span>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
 
-function WatchlistCard({
+function WatchlistCol({
   title,
-  stocks,
-  colorClass,
+  entries,
+  textColor,
   icon,
 }: {
   title: string;
-  stocks?: StockEntry[];
-  colorClass: string;
+  entries: WatchlistEntry[];
+  textColor: string;
   icon: React.ReactNode;
 }) {
   return (
     <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 flex flex-col">
       <div className="flex items-center gap-2 mb-3">
-        <div className={`flex items-center justify-center w-6 h-6 rounded-md ${colorClass}`}>{icon}</div>
+        <div className={`flex items-center justify-center w-6 h-6 rounded-md ${textColor} bg-white/[0.06]`}>{icon}</div>
         <h3 className="text-[11px] font-bold text-white/70 uppercase tracking-wider">{title}</h3>
-        {(stocks?.length ?? 0) > 0 && (
-          <span className="ml-auto text-[9px] text-white/25 tabular-nums">{stocks!.length} stocks</span>
+        {entries.length > 0 && (
+          <span className="ml-auto text-[9px] text-white/20 tabular-nums">{entries.length}</span>
         )}
       </div>
-      {(stocks?.length ?? 0) === 0 ? (
-        <p className="text-[10px] text-white/20 py-2">No stocks in this list yet.</p>
+      {entries.length === 0 ? (
+        <p className="text-[10px] text-white/20 py-2">No stocks in this list.</p>
       ) : (
-        <div>
-          {stocks!.map((s, i) => <StockRow key={s.ticker + i} entry={s} />)}
-        </div>
+        <div>{entries.map((e, i) => <WatchlistRow key={e.ticker + i} entry={e} />)}</div>
       )}
     </div>
   );
 }
 
-function StockWatchlistsSection({ watchlists, loading }: { watchlists: StockWatchlists | null; loading: boolean }) {
+function StockWatchlistsSection({
+  wl,
+  loading,
+}: {
+  wl: { bullish: WatchlistEntry[]; bearish: WatchlistEntry[]; conditional: WatchlistEntry[] } | null;
+  loading: boolean;
+}) {
   return (
     <GlassCard className="p-5 mb-5">
       <SectionHeader
@@ -621,78 +663,67 @@ function StockWatchlistsSection({ watchlists, loading }: { watchlists: StockWatc
       />
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-48 rounded-xl" />)}
+          {[...Array(3)].map((_, i) => <Skel key={i} className="h-48 rounded-xl" />)}
         </div>
-      ) : !watchlists ? (
+      ) : !wl || (wl.bullish.length + wl.bearish.length + wl.conditional.length === 0) ? (
         <EmptyState text="Watchlist data not yet available." />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <WatchlistCard
-            title="Bullish Watchlist"
-            stocks={watchlists.bullish}
-            colorClass="bg-emerald-500/15 text-emerald-400"
-            icon={<TrendingUp className="w-3.5 h-3.5" />}
-          />
-          <WatchlistCard
-            title="Bearish Watchlist"
-            stocks={watchlists.bearish}
-            colorClass="bg-red-500/15 text-red-400"
-            icon={<TrendingDown className="w-3.5 h-3.5" />}
-          />
-          <WatchlistCard
-            title="Conditional Watch"
-            stocks={watchlists.conditional}
-            colorClass="bg-amber-500/15 text-amber-400"
-            icon={<AlertTriangle className="w-3.5 h-3.5" />}
-          />
+          <WatchlistCol title="Bullish" entries={wl.bullish} textColor="text-emerald-400" icon={<TrendingUp className="w-3.5 h-3.5" />} />
+          <WatchlistCol title="Bearish" entries={wl.bearish} textColor="text-red-400" icon={<TrendingDown className="w-3.5 h-3.5" />} />
+          <WatchlistCol title="Conditional" entries={wl.conditional} textColor="text-amber-400" icon={<AlertTriangle className="w-3.5 h-3.5" />} />
         </div>
       )}
     </GlassCard>
   );
 }
 
-// ─── Theme Clusters ───────────────────────────────────────────────
+// ─── Theme Clusters ───────────────────────────────────────────────────────────
 
-const ThemeClusterCard = memo(function ThemeClusterCard({ cluster }: { cluster: ThemeCluster }) {
+const ThemeCard = memo(function ThemeCard({ cluster }: { cluster: BackendThemeCluster }) {
   const [expanded, setExpanded] = useState(false);
-  const dc = directionColor(cluster.direction);
+  const dir = directionFromSummary(cluster.summary_direction);  // backend: summary_direction
+  const dc = dirColors(dir);
+  const hasContradiction = (cluster.contradiction_score ?? 0) > 0.3;
 
   return (
     <div className={`rounded-xl border ${dc.border} ${dc.bg} p-4`}>
-      {/* Header */}
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex items-center gap-1.5">
-          {directionIcon(cluster.direction, "w-3.5 h-3.5")}
-          <h3 className="text-[11px] font-bold text-white/80">{cluster.theme}</h3>
+          {cluster.theme_emoji && <span className="text-sm">{cluster.theme_emoji}</span>}
+          <h3 className="text-[11px] font-bold text-white/80">{cluster.theme_name}</h3>
         </div>
-        {cluster.confidence != null && (
-          <span className={`text-[9px] font-semibold flex-shrink-0 ${confidenceColor(cluster.confidence)}`}>
-            {formatConfidence(cluster.confidence)}
+        {cluster.confidence_score != null && (
+          <span className={`text-[9px] font-semibold flex-shrink-0 ${confidenceColor(cluster.confidence_score)}`}>
+            {confidenceLabel(cluster.confidence_score)}
           </span>
         )}
       </div>
 
-      {/* Direction */}
       <div className="flex items-center gap-2 mb-2">
-        <span className={`text-[9px] font-semibold uppercase tracking-wide ${dc.text}`}>
-          {directionLabel(cluster.direction)}
-        </span>
-        {cluster.consistency && (
-          <span className="text-[9px] text-white/25">{cluster.consistency}</span>
-        )}
-        {cluster.contradiction && (
+        <div className="flex items-center gap-1">
+          {dirIcon(dir, "w-3 h-3")}
+          <span className={`text-[9px] font-semibold uppercase tracking-wide ${dc.text}`}>{dir}</span>
+        </div>
+        {hasContradiction && (
           <span className="text-[8px] text-amber-400 font-semibold bg-amber-500/10 border border-amber-500/15 px-1 py-0.5 rounded">
-            ⚠ Mixed signals
+            ⚠ Mixed
           </span>
         )}
       </div>
 
-      {/* Equity impact */}
-      {cluster.equity_impact && (
-        <p className="text-[10px] text-white/45 leading-relaxed mb-2">{cluster.equity_impact}</p>
+      {cluster.description && (
+        <p className="text-[10px] text-white/40 leading-relaxed mb-2 line-clamp-2">{cluster.description}</p>
       )}
 
-      {/* Supporting markets (expandable) */}
+      {(cluster.bullish_stocks?.length ?? 0) > 0 && (
+        <div className="flex flex-wrap gap-1 mb-2">
+          {cluster.bullish_stocks!.slice(0, 4).map(t => (
+            <span key={t} className="text-[8px] font-bold font-mono px-1 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">{t}</span>
+          ))}
+        </div>
+      )}
+
       {(cluster.supporting_markets?.length ?? 0) > 0 && (
         <>
           <button
@@ -700,34 +731,17 @@ const ThemeClusterCard = memo(function ThemeClusterCard({ cluster }: { cluster: 
             className="flex items-center gap-1 text-[9px] text-white/25 hover:text-white/50 transition-colors"
           >
             {expanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-            {cluster.supporting_markets!.length} supporting market{cluster.supporting_markets!.length !== 1 ? "s" : ""}
+            {cluster.supporting_markets!.length} market{cluster.supporting_markets!.length !== 1 ? "s" : ""}
           </button>
           {expanded && (
             <div className="mt-2 space-y-1">
-              {cluster.supporting_markets!.slice(0, 5).map((m, i) => {
-                const title = m.title ?? m.question ?? "";
-                const url = m.slug ? `https://polymarket.com/event/${m.slug}` : null;
-                return (
-                  <div key={i} className="flex items-center gap-1.5 text-[10px]">
-                    <CircleDot className="w-2.5 h-2.5 text-white/15 flex-shrink-0" />
-                    {url ? (
-                      <a href={url} target="_blank" rel="noopener noreferrer" className="text-white/40 hover:text-white/65 truncate transition-colors flex-1">
-                        {title}
-                      </a>
-                    ) : (
-                      <span className="text-white/35 truncate flex-1">{title}</span>
-                    )}
-                    {m.yes_pct != null && (
-                      <span className="text-white/35 font-mono flex-shrink-0">{m.yes_pct}%</span>
-                    )}
-                    {url && (
-                      <a href={url} target="_blank" rel="noopener noreferrer" className="flex-shrink-0 text-white/15 hover:text-white/40 transition-colors">
-                        <ExternalLink className="w-2.5 h-2.5" />
-                      </a>
-                    )}
-                  </div>
-                );
-              })}
+              {cluster.supporting_markets!.slice(0, 4).map((m, i) => (
+                <div key={i} className="flex items-center gap-1.5 text-[10px]">
+                  <CircleDot className="w-2.5 h-2.5 text-white/15 flex-shrink-0" />
+                  <span className="text-white/35 truncate flex-1">{m.question ?? ""}</span>
+                  {m.yes_pct != null && <span className="text-white/30 font-mono flex-shrink-0">{m.yes_pct}%</span>}
+                </div>
+              ))}
             </div>
           )}
         </>
@@ -736,7 +750,7 @@ const ThemeClusterCard = memo(function ThemeClusterCard({ cluster }: { cluster: 
   );
 });
 
-function ThemeClusters({ themes, loading }: { themes: ThemeCluster[]; loading: boolean }) {
+function ThemeClusters({ clusters, loading }: { clusters: BackendThemeCluster[]; loading: boolean }) {
   return (
     <GlassCard className="p-5 mb-5">
       <SectionHeader
@@ -746,89 +760,51 @@ function ThemeClusters({ themes, loading }: { themes: ThemeCluster[]; loading: b
       />
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)}
+          {[...Array(6)].map((_, i) => <Skel key={i} className="h-32 rounded-xl" />)}
         </div>
-      ) : themes.length === 0 ? (
+      ) : clusters.length === 0 ? (
         <EmptyState text="Theme cluster data not yet available." />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {themes.map((t, i) => <ThemeClusterCard key={t.theme + i} cluster={t} />)}
+          {clusters.map((c, i) => <ThemeCard key={c.theme_id ?? c.theme_name + i} cluster={c} />)}
         </div>
       )}
     </GlassCard>
   );
 }
 
-// ─── Empty State ──────────────────────────────────────────────────
+// ─── Data fetching ────────────────────────────────────────────────────────────
 
-function EmptyState({ text }: { text: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-8 text-center">
-      <div className="w-8 h-8 rounded-lg bg-white/[0.04] flex items-center justify-center mb-2">
-        <BarChart3 className="w-4 h-4 text-white/20" />
-      </div>
-      <p className="text-[11px] text-white/25">{text}</p>
-    </div>
-  );
+async function fetchOverview(): Promise<BackendOverview> {
+  // Primary: /overview (the only working comprehensive endpoint)
+  const r = await fetch("/api/predict/investor/overview");
+  if (!r.ok) throw new Error(`/investor/overview returned ${r.status}`);
+  const json: BackendOverview = await r.json();
+
+  // Validate we got real data (not just an empty shell)
+  const hasData = (json.top_equity_signals?.length ?? 0) > 0
+    || json.regime_scoreboard != null
+    || json.theme_clusters != null;
+  if (!hasData) throw new Error("Overview returned empty payload");
+
+  return json;
 }
 
-// ─── Data Fetching ────────────────────────────────────────────────
-
-// Tries the comprehensive /api/predict/investor endpoint first,
-// then individual sub-endpoints as a fallback.
-async function fetchInvestorData(): Promise<InvestorData> {
-  // Attempt 1: comprehensive endpoint
-  try {
-    const r = await fetch("/api/predict/investor");
-    if (r.ok) {
-      const json = await r.json();
-      if (json && (json.equity_signals || json.regime || json.sectors || json.watchlists || json.themes)) {
-        return json as InvestorData;
-      }
-    }
-  } catch { /* fall through */ }
-
-  // Attempt 2: individual sub-endpoints in parallel
-  const results = await Promise.allSettled([
-    fetch("/api/predict/investor/signals").then(r => r.ok ? r.json() : null),
-    fetch("/api/predict/investor/regime").then(r => r.ok ? r.json() : null),
-    fetch("/api/predict/investor/sectors").then(r => r.ok ? r.json() : null),
-    fetch("/api/predict/investor/watchlists").then(r => r.ok ? r.json() : null),
-    fetch("/api/predict/investor/themes").then(r => r.ok ? r.json() : null),
-  ]);
-
-  const [signalsRes, regimeRes, sectorsRes, watchlistsRes, themesRes] = results.map(r =>
-    r.status === "fulfilled" ? r.value : null
-  );
-
-  const hasAny = signalsRes || regimeRes || sectorsRes || watchlistsRes || themesRes;
-  if (!hasAny) throw new Error("Investor endpoints not yet available");
-
-  return {
-    equity_signals: Array.isArray(signalsRes) ? signalsRes : (signalsRes?.signals ?? signalsRes?.equity_signals ?? []),
-    regime: Array.isArray(regimeRes) ? regimeRes : (regimeRes?.regime ?? regimeRes?.indicators ?? []),
-    sectors: Array.isArray(sectorsRes) ? sectorsRes : (sectorsRes?.sectors ?? sectorsRes?.sector_signals ?? []),
-    watchlists: watchlistsRes?.watchlists ?? watchlistsRes ?? null,
-    themes: Array.isArray(themesRes) ? themesRes : (themesRes?.themes ?? themesRes?.clusters ?? []),
-  };
-}
-
-// ─── Main Component ───────────────────────────────────────────────
+// ─── Main Component ───────────────────────────────────────────────────────────
 
 export function ProphetikInvestorTab() {
-  const [data, setData] = useState<InvestorData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+  const [overview, setOverview]     = useState<BackendOverview | null>(null);
+  const [loading, setLoading]       = useState(true);
+  const [error, setError]           = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const d = await fetchInvestorData();
-      setData(d);
-      setLastUpdated(d.generated_at ?? new Date().toISOString());
+      const data = await fetchOverview();
+      setOverview(data);
     } catch (e: any) {
+      console.error("[Investor] fetch error:", e?.message);
       setError(e?.message ?? "Failed to load investor data");
     } finally {
       setLoading(false);
@@ -837,33 +813,38 @@ export function ProphetikInvestorTab() {
 
   useEffect(() => {
     loadData();
-    const iv = setInterval(loadData, 5 * 60_000); // refresh every 5 min
+    const iv = setInterval(loadData, 5 * 60_000);
     return () => clearInterval(iv);
   }, [loadData]);
 
-  // Section-level data (fall through to empty arrays if unavailable)
-  const signals = data?.equity_signals ?? [];
-  const regime = data?.regime ?? [];
-  const sectors = data?.sectors ?? [];
-  const watchlists = data?.watchlists ?? null;
-  const themes = data?.themes ?? [];
+  // ── Normalise all sections from the overview payload ──
+  const signals  = overview?.top_equity_signals ?? [];
+  const regime   = transformRegime(overview?.regime_scoreboard);
+  const sectors  = transformSectors(overview?.sector_rotation);
+  const watchlists = overview?.watchlists
+    ? transformWatchlists(overview.watchlists)
+    : null;
+  const themes   = overview?.theme_clusters ?? [];
 
-  const isLoading = loading && !data;
-  const noData = !loading && !data && !!error;
+  const isLoading = loading && !overview;
+  const noData    = !loading && !overview && !!error;
 
   return (
     <div className="pb-4">
-      {/* Tab sub-header */}
+      {/* Sub-header */}
       <div className="flex items-center justify-between mb-5">
-        <div>
-          <p className="text-[11px] text-white/30">
-            Prediction markets translated into equity-relevant macro signals, regime reads, and stock implications.
-          </p>
-        </div>
+        <p className="text-[11px] text-white/30">
+          Prediction markets translated into equity signals, regime reads, and stock watchlists.
+        </p>
         <div className="flex items-center gap-2">
-          {lastUpdated && (
-            <span className="text-[9px] text-white/20 tabular-nums">
-              Updated {new Date(lastUpdated).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+          {overview?.generated_at && (
+            <span className="text-[9px] text-white/20">
+              Updated {new Date(overview.generated_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+            </span>
+          )}
+          {overview?.equity_relevant_market_count != null && (
+            <span className="text-[9px] text-white/20">
+              {overview.equity_relevant_market_count}/{overview.total_market_count} markets equity-relevant
             </span>
           )}
           <button
@@ -876,7 +857,7 @@ export function ProphetikInvestorTab() {
         </div>
       </div>
 
-      {/* Error state — shown only when no data at all */}
+      {/* Error / unavailable state */}
       {noData && (
         <GlassCard className="p-8 mb-5 text-center">
           <div className="flex flex-col items-center gap-3">
@@ -886,7 +867,7 @@ export function ProphetikInvestorTab() {
             <div>
               <p className="text-sm font-semibold text-white/40 mb-1">Investor data unavailable</p>
               <p className="text-[11px] text-white/20 max-w-xs mx-auto leading-relaxed">
-                The Investor backend endpoints are not yet responding. The Gambler tab continues to work normally.
+                {error ?? "Backend investor endpoints are not yet responding."}
               </p>
             </div>
             <button
@@ -899,14 +880,14 @@ export function ProphetikInvestorTab() {
         </GlassCard>
       )}
 
-      {/* Content sections — render independently so partial data still shows */}
+      {/* Content — all sections render independently */}
       {!noData && (
         <>
-          <TopEquitySignals signals={signals} loading={isLoading} />
-          <RegimeScoreboard regime={regime} loading={isLoading} />
-          <SectorRotationSignals sectors={sectors} loading={isLoading} />
-          <StockWatchlistsSection watchlists={watchlists} loading={isLoading} />
-          <ThemeClusters themes={themes} loading={isLoading} />
+          <TopEquitySignals     signals={signals}     loading={isLoading} />
+          <RegimeScoreboard     rows={regime}         loading={isLoading} />
+          <SectorRotationSignals sectors={sectors}    loading={isLoading} />
+          <StockWatchlistsSection wl={watchlists}     loading={isLoading} />
+          <ThemeClusters        clusters={themes}     loading={isLoading} />
         </>
       )}
     </div>
