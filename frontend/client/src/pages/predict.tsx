@@ -9,6 +9,7 @@ import {
   Zap, Eye, Target, AlertTriangle, CheckCircle, Brain, Star, Waves, Layers,
 } from "lucide-react";
 import { openSecureLink } from "@/utils/security";
+import { DecisionEngine } from "@/components/decision-engine";
 import diceImage from "@assets/istockphoto-1252690598-612x612_1756665072306.jpg";
 
 // ─── Constants ────────────────────────────────────────────────────
@@ -2202,6 +2203,9 @@ export default function PredictPage() {
         <div className="flex flex-col gap-6">
 
           <div className="flex-1 min-w-0">
+
+            {/* ═══ Decision Engine — Top Signal Recommendations ═══ */}
+            <DecisionEngine />
 
             {/* ═══ Enhanced Markets Table ═══ */}
             <EnhancedMarketsTable />
