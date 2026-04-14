@@ -656,25 +656,6 @@ function PolymarketDashboard({ signals }: { signals: SignalsData | null }) {
           {/* Market Pulse Ticker Tape — always uses main markets */}
           <MarketPulseBar markets={markets} />
 
-          {/* Market Health Stats Bar */}
-          {signals?.summary && (
-            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide mb-5">
-              {[
-                { label: "24h Volume",   val: signals.summary.total_volume_24h   != null ? formatVolume(signals.summary.total_volume_24h)       : "—", color: "text-blue-400" },
-                { label: "Active Mkts",  val: signals.summary.market_count       != null ? signals.summary.market_count.toLocaleString()        : "—", color: "text-white" },
-                { label: "Surging",      val: signals.summary.surging_count      != null ? signals.summary.surging_count.toLocaleString()       : "—", color: "text-emerald-400" },
-                { label: "Fading",       val: signals.summary.fading_count       != null ? signals.summary.fading_count.toLocaleString()        : "—", color: "text-red-400" },
-                { label: "Whale Active", val: signals.summary.whale_active_count != null ? signals.summary.whale_active_count.toLocaleString()  : "—", color: "text-purple-400" },
-                { label: "Avg Spread",   val: signals.summary.avg_spread_pct     != null ? `${signals.summary.avg_spread_pct.toFixed(2)}%`      : "—", color: "text-amber-400" },
-              ].map(({ label, val, color }) => (
-                <div key={label} className="flex-shrink-0 bg-white/[0.03] border border-white/[0.06] rounded-lg px-3 py-2 flex flex-col items-center min-w-[90px]">
-                  <div className="text-[9px] text-white/30 uppercase tracking-widest font-semibold mb-0.5">{label}</div>
-                  <div className={`text-sm font-bold font-mono ${color}`}>{val}</div>
-                </div>
-              ))}
-            </div>
-          )}
-
           {/* Movers & Shakers — always uses main markets */}
           <MoversSection markets={markets} />
 
@@ -943,7 +924,7 @@ function EnhancedMarketsTable() {
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <BarChart3 className="w-4 h-4 text-blue-400" />
-          <h2 className="text-sm font-bold text-white">Intelligence Markets</h2>
+          <h2 className="text-sm font-bold text-white">Market Intelligence Screener</h2>
           <LiveBadge />
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -1776,52 +1757,6 @@ const openInNewTab = (url: string) => {
   openSecureLink(url);
 };
 
-// ─── Deep Dive Panel ──────────────────────────────────────────────
-
-function DeepDivePanel() {
-  const [open, setOpen] = useState(false);
-  return (
-    <GlassCard className="mb-5">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between px-5 py-4 hover:bg-white/[0.02] transition-colors rounded-xl"
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
-            <Brain className="w-4 h-4 text-white" />
-          </div>
-          <div className="text-left">
-            <div className="text-sm font-bold text-white flex items-center gap-2">
-              Caelyn Analyzes
-              <Star className="w-3.5 h-3.5 text-amber-400" />
-              <span className="text-[10px] font-normal text-white/30">6-agent deep dive · 30–90s</span>
-            </div>
-            <p className="text-[10px] text-white/30">
-              Ask a specific question — get a structured LONG YES / LONG NO trade recommendation
-            </p>
-            <div className="flex flex-wrap gap-1.5 mt-2" onClick={(e) => e.stopPropagation()}>
-              {["Will the Fed cut rates this year?", "Will Bitcoin hit $100K?", "US recession in 2025?"].map((q) => (
-                <span key={q} className="text-[9px] px-2 py-0.5 rounded-full bg-white/[0.04] border border-white/[0.06] text-white/25">
-                  {q}
-                </span>
-              ))}
-            </div>
-          </div>
-        </div>
-        <ChevronDown
-          className="w-4 h-4 text-white/30 flex-shrink-0 transition-transform duration-200"
-          style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)" }}
-        />
-      </button>
-      {open && (
-        <div className="px-5 pb-5 border-t border-white/[0.06] pt-5">
-          <AnalysisPanel />
-        </div>
-      )}
-    </GlassCard>
-  );
-}
-
 // ─── Main Page ────────────────────────────────────────────────────
 
 export default function PredictPage() {
@@ -1868,6 +1803,26 @@ export default function PredictPage() {
           {/* AI chat dropdown — top right of header */}
           <CaelynPredictsDropdown signals={pageSignals} />
         </div>
+
+        {/* Market Health Stats Bar — live signals summary */}
+        {pageSignals?.summary && (
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide mt-3">
+            {[
+              { label: "24h Volume",   val: pageSignals.summary.total_volume_24h   != null ? formatVolume(pageSignals.summary.total_volume_24h)       : "—", color: "text-blue-400" },
+              { label: "Active Mkts",  val: pageSignals.summary.market_count       != null ? pageSignals.summary.market_count.toLocaleString()        : "—", color: "text-white" },
+              { label: "Surging",      val: pageSignals.summary.surging_count      != null ? pageSignals.summary.surging_count.toLocaleString()       : "—", color: "text-emerald-400" },
+              { label: "Fading",       val: pageSignals.summary.fading_count       != null ? pageSignals.summary.fading_count.toLocaleString()        : "—", color: "text-red-400" },
+              { label: "Whale Active", val: pageSignals.summary.whale_active_count != null ? pageSignals.summary.whale_active_count.toLocaleString()  : "—", color: "text-purple-400" },
+              { label: "Avg Spread",   val: pageSignals.summary.avg_spread_pct     != null ? `${pageSignals.summary.avg_spread_pct.toFixed(2)}%`      : "—", color: "text-amber-400" },
+            ].map(({ label, val, color }) => (
+              <div key={label} className="flex-shrink-0 bg-white/[0.03] border border-white/[0.06] rounded-lg px-3 py-2 flex flex-col items-center min-w-[90px]">
+                <div className="text-[9px] text-white/30 uppercase tracking-widest font-semibold mb-0.5">{label}</div>
+                <div className={`text-sm font-bold font-mono ${color}`}>{val}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="w-32 h-0.5 rounded-full mt-3 mb-4" style={{ background: 'linear-gradient(135deg, #2090d0, #3b82f6, #80d8f8)' }} />
       </div>
 
@@ -1880,17 +1835,17 @@ export default function PredictPage() {
             {/* ═══ Prediction Markets Dashboard ═══ */}
             <PolymarketDashboard signals={pageSignals} />
 
-            {/* ═══ Caelyn Analyzes — Deep Dive ═══ */}
-            <DeepDivePanel />
+            {/* ═══ Caelyn Analyzes ═══ */}
+            <AnalysisPanel />
 
             {/* ═══ Enhanced Markets Table ═══ */}
             <EnhancedMarketsTable />
 
-            {/* ═══ Whale Watch ═══ */}
-            <WhaleWatchPanel />
-
-            {/* ═══ Category Volume Chart ═══ */}
-            <CategoryChart />
+            {/* ═══ Whale Watch + Category Volume — side by side on large screens ═══ */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              <WhaleWatchPanel />
+              <CategoryChart />
+            </div>
 
             {/* ═══ Betting Platforms ═══ */}
             <GlassCard className="p-6">
