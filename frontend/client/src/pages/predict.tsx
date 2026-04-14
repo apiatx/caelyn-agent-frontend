@@ -1545,24 +1545,15 @@ function PredictionAgent() {
   };
 
   return (
-    <div className="w-full lg:w-[380px] xl:w-[420px] flex-shrink-0">
-      <div className="rounded-xl p-5 sticky top-4" style={{
-        background: 'rgba(255,255,255,0.02)',
-        border: '1px solid rgba(255,255,255,0.06)',
-        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.03), 0 2px 16px rgba(0,0,0,0.3)',
-      }}>
-      {/* Header */}
+    <div className="flex flex-col h-full">
+      {/* Header inside panel */}
       <div className="flex items-center gap-3 mb-4">
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #2090d0 0%, #3b82f6 50%, #80d8f8 100%)' }}>
-          <Sparkles className="w-4 h-4 text-white" />
+        <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg, #2090d0 0%, #3b82f6 50%, #80d8f8 100%)' }}>
+          <Sparkles className="w-3.5 h-3.5 text-white" />
         </div>
         <div>
-          <h2 className="text-sm font-bold text-white flex items-center gap-2">
-            Caelyn Predicts
-          </h2>
-          <p className="text-[10px] text-white/25">
-            Prediction market odds &amp; investment implications
-          </p>
+          <h2 className="text-sm font-bold text-white">Caelyn Predicts</h2>
+          <p className="text-[10px] text-white/25">Prediction market odds &amp; investment implications</p>
         </div>
       </div>
 
@@ -1654,7 +1645,62 @@ function PredictionAgent() {
           Clear conversation
         </button>
       )}
-      </div>
+    </div>
+  );
+}
+
+// ─── Caelyn Predicts Dropdown ─────────────────────────────────────
+
+function CaelynPredictsDropdown() {
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
+
+  return (
+    <div ref={dropdownRef} className="relative flex-shrink-0">
+      {/* Trigger button */}
+      <button
+        onClick={() => setOpen(v => !v)}
+        className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+        style={{
+          background: open ? 'rgba(32,144,208,0.18)' : 'rgba(32,144,208,0.08)',
+          border: `1px solid ${open ? 'rgba(32,144,208,0.5)' : 'rgba(32,144,208,0.2)'}`,
+          color: '#80d8f8',
+        }}
+      >
+        <Sparkles className="w-3.5 h-3.5" />
+        Caelyn Predicts
+        <ChevronDown
+          className="w-3.5 h-3.5 transition-transform duration-200"
+          style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}
+        />
+      </button>
+
+      {/* Dropdown panel */}
+      {open && (
+        <div
+          className="absolute right-0 top-full mt-2 rounded-xl p-5 z-50"
+          style={{
+            width: 420,
+            background: 'rgba(5,8,16,0.97)',
+            border: '1px solid rgba(32,144,208,0.2)',
+            boxShadow: '0 8px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(32,144,208,0.05) inset',
+            backdropFilter: 'blur(20px)',
+          }}
+        >
+          <PredictionAgent />
+        </div>
+      )}
     </div>
   );
 }
@@ -1735,7 +1781,7 @@ export default function PredictPage() {
               className="w-14 h-14 object-cover"
             />
           </div>
-          <div>
+          <div className="flex-1">
             <h1 className="text-2xl font-bold" style={{
               background: 'linear-gradient(135deg, #2090d0 0%, #3b82f6 40%, #80d8f8 100%)',
               WebkitBackgroundClip: 'text',
@@ -1745,15 +1791,16 @@ export default function PredictPage() {
             </h1>
             <p className="text-xs text-white/30">Decentralized Casino and Analytics</p>
           </div>
+          {/* AI chat dropdown — top right of header */}
+          <CaelynPredictsDropdown />
         </div>
         <div className="w-32 h-0.5 rounded-full mt-3 mb-4" style={{ background: 'linear-gradient(135deg, #2090d0, #3b82f6, #80d8f8)' }} />
       </div>
 
-      {/* Main Content — Prediction Markets + Agent sidebar */}
+      {/* Main Content — full-width (agent moved to header dropdown) */}
       <main className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pb-8 relative" style={{ zIndex: 1 }}>
-        <div className="flex flex-col lg:flex-row gap-6">
+        <div className="flex flex-col gap-6">
 
-          {/* Left: content */}
           <div className="flex-1 min-w-0">
 
             {/* ═══ Market Intelligence ═══ */}
@@ -2059,8 +2106,6 @@ export default function PredictPage() {
             </GlassCard>
           </div>
 
-          {/* Right: Agent sidebar */}
-          <PredictionAgent />
         </div>
       </main>
     </div>
