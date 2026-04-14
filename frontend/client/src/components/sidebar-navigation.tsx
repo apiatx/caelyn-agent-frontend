@@ -92,16 +92,16 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
       path: '/app/caelyn-terminal'
     },
     {
-      id: 'predict',
-      label: 'Predict',
-      icon: <TrendingUp className="w-4 h-4" />,
-      path: '/app/predict'
-    },
-    {
       id: 'hyperliquid-screener',
       label: 'Hyperliquid',
       icon: <Activity className="w-4 h-4" />,
       path: '/app/hyperliquid-screener'
+    },
+    {
+      id: 'predict',
+      label: 'Predict',
+      icon: <TrendingUp className="w-4 h-4" />,
+      path: '/app/predict'
     },
     {
       id: 'bittensor',
