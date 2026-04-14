@@ -1,0 +1,151 @@
+Fix Instructions — Surging Tab + Remove Fading
+What's Broken and Why
+The Surging tab is showing blank GlassCards because the current implementation maps signals.surging_markets (which only has question, volume_24h, volume_momentum) into fake ParsedMarket objects with yesPrice: 0. The MarketCard component then renders a price bar at 0% and the card looks empty.
+
+The Fading tab should be removed entirely — the user doesn't want a separate fading section.
+
+The Surging tab should be redesigned to show the biggest 24h odds movers in either direction (both +35% and -35% are "surging" in terms of market activity), using signals.top_movers instead of signals.surging_markets. This incorporates the deleted "24H Movers" data: price_change_1d and yes_pct.
+
+Fix 1 — Remove the Fading tab
+In the tabs array inside PolymarketDashboard, remove the fading entry entirely:
+
+// DELETE this line:
+{ key: "fading" as CategoryTab, label: "↘ Fading" },
+
+Remove "fading" from the CategoryTab type union.
+
+In the filtered computation, remove the activeTab === "fading" branch entirely.
+
+Fix 2 — Fix the Surging tab to use top_movers data with a custom row renderer
+The Surging tab needs to stop using MarketCard (which requires real yesPrice for its price bar) and instead use a dedicated row layout designed for movers data.
+
+Step 2a — Update the filtered computation for the Surging tab
+Replace the current Surging branch in the filtered computation with this:
+
+// Surging tab uses top_movers from signals — biggest 24h odds movers either direction
+if (activeTab === "surging") {
+  // no change to filtered — Surging renders separately below, not through filtered
+}
+
+Actually, the cleanest approach is to handle the Surging tab's rendering completely separately from the filtered → MarketCard grid. See Step 2b.
+
+Step 2b — Add a dedicated Surging render path in the JSX
+In the section where the tab content is rendered (the part that currently does filtered.slice(0, 15).map((m) => <MarketCard ... />)), add a conditional check at the top:
+
+{activeTab === "surging" ? (
+  <SurgingMoversView signals={signals} />
+) : (
+  // ... existing filtered MarketCard grid render stays exactly as-is ...
+)}
+
+Step 2c — Create the SurgingMoversView component
+Add this component above PolymarketDashboard:
+
+function SurgingMoversView({ signals }: { signals: SignalsData | null }) {
+  const movers = signals?.top_movers ?? [];
+  if (!signals) {
+    return (
+      <div className="flex items-center justify-center py-10 text-xs text-white/20">
+        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+        Loading market movers…
+      </div>
+    );
+  }
+  if (movers.length === 0) {
+    return (
+      <div className="text-center py-8 text-sm text-white/30">
+        No significant movers in the last 24h.
+      </div>
+    );
+  }
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-3">
+        <Zap className="w-4 h-4 text-orange-400" />
+        <h3 className="text-sm font-bold text-white/90 tracking-wide uppercase">
+          Biggest 24H Odds Movers
+        </h3>
+        <span className="text-[10px] text-white/30">Largest probability shifts — either direction</span>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {movers.slice(0, 12).map((m, i) => {
+          const chg = m.price_change_1d;
+          const isUp = chg != null && chg > 0;
+          const isDown = chg != null && chg < 0;
+          const chgStr = chg == null ? "—" : `${isUp ? "+" : ""}${chg.toFixed(1)}%`;
+          const chgCls = isUp ? "text-emerald-400" : isDown ? "text-red-400" : "text-white/25";
+          const bgCls  = isUp ? "bg-emerald-500/10 border-emerald-500/20" : isDown ? "bg-red-500/10 border-red-500/20" : "bg-white/[0.03] border-white/[0.06]";
+          const pct = m.yes_pct;
+          return (
+            <a
+              key={i}
+              href={m.slug ? `https://polymarket.com/event/${m.slug}` : "#"}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block"
+            >
+              <GlassCard className="p-3 hover:bg-white/[0.06] transition-all cursor-pointer h-full">
+                {/* Question */}
+                <p className="text-[11px] text-white/80 font-medium leading-tight line-clamp-2 mb-3 min-h-[2.5rem]">
+                  {m.question}
+                </p>
+                {/* 24H change badge + current odds */}
+                <div className="flex items-center justify-between gap-2">
+                  <span className={`text-sm font-bold px-2 py-0.5 rounded-full border ${bgCls} ${chgCls}`}>
+                    {chgStr} 24h
+                  </span>
+                  {pct != null && (
+                    <span className={`text-sm font-bold font-mono ${pct >= 60 ? "text-emerald-400" : pct <= 40 ? "text-red-400" : "text-blue-400"}`}>
+                      {pct}% YES
+                    </span>
+                  )}
+                </div>
+                {/* Volume if available */}
+                {m.volume_24h != null && (
+                  <div className="mt-2 text-[10px] text-white/30 font-mono">
+                    {formatVolume(m.volume_24h)} 24h vol
+                  </div>
+                )}
+              </GlassCard>
+            </a>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+Add volume_24h and slug to the MoverMarket type (or whatever type top_movers items currently use) if not already present:
+
+interface MoverMarket {
+  question: string;
+  price_change_1d?: number;
+  yes_pct?: number;
+  volume_24h?: number;
+  slug?: string;
+}
+
+And add top_movers to SignalsData if not already there:
+
+top_movers?: MoverMarket[];
+
+Zap and Loader2 are already imported. GlassCard, formatVolume are already available.
+
+Fix 3 — Update the Surging tab label
+In the tabs array, update the Surging entry to reflect what it now shows:
+
+{ key: "surging" as CategoryTab, label: "⚡ 24H Movers" },
+
+This makes it clear to the user that this tab shows 24h odds movements in both directions, not just upward volume surges.
+
+Summary of All Changes
+What	Action
+"fading" tab entry	Delete from tabs array
+"fading" from CategoryTab type	Remove
+Fading branch in filtered computation	Delete
+Surging tab label	Change to "⚡ 24H Movers"
+Surging tab content	Replace MarketCard grid with <SurgingMoversView signals={signals} />
+SurgingMoversView	New component using signals.top_movers, sorted by `
+MoverMarket type	Add volume_24h?: number and slug?: string
+SignalsData.top_movers	Confirm it exists in the type (add if missing)
+Nothing else changes. All other tabs (All Macro, Crypto, Fed, Elections, Economy, Geopolitics, Finance, Tech), the Market Pulse ticker, Movers & Shakers section, Top Edges, Order Book Divergence, and all other existing sections are untouched.

@@ -61,7 +61,7 @@ const MACRO_EXCLUDE = [
   "paralympics",
 ];
 
-type CategoryTab = "all" | "crypto" | "fed" | "elections" | "economy" | "geopolitics" | "finance" | "tech" | "surging" | "fading";
+type CategoryTab = "all" | "crypto" | "fed" | "elections" | "economy" | "geopolitics" | "finance" | "tech" | "surging";
 
 // Categories that use Polymarket tag_slug API for direct fetching
 const TAG_SLUG_CATEGORIES: Partial<Record<CategoryTab, string>> = {
@@ -459,6 +459,79 @@ async function fetchPolymarketByTag(tagSlug: string): Promise<PolyEvent[] | null
   return null;
 }
 
+// ─── Surging Movers View ──────────────────────────────────────────
+
+function SurgingMoversView({ signals }: { signals: SignalsData | null }) {
+  const movers = signals?.top_movers ?? [];
+  if (!signals) {
+    return (
+      <div className="flex items-center justify-center py-10 text-xs text-white/20">
+        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+        Loading market movers…
+      </div>
+    );
+  }
+  if (movers.length === 0) {
+    return (
+      <div className="text-center py-8 text-sm text-white/30">
+        No significant movers in the last 24h.
+      </div>
+    );
+  }
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-3">
+        <Zap className="w-4 h-4 text-orange-400" />
+        <h3 className="text-sm font-bold text-white/90 tracking-wide uppercase">
+          Biggest 24H Odds Movers
+        </h3>
+        <span className="text-[10px] text-white/30">Largest probability shifts — either direction</span>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {movers.slice(0, 12).map((m, i) => {
+          const chg = m.price_change_1d;
+          const isUp = chg != null && chg > 0;
+          const isDown = chg != null && chg < 0;
+          const chgStr = chg == null ? "—" : `${isUp ? "+" : ""}${chg.toFixed(1)}%`;
+          const chgCls = isUp ? "text-emerald-400" : isDown ? "text-red-400" : "text-white/25";
+          const bgCls  = isUp ? "bg-emerald-500/10 border-emerald-500/20" : isDown ? "bg-red-500/10 border-red-500/20" : "bg-white/[0.03] border-white/[0.06]";
+          const pct = m.yes_pct;
+          return (
+            <a
+              key={i}
+              href={m.slug ? `https://polymarket.com/event/${m.slug}` : "#"}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block"
+            >
+              <GlassCard className="p-3 hover:bg-white/[0.06] transition-all cursor-pointer h-full">
+                <p className="text-[11px] text-white/80 font-medium leading-tight line-clamp-2 mb-3 min-h-[2.5rem]">
+                  {m.question}
+                </p>
+                <div className="flex items-center justify-between gap-2">
+                  <span className={`text-sm font-bold px-2 py-0.5 rounded-full border ${bgCls} ${chgCls}`}>
+                    {chgStr} 24h
+                  </span>
+                  {pct != null && (
+                    <span className={`text-sm font-bold font-mono ${pct >= 60 ? "text-emerald-400" : pct <= 40 ? "text-red-400" : "text-blue-400"}`}>
+                      {pct}% YES
+                    </span>
+                  )}
+                </div>
+                {m.volume_24h != null && (
+                  <div className="mt-2 text-[10px] text-white/30 font-mono">
+                    {formatVolume(m.volume_24h)} 24h vol
+                  </div>
+                )}
+              </GlassCard>
+            </a>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ─── Dashboard Component ──────────────────────────────────────────
 
 function PolymarketDashboard({ signals }: { signals: SignalsData | null }) {
@@ -548,31 +621,7 @@ function PolymarketDashboard({ signals }: { signals: SignalsData | null }) {
   const tagSlug = TAG_SLUG_CATEGORIES[activeTab];
   const filtered =
     activeTab === "surging"
-      ? (signals?.surging_markets ?? []).map((m) => ({
-          eventTitle: m.question,
-          eventSlug: m.slug ?? "",
-          marketId: m.slug ?? String(Math.random()),
-          yesPrice: 0,
-          noPrice: 0,
-          volume24hr: m.volume_24h ?? 0,
-          totalVolume: 0,
-          liquidity: 0,
-          tags: [],
-          volume_momentum: m.volume_momentum,
-        } as ParsedMarket & { volume_momentum?: string }))
-      : activeTab === "fading"
-      ? (signals?.fading_markets ?? []).map((m) => ({
-          eventTitle: m.question,
-          eventSlug: m.slug ?? "",
-          marketId: m.slug ?? String(Math.random()),
-          yesPrice: 0,
-          noPrice: 0,
-          volume24hr: m.volume_24h ?? 0,
-          totalVolume: 0,
-          liquidity: 0,
-          tags: [],
-          volume_momentum: m.volume_momentum,
-        } as ParsedMarket & { volume_momentum?: string }))
+      ? [] // Surging tab renders via SurgingMoversView, not the MarketCard grid
       : isTagCategory
       ? (tagSlug ? tagCache[tagSlug] || [] : [])
       : markets.filter((m) => matchesCategory(m, activeTab));
@@ -586,8 +635,7 @@ function PolymarketDashboard({ signals }: { signals: SignalsData | null }) {
     { key: "geopolitics", label: "Geopolitics" },
     { key: "finance", label: "Finance" },
     { key: "tech", label: "Tech" },
-    { key: "surging", label: "⚡ Surging" },
-    { key: "fading", label: "↘ Fading" },
+    { key: "surging", label: "⚡ 24H Movers" },
   ];
 
   return (
@@ -737,41 +785,46 @@ function PolymarketDashboard({ signals }: { signals: SignalsData | null }) {
             ))}
           </div>
 
-          {/* Tag category: show skeleton only on first load (no cache yet) */}
-          {isTagCategory && tagLoading && filtered.length === 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-2">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <CardSkeleton key={i} />
-              ))}
-            </div>
+          {/* 24H Movers tab — dedicated renderer */}
+          {activeTab === "surging" ? (
+            <SurgingMoversView signals={signals} />
           ) : (
-            <>
-              <div className="flex items-center gap-2 mb-3">
-                <TrendingUp className="w-4 h-4 text-blue-400" />
-                <h3 className="text-sm font-bold text-white/90 tracking-wide uppercase">
-                  {isTagCategory ? `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Markets` : "Top Macro Markets"}
-                </h3>
-                <span className="text-[10px] text-white/30">By 24h volume</span>
+            /* Tag category: show skeleton only on first load (no cache yet) */
+            isTagCategory && tagLoading && filtered.length === 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-2">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <CardSkeleton key={i} />
+                ))}
               </div>
-
-              {filtered.length === 0 ? (
-                <div className="text-center py-8 text-sm text-white/30">
-                  No markets found for this category.
+            ) : (
+              <>
+                <div className="flex items-center gap-2 mb-3">
+                  <TrendingUp className="w-4 h-4 text-blue-400" />
+                  <h3 className="text-sm font-bold text-white/90 tracking-wide uppercase">
+                    {isTagCategory ? `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Markets` : "Top Macro Markets"}
+                  </h3>
+                  <span className="text-[10px] text-white/30">By 24h volume</span>
                 </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {filtered.slice(0, 15).map((m) => (
-                    <MarketCard key={m.marketId} market={m} />
-                  ))}
-                </div>
-              )}
 
-              {filtered.length > 15 && (
-                <p className="text-center text-[10px] text-white/20 mt-3">
-                  Showing top 15 of {filtered.length} markets
-                </p>
-              )}
-            </>
+                {filtered.length === 0 ? (
+                  <div className="text-center py-8 text-sm text-white/30">
+                    No markets found for this category.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {filtered.slice(0, 15).map((m) => (
+                      <MarketCard key={m.marketId} market={m} />
+                    ))}
+                  </div>
+                )}
+
+                {filtered.length > 15 && (
+                  <p className="text-center text-[10px] text-white/20 mt-3">
+                    Showing top 15 of {filtered.length} markets
+                  </p>
+                )}
+              </>
+            )
           )}
         </>
       )}
@@ -797,7 +850,7 @@ interface SignalsData {
   surging_markets?: Array<{ question: string; volume_24h?: number; volume_momentum?: string; slug?: string; }>;
   fading_markets?: Array<{ question: string; volume_24h?: number; volume_momentum?: string; slug?: string; }>;
   whale_markets?: Array<{ question: string; vol_liq_ratio?: number; volume_24h?: number; yes_pct?: number; slug?: string; }>;
-  top_movers?: Array<{ question: string; price_change_1d?: number; yes_pct?: number; slug?: string; }>;
+  top_movers?: Array<{ question: string; price_change_1d?: number; yes_pct?: number; volume_24h?: number; slug?: string; }>;
 }
 interface EnhancedMarket {
   id?: string;
