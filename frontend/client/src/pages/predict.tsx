@@ -581,7 +581,7 @@ function SurgingMoversView({ signals }: { signals: SignalsData | null }) {
 
 // ─── Dashboard Component ──────────────────────────────────────────
 
-function PolymarketDashboard({ signals }: { signals: SignalsData | null }) {
+function PolymarketDashboard({ signals, children }: { signals: SignalsData | null; children?: React.ReactNode }) {
   const [markets, setMarkets] = useState<ParsedMarket[]>([]);
   const [tagCache, setTagCache] = useState<Record<string, ParsedMarket[]>>({});
   const [loading, setLoading] = useState(true);
@@ -716,7 +716,7 @@ function PolymarketDashboard({ signals }: { signals: SignalsData | null }) {
       {error && (
         <div className="mb-4 p-3 rounded-lg bg-red-500/5 border border-red-500/10 text-xs text-red-400 flex items-center gap-2">
           <span>Data unavailable — {error}</span>
-          <button onClick={handleRefresh} className="text-red-300 underline hover:text-red-200">
+          <button onClick={fetchData} className="text-red-300 underline hover:text-red-200">
             Retry
           </button>
         </div>
@@ -817,6 +817,9 @@ function PolymarketDashboard({ signals }: { signals: SignalsData | null }) {
               )}
             </div>
           )}
+
+          {/* Injected slot — e.g. Caelyn Analyzes */}
+          {children}
 
           {/* Category Tabs */}
           <div className="flex items-center gap-1.5 mb-4 overflow-x-auto pb-1 scrollbar-hide">
@@ -1151,9 +1154,9 @@ function EnhancedMarketsTable() {
       ) : markets.length === 0 ? (
         <div className="text-center py-8 text-sm text-white/30">No markets match the selected filters</div>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="overflow-auto max-h-[460px]">
           <table className="w-full min-w-[800px]">
-            <thead>
+            <thead className="sticky top-0 z-10 bg-[#080d16]">
               <tr className="border-b border-white/[0.06]">
                 <th className="px-2 py-2 text-left text-[10px] font-semibold text-white/30 uppercase tracking-wider">Market</th>
                 <ColHeader col="yes_pct"    label="YES%" />
@@ -2009,11 +2012,10 @@ export default function PredictPage() {
             {/* ═══ Enhanced Markets Table ═══ */}
             <EnhancedMarketsTable />
 
-            {/* ═══ Caelyn Analyzes ═══ */}
-            <AnalysisPanel />
-
-            {/* ═══ Prediction Markets Dashboard ═══ */}
-            <PolymarketDashboard signals={pageSignals} />
+            {/* ═══ Prediction Markets Dashboard (Caelyn Analyzes injected between Top Edges & category tabs) ═══ */}
+            <PolymarketDashboard signals={pageSignals}>
+              <AnalysisPanel />
+            </PolymarketDashboard>
 
             {/* ═══ Whale Watch + Category Volume — side by side on large screens ═══ */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
