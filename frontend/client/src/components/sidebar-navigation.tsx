@@ -92,16 +92,22 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
       path: '/app/caelyn-terminal'
     },
     {
-      id: 'bittensor',
-      label: 'Bittensor',
-      icon: <Brain className="w-4 h-4" />,
-      path: '/app/bittensor'
+      id: 'predict',
+      label: 'Predict',
+      icon: <TrendingUp className="w-4 h-4" />,
+      path: '/app/predict'
     },
     {
       id: 'hyperliquid-screener',
       label: 'Hyperliquid',
       icon: <Activity className="w-4 h-4" />,
       path: '/app/hyperliquid-screener'
+    },
+    {
+      id: 'bittensor',
+      label: 'Bittensor',
+      icon: <Brain className="w-4 h-4" />,
+      path: '/app/bittensor'
     },
     {
       id: 'crypto-stocks',
@@ -369,12 +375,6 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
       label: 'Tokenization',
       icon: <Building2 className="w-4 h-4" />,
       path: '/app/rwa'
-    },
-    {
-      id: 'predict',
-      label: 'Predict',
-      icon: <TrendingUp className="w-4 h-4" />,
-      path: '/app/predict'
     },
     {
       id: 'onchain-social',

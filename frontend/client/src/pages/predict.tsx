@@ -2179,14 +2179,14 @@ export default function PredictPage() {
             {/* ═══ Enhanced Markets Table ═══ */}
             <EnhancedMarketsTable />
 
-            {/* ═══ Prediction Markets Dashboard ═══ */}
-            <PolymarketDashboard signals={pageSignals} />
-
             {/* ═══ Whale Watch + Category Volume — side by side on large screens ═══ */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
               <WhaleWatchPanel />
               <CategoryChart />
             </div>
+
+            {/* ═══ Prediction Markets Dashboard ═══ */}
+            <PolymarketDashboard signals={pageSignals} />
 
           </div>
 
