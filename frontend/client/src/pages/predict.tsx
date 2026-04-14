@@ -663,28 +663,16 @@ function PolymarketDashboard({ signals }: { signals: SignalsData | null }) {
     <GlassCard className="p-5 mb-8">
       {/* Header */}
       <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
-            <BarChart3 className="w-4 h-4 text-white" />
-          </div>
-          <div>
-            <h2 className="text-base font-bold text-white flex items-center gap-2">
-              Prediction Markets Dashboard
-              <LiveBadge />
-            </h2>
-            <p className="text-[10px] text-white/30 flex items-center gap-2 flex-wrap">
-              Live prediction market odds for macro, economics &amp; investing
-              {lastUpdated && (
-                <span className="flex items-center gap-1 text-white/25">
-                  &middot; Updated {lastUpdated.toLocaleTimeString()}
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 ml-1">
-                    <span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" />
-                    <span className="text-[9px] text-emerald-400 font-semibold uppercase tracking-widest">Live</span>
-                  </span>
-                </span>
-              )}
-            </p>
-          </div>
+        <div className="flex items-center gap-2 text-[10px] text-white/25">
+          {lastUpdated && (
+            <span className="flex items-center gap-1">
+              Updated {lastUpdated.toLocaleTimeString()}
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 ml-1">
+                <span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-[9px] text-emerald-400 font-semibold uppercase tracking-widest">Live</span>
+              </span>
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <a
@@ -1939,7 +1927,7 @@ export default function PredictPage() {
             }}>
               Prediction Markets
             </h1>
-            <p className="text-xs text-white/30">Decentralized Casino and Analytics</p>
+            <p className="text-xs text-white/30">Live prediction market odds for macro, economics &amp; investing</p>
           </div>
           {/* AI chat dropdown — top right of header */}
           <CaelynPredictsDropdown signals={pageSignals} />
@@ -1954,6 +1942,9 @@ export default function PredictPage() {
 
           <div className="flex-1 min-w-0">
 
+            {/* ═══ Prediction Markets Dashboard ═══ */}
+            <PolymarketDashboard signals={pageSignals} />
+
             {/* ═══ Caelyn Analyzes ═══ */}
             <AnalysisPanel />
 
@@ -1965,9 +1956,6 @@ export default function PredictPage() {
               <WhaleWatchPanel />
               <CategoryChart />
             </div>
-
-            {/* ═══ Prediction Markets Dashboard ═══ */}
-            <PolymarketDashboard signals={pageSignals} />
 
             {/* ═══ Betting Platforms ═══ */}
             <GlassCard className="p-6">
