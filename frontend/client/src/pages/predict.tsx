@@ -17,6 +17,7 @@ import {
 import { openSecureLink } from "@/utils/security";
 import { DecisionEngine } from "@/components/decision-engine";
 import { RecentSignalChanges } from "@/components/recent-signal-changes";
+import { ProphetikInvestorTab } from "@/components/prophetik-investor-tab";
 import diceImage from "@assets/istockphoto-1252690598-612x612_1756665072306.jpg";
 
 // ─── Constants ────────────────────────────────────────────────────
@@ -2454,6 +2455,7 @@ const openInNewTab = (url: string) => {
 // ─── Main Page ────────────────────────────────────────────────────
 
 export default function PredictPage() {
+  const [activeTab, setActiveTab] = useState<"gambler" | "investor">("gambler");
   const [pageSignals, setPageSignals] = useState<SignalsData | null>(null);
   const [scoredRaw, setScoredRaw] = useState<ScoredMarket[]>([]);
   const scoredFetchingRef = useRef(false);
@@ -2547,34 +2549,59 @@ export default function PredictPage() {
         </div>
 
         <div className="w-32 h-0.5 rounded-full mt-3 mb-4" style={{ background: 'linear-gradient(135deg, #2090d0, #3b82f6, #80d8f8)' }} />
+
+        {/* ── Tab Switcher ──────────────────────────────────────────── */}
+        <div className="flex items-center gap-1 p-1 rounded-xl bg-white/[0.04] border border-white/[0.06] w-fit">
+          {(["investor", "gambler"] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`relative px-5 py-2 rounded-lg text-[11px] font-bold uppercase tracking-widest transition-all duration-200 ${
+                activeTab === tab
+                  ? tab === "investor"
+                    ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/25"
+                    : "bg-blue-500/15 text-blue-300 border border-blue-500/25"
+                  : "text-white/30 hover:text-white/55 border border-transparent"
+              }`}
+            >
+              {tab === "investor" ? "📈 Investor" : "🎲 Gambler"}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Main Content — full-width (agent moved to header dropdown) */}
+      {/* Main Content */}
       <main className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pb-8 relative" style={{ zIndex: 1 }}>
-        <div className="flex flex-col gap-6">
 
-          <div className="flex-1 min-w-0">
+        {/* ── Investor Tab ─────────────────────────────────────────── */}
+        {activeTab === "investor" && <ProphetikInvestorTab />}
 
-            {/* ═══ Decision Engine — Top Signal Recommendations ═══ */}
-            <DecisionEngine />
+        {/* ── Gambler Tab — original Prophetik content, unchanged ──── */}
+        {activeTab === "gambler" && (
+          <div className="flex flex-col gap-6">
+            <div className="flex-1 min-w-0">
 
-            {/* ═══ Recent Signal Changes ═══ */}
-            <RecentSignalChanges />
+              {/* ═══ Decision Engine — Top Signal Recommendations ═══ */}
+              <DecisionEngine />
 
-            {/* ═══ Enhanced Markets Table ═══ */}
-            <EnhancedMarketsTable scoredLookup={scoredLookup} />
+              {/* ═══ Recent Signal Changes ═══ */}
+              <RecentSignalChanges />
 
-            {/* ═══ Prediction Markets Dashboard ═══ */}
-            <PolymarketDashboard signals={pageSignals} scoredLookup={scoredLookup}>
-              <WhaleWatchPanel scoredLookup={scoredLookup} />
-            </PolymarketDashboard>
+              {/* ═══ Enhanced Markets Table ═══ */}
+              <EnhancedMarketsTable scoredLookup={scoredLookup} />
 
-            {/* ═══ Category Volume — full width, bottom of page ═══ */}
-            <CategoryChart />
+              {/* ═══ Prediction Markets Dashboard ═══ */}
+              <PolymarketDashboard signals={pageSignals} scoredLookup={scoredLookup}>
+                <WhaleWatchPanel scoredLookup={scoredLookup} />
+              </PolymarketDashboard>
 
+              {/* ═══ Category Volume — full width, bottom of page ═══ */}
+              <CategoryChart />
+
+            </div>
           </div>
+        )}
 
-        </div>
       </main>
     </div>
   );

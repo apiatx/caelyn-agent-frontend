@@ -2301,6 +2301,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/predict/diagnostics",     (q, s) => proxyPredict("/api/predict/diagnostics",     q, s));
   app.get("/api/predict/signal-changes", (q, s) => proxyPredict("/api/predict/signal-changes", q, s));
 
+  // ── Prophetik Investor tab endpoints ────────────────────────────────────────
+  app.get("/api/predict/investor",          (q, s) => proxyPredict("/api/predict/investor",          q, s));
+  app.get("/api/predict/investor/signals",  (q, s) => proxyPredict("/api/predict/investor/signals",  q, s));
+  app.get("/api/predict/investor/regime",   (q, s) => proxyPredict("/api/predict/investor/regime",   q, s));
+  app.get("/api/predict/investor/sectors",  (q, s) => proxyPredict("/api/predict/investor/sectors",  q, s));
+  app.get("/api/predict/investor/watchlists",(q,s) => proxyPredict("/api/predict/investor/watchlists",q,s));
+  app.get("/api/predict/investor/themes",   (q, s) => proxyPredict("/api/predict/investor/themes",   q, s));
+
   // ── Whale Watch proxy ────────────────────────────────────────────────────────
   const WHALE_URL = "https://fast-api-server-trading-agent-aidanpilon.replit.app";
   const whaleHdr  = () => ({ "X-API-Key": "hippo_ak_7f3x9k2m4p8q1w5t", "Content-Type": "application/json" });

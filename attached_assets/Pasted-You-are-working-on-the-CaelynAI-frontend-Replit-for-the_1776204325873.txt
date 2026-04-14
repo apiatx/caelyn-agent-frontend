@@ -1,0 +1,251 @@
+You are working on the CaelynAI frontend Replit for the Prophetik page.
+
+Mission:
+Add TWO tabs to the Prophetik page without changing or breaking anything that currently exists.
+
+Tabs:
+1. Investor
+2. Gambler
+
+Critical requirement:
+- Keep the current Prophetik implementation exactly as-is under the “Gambler” tab
+- Do NOT remove, redesign, or break the existing Gambler view
+- Build a NEW “Investor” tab that consumes new backend Investor endpoints and presents Polymarket data as equity/sector/regime signals for stock investing
+
+This is an additive implementation only.
+
+==================================================
+PRODUCT GOAL
+==================================================
+
+Investor tab is NOT for betting.
+
+It should help the user quickly understand:
+- what Polymarket is implying about the macro/political/geopolitical environment
+- which sectors are likely helped or hurt
+- which stocks/baskets are most exposed
+- whether this suggests a regime shift or sector rotation
+
+The Investor tab should feel like:
+“Prediction markets translated into stock market implications”
+
+==================================================
+DESIGN RULES
+==================================================
+
+- Preserve the existing Prophetik page under “Gambler”
+- Add a clean tab switcher near the top of the Prophetik page
+- Default behavior:
+  - keep current page behavior intact unless product logic says Investor should be default
+  - if uncertain, default to Gambler for backward compatibility
+- Use the same dark / premium / terminal-like visual language
+- Keep spacing, typography, card styling, and badges consistent with existing Prophetik aesthetics
+- Do not create visual clutter
+- Keep the new Investor tab intuitive at a glance
+
+==================================================
+WHAT TO BUILD
+==================================================
+
+Add a tabbed Prophetik page:
+- Investor tab
+- Gambler tab
+
+Gambler tab:
+- render the current Prophetik UI exactly as it currently exists
+
+Investor tab:
+- render a new set of components powered by new backend Investor endpoints
+
+==================================================
+STEP 1 — TAB SHELL
+==================================================
+
+Add a tab selector to the Prophetik page:
+- Investor
+- Gambler
+
+Requirements:
+- switching tabs should not break existing Gambler components
+- Gambler should preserve all current state/behavior as much as practical
+- Investor tab should load its own data independently
+- use clean tab styling consistent with the existing dashboard aesthetic
+
+==================================================
+STEP 2 — INVESTOR TAB MAIN LAYOUT
+==================================================
+
+Build the Investor tab with these sections, in this order:
+
+1. Top Equity Signals
+2. Regime Scoreboard
+3. Sector Rotation Signals
+4. Stock Watchlists from Prediction Markets
+5. Theme Clusters / Supporting Markets
+
+This should be a new investor-first layout, not a copy of Gambler tables.
+
+==================================================
+STEP 3 — TOP EQUITY SIGNALS SECTION
+==================================================
+
+Build a top section that surfaces 3–5 highest-priority equity-relevant signals.
+
+Each card should show:
+- title
+- short summary
+- why it matters
+- odds move summary
+- confidence
+- bullish sectors
+- bearish sectors
+- bullish stocks
+- bearish stocks
+- regime implication
+- supporting markets count or small list
+
+This is the key section.
+It should immediately answer:
+“What does prediction market repricing imply for stocks right now?”
+
+Use strong visual hierarchy.
+Top 1 card can be larger than the rest if helpful.
+
+==================================================
+STEP 4 — REGIME SCOREBOARD
+==================================================
+
+Build a compact visual scoreboard for regime indicators returned by backend.
+
+Expected indicators may include:
+- Risk On / Risk Off
+- Higher for Longer / Easing
+- Inflationary / Disinflationary
+- Growth / Slowdown
+- Geopolitical Stress / Easing
+- Commodity Pressure / Relief
+- AI Capex Supportive / Restrictive
+
+For each:
+- label
+- score
+- direction
+- confidence
+- maybe supporting theme count
+
+Make this scannable and clean.
+Think “macro dashboard,” not toy gauges.
+
+==================================================
+STEP 5 — SECTOR ROTATION SIGNALS
+==================================================
+
+Build a section showing:
+- strongest positive sector implication
+- strongest negative sector implication
+- emerging leadership
+- fading leadership
+
+For each signal:
+- sector or basket name
+- direction
+- reason
+- confidence
+- tied themes/markets
+
+This should make sector rotation obvious quickly.
+
+==================================================
+STEP 6 — STOCK WATCHLISTS FROM PREDICTION MARKETS
+==================================================
+
+Build grouped watchlist cards/tables showing:
+- bullish watchlist
+- bearish watchlist
+- conditional watchlist
+
+Each stock entry should show:
+- ticker
+- company name if available
+- short reason
+- source theme(s)
+
+Keep this compact but useful.
+This is a watchlist, not a giant equity screener.
+
+==================================================
+STEP 7 — THEME CLUSTERS / SUPPORTING MARKETS
+==================================================
+
+Build a lower section showing the underlying theme clusters and supporting markets for users who want detail.
+
+Each cluster card should show:
+- theme name
+- direction
+- confidence
+- consistency / contradiction if available
+- supporting markets
+- brief equity impact summary
+
+This section is the bridge between raw Polymarket data and investor interpretation.
+
+==================================================
+STEP 8 — EMPTY / LOADING / ERROR STATES
+==================================================
+
+For Investor tab:
+- add clean loading skeletons
+- graceful empty states
+- meaningful error state if endpoint fails
+- do not affect Gambler tab if Investor endpoints fail
+
+==================================================
+STEP 9 — KEEP GAMBLER UNTOUCHED
+==================================================
+
+Very important:
+- do not redesign the current Gambler UI
+- do not rename/remove its current sections
+- do not break its endpoint usage
+- do not mix investor copy into Gambler mode
+
+Investor should feel like a new lens.
+Gambler remains the current raw Polymarket/trading-style dashboard.
+
+==================================================
+STEP 10 — FRONTEND DATA INTEGRATION
+==================================================
+
+Use the new Investor backend endpoints only for the Investor tab.
+
+Keep the frontend code organized:
+- separate Investor tab components from existing Gambler components
+- reusable card/list components are fine
+- avoid jamming all logic into one giant Prophetik page file
+
+==================================================
+SUCCESS CRITERIA
+==================================================
+
+Success means:
+- Prophetik page now has Investor and Gambler tabs
+- Gambler tab is unchanged and still works
+- Investor tab presents prediction market data as:
+  - equity-relevant macro signals
+  - regime interpretation
+  - sector rotation implications
+  - stock watchlists
+- Investor tab is intuitive and visually polished
+- Page feels additive, not disruptive
+
+==================================================
+WHAT TO REPORT BACK
+==================================================
+
+When done, report:
+1. files/components added or changed
+2. how tab state is handled
+3. which backend endpoints are used
+4. how Gambler was preserved untouched
+5. screenshots or section descriptions of the new Investor layout
+6. any assumptions or fallbacks used
