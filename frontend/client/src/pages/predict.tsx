@@ -1009,7 +1009,6 @@ function isSportsMarket(m: EnhancedMarket): boolean {
 
 function EnhancedMarketsTable() {
   const [allMarkets, setAllMarkets]   = useState<EnhancedMarket[]>([]);
-  const [categories, setCategories]   = useState<CategoryItem[]>([]);
   const [loading, setLoading]         = useState(true);
   const [tagFilter, setTagFilter]     = useState("");
   const [minVol, setMinVol]           = useState("");
@@ -1028,13 +1027,6 @@ function EnhancedMarketsTable() {
         setAllMarkets(Array.isArray(d) ? d : (d.markets ?? []));
       }
     } catch {} finally { setLoading(false); }
-  }, []);
-
-  useEffect(() => {
-    fetch("/api/predict/categories")
-      .then((r) => r.ok ? r.json() : null)
-      .then((d) => { if (d?.categories) setCategories(d.categories.slice(0, 40)); })
-      .catch(() => {});
   }, []);
 
   useEffect(() => { fetchMarkets(tagFilter || undefined); }, [fetchMarkets, tagFilter]);
@@ -1115,7 +1107,9 @@ function EnhancedMarketsTable() {
           <select value={tagFilter} onChange={(e) => setTagFilter(e.target.value)}
             className="bg-white/[0.04] border border-white/[0.08] rounded-lg px-2.5 py-1.5 text-[11px] text-white/60 focus:outline-none">
             <option value="">All Categories</option>
-            {categories.map((c) => <option key={c.tag} value={c.tag}>{c.tag}</option>)}
+            {["Trending","Breaking","New","Politics","Sports","Crypto","Finance","Geopolitics","Tech","Culture","Economy","Weather","Mentions","Election"].map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
           </select>
           <select value={minVol} onChange={(e) => setMinVol(e.target.value)}
             className="bg-white/[0.04] border border-white/[0.08] rounded-lg px-2.5 py-1.5 text-[11px] text-white/60 focus:outline-none">
@@ -1287,11 +1281,11 @@ function WhaleWatchPanel() {
           {/* Column headers */}
           <div className="flex items-center gap-3 px-3 pb-2 mb-1 border-b border-white/[0.05]">
             <span className="flex-1 text-[9px] font-semibold text-white/25 uppercase tracking-wider">Market</span>
-            <span className="text-[9px] font-semibold text-white/25 uppercase tracking-wider whitespace-nowrap flex-shrink-0">Vol/Liq</span>
-            <span className="text-[9px] font-semibold text-white/25 uppercase tracking-wider flex-shrink-0">24h Vol</span>
-            <span className="text-[9px] font-semibold text-white/25 uppercase tracking-wider flex-shrink-0">YES</span>
-            <span className="text-[9px] font-semibold text-white/25 uppercase tracking-wider flex-shrink-0">Eff</span>
-            <span className="text-[9px] font-semibold text-white/25 uppercase tracking-wider flex-shrink-0">1d Δ</span>
+            <span className="w-[118px] text-right text-[9px] font-semibold text-white/25 uppercase tracking-wider">Vol/Liq</span>
+            <span className="w-14 text-right text-[9px] font-semibold text-white/25 uppercase tracking-wider">24h Vol</span>
+            <span className="w-9 text-right text-[9px] font-semibold text-white/25 uppercase tracking-wider">YES</span>
+            <span className="w-8 text-center text-[9px] font-semibold text-white/25 uppercase tracking-wider">Eff</span>
+            <span className="w-10 text-right text-[9px] font-semibold text-white/25 uppercase tracking-wider">1d Δ</span>
           </div>
           <div className="space-y-2">
           {items.map((w, i) => (
@@ -1303,17 +1297,19 @@ function WhaleWatchPanel() {
                   {w.question?.slice(0, 65) || "—"}
                 </a>
               </div>
-              <span className="text-xs font-bold text-purple-400 font-mono flex-shrink-0 whitespace-nowrap">
+              <span className="w-[118px] text-right text-xs font-bold text-purple-400 font-mono flex-shrink-0 whitespace-nowrap">
                 {w.vol_liq_ratio != null ? `${w.vol_liq_ratio.toFixed(1)}× liquidity` : "—"}
               </span>
-              <span className="text-[11px] font-mono text-white/40 flex-shrink-0">{w.volume_24h != null ? formatVolume(w.volume_24h) : ""}</span>
-              {w.yes_pct != null && <span className={`text-xs font-bold font-mono flex-shrink-0 ${w.yes_pct >= 60 ? "text-emerald-400" : w.yes_pct <= 40 ? "text-red-400" : "text-blue-400"}`}>{w.yes_pct}%</span>}
-              {w.market_efficiency_score != null && effBadge(w.market_efficiency_score)}
-              {w.price_change_1d != null && (
-                <span className={`text-[10px] font-bold font-mono flex-shrink-0 ${w.price_change_1d > 0 ? "text-emerald-400" : w.price_change_1d < 0 ? "text-red-400" : "text-white/25"}`}>
-                  {w.price_change_1d > 0 ? "+" : ""}{w.price_change_1d.toFixed(1)}%
-                </span>
-              )}
+              <span className="w-14 text-right text-[11px] font-mono text-white/40 flex-shrink-0">{w.volume_24h != null ? formatVolume(w.volume_24h) : "—"}</span>
+              <span className={`w-9 text-right text-xs font-bold font-mono flex-shrink-0 ${w.yes_pct != null ? (w.yes_pct >= 60 ? "text-emerald-400" : w.yes_pct <= 40 ? "text-red-400" : "text-blue-400") : "text-white/20"}`}>
+                {w.yes_pct != null ? `${w.yes_pct}%` : "—"}
+              </span>
+              <span className="w-8 flex justify-center flex-shrink-0">
+                {w.market_efficiency_score != null ? effBadge(w.market_efficiency_score) : <span className="text-white/20 text-[10px]">—</span>}
+              </span>
+              <span className={`w-10 text-right text-[10px] font-bold font-mono flex-shrink-0 ${w.price_change_1d != null ? (w.price_change_1d > 0 ? "text-emerald-400" : w.price_change_1d < 0 ? "text-red-400" : "text-white/25") : "text-white/20"}`}>
+                {w.price_change_1d != null ? `${w.price_change_1d > 0 ? "+" : ""}${w.price_change_1d.toFixed(1)}%` : "—"}
+              </span>
             </div>
           ))}
           </div>
