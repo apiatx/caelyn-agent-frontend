@@ -23,6 +23,10 @@ import {
   ShieldAlert,
   ArrowUpRight,
   ArrowDownRight,
+  CheckCircle2,
+  Clock,
+  ArrowRightLeft,
+  Shuffle,
 } from "lucide-react";
 
 // ─── Constants ────────────────────────────────────────────────────
@@ -34,9 +38,8 @@ function getToken(): string | null {
   return localStorage.getItem('caelyn_token') || sessionStorage.getItem('caelyn_token');
 }
 
-function authHeaders(method: 'GET' | 'POST' = 'GET'): Record<string, string> {
-  const h: Record<string, string> = { 'X-API-Key': AGENT_API_KEY };
-  if (method === 'POST') h['Content-Type'] = 'application/json';
+function authHeaders(): Record<string, string> {
+  const h: Record<string, string> = { 'Content-Type': 'application/json', 'X-API-Key': AGENT_API_KEY };
   const t = getToken();
   if (t) h['Authorization'] = `Bearer ${t}`;
   return h;
@@ -84,6 +87,15 @@ interface RecommendationsResponse {
   best_execution_quality?: RecommendationMarket | RecommendationMarket[];
   strongest_flow_without_confirmation?: RecommendationMarket | RecommendationMarket[];
   strongest_conviction_with_good_execution?: RecommendationMarket | RecommendationMarket[];
+}
+
+// Tracked across polls to determine Best Bet stability
+interface BestBetMeta {
+  streak: number;           // how many consecutive polls this same market was #1
+  changedAt: number | null; // Date.now() when last flip occurred
+  prevTitle: string | null; // title of the market before the last flip
+  prevDirection: string | null;
+  prevConditionId: string | null;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────
@@ -158,6 +170,49 @@ function formatSecondsAgo(seconds: number): string {
   return `${Math.floor(mins / 60)}h ${mins % 60}m ago`;
 }
 
+function formatTimeAgo(ts: number | null): string {
+  if (!ts) return "";
+  const diffMs = Date.now() - ts;
+  const mins = Math.floor(diffMs / 60_000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  return `${hrs}h ${mins % 60}m ago`;
+}
+
+// ─── Stability helpers ─────────────────────────────────────────────
+// A recommendation is considered "stable" if the same market has held
+// the top spot for ≥3 consecutive polls (~4.5 minutes at 90s intervals).
+const STABLE_THRESHOLD = 3;
+
+function getStabilityLabel(streak: number): { label: string; color: string; bg: string; border: string; icon: React.ReactNode } {
+  if (streak >= STABLE_THRESHOLD) {
+    return {
+      label: "Stable Pick",
+      color: "text-emerald-400",
+      bg: "bg-emerald-500/10",
+      border: "border-emerald-500/20",
+      icon: <CheckCircle2 className="w-3 h-3" />,
+    };
+  }
+  if (streak >= 2) {
+    return {
+      label: "Holding",
+      color: "text-blue-400",
+      bg: "bg-blue-500/10",
+      border: "border-blue-500/20",
+      icon: <Clock className="w-3 h-3" />,
+    };
+  }
+  return {
+    label: "New Pick",
+    color: "text-amber-400",
+    bg: "bg-amber-500/10",
+    border: "border-amber-500/20",
+    icon: <Shuffle className="w-3 h-3" />,
+  };
+}
+
 // ─── Bucket config ────────────────────────────────────────────────
 interface BucketConfig {
   key: keyof RecommendationsResponse;
@@ -207,10 +262,12 @@ const RecommendationCard = memo(function RecommendationCard({
   market,
   bucket,
   justUpdated,
+  bestBetMeta,
 }: {
   market: RecommendationMarket;
   bucket: BucketConfig;
   justUpdated?: boolean;
+  bestBetMeta?: BestBetMeta;
 }) {
   const direction = getDirection(market, bucket.key);
   const dirColors = getDirectionColor(direction);
@@ -224,8 +281,12 @@ const RecommendationCard = memo(function RecommendationCard({
   const execScore = market.execution_quality_score;
   const isHero = bucket.hero === true;
   const isDanger = bucket.danger === true;
-
   const polyUrl = market.slug ? `https://polymarket.com/event/${market.slug}` : null;
+
+  // Stability display — only for the hero Best Bet card
+  const stability = (isHero && bestBetMeta) ? getStabilityLabel(bestBetMeta.streak) : null;
+  const recentlyChanged = isHero && bestBetMeta && bestBetMeta.changedAt != null && bestBetMeta.streak < STABLE_THRESHOLD;
+  const hadPreviousPick = isHero && bestBetMeta?.prevTitle && bestBetMeta.changedAt != null;
 
   return (
     <div
@@ -249,6 +310,22 @@ const RecommendationCard = memo(function RecommendationCard({
           <span className={`text-[10px] font-bold uppercase tracking-widest ${isDanger ? "text-amber-400/70" : "text-white/35"}`}>
             {bucket.label}
           </span>
+
+          {/* Stability badge — hero card only */}
+          {stability && (
+            <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wide border ${stability.bg} ${stability.color} ${stability.border}`}>
+              {stability.icon}
+              {stability.label}
+            </span>
+          )}
+
+          {/* "Changed recently" badge */}
+          {recentlyChanged && bestBetMeta?.changedAt && (
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-semibold bg-amber-500/10 border border-amber-500/20 text-amber-400">
+              <ArrowRightLeft className="w-2.5 h-2.5" />
+              Changed {formatTimeAgo(bestBetMeta.changedAt)}
+            </span>
+          )}
         </div>
 
         {/* Score badge */}
@@ -279,6 +356,20 @@ const RecommendationCard = memo(function RecommendationCard({
           {momentum.text}
         </span>
       </div>
+
+      {/* "Replaced prior top pick" note — hero card only, shown when pick changed */}
+      {hadPreviousPick && bestBetMeta && (
+        <div className="mb-3 flex items-start gap-1.5 px-2.5 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06]">
+          <ArrowRightLeft className="w-3 h-3 text-white/25 flex-shrink-0 mt-0.5" />
+          <span className="text-[10px] text-white/35 leading-snug">
+            Replaced prior top pick:{" "}
+            <span className={`font-semibold ${bestBetMeta.prevDirection === "NO" ? "text-red-400/70" : "text-emerald-400/70"}`}>
+              {bestBetMeta.prevDirection ?? "YES"}
+            </span>{" "}
+            <span className="text-white/50">{bestBetMeta.prevTitle}</span>
+          </span>
+        </div>
+      )}
 
       {/* Reasons bullets */}
       {reasons.length > 0 && (
@@ -316,9 +407,9 @@ const RecommendationCard = memo(function RecommendationCard({
             Liq <span className="text-white/70 font-semibold">{formatDollars(market.liquidity)}</span>
           </span>
         )}
-        {(market.spread_pct ?? market.spread) != null && (
+        {market.spread != null && (
           <span className="text-white/40">
-            Spread <span className="text-white/70 font-semibold">{(market.spread_pct ?? (market.spread! * 100)).toFixed(1)}¢</span>
+            Spread <span className="text-white/70 font-semibold">{market.spread.toFixed(1)}¢</span>
           </span>
         )}
         {market.days_to_expiry != null && (
@@ -374,12 +465,24 @@ export function DecisionEngine() {
   const [lastFetchTime, setLastFetchTime] = useState<number | null>(null);
   const [secondsAgo, setSecondsAgo] = useState(0);
   const [justUpdated, setJustUpdated] = useState(false);
+  const [bestBetMeta, setBestBetMeta] = useState<BestBetMeta>({
+    streak: 0,
+    changedAt: null,
+    prevTitle: null,
+    prevDirection: null,
+    prevConditionId: null,
+  });
   const fetchingRef = useRef(false);
+  const prevBestBetRef = useRef<{ conditionId: string | null; title: string | null; direction: string | null }>({
+    conditionId: null,
+    title: null,
+    direction: null,
+  });
 
-  const fetchRecommendations = useCallback(async (isManual = false, retryCount = 0) => {
-    if (fetchingRef.current && retryCount === 0) return;
+  const fetchRecommendations = useCallback(async (isManual = false) => {
+    if (fetchingRef.current) return;
     fetchingRef.current = true;
-    if (isManual && retryCount === 0) setLoading(true);
+    if (isManual) setLoading(true);
     try {
       let res = await fetch("/api/predict/recommendations", { headers: authHeaders() });
       if (!res.ok) {
@@ -387,22 +490,44 @@ export function DecisionEngine() {
       }
       if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
       const json = await res.json();
-      // Handle various response shapes: direct buckets, or nested under recommendations/data
       const payload = json?.recommendations ?? json?.data ?? json;
       setData(payload);
       setError(null);
       setLastFetchTime(Date.now());
       setJustUpdated(true);
+
+      // ── Best Bet stability tracking ──────────────────────────────
+      const newBestBet = extractFirst(payload?.best_bet_now);
+      const newId = newBestBet?.condition_id ?? newBestBet?.slug ?? null;
+      const newTitle = newBestBet?.question || newBestBet?.title || null;
+      const newDir = newBestBet
+        ? (newBestBet.direction?.toUpperCase().startsWith("NO") ? "NO" : "YES")
+        : null;
+
+      const prev = prevBestBetRef.current;
+      if (newId && prev.conditionId && newId !== prev.conditionId) {
+        // Top pick flipped — reset streak, record change
+        setBestBetMeta({
+          streak: 1,
+          changedAt: Date.now(),
+          prevTitle: prev.title,
+          prevDirection: prev.direction,
+          prevConditionId: prev.conditionId,
+        });
+      } else if (newId) {
+        // Same pick holding — increment streak
+        setBestBetMeta(m => ({
+          ...m,
+          streak: m.streak + 1,
+        }));
+      }
+
+      // Always update the ref to the current pick
+      if (newId || newTitle) {
+        prevBestBetRef.current = { conditionId: newId, title: newTitle, direction: newDir };
+      }
     } catch (e: any) {
       console.error("[DecisionEngine] Failed to fetch recommendations:", e);
-      // Retry up to 2 times with increasing delay (3s, 6s) — handles cold-start timeouts
-      if (retryCount < 2) {
-        fetchingRef.current = false;
-        const delay = (retryCount + 1) * 3000;
-        setTimeout(() => fetchRecommendations(isManual, retryCount + 1), delay);
-        return;
-      }
-      // Only set error if we have no previous data (stale-while-revalidate)
       if (!data) {
         setError("Unable to load signal recommendations");
       }
@@ -412,18 +537,15 @@ export function DecisionEngine() {
     }
   }, [data]);
 
-  // Initial fetch
   useEffect(() => {
     fetchRecommendations(true);
   }, []);
 
-  // Polling every 90 seconds
   useEffect(() => {
     const iv = setInterval(() => fetchRecommendations(false), POLL_INTERVAL_MS);
     return () => clearInterval(iv);
   }, [fetchRecommendations]);
 
-  // Freshness counter — ticks every second
   useEffect(() => {
     if (!lastFetchTime) return;
     const tick = () => setSecondsAgo(Math.floor((Date.now() - lastFetchTime) / 1000));
@@ -432,17 +554,14 @@ export function DecisionEngine() {
     return () => clearInterval(iv);
   }, [lastFetchTime]);
 
-  // Clear justUpdated pulse after 5 seconds
   useEffect(() => {
     if (!justUpdated) return;
     const t = setTimeout(() => setJustUpdated(false), 5000);
     return () => clearTimeout(t);
   }, [justUpdated]);
 
-  // Check if we have any usable data
   const hasData = data && PRIMARY_BUCKETS.some(b => extractFirst(data[b.key]) !== null);
 
-  // If error and no data, show fallback — but don't break the page
   if (!loading && !hasData) {
     return (
       <GlassCard className="p-5 mb-5">
@@ -464,7 +583,6 @@ export function DecisionEngine() {
 
   return (
     <GlassCard className="p-5 mb-5">
-      {/* Pulse animation keyframes */}
       <style>{`
         @keyframes pulse-glow {
           0%, 100% { box-shadow: 0 0 0 0 rgba(96,165,250,0); }
@@ -488,7 +606,6 @@ export function DecisionEngine() {
                 </span>
                 LIVE
               </span>
-              {/* How to read tooltip */}
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -500,6 +617,10 @@ export function DecisionEngine() {
                     <p className="font-semibold text-white/90 mb-1">How to read these signals</p>
                     <p>This is not a popularity ranking. Markets are scored across odds momentum, conviction strength, liquidity depth, execution quality, participation breadth, and expiry timing.</p>
                     <p className="mt-1">Higher composite scores indicate stronger multi-factor edge. Trap risk flags markets that appear active but may be dangerous to enter.</p>
+                    <p className="mt-1 text-white/50">
+                      <span className="text-emerald-400 font-semibold">Stable Pick</span> = same #1 for ≥3 polls (~4.5 min).{" "}
+                      <span className="text-amber-400 font-semibold">New Pick</span> = just ranked #1 — watch before trading.
+                    </p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -538,31 +659,36 @@ export function DecisionEngine() {
             {PRIMARY_BUCKETS.map(bucket => {
               const market = extractFirst(data?.[bucket.key]);
               if (!market) return null;
-              return <RecommendationCard key={bucket.key} market={market} bucket={bucket} justUpdated={justUpdated} />;
+              return (
+                <RecommendationCard
+                  key={bucket.key}
+                  market={market}
+                  bucket={bucket}
+                  justUpdated={justUpdated}
+                  bestBetMeta={bucket.hero ? bestBetMeta : undefined}
+                />
+              );
             })}
           </div>
 
-          {/* Secondary cards toggle */}
-          {SECONDARY_BUCKETS.some(b => extractFirst(data?.[b.key]) !== null) && (
-            <>
-              <button
-                onClick={() => setShowSecondary(v => !v)}
-                className="mt-4 flex items-center gap-1.5 text-[10px] font-medium text-white/30 hover:text-white/50 transition-colors"
-              >
-                {showSecondary ? "Hide" : "Show"} additional signals
-                <span className="text-[9px]">{showSecondary ? "▲" : "▼"}</span>
-              </button>
-
-              {showSecondary && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mt-3">
-                  {SECONDARY_BUCKETS.map(bucket => {
-                    const market = extractFirst(data?.[bucket.key]);
-                    if (!market) return null;
-                    return <RecommendationCard key={bucket.key} market={market} bucket={bucket} justUpdated={justUpdated} />;
-                  })}
-                </div>
-              )}
-            </>
+          {/* Secondary buckets toggle */}
+          <div className="mt-4">
+            <button
+              onClick={() => setShowSecondary(v => !v)}
+              className="flex items-center gap-1.5 text-[10px] text-white/30 hover:text-white/60 transition-colors"
+            >
+              <Eye className="w-3 h-3" />
+              {showSecondary ? "Hide" : "Show"} advanced signal buckets
+            </button>
+          </div>
+          {showSecondary && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mt-3">
+              {SECONDARY_BUCKETS.map(bucket => {
+                const market = extractFirst(data?.[bucket.key]);
+                if (!market) return null;
+                return <RecommendationCard key={bucket.key} market={market} bucket={bucket} justUpdated={justUpdated} />;
+              })}
+            </div>
           )}
         </>
       )}
