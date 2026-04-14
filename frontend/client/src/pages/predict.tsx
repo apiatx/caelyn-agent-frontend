@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import {
   TrendingUp, TrendingDown, ExternalLink, Activity, BarChart3, RefreshCw, Users, DollarSign,
   MessageSquare, Send, Loader2, Sparkles, ChevronDown, ChevronRight,
-  Zap, Eye, Target, AlertTriangle, CheckCircle, Brain, Star, Waves,
+  Zap, Eye, Target, AlertTriangle, CheckCircle, Brain, Star, Waves, Layers,
 } from "lucide-react";
 import { openSecureLink } from "@/utils/security";
 import diceImage from "@assets/istockphoto-1252690598-612x612_1756665072306.jpg";
@@ -1873,22 +1873,17 @@ function CaelynPredictsDropdown({ signals }: { signals: SignalsData | null }) {
 
   return (
     <div ref={dropdownRef} className="relative flex-shrink-0">
-      {/* Trigger button */}
       <button
         onClick={() => setOpen(v => !v)}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+        className="flex flex-col items-center justify-center gap-1 w-[76px] h-[64px] rounded-xl text-[10px] font-semibold transition-all"
         style={{
           background: open ? 'rgba(32,144,208,0.18)' : 'rgba(32,144,208,0.08)',
           border: `1px solid ${open ? 'rgba(32,144,208,0.5)' : 'rgba(32,144,208,0.2)'}`,
           color: '#80d8f8',
         }}
       >
-        <Sparkles className="w-3.5 h-3.5" />
-        Caelyn Predicts
-        <ChevronDown
-          className="w-3.5 h-3.5 transition-transform duration-200"
-          style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}
-        />
+        <Sparkles className="w-4 h-4" />
+        <span className="text-center leading-tight">Caelyn<br/>Predicts</span>
       </button>
 
       {/* Dropdown panel */}
@@ -1931,19 +1926,15 @@ function CaelynAnalyzesDropdown() {
     <div ref={dropdownRef} className="relative flex-shrink-0">
       <button
         onClick={() => setOpen(v => !v)}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+        className="flex flex-col items-center justify-center gap-1 w-[76px] h-[64px] rounded-xl text-[10px] font-semibold transition-all"
         style={{
           background: open ? 'rgba(245,158,11,0.18)' : 'rgba(245,158,11,0.08)',
           border: `1px solid ${open ? 'rgba(245,158,11,0.5)' : 'rgba(245,158,11,0.2)'}`,
           color: '#fbbf24',
         }}
       >
-        <Brain className="w-3.5 h-3.5" />
-        Caelyn Analyzes
-        <ChevronDown
-          className="w-3.5 h-3.5 transition-transform duration-200"
-          style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}
-        />
+        <Brain className="w-4 h-4" />
+        <span className="text-center leading-tight">Caelyn<br/>Analyzes</span>
       </button>
 
       {open && (
@@ -1959,6 +1950,87 @@ function CaelynAnalyzesDropdown() {
           }}
         >
           <AnalysisPanel noCard />
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Betting Platforms Dropdown ───────────────────────────────────
+
+const BETTING_PLATFORMS = [
+  { name: "Predict Base",       sub: "Analytics & Trading",      url: "https://predictbase.app/" },
+  { name: "Bet Base",           sub: "Aggregated Odds",          url: "https://betbase.xyz/" },
+  { name: "PMX",                sub: "Pro Exchange",             url: "https://pmx.trade/markets" },
+  { name: "Kalshi",             sub: "CFTC-Regulated",           url: "https://kalshi.com/" },
+  { name: "TrueMarkets",        sub: "Decentralized",            url: "https://app.truemarkets.org/en/markets" },
+  { name: "Cloudbet",           sub: "Crypto Sports Betting",    url: "https://www.cloudbet.com/en/sports" },
+  { name: "Betly.trade",        sub: "Social Betting",           url: "https://www.betly.trade/categories" },
+  { name: "Limitless Exchange", sub: "Crypto Predictions",       url: "https://limitless.exchange/advanced" },
+  { name: "Overtime Markets",   sub: "Sports — Decentralized",   url: "https://www.overtimemarkets.xyz/markets?status=OpenMarkets&sport=Live" },
+];
+
+function BettingPlatformsDropdown() {
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
+
+  return (
+    <div ref={dropdownRef} className="relative flex-shrink-0">
+      <button
+        onClick={() => setOpen(v => !v)}
+        className="flex flex-col items-center justify-center gap-1 w-[76px] h-[64px] rounded-xl text-[10px] font-semibold transition-all"
+        style={{
+          background: open ? 'rgba(120,100,200,0.18)' : 'rgba(120,100,200,0.08)',
+          border: `1px solid ${open ? 'rgba(160,130,240,0.4)' : 'rgba(160,130,240,0.15)'}`,
+          color: 'rgba(180,160,240,0.85)',
+        }}
+      >
+        <Layers className="w-4 h-4" />
+        <span className="text-center leading-tight">Other<br/>Platforms</span>
+      </button>
+
+      {open && (
+        <div
+          className="absolute right-0 top-full mt-2 rounded-xl z-50 overflow-hidden"
+          style={{
+            width: 300,
+            background: 'rgba(5,8,16,0.97)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            boxShadow: '0 8px 40px rgba(0,0,0,0.6)',
+            backdropFilter: 'blur(20px)',
+          }}
+        >
+          <div className="px-4 py-3 border-b border-white/[0.06]">
+            <p className="text-[10px] text-white/40 font-semibold uppercase tracking-widest">Betting Platforms</p>
+          </div>
+          <div className="py-1.5">
+            {BETTING_PLATFORMS.map((p) => (
+              <a
+                key={p.name}
+                href={p.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between px-4 py-2.5 hover:bg-white/[0.04] transition-colors group"
+              >
+                <div>
+                  <p className="text-[12px] text-white/75 font-medium group-hover:text-white transition-colors">{p.name}</p>
+                  <p className="text-[10px] text-white/30">{p.sub}</p>
+                </div>
+                <ExternalLink className="w-3 h-3 text-white/20 group-hover:text-white/50 transition-colors flex-shrink-0" />
+              </a>
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -2060,10 +2132,27 @@ export default function PredictPage() {
             </h1>
             <p className="text-xs text-white/30">Live prediction market odds for macro, economics &amp; investing</p>
           </div>
-          {/* AI dropdowns — stacked top right of header */}
-          <div className="flex flex-col items-end gap-1.5">
+          {/* Header action buttons — 4 square tiles, side by side */}
+          <div className="flex items-center gap-2 flex-shrink-0">
             <CaelynPredictsDropdown signals={pageSignals} />
             <CaelynAnalyzesDropdown />
+            <a
+              href="https://polymarket.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex flex-col items-center justify-center gap-1 w-[76px] h-[64px] rounded-xl text-[10px] font-semibold transition-all"
+              style={{
+                background: 'rgba(34,197,94,0.08)',
+                border: '1px solid rgba(34,197,94,0.2)',
+                color: 'rgba(74,222,128,0.85)',
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(34,197,94,0.15)'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(34,197,94,0.08)'; }}
+            >
+              <ExternalLink className="w-4 h-4" />
+              <span className="text-center leading-tight">Open<br/>Polymarket</span>
+            </a>
+            <BettingPlatformsDropdown />
           </div>
         </div>
 
@@ -2088,292 +2177,6 @@ export default function PredictPage() {
               <CategoryChart />
             </div>
 
-            {/* ═══ Betting Platforms ═══ */}
-            <GlassCard className="p-6">
-              <h2 className="text-base font-bold text-white mb-5">Betting Platforms</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
-                {/* Predict Base */}
-                <div className="p-5 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 rounded-lg flex flex-col">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full flex items-center justify-center">
-                        <TrendingUp className="w-4 h-4 text-white" />
-                      </div>
-                      <h3 className="text-base font-semibold text-white">Predict Base</h3>
-                    </div>
-                    <Button
-                      onClick={() => openInNewTab("https://predictbase.app/")}
-                      className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white font-semibold px-3 py-1.5 text-xs rounded-lg transition-all duration-200 flex items-center gap-1.5"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                      Open Predict Base
-                    </Button>
-                  </div>
-                  <p className="text-crypto-silver text-sm mb-3">
-                    Advanced prediction market analytics and trading platform with real-time market data.
-                  </p>
-                  <div className="bg-black/20 rounded-lg p-3 border border-indigo-500/20 mt-auto">
-                    <p className="text-sm text-crypto-silver">
-                      Real-time prediction market data and analytics
-                      <br />
-                      Track market movements and betting trends
-                      <br />
-                      Comprehensive dashboard for prediction traders
-                    </p>
-                  </div>
-                </div>
-
-                {/* Bet Base */}
-                <div className="p-5 bg-gradient-to-r from-green-500/10 to-teal-500/10 border border-green-500/20 rounded-lg flex flex-col">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-teal-500 rounded-full flex items-center justify-center">
-                        <TrendingUp className="w-4 h-4 text-white" />
-                      </div>
-                      <h3 className="text-base font-semibold text-white">Bet Base</h3>
-                    </div>
-                    <Button
-                      onClick={() => openInNewTab("https://betbase.xyz/")}
-                      className="bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white font-semibold px-3 py-1.5 text-xs rounded-lg transition-all duration-200 flex items-center gap-1.5"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                      Open Bet Base
-                    </Button>
-                  </div>
-                  <p className="text-crypto-silver text-sm mb-3">
-                    Multi-market betting platform with aggregated odds across top prediction markets.
-                  </p>
-                  <div className="bg-black/20 rounded-lg p-3 border border-green-500/20 mt-auto">
-                    <p className="text-sm text-crypto-silver">
-                      Aggregated betting markets in one platform
-                      <br />
-                      Compare odds across multiple prediction exchanges
-                      <br />
-                      Streamlined interface for active bettors
-                    </p>
-                  </div>
-                </div>
-
-                {/* PMX */}
-                <div className="p-5 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg flex flex-col">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                        <TrendingUp className="w-4 h-4 text-white" />
-                      </div>
-                      <h3 className="text-base font-semibold text-white">PMX</h3>
-                    </div>
-                    <Button
-                      onClick={() => openInNewTab("https://pmx.trade/markets")}
-                      className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-semibold px-3 py-1.5 text-xs rounded-lg transition-all duration-200 flex items-center gap-1.5"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                      Open PMX
-                    </Button>
-                  </div>
-                  <p className="text-crypto-silver text-sm mb-3">
-                    Professional prediction market exchange with advanced trading features and deep liquidity.
-                  </p>
-                  <div className="bg-black/20 rounded-lg p-3 border border-blue-500/20 mt-auto">
-                    <p className="text-sm text-crypto-silver">
-                      Professional-grade prediction market trading
-                      <br />
-                      Advanced order types and market depth
-                      <br />
-                      Deep liquidity across multiple market categories
-                    </p>
-                  </div>
-                </div>
-
-                {/* Kalshi */}
-                <div className="p-5 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 rounded-lg flex flex-col">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full flex items-center justify-center">
-                        <TrendingUp className="w-4 h-4 text-white" />
-                      </div>
-                      <h3 className="text-base font-semibold text-white">Kalshi</h3>
-                    </div>
-                    <Button
-                      onClick={() => openInNewTab("https://kalshi.com/")}
-                      className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white font-semibold px-3 py-1.5 text-xs rounded-lg transition-all duration-200 flex items-center gap-1.5"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                      Open Kalshi
-                    </Button>
-                  </div>
-                  <p className="text-crypto-silver text-sm mb-3">
-                    CFTC-regulated prediction markets where you can trade on real-world events.
-                  </p>
-                  <div className="bg-black/20 rounded-lg p-3 border border-indigo-500/20 mt-auto">
-                    <p className="text-sm text-crypto-silver">
-                      Trade on elections, economic data, and news events
-                      <br />
-                      CFTC-regulated and fully legal in the US
-                      <br />
-                      Real money trading with transparent odds
-                    </p>
-                  </div>
-                </div>
-
-                {/* TrueMarkets */}
-                <div className="p-5 bg-gradient-to-r from-green-500/10 to-teal-500/10 border border-green-500/20 rounded-lg flex flex-col">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-teal-500 rounded-full flex items-center justify-center">
-                        <TrendingUp className="w-4 h-4 text-white" />
-                      </div>
-                      <h3 className="text-base font-semibold text-white">TrueMarkets</h3>
-                    </div>
-                    <Button
-                      onClick={() => openInNewTab("https://app.truemarkets.org/en/markets")}
-                      className="bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white font-semibold px-3 py-1.5 text-xs rounded-lg transition-all duration-200 flex items-center gap-1.5"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                      Open TrueMarkets
-                    </Button>
-                  </div>
-                  <p className="text-crypto-silver text-sm mb-3">
-                    Decentralized prediction markets platform with transparent and trustless betting mechanisms.
-                  </p>
-                  <div className="bg-black/20 rounded-lg p-3 border border-green-500/20 mt-auto">
-                    <p className="text-sm text-crypto-silver">
-                      Decentralized prediction markets on blockchain
-                      <br />
-                      Trustless and transparent betting protocols
-                      <br />
-                      Wide range of prediction market categories
-                    </p>
-                  </div>
-                </div>
-
-                {/* Cloudbet Sports Betting */}
-                <div className="p-5 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg flex flex-col">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                        <TrendingUp className="w-4 h-4 text-white" />
-                      </div>
-                      <h3 className="text-base font-semibold text-white">Cloudbet Sports Betting</h3>
-                    </div>
-                    <Button
-                      onClick={() => openInNewTab("https://www.cloudbet.com/en/sports")}
-                      className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-semibold px-3 py-1.5 text-xs rounded-lg transition-all duration-200 flex items-center gap-1.5"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                      Open Cloudbet
-                    </Button>
-                  </div>
-                  <p className="text-crypto-silver text-sm mb-3">
-                    Professional crypto sports betting platform with competitive odds and live betting options.
-                  </p>
-                  <div className="bg-black/20 rounded-lg p-3 border border-blue-500/20 mt-auto">
-                    <p className="text-sm text-crypto-silver">
-                      Crypto-first sportsbook with Bitcoin, Ethereum, and altcoin betting
-                      <br />
-                      Live betting on major sports events
-                      <br />
-                      Provably fair gaming and instant withdrawals
-                    </p>
-                  </div>
-                </div>
-
-                {/* Betly.trade */}
-                <div className="p-5 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-lg flex flex-col">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                        <TrendingUp className="w-4 h-4 text-white" />
-                      </div>
-                      <h3 className="text-base font-semibold text-white">Betly.trade</h3>
-                    </div>
-                    <Button
-                      onClick={() => openInNewTab("https://www.betly.trade/categories")}
-                      className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold px-3 py-1.5 text-xs rounded-lg transition-all duration-200 flex items-center gap-1.5"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                      Open Betly
-                    </Button>
-                  </div>
-                  <p className="text-crypto-silver text-sm mb-3">
-                    Social betting made simple. Swipe on prediction markets, not thots.
-                  </p>
-                  <div className="bg-black/20 rounded-lg p-3 border border-purple-500/20 mt-auto">
-                    <p className="text-sm text-crypto-silver">
-                      Swipe-based prediction market interface
-                      <br />
-                      Social betting on crypto and trending topics
-                      <br />
-                      Quick and simple market participation
-                    </p>
-                  </div>
-                </div>
-
-                {/* Limitless Exchange */}
-                <div className="p-5 bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/20 rounded-lg flex flex-col">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
-                        <TrendingUp className="w-4 h-4 text-white" />
-                      </div>
-                      <h3 className="text-base font-semibold text-white">Limitless Exchange</h3>
-                    </div>
-                    <Button
-                      onClick={() => openInNewTab("https://limitless.exchange/advanced")}
-                      className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold px-3 py-1.5 text-xs rounded-lg transition-all duration-200 flex items-center gap-1.5"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                      Open Limitless
-                    </Button>
-                  </div>
-                  <p className="text-crypto-silver text-sm mb-3">
-                    Predict future crypto and stocks prices with sophisticated trading features and analytics.
-                  </p>
-                  <div className="bg-black/20 rounded-lg p-3 border border-orange-500/20 mt-auto">
-                    <p className="text-sm text-crypto-silver">
-                      Advanced prediction market trading platform
-                      <br />
-                      Crypto and stock price predictions
-                      <br />
-                      Sophisticated analytics and trading features
-                    </p>
-                  </div>
-                </div>
-
-                {/* Overtime Markets */}
-                <div className="p-5 bg-gradient-to-r from-green-500/10 to-blue-500/10 border border-green-500/20 rounded-lg flex flex-col">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center">
-                        <TrendingUp className="w-4 h-4 text-white" />
-                      </div>
-                      <h3 className="text-base font-semibold text-white">Overtime Markets</h3>
-                    </div>
-                    <Button
-                      onClick={() => openInNewTab("https://www.overtimemarkets.xyz/markets?status=OpenMarkets&sport=Live")}
-                      className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white font-semibold px-3 py-1.5 text-xs rounded-lg transition-all duration-200 flex items-center gap-1.5"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                      Open Overtime
-                    </Button>
-                  </div>
-                  <p className="text-crypto-silver text-sm mb-3">
-                    Decentralized sports prediction markets with live betting on major sports events.
-                  </p>
-                  <div className="bg-black/20 rounded-lg p-3 border border-green-500/20 mt-auto">
-                    <p className="text-sm text-crypto-silver">
-                      Live sports prediction markets
-                      <br />
-                      Decentralized betting on NBA, NFL, Soccer, and more
-                      <br />
-                      Real-time odds and transparent market mechanics
-                    </p>
-                  </div>
-                </div>
-
-              </div>
-            </GlassCard>
           </div>
 
         </div>

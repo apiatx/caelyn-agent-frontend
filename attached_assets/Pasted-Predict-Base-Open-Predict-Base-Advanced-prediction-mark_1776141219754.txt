@@ -1,0 +1,71 @@
+Predict Base
+Open Predict Base
+Advanced prediction market analytics and trading platform with real-time market data.
+
+Real-time prediction market data and analytics
+Track market movements and betting trends
+Comprehensive dashboard for prediction traders
+
+Bet Base
+Open Bet Base
+Multi-market betting platform with aggregated odds across top prediction markets.
+
+Aggregated betting markets in one platform
+Compare odds across multiple prediction exchanges
+Streamlined interface for active bettors
+
+PMX
+Open PMX
+Professional prediction market exchange with advanced trading features and deep liquidity.
+
+Professional-grade prediction market trading
+Advanced order types and market depth
+Deep liquidity across multiple market categories
+
+Kalshi
+Open Kalshi
+CFTC-regulated prediction markets where you can trade on real-world events.
+
+Trade on elections, economic data, and news events
+CFTC-regulated and fully legal in the US
+Real money trading with transparent odds
+
+TrueMarkets
+Open TrueMarkets
+Decentralized prediction markets platform with transparent and trustless betting mechanisms.
+
+Decentralized prediction markets on blockchain
+Trustless and transparent betting protocols
+Wide range of prediction market categories
+
+Cloudbet Sports Betting
+Open Cloudbet
+Professional crypto sports betting platform with competitive odds and live betting options.
+
+Crypto-first sportsbook with Bitcoin, Ethereum, and altcoin betting
+Live betting on major sports events
+Provably fair gaming and instant withdrawals
+
+Betly.trade
+Open Betly
+Social betting made simple. Swipe on prediction markets, not thots.
+
+Swipe-based prediction market interface
+Social betting on crypto and trending topics
+Quick and simple market participation
+
+Limitless Exchange
+Open Limitless
+Predict future crypto and stocks prices with sophisticated trading features and analytics.
+
+Advanced prediction market trading platform
+Crypto and stock price predictions
+Sophisticated analytics and trading features
+
+Overtime Markets
+Open Overtime
+Decentralized sports prediction markets with live betting on major sports events.
+
+Live sports prediction markets
+Decentralized betting on NBA, NFL, Soccer, and more
+Real-time odds and transparent market mechanics
