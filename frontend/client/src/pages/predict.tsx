@@ -277,6 +277,29 @@ function PriceBar({ yesPrice }: { yesPrice: number }) {
   );
 }
 
+function InfoTooltip({ text }: { text: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <span className="relative inline-flex flex-shrink-0">
+      <button
+        onMouseEnter={() => setOpen(true)}
+        onMouseLeave={() => setOpen(false)}
+        onClick={(e) => { e.stopPropagation(); setOpen((v) => !v); }}
+        className="w-[15px] h-[15px] rounded-full bg-white/[0.07] border border-white/[0.12] text-white/40 text-[9px] font-bold flex items-center justify-center hover:bg-white/[0.14] hover:text-white/70 transition-all cursor-help"
+        aria-label="More info"
+      >
+        i
+      </button>
+      {open && (
+        <div className="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+6px)] z-[9999] w-64 bg-[#0d1520] border border-white/[0.1] rounded-xl p-3 shadow-2xl pointer-events-none">
+          <p className="text-[11px] text-white/65 leading-relaxed">{text}</p>
+          <div className="absolute left-1/2 -translate-x-1/2 top-full w-2 h-2 bg-[#0d1520] border-b border-r border-white/[0.1] rotate-45 -mt-[5px]" />
+        </div>
+      )}
+    </span>
+  );
+}
+
 function MarketPulseBar({ markets }: { markets: ParsedMarket[] }) {
   const top = markets.slice(0, 5);
   if (top.length === 0) return null;
@@ -285,6 +308,7 @@ function MarketPulseBar({ markets }: { markets: ParsedMarket[] }) {
       <div className="flex items-center gap-2 mb-3">
         <Activity className="w-4 h-4 text-emerald-400" />
         <h3 className="text-sm font-bold text-white/90 tracking-wide uppercase">Market Pulse</h3>
+        <InfoTooltip text="Where is the most money flowing right now? The top 5 markets by raw dollar trading volume in the last 24 hours. If $13.7M traded on 'Military action against Iran,' it's #1. It tells you what the crowd is most interested in, but nothing about whether odds changed or whether bets are confident. It's a volume leaderboard, nothing more." />
         <LiveBadge />
       </div>
       <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
@@ -387,6 +411,7 @@ function MoversSection({ markets }: { markets: ParsedMarket[] }) {
       <div className="flex items-center gap-2 mb-3">
         <TrendingUp className="w-4 h-4 text-orange-400" />
         <h3 className="text-sm font-bold text-white/90 tracking-wide uppercase">Movers & Shakers</h3>
+        <InfoTooltip text="Where is the crowd most confident AND putting money behind it? Ranks markets by multiplying conviction (how far the price is from 50/50) by volume. A market at 100% YES with high volume scores highest. A market at 51% YES even with high volume barely shows up. This answers: 'Where has the crowd made up its mind and put real money on it?' — not about recent movement, just current conviction." />
         <span className="text-[10px] text-white/30">Highest conviction bets</span>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -485,6 +510,7 @@ function SurgingMoversView({ signals }: { signals: SignalsData | null }) {
         <h3 className="text-sm font-bold text-white/90 tracking-wide uppercase">
           Biggest 24H Odds Movers
         </h3>
+        <InfoTooltip text="What just changed dramatically? Shows markets whose probability shifted the most in the last 24 hours, in either direction. A market that went from 60% to 0.1% (−59.5%) shows up. One that jumped from 33% to 89.5% (+56.5%) shows up. This is the 'breaking news' feed — something happened to move these odds." />
         <span className="text-[10px] text-white/30">Largest probability shifts — either direction</span>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -712,10 +738,10 @@ function PolymarketDashboard({ signals }: { signals: SignalsData | null }) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
               {(signals.top_edges?.length ?? 0) > 0 && (
                 <div>
-                  <div className="flex items-center gap-1.5 mb-2.5" title="Spread as % of YES price — higher = wider bid-ask relative to price, signals a pricing inefficiency or market-making opportunity">
+                  <div className="flex items-center gap-1.5 mb-2.5">
                     <Target className="w-3.5 h-3.5 text-amber-400" />
                     <span className="text-[11px] font-bold text-white/80 uppercase tracking-wider">Top Edges</span>
-                    <span className="text-[9px] text-white/25 cursor-help">ⓘ</span>
+                    <InfoTooltip text="Spread as a % of the YES price — higher means a wider bid-ask gap relative to the current price. A wide spread signals a pricing inefficiency or market-making opportunity: the market maker is uncertain, leaving room for a sharper bet." />
                   </div>
                   <div className="space-y-1.5">
                     {(signals.top_edges ?? []).slice(0, 6).map((e, i) => (
