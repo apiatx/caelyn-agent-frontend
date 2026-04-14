@@ -311,8 +311,14 @@ function MarketPulseBar({ markets }: { markets: ParsedMarket[] }) {
         <InfoTooltip text="Where is the most money flowing right now? The top 5 markets by raw dollar trading volume in the last 24 hours. If $13.7M traded on 'Military action against Iran,' it's #1. It tells you what the crowd is most interested in, but nothing about whether odds changed or whether bets are confident. It's a volume leaderboard, nothing more." />
         <LiveBadge />
       </div>
-      <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-        {top.map((m) => {
+      <div className="rounded-lg border border-white/[0.06] overflow-hidden">
+        <div className="flex items-center gap-3 px-3 py-1.5 bg-white/[0.02] border-b border-white/[0.06]">
+          <span className="w-4 shrink-0" />
+          <span className="flex-1 text-[9px] text-white/25 uppercase tracking-wider font-semibold">Market</span>
+          <span className="w-[100px] text-right text-[9px] text-white/25 uppercase tracking-wider font-semibold">YES %</span>
+          <span className="w-16 text-right text-[9px] text-white/25 uppercase tracking-wider font-semibold">24h Vol</span>
+        </div>
+        {top.map((m, i) => {
           const pct = Math.round(m.yesPrice * 100);
           const isHigh = pct >= 60;
           return (
@@ -321,26 +327,17 @@ function MarketPulseBar({ markets }: { markets: ParsedMarket[] }) {
               href={`https://polymarket.com/event/${m.eventSlug}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex-shrink-0 min-w-[220px] max-w-[280px] bg-white/[0.03] border border-white/[0.06] rounded-lg px-3 py-2.5 hover:bg-white/[0.06] hover:border-white/10 transition-all cursor-pointer group"
+              className="flex items-center gap-3 px-3 py-2.5 hover:bg-white/[0.04] transition-colors group border-t border-white/[0.04] first:border-t-0"
             >
-              <p className="text-[11px] text-white/70 font-medium leading-tight mb-2 line-clamp-2 group-hover:text-white/90 transition-colors">
-                {m.question.length > 65 ? m.question.slice(0, 62) + "..." : m.question}
-              </p>
-              <div className="flex items-center gap-2">
-                <span className={`text-sm font-bold ${isHigh ? "text-emerald-400" : "text-red-400"}`}>
-                  {pct}%
-                </span>
-                <div className="flex-1 h-1.5 rounded-full bg-white/5 overflow-hidden">
-                  <div
-                    className="h-full rounded-full"
-                    style={{
-                      width: `${pct}%`,
-                      background: isHigh ? "#22c55e" : "#ef4444",
-                    }}
-                  />
+              <span className="w-4 shrink-0 text-[9px] text-white/20 font-mono text-right">{i + 1}</span>
+              <p className="flex-1 min-w-0 text-[11px] text-white/70 truncate group-hover:text-white/90 transition-colors">{m.question}</p>
+              <div className="flex items-center gap-1.5 w-[100px] justify-end shrink-0">
+                <div className="w-12 h-1 rounded-full bg-white/[0.06] overflow-hidden">
+                  <div className="h-full rounded-full" style={{ width: `${pct}%`, background: isHigh ? '#22c55e' : '#ef4444' }} />
                 </div>
-                <span className="text-[9px] text-white/30 font-mono">{formatVolume(m.volume24hr)}</span>
+                <span className={`text-[11px] font-bold font-mono w-8 text-right ${isHigh ? 'text-emerald-400' : 'text-red-400'}`}>{pct}%</span>
               </div>
+              <span className="w-16 text-right text-[10px] font-mono text-white/40 shrink-0">{formatVolume(m.volume24hr)}</span>
             </a>
           );
         })}
@@ -414,8 +411,15 @@ function MoversSection({ markets }: { markets: ParsedMarket[] }) {
         <InfoTooltip text="Where is the crowd most confident AND putting money behind it? Ranks markets by multiplying conviction (how far the price is from 50/50) by volume. A market at 100% YES with high volume scores highest. A market at 51% YES even with high volume barely shows up. This answers: 'Where has the crowd made up its mind and put real money on it?' — not about recent movement, just current conviction." />
         <span className="text-[10px] text-white/30">Highest conviction bets</span>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {movers.map((m) => {
+      <div className="rounded-lg border border-white/[0.06] overflow-hidden">
+        <div className="flex items-center gap-3 px-3 py-1.5 bg-white/[0.02] border-b border-white/[0.06]">
+          <span className="w-4 shrink-0" />
+          <span className="flex-1 text-[9px] text-white/25 uppercase tracking-wider font-semibold">Market</span>
+          <span className="w-[100px] text-right text-[9px] text-white/25 uppercase tracking-wider font-semibold">YES %</span>
+          <span className="w-16 text-right text-[9px] text-white/25 uppercase tracking-wider font-semibold">Conv.</span>
+          <span className="w-16 text-right text-[9px] text-white/25 uppercase tracking-wider font-semibold">24h Vol</span>
+        </div>
+        {movers.map((m, i) => {
           const pct = Math.round(m.yesPrice * 100);
           const deviation = pct - 50;
           const isYesFavored = deviation > 0;
@@ -425,29 +429,20 @@ function MoversSection({ markets }: { markets: ParsedMarket[] }) {
               href={`https://polymarket.com/event/${m.eventSlug}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="block"
+              className="flex items-center gap-3 px-3 py-2.5 hover:bg-white/[0.04] transition-colors group border-t border-white/[0.04] first:border-t-0"
             >
-              <GlassCard className="p-3 hover:bg-white/[0.06] transition-all cursor-pointer">
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <p className="text-[11px] text-white/80 font-medium leading-tight line-clamp-2 flex-1">
-                    {m.question.length > 80 ? m.question.slice(0, 77) + "..." : m.question}
-                  </p>
-                  <span
-                    className={`text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${
-                      isYesFavored
-                        ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                        : "bg-red-500/10 text-red-400 border border-red-500/20"
-                    }`}
-                  >
-                    {isYesFavored ? "+" : ""}
-                    {deviation}%
-                  </span>
+              <span className="w-4 shrink-0 text-[9px] text-white/20 font-mono text-right">{i + 1}</span>
+              <p className="flex-1 min-w-0 text-[11px] text-white/70 truncate group-hover:text-white/90 transition-colors">{m.question}</p>
+              <div className="flex items-center gap-1.5 w-[100px] justify-end shrink-0">
+                <div className="w-12 h-1 rounded-full bg-white/[0.06] overflow-hidden">
+                  <div className="h-full rounded-full" style={{ width: `${pct}%`, background: pct >= 60 ? '#22c55e' : '#ef4444' }} />
                 </div>
-                <div className="flex items-center justify-between text-[10px] text-white/40">
-                  <span>YES {pct}%</span>
-                  <span>{formatVolume(m.volume24hr)} 24h</span>
-                </div>
-              </GlassCard>
+                <span className={`text-[11px] font-bold font-mono w-8 text-right ${pct >= 60 ? 'text-emerald-400' : 'text-red-400'}`}>{pct}%</span>
+              </div>
+              <span className={`w-16 text-right text-[11px] font-bold font-mono shrink-0 ${isYesFavored ? 'text-emerald-400' : 'text-red-400'}`}>
+                {isYesFavored ? '+' : ''}{deviation}%
+              </span>
+              <span className="w-16 text-right text-[10px] font-mono text-white/40 shrink-0">{formatVolume(m.volume24hr)}</span>
             </a>
           );
         })}
@@ -513,43 +508,45 @@ function SurgingMoversView({ signals }: { signals: SignalsData | null }) {
         <InfoTooltip text="What just changed dramatically? Shows markets whose probability shifted the most in the last 24 hours, in either direction. A market that went from 60% to 0.1% (−59.5%) shows up. One that jumped from 33% to 89.5% (+56.5%) shows up. This is the 'breaking news' feed — something happened to move these odds." />
         <span className="text-[10px] text-white/30">Largest probability shifts — either direction</span>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className="rounded-lg border border-white/[0.06] overflow-hidden">
+        <div className="flex items-center gap-3 px-3 py-1.5 bg-white/[0.02] border-b border-white/[0.06]">
+          <span className="w-4 shrink-0" />
+          <span className="flex-1 text-[9px] text-white/25 uppercase tracking-wider font-semibold">Market</span>
+          <span className="w-16 text-right text-[9px] text-white/25 uppercase tracking-wider font-semibold">24h Δ</span>
+          <span className="w-[100px] text-right text-[9px] text-white/25 uppercase tracking-wider font-semibold">YES %</span>
+          <span className="w-16 text-right text-[9px] text-white/25 uppercase tracking-wider font-semibold">24h Vol</span>
+        </div>
         {movers.slice(0, 12).map((m, i) => {
           const chg = m.price_change_1d;
           const isUp = chg != null && chg > 0;
           const isDown = chg != null && chg < 0;
-          const chgStr = chg == null ? "—" : `${isUp ? "+" : ""}${chg.toFixed(1)}%`;
-          const chgCls = isUp ? "text-emerald-400" : isDown ? "text-red-400" : "text-white/25";
-          const bgCls  = isUp ? "bg-emerald-500/10 border-emerald-500/20" : isDown ? "bg-red-500/10 border-red-500/20" : "bg-white/[0.03] border-white/[0.06]";
+          const chgStr = chg == null ? '—' : `${isUp ? '+' : ''}${chg.toFixed(1)}%`;
+          const chgCls = isUp ? 'text-emerald-400' : isDown ? 'text-red-400' : 'text-white/25';
           const pct = m.yes_pct;
           return (
             <a
               key={i}
-              href={m.slug ? `https://polymarket.com/event/${m.slug}` : "#"}
+              href={m.slug ? `https://polymarket.com/event/${m.slug}` : '#'}
               target="_blank"
               rel="noopener noreferrer"
-              className="block"
+              className="flex items-center gap-3 px-3 py-2.5 hover:bg-white/[0.04] transition-colors group border-t border-white/[0.04] first:border-t-0"
             >
-              <GlassCard className="p-3 hover:bg-white/[0.06] transition-all cursor-pointer h-full">
-                <p className="text-[11px] text-white/80 font-medium leading-tight line-clamp-2 mb-3 min-h-[2.5rem]">
-                  {m.question}
-                </p>
-                <div className="flex items-center justify-between gap-2">
-                  <span className={`text-sm font-bold px-2 py-0.5 rounded-full border ${bgCls} ${chgCls}`}>
-                    {chgStr} 24h
-                  </span>
-                  {pct != null && (
-                    <span className={`text-sm font-bold font-mono ${pct >= 60 ? "text-emerald-400" : pct <= 40 ? "text-red-400" : "text-blue-400"}`}>
-                      {pct}% YES
-                    </span>
-                  )}
-                </div>
-                {m.volume_24h != null && (
-                  <div className="mt-2 text-[10px] text-white/30 font-mono">
-                    {formatVolume(m.volume_24h)} 24h vol
-                  </div>
-                )}
-              </GlassCard>
+              <span className="w-4 shrink-0 text-[9px] text-white/20 font-mono text-right">{i + 1}</span>
+              <p className="flex-1 min-w-0 text-[11px] text-white/70 truncate group-hover:text-white/90 transition-colors">{m.question}</p>
+              <span className={`w-16 text-right text-[11px] font-bold font-mono shrink-0 ${chgCls}`}>{chgStr}</span>
+              <div className="flex items-center gap-1.5 w-[100px] justify-end shrink-0">
+                {pct != null ? (
+                  <>
+                    <div className="w-12 h-1 rounded-full bg-white/[0.06] overflow-hidden">
+                      <div className="h-full rounded-full" style={{ width: `${pct}%`, background: pct >= 60 ? '#22c55e' : pct <= 40 ? '#ef4444' : '#3b82f6' }} />
+                    </div>
+                    <span className={`text-[11px] font-bold font-mono w-8 text-right ${pct >= 60 ? 'text-emerald-400' : pct <= 40 ? 'text-red-400' : 'text-blue-400'}`}>{pct}%</span>
+                  </>
+                ) : <span className="text-[10px] text-white/25 w-full text-right">—</span>}
+              </div>
+              <span className="w-16 text-right text-[10px] font-mono text-white/40 shrink-0">
+                {m.volume_24h != null ? formatVolume(m.volume_24h) : '—'}
+              </span>
             </a>
           );
         })}
@@ -745,21 +742,36 @@ function PolymarketDashboard({ signals }: { signals: SignalsData | null }) {
                     <h3 className="text-sm font-bold text-white/90 tracking-wide uppercase">Top Edges</h3>
                     <InfoTooltip text="Spread as a % of the YES price — higher means a wider bid-ask gap relative to the current price. A wide spread signals a pricing inefficiency or market-making opportunity: the market maker is uncertain, leaving room for a sharper bet." />
                   </div>
-                  <div className="space-y-1.5">
-                    {(signals.top_edges ?? []).slice(0, 6).map((e, i) => (
-                      <a key={i} href={e.slug ? `https://polymarket.com/event/${e.slug}` : "#"} target="_blank" rel="noopener noreferrer"
-                        className="bg-white/[0.02] border border-white/[0.05] rounded-lg px-2.5 py-2 flex items-start gap-2 hover:bg-white/[0.05] transition-colors">
-                        <p className="flex-1 text-[10px] text-white/70 leading-snug">{e.question || "—"}</p>
-                        <div className="flex items-center gap-1 flex-shrink-0 mt-0.5">
-                          <span className="text-[10px] font-mono text-blue-400">{e.yes_pct != null ? `${e.yes_pct}%` : "—"}</span>
-                          {(e.edge_pct ?? e.spread_pct_of_price) != null && (
-                            <span className="text-[10px] font-bold font-mono text-amber-400 whitespace-nowrap">
-                              {(e.edge_pct ?? e.spread_pct_of_price)!.toFixed(1)}% spread
-                            </span>
-                          )}
-                        </div>
-                      </a>
-                    ))}
+                  <div className="rounded-lg border border-white/[0.06] overflow-hidden">
+                    <div className="flex items-center gap-3 px-3 py-1.5 bg-white/[0.02] border-b border-white/[0.06]">
+                      <span className="w-4 shrink-0" />
+                      <span className="flex-1 text-[9px] text-white/25 uppercase tracking-wider font-semibold">Market</span>
+                      <span className="w-[80px] text-right text-[9px] text-white/25 uppercase tracking-wider font-semibold">YES %</span>
+                      <span className="w-16 text-right text-[9px] text-white/25 uppercase tracking-wider font-semibold">Spread</span>
+                    </div>
+                    {(signals.top_edges ?? []).slice(0, 6).map((e, i) => {
+                      const spread = e.edge_pct ?? e.spread_pct_of_price;
+                      return (
+                        <a key={i} href={e.slug ? `https://polymarket.com/event/${e.slug}` : "#"} target="_blank" rel="noopener noreferrer"
+                          className="flex items-center gap-3 px-3 py-2.5 hover:bg-white/[0.04] transition-colors group border-t border-white/[0.04] first:border-t-0">
+                          <span className="w-4 shrink-0 text-[9px] text-white/20 font-mono text-right">{i + 1}</span>
+                          <p className="flex-1 min-w-0 text-[11px] text-white/70 truncate group-hover:text-white/90 transition-colors">{e.question || "—"}</p>
+                          <div className="flex items-center gap-1.5 w-[80px] justify-end shrink-0">
+                            {e.yes_pct != null ? (
+                              <>
+                                <div className="w-10 h-1 rounded-full bg-white/[0.06] overflow-hidden">
+                                  <div className="h-full rounded-full" style={{ width: `${e.yes_pct}%`, background: e.yes_pct >= 60 ? '#22c55e' : e.yes_pct <= 40 ? '#ef4444' : '#3b82f6' }} />
+                                </div>
+                                <span className={`text-[11px] font-bold font-mono w-7 text-right ${e.yes_pct >= 60 ? 'text-emerald-400' : e.yes_pct <= 40 ? 'text-red-400' : 'text-blue-400'}`}>{e.yes_pct}%</span>
+                              </>
+                            ) : <span className="text-[10px] text-white/25 w-full text-right">—</span>}
+                          </div>
+                          <span className="w-16 text-right text-[11px] font-bold font-mono text-amber-400 shrink-0">
+                            {spread != null ? `${spread.toFixed(1)}%` : '—'}
+                          </span>
+                        </a>
+                      );
+                    })}
                   </div>
                 </div>
               )}
