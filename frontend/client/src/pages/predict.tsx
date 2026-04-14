@@ -283,35 +283,40 @@ function InfoTooltip({ text }: { text: string }) {
   const [pos, setPos] = useState({ top: 0, left: 0 });
   const btnRef = useRef<HTMLButtonElement>(null);
 
-  const calcPos = () => {
-    if (btnRef.current) {
+  const toggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!open && btnRef.current) {
       const rect = btnRef.current.getBoundingClientRect();
-      setPos({
-        top: rect.top + window.scrollY,
-        left: rect.left + rect.width / 2 + window.scrollX,
-      });
+      setPos({ top: rect.top, left: rect.left + rect.width / 2 });
     }
+    setOpen((v) => !v);
   };
+
+  useEffect(() => {
+    if (!open) return;
+    const close = () => setOpen(false);
+    document.addEventListener("click", close);
+    return () => document.removeEventListener("click", close);
+  }, [open]);
 
   return (
     <span className="inline-flex flex-shrink-0">
       <button
         ref={btnRef}
-        onMouseEnter={() => { calcPos(); setOpen(true); }}
-        onMouseLeave={() => setOpen(false)}
-        onClick={(e) => { e.stopPropagation(); calcPos(); setOpen((v) => !v); }}
-        className="w-[15px] h-[15px] rounded-full bg-white/[0.07] border border-white/[0.12] text-white/40 text-[9px] font-bold flex items-center justify-center hover:bg-white/[0.14] hover:text-white/70 transition-all cursor-help"
+        onClick={toggle}
+        className={`w-[15px] h-[15px] rounded-full border text-[9px] font-bold flex items-center justify-center transition-all cursor-pointer ${open ? "bg-blue-500/20 border-blue-500/40 text-blue-400" : "bg-white/[0.07] border-white/[0.12] text-white/40 hover:bg-white/[0.14] hover:text-white/70"}`}
         aria-label="More info"
       >
         i
       </button>
       {open && createPortal(
         <div
-          className="fixed w-64 bg-[#0d1520] border border-white/[0.1] rounded-xl p-3 shadow-2xl pointer-events-none"
-          style={{ zIndex: 99999, top: pos.top, left: pos.left, transform: 'translate(-50%, calc(-100% - 10px))' }}
+          className="fixed w-72 bg-[#0d1520] border border-white/[0.12] rounded-xl p-3.5 shadow-2xl"
+          style={{ zIndex: 99999, top: pos.top, left: pos.left, transform: 'translate(-50%, calc(-100% - 8px))' }}
+          onClick={(e) => e.stopPropagation()}
         >
-          <p className="text-[11px] text-white/65 leading-relaxed">{text}</p>
-          <div className="absolute left-1/2 -translate-x-1/2 top-full w-2 h-2 bg-[#0d1520] border-b border-r border-white/[0.1] rotate-45 -mt-[5px]" />
+          <p className="text-[11px] text-white/70 leading-relaxed">{text}</p>
+          <div className="absolute left-1/2 -translate-x-1/2 top-full w-2 h-2 bg-[#0d1520] border-b border-r border-white/[0.12] rotate-45 -mt-[5px]" />
         </div>,
         document.body
       )}
