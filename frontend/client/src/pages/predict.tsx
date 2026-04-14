@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
@@ -976,36 +976,88 @@ function recoBadge(r: string | undefined) {
 }
 
 // ─── Enhanced Markets Table ────────────────────────────────────────
+type ScreenerSortCol = "yes_pct" | "change_1h" | "change_24h" | "change_1wk" | "volume" | "momentum" | "whale" | "efficiency" | "expires";
+type SortDir = "asc" | "desc";
+
 function EnhancedMarketsTable() {
-  const [markets, setMarkets]       = useState<EnhancedMarket[]>([]);
-  const [categories, setCategories] = useState<CategoryItem[]>([]);
-  const [loading, setLoading]       = useState(true);
-  const [tagFilter, setTagFilter]   = useState("");
-  const [minVol, setMinVol]         = useState("");
-  const [sortBy, setSortBy]         = useState<"volume" | "change_24h" | "change_1h" | "efficiency" | "edge" | "liquidity">("volume");
+  const [allMarkets, setAllMarkets]   = useState<EnhancedMarket[]>([]);
+  const [categories, setCategories]   = useState<CategoryItem[]>([]);
+  const [loading, setLoading]         = useState(true);
+  const [tagFilter, setTagFilter]     = useState("");
+  const [minVol, setMinVol]           = useState("");
+  const [sortCol, setSortCol]         = useState<ScreenerSortCol>("volume");
+  const [sortDir, setSortDir]         = useState<SortDir>("desc");
 
   const fetchMarkets = useCallback(async () => {
     setLoading(true);
     try {
-      const qs = new URLSearchParams({ limit: "50" });
-      if (tagFilter) qs.set("tag", tagFilter);
-      if (minVol)    qs.set("min_volume", minVol);
-      const r = await fetch(`/api/predict/markets?${qs}`);
+      const r = await fetch("/api/predict/markets?limit=100");
       if (r.ok) {
         const d = await r.json();
-        setMarkets(Array.isArray(d) ? d : (d.markets ?? []));
+        setAllMarkets(Array.isArray(d) ? d : (d.markets ?? []));
       }
     } catch {} finally { setLoading(false); }
-  }, [tagFilter, minVol]);
+  }, []);
 
   useEffect(() => {
     fetch("/api/predict/categories")
       .then((r) => r.ok ? r.json() : null)
-      .then((d) => { if (d?.categories) setCategories(d.categories.slice(0, 20)); })
+      .then((d) => { if (d?.categories) setCategories(d.categories.slice(0, 30)); })
       .catch(() => {});
   }, []);
 
   useEffect(() => { fetchMarkets(); }, [fetchMarkets]);
+
+  const handleColClick = (col: ScreenerSortCol) => {
+    if (sortCol === col) {
+      setSortDir((d) => d === "desc" ? "asc" : "desc");
+    } else {
+      setSortCol(col);
+      setSortDir("desc");
+    }
+  };
+
+  const minVolNum = minVol ? Number(minVol) : 0;
+
+  const markets = useMemo(() => {
+    let rows = allMarkets.filter((m) => {
+      if (tagFilter) {
+        const tags = (m.tags ?? []).map((t) => t.toLowerCase());
+        if (!tags.some((t) => t.includes(tagFilter.toLowerCase()) || tagFilter.toLowerCase().includes(t))) return false;
+      }
+      if (minVolNum > 0 && (m.volume_24h ?? 0) < minVolNum) return false;
+      return true;
+    });
+
+    rows = [...rows].sort((a, b) => {
+      let av = 0, bv = 0;
+      if (sortCol === "yes_pct")     { av = a.yes_pct ?? 0;                  bv = b.yes_pct ?? 0; }
+      if (sortCol === "change_1h")   { av = a.price_change_1h ?? 0;          bv = b.price_change_1h ?? 0; }
+      if (sortCol === "change_24h")  { av = a.price_change_1d ?? 0;          bv = b.price_change_1d ?? 0; }
+      if (sortCol === "change_1wk")  { av = a.price_change_1wk ?? 0;         bv = b.price_change_1wk ?? 0; }
+      if (sortCol === "volume")      { av = a.volume_24h ?? 0;               bv = b.volume_24h ?? 0; }
+      if (sortCol === "momentum")    { av = a.volume_momentum === "SURGING" ? 2 : a.volume_momentum === "ACCELERATING" ? 1 : 0; bv = b.volume_momentum === "SURGING" ? 2 : b.volume_momentum === "ACCELERATING" ? 1 : 0; }
+      if (sortCol === "whale")       { av = a.whale_activity ? 1 : 0;        bv = b.whale_activity ? 1 : 0; }
+      if (sortCol === "efficiency")  { av = a.market_efficiency_score ?? 0;  bv = b.market_efficiency_score ?? 0; }
+      if (sortCol === "expires")     { av = a.days_to_expiry ?? 9999;        bv = b.days_to_expiry ?? 9999; }
+      return sortDir === "desc" ? bv - av : av - bv;
+    });
+
+    return rows;
+  }, [allMarkets, tagFilter, minVolNum, sortCol, sortDir]);
+
+  const ColHeader = ({ col, label, align = "left" }: { col: ScreenerSortCol; label: string; align?: "left" | "right" | "center" }) => {
+    const active = sortCol === col;
+    const arrow = sortDir === "desc" ? "↓" : "↑";
+    return (
+      <th
+        onClick={() => handleColClick(col)}
+        className={`px-2 py-2 text-${align} text-[10px] font-semibold uppercase tracking-wider cursor-pointer select-none whitespace-nowrap transition-colors ${active ? "text-blue-400" : "text-white/30 hover:text-white/60"}`}
+      >
+        {label}{active && <span className="ml-0.5 text-[9px]">{arrow}</span>}
+      </th>
+    );
+  };
 
   return (
     <GlassCard className="p-5 mb-5">
@@ -1024,46 +1076,45 @@ function EnhancedMarketsTable() {
           <select value={minVol} onChange={(e) => setMinVol(e.target.value)}
             className="bg-white/[0.04] border border-white/[0.08] rounded-lg px-2.5 py-1.5 text-[11px] text-white/60 focus:outline-none">
             <option value="">Any Volume</option>
-            <option value="1000">$1K+</option><option value="10000">$10K+</option>
-            <option value="50000">$50K+</option><option value="100000">$100K+</option>
-          </select>
-          <select value={sortBy} onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-            className="bg-white/[0.04] border border-white/[0.08] rounded-lg px-2.5 py-1.5 text-[11px] text-white/60 focus:outline-none">
-            <option value="volume">Sort: Volume</option>
-            <option value="change_24h">Sort: 24H Move</option>
-            <option value="change_1h">Sort: 1H Move</option>
-            <option value="efficiency">Sort: Efficiency</option>
-            <option value="edge">Sort: Edge %</option>
-            <option value="liquidity">Sort: Liquidity</option>
+            <option value="100000">$100K+</option>
+            <option value="500000">$500K+</option>
+            <option value="1000000">$1M+</option>
+            <option value="10000000">$10M+</option>
           </select>
           <button onClick={fetchMarkets} className="p-1.5 rounded-lg border border-white/10 hover:bg-white/5 transition-colors">
             <RefreshCw className={`w-3.5 h-3.5 text-white/40 ${loading ? "animate-spin" : ""}`} />
           </button>
         </div>
       </div>
+      {tagFilter && (
+        <div className="mb-3 text-[11px] text-white/40">
+          Showing <span className="text-white/70 font-semibold">{markets.length}</span> market{markets.length !== 1 ? "s" : ""} in <span className="text-blue-400 font-semibold">{tagFilter}</span>
+          <button onClick={() => setTagFilter("")} className="ml-2 text-white/30 hover:text-white/60 transition-colors">✕ clear</button>
+        </div>
+      )}
       {loading ? (
         <div className="space-y-2">{[...Array(5)].map((_, i) => <div key={i} className="h-10 rounded-lg bg-white/[0.03] animate-pulse" />)}</div>
       ) : markets.length === 0 ? (
-        <div className="text-center py-8 text-sm text-white/30">No markets available</div>
+        <div className="text-center py-8 text-sm text-white/30">No markets match the selected filters</div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[800px]">
             <thead>
               <tr className="border-b border-white/[0.06]">
-                {["Market", "YES%", "1H Δ", "24H Δ", "1W Δ", "Vol 24h", "Momentum", "Whale", "Efficiency", "Expires"].map((h) => (
-                  <th key={h} className="px-2 py-2 text-left text-[10px] font-semibold text-white/30 uppercase tracking-wider">{h}</th>
-                ))}
+                <th className="px-2 py-2 text-left text-[10px] font-semibold text-white/30 uppercase tracking-wider">Market</th>
+                <ColHeader col="yes_pct"    label="YES%" />
+                <ColHeader col="change_1h"  label="1H Δ" />
+                <ColHeader col="change_24h" label="24H Δ" />
+                <ColHeader col="change_1wk" label="1W Δ" />
+                <ColHeader col="volume"     label="Vol 24h" />
+                <ColHeader col="momentum"   label="Momentum" />
+                <ColHeader col="whale"      label="Whale" align="center" />
+                <ColHeader col="efficiency" label="Efficiency" />
+                <ColHeader col="expires"    label="Expires" />
               </tr>
             </thead>
             <tbody>
-              {[...markets].sort((a, b) => {
-                if (sortBy === "change_24h") return Math.abs(b.price_change_1d ?? 0) - Math.abs(a.price_change_1d ?? 0);
-                if (sortBy === "change_1h")  return Math.abs(b.price_change_1h ?? 0) - Math.abs(a.price_change_1h ?? 0);
-                if (sortBy === "efficiency") return (b.market_efficiency_score ?? 0) - (a.market_efficiency_score ?? 0);
-                if (sortBy === "edge")       return (b.edge_pct ?? 0) - (a.edge_pct ?? 0);
-                if (sortBy === "liquidity")  return (b.liquidity ?? 0) - (a.liquidity ?? 0);
-                return (b.volume_24h ?? 0) - (a.volume_24h ?? 0);
-              }).map((m, i) => (
+              {markets.map((m, i) => (
                 <tr key={m.id ?? i} className={`border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors ${i % 2 === 0 ? "" : "bg-white/[0.01]"}`}>
                   <td className="px-2 py-2.5 max-w-[260px]">
                     <a href={m.slug ? `https://polymarket.com/event/${m.slug}` : "#"} target="_blank" rel="noopener noreferrer"
