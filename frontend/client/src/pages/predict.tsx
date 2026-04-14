@@ -1952,9 +1952,6 @@ export default function PredictPage() {
 
           <div className="flex-1 min-w-0">
 
-            {/* ═══ Prediction Markets Dashboard ═══ */}
-            <PolymarketDashboard signals={pageSignals} />
-
             {/* ═══ Caelyn Analyzes ═══ */}
             <AnalysisPanel />
 
@@ -1966,6 +1963,9 @@ export default function PredictPage() {
               <WhaleWatchPanel />
               <CategoryChart />
             </div>
+
+            {/* ═══ Prediction Markets Dashboard ═══ */}
+            <PolymarketDashboard signals={pageSignals} />
 
             {/* ═══ Betting Platforms ═══ */}
             <GlassCard className="p-6">
