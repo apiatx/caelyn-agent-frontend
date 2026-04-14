@@ -1772,7 +1772,7 @@ export default function PredictPage() {
         pointerEvents: 'none', zIndex: 0
       }} />
       {/* Header */}
-      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-2 relative" style={{ zIndex: 1 }}>
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-2 relative" style={{ zIndex: 200 }}>
         <div className="flex items-center gap-4 mb-1">
           <div className="w-14 h-14 rounded-full flex items-center justify-center border-2 shadow-2xl overflow-hidden flex-shrink-0" style={{ borderColor: '#5cc8f0' }}>
             <img
