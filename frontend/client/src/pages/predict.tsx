@@ -1883,25 +1883,6 @@ export default function PredictPage() {
           <CaelynPredictsDropdown signals={pageSignals} />
         </div>
 
-        {/* Market Health Stats Bar — live signals summary */}
-        {pageSignals?.summary && (
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide mt-3">
-            {[
-              { label: "24h Volume",   val: pageSignals.summary.total_volume_24h   != null ? formatVolume(pageSignals.summary.total_volume_24h)       : "—", color: "text-blue-400" },
-              { label: "Active Mkts",  val: pageSignals.summary.market_count       != null ? pageSignals.summary.market_count.toLocaleString()        : "—", color: "text-white" },
-              { label: "Surging",      val: pageSignals.summary.surging_count      != null ? pageSignals.summary.surging_count.toLocaleString()       : "—", color: "text-emerald-400" },
-              { label: "Fading",       val: pageSignals.summary.fading_count       != null ? pageSignals.summary.fading_count.toLocaleString()        : "—", color: "text-red-400" },
-              { label: "Whale Active", val: pageSignals.summary.whale_active_count != null ? pageSignals.summary.whale_active_count.toLocaleString()  : "—", color: "text-purple-400" },
-              { label: "Avg Spread",   val: pageSignals.summary.avg_spread_pct     != null ? `${pageSignals.summary.avg_spread_pct.toFixed(2)}%`      : "—", color: "text-amber-400" },
-            ].map(({ label, val, color }) => (
-              <div key={label} className="flex-shrink-0 bg-white/[0.03] border border-white/[0.06] rounded-lg px-3 py-2 flex flex-col items-center min-w-[90px]">
-                <div className="text-[9px] text-white/30 uppercase tracking-widest font-semibold mb-0.5">{label}</div>
-                <div className={`text-sm font-bold font-mono ${color}`}>{val}</div>
-              </div>
-            ))}
-          </div>
-        )}
-
         <div className="w-32 h-0.5 rounded-full mt-3 mb-4" style={{ background: 'linear-gradient(135deg, #2090d0, #3b82f6, #80d8f8)' }} />
       </div>
 
