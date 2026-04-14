@@ -4,9 +4,15 @@ import { useAuth } from "@/contexts/AuthContext";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   TrendingUp, TrendingDown, ExternalLink, Activity, BarChart3, RefreshCw, Users, DollarSign,
   MessageSquare, Send, Loader2, Sparkles, ChevronDown, ChevronRight,
-  Zap, Eye, Target, AlertTriangle, CheckCircle, Brain, Star, Waves, Layers,
+  Zap, Eye, Target, AlertTriangle, CheckCircle, Brain, Star, Waves, Layers, Info, HelpCircle,
 } from "lucide-react";
 import { openSecureLink } from "@/utils/security";
 import { DecisionEngine } from "@/components/decision-engine";
@@ -123,6 +129,239 @@ interface ParsedMarket {
   liquidity: number;
   tags: string[];
   endDate?: string;
+}
+
+// ─── Scored Market Types & Helpers ────────────────────────────────
+interface ScoredMarket {
+  condition_id?: string;
+  question?: string;
+  title?: string;
+  slug?: string;
+  yes_price?: number;
+  yes_pct?: number;
+  volume_24h?: number;
+  liquidity?: number;
+  spread?: number;
+  spread_pct?: number;
+  best_bid?: number;
+  best_ask?: number;
+  days_to_expiry?: number;
+  hours_to_expiry?: number;
+  conviction_score?: number;
+  momentum_score?: number;
+  flow_score?: number;
+  execution_quality_score?: number;
+  participation_quality_score?: number;
+  time_quality_score?: number;
+  trap_risk_score?: number;
+  composite_score?: number;
+  momentum_label?: string;
+  reasons?: string[];
+  competitive?: boolean;
+  tags?: string[];
+}
+
+/** Fetch scored markets from the backend scoring endpoint */
+async function fetchScoredMarkets(): Promise<ScoredMarket[]> {
+  try {
+    const res = await fetch("/api/predict/scored?limit=200");
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data) ? data : (data.markets ?? data.results ?? []);
+  } catch {
+    return [];
+  }
+}
+
+/** Build a lookup map keyed by question (lowercased, trimmed) for fuzzy matching */
+function buildScoredLookup(scored: ScoredMarket[]): Map<string, ScoredMarket> {
+  const map = new Map<string, ScoredMarket>();
+  for (const s of scored) {
+    const key = (s.question || s.title || "").toLowerCase().trim();
+    if (key) map.set(key, s);
+    if (s.condition_id) map.set(s.condition_id, s);
+    if (s.slug) map.set(s.slug.toLowerCase(), s);
+  }
+  return map;
+}
+
+/** Try to find a scored market match by question, slug, or condition_id */
+function findScored(lookup: Map<string, ScoredMarket>, question?: string, slug?: string, id?: string): ScoredMarket | undefined {
+  if (id && lookup.has(id)) return lookup.get(id);
+  if (slug && lookup.has(slug.toLowerCase())) return lookup.get(slug.toLowerCase());
+  if (question) {
+    const key = question.toLowerCase().trim();
+    if (lookup.has(key)) return lookup.get(key);
+    // Fuzzy: try matching first 50 chars
+    const prefix = key.slice(0, 50);
+    let fuzzyMatch: ScoredMarket | undefined;
+    lookup.forEach((v, k) => {
+      if (!fuzzyMatch && (k.startsWith(prefix) || prefix.startsWith(k.slice(0, 50)))) fuzzyMatch = v;
+    });
+    if (fuzzyMatch) return fuzzyMatch;
+  }
+  return undefined;
+}
+
+/** Generate explainability text from scored data */
+function generateExplainText(s: ScoredMarket): string[] {
+  const lines: string[] = [];
+  if (s.reasons && s.reasons.length > 0) return s.reasons.slice(0, 3);
+  if (s.composite_score != null) {
+    const qual = s.composite_score >= 70 ? "strong" : s.composite_score >= 50 ? "moderate" : "weak";
+    lines.push(`Composite score: ${s.composite_score} — ${qual} overall setup`);
+  }
+  if (s.momentum_score != null && s.momentum_label) {
+    lines.push(`Momentum: ${s.momentum_score} (${s.momentum_label.replace(/_/g, " ")})`);
+  }
+  if (s.trap_risk_score != null && s.trap_risk_score > 50) {
+    lines.push(`Trap risk: ${s.trap_risk_score} — ${s.trap_risk_score > 70 ? "high risk, proceed with caution" : "elevated risk"}`);
+  }
+  if (s.execution_quality_score != null) {
+    const qual = s.execution_quality_score >= 70 ? "good execution, tight spread" : s.execution_quality_score >= 40 ? "moderate execution quality" : "poor execution, wide spread";
+    lines.push(`Execution: ${s.execution_quality_score} — ${qual}`);
+  }
+  if (s.flow_score != null && s.flow_score > 60) {
+    lines.push(`Flow score: ${s.flow_score} — ${s.flow_score > 70 ? "strong directional flow" : "decent flow activity"}`);
+  }
+  return lines.slice(0, 3);
+}
+
+// ─── Signal Badge Components ─────────────────────────────────────
+
+function SignalBadge({ label, color }: { label: string; color: "green" | "red" | "amber" | "blue" | "purple" }) {
+  const colors = {
+    green: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20",
+    red: "bg-red-500/15 text-red-400 border-red-500/20",
+    amber: "bg-amber-500/15 text-amber-400 border-amber-500/20",
+    blue: "bg-blue-500/15 text-blue-400 border-blue-500/20",
+    purple: "bg-purple-500/15 text-purple-400 border-purple-500/20",
+  };
+  return (
+    <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-semibold border ${colors[color]}`}>
+      {label}
+    </span>
+  );
+}
+
+/** Generate contextual badges for a scored market. maxBadges limits output */
+function getSignalBadges(s: ScoredMarket, context: "screener" | "movers" | "whale" | "edges", maxBadges = 3): React.ReactNode[] {
+  const badges: React.ReactNode[] = [];
+  const add = (label: string, color: "green" | "red" | "amber" | "blue" | "purple") => {
+    if (badges.length < maxBadges) badges.push(<SignalBadge key={label} label={label} color={color} />);
+  };
+
+  // Trap Risk — show everywhere when elevated
+  if (s.trap_risk_score != null && s.trap_risk_score > 60) add("Trap Risk", "red");
+
+  if (context === "screener" || context === "edges") {
+    if (s.spread != null && s.spread < 0.02) add("Tight Spread", "green");
+    if (s.spread != null && s.spread > 0.05) add("Wide Spread", "amber");
+    if (s.execution_quality_score != null && s.execution_quality_score > 70) add("Good Execution", "green");
+  }
+  if (context === "screener" || context === "movers") {
+    if (s.flow_score != null && s.flow_score > 70) add("Strong Flow", "blue");
+    if (s.participation_quality_score != null && s.participation_quality_score < 30) add("Crowded", "amber");
+  }
+  if (context === "whale") {
+    if (s.participation_quality_score != null && s.participation_quality_score > 70) add("Broad Participation", "green");
+    if (s.participation_quality_score != null && s.participation_quality_score < 30) add("Crowded", "amber");
+    if (s.execution_quality_score != null && s.execution_quality_score > 70) add("Good Execution", "green");
+  }
+  if (s.days_to_expiry != null && s.days_to_expiry < 3) add("Near Expiry", "amber");
+
+  return badges;
+}
+
+/** Momentum label badge with color coding */
+function MomentumLabelBadge({ label }: { label?: string }) {
+  if (!label) return null;
+  const l = label.toLowerCase().replace(/_/g, " ");
+  let color: "green" | "red" | "amber" | "blue" = "blue";
+  if (l.includes("strong up") || l.includes("strong_up")) color = "green";
+  else if (l.includes("moderate up") || l.includes("moderate_up")) color = "green";
+  else if (l.includes("strong down") || l.includes("strong_down")) color = "red";
+  else if (l.includes("moderate down") || l.includes("moderate_down")) color = "red";
+  else if (l.includes("neutral")) color = "amber";
+  const displayLabel = l.replace("strong ", "").replace("moderate ", "mod ");
+  const cls = {
+    green: "bg-emerald-500/15 text-emerald-400",
+    red: "bg-red-500/15 text-red-400",
+    amber: "bg-amber-500/15 text-amber-400",
+    blue: "bg-blue-500/15 text-blue-400",
+  };
+  const icon = color === "green" ? "▲" : color === "red" ? "▼" : "●";
+  return (
+    <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold ${cls[color]}`}>
+      {icon} {displayLabel}
+    </span>
+  );
+}
+
+/** Composite score pill — color-coded */
+function CompositeScorePill({ score }: { score?: number }) {
+  if (score == null) return <span className="text-[10px] text-white/20">—</span>;
+  const cls = score >= 70 ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/25"
+    : score >= 50 ? "bg-blue-500/20 text-blue-400 border-blue-500/25"
+    : score >= 30 ? "bg-amber-500/20 text-amber-400 border-amber-500/25"
+    : "bg-red-500/20 text-red-400 border-red-500/25";
+  return <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold border ${cls}`}>{score}</span>;
+}
+
+/** Score cell — small colored number */
+function ScoreCell({ score, invert }: { score?: number; invert?: boolean }) {
+  if (score == null) return <span className="text-[10px] text-white/20">—</span>;
+  const isGood = invert ? score < 40 : score > 60;
+  const isBad = invert ? score > 60 : score < 40;
+  const cls = isGood ? "text-emerald-400" : isBad ? "text-red-400" : "text-amber-400";
+  return <span className={`text-[10px] font-bold font-mono ${cls}`}>{score}</span>;
+}
+
+/** Explainability tooltip — shows "Why?" icon with reasons on hover */
+function ExplainTooltip({ scored }: { scored?: ScoredMarket }) {
+  if (!scored) return null;
+  const reasons = generateExplainText(scored);
+  if (reasons.length === 0) return null;
+  return (
+    <TooltipProvider delayDuration={200}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button className="w-4 h-4 rounded-full bg-white/[0.06] border border-white/[0.1] flex items-center justify-center flex-shrink-0 hover:bg-white/[0.12] transition-colors cursor-help">
+            <HelpCircle className="w-2.5 h-2.5 text-white/40" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="left" className="max-w-[280px] bg-[#0c1220] border-white/[0.12] p-3">
+          <p className="text-[9px] text-white/40 uppercase tracking-wider font-semibold mb-1.5">Why this market ranks here</p>
+          <ul className="space-y-1">
+            {reasons.map((r, i) => (
+              <li key={i} className="text-[10px] text-white/70 leading-snug flex gap-1.5">
+                <span className="text-blue-400 mt-px flex-shrink-0">•</span>
+                {r}
+              </li>
+            ))}
+          </ul>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
+/** Section info tooltip — uses Radix tooltip with ℹ icon */
+function SectionInfoTooltip({ text }: { text: string }) {
+  return (
+    <TooltipProvider delayDuration={200}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button className="w-[15px] h-[15px] rounded-full bg-white/[0.07] border border-white/[0.12] text-[9px] font-bold flex items-center justify-center text-white/40 hover:bg-white/[0.14] hover:text-white/70 transition-all cursor-help flex-shrink-0">
+            <Info className="w-2.5 h-2.5" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-[320px] bg-[#0c1220] border-white/[0.12] p-3">
+          <p className="text-[10px] text-white/70 leading-relaxed">{text}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────
@@ -333,7 +572,7 @@ function MarketPulseBar({ markets }: { markets: ParsedMarket[] }) {
       <div className="flex items-center gap-2 mb-3">
         <Activity className="w-4 h-4 text-emerald-400" />
         <h3 className="text-sm font-bold text-white/90 tracking-wide uppercase">Market Pulse</h3>
-        <InfoTooltip text="Where is the most money flowing right now? The top 5 markets by raw dollar trading volume in the last 24 hours. If $13.7M traded on 'Military action against Iran,' it's #1. It tells you what the crowd is most interested in, but nothing about whether odds changed or whether bets are confident. It's a volume leaderboard, nothing more." />
+        <SectionInfoTooltip text="Top 5 markets by raw dollar trading volume in the last 24 hours. Shows what the crowd is most interested in. Does NOT tell you about odds movement or bet confidence — it's a volume leaderboard." />
         <LiveBadge />
       </div>
       <div className="rounded-lg border border-white/[0.06] overflow-hidden">
@@ -414,7 +653,7 @@ function MarketCard({ market }: { market: ParsedMarket }) {
   );
 }
 
-function MoversSection({ markets }: { markets: ParsedMarket[] }) {
+function MoversSection({ markets, scoredLookup }: { markets: ParsedMarket[]; scoredLookup: Map<string, ScoredMarket> }) {
   // Show markets with extreme probabilities (strong conviction) or near-50/50 (contested)
   const movers = [...markets]
     .filter((m) => m.volume24hr > 0)
@@ -433,8 +672,8 @@ function MoversSection({ markets }: { markets: ParsedMarket[] }) {
       <div className="flex items-center gap-2 mb-3">
         <LiveBadge />
         <h3 className="text-sm font-bold text-white/90 tracking-wide uppercase">Movers & Shakers</h3>
-        <InfoTooltip text="Where is the crowd most confident AND putting money behind it? Ranks markets by multiplying conviction (how far the price is from 50/50) by volume. A market at 100% YES with high volume scores highest. A market at 51% YES even with high volume barely shows up. This answers: 'Where has the crowd made up its mind and put real money on it?' — not about recent movement, just current conviction." />
-        <span className="text-[10px] text-white/30">Highest conviction bets</span>
+        <SectionInfoTooltip text="Highest conviction markets with active directional flow. Ranks by conviction (distance from 50/50) × volume. Shows where the crowd has made up its mind and put real money on it. Does NOT tell you about recent price movement — see Biggest 24H Odds Movers for that." />
+        <span className="text-[10px] text-white/30">Highest conviction markets with active directional flow</span>
       </div>
       <div className="rounded-lg border border-white/[0.06] overflow-hidden">
         <div className="flex items-center gap-3 px-3 py-1.5 bg-white/[0.02] border-b border-white/[0.06]">
@@ -442,22 +681,29 @@ function MoversSection({ markets }: { markets: ParsedMarket[] }) {
           <span className="flex-1 text-[9px] text-white/25 uppercase tracking-wider font-semibold">Market</span>
           <span className="w-[100px] text-right text-[9px] text-white/25 uppercase tracking-wider font-semibold">YES %</span>
           <span className="w-16 text-right text-[9px] text-white/25 uppercase tracking-wider font-semibold">Conv.</span>
+          <span className="w-12 text-right text-[9px] text-white/25 uppercase tracking-wider font-semibold">Flow</span>
           <span className="w-16 text-right text-[9px] text-white/25 uppercase tracking-wider font-semibold">24h Vol</span>
+          <span className="w-4 shrink-0" />
         </div>
         {movers.map((m, i) => {
           const pct = Math.round(m.yesPrice * 100);
           const deviation = pct - 50;
+          const scored = findScored(scoredLookup, m.question, m.eventSlug, m.marketId);
           const isYesFavored = deviation > 0;
+          const trapFlag = scored?.trap_risk_score != null && scored.trap_risk_score > 60;
           return (
             <a
               key={m.marketId}
               href={`https://polymarket.com/event/${m.eventSlug}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-3 px-3 py-2.5 hover:bg-white/[0.04] transition-colors group border-t border-white/[0.04] first:border-t-0"
+              className={`flex items-center gap-3 px-3 py-2.5 hover:bg-white/[0.04] transition-colors group border-t border-white/[0.04] first:border-t-0 ${trapFlag ? "bg-red-500/[0.02]" : ""}`}
             >
               <span className="w-4 shrink-0 text-[9px] text-white/20 font-mono text-right">{i + 1}</span>
-              <p className="flex-1 min-w-0 text-[11px] text-white/70 truncate group-hover:text-white/90 transition-colors">{m.question}</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-[11px] text-white/70 truncate group-hover:text-white/90 transition-colors">{m.question}</p>
+                {trapFlag && <span className="inline-flex items-center gap-0.5 mt-0.5"><SignalBadge label="Trap Risk" color="red" /></span>}
+              </div>
               <div className="flex items-center gap-1.5 w-[100px] justify-end shrink-0">
                 <div className="w-12 h-1 rounded-full bg-white/[0.06] overflow-hidden">
                   <div className="h-full rounded-full" style={{ width: `${pct}%`, background: pct >= 60 ? '#22c55e' : '#ef4444' }} />
@@ -467,7 +713,9 @@ function MoversSection({ markets }: { markets: ParsedMarket[] }) {
               <span className={`w-16 text-right text-[11px] font-bold font-mono shrink-0 ${isYesFavored ? 'text-emerald-400' : 'text-red-400'}`}>
                 {isYesFavored ? '+' : ''}{deviation}%
               </span>
+              <span className="w-12 text-right shrink-0"><ScoreCell score={scored?.flow_score} /></span>
               <span className="w-16 text-right text-[10px] font-mono text-white/40 shrink-0">{formatVolume(m.volume24hr)}</span>
+              <span className="w-4 shrink-0"><ExplainTooltip scored={scored} /></span>
             </a>
           );
         })}
@@ -506,7 +754,7 @@ async function fetchPolymarketByTag(tagSlug: string): Promise<PolyEvent[] | null
 
 // ─── Surging Movers View ──────────────────────────────────────────
 
-function SurgingMoversView({ signals }: { signals: SignalsData | null }) {
+function SurgingMoversView({ signals, scoredLookup }: { signals: SignalsData | null; scoredLookup: Map<string, ScoredMarket> }) {
   const movers = signals?.top_movers ?? [];
   if (!signals) {
     return (
@@ -530,7 +778,7 @@ function SurgingMoversView({ signals }: { signals: SignalsData | null }) {
         <h3 className="text-sm font-bold text-white/90 tracking-wide uppercase">
           Biggest 24H Odds Movers
         </h3>
-        <InfoTooltip text="What just changed dramatically? Shows markets whose probability shifted the most in the last 24 hours, in either direction. A market that went from 60% to 0.1% (−59.5%) shows up. One that jumped from 33% to 89.5% (+56.5%) shows up. This is the 'breaking news' feed — something happened to move these odds." />
+        <SectionInfoTooltip text="Largest probability repricings in the last 24 hours — shows markets whose odds shifted the most in either direction. This is the 'breaking news' feed — something happened to move these odds. Does NOT tell you if the move will continue or revert." />
         <span className="text-[10px] text-white/30">Largest probability shifts — either direction</span>
       </div>
       <div className="rounded-lg border border-white/[0.06] overflow-hidden">
@@ -539,7 +787,9 @@ function SurgingMoversView({ signals }: { signals: SignalsData | null }) {
           <span className="flex-1 text-[9px] text-white/25 uppercase tracking-wider font-semibold">Market</span>
           <span className="w-16 text-right text-[9px] text-white/25 uppercase tracking-wider font-semibold">24h Δ</span>
           <span className="w-[100px] text-right text-[9px] text-white/25 uppercase tracking-wider font-semibold">YES %</span>
+          <span className="w-12 text-right text-[9px] text-white/25 uppercase tracking-wider font-semibold">Mom.</span>
           <span className="w-16 text-right text-[9px] text-white/25 uppercase tracking-wider font-semibold">24h Vol</span>
+          <span className="w-4 shrink-0" />
         </div>
         {movers.slice(0, 12).map((m, i) => {
           const chg = m.price_change_1d;
@@ -548,6 +798,7 @@ function SurgingMoversView({ signals }: { signals: SignalsData | null }) {
           const chgStr = chg == null ? '—' : `${isUp ? '+' : ''}${chg.toFixed(1)}%`;
           const chgCls = isUp ? 'text-emerald-400' : isDown ? 'text-red-400' : 'text-white/25';
           const pct = m.yes_pct;
+          const scored = findScored(scoredLookup, m.question, m.slug);
           return (
             <a
               key={i}
@@ -569,9 +820,11 @@ function SurgingMoversView({ signals }: { signals: SignalsData | null }) {
                   </>
                 ) : <span className="text-[10px] text-white/25 w-full text-right">—</span>}
               </div>
+              <span className="w-12 text-right shrink-0"><MomentumLabelBadge label={scored?.momentum_label} /></span>
               <span className="w-16 text-right text-[10px] font-mono text-white/40 shrink-0">
                 {m.volume_24h != null ? formatVolume(m.volume_24h) : '—'}
               </span>
+              <span className="w-4 shrink-0"><ExplainTooltip scored={scored} /></span>
             </a>
           );
         })}
@@ -582,7 +835,7 @@ function SurgingMoversView({ signals }: { signals: SignalsData | null }) {
 
 // ─── Dashboard Component ──────────────────────────────────────────
 
-function PolymarketDashboard({ signals, children }: { signals: SignalsData | null; children?: React.ReactNode }) {
+function PolymarketDashboard({ signals, children, scoredLookup }: { signals: SignalsData | null; children?: React.ReactNode; scoredLookup: Map<string, ScoredMarket> }) {
   const [markets, setMarkets] = useState<ParsedMarket[]>([]);
   const [tagCache, setTagCache] = useState<Record<string, ParsedMarket[]>>({});
   const [loading, setLoading] = useState(true);
@@ -736,11 +989,11 @@ function PolymarketDashboard({ signals, children }: { signals: SignalsData | nul
       ) : (
         <>
           {/* Movers & Shakers — always uses main markets */}
-          <MoversSection markets={markets} />
+          <MoversSection markets={markets} scoredLookup={scoredLookup} />
 
           {/* 24H Movers — always visible permanent section */}
           <div className="mb-6">
-            <SurgingMoversView signals={signals} />
+            <SurgingMoversView signals={signals} scoredLookup={scoredLookup} />
           </div>
 
           {/* Top Edges — full width */}
@@ -749,22 +1002,31 @@ function PolymarketDashboard({ signals, children }: { signals: SignalsData | nul
               <div className="flex items-center gap-2 mb-3">
                 <Target className="w-4 h-4 text-amber-400" />
                 <h3 className="text-sm font-bold text-white/90 tracking-wide uppercase">Top Edges</h3>
-                <InfoTooltip text="Spread as a % of the YES price — higher means a wider bid-ask gap relative to the current price. A wide spread signals a pricing inefficiency or market-making opportunity: the market maker is uncertain, leaving room for a sharper bet." />
+                <SectionInfoTooltip text="Widest pricing dislocations and asymmetry candidates. Shows markets where the bid-ask spread is widest relative to price — a wider spread signals a pricing inefficiency or market-making opportunity. Does NOT tell you the direction of the edge — only that the market is uncertain." />
+                <span className="text-[10px] text-white/30">Widest pricing dislocations and asymmetry candidates</span>
               </div>
               <div className="rounded-lg border border-white/[0.06] overflow-hidden">
                 <div className="flex items-center gap-3 px-3 py-1.5 bg-white/[0.02] border-b border-white/[0.06]">
                   <span className="w-4 shrink-0" />
                   <span className="flex-1 text-[9px] text-white/25 uppercase tracking-wider font-semibold">Market</span>
                   <span className="w-[100px] text-right text-[9px] text-white/25 uppercase tracking-wider font-semibold">YES %</span>
+                  <span className="w-12 text-right text-[9px] text-white/25 uppercase tracking-wider font-semibold">Conv.</span>
+                  <span className="w-10 text-right text-[9px] text-white/25 uppercase tracking-wider font-semibold">Exec</span>
                   <span className="w-20 text-right text-[9px] text-white/25 uppercase tracking-wider font-semibold">Spread</span>
+                  <span className="w-4 shrink-0" />
                 </div>
                 {(signals.top_edges ?? []).slice(0, 6).map((e, i) => {
                   const spread = e.edge_pct ?? e.spread_pct_of_price;
+                  const scored = findScored(scoredLookup, e.question, e.slug);
+                  const badges = scored ? getSignalBadges(scored, "edges", 2) : [];
                   return (
                     <a key={i} href={e.slug ? `https://polymarket.com/event/${e.slug}` : "#"} target="_blank" rel="noopener noreferrer"
                       className="flex items-center gap-3 px-3 py-2.5 hover:bg-white/[0.04] transition-colors group border-t border-white/[0.04] first:border-t-0">
                       <span className="w-4 shrink-0 text-[9px] text-white/20 font-mono text-right">{i + 1}</span>
-                      <p className="flex-1 min-w-0 text-[11px] text-white/70 truncate group-hover:text-white/90 transition-colors">{e.question || "—"}</p>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[11px] text-white/70 truncate group-hover:text-white/90 transition-colors">{e.question || "—"}</p>
+                        {badges.length > 0 && <div className="flex gap-1 mt-0.5">{badges}</div>}
+                      </div>
                       <div className="flex items-center gap-1.5 w-[100px] justify-end shrink-0">
                         {e.yes_pct != null ? (
                           <>
@@ -775,9 +1037,12 @@ function PolymarketDashboard({ signals, children }: { signals: SignalsData | nul
                           </>
                         ) : <span className="text-[10px] text-white/25 w-full text-right">—</span>}
                       </div>
+                      <span className="w-12 text-right shrink-0"><ScoreCell score={scored?.conviction_score} /></span>
+                      <span className="w-10 text-right shrink-0"><ScoreCell score={scored?.execution_quality_score} /></span>
                       <span className="w-20 text-right text-[11px] font-bold font-mono text-amber-400 shrink-0">
                         {spread != null ? `${spread.toFixed(1)}%` : '—'}
                       </span>
+                      <span className="w-4 shrink-0"><ExplainTooltip scored={scored} /></span>
                     </a>
                   );
                 })}
@@ -793,7 +1058,8 @@ function PolymarketDashboard({ signals, children }: { signals: SignalsData | nul
                   <div className="flex items-center gap-2 mb-3">
                     <Eye className="w-4 h-4 text-orange-400" />
                     <h3 className="text-sm font-bold text-white/90 tracking-wide uppercase">Order Book Divergence</h3>
-                    <InfoTooltip text="CLOB order book mid price differs from displayed YES price — signals professional traders are positioned at different odds than the displayed price." />
+                    <SectionInfoTooltip text="CLOB order book mid price differs from displayed YES price — signals professional traders are positioned at different odds than the displayed price. Does NOT guarantee the divergence will converge — it may reflect legitimate information asymmetry." />
+                    <span className="text-[10px] text-white/30">Professional traders positioned at different odds</span>
                   </div>
                   <div className="space-y-1.5">
                     {(signals.top_mispricings ?? []).slice(0, 6).map((m, i) => (
@@ -992,7 +1258,7 @@ function recoBadge(r: string | undefined) {
 }
 
 // ─── Enhanced Markets Table ────────────────────────────────────────
-type ScreenerSortCol = "yes_pct" | "change_1h" | "change_24h" | "change_1wk" | "volume" | "momentum" | "whale" | "efficiency" | "expires";
+type ScreenerSortCol = "yes_pct" | "change_1h" | "change_24h" | "change_1wk" | "volume" | "momentum" | "whale" | "efficiency" | "expires" | "composite" | "trap_risk";
 type SortDir = "asc" | "desc";
 
 const SPORTS_TAGS = new Set([
@@ -1008,13 +1274,13 @@ function isSportsMarket(m: EnhancedMarket): boolean {
   return (m.tags ?? []).some((t) => SPORTS_TAGS.has(t.toLowerCase()));
 }
 
-function EnhancedMarketsTable() {
+function EnhancedMarketsTable({ scoredLookup }: { scoredLookup: Map<string, ScoredMarket> }) {
   const [allMarkets, setAllMarkets]   = useState<EnhancedMarket[]>([]);
   const [loading, setLoading]         = useState(true);
   const [tagFilter, setTagFilter]     = useState("");
   const [minVol, setMinVol]           = useState("");
   const [includeSports, setIncludeSports] = useState(false);
-  const [sortCol, setSortCol]         = useState<ScreenerSortCol>("volume");
+  const [sortCol, setSortCol]         = useState<ScreenerSortCol>("composite");
   const [sortDir, setSortDir]         = useState<SortDir>("desc");
 
   const fetchMarkets = useCallback(async (tag?: string) => {
@@ -1100,6 +1366,16 @@ function EnhancedMarketsTable() {
       if (sortCol === "whale")       { av = a.whale_activity ? 1 : 0;        bv = b.whale_activity ? 1 : 0; }
       if (sortCol === "efficiency")  { av = a.market_efficiency_score ?? 0;  bv = b.market_efficiency_score ?? 0; }
       if (sortCol === "expires")     { av = a.days_to_expiry ?? 9999;        bv = b.days_to_expiry ?? 9999; }
+      if (sortCol === "composite") {
+        const sa = findScored(scoredLookup, a.question, a.slug, a.id);
+        const sb = findScored(scoredLookup, b.question, b.slug, b.id);
+        av = sa?.composite_score ?? 0; bv = sb?.composite_score ?? 0;
+      }
+      if (sortCol === "trap_risk") {
+        const sa = findScored(scoredLookup, a.question, a.slug, a.id);
+        const sb = findScored(scoredLookup, b.question, b.slug, b.id);
+        av = sa?.trap_risk_score ?? 0; bv = sb?.trap_risk_score ?? 0;
+      }
       return sortDir === "desc" ? bv - av : av - bv;
     });
 
@@ -1124,8 +1400,10 @@ function EnhancedMarketsTable() {
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <BarChart3 className="w-4 h-4 text-blue-400" />
-          <h2 className="text-sm font-bold text-white">Polymarket Screener</h2>
+          <h2 className="text-sm font-bold text-white">Market Screener</h2>
+          <SectionInfoTooltip text="Full live market monitor — sort and filter all active prediction markets by price, volume, momentum, and scoring signals. Ranked by composite score by default. Does NOT tell you which direction to bet — use the Decision Engine for directional recommendations." />
           <LiveBadge />
+          <span className="text-[10px] text-white/30 hidden sm:inline">Full live market monitor — sort and filter all active markets</span>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <button
@@ -1185,6 +1463,7 @@ function EnhancedMarketsTable() {
             <thead className="sticky top-0 z-10 bg-[#080d16]">
               <tr className="border-b border-white/[0.06]">
                 <th className="px-2 py-2 text-left text-[10px] font-semibold text-white/30 uppercase tracking-wider">Market</th>
+                <ColHeader col="composite"  label="Score" />
                 <ColHeader col="yes_pct"    label="YES%" />
                 <ColHeader col="change_1h"  label="1H Δ" />
                 <ColHeader col="change_24h" label="24H Δ" />
@@ -1193,47 +1472,65 @@ function EnhancedMarketsTable() {
                 <ColHeader col="momentum"   label="Momentum" />
                 <ColHeader col="whale"      label="Whale" align="center" />
                 <ColHeader col="efficiency" label="Efficiency" />
+                <ColHeader col="trap_risk"  label="Trap" />
                 <ColHeader col="expires"    label="Expires" />
+                <th className="px-1 py-2 w-5" />
               </tr>
             </thead>
             <tbody>
-              {markets.map((m, i) => (
-                <tr key={m.id ?? i} className={`border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors ${i % 2 === 0 ? "" : "bg-white/[0.01]"}`}>
-                  <td className="px-2 py-2.5 max-w-[260px]">
-                    <a href={m.slug ? `https://polymarket.com/event/${m.slug}` : "#"} target="_blank" rel="noopener noreferrer"
-                      className="text-[11px] text-white/75 hover:text-white transition-colors leading-tight line-clamp-2 block">
-                      {m.question}
-                    </a>
-                  </td>
-                  <td className="px-2 py-2.5">
-                    {m.yes_pct != null && <span className={`text-sm font-bold ${m.yes_pct >= 60 ? "text-emerald-400" : m.yes_pct <= 40 ? "text-red-400" : "text-blue-400"}`}>{m.yes_pct}%</span>}
-                  </td>
-                  <td className="px-2 py-2.5">
-                    {m.price_change_1h == null ? <span className="text-[11px] text-white/20">—</span>
-                    : <span className={`text-[11px] font-bold font-mono ${m.price_change_1h > 0 ? "text-emerald-400" : m.price_change_1h < 0 ? "text-red-400" : "text-white/25"}`}>
-                        {m.price_change_1h > 0 ? "+" : ""}{m.price_change_1h.toFixed(1)}%
-                      </span>}
-                  </td>
-                  <td className="px-2 py-2.5">
-                    {m.is_expired ? <span className="text-[11px] text-white/20">—</span>
-                    : m.price_change_1d == null ? <span className="text-[11px] text-white/20">—</span>
-                    : <span className={`text-[11px] font-bold font-mono ${m.price_change_1d > 0 ? "text-emerald-400" : m.price_change_1d < 0 ? "text-red-400" : "text-white/25"}`}>
-                        {m.price_change_1d > 0 ? "+" : ""}{m.price_change_1d.toFixed(1)}%
-                      </span>}
-                  </td>
-                  <td className="px-2 py-2.5">
-                    {m.price_change_1wk == null ? <span className="text-[11px] text-white/20">—</span>
-                    : <span className={`text-[11px] font-bold font-mono ${m.price_change_1wk > 0 ? "text-emerald-400" : m.price_change_1wk < 0 ? "text-red-400" : "text-white/25"}`}>
-                        {m.price_change_1wk > 0 ? "+" : ""}{m.price_change_1wk.toFixed(1)}%
-                      </span>}
-                  </td>
-                  <td className="px-2 py-2.5 text-[11px] text-white/40 font-mono">{m.volume_24h != null ? formatVolume(m.volume_24h) : "—"}</td>
-                  <td className="px-2 py-2.5">{momentumBadge(m.volume_momentum)}</td>
-                  <td className="px-2 py-2.5 text-center">{m.whale_activity && <span title="Whale active" className="text-base">🐋</span>}</td>
-                  <td className="px-2 py-2.5">{effBadge(m.market_efficiency_score)}</td>
-                  <td className="px-2 py-2.5 text-[11px] text-white/40">{m.days_to_expiry != null ? `${m.days_to_expiry}d` : "—"}</td>
-                </tr>
-              ))}
+              {markets.map((m, i) => {
+                const scored = findScored(scoredLookup, m.question, m.slug, m.id);
+                const composite = scored?.composite_score;
+                const trapRisk = scored?.trap_risk_score;
+                // Row emphasis: subtle green tint for high composite, subtle red for high trap risk
+                const rowBg = composite != null && composite >= 75 ? "bg-emerald-500/[0.03]"
+                  : trapRisk != null && trapRisk > 70 ? "bg-red-500/[0.03]"
+                  : i % 2 === 0 ? "" : "bg-white/[0.01]";
+                const badges = scored ? getSignalBadges(scored, "screener", 2) : [];
+                return (
+                  <tr key={m.id ?? i} className={`border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors ${rowBg}`}>
+                    <td className="px-2 py-2.5 max-w-[260px]">
+                      <a href={m.slug ? `https://polymarket.com/event/${m.slug}` : "#"} target="_blank" rel="noopener noreferrer"
+                        className="text-[11px] text-white/75 hover:text-white transition-colors leading-tight line-clamp-2 block">
+                        {m.question}
+                      </a>
+                      {badges.length > 0 && <div className="flex gap-1 mt-1">{badges}</div>}
+                    </td>
+                    <td className="px-2 py-2.5"><CompositeScorePill score={composite} /></td>
+                    <td className="px-2 py-2.5">
+                      {m.yes_pct != null && <span className={`text-sm font-bold ${m.yes_pct >= 60 ? "text-emerald-400" : m.yes_pct <= 40 ? "text-red-400" : "text-blue-400"}`}>{m.yes_pct}%</span>}
+                    </td>
+                    <td className="px-2 py-2.5">
+                      {m.price_change_1h == null ? <span className="text-[11px] text-white/20">—</span>
+                      : <span className={`text-[11px] font-bold font-mono ${m.price_change_1h > 0 ? "text-emerald-400" : m.price_change_1h < 0 ? "text-red-400" : "text-white/25"}`}>
+                          {m.price_change_1h > 0 ? "+" : ""}{m.price_change_1h.toFixed(1)}%
+                        </span>}
+                    </td>
+                    <td className="px-2 py-2.5">
+                      {m.is_expired ? <span className="text-[11px] text-white/20">—</span>
+                      : m.price_change_1d == null ? <span className="text-[11px] text-white/20">—</span>
+                      : <span className={`text-[11px] font-bold font-mono ${m.price_change_1d > 0 ? "text-emerald-400" : m.price_change_1d < 0 ? "text-red-400" : "text-white/25"}`}>
+                          {m.price_change_1d > 0 ? "+" : ""}{m.price_change_1d.toFixed(1)}%
+                        </span>}
+                    </td>
+                    <td className="px-2 py-2.5">
+                      {m.price_change_1wk == null ? <span className="text-[11px] text-white/20">—</span>
+                      : <span className={`text-[11px] font-bold font-mono ${m.price_change_1wk > 0 ? "text-emerald-400" : m.price_change_1wk < 0 ? "text-red-400" : "text-white/25"}`}>
+                          {m.price_change_1wk > 0 ? "+" : ""}{m.price_change_1wk.toFixed(1)}%
+                        </span>}
+                    </td>
+                    <td className="px-2 py-2.5 text-[11px] text-white/40 font-mono">{m.volume_24h != null ? formatVolume(m.volume_24h) : "—"}</td>
+                    <td className="px-2 py-2.5">
+                      {scored?.momentum_label ? <MomentumLabelBadge label={scored.momentum_label} /> : momentumBadge(m.volume_momentum)}
+                    </td>
+                    <td className="px-2 py-2.5 text-center">{m.whale_activity && <span title="Whale active" className="text-base">🐋</span>}</td>
+                    <td className="px-2 py-2.5">{effBadge(scored?.execution_quality_score ?? m.market_efficiency_score)}</td>
+                    <td className="px-2 py-2.5"><ScoreCell score={trapRisk} invert /></td>
+                    <td className="px-2 py-2.5 text-[11px] text-white/40">{m.days_to_expiry != null ? `${m.days_to_expiry}d` : "—"}</td>
+                    <td className="px-1 py-2.5"><ExplainTooltip scored={scored} /></td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -1259,6 +1556,7 @@ function CategoryChart() {
       <div className="flex items-center gap-2 mb-4">
         <BarChart3 className="w-4 h-4 text-teal-400" />
         <h2 className="text-sm font-bold text-white">Category Volume</h2>
+        <SectionInfoTooltip text="Shows the distribution of 24-hour trading volume across prediction market categories. Helps identify which sectors are seeing the most betting activity. Does NOT indicate price movement direction." />
         <span className="text-[10px] text-white/30">24h trading volume by category</span>
       </div>
       {loading ? (
@@ -1290,7 +1588,7 @@ function CategoryChart() {
 }
 
 // ─── Whale Watch Panel ────────────────────────────────────────────
-function WhaleWatchPanel() {
+function WhaleWatchPanel({ scoredLookup }: { scoredLookup: Map<string, ScoredMarket> }) {
   const [items, setItems] = useState<WhaleWatchItem[]>([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
@@ -1305,7 +1603,8 @@ function WhaleWatchPanel() {
       <div className="flex items-center gap-2 mb-4">
         <Waves className="w-4 h-4 text-purple-400" />
         <h2 className="text-sm font-bold text-white">Whale Watch</h2>
-        <span className="text-[10px] text-white/30">Volume/liquidity ratio — signals large coordinated positions</span>
+        <SectionInfoTooltip text="Unusual size activity relative to normal liquidity. Shows markets where trading volume far exceeds available liquidity — signals large coordinated positions or informed activity. Does NOT tell you if whales are buying or selling, only that something big is happening." />
+        <span className="text-[10px] text-white/30">Unusual size activity relative to normal liquidity</span>
       </div>
       {loading ? (
         <div className="space-y-2">{[...Array(6)].map((_, i) => <div key={i} className="h-10 rounded-lg bg-white/[0.03] animate-pulse" />)}</div>
@@ -1320,33 +1619,45 @@ function WhaleWatchPanel() {
             <span className="w-14 text-right text-[9px] font-semibold text-white/25 uppercase tracking-wider">24h Vol</span>
             <span className="w-9 text-right text-[9px] font-semibold text-white/25 uppercase tracking-wider">YES</span>
             <span className="w-8 text-center text-[9px] font-semibold text-white/25 uppercase tracking-wider">Eff</span>
+            <span className="w-8 text-center text-[9px] font-semibold text-white/25 uppercase tracking-wider">Part</span>
             <span className="w-10 text-right text-[9px] font-semibold text-white/25 uppercase tracking-wider">1d Δ</span>
+            <span className="w-4 shrink-0" />
           </div>
           <div className="space-y-2">
-          {items.map((w, i) => (
-            <div key={i} className="bg-white/[0.02] border border-white/[0.05] rounded-lg px-3 py-2.5 flex items-center gap-3 group"
-              title={`Volume is ${w.vol_liq_ratio?.toFixed(1)}× the available liquidity — signals large coordinated position`}>
-              <div className="flex-1 min-w-0">
-                <a href={w.slug ? `https://polymarket.com/event/${w.slug}` : "#"} target="_blank" rel="noopener noreferrer"
-                  className="text-[11px] text-white/70 hover:text-white transition-colors leading-tight block truncate">
-                  {w.question?.slice(0, 65) || "—"}
-                </a>
+          {items.map((w, i) => {
+            const scored = findScored(scoredLookup, w.question, w.slug);
+            const badges = scored ? getSignalBadges(scored, "whale", 2) : [];
+            const trapFlag = scored?.trap_risk_score != null && scored.trap_risk_score > 60;
+            return (
+              <div key={i} className={`border rounded-lg px-3 py-2.5 flex items-center gap-3 group ${trapFlag ? "bg-red-500/[0.03] border-red-500/[0.08]" : "bg-white/[0.02] border-white/[0.05]"}`}
+                title={`Volume is ${w.vol_liq_ratio?.toFixed(1)}× the available liquidity — signals large coordinated position`}>
+                <div className="flex-1 min-w-0">
+                  <a href={w.slug ? `https://polymarket.com/event/${w.slug}` : "#"} target="_blank" rel="noopener noreferrer"
+                    className="text-[11px] text-white/70 hover:text-white transition-colors leading-tight block truncate">
+                    {w.question?.slice(0, 65) || "—"}
+                  </a>
+                  {badges.length > 0 && <div className="flex gap-1 mt-0.5">{badges}</div>}
+                </div>
+                <span className="w-[118px] text-right text-xs font-bold text-purple-400 font-mono flex-shrink-0 whitespace-nowrap">
+                  {w.vol_liq_ratio != null ? `${w.vol_liq_ratio.toFixed(1)}× liquidity` : "—"}
+                </span>
+                <span className="w-14 text-right text-[11px] font-mono text-white/40 flex-shrink-0">{w.volume_24h != null ? formatVolume(w.volume_24h) : "—"}</span>
+                <span className={`w-9 text-right text-xs font-bold font-mono flex-shrink-0 ${w.yes_pct != null ? (w.yes_pct >= 60 ? "text-emerald-400" : w.yes_pct <= 40 ? "text-red-400" : "text-blue-400") : "text-white/20"}`}>
+                  {w.yes_pct != null ? `${w.yes_pct}%` : "—"}
+                </span>
+                <span className="w-8 flex justify-center flex-shrink-0">
+                  {scored?.execution_quality_score != null ? effBadge(scored.execution_quality_score) : (w.market_efficiency_score != null ? effBadge(w.market_efficiency_score) : <span className="text-white/20 text-[10px]">—</span>)}
+                </span>
+                <span className="w-8 flex justify-center flex-shrink-0">
+                  <ScoreCell score={scored?.participation_quality_score} />
+                </span>
+                <span className={`w-10 text-right text-[10px] font-bold font-mono flex-shrink-0 ${w.price_change_1d != null ? (w.price_change_1d > 0 ? "text-emerald-400" : w.price_change_1d < 0 ? "text-red-400" : "text-white/25") : "text-white/20"}`}>
+                  {w.price_change_1d != null ? `${w.price_change_1d > 0 ? "+" : ""}${w.price_change_1d.toFixed(1)}%` : "—"}
+                </span>
+                <span className="w-4 shrink-0"><ExplainTooltip scored={scored} /></span>
               </div>
-              <span className="w-[118px] text-right text-xs font-bold text-purple-400 font-mono flex-shrink-0 whitespace-nowrap">
-                {w.vol_liq_ratio != null ? `${w.vol_liq_ratio.toFixed(1)}× liquidity` : "—"}
-              </span>
-              <span className="w-14 text-right text-[11px] font-mono text-white/40 flex-shrink-0">{w.volume_24h != null ? formatVolume(w.volume_24h) : "—"}</span>
-              <span className={`w-9 text-right text-xs font-bold font-mono flex-shrink-0 ${w.yes_pct != null ? (w.yes_pct >= 60 ? "text-emerald-400" : w.yes_pct <= 40 ? "text-red-400" : "text-blue-400") : "text-white/20"}`}>
-                {w.yes_pct != null ? `${w.yes_pct}%` : "—"}
-              </span>
-              <span className="w-8 flex justify-center flex-shrink-0">
-                {w.market_efficiency_score != null ? effBadge(w.market_efficiency_score) : <span className="text-white/20 text-[10px]">—</span>}
-              </span>
-              <span className={`w-10 text-right text-[10px] font-bold font-mono flex-shrink-0 ${w.price_change_1d != null ? (w.price_change_1d > 0 ? "text-emerald-400" : w.price_change_1d < 0 ? "text-red-400" : "text-white/25") : "text-white/20"}`}>
-                {w.price_change_1d != null ? `${w.price_change_1d > 0 ? "+" : ""}${w.price_change_1d.toFixed(1)}%` : "—"}
-              </span>
-            </div>
-          ))}
+            );
+          })}
           </div>
         </div>
       )}
@@ -2132,12 +2443,17 @@ const openInNewTab = (url: string) => {
 
 export default function PredictPage() {
   const [pageSignals, setPageSignals] = useState<SignalsData | null>(null);
+  const [scoredLookup, setScoredLookup] = useState<Map<string, ScoredMarket>>(new Map());
 
   useEffect(() => {
     fetch("/api/predict/signals")
       .then((r) => r.ok ? r.json() : null)
       .then((d) => { if (d) setPageSignals(d); })
       .catch(() => {});
+    // Fetch scored data for enrichment across all sections
+    fetchScoredMarkets().then((scored) => {
+      if (scored.length > 0) setScoredLookup(buildScoredLookup(scored));
+    });
   }, []);
 
   return (
@@ -2208,11 +2524,11 @@ export default function PredictPage() {
             <DecisionEngine />
 
             {/* ═══ Enhanced Markets Table ═══ */}
-            <EnhancedMarketsTable />
+            <EnhancedMarketsTable scoredLookup={scoredLookup} />
 
             {/* ═══ Prediction Markets Dashboard ═══ */}
-            <PolymarketDashboard signals={pageSignals}>
-              <WhaleWatchPanel />
+            <PolymarketDashboard signals={pageSignals} scoredLookup={scoredLookup}>
+              <WhaleWatchPanel scoredLookup={scoredLookup} />
             </PolymarketDashboard>
 
             {/* ═══ Category Volume — full width, bottom of page ═══ */}
