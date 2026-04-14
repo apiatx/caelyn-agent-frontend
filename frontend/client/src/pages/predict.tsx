@@ -1184,21 +1184,46 @@ interface SignalsData {
 }
 interface EnhancedMarket {
   id?: string;
+  condition_id?: string;
   question: string;
   slug?: string;
+  image?: string;
+  tags?: string[];
+  // Price
   yes_pct?: number;
-  price_change_1h?: number;
-  price_change_1d?: number;
-  price_change_1wk?: number;
+  no_pct?: number;
+  yes_price?: number;
+  no_price?: number;
+  spread_pct?: number;
+  // Volume & Liquidity
   volume_24h?: number;
+  liquidity?: number;
+  vol_liq_ratio?: number;
   volume_momentum?: string;
   whale_activity?: boolean;
+  // Price changes (percentage points, NOT decimals)
+  price_change_1h?: number;
+  price_change_1d?: number;
+  price_change_24h?: number;
+  price_change_1wk?: number;
+  // Time
+  days_to_expiry?: number;
+  hours_to_expiry?: number;
+  end_date?: string;
+  is_expired?: boolean;
+  is_resolving?: boolean;
+  // Legacy / derived
   market_efficiency_score?: number;
   edge_pct?: number;
-  liquidity?: number;
-  days_to_expiry?: number;
-  is_expired?: boolean;
-  tags?: string[];
+  // Prophetik Signal Engine Scores (0-100)
+  composite_score?: number;
+  conviction_score?: number;
+  flow_score?: number;
+  execution_quality_score?: number;
+  participation_quality_score?: number;
+  momentum_score?: number;
+  trap_risk_score?: number;
+  momentum_label?: string;
 }
 interface CategoryItem {
   tag: string;
@@ -1299,47 +1324,11 @@ function EnhancedMarketsTable({ scoredLookup }: { scoredLookup: Map<string, Scor
   const fetchMarkets = useCallback(async (tag?: string) => {
     setLoading(true);
     try {
-      if (tag) {
-        // Tag-filtered queries: hit Polymarket Gamma API directly via fetchPolymarketByTag
-        // (backend enrichment doesn't reliably filter by tag slug)
-        const events = await fetchPolymarketByTag(tag.toLowerCase());
-        if (events && events.length > 0) {
-          const enhanced: EnhancedMarket[] = [];
-          for (const ev of events) {
-            for (const m of (ev.markets ?? [])) {
-              if (!m.active || m.closed) continue;
-              let yesPrice = 0.5;
-              try {
-                const prices = JSON.parse(m.outcomePrices || "[0.5]");
-                yesPrice = parseFloat(prices[0] ?? "0.5");
-              } catch {}
-              enhanced.push({
-                id: m.id,
-                question: m.question || ev.title,
-                slug: ev.slug,
-                yes_pct: Math.round(yesPrice * 100),
-                volume_24h: m.volume24hr ?? ev.volume24hr,
-                liquidity: parseFloat(m.liquidity ?? "0") || ev.liquidity,
-                tags: ev.tags?.map((t) => t.slug) ?? [],
-              });
-            }
-          }
-          if (enhanced.length > 0) {
-            setAllMarkets(enhanced);
-            return;
-          }
-        }
-        // Fallback if Gamma returns nothing — backend proxy
-        const params = new URLSearchParams({ limit: "200", tag });
-        const r = await fetch(`/api/predict/markets?${params}`);
-        if (r.ok) {
-          const d = await r.json();
-          setAllMarkets(Array.isArray(d) ? d : (d.markets ?? []));
-        }
-        return;
-      }
-      // No tag — fetch enriched markets from backend
-      const r = await fetch(`/api/predict/markets?limit=200`);
+      // All requests go through the backend proxy — do NOT call Gamma API directly (CORS)
+      // Backend accepts ?tag=<ExactCasing> e.g. "Sports", "Crypto", "Politics"
+      const params = new URLSearchParams({ limit: "200" });
+      if (tag) params.set("tag", tag);
+      const r = await fetch(`/api/predict/markets?${params}`);
       if (r.ok) {
         const d = await r.json();
         setAllMarkets(Array.isArray(d) ? d : (d.markets ?? []));
@@ -1446,7 +1435,7 @@ function EnhancedMarketsTable({ scoredLookup }: { scoredLookup: Map<string, Scor
           <select value={tagFilter} onChange={(e) => setTagFilter(e.target.value)}
             className="bg-white/[0.04] border border-white/[0.08] rounded-lg px-2.5 py-1.5 text-[11px] text-white/60 focus:outline-none">
             <option value="">All Categories</option>
-            {["Trending","Breaking","New","Politics","Sports","Crypto","Finance","Geopolitics","Tech","Culture","Economy","Weather","Mentions","Election"].map((c) => (
+            {["Politics","Sports","Crypto","Finance","Geopolitics","Tech","Culture","Economy","Election"].map((c) => (
               <option key={c} value={c}>{c}</option>
             ))}
           </select>

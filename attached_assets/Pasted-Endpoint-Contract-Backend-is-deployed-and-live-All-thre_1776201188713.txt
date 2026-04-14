@@ -1,0 +1,124 @@
+Endpoint Contract (Backend is deployed and live)
+All three endpoints now return the same scoring fields. Use whichever your page already calls — no need to switch endpoints.
+
+1. Market Screener — GET /api/predict/markets
+Query params:
+
+limit — number of markets (default 200, max 500)
+tag — category filter: Sports, Crypto, Politics, Tech, Geopolitics, Finance, Economy, Culture, Election (exact casing)
+min_volume — minimum 24h volume filter (default 0)
+Response shape:
+
+{
+  "count": 200,
+  "markets": [ <market objects> ]
+}
+
+2. Signals Dashboard — GET /api/predict/signals
+Response shape:
+
+{
+  "top_movers":      [ <market objects> ],
+  "top_edges":       [ <market objects> ],
+  "whale_markets":   [ <market objects> ],
+  "surging_markets": [ <market objects> ],
+  "top_by_volume":   [ <market objects> ],
+  "top_by_liquidity":[ <market objects> ],
+  "summary": {
+    "total_volume_24h": 0,
+    "total_liquidity": 0,
+    "avg_spread_pct": 0,
+    "edge_count": 0,
+    "whale_active_count": 0,
+    "surging_count": 0
+  }
+}
+
+3. Signal Engine / Recommendation Cards — GET /api/predict/recommendations
+Response shape:
+
+{
+  "best_bet_now":                          [ <market objects> ],
+  "best_yes_setup":                        [ <market objects> ],
+  "best_no_setup":                         [ <market objects> ],
+  "best_momentum_continuation":            [ <market objects> ],
+  "best_mean_reversion_candidate":         [ <market objects> ],
+  "best_whale_follow":                     [ <market objects> ],
+  "avoid_or_trap_markets":                 [ <market objects> ],
+  "best_execution_quality":                [ <market objects> ],
+  "strongest_flow_without_confirmation":   [ <market objects> ],
+  "strongest_conviction_with_good_execution": [ <market objects> ]
+}
+
+Market Object — Full Field Reference
+Every market object from all three endpoints now contains:
+
+Identity
+Field	Type	Example
+condition_id	string	"0x2cd24..."
+question	string	"Will Bitcoin reach $75k?"
+slug	string	"will-bitcoin-reach-75k"
+image	string (URL)	"https://polymarket-upload.s3..."
+tags	array of strings	["Crypto", "Bitcoin"]
+Price
+Field	Type	Notes
+yes_pct	number	0–100, e.g. 27.8 means 27.8%
+no_pct	number	0–100
+yes_price	number	Raw CLOB price 0–1, e.g. 0.278
+no_price	number	Raw CLOB price 0–1
+spread_pct	number	Percentage, e.g. 0.5 means 0.5%
+Volume & Liquidity
+Field	Type	Notes
+volume_24h	number	USD, e.g. 1428833.82
+liquidity	number	USD
+vol_liq_ratio	number	volume/liquidity ratio
+volume_momentum	string	"surging", "accelerating", "stable", "fading"
+whale_activity	boolean	true = anomalous large-order flow detected
+Price Changes (all in percentage points, NOT decimals)
+Field	Type	Notes
+price_change_1h	number	e.g. 1.35 = +1.35 percentage points
+price_change_1d	number	same unit — use this as canonical 24h field
+price_change_24h	number	alias of price_change_1d — safe to use either
+price_change_1wk	number	key is 1wk not 7d
+Time
+Field	Type	Notes
+days_to_expiry	number	integer
+hours_to_expiry	number	float
+end_date	string	ISO 8601
+is_expired	boolean	
+is_resolving	boolean	
+Prophetik Signal Engine Scores (0–100 scale)
+Field	Type	Notes
+composite_score	number	Overall Prophetik score, 0–100
+conviction_score	number	Price conviction strength, 0–100
+flow_score	number	Volume flow quality, 0–100
+execution_quality_score	number	Spread/liquidity execution quality, 0–100
+participation_quality_score	number	Participation depth, 0–100
+momentum_score	number	Price momentum, 0–100
+trap_risk_score	number	Trap/manipulation risk, 0–100 (higher = more risky)
+momentum_label	string	"strong_up", "moderate_up", "mild_up", "flat", "mild_down", "moderate_down", "strong_down", "stale_pinned"
+Recommendations-only Fields (only on /api/predict/recommendations)
+Field	Type	Notes
+direction	string	"YES", "NO", "AVOID"
+reasons	array of strings	3–5 explainability bullets, e.g. ["24h odds up 15.1%", "volume accelerating"]
+scores	object	Dict of sub-scores: { conviction, momentum, flow, execution_quality, participation_quality, time_quality, trap_risk }
+Critical Units & Gotchas
+price_change_* fields are percentage points, not decimals. price_change_1d: 15.1 means YES odds moved +15.1 percentage points in 24h. Do NOT multiply by 100.
+
+spread_pct is already a percentage. spread_pct: 0.5 means 0.5% spread. Do NOT multiply by 100.
+
+yes_pct and no_pct are 0–100. yes_pct: 27.8 = 27.8%. yes_price is the raw decimal (0.278).
+
+trap_risk_score is inverted — higher is worse. 0 = no trap risk, 100 = high trap/manipulation risk. If displaying as a "health" bar, invert it.
+
+whale_activity is a boolean, not a score. There is no numeric whale score — it's true/false only.
+
+momentum_label casing. Values use underscores: "strong_up", "stale_pinned" — not spaces or camelCase.
+
+top_mispricings will be empty. This bucket returns [] currently — don't show it or show "No mispricings detected."
+
+signal-changes starts empty on cold boot. GET /api/predict/signal-changes returns { changes: [], change_count: 0 } until the backend has accumulated multiple cache snapshots (usually 5–15 minutes after first request). Show a loading/warming state.
+
+Do NOT call Gamma API directly from the browser. CORS blocks it. All Polymarket data must go through the backend.
+
+Category tag names are case-sensitive. Use exact casing: Sports, Crypto, Politics, Tech, Technology, Geopolitics, Finance, Economy, Culture, Election. Tags Trending, Breaking, New, Mentions return 0 markets — hide them or show "No markets."
