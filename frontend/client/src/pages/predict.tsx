@@ -168,7 +168,19 @@ async function fetchScoredMarkets(): Promise<ScoredMarket[]> {
     const res = await fetch("/api/predict/scored?limit=200");
     if (!res.ok) return [];
     const data = await res.json();
-    return Array.isArray(data) ? data : (data.markets ?? data.results ?? []);
+    const arr = Array.isArray(data) ? data : (data.markets ?? data.results ?? data.scored ?? []);
+    // Normalize field names — backend might use slightly different keys
+    return arr.map((m: any) => ({
+      ...m,
+      composite_score: m.composite_score ?? m.score ?? undefined,
+      question: m.question ?? m.title ?? m.market_title ?? undefined,
+      yes_pct: m.yes_pct ?? (m.yes_price != null ? Math.round(m.yes_price * 100) : undefined),
+      trap_risk_score: m.trap_risk_score ?? m.trap_score ?? undefined,
+      execution_quality_score: m.execution_quality_score ?? m.exec_score ?? undefined,
+      conviction_score: m.conviction_score ?? undefined,
+      flow_score: m.flow_score ?? undefined,
+      participation_quality_score: m.participation_quality_score ?? undefined,
+    }));
   } catch {
     return [];
   }
@@ -299,9 +311,9 @@ function MomentumLabelBadge({ label }: { label?: string }) {
   );
 }
 
-/** Composite score pill — color-coded */
+/** Composite score pill — color-coded; returns null when no data */
 function CompositeScorePill({ score }: { score?: number }) {
-  if (score == null) return <span className="text-[10px] text-white/20">—</span>;
+  if (score == null) return null;
   const cls = score >= 70 ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/25"
     : score >= 50 ? "bg-blue-500/20 text-blue-400 border-blue-500/25"
     : score >= 30 ? "bg-amber-500/20 text-amber-400 border-amber-500/25"
@@ -309,9 +321,9 @@ function CompositeScorePill({ score }: { score?: number }) {
   return <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold border ${cls}`}>{score}</span>;
 }
 
-/** Score cell — small colored number */
+/** Score cell — small colored number; returns null when no data */
 function ScoreCell({ score, invert }: { score?: number; invert?: boolean }) {
-  if (score == null) return <span className="text-[10px] text-white/20">—</span>;
+  if (score == null) return null;
   const isGood = invert ? score < 40 : score > 60;
   const isBad = invert ? score > 60 : score < 40;
   const cls = isGood ? "text-emerald-400" : isBad ? "text-red-400" : "text-amber-400";
@@ -674,15 +686,15 @@ function MoversSection({ markets, scoredLookup }: { markets: ParsedMarket[]; sco
         <LiveBadge />
         <h3 className="text-sm font-bold text-white/90 tracking-wide uppercase">Movers & Shakers</h3>
         <SectionInfoTooltip text="Highest conviction markets with active directional flow. Ranks by conviction (distance from 50/50) × volume. Shows where the crowd has made up its mind and put real money on it. Does NOT tell you about recent price movement — see Biggest 24H Odds Movers for that." />
-        <span className="text-[10px] text-white/30">Highest conviction markets with active directional flow</span>
+        <span className="text-[10px] text-white/30">Strongest conviction with active flow</span>
       </div>
       <div className="rounded-lg border border-white/[0.06] overflow-hidden">
         <div className="flex items-center gap-3 px-3 py-1.5 bg-white/[0.02] border-b border-white/[0.06]">
           <span className="w-4 shrink-0" />
           <span className="flex-1 text-[9px] text-white/25 uppercase tracking-wider font-semibold">Market</span>
           <span className="w-[100px] text-right text-[9px] text-white/25 uppercase tracking-wider font-semibold">YES %</span>
-          <span className="w-16 text-right text-[9px] text-white/25 uppercase tracking-wider font-semibold">Conv.</span>
-          <span className="w-12 text-right text-[9px] text-white/25 uppercase tracking-wider font-semibold">Flow</span>
+          <TooltipProvider delayDuration={200}><Tooltip><TooltipTrigger asChild><span className="w-16 text-right text-[9px] text-white/25 uppercase tracking-wider font-semibold cursor-help">Conviction</span></TooltipTrigger><TooltipContent side="top" className="max-w-[240px] bg-[#0c1220] border-white/[0.12] p-2"><p className="text-[10px] text-white/70">How far the market has moved away from 50/50</p></TooltipContent></Tooltip></TooltipProvider>
+          <TooltipProvider delayDuration={200}><Tooltip><TooltipTrigger asChild><span className="w-12 text-right text-[9px] text-white/25 uppercase tracking-wider font-semibold cursor-help">Flow</span></TooltipTrigger><TooltipContent side="top" className="max-w-[240px] bg-[#0c1220] border-white/[0.12] p-2"><p className="text-[10px] text-white/70">How much active trading is pushing the move</p></TooltipContent></Tooltip></TooltipProvider>
           <span className="w-16 text-right text-[9px] text-white/25 uppercase tracking-wider font-semibold">24h Vol</span>
           <span className="w-4 shrink-0" />
         </div>
@@ -780,7 +792,7 @@ function SurgingMoversView({ signals, scoredLookup }: { signals: SignalsData | n
           Biggest 24H Odds Movers
         </h3>
         <SectionInfoTooltip text="Largest probability repricings in the last 24 hours — shows markets whose odds shifted the most in either direction. This is the 'breaking news' feed — something happened to move these odds. Does NOT tell you if the move will continue or revert." />
-        <span className="text-[10px] text-white/30">Largest probability shifts — either direction</span>
+        <span className="text-[10px] text-white/30">Largest repricings in the last 24 hours</span>
       </div>
       <div className="rounded-lg border border-white/[0.06] overflow-hidden">
         <div className="flex items-center gap-3 px-3 py-1.5 bg-white/[0.02] border-b border-white/[0.06]">
@@ -788,7 +800,7 @@ function SurgingMoversView({ signals, scoredLookup }: { signals: SignalsData | n
           <span className="flex-1 text-[9px] text-white/25 uppercase tracking-wider font-semibold">Market</span>
           <span className="w-16 text-right text-[9px] text-white/25 uppercase tracking-wider font-semibold">24h Δ</span>
           <span className="w-[100px] text-right text-[9px] text-white/25 uppercase tracking-wider font-semibold">YES %</span>
-          <span className="w-12 text-right text-[9px] text-white/25 uppercase tracking-wider font-semibold">Mom.</span>
+          <span className="w-12 text-right text-[9px] text-white/25 uppercase tracking-wider font-semibold">Momentum</span>
           <span className="w-16 text-right text-[9px] text-white/25 uppercase tracking-wider font-semibold">24h Vol</span>
           <span className="w-4 shrink-0" />
         </div>
@@ -1011,8 +1023,8 @@ function PolymarketDashboard({ signals, children, scoredLookup }: { signals: Sig
                   <span className="w-4 shrink-0" />
                   <span className="flex-1 text-[9px] text-white/25 uppercase tracking-wider font-semibold">Market</span>
                   <span className="w-[100px] text-right text-[9px] text-white/25 uppercase tracking-wider font-semibold">YES %</span>
-                  <span className="w-12 text-right text-[9px] text-white/25 uppercase tracking-wider font-semibold">Conv.</span>
-                  <span className="w-10 text-right text-[9px] text-white/25 uppercase tracking-wider font-semibold">Exec</span>
+                  <TooltipProvider delayDuration={200}><Tooltip><TooltipTrigger asChild><span className="w-12 text-right text-[9px] text-white/25 uppercase tracking-wider font-semibold cursor-help">Conviction</span></TooltipTrigger><TooltipContent side="top" className="max-w-[240px] bg-[#0c1220] border-white/[0.12] p-2"><p className="text-[10px] text-white/70">How far the market has moved away from 50/50</p></TooltipContent></Tooltip></TooltipProvider>
+                  <TooltipProvider delayDuration={200}><Tooltip><TooltipTrigger asChild><span className="w-10 text-right text-[9px] text-white/25 uppercase tracking-wider font-semibold cursor-help">Execution</span></TooltipTrigger><TooltipContent side="top" className="max-w-[240px] bg-[#0c1220] border-white/[0.12] p-2"><p className="text-[10px] text-white/70">How tradable the market is based on spread/liquidity</p></TooltipContent></Tooltip></TooltipProvider>
                   <span className="w-20 text-right text-[9px] text-white/25 uppercase tracking-wider font-semibold">Spread</span>
                   <span className="w-4 shrink-0" />
                 </div>
@@ -1383,16 +1395,29 @@ function EnhancedMarketsTable({ scoredLookup }: { scoredLookup: Map<string, Scor
     return rows;
   }, [allMarkets, tagFilter, minVolNum, includeSports, sortCol, sortDir]);
 
-  const ColHeader = ({ col, label, align = "left" }: { col: ScreenerSortCol; label: string; align?: "left" | "right" | "center" }) => {
+  const ColHeader = ({ col, label, align = "left", tooltip }: { col: ScreenerSortCol; label: string; align?: "left" | "right" | "center"; tooltip?: string }) => {
     const active = sortCol === col;
     const arrow = sortDir === "desc" ? "↓" : "↑";
-    return (
+    const inner = (
       <th
         onClick={() => handleColClick(col)}
         className={`px-2 py-2 text-${align} text-[10px] font-semibold uppercase tracking-wider cursor-pointer select-none whitespace-nowrap transition-colors ${active ? "text-blue-400" : "text-white/30 hover:text-white/60"}`}
       >
-        {label}{active && <span className="ml-0.5 text-[9px]">{arrow}</span>}
+        <span className="inline-flex items-center gap-1">
+          {label}{active && <span className="text-[9px]">{arrow}</span>}
+        </span>
       </th>
+    );
+    if (!tooltip) return inner;
+    return (
+      <TooltipProvider delayDuration={200}>
+        <Tooltip>
+          <TooltipTrigger asChild>{inner}</TooltipTrigger>
+          <TooltipContent side="top" className="max-w-[240px] bg-[#0c1220] border-white/[0.12] p-2">
+            <p className="text-[10px] text-white/70 leading-relaxed">{tooltip}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     );
   };
 
@@ -1404,7 +1429,7 @@ function EnhancedMarketsTable({ scoredLookup }: { scoredLookup: Map<string, Scor
           <h2 className="text-sm font-bold text-white">Market Screener</h2>
           <SectionInfoTooltip text="Full live market monitor — sort and filter all active prediction markets by price, volume, momentum, and scoring signals. Ranked by composite score by default. Does NOT tell you which direction to bet — use the Decision Engine for directional recommendations." />
           <LiveBadge />
-          <span className="text-[10px] text-white/30 hidden sm:inline">Full live market monitor — sort and filter all active markets</span>
+          <span className="text-[10px] text-white/30 hidden sm:inline">All live markets with signal diagnostics</span>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <button
@@ -1464,7 +1489,7 @@ function EnhancedMarketsTable({ scoredLookup }: { scoredLookup: Map<string, Scor
             <thead className="sticky top-0 z-10 bg-[#080d16]">
               <tr className="border-b border-white/[0.06]">
                 <th className="px-2 py-2 text-left text-[10px] font-semibold text-white/30 uppercase tracking-wider">Market</th>
-                <ColHeader col="composite"  label="Score" />
+                <ColHeader col="composite"  label="Signal" tooltip="Overall ranking based on movement, flow, execution, and risk" />
                 <ColHeader col="yes_pct"    label="YES%" />
                 <ColHeader col="change_1h"  label="1H Δ" />
                 <ColHeader col="change_24h" label="24H Δ" />
@@ -1472,8 +1497,8 @@ function EnhancedMarketsTable({ scoredLookup }: { scoredLookup: Map<string, Scor
                 <ColHeader col="volume"     label="Vol 24h" />
                 <ColHeader col="momentum"   label="Momentum" />
                 <ColHeader col="whale"      label="Whale" align="center" />
-                <ColHeader col="efficiency" label="Efficiency" />
-                <ColHeader col="trap_risk"  label="Trap" />
+                <ColHeader col="efficiency" label="Execution" tooltip="How tradable the market is based on spread/liquidity" />
+                <ColHeader col="trap_risk"  label="Trap Risk" tooltip="How likely the setup is misleading, late, stale, or hard to trade" />
                 <ColHeader col="expires"    label="Expires" />
                 <th className="px-1 py-2 w-5" />
               </tr>
@@ -1606,6 +1631,7 @@ function WhaleWatchPanel({ scoredLookup }: { scoredLookup: Map<string, ScoredMar
         <h2 className="text-sm font-bold text-white">Whale Watch</h2>
         <SectionInfoTooltip text="Unusual size activity relative to normal liquidity. Shows markets where trading volume far exceeds available liquidity — signals large coordinated positions or informed activity. Does NOT tell you if whales are buying or selling, only that something big is happening." />
         <span className="text-[10px] text-white/30">Unusual size activity relative to normal liquidity</span>
+        <LiveBadge />
       </div>
       {loading ? (
         <div className="space-y-2">{[...Array(6)].map((_, i) => <div key={i} className="h-10 rounded-lg bg-white/[0.03] animate-pulse" />)}</div>
@@ -1619,8 +1645,7 @@ function WhaleWatchPanel({ scoredLookup }: { scoredLookup: Map<string, ScoredMar
             <span className="w-[118px] text-right text-[9px] font-semibold text-white/25 uppercase tracking-wider">Vol/Liq</span>
             <span className="w-14 text-right text-[9px] font-semibold text-white/25 uppercase tracking-wider">24h Vol</span>
             <span className="w-9 text-right text-[9px] font-semibold text-white/25 uppercase tracking-wider">YES</span>
-            <span className="w-8 text-center text-[9px] font-semibold text-white/25 uppercase tracking-wider">Eff</span>
-            <span className="w-8 text-center text-[9px] font-semibold text-white/25 uppercase tracking-wider">Part</span>
+            <TooltipProvider delayDuration={200}><Tooltip><TooltipTrigger asChild><span className="w-8 text-center text-[9px] font-semibold text-white/25 uppercase tracking-wider cursor-help">Execution</span></TooltipTrigger><TooltipContent side="top" className="max-w-[240px] bg-[#0c1220] border-white/[0.12] p-2"><p className="text-[10px] text-white/70">How tradable the market is based on spread/liquidity</p></TooltipContent></Tooltip></TooltipProvider>
             <span className="w-10 text-right text-[9px] font-semibold text-white/25 uppercase tracking-wider">1d Δ</span>
             <span className="w-4 shrink-0" />
           </div>
@@ -1647,10 +1672,7 @@ function WhaleWatchPanel({ scoredLookup }: { scoredLookup: Map<string, ScoredMar
                   {w.yes_pct != null ? `${w.yes_pct}%` : "—"}
                 </span>
                 <span className="w-8 flex justify-center flex-shrink-0">
-                  {scored?.execution_quality_score != null ? effBadge(scored.execution_quality_score) : (w.market_efficiency_score != null ? effBadge(w.market_efficiency_score) : <span className="text-white/20 text-[10px]">—</span>)}
-                </span>
-                <span className="w-8 flex justify-center flex-shrink-0">
-                  <ScoreCell score={scored?.participation_quality_score} />
+                  {scored?.execution_quality_score != null ? effBadge(scored.execution_quality_score) : (w.market_efficiency_score != null ? effBadge(w.market_efficiency_score) : null)}
                 </span>
                 <span className={`w-10 text-right text-[10px] font-bold font-mono flex-shrink-0 ${w.price_change_1d != null ? (w.price_change_1d > 0 ? "text-emerald-400" : w.price_change_1d < 0 ? "text-red-400" : "text-white/25") : "text-white/20"}`}>
                   {w.price_change_1d != null ? `${w.price_change_1d > 0 ? "+" : ""}${w.price_change_1d.toFixed(1)}%` : "—"}

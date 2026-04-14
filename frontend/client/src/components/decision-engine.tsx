@@ -93,15 +93,15 @@ function extractFirst(val: RecommendationMarket | RecommendationMarket[] | undef
   return val;
 }
 
-function formatDollars(v: number | undefined): string {
-  if (v === undefined || v === null) return "—";
+function formatDollars(v: number | undefined | null): string | null {
+  if (v == null) return null;
   if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`;
   if (v >= 1_000) return `$${(v / 1_000).toFixed(0)}K`;
   return `$${v.toFixed(0)}`;
 }
 
-function formatPercent(v: number | undefined): string {
-  if (v === undefined || v === null) return "—";
+function formatPercent(v: number | undefined | null): string | null {
+  if (v == null) return null;
   const sign = v > 0 ? "+" : "";
   return `${sign}${v.toFixed(1)}%`;
 }
@@ -213,14 +213,14 @@ const RecommendationCard = memo(function RecommendationCard({
 }) {
   const direction = getDirection(market, bucket.key);
   const dirColors = getDirectionColor(direction);
-  const score = market.composite_score ?? 0;
-  const title = market.question || market.title || "Unknown Market";
+  const score = market.composite_score ?? (market as any).score ?? 0;
+  const title = market.question || market.title || (market as any).market_title || "Unknown Market";
   const reasons = market.reasons ?? [];
-  const yesPct = market.yes_pct ?? (market.yes_price ? Math.round(market.yes_price * 100) : null);
+  const yesPct = market.yes_pct ?? (market.yes_price ? Math.round(market.yes_price * 100) : ((market as any).best_ask ? Math.round((market as any).best_ask * 100) : null));
   const priceChange = market.price_change_24h ?? market.price_change_1d;
   const momentum = getMomentumLabel(market.momentum_label);
-  const trapRisk = market.trap_risk_score ?? 0;
-  const execScore = market.execution_quality_score ?? 0;
+  const trapRisk = market.trap_risk_score;
+  const execScore = market.execution_quality_score;
   const isHero = bucket.hero === true;
   const isDanger = bucket.danger === true;
 
@@ -291,61 +291,61 @@ const RecommendationCard = memo(function RecommendationCard({
         </ul>
       )}
 
-      {/* Key metrics row */}
+      {/* Key metrics row — only render metrics that have real data */}
       <div className="flex items-center gap-3 flex-wrap text-[10px]">
-        {yesPct !== null && (
+        {yesPct != null && (
           <span className="text-white/40">
             YES <span className="text-white/70 font-semibold">{yesPct}%</span>
           </span>
         )}
-        {priceChange !== undefined && priceChange !== null && (
+        {priceChange != null && formatPercent(priceChange) && (
           <span className="text-white/40">
             24h <span className={`font-semibold ${priceChange > 0 ? "text-emerald-400" : priceChange < 0 ? "text-red-400" : "text-white/50"}`}>
               {formatPercent(priceChange)}
             </span>
           </span>
         )}
-        {market.volume_24h !== undefined && (
+        {market.volume_24h != null && formatDollars(market.volume_24h) && (
           <span className="text-white/40">
             Vol <span className="text-white/70 font-semibold">{formatDollars(market.volume_24h)}</span>
           </span>
         )}
-        {market.liquidity !== undefined && (
+        {market.liquidity != null && formatDollars(market.liquidity) && (
           <span className="text-white/40">
             Liq <span className="text-white/70 font-semibold">{formatDollars(market.liquidity)}</span>
           </span>
         )}
-        {market.spread !== undefined && (
+        {market.spread != null && (
           <span className="text-white/40">
             Spread <span className="text-white/70 font-semibold">{market.spread.toFixed(1)}¢</span>
           </span>
         )}
-        {market.days_to_expiry !== undefined && (
+        {market.days_to_expiry != null && (
           <span className="text-white/40">
             Exp <span className="text-white/70 font-semibold">{market.days_to_expiry}d</span>
           </span>
         )}
       </div>
 
-      {/* Bottom badges row */}
+      {/* Bottom badges row — only show when data is available */}
       <div className="flex items-center gap-2 mt-3 flex-wrap">
-        {execScore > 0 && (
+        {execScore != null && execScore > 0 && (
           <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-semibold border ${
             execScore >= 70 ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" :
             execScore >= 40 ? "bg-blue-500/10 border-blue-500/20 text-blue-400" :
             "bg-white/[0.04] border-white/[0.08] text-white/40"
           }`}>
             <Activity className="w-2.5 h-2.5" />
-            Exec {execScore.toFixed(0)}
+            Execution {execScore.toFixed(0)}
           </span>
         )}
-        {(isDanger || trapRisk >= 50) && (
+        {trapRisk != null && (isDanger || trapRisk >= 50) && (
           <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-semibold border ${
             trapRisk >= 70 ? "bg-red-500/10 border-red-500/20 text-red-400" :
             "bg-amber-500/10 border-amber-500/20 text-amber-400"
           }`}>
             <AlertTriangle className="w-2.5 h-2.5" />
-            Trap {trapRisk.toFixed(0)}
+            Trap Risk {trapRisk.toFixed(0)}
           </span>
         )}
         {polyUrl && (
@@ -380,13 +380,15 @@ export function DecisionEngine() {
     fetchingRef.current = true;
     if (isManual) setLoading(true);
     try {
-      let res = await fetch("/api/predict/recommendations", { headers: { 'Content-Type': 'application/json' } });
+      let res = await fetch("/api/predict/recommendations", { headers: authHeaders() });
       if (!res.ok) {
         res = await fetch(`${AGENT_BACKEND_URL}/api/predict/recommendations`, { headers: authHeaders() });
       }
-      if (!res.ok) throw new Error(`${res.status}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
       const json = await res.json();
-      setData(json);
+      // Handle various response shapes: direct buckets, or nested under recommendations/data
+      const payload = json?.recommendations ?? json?.data ?? json;
+      setData(payload);
       setError(null);
       setLastFetchTime(Date.now());
       setJustUpdated(true);
