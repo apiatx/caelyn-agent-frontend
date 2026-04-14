@@ -1019,9 +1019,47 @@ function EnhancedMarketsTable() {
   const fetchMarkets = useCallback(async (tag?: string) => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ limit: "200" });
-      if (tag) params.set("tag", tag);
-      const r = await fetch(`/api/predict/markets?${params}`);
+      if (tag) {
+        // Tag-filtered queries: hit Polymarket Gamma API directly via fetchPolymarketByTag
+        // (backend enrichment doesn't reliably filter by tag slug)
+        const events = await fetchPolymarketByTag(tag.toLowerCase());
+        if (events && events.length > 0) {
+          const enhanced: EnhancedMarket[] = [];
+          for (const ev of events) {
+            for (const m of (ev.markets ?? [])) {
+              if (!m.active || m.closed) continue;
+              let yesPrice = 0.5;
+              try {
+                const prices = JSON.parse(m.outcomePrices || "[0.5]");
+                yesPrice = parseFloat(prices[0] ?? "0.5");
+              } catch {}
+              enhanced.push({
+                id: m.id,
+                question: m.question || ev.title,
+                slug: ev.slug,
+                yes_pct: Math.round(yesPrice * 100),
+                volume_24h: m.volume24hr ?? ev.volume24hr,
+                liquidity: parseFloat(m.liquidity ?? "0") || ev.liquidity,
+                tags: ev.tags?.map((t) => t.slug) ?? [],
+              });
+            }
+          }
+          if (enhanced.length > 0) {
+            setAllMarkets(enhanced);
+            return;
+          }
+        }
+        // Fallback if Gamma returns nothing — backend proxy
+        const params = new URLSearchParams({ limit: "200", tag });
+        const r = await fetch(`/api/predict/markets?${params}`);
+        if (r.ok) {
+          const d = await r.json();
+          setAllMarkets(Array.isArray(d) ? d : (d.markets ?? []));
+        }
+        return;
+      }
+      // No tag — fetch enriched markets from backend
+      const r = await fetch(`/api/predict/markets?limit=200`);
       if (r.ok) {
         const d = await r.json();
         setAllMarkets(Array.isArray(d) ? d : (d.markets ?? []));
@@ -1045,11 +1083,7 @@ function EnhancedMarketsTable() {
   const markets = useMemo(() => {
     let rows = allMarkets.filter((m) => {
       if (!includeSports && isSportsMarket(m)) return false;
-      if (tagFilter) {
-        const tags = (m.tags ?? []).map((t) => t.toLowerCase());
-        const needle = tagFilter.toLowerCase();
-        if (!tags.some((t) => t === needle || t.includes(needle))) return false;
-      }
+      // Tag filtering is handled at fetch time (Gamma API tag_slug param) — no local double-filter
       if (minVolNum > 0 && (m.volume_24h ?? 0) < minVolNum) return false;
       return true;
     });
