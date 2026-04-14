@@ -99,7 +99,7 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
     },
     {
       id: 'predict',
-      label: 'Predict',
+      label: 'Prophetik',
       icon: <TrendingUp className="w-4 h-4" />,
       path: '/app/predict'
     },

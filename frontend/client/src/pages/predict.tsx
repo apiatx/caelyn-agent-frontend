@@ -2132,9 +2132,9 @@ export default function PredictPage() {
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
             }}>
-              Prediction Markets
+              Prophetik Markets
             </h1>
-            <p className="text-xs text-white/30">Live prediction market odds for macro, economics &amp; investing</p>
+            <p className="text-xs text-white/30">Prediction Markets Intelligence Dashboard</p>
           </div>
           {/* Header action buttons — 4 square tiles, side by side */}
           <div className="flex items-center gap-2 flex-shrink-0">
