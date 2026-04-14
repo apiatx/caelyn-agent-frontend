@@ -61,7 +61,7 @@ const MACRO_EXCLUDE = [
   "paralympics",
 ];
 
-type CategoryTab = "all" | "crypto" | "fed" | "elections" | "economy" | "geopolitics" | "finance" | "tech";
+type CategoryTab = "all" | "crypto" | "fed" | "elections" | "economy" | "geopolitics" | "finance" | "tech" | "surging" | "fading";
 
 // Categories that use Polymarket tag_slug API for direct fetching
 const TAG_SLUG_CATEGORIES: Partial<Record<CategoryTab, string>> = {
@@ -469,6 +469,7 @@ function PolymarketDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<CategoryTab>("all");
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [signals, setSignals] = useState<SignalsData | null>(null);
 
   // Fetch the main macro markets (for all/crypto/fed/elections/economy/geopolitics)
   const fetchData = useCallback(async () => {
@@ -543,12 +544,47 @@ function PolymarketDashboard() {
     }
   }, [activeTab, fetchTagData]);
 
+  // Fetch signals once on mount
+  useEffect(() => {
+    fetch("/api/predict/signals")
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => { if (d) setSignals(d); })
+      .catch(() => {});
+  }, []);
+
   // For tag-slug categories, use cached tag data; for others, filter the main markets
   const isTagCategory = activeTab in TAG_SLUG_CATEGORIES;
   const tagSlug = TAG_SLUG_CATEGORIES[activeTab];
-  const filtered = isTagCategory
-    ? (tagSlug ? tagCache[tagSlug] || [] : [])
-    : markets.filter((m) => matchesCategory(m, activeTab));
+  const filtered =
+    activeTab === "surging"
+      ? (signals?.surging_markets ?? []).map((m) => ({
+          eventTitle: m.question,
+          eventSlug: m.slug ?? "",
+          marketId: m.slug ?? String(Math.random()),
+          yesPrice: 0,
+          noPrice: 0,
+          volume24hr: m.volume_24h ?? 0,
+          totalVolume: 0,
+          liquidity: 0,
+          tags: [],
+          volume_momentum: m.volume_momentum,
+        } as ParsedMarket & { volume_momentum?: string }))
+      : activeTab === "fading"
+      ? (signals?.fading_markets ?? []).map((m) => ({
+          eventTitle: m.question,
+          eventSlug: m.slug ?? "",
+          marketId: m.slug ?? String(Math.random()),
+          yesPrice: 0,
+          noPrice: 0,
+          volume24hr: m.volume_24h ?? 0,
+          totalVolume: 0,
+          liquidity: 0,
+          tags: [],
+          volume_momentum: m.volume_momentum,
+        } as ParsedMarket & { volume_momentum?: string }))
+      : isTagCategory
+      ? (tagSlug ? tagCache[tagSlug] || [] : [])
+      : markets.filter((m) => matchesCategory(m, activeTab));
 
   const tabs: { key: CategoryTab; label: string }[] = [
     { key: "all", label: "All Macro" },
@@ -559,6 +595,8 @@ function PolymarketDashboard() {
     { key: "geopolitics", label: "Geopolitics" },
     { key: "finance", label: "Finance" },
     { key: "tech", label: "Tech" },
+    { key: "surging", label: "⚡ Surging" },
+    { key: "fading", label: "↘ Fading" },
   ];
 
   return (
@@ -627,8 +665,83 @@ function PolymarketDashboard() {
           {/* Market Pulse Ticker Tape — always uses main markets */}
           <MarketPulseBar markets={markets} />
 
+          {/* Market Health Stats Bar */}
+          {signals?.summary && (
+            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide mb-5">
+              {[
+                { label: "24h Volume",   val: signals.summary.total_volume_24h   != null ? formatVolume(signals.summary.total_volume_24h)       : "—", color: "text-blue-400" },
+                { label: "Active Mkts",  val: signals.summary.market_count       != null ? signals.summary.market_count.toLocaleString()        : "—", color: "text-white" },
+                { label: "Surging",      val: signals.summary.surging_count      != null ? signals.summary.surging_count.toLocaleString()       : "—", color: "text-emerald-400" },
+                { label: "Fading",       val: signals.summary.fading_count       != null ? signals.summary.fading_count.toLocaleString()        : "—", color: "text-red-400" },
+                { label: "Whale Active", val: signals.summary.whale_active_count != null ? signals.summary.whale_active_count.toLocaleString()  : "—", color: "text-purple-400" },
+                { label: "Avg Spread",   val: signals.summary.avg_spread_pct     != null ? `${signals.summary.avg_spread_pct.toFixed(2)}%`      : "—", color: "text-amber-400" },
+              ].map(({ label, val, color }) => (
+                <div key={label} className="flex-shrink-0 bg-white/[0.03] border border-white/[0.06] rounded-lg px-3 py-2 flex flex-col items-center min-w-[90px]">
+                  <div className="text-[9px] text-white/30 uppercase tracking-widest font-semibold mb-0.5">{label}</div>
+                  <div className={`text-sm font-bold font-mono ${color}`}>{val}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Movers & Shakers — always uses main markets */}
           <MoversSection markets={markets} />
+
+          {/* Top Edges + Order Book Divergence */}
+          {signals && ((signals.top_edges?.length ?? 0) > 0 || (signals.top_mispricings?.length ?? 0) > 0) && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+              {(signals.top_edges?.length ?? 0) > 0 && (
+                <div>
+                  <div className="flex items-center gap-1.5 mb-2.5" title="Spread as % of YES price — higher = wider bid-ask relative to price, signals a pricing inefficiency or market-making opportunity">
+                    <Target className="w-3.5 h-3.5 text-amber-400" />
+                    <span className="text-[11px] font-bold text-white/80 uppercase tracking-wider">Top Edges</span>
+                    <span className="text-[9px] text-white/25 cursor-help">ⓘ</span>
+                  </div>
+                  <div className="space-y-1.5">
+                    {(signals.top_edges ?? []).slice(0, 6).map((e, i) => (
+                      <a key={i} href={e.slug ? `https://polymarket.com/event/${e.slug}` : "#"} target="_blank" rel="noopener noreferrer"
+                        className="bg-white/[0.02] border border-white/[0.05] rounded-lg px-2.5 py-2 flex items-start gap-2 hover:bg-white/[0.05] transition-colors">
+                        <p className="flex-1 text-[10px] text-white/70 leading-snug">{e.question || "—"}</p>
+                        <div className="flex items-center gap-1 flex-shrink-0 mt-0.5">
+                          <span className="text-[10px] font-mono text-blue-400">{e.yes_pct != null ? `${e.yes_pct}%` : "—"}</span>
+                          {(e.edge_pct ?? e.spread_pct_of_price) != null && (
+                            <span className="text-[10px] font-bold font-mono text-amber-400 whitespace-nowrap">
+                              {(e.edge_pct ?? e.spread_pct_of_price)!.toFixed(1)}% spread
+                            </span>
+                          )}
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {(signals.top_mispricings?.length ?? 0) > 0 && (
+                <div>
+                  <div className="flex items-center gap-1.5 mb-2.5" title="CLOB order book mid price differs from displayed YES price — signals professional traders are positioned at different odds than the displayed price">
+                    <Eye className="w-3.5 h-3.5 text-orange-400" />
+                    <span className="text-[11px] font-bold text-white/80 uppercase tracking-wider">Order Book Divergence</span>
+                    <span className="text-[9px] text-white/25 cursor-help">ⓘ</span>
+                  </div>
+                  <div className="space-y-1.5">
+                    {(signals.top_mispricings ?? []).slice(0, 6).map((m, i) => (
+                      <a key={i} href={m.slug ? `https://polymarket.com/event/${m.slug}` : "#"} target="_blank" rel="noopener noreferrer"
+                        className="bg-white/[0.02] border border-white/[0.05] rounded-lg px-2.5 py-2 flex items-start gap-2 hover:bg-white/[0.05] transition-colors">
+                        <p className="flex-1 text-[10px] text-white/70 leading-snug">{m.question || "—"}</p>
+                        <div className="flex items-center gap-1 flex-shrink-0 mt-0.5">
+                          <span className="text-[10px] font-mono text-blue-400">{m.yes_pct != null ? `${m.yes_pct}%` : "—"}</span>
+                          {m.mispricing_score != null && (
+                            <span className="text-[10px] font-bold font-mono text-orange-400 whitespace-nowrap">
+                              Δ {m.mispricing_score.toFixed(3)}
+                            </span>
+                          )}
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Category Tabs */}
           <div className="flex items-center gap-1.5 mb-4 overflow-x-auto pb-1 scrollbar-hide">
@@ -698,59 +811,36 @@ function PolymarketDashboard() {
 // ═══════════════════════════════════════════════════════════════════
 // MARKET INTELLIGENCE — Types
 // ═══════════════════════════════════════════════════════════════════
-interface SignalsSummary {
-  total_volume_24h?: number;
-  market_count?: number;
-  surging_count?: number;
-  whale_active_count?: number;
-}
-interface EdgeMarket {
-  question: string;
-  yes_pct?: number;
-  edge_pct?: number;
-  spread_pct_of_price?: number;
-  price_change_1d?: number;
-  market_efficiency_score?: number;
-  slug?: string;
-  slug_url?: string;
-}
-interface SurgingMarket {
-  question: string;
-  volume_24h?: number;
-  volume_momentum?: string;
-  slug?: string;
-}
-interface MoverMarket {
-  question: string;
-  price_change_1d?: number;
-  yes_pct?: number;
-  slug?: string;
-}
-interface WhaleMkt {
-  question: string;
-  vol_liq_ratio?: number;
-  volume_24h?: number;
-  yes_pct?: number;
-  slug?: string;
-}
 interface SignalsData {
-  summary?: SignalsSummary;
-  top_edges?: EdgeMarket[];
-  top_mispricings?: EdgeMarket[];
-  surging_markets?: SurgingMarket[];
-  whale_markets?: WhaleMkt[];
-  top_movers?: MoverMarket[];
+  summary?: {
+    total_volume_24h?: number;
+    market_count?: number;
+    surging_count?: number;
+    fading_count?: number;
+    whale_active_count?: number;
+    avg_spread_pct?: number;
+  };
+  top_edges?: Array<{ question: string; yes_pct?: number; edge_pct?: number; spread_pct_of_price?: number; slug?: string; }>;
+  top_mispricings?: Array<{ question: string; yes_pct?: number; mispricing_score?: number; slug?: string; }>;
+  surging_markets?: Array<{ question: string; volume_24h?: number; volume_momentum?: string; slug?: string; }>;
+  fading_markets?: Array<{ question: string; volume_24h?: number; volume_momentum?: string; slug?: string; }>;
+  whale_markets?: Array<{ question: string; vol_liq_ratio?: number; volume_24h?: number; yes_pct?: number; slug?: string; }>;
+  top_movers?: Array<{ question: string; price_change_1d?: number; yes_pct?: number; slug?: string; }>;
 }
 interface EnhancedMarket {
   id?: string;
   question: string;
   slug?: string;
   yes_pct?: number;
+  price_change_1h?: number;
   price_change_1d?: number;
+  price_change_1wk?: number;
   volume_24h?: number;
   volume_momentum?: string;
   whale_activity?: boolean;
   market_efficiency_score?: number;
+  edge_pct?: number;
+  liquidity?: number;
   days_to_expiry?: number;
   is_expired?: boolean;
   tags?: string[];
@@ -766,6 +856,8 @@ interface WhaleWatchItem {
   vol_liq_ratio?: number;
   volume_24h?: number;
   yes_pct?: number;
+  market_efficiency_score?: number;
+  price_change_1d?: number;
   slug?: string;
 }
 // Analysis types
@@ -823,162 +915,6 @@ function recoBadge(r: string | undefined) {
   return <span className="inline-flex items-center px-3 py-1 rounded-lg bg-gray-500/20 text-gray-400 border border-gray-500/30 text-base font-bold">{u}</span>;
 }
 
-// ─── Market Intelligence Panel ────────────────────────────────────
-function MarketIntelligence() {
-  const [data, setData] = useState<SignalsData | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch("/api/predict/signals")
-      .then((r) => r.ok ? r.json() : null)
-      .then((d) => { if (d) setData(d); })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
-
-  const s = data?.summary;
-  const statCards = [
-    { icon: DollarSign, label: "24h Volume",    val: s?.total_volume_24h   != null ? formatVolume(s.total_volume_24h)        : "—", cls: "text-blue-400" },
-    { icon: Activity,   label: "Active Markets", val: s?.market_count       != null ? s.market_count.toLocaleString()        : "—", cls: "text-white" },
-    { icon: Zap,        label: "Surging",        val: s?.surging_count      != null ? s.surging_count.toLocaleString()       : "—", cls: "text-emerald-400" },
-    { icon: Waves,      label: "Whale Active",   val: s?.whale_active_count != null ? s.whale_active_count.toLocaleString()  : "—", cls: "text-purple-400" },
-  ];
-  const edges    = (data?.top_edges ?? []).slice(0, 8);
-  const surging  = data?.surging_markets?.slice(0, 6) ?? [];
-  const whales   = data?.whale_markets?.slice(0, 5) ?? [];
-  const movers   = data?.top_movers?.slice(0, 6) ?? [];
-
-  return (
-    <GlassCard className="p-5 mb-5">
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center flex-shrink-0">
-          <Brain className="w-4 h-4 text-white" />
-        </div>
-        <div>
-          <h2 className="text-sm font-bold text-white flex items-center gap-2">
-            Market Intelligence
-            <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-[10px] text-emerald-400 font-semibold uppercase tracking-widest">Live</span>
-            </span>
-          </h2>
-          <p className="text-[10px] text-white/30">Real-time signals, edges, and whale activity from Polymarket</p>
-        </div>
-      </div>
-
-      {/* Stat cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-5">
-        {statCards.map(({ icon: Icon, label, val, cls }) => (
-          <div key={label} className="bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 flex items-center gap-2.5">
-            <Icon className={`w-4 h-4 flex-shrink-0 ${cls}`} />
-            <div>
-              <div className="text-[9px] text-white/30 uppercase tracking-widest font-semibold leading-none mb-0.5">{label}</div>
-              <div className={`text-sm font-bold font-mono leading-tight ${cls}`}>{loading ? <span className="animate-pulse text-white/20">···</span> : val}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {loading ? (
-        <div className="flex items-center justify-center py-8 text-xs text-white/20"><Loader2 className="w-4 h-4 animate-spin mr-2" />Loading intelligence data…</div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-          {/* Top Edges */}
-          <div>
-            <div className="flex items-center gap-1.5 mb-2.5" title="Spread as % of YES price — higher = wider bid-ask relative to price, more pricing inefficiency">
-              <Target className="w-3.5 h-3.5 text-amber-400" />
-              <span className="text-[11px] font-bold text-white/80 uppercase tracking-wider">Top Edges</span>
-              <span className="text-[9px] text-white/25 ml-0.5 cursor-help">ⓘ</span>
-            </div>
-            <div className="space-y-1.5">
-              {edges.length === 0 ? <div className="text-[11px] text-white/20 py-3 text-center">No edges detected</div>
-              : edges.map((e, i) => (
-                <div key={i} className="bg-white/[0.02] border border-white/[0.05] rounded-lg px-2.5 py-2 flex items-start gap-2">
-                  <p className="flex-1 text-[10px] text-white/70 leading-snug">{e.question || "—"}</p>
-                  <div className="flex items-center gap-1 flex-shrink-0 mt-0.5">
-                    <span className="text-[10px] font-mono text-blue-400">{e.yes_pct != null ? `${e.yes_pct}%` : "—"}</span>
-                    {(e.edge_pct ?? e.spread_pct_of_price) != null && (
-                      <span className="text-[10px] font-bold font-mono text-amber-400 whitespace-nowrap">
-                        {(e.edge_pct ?? e.spread_pct_of_price)!.toFixed(1)}% spread
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Surging Markets */}
-          <div>
-            <div className="flex items-center gap-1.5 mb-2.5">
-              <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="text-[11px] font-bold text-white/80 uppercase tracking-wider">Surging Markets</span>
-            </div>
-            <div className="space-y-1.5">
-              {surging.length === 0 ? <div className="text-[11px] text-white/20 py-3 text-center">No data</div>
-              : surging.map((m, i) => (
-                <div key={i} className="bg-white/[0.02] border border-white/[0.05] rounded-lg px-2.5 py-2 flex items-start gap-2">
-                  <p className="flex-1 text-[10px] text-white/70 leading-snug">{m.question || "—"}</p>
-                  <div className="flex items-center gap-1 flex-shrink-0 mt-0.5">
-                    <span className="text-[10px] font-mono text-white/40">{m.volume_24h != null ? formatVolume(m.volume_24h) : ""}</span>
-                    {momentumBadge(m.volume_momentum)}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Whale Watch */}
-          <div>
-            <div className="flex items-center gap-1.5 mb-2.5">
-              <Waves className="w-3.5 h-3.5 text-purple-400" />
-              <span className="text-[11px] font-bold text-white/80 uppercase tracking-wider">Whale Watch</span>
-            </div>
-            <div className="space-y-1.5">
-              {whales.length === 0 ? <div className="text-[11px] text-white/20 py-3 text-center">No whale activity</div>
-              : whales.map((w, i) => (
-                <div key={i} className="bg-white/[0.02] border border-white/[0.05] rounded-lg px-2.5 py-2 flex items-start gap-2">
-                  <p className="flex-1 text-[10px] text-white/70 leading-snug">{w.question || "—"}</p>
-                  <div className="flex items-center gap-1 flex-shrink-0 mt-0.5">
-                    {w.vol_liq_ratio != null && <span className="text-[10px] font-bold text-purple-400 font-mono">{w.vol_liq_ratio.toFixed(1)}×</span>}
-                    <span className="text-[10px] text-white/30 font-mono">{w.volume_24h != null ? formatVolume(w.volume_24h) : ""}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* 24H Movers */}
-          <div>
-            <div className="flex items-center gap-1.5 mb-2.5">
-              <Zap className="w-3.5 h-3.5 text-orange-400" />
-              <span className="text-[11px] font-bold text-white/80 uppercase tracking-wider">24H Movers</span>
-            </div>
-            <div className="space-y-1.5">
-              {movers.length === 0 ? <div className="text-[11px] text-white/20 py-3 text-center">No mover data</div>
-              : movers.map((m, i) => {
-                const chg = m.price_change_1d;
-                const chgCls = chg == null ? "text-white/25" : chg > 0 ? "text-emerald-400" : chg < 0 ? "text-red-400" : "text-white/25";
-                const chgStr = chg == null ? "—" : `${chg > 0 ? "+" : ""}${chg.toFixed(1)}%`;
-                return (
-                  <div key={i} className="bg-white/[0.02] border border-white/[0.05] rounded-lg px-2.5 py-2 flex items-start gap-2">
-                    <p className="flex-1 text-[10px] text-white/70 leading-snug">{m.question || "—"}</p>
-                    <div className="flex items-center gap-1 flex-shrink-0 mt-0.5">
-                      <span className={`text-[10px] font-bold font-mono ${chgCls}`}>{chgStr}</span>
-                      <span className="text-[10px] font-mono text-blue-400">{m.yes_pct != null ? `${m.yes_pct}%` : "—"}</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
-    </GlassCard>
-  );
-}
-
 // ─── Enhanced Markets Table ────────────────────────────────────────
 function EnhancedMarketsTable() {
   const [markets, setMarkets]       = useState<EnhancedMarket[]>([]);
@@ -986,6 +922,7 @@ function EnhancedMarketsTable() {
   const [loading, setLoading]       = useState(true);
   const [tagFilter, setTagFilter]   = useState("");
   const [minVol, setMinVol]         = useState("");
+  const [sortBy, setSortBy]         = useState<"volume" | "change_24h" | "change_1h" | "efficiency" | "edge" | "liquidity">("volume");
 
   const fetchMarkets = useCallback(async () => {
     setLoading(true);
@@ -1030,6 +967,15 @@ function EnhancedMarketsTable() {
             <option value="1000">$1K+</option><option value="10000">$10K+</option>
             <option value="50000">$50K+</option><option value="100000">$100K+</option>
           </select>
+          <select value={sortBy} onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+            className="bg-white/[0.04] border border-white/[0.08] rounded-lg px-2.5 py-1.5 text-[11px] text-white/60 focus:outline-none">
+            <option value="volume">Sort: Volume</option>
+            <option value="change_24h">Sort: 24H Move</option>
+            <option value="change_1h">Sort: 1H Move</option>
+            <option value="efficiency">Sort: Efficiency</option>
+            <option value="edge">Sort: Edge %</option>
+            <option value="liquidity">Sort: Liquidity</option>
+          </select>
           <button onClick={fetchMarkets} className="p-1.5 rounded-lg border border-white/10 hover:bg-white/5 transition-colors">
             <RefreshCw className={`w-3.5 h-3.5 text-white/40 ${loading ? "animate-spin" : ""}`} />
           </button>
@@ -1041,16 +987,23 @@ function EnhancedMarketsTable() {
         <div className="text-center py-8 text-sm text-white/30">No markets available</div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[700px]">
+          <table className="w-full min-w-[800px]">
             <thead>
               <tr className="border-b border-white/[0.06]">
-                {["Market", "YES%", "24H Δ", "Vol 24h", "Momentum", "Whale", "Efficiency", "Expires"].map((h) => (
+                {["Market", "YES%", "1H Δ", "24H Δ", "1W Δ", "Vol 24h", "Momentum", "Whale", "Efficiency", "Expires"].map((h) => (
                   <th key={h} className="px-2 py-2 text-left text-[10px] font-semibold text-white/30 uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {markets.map((m, i) => (
+              {[...markets].sort((a, b) => {
+                if (sortBy === "change_24h") return Math.abs(b.price_change_1d ?? 0) - Math.abs(a.price_change_1d ?? 0);
+                if (sortBy === "change_1h")  return Math.abs(b.price_change_1h ?? 0) - Math.abs(a.price_change_1h ?? 0);
+                if (sortBy === "efficiency") return (b.market_efficiency_score ?? 0) - (a.market_efficiency_score ?? 0);
+                if (sortBy === "edge")       return (b.edge_pct ?? 0) - (a.edge_pct ?? 0);
+                if (sortBy === "liquidity")  return (b.liquidity ?? 0) - (a.liquidity ?? 0);
+                return (b.volume_24h ?? 0) - (a.volume_24h ?? 0);
+              }).map((m, i) => (
                 <tr key={m.id ?? i} className={`border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors ${i % 2 === 0 ? "" : "bg-white/[0.01]"}`}>
                   <td className="px-2 py-2.5 max-w-[260px]">
                     <a href={m.slug ? `https://polymarket.com/event/${m.slug}` : "#"} target="_blank" rel="noopener noreferrer"
@@ -1062,10 +1015,22 @@ function EnhancedMarketsTable() {
                     {m.yes_pct != null && <span className={`text-sm font-bold ${m.yes_pct >= 60 ? "text-emerald-400" : m.yes_pct <= 40 ? "text-red-400" : "text-blue-400"}`}>{m.yes_pct}%</span>}
                   </td>
                   <td className="px-2 py-2.5">
+                    {m.price_change_1h == null ? <span className="text-[11px] text-white/20">—</span>
+                    : <span className={`text-[11px] font-bold font-mono ${m.price_change_1h > 0 ? "text-emerald-400" : m.price_change_1h < 0 ? "text-red-400" : "text-white/25"}`}>
+                        {m.price_change_1h > 0 ? "+" : ""}{m.price_change_1h.toFixed(1)}%
+                      </span>}
+                  </td>
+                  <td className="px-2 py-2.5">
                     {m.is_expired ? <span className="text-[11px] text-white/20">—</span>
                     : m.price_change_1d == null ? <span className="text-[11px] text-white/20">—</span>
                     : <span className={`text-[11px] font-bold font-mono ${m.price_change_1d > 0 ? "text-emerald-400" : m.price_change_1d < 0 ? "text-red-400" : "text-white/25"}`}>
                         {m.price_change_1d > 0 ? "+" : ""}{m.price_change_1d.toFixed(1)}%
+                      </span>}
+                  </td>
+                  <td className="px-2 py-2.5">
+                    {m.price_change_1wk == null ? <span className="text-[11px] text-white/20">—</span>
+                    : <span className={`text-[11px] font-bold font-mono ${m.price_change_1wk > 0 ? "text-emerald-400" : m.price_change_1wk < 0 ? "text-red-400" : "text-white/25"}`}>
+                        {m.price_change_1wk > 0 ? "+" : ""}{m.price_change_1wk.toFixed(1)}%
                       </span>}
                   </td>
                   <td className="px-2 py-2.5 text-[11px] text-white/40 font-mono">{m.volume_24h != null ? formatVolume(m.volume_24h) : "—"}</td>
@@ -1168,6 +1133,12 @@ function WhaleWatchPanel() {
               </span>
               <span className="text-[11px] font-mono text-white/40 flex-shrink-0">{w.volume_24h != null ? formatVolume(w.volume_24h) : ""}</span>
               {w.yes_pct != null && <span className={`text-xs font-bold font-mono flex-shrink-0 ${w.yes_pct >= 60 ? "text-emerald-400" : w.yes_pct <= 40 ? "text-red-400" : "text-blue-400"}`}>{w.yes_pct}%</span>}
+              {w.market_efficiency_score != null && effBadge(w.market_efficiency_score)}
+              {w.price_change_1d != null && (
+                <span className={`text-[10px] font-bold font-mono flex-shrink-0 ${w.price_change_1d > 0 ? "text-emerald-400" : w.price_change_1d < 0 ? "text-red-400" : "text-white/25"}`}>
+                  {w.price_change_1d > 0 ? "+" : ""}{w.price_change_1d.toFixed(1)}%
+                </span>
+              )}
             </div>
           ))}
         </div>
@@ -1802,9 +1773,6 @@ export default function PredictPage() {
         <div className="flex flex-col gap-6">
 
           <div className="flex-1 min-w-0">
-
-            {/* ═══ Market Intelligence ═══ */}
-            <MarketIntelligence />
 
             {/* ═══ Prediction Markets Dashboard ═══ */}
             <PolymarketDashboard />

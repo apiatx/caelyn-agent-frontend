@@ -1,0 +1,281 @@
+Predict Page Consolidation
+Overview
+Remove the <MarketIntelligence /> section from the Predict page and distribute its best elements into the existing sections below it. Do not modify any existing data, layout, or logic in the other sections — only add to them. The page render order stays the same: PolymarketDashboard, then EnhancedMarketsTable, then WhaleWatchPanel, then CategoryChart, then Betting Platforms.
+
+Step 1 — Delete Market Intelligence
+Remove <MarketIntelligence /> from the PredictPage render (it is the first component rendered inside <main>, around line 1807).
+Delete the entire MarketIntelligence function component (lines 827–980).
+Delete the types that are now unused because they were only used by MarketIntelligence: SignalsSummary, EdgeMarket, SurgingMarket, MoverMarket, WhaleMkt, SignalsData.
+Keep the helper functions effBadge, momentumBadge, recoBadge — they are used by EnhancedMarketsTable and AnalysisPanel.
+Step 2 — Upgrade PolymarketDashboard
+The PolymarketDashboard component already fetches from Polymarket. Add a second fetch from /api/predict/signals inside this component. Do not change any existing fetch logic.
+
+2a — Add signals state
+Inside PolymarketDashboard, add:
+
+const [signals, setSignals] = useState<SignalsData | null>(null);
+
+Add a useEffect to fetch signals once on mount:
+
+useEffect(() => {
+  fetch("/api/predict/signals")
+    .then((r) => r.ok ? r.json() : null)
+    .then((d) => { if (d) setSignals(d); })
+    .catch(() => {});
+}, []);
+
+Keep the SignalsData type — just move it to remain at the top of the file. If you deleted it in Step 1, re-declare only what's needed:
+
+interface SignalsData {
+  summary?: {
+    total_volume_24h?: number;
+    market_count?: number;
+    surging_count?: number;
+    fading_count?: number;
+    whale_active_count?: number;
+    avg_spread_pct?: number;
+  };
+  top_edges?: Array<{ question: string; yes_pct?: number; edge_pct?: number; spread_pct_of_price?: number; slug?: string; }>;
+  top_mispricings?: Array<{ question: string; yes_pct?: number; mispricing_score?: number; slug?: string; }>;
+  surging_markets?: Array<{ question: string; volume_24h?: number; volume_momentum?: string; slug?: string; }>;
+  fading_markets?: Array<{ question: string; volume_24h?: number; volume_momentum?: string; slug?: string; }>;
+}
+
+2b — Add Market Health Stats Bar
+Placement: Insert this immediately below the existing <MarketPulseBar markets={markets} /> line and above <MoversSection markets={markets} />.
+
+This is a scrollable row of 6 compact stat chips, all sourced from signals?.summary. Only render if signals is not null:
+
+{signals?.summary && (
+  <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide mb-5">
+    {[
+      { label: "24h Volume",    val: signals.summary.total_volume_24h   != null ? formatVolume(signals.summary.total_volume_24h)             : "—", color: "text-blue-400" },
+      { label: "Active Mkts",   val: signals.summary.market_count       != null ? signals.summary.market_count.toLocaleString()             : "—", color: "text-white" },
+      { label: "Surging",       val: signals.summary.surging_count      != null ? signals.summary.surging_count.toLocaleString()            : "—", color: "text-emerald-400" },
+      { label: "Fading",        val: signals.summary.fading_count       != null ? signals.summary.fading_count.toLocaleString()             : "—", color: "text-red-400" },
+      { label: "Whale Active",  val: signals.summary.whale_active_count != null ? signals.summary.whale_active_count.toLocaleString()       : "—", color: "text-purple-400" },
+      { label: "Avg Spread",    val: signals.summary.avg_spread_pct     != null ? `${signals.summary.avg_spread_pct.toFixed(2)}%`           : "—", color: "text-amber-400" },
+    ].map(({ label, val, color }) => (
+      <div key={label} className="flex-shrink-0 bg-white/[0.03] border border-white/[0.06] rounded-lg px-3 py-2 flex flex-col items-center min-w-[90px]">
+        <div className="text-[9px] text-white/30 uppercase tracking-widest font-semibold mb-0.5">{label}</div>
+        <div className={`text-sm font-bold font-mono ${color}`}>{val}</div>
+      </div>
+    ))}
+  </div>
+)}
+
+2c — Add Top Edges + Top Mispricings (Order Book Divergence) sub-sections
+Placement: Insert this block immediately after <MoversSection markets={markets} /> and before the category tabs <div className="flex items-center gap-1.5 mb-4 ...">.
+
+Only render if signals has data in either list:
+
+{signals && ((signals.top_edges?.length ?? 0) > 0 || (signals.top_mispricings?.length ?? 0) > 0) && (
+  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+    {/* Top Edges */}
+    {(signals.top_edges?.length ?? 0) > 0 && (
+      <div>
+        <div
+          className="flex items-center gap-1.5 mb-2.5"
+          title="Spread as % of YES price — higher = wider bid-ask relative to price, signals a pricing inefficiency or market-making opportunity"
+        >
+          <Target className="w-3.5 h-3.5 text-amber-400" />
+          <span className="text-[11px] font-bold text-white/80 uppercase tracking-wider">Top Edges</span>
+          <span className="text-[9px] text-white/25 cursor-help">ⓘ</span>
+        </div>
+        <div className="space-y-1.5">
+          {(signals.top_edges ?? []).slice(0, 6).map((e, i) => (
+            <a
+              key={i}
+              href={e.slug ? `https://polymarket.com/event/${e.slug}` : "#"}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-white/[0.02] border border-white/[0.05] rounded-lg px-2.5 py-2 flex items-start gap-2 hover:bg-white/[0.05] transition-colors"
+            >
+              <p className="flex-1 text-[10px] text-white/70 leading-snug">{e.question || "—"}</p>
+              <div className="flex items-center gap-1 flex-shrink-0 mt-0.5">
+                <span className="text-[10px] font-mono text-blue-400">{e.yes_pct != null ? `${e.yes_pct}%` : "—"}</span>
+                {(e.edge_pct ?? e.spread_pct_of_price) != null && (
+                  <span className="text-[10px] font-bold font-mono text-amber-400 whitespace-nowrap">
+                    {(e.edge_pct ?? e.spread_pct_of_price)!.toFixed(1)}% spread
+                  </span>
+                )}
+              </div>
+            </a>
+          ))}
+        </div>
+      </div>
+    )}
+    {/* Top Mispricings / Order Book Divergence */}
+    {(signals.top_mispricings?.length ?? 0) > 0 && (
+      <div>
+        <div
+          className="flex items-center gap-1.5 mb-2.5"
+          title="CLOB order book mid price differs from displayed YES price — signals professional traders are positioned at different odds than the displayed price"
+        >
+          <Eye className="w-3.5 h-3.5 text-orange-400" />
+          <span className="text-[11px] font-bold text-white/80 uppercase tracking-wider">Order Book Divergence</span>
+          <span className="text-[9px] text-white/25 cursor-help">ⓘ</span>
+        </div>
+        <div className="space-y-1.5">
+          {(signals.top_mispricings ?? []).slice(0, 6).map((m, i) => (
+            <a
+              key={i}
+              href={m.slug ? `https://polymarket.com/event/${m.slug}` : "#"}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-white/[0.02] border border-white/[0.05] rounded-lg px-2.5 py-2 flex items-start gap-2 hover:bg-white/[0.05] transition-colors"
+            >
+              <p className="flex-1 text-[10px] text-white/70 leading-snug">{m.question || "—"}</p>
+              <div className="flex items-center gap-1 flex-shrink-0 mt-0.5">
+                <span className="text-[10px] font-mono text-blue-400">{m.yes_pct != null ? `${m.yes_pct}%` : "—"}</span>
+                {m.mispricing_score != null && (
+                  <span className="text-[10px] font-bold font-mono text-orange-400 whitespace-nowrap">
+                    Δ {m.mispricing_score.toFixed(3)}
+                  </span>
+                )}
+              </div>
+            </a>
+          ))}
+        </div>
+      </div>
+    )}
+  </div>
+)}
+
+Target and Eye are already imported at the top of the file — no import changes needed.
+
+2d — Add Surging and Fading tabs to the category tabs
+In the existing tabs array inside PolymarketDashboard, add two new entries:
+
+{ key: "surging" as CategoryTab, label: "⚡ Surging" },
+{ key: "fading"  as CategoryTab, label: "↘ Fading"  },
+
+Update the CategoryTab type to include "surging" | "fading".
+
+In the filtered computation, handle these two cases:
+
+const filtered =
+  activeTab === "surging"
+    ? (signals?.surging_markets ?? []).map((m) => ({
+        ...m,
+        eventTitle: m.question,
+        eventSlug: m.slug ?? "",
+        marketId: m.slug ?? String(Math.random()),
+        yesPrice: 0,
+        noPrice: 0,
+        volume24hr: m.volume_24h ?? 0,
+        totalVolume: 0,
+        liquidity: 0,
+        tags: [],
+      }))
+    : activeTab === "fading"
+    ? (signals?.fading_markets ?? []).map((m) => ({
+        ...m,
+        eventTitle: m.question,
+        eventSlug: m.slug ?? "",
+        marketId: m.slug ?? String(Math.random()),
+        yesPrice: 0,
+        noPrice: 0,
+        volume24hr: m.volume_24h ?? 0,
+        totalVolume: 0,
+        liquidity: 0,
+        tags: [],
+      }))
+    : isTagCategory
+    ? (tagSlug ? tagCache[tagSlug] || [] : [])
+    : markets.filter((m) => matchesCategory(m, activeTab));
+
+For Surging/Fading tabs, show the markets using the existing <MarketCard> component. The volume_momentum badge is already available — show it in the card if the tab is surging/fading by rendering {momentumBadge(m.volume_momentum)} in the card subtitle area. Since MarketCard won't show a price bar without a real yesPrice, conditionally skip the price bar when yesPrice === 0.
+
+Step 3 — Upgrade EnhancedMarketsTable
+3a — Add 1H Δ and 1W Δ columns
+The /api/predict/markets endpoint already returns price_change_1h and price_change_1wk on every market object. Add two new columns to the table:
+
+In the <thead>:
+
+{["Market", "YES%", "1H Δ", "24H Δ", "1W Δ", "Vol 24h", "Momentum", "Whale", "Efficiency", "Expires"].map((h) => (
+  <th key={h} ...>{h}</th>
+))}
+
+In the <tbody> row, after the existing "24H Δ" cell (price_change_1d), add:
+
+1H Δ cell (insert before the existing 24H Δ cell):
+<td className="px-2 py-2.5">
+  {m.price_change_1h == null ? <span className="text-[11px] text-white/20">—</span>
+  : <span className={`text-[11px] font-bold font-mono ${m.price_change_1h > 0 ? "text-emerald-400" : m.price_change_1h < 0 ? "text-red-400" : "text-white/25"}`}>
+      {m.price_change_1h > 0 ? "+" : ""}{m.price_change_1h.toFixed(1)}%
+    </span>}
+</td>
+
+1W Δ cell (insert after the existing 24H Δ cell):
+<td className="px-2 py-2.5">
+  {m.price_change_1wk == null ? <span className="text-[11px] text-white/20">—</span>
+  : <span className={`text-[11px] font-bold font-mono ${m.price_change_1wk > 0 ? "text-emerald-400" : m.price_change_1wk < 0 ? "text-red-400" : "text-white/25"}`}>
+      {m.price_change_1wk > 0 ? "+" : ""}{m.price_change_1wk.toFixed(1)}%
+    </span>}
+</td>
+
+3b — Add Sort By control
+Above the table (inside the existing header <div className="flex items-center justify-between mb-4 ...">, alongside the existing tag and volume filters), add a sort select:
+
+const [sortBy, setSortBy] = useState<"volume" | "change_24h" | "change_1h" | "efficiency" | "edge" | "liquidity">("volume");
+
+<select
+  value={sortBy}
+  onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+  className="bg-white/[0.04] border border-white/[0.08] rounded-lg px-2.5 py-1.5 text-[11px] text-white/60 focus:outline-none"
+>
+  <option value="volume">Sort: Volume</option>
+  <option value="change_24h">Sort: 24H Move</option>
+  <option value="change_1h">Sort: 1H Move</option>
+  <option value="efficiency">Sort: Efficiency</option>
+  <option value="edge">Sort: Edge %</option>
+  <option value="liquidity">Sort: Liquidity</option>
+</select>
+
+After fetching, apply client-side sort before rendering:
+
+const sortedMarkets = [...markets].sort((a, b) => {
+  if (sortBy === "change_24h") return Math.abs(b.price_change_1d ?? 0) - Math.abs(a.price_change_1d ?? 0);
+  if (sortBy === "change_1h")  return Math.abs(b.price_change_1h ?? 0) - Math.abs(a.price_change_1h ?? 0);
+  if (sortBy === "efficiency") return (b.market_efficiency_score ?? 0) - (a.market_efficiency_score ?? 0);
+  if (sortBy === "edge")       return (b.edge_pct ?? 0) - (a.edge_pct ?? 0);
+  if (sortBy === "liquidity")  return (b.liquidity ?? 0) - (a.liquidity ?? 0);
+  return (b.volume_24h ?? 0) - (a.volume_24h ?? 0); // default: volume
+});
+
+Use sortedMarkets in the tbody instead of markets.
+
+Step 4 — Upgrade WhaleWatchPanel
+In the whale item row, add two additional data points after the existing yes_pct span:
+
+Market efficiency badge (reuse the existing effBadge helper):
+
+{w.market_efficiency_score != null && effBadge(w.market_efficiency_score)}
+
+24h price change:
+
+{w.price_change_1d != null && (
+  <span className={`text-[10px] font-bold font-mono flex-shrink-0 ${w.price_change_1d > 0 ? "text-emerald-400" : w.price_change_1d < 0 ? "text-red-400" : "text-white/25"}`}>
+    {w.price_change_1d > 0 ? "+" : ""}{w.price_change_1d.toFixed(1)}%
+  </span>
+)}
+
+Update the WhaleWatchItem type to include market_efficiency_score?: number and price_change_1d?: number.
+
+Step 5 — One Small Backend Addition (needed for Step 2d Fading tab)
+The /api/predict/signals endpoint currently returns fading_count in the summary but does not return the individual fading market list. Ask the backend developer to add one line to get_market_signals() in backend/services/predict/polymarket_intelligence.py:
+
+In the result dict (around line 147), add:
+
+"fading_markets": _slim(momentum_down[:6]),
+
+This is the only backend change needed. Everything else already exists.
+
+What Is NOT Changing
+The Market Pulse ticker, Movers & Shakers, category tabs, and all existing market cards in PolymarketDashboard are unchanged
+The EnhancedMarketsTable existing columns (Market, YES%, 24H Δ, Vol 24h, Momentum, Whale, Efficiency, Expires) are unchanged — only new columns and a sort control are added
+The WhaleWatchPanel layout and existing data are unchanged — only two additional data points are appended to each row
+CategoryChart is unchanged
+Betting Platforms section is unchanged
+All existing fetch logic, polling intervals, and error handling are unchanged
