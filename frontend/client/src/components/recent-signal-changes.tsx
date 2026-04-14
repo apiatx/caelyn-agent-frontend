@@ -146,9 +146,7 @@ export const RecentSignalChanges = memo(function RecentSignalChanges() {
     if (fetchingRef.current) return;
     fetchingRef.current = true;
     try {
-      const res = await fetch("/api/predict/signal-changes", {
-        headers: { "Content-Type": "application/json" },
-      });
+      const res = await fetch("/api/predict/signal-changes");
       if (!res.ok) {
         // 404 is expected while backend is being built — hide gracefully
         if (res.status === 404) {

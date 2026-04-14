@@ -34,8 +34,9 @@ function getToken(): string | null {
   return localStorage.getItem('caelyn_token') || sessionStorage.getItem('caelyn_token');
 }
 
-function authHeaders(): Record<string, string> {
-  const h: Record<string, string> = { 'Content-Type': 'application/json', 'X-API-Key': AGENT_API_KEY };
+function authHeaders(method: 'GET' | 'POST' = 'GET'): Record<string, string> {
+  const h: Record<string, string> = { 'X-API-Key': AGENT_API_KEY };
+  if (method === 'POST') h['Content-Type'] = 'application/json';
   const t = getToken();
   if (t) h['Authorization'] = `Bearer ${t}`;
   return h;
@@ -315,9 +316,9 @@ const RecommendationCard = memo(function RecommendationCard({
             Liq <span className="text-white/70 font-semibold">{formatDollars(market.liquidity)}</span>
           </span>
         )}
-        {market.spread != null && (
+        {(market.spread_pct ?? market.spread) != null && (
           <span className="text-white/40">
-            Spread <span className="text-white/70 font-semibold">{market.spread.toFixed(1)}¢</span>
+            Spread <span className="text-white/70 font-semibold">{(market.spread_pct ?? (market.spread! * 100)).toFixed(1)}¢</span>
           </span>
         )}
         {market.days_to_expiry != null && (
@@ -375,10 +376,10 @@ export function DecisionEngine() {
   const [justUpdated, setJustUpdated] = useState(false);
   const fetchingRef = useRef(false);
 
-  const fetchRecommendations = useCallback(async (isManual = false) => {
-    if (fetchingRef.current) return;
+  const fetchRecommendations = useCallback(async (isManual = false, retryCount = 0) => {
+    if (fetchingRef.current && retryCount === 0) return;
     fetchingRef.current = true;
-    if (isManual) setLoading(true);
+    if (isManual && retryCount === 0) setLoading(true);
     try {
       let res = await fetch("/api/predict/recommendations", { headers: authHeaders() });
       if (!res.ok) {
@@ -394,6 +395,13 @@ export function DecisionEngine() {
       setJustUpdated(true);
     } catch (e: any) {
       console.error("[DecisionEngine] Failed to fetch recommendations:", e);
+      // Retry up to 2 times with increasing delay (3s, 6s) — handles cold-start timeouts
+      if (retryCount < 2) {
+        fetchingRef.current = false;
+        const delay = (retryCount + 1) * 3000;
+        setTimeout(() => fetchRecommendations(isManual, retryCount + 1), delay);
+        return;
+      }
       // Only set error if we have no previous data (stale-while-revalidate)
       if (!data) {
         setError("Unable to load signal recommendations");
