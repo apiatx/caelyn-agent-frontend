@@ -430,7 +430,7 @@ function MoversSection({ markets }: { markets: ParsedMarket[] }) {
   return (
     <div className="mb-6">
       <div className="flex items-center gap-2 mb-3">
-        <TrendingUp className="w-4 h-4 text-orange-400" />
+        <LiveBadge />
         <h3 className="text-sm font-bold text-white/90 tracking-wide uppercase">Movers & Shakers</h3>
         <InfoTooltip text="Where is the crowd most confident AND putting money behind it? Ranks markets by multiplying conviction (how far the price is from 50/50) by volume. A market at 100% YES with high volume scores highest. A market at 51% YES even with high volume barely shows up. This answers: 'Where has the crowd made up its mind and put real money on it?' — not about recent movement, just current conviction." />
         <span className="text-[10px] text-white/30">Highest conviction bets</span>
@@ -734,9 +734,6 @@ function PolymarketDashboard({ signals, children }: { signals: SignalsData | nul
         </div>
       ) : (
         <>
-          {/* Market Pulse Ticker Tape — always uses main markets */}
-          <MarketPulseBar markets={markets} />
-
           {/* Movers & Shakers — always uses main markets */}
           <MoversSection markets={markets} />
 
