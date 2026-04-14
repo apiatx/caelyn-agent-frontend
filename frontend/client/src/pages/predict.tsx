@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
@@ -279,22 +280,40 @@ function PriceBar({ yesPrice }: { yesPrice: number }) {
 
 function InfoTooltip({ text }: { text: string }) {
   const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+  const btnRef = useRef<HTMLButtonElement>(null);
+
+  const calcPos = () => {
+    if (btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setPos({
+        top: rect.top + window.scrollY,
+        left: rect.left + rect.width / 2 + window.scrollX,
+      });
+    }
+  };
+
   return (
-    <span className="relative inline-flex flex-shrink-0">
+    <span className="inline-flex flex-shrink-0">
       <button
-        onMouseEnter={() => setOpen(true)}
+        ref={btnRef}
+        onMouseEnter={() => { calcPos(); setOpen(true); }}
         onMouseLeave={() => setOpen(false)}
-        onClick={(e) => { e.stopPropagation(); setOpen((v) => !v); }}
+        onClick={(e) => { e.stopPropagation(); calcPos(); setOpen((v) => !v); }}
         className="w-[15px] h-[15px] rounded-full bg-white/[0.07] border border-white/[0.12] text-white/40 text-[9px] font-bold flex items-center justify-center hover:bg-white/[0.14] hover:text-white/70 transition-all cursor-help"
         aria-label="More info"
       >
         i
       </button>
-      {open && (
-        <div className="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+6px)] z-[9999] w-64 bg-[#0d1520] border border-white/[0.1] rounded-xl p-3 shadow-2xl pointer-events-none">
+      {open && createPortal(
+        <div
+          className="fixed w-64 bg-[#0d1520] border border-white/[0.1] rounded-xl p-3 shadow-2xl pointer-events-none"
+          style={{ zIndex: 99999, top: pos.top, left: pos.left, transform: 'translate(-50%, calc(-100% - 10px))' }}
+        >
           <p className="text-[11px] text-white/65 leading-relaxed">{text}</p>
           <div className="absolute left-1/2 -translate-x-1/2 top-full w-2 h-2 bg-[#0d1520] border-b border-r border-white/[0.1] rotate-45 -mt-[5px]" />
-        </div>
+        </div>,
+        document.body
       )}
     </span>
   );
@@ -663,9 +682,10 @@ function PolymarketDashboard({ signals }: { signals: SignalsData | null }) {
     <GlassCard className="p-5 mb-8">
       {/* Header */}
       <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
-        <div className="flex items-center gap-2 text-[10px] text-white/25">
+        <div className="flex items-center gap-3">
+          <h2 className="text-base font-bold text-white">Market Intelligence</h2>
           {lastUpdated && (
-            <span className="flex items-center gap-1">
+            <span className="flex items-center gap-1 text-[10px] text-white/25">
               Updated {lastUpdated.toLocaleTimeString()}
               <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 ml-1">
                 <span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" />
@@ -1054,7 +1074,7 @@ function EnhancedMarketsTable() {
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <BarChart3 className="w-4 h-4 text-blue-400" />
-          <h2 className="text-sm font-bold text-white">Market Intelligence Screener</h2>
+          <h2 className="text-sm font-bold text-white">Polymarket Screener</h2>
           <LiveBadge />
         </div>
         <div className="flex items-center gap-2 flex-wrap">
