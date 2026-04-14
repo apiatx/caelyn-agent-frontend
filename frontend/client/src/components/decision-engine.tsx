@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef, memo } from "react";
 import { GlassCard } from "@/components/ui/glass-card";
 import {
   Tooltip,
@@ -28,6 +28,7 @@ import {
 // ─── Constants ────────────────────────────────────────────────────
 const AGENT_BACKEND_URL = "https://fast-api-server-trading-agent-aidanpilon.replit.app";
 const AGENT_API_KEY = "hippo_ak_7f3x9k2m4p8q1w5t";
+const POLL_INTERVAL_MS = 90_000;
 
 function getToken(): string | null {
   return localStorage.getItem('caelyn_token') || sessionStorage.getItem('caelyn_token');
@@ -148,6 +149,14 @@ function getMomentumLabel(label: string | undefined): { text: string; color: str
   return { text: label.replace(/_/g, " "), color: "text-white/40" };
 }
 
+function formatSecondsAgo(seconds: number): string {
+  if (seconds < 5) return "just now";
+  if (seconds < 60) return `${seconds}s ago`;
+  const mins = Math.floor(seconds / 60);
+  if (mins < 60) return `${mins}m ago`;
+  return `${Math.floor(mins / 60)}h ${mins % 60}m ago`;
+}
+
 // ─── Bucket config ────────────────────────────────────────────────
 interface BucketConfig {
   key: keyof RecommendationsResponse;
@@ -193,12 +202,14 @@ function SkeletonCard({ hero = false }: { hero?: boolean }) {
 }
 
 // ─── Recommendation Card ──────────────────────────────────────────
-function RecommendationCard({
+const RecommendationCard = memo(function RecommendationCard({
   market,
   bucket,
+  justUpdated,
 }: {
   market: RecommendationMarket;
   bucket: BucketConfig;
+  justUpdated?: boolean;
 }) {
   const direction = getDirection(market, bucket.key);
   const dirColors = getDirectionColor(direction);
@@ -219,6 +230,7 @@ function RecommendationCard({
     <div
       className={`
         relative group rounded-xl border transition-all duration-200
+        ${justUpdated ? "ring-1 ring-blue-400/30 animate-[pulse-glow_2s_ease-in-out]" : ""}
         ${isHero
           ? `col-span-full ${isDanger ? "border-amber-500/20 bg-amber-500/[0.03]" : `${dirColors.border} bg-gradient-to-br from-white/[0.04] to-white/[0.01]`} p-5 sm:p-6 shadow-lg ${dirColors.glow}`
           : isDanger
@@ -350,7 +362,7 @@ function RecommendationCard({
       </div>
     </div>
   );
-}
+});
 
 // ─── Main Decision Engine Component ───────────────────────────────
 export function DecisionEngine() {
@@ -358,10 +370,16 @@ export function DecisionEngine() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showSecondary, setShowSecondary] = useState(false);
+  const [lastFetchTime, setLastFetchTime] = useState<number | null>(null);
+  const [secondsAgo, setSecondsAgo] = useState(0);
+  const [justUpdated, setJustUpdated] = useState(false);
+  const fetchingRef = useRef(false);
 
-  const fetchRecommendations = useCallback(async () => {
+  const fetchRecommendations = useCallback(async (isManual = false) => {
+    if (fetchingRef.current) return;
+    fetchingRef.current = true;
+    if (isManual) setLoading(true);
     try {
-      // Try local proxy first, then direct backend
       let res = await fetch("/api/predict/recommendations", { headers: { 'Content-Type': 'application/json' } });
       if (!res.ok) {
         res = await fetch(`${AGENT_BACKEND_URL}/api/predict/recommendations`, { headers: authHeaders() });
@@ -370,17 +388,46 @@ export function DecisionEngine() {
       const json = await res.json();
       setData(json);
       setError(null);
+      setLastFetchTime(Date.now());
+      setJustUpdated(true);
     } catch (e: any) {
       console.error("[DecisionEngine] Failed to fetch recommendations:", e);
-      setError("Unable to load signal recommendations");
+      // Only set error if we have no previous data (stale-while-revalidate)
+      if (!data) {
+        setError("Unable to load signal recommendations");
+      }
     } finally {
       setLoading(false);
+      fetchingRef.current = false;
     }
+  }, [data]);
+
+  // Initial fetch
+  useEffect(() => {
+    fetchRecommendations(true);
   }, []);
 
+  // Polling every 90 seconds
   useEffect(() => {
-    fetchRecommendations();
+    const iv = setInterval(() => fetchRecommendations(false), POLL_INTERVAL_MS);
+    return () => clearInterval(iv);
   }, [fetchRecommendations]);
+
+  // Freshness counter — ticks every second
+  useEffect(() => {
+    if (!lastFetchTime) return;
+    const tick = () => setSecondsAgo(Math.floor((Date.now() - lastFetchTime) / 1000));
+    tick();
+    const iv = setInterval(tick, 1000);
+    return () => clearInterval(iv);
+  }, [lastFetchTime]);
+
+  // Clear justUpdated pulse after 5 seconds
+  useEffect(() => {
+    if (!justUpdated) return;
+    const t = setTimeout(() => setJustUpdated(false), 5000);
+    return () => clearTimeout(t);
+  }, [justUpdated]);
 
   // Check if we have any usable data
   const hasData = data && PRIMARY_BUCKETS.some(b => extractFirst(data[b.key]) !== null);
@@ -407,6 +454,14 @@ export function DecisionEngine() {
 
   return (
     <GlassCard className="p-5 mb-5">
+      {/* Pulse animation keyframes */}
+      <style>{`
+        @keyframes pulse-glow {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(96,165,250,0); }
+          50% { box-shadow: 0 0 8px 2px rgba(96,165,250,0.15); }
+        }
+      `}</style>
+
       {/* Section header */}
       <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
         <div className="flex items-center gap-3">
@@ -439,13 +494,21 @@ export function DecisionEngine() {
                 </Tooltip>
               </TooltipProvider>
             </div>
-            <p className="text-[10px] text-white/30">Best setups right now, ranked by edge, flow, execution, and crowd quality</p>
+            <div className="flex items-center gap-2">
+              <p className="text-[10px] text-white/30">Best setups right now, ranked by edge, flow, execution, and crowd quality</p>
+              {lastFetchTime && (
+                <span className="text-[9px] text-white/20 tabular-nums">
+                  Updated {formatSecondsAgo(secondsAgo)}
+                </span>
+              )}
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => { setLoading(true); fetchRecommendations(); }}
-            className="p-1.5 rounded-lg border border-white/10 hover:bg-white/5 transition-colors"
+            onClick={() => fetchRecommendations(true)}
+            disabled={fetchingRef.current}
+            className="p-1.5 rounded-lg border border-white/10 hover:bg-white/5 transition-colors disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 text-white/40 ${loading ? "animate-spin" : ""}`} />
           </button>
@@ -453,7 +516,7 @@ export function DecisionEngine() {
       </div>
 
       {/* Loading skeleton */}
-      {loading ? (
+      {loading && !hasData ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           <SkeletonCard hero />
           {[...Array(5)].map((_, i) => <SkeletonCard key={i} />)}
@@ -465,7 +528,7 @@ export function DecisionEngine() {
             {PRIMARY_BUCKETS.map(bucket => {
               const market = extractFirst(data?.[bucket.key]);
               if (!market) return null;
-              return <RecommendationCard key={bucket.key} market={market} bucket={bucket} />;
+              return <RecommendationCard key={bucket.key} market={market} bucket={bucket} justUpdated={justUpdated} />;
             })}
           </div>
 
@@ -485,7 +548,7 @@ export function DecisionEngine() {
                   {SECONDARY_BUCKETS.map(bucket => {
                     const market = extractFirst(data?.[bucket.key]);
                     if (!market) return null;
-                    return <RecommendationCard key={bucket.key} market={market} bucket={bucket} />;
+                    return <RecommendationCard key={bucket.key} market={market} bucket={bucket} justUpdated={justUpdated} />;
                   })}
                 </div>
               )}

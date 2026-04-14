@@ -2299,6 +2299,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/predict/enriched-signals",(q, s) => proxyPredict("/api/predict/enriched-signals",q, s));
   app.get("/api/predict/scored/:id",      (q, s) => proxyPredict(`/api/predict/scored/${(q as any).params.id}`, q, s));
   app.get("/api/predict/diagnostics",     (q, s) => proxyPredict("/api/predict/diagnostics",     q, s));
+  app.get("/api/predict/signal-changes", (q, s) => proxyPredict("/api/predict/signal-changes", q, s));
 
   // ── Whale Watch proxy ────────────────────────────────────────────────────────
   const WHALE_URL = "https://fast-api-server-trading-agent-aidanpilon.replit.app";

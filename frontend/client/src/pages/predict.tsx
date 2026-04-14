@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { openSecureLink } from "@/utils/security";
 import { DecisionEngine } from "@/components/decision-engine";
+import { RecentSignalChanges } from "@/components/recent-signal-changes";
 import diceImage from "@assets/istockphoto-1252690598-612x612_1756665072306.jpg";
 
 // ─── Constants ────────────────────────────────────────────────────
@@ -2443,18 +2444,41 @@ const openInNewTab = (url: string) => {
 
 export default function PredictPage() {
   const [pageSignals, setPageSignals] = useState<SignalsData | null>(null);
-  const [scoredLookup, setScoredLookup] = useState<Map<string, ScoredMarket>>(new Map());
+  const [scoredRaw, setScoredRaw] = useState<ScoredMarket[]>([]);
+  const scoredFetchingRef = useRef(false);
 
+  // Memoize the scored lookup map — only recomputes when raw data changes
+  const scoredLookup = useMemo(() => buildScoredLookup(scoredRaw), [scoredRaw]);
+
+  // Stable fetch function for scored data with in-flight guard
+  const refreshScored = useCallback(async () => {
+    if (scoredFetchingRef.current) return;
+    scoredFetchingRef.current = true;
+    try {
+      const scored = await fetchScoredMarkets();
+      if (scored.length > 0) setScoredRaw(scored);
+      // If fetch returns empty, keep previous data (stale-while-revalidate)
+    } catch {
+      // Silently keep previous data
+    } finally {
+      scoredFetchingRef.current = false;
+    }
+  }, []);
+
+  // Initial data fetch
   useEffect(() => {
     fetch("/api/predict/signals")
       .then((r) => r.ok ? r.json() : null)
       .then((d) => { if (d) setPageSignals(d); })
       .catch(() => {});
-    // Fetch scored data for enrichment across all sections
-    fetchScoredMarkets().then((scored) => {
-      if (scored.length > 0) setScoredLookup(buildScoredLookup(scored));
-    });
-  }, []);
+    refreshScored();
+  }, [refreshScored]);
+
+  // Poll scored data every 90 seconds
+  useEffect(() => {
+    const iv = setInterval(refreshScored, 90_000);
+    return () => clearInterval(iv);
+  }, [refreshScored]);
 
   return (
     <div className="min-h-screen text-white relative" style={{ background: '#050608', fontFamily: "'Outfit', sans-serif" }}>
@@ -2522,6 +2546,9 @@ export default function PredictPage() {
 
             {/* ═══ Decision Engine — Top Signal Recommendations ═══ */}
             <DecisionEngine />
+
+            {/* ═══ Recent Signal Changes ═══ */}
+            <RecentSignalChanges />
 
             {/* ═══ Enhanced Markets Table ═══ */}
             <EnhancedMarketsTable scoredLookup={scoredLookup} />
