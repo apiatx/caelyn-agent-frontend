@@ -1286,7 +1286,17 @@ function WhaleWatchPanel() {
       ) : items.length === 0 ? (
         <div className="text-center py-8 text-sm text-white/30">No whale activity detected</div>
       ) : (
-        <div className="space-y-2">
+        <div>
+          {/* Column headers */}
+          <div className="flex items-center gap-3 px-3 pb-2 mb-1 border-b border-white/[0.05]">
+            <span className="flex-1 text-[9px] font-semibold text-white/25 uppercase tracking-wider">Market</span>
+            <span className="text-[9px] font-semibold text-white/25 uppercase tracking-wider whitespace-nowrap flex-shrink-0">Vol/Liq</span>
+            <span className="text-[9px] font-semibold text-white/25 uppercase tracking-wider flex-shrink-0">24h Vol</span>
+            <span className="text-[9px] font-semibold text-white/25 uppercase tracking-wider flex-shrink-0">YES</span>
+            <span className="text-[9px] font-semibold text-white/25 uppercase tracking-wider flex-shrink-0">Eff</span>
+            <span className="text-[9px] font-semibold text-white/25 uppercase tracking-wider flex-shrink-0">1d Δ</span>
+          </div>
+          <div className="space-y-2">
           {items.map((w, i) => (
             <div key={i} className="bg-white/[0.02] border border-white/[0.05] rounded-lg px-3 py-2.5 flex items-center gap-3 group"
               title={`Volume is ${w.vol_liq_ratio?.toFixed(1)}× the available liquidity — signals large coordinated position`}>
@@ -1309,6 +1319,7 @@ function WhaleWatchPanel() {
               )}
             </div>
           ))}
+          </div>
         </div>
       )}
     </GlassCard>
