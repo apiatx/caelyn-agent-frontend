@@ -994,19 +994,35 @@ function recoBadge(r: string | undefined) {
 type ScreenerSortCol = "yes_pct" | "change_1h" | "change_24h" | "change_1wk" | "volume" | "momentum" | "whale" | "efficiency" | "expires";
 type SortDir = "asc" | "desc";
 
+const SPORTS_TAGS = new Set([
+  "sports","nba","nfl","mlb","nhl","soccer","baseball","basketball","football",
+  "tennis","golf","boxing","mma","ufc","olympics","cricket","rugby","f1","nascar",
+  "racing","esports","ncaa","college football","college basketball","college sports",
+  "pga","wta","atp","champions league","premier league","la liga","bundesliga",
+  "serie a","march madness","super bowl","world cup","nba finals","stanley cup",
+  "world series","volleyball","swimming","track","cycling","skiing","hockey",
+]);
+
+function isSportsMarket(m: EnhancedMarket): boolean {
+  return (m.tags ?? []).some((t) => SPORTS_TAGS.has(t.toLowerCase()));
+}
+
 function EnhancedMarketsTable() {
   const [allMarkets, setAllMarkets]   = useState<EnhancedMarket[]>([]);
   const [categories, setCategories]   = useState<CategoryItem[]>([]);
   const [loading, setLoading]         = useState(true);
   const [tagFilter, setTagFilter]     = useState("");
   const [minVol, setMinVol]           = useState("");
+  const [includeSports, setIncludeSports] = useState(false);
   const [sortCol, setSortCol]         = useState<ScreenerSortCol>("volume");
   const [sortDir, setSortDir]         = useState<SortDir>("desc");
 
-  const fetchMarkets = useCallback(async () => {
+  const fetchMarkets = useCallback(async (tag?: string) => {
     setLoading(true);
     try {
-      const r = await fetch("/api/predict/markets?limit=100");
+      const params = new URLSearchParams({ limit: "200" });
+      if (tag) params.set("tag", tag);
+      const r = await fetch(`/api/predict/markets?${params}`);
       if (r.ok) {
         const d = await r.json();
         setAllMarkets(Array.isArray(d) ? d : (d.markets ?? []));
@@ -1017,11 +1033,11 @@ function EnhancedMarketsTable() {
   useEffect(() => {
     fetch("/api/predict/categories")
       .then((r) => r.ok ? r.json() : null)
-      .then((d) => { if (d?.categories) setCategories(d.categories.slice(0, 30)); })
+      .then((d) => { if (d?.categories) setCategories(d.categories.slice(0, 40)); })
       .catch(() => {});
   }, []);
 
-  useEffect(() => { fetchMarkets(); }, [fetchMarkets]);
+  useEffect(() => { fetchMarkets(tagFilter || undefined); }, [fetchMarkets, tagFilter]);
 
   const handleColClick = (col: ScreenerSortCol) => {
     if (sortCol === col) {
@@ -1036,9 +1052,11 @@ function EnhancedMarketsTable() {
 
   const markets = useMemo(() => {
     let rows = allMarkets.filter((m) => {
+      if (!includeSports && isSportsMarket(m)) return false;
       if (tagFilter) {
         const tags = (m.tags ?? []).map((t) => t.toLowerCase());
-        if (!tags.some((t) => t.includes(tagFilter.toLowerCase()) || tagFilter.toLowerCase().includes(t))) return false;
+        const needle = tagFilter.toLowerCase();
+        if (!tags.some((t) => t === needle || t.includes(needle))) return false;
       }
       if (minVolNum > 0 && (m.volume_24h ?? 0) < minVolNum) return false;
       return true;
@@ -1059,7 +1077,7 @@ function EnhancedMarketsTable() {
     });
 
     return rows;
-  }, [allMarkets, tagFilter, minVolNum, sortCol, sortDir]);
+  }, [allMarkets, tagFilter, minVolNum, includeSports, sortCol, sortDir]);
 
   const ColHeader = ({ col, label, align = "left" }: { col: ScreenerSortCol; label: string; align?: "left" | "right" | "center" }) => {
     const active = sortCol === col;
@@ -1083,6 +1101,17 @@ function EnhancedMarketsTable() {
           <LiveBadge />
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => setIncludeSports((v) => !v)}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[11px] font-medium transition-all ${
+              includeSports
+                ? "bg-amber-500/15 border-amber-500/30 text-amber-400"
+                : "bg-white/[0.04] border-white/[0.08] text-white/35 hover:text-white/55"
+            }`}
+            title={includeSports ? "Sports bets are shown — click to hide" : "Sports bets are hidden — click to show"}
+          >
+            🏆 <span>{includeSports ? "Sports: On" : "Sports: Off"}</span>
+          </button>
           <select value={tagFilter} onChange={(e) => setTagFilter(e.target.value)}
             className="bg-white/[0.04] border border-white/[0.08] rounded-lg px-2.5 py-1.5 text-[11px] text-white/60 focus:outline-none">
             <option value="">All Categories</option>
@@ -1096,15 +1125,25 @@ function EnhancedMarketsTable() {
             <option value="1000000">$1M+</option>
             <option value="10000000">$10M+</option>
           </select>
-          <button onClick={fetchMarkets} className="p-1.5 rounded-lg border border-white/10 hover:bg-white/5 transition-colors">
+          <button onClick={() => fetchMarkets(tagFilter || undefined)} className="p-1.5 rounded-lg border border-white/10 hover:bg-white/5 transition-colors">
             <RefreshCw className={`w-3.5 h-3.5 text-white/40 ${loading ? "animate-spin" : ""}`} />
           </button>
         </div>
       </div>
-      {tagFilter && (
-        <div className="mb-3 text-[11px] text-white/40">
-          Showing <span className="text-white/70 font-semibold">{markets.length}</span> market{markets.length !== 1 ? "s" : ""} in <span className="text-blue-400 font-semibold">{tagFilter}</span>
-          <button onClick={() => setTagFilter("")} className="ml-2 text-white/30 hover:text-white/60 transition-colors">✕ clear</button>
+      {(tagFilter || !includeSports) && (
+        <div className="mb-3 flex items-center gap-3 flex-wrap text-[11px] text-white/40">
+          {tagFilter && (
+            <span>
+              <span className="text-white/70 font-semibold">{markets.length}</span> market{markets.length !== 1 ? "s" : ""} in <span className="text-blue-400 font-semibold">{tagFilter}</span>
+              <button onClick={() => setTagFilter("")} className="ml-1.5 text-white/30 hover:text-white/60 transition-colors">✕</button>
+            </span>
+          )}
+          {!includeSports && (
+            <span className="text-amber-400/60">
+              🏆 Sports bets hidden
+              <button onClick={() => setIncludeSports(true)} className="ml-1.5 text-white/30 hover:text-amber-400/60 transition-colors">show</button>
+            </span>
+          )}
         </div>
       )}
       {loading ? (
