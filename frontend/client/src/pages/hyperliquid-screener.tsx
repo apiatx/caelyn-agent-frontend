@@ -511,15 +511,20 @@ function RichThesisPanel({ idea, row }: { idea: BriefingIdea | AgentRankedItem |
 
   return (
     <div style={{ display:'flex', flexDirection:'column', height:'100%', overflow:'hidden' }}>
-      {/* Thesis header */}
+
+      {/* ── Thesis header (fixed) ── */}
       <div style={{ padding:'8px 12px 6px', borderBottom:`1px solid ${C.border}`, background:C.card2, flexShrink:0 }}>
         <div style={{ display:'flex', alignItems:'center', gap:7, marginBottom:3 }}>
           <span style={{ fontFamily:C.font, fontWeight:800, fontSize:15, color:C.text }}>{coin}</span>
           <span style={{ fontSize:8.5, fontWeight:700, color:dir.color, background:`${dir.color}18`, border:`1px solid ${dir.color}44`, borderRadius:3, padding:'2px 6px' }}>{dir.label}</span>
-          {setupType && <span style={{ fontSize:8, color:setup.color, background:`${setup.color}12`, border:`1px solid ${setup.color}33`, borderRadius:3, padding:'1px 5px' }}>{setup.label}</span>}
+          {setupType && (
+            <span style={{ fontSize:8, color:setup.color, background:`${setup.color}12`, border:`1px solid ${setup.color}33`, borderRadius:3, padding:'1px 5px' }}>{setup.label}</span>
+          )}
           <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:8 }}>
             {rankMov != null && rankMov !== 0 && (
-              <span style={{ fontSize:8, fontWeight:700, color:rankMov>0?C.green:C.red }}>{rankMov>0?`▲${rankMov}`:`▼${Math.abs(rankMov)}`} rank</span>
+              <span style={{ fontSize:8, fontWeight:700, color:rankMov>0?C.green:C.red }}>
+                {rankMov>0?`▲${rankMov}`:`▼${Math.abs(rankMov)}`} rank
+              </span>
             )}
             <span style={{ fontSize:10, fontWeight:800, color:C.purple, fontFamily:C.font }}>Score {score.toFixed(2)}</span>
             <span style={{ fontSize:9, color:scC(confidence) }}>Conf {(confidence*100).toFixed(0)}%</span>
@@ -527,97 +532,99 @@ function RichThesisPanel({ idea, row }: { idea: BriefingIdea | AgentRankedItem |
         </div>
       </div>
 
-      {/* ── Inline chart with interval selector ── */}
-      <div style={{ borderBottom: `1px solid ${C.border}`, flexShrink: 0, background: '#050c16' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: '3px 8px', gap: 3 }}>
-          {(['15m', '1h', '4h', '1d'] as ChartInterval[]).map(t => (
-            <button key={t} onClick={() => setChartIv(t)}
-              style={{ fontSize: 7.5, padding: '1px 5px', borderRadius: 2, cursor: 'pointer', fontFamily: C.font,
-                background: chartIv === t ? `${C.teal}22` : 'none',
-                border: `1px solid ${chartIv === t ? C.teal : C.border}`,
-                color: chartIv === t ? C.teal : C.dim }}>
-              {t}
-            </button>
-          ))}
-        </div>
-        <CoinChartPanel coin={coin} interval={chartIv} />
-      </div>
+      {/* ── Scrollable body: chart + all metrics scroll together ── */}
+      <div style={{ flex:1, overflowY:'auto' }}>
 
-      <div style={{ flex:1, overflowY:'auto', padding:'0 12px 10px' }}>
-        {/* Key metrics */}
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0 14px', marginTop:6 }}>
-          {row ? <>
-            <Metric label="Mark"        value={px(row.markPrice)} />
-            <Metric label="24H Chg"     value={pctD(row.change24hPct)} vc={pctC(row.change24hPct)} />
-            <Metric label="Funding/hr"  value={fmtF(row.funding)} vc={fC(row.funding)} />
-            <Metric label="OI"          value={$$(row.openInterest)} />
-            <Metric label="Volume"      value={$$(row.volume24h)} />
-            <Metric label="Oracle"      value={px(row.oraclePrice)} />
-            <Metric label="Mk/Oracle Δ" value={fmtD(row.distMarkOracle)} vc={pctC(row.distMarkOracle)} />
-            <Metric label="Premium"     value={fmtD(row.premium)} vc={pctC(row.premium)} />
-            <Metric label="Trade Flow"  value={row.tradeImbalance==null?'—':row.tradeImbalance.toFixed(3)} vc={pctC(row.tradeImbalance)} />
-            <Metric label="Book Imbal"  value={row.bidAskImbalance==null?'—':row.bidAskImbalance.toFixed(3)} vc={pctC(row.bidAskImbalance)} />
-            <Metric label="Vol Regime"  value={sc(row.volatility)} vc={scC(row.volatility)} />
-            <Metric label="Composite"   value={sc(row.compositeSignal)} vc={scC(row.compositeSignal)} />
-          </> : briefMetrics ? Object.entries(briefMetrics).slice(0,10).map(([k,v]) => (
-            <Metric key={k} label={k.replace(/_/g,' ')} value={v==null?'—':v.toFixed(4)} />
-          )) : null}
-        </div>
-
-        {/* Thesis summary */}
-        {thesisText && (
-          <Section title="Thesis" color={C.purple}>
-            <div style={{ fontSize:9, color:C.text, lineHeight:1.65, background:`${C.purple}0c`, border:`1px solid ${C.purple}33`, borderRadius:4, padding:'7px 9px' }}>
-              {thesisText}
-            </div>
-          </Section>
-        )}
-
-        {/* Reasons */}
-        {reasons.length > 0 && (
-          <Section title="Why Now" color={C.green}>
-            <Bullets items={reasons} color={C.green} />
-          </Section>
-        )}
-
-        {/* What to watch */}
-        {whatToWatch.length > 0 && (
-          <Section title="What to Watch" color={C.teal}>
-            <Bullets items={whatToWatch} color={C.teal} />
-          </Section>
-        )}
-
-        {/* Signal driver bars (legacy items) */}
-        {contribs && contribs.length > 0 && (
-          <Section title="Signal Drivers" color={C.teal}>
-            {contribs.map(([k,v]) => (
-              <div key={k} style={{ display:'flex', alignItems:'center', gap:7, marginBottom:4 }}>
-                <span style={{ fontSize:8, color:C.dim, minWidth:100 }}>{k.replace(/_/g,' ')}</span>
-                <div style={{ flex:1, height:3, background:C.dimLow, borderRadius:2 }}>
-                  <div style={{ height:'100%', width:`${Math.min(100,v*100).toFixed(0)}%`, background:C.teal, borderRadius:2 }} />
-                </div>
-                <span style={{ fontSize:8, fontFamily:C.font, color:C.teal, flexShrink:0 }}>{(v*100).toFixed(0)}%</span>
-              </div>
+        {/* Inline chart */}
+        <div style={{ background:'#050c16', borderBottom:`1px solid ${C.border}` }}>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'flex-end', padding:'3px 8px', gap:3 }}>
+            {(['15m','1h','4h','1d'] as ChartInterval[]).map(t => (
+              <button key={t} onClick={() => setChartIv(t)}
+                style={{ fontSize:7.5, padding:'1px 5px', borderRadius:2, cursor:'pointer', fontFamily:C.font,
+                  background: chartIv===t ? `${C.teal}22` : 'none',
+                  border: `1px solid ${chartIv===t ? C.teal : C.border}`,
+                  color: chartIv===t ? C.teal : C.dim }}>
+                {t}
+              </button>
             ))}
-          </Section>
-        )}
-
-        {/* Invalidation */}
-        {invalidation.length > 0 && (
-          <Section title="Invalidation / Risk" color={C.amber}>
-            <div style={{ background:`${C.amber}0c`, border:`1px solid ${C.amber}44`, borderRadius:4, padding:'7px 9px' }}>
-              <Bullets items={invalidation} color={C.amber} />
-            </div>
-          </Section>
-        )}
-
-        {row && (
-          <div style={{ fontSize:7, color:C.dimLow, marginTop:10, display:'flex', gap:10, flexWrap:'wrap' }}>
-            {row.maxLeverage!=null&&<span>Max lev {row.maxLeverage}×</span>}
-            {row.oiChangePct!=null&&<span>OI Δ <span style={{ color:pctC(row.oiChangePct) }}>{pctD(row.oiChangePct)}</span></span>}
-            {row.updatedAt&&<span>Updated {new Date(row.updatedAt).toLocaleTimeString()}</span>}
           </div>
-        )}
+          <CoinChartPanel coin={coin} interval={chartIv} />
+        </div>
+
+        {/* Key metrics grid */}
+        <div style={{ padding:'6px 12px 0' }}>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0 14px' }}>
+            {row ? (
+              <>
+                <Metric label="Mark"        value={px(row.markPrice)} />
+                <Metric label="24H Chg"     value={pctD(row.change24hPct)}  vc={pctC(row.change24hPct)} />
+                <Metric label="Funding/hr"  value={fmtF(row.funding)}        vc={fC(row.funding)} />
+                <Metric label="OI"          value={$$(row.openInterest)} />
+                <Metric label="Volume"      value={$$(row.volume24h)} />
+                <Metric label="Oracle"      value={px(row.oraclePrice)} />
+                <Metric label="Mk/Oracle Δ" value={fmtD(row.distMarkOracle)} vc={pctC(row.distMarkOracle)} />
+                <Metric label="Premium"     value={fmtD(row.premium)}         vc={pctC(row.premium)} />
+                <Metric label="Trade Flow"  value={row.tradeImbalance==null?'—':row.tradeImbalance.toFixed(3)}  vc={pctC(row.tradeImbalance)} />
+                <Metric label="Book Imbal"  value={row.bidAskImbalance==null?'—':row.bidAskImbalance.toFixed(3)} vc={pctC(row.bidAskImbalance)} />
+                <Metric label="Vol Regime"  value={sc(row.volatility)}        vc={scC(row.volatility)} />
+                <Metric label="Composite"   value={sc(row.compositeSignal)}   vc={scC(row.compositeSignal)} />
+              </>
+            ) : briefMetrics ? (
+              Object.entries(briefMetrics).slice(0,10).map(([k,v]) => (
+                <Metric key={k} label={k.replace(/_/g,' ')} value={v==null?'—':v.toFixed(4)} />
+              ))
+            ) : null}
+          </div>
+        </div>
+
+        {/* Rest of thesis content */}
+        <div style={{ padding:'0 12px 10px' }}>
+          {thesisText && (
+            <Section title="Thesis" color={C.purple}>
+              <div style={{ fontSize:9, color:C.text, lineHeight:1.65, background:`${C.purple}0c`, border:`1px solid ${C.purple}33`, borderRadius:4, padding:'7px 9px' }}>
+                {thesisText}
+              </div>
+            </Section>
+          )}
+          {reasons.length > 0 && (
+            <Section title="Why Now" color={C.green}>
+              <Bullets items={reasons} color={C.green} />
+            </Section>
+          )}
+          {whatToWatch.length > 0 && (
+            <Section title="What to Watch" color={C.teal}>
+              <Bullets items={whatToWatch} color={C.teal} />
+            </Section>
+          )}
+          {contribs && contribs.length > 0 && (
+            <Section title="Signal Drivers" color={C.teal}>
+              {contribs.map(([k,v]) => (
+                <div key={k} style={{ display:'flex', alignItems:'center', gap:7, marginBottom:4 }}>
+                  <span style={{ fontSize:8, color:C.dim, minWidth:100 }}>{k.replace(/_/g,' ')}</span>
+                  <div style={{ flex:1, height:3, background:C.dimLow, borderRadius:2 }}>
+                    <div style={{ height:'100%', width:`${Math.min(100,v*100).toFixed(0)}%`, background:C.teal, borderRadius:2 }} />
+                  </div>
+                  <span style={{ fontSize:8, fontFamily:C.font, color:C.teal, flexShrink:0 }}>{(v*100).toFixed(0)}%</span>
+                </div>
+              ))}
+            </Section>
+          )}
+          {invalidation.length > 0 && (
+            <Section title="Invalidation / Risk" color={C.amber}>
+              <div style={{ background:`${C.amber}0c`, border:`1px solid ${C.amber}44`, borderRadius:4, padding:'7px 9px' }}>
+                <Bullets items={invalidation} color={C.amber} />
+              </div>
+            </Section>
+          )}
+          {row && (
+            <div style={{ fontSize:7, color:C.dimLow, marginTop:10, display:'flex', gap:10, flexWrap:'wrap' }}>
+              {row.maxLeverage!=null && <span>Max lev {row.maxLeverage}×</span>}
+              {row.oiChangePct!=null && <span>OI Δ <span style={{ color:pctC(row.oiChangePct) }}>{pctD(row.oiChangePct)}</span></span>}
+              {row.updatedAt && <span>Updated {new Date(row.updatedAt).toLocaleTimeString()}</span>}
+            </div>
+          )}
+        </div>
+
       </div>
     </div>
   );
@@ -687,16 +694,16 @@ function AgentMarketBrief({ agentResult, agentLoading, agentStage, rows, selecte
 
   // Derive ranked ideas
   const ideas: BriefingIdea[] = useMemo(() => {
-    if (briefing?.actionableIdeas.length) return briefing.actionableIdeas.slice(0,6);
+    if (briefing?.actionableIdeas.length) return briefing.actionableIdeas.slice(0,10);
     if (agentResult) {
-      return agentResult.rankedCoins.slice(0,6).map(a => ({
+      return agentResult.rankedCoins.slice(0,10).map(a => ({
         coin:a.coin, side:a.direction as any, setupType:a.setupType, score:a.agentScore,
         confidence:a.confidence, thesisTitle:null, thesisSummary:a.thesis??a.rationale,
         reasons:null, whatToWatch:null, invalidationNotes:a.riskNote?[a.riskNote]:null,
         rankMovement:a.rankMovement, metrics:null,
       }));
     }
-    return rows.filter(r=>r.compositeSignal!=null).sort((a,b)=>(b.compositeSignal!-a.compositeSignal!)).slice(0,6).map((r,i)=>({
+    return rows.filter(r=>r.compositeSignal!=null).sort((a,b)=>(b.compositeSignal!-a.compositeSignal!)).slice(0,10).map((r,i)=>({
       coin:r.coin, side:(r.signalDirection==='bullish'?'long':r.signalDirection==='bearish'?'short':'watch') as any,
       setupType:null, score:r.compositeSignal!, confidence:r.signalConfidence??0.5,
       thesisTitle:null, thesisSummary:r.agentRationale??null, reasons:null, whatToWatch:null,
@@ -787,7 +794,7 @@ function AgentMarketBrief({ agentResult, agentLoading, agentStage, rows, selecte
       </div>
 
       {/* ── B: Ranked ideas + C: Thesis ── */}
-      <div style={{ display:'flex', height:232 }}>
+      <div style={{ display:'flex', height:320 }}>
         {/* Left: ideas list */}
         <div style={{ width:380, borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column', overflow:'hidden', flexShrink:0 }}>
           {/* Header */}
@@ -799,15 +806,17 @@ function AgentMarketBrief({ agentResult, agentLoading, agentStage, rows, selecte
           </div>
           {ideas.length === 0
             ? <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', fontSize:9, color:C.dimLow, textAlign:'center', padding:'0 20px' }}>{agentLoading ? 'Analyzing…' : 'No data. Load screener first.'}</div>
-            : ideas.map((idea, i) => (
-                <IdeaRow key={idea.coin} rank={i+1} coin={idea.coin} side={idea.side} setupType={idea.setupType}
-                  score={idea.score} confidence={idea.confidence} thesisSummary={idea.thesisSummary}
-                  rankMovement={idea.rankMovement} selected={effIdx===i}
-                  onClick={() => { setSelectedIdx(i); onSelect(idea.coin); }} />
-              ))
+            : <div style={{ flex:1, overflowY:'auto' }}>
+                {ideas.map((idea, i) => (
+                  <IdeaRow key={idea.coin} rank={i+1} coin={idea.coin} side={idea.side} setupType={idea.setupType}
+                    score={idea.score} confidence={idea.confidence} thesisSummary={idea.thesisSummary}
+                    rankMovement={idea.rankMovement} selected={effIdx===i}
+                    onClick={() => { setSelectedIdx(i); onSelect(idea.coin); }} />
+                ))}
+              </div>
           }
           {isPreview && ideas.length > 0 && (
-            <div style={{ padding:'5px 12px', fontSize:8, color:C.dimLow, textAlign:'center', borderTop:`1px solid ${C.dimLow}`, marginTop:'auto', flexShrink:0 }}>
+            <div style={{ padding:'5px 12px', fontSize:8, color:C.dimLow, textAlign:'center', borderTop:`1px solid ${C.dimLow}`, flexShrink:0 }}>
               Preview ranking — press Agent above for AI analysis
             </div>
           )}
