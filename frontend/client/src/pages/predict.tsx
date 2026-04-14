@@ -1323,7 +1323,7 @@ const ANALYSIS_STEPS = [
   { label: "Risk Manager deciding…",          ms: 50000 },
 ];
 
-function AnalysisPanel() {
+function AnalysisPanel({ noCard = false }: { noCard?: boolean }) {
   const { authFetch } = useAuth();
   const [question, setQuestion] = useState("");
   const [status, setStatus]     = useState<"idle" | "context" | "analyzing" | "done" | "error">("idle");
@@ -1378,23 +1378,31 @@ function AnalysisPanel() {
   const f = result?.final;
   const agentEntries = Object.entries(result?.agents ?? {});
 
-  return (
-    <GlassCard className="p-5 mb-5">
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
-          <Brain className="w-4 h-4 text-white" />
+  const inner = (
+    <>
+      {/* Header — only shown in card mode */}
+      {!noCard && (
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
+            <Brain className="w-4 h-4 text-white" />
+          </div>
+          <div>
+            <h2 className="text-sm font-bold text-white flex items-center gap-2">
+              Caelyn Analyzes <Star className="w-3.5 h-3.5 text-amber-400" />
+            </h2>
+            <p className="text-[10px] text-white/30">Multi-agent prediction market analysis — 30-90 seconds</p>
+          </div>
+          {status !== "idle" && (
+            <button onClick={reset} className="ml-auto text-[10px] text-white/30 hover:text-white/60 transition-colors border border-white/[0.06] rounded px-2 py-1">Reset</button>
+          )}
         </div>
-        <div>
-          <h2 className="text-sm font-bold text-white flex items-center gap-2">
-            Caelyn Analyzes <Star className="w-3.5 h-3.5 text-amber-400" />
-          </h2>
+      )}
+      {noCard && status !== "idle" && (
+        <div className="flex items-center justify-between mb-3">
           <p className="text-[10px] text-white/30">Multi-agent prediction market analysis — 30-90 seconds</p>
+          <button onClick={reset} className="text-[10px] text-white/30 hover:text-white/60 transition-colors border border-white/[0.06] rounded px-2 py-1">Reset</button>
         </div>
-        {status !== "idle" && (
-          <button onClick={reset} className="ml-auto text-[10px] text-white/30 hover:text-white/60 transition-colors border border-white/[0.06] rounded px-2 py-1">Reset</button>
-        )}
-      </div>
+      )}
 
       {/* Input */}
       {(status === "idle" || status === "error") && (
@@ -1554,8 +1562,9 @@ function AnalysisPanel() {
           )}
         </div>
       )}
-    </GlassCard>
+    </>
   );
+  return noCard ? inner : <GlassCard className="p-5 mb-5">{inner}</GlassCard>;
 }
 
 // ─── Prediction Markets Agent ─────────────────────────────────────
@@ -1901,6 +1910,61 @@ function CaelynPredictsDropdown({ signals }: { signals: SignalsData | null }) {
   );
 }
 
+// ─── Caelyn Analyzes Dropdown ─────────────────────────────────────
+
+function CaelynAnalyzesDropdown() {
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
+
+  return (
+    <div ref={dropdownRef} className="relative flex-shrink-0">
+      <button
+        onClick={() => setOpen(v => !v)}
+        className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+        style={{
+          background: open ? 'rgba(245,158,11,0.18)' : 'rgba(245,158,11,0.08)',
+          border: `1px solid ${open ? 'rgba(245,158,11,0.5)' : 'rgba(245,158,11,0.2)'}`,
+          color: '#fbbf24',
+        }}
+      >
+        <Brain className="w-3.5 h-3.5" />
+        Caelyn Analyzes
+        <ChevronDown
+          className="w-3.5 h-3.5 transition-transform duration-200"
+          style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}
+        />
+      </button>
+
+      {open && (
+        <div
+          className="absolute right-0 top-full mt-2 rounded-xl p-5 z-50 overflow-y-auto"
+          style={{
+            width: 460,
+            maxHeight: '80vh',
+            background: 'rgba(5,8,16,0.97)',
+            border: '1px solid rgba(245,158,11,0.2)',
+            boxShadow: '0 8px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(245,158,11,0.05) inset',
+            backdropFilter: 'blur(20px)',
+          }}
+        >
+          <AnalysisPanel noCard />
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Lazy Iframe (kept for backward compat) ───────────────────────
 
 function LazyIframe({ src, title, sandbox, referrerPolicy, scrolling }: {
@@ -1996,8 +2060,11 @@ export default function PredictPage() {
             </h1>
             <p className="text-xs text-white/30">Live prediction market odds for macro, economics &amp; investing</p>
           </div>
-          {/* AI chat dropdown — top right of header */}
-          <CaelynPredictsDropdown signals={pageSignals} />
+          {/* AI dropdowns — stacked top right of header */}
+          <div className="flex flex-col items-end gap-1.5">
+            <CaelynPredictsDropdown signals={pageSignals} />
+            <CaelynAnalyzesDropdown />
+          </div>
         </div>
 
         <div className="w-32 h-0.5 rounded-full mt-3 mb-4" style={{ background: 'linear-gradient(135deg, #2090d0, #3b82f6, #80d8f8)' }} />
@@ -2012,10 +2079,8 @@ export default function PredictPage() {
             {/* ═══ Enhanced Markets Table ═══ */}
             <EnhancedMarketsTable />
 
-            {/* ═══ Prediction Markets Dashboard (Caelyn Analyzes injected between Top Edges & category tabs) ═══ */}
-            <PolymarketDashboard signals={pageSignals}>
-              <AnalysisPanel />
-            </PolymarketDashboard>
+            {/* ═══ Prediction Markets Dashboard ═══ */}
+            <PolymarketDashboard signals={pageSignals} />
 
             {/* ═══ Whale Watch + Category Volume — side by side on large screens ═══ */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
