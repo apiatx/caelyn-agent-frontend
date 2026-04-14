@@ -732,49 +732,51 @@ function PolymarketDashboard({ signals }: { signals: SignalsData | null }) {
             <SurgingMoversView signals={signals} />
           </div>
 
-          {/* Top Edges + Order Book Divergence */}
-          {signals && ((signals.top_edges?.length ?? 0) > 0 || (signals.top_mispricings?.length ?? 0) > 0) && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-              {(signals.top_edges?.length ?? 0) > 0 && (
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <Target className="w-4 h-4 text-amber-400" />
-                    <h3 className="text-sm font-bold text-white/90 tracking-wide uppercase">Top Edges</h3>
-                    <InfoTooltip text="Spread as a % of the YES price — higher means a wider bid-ask gap relative to the current price. A wide spread signals a pricing inefficiency or market-making opportunity: the market maker is uncertain, leaving room for a sharper bet." />
-                  </div>
-                  <div className="rounded-lg border border-white/[0.06] overflow-hidden">
-                    <div className="flex items-center gap-3 px-3 py-1.5 bg-white/[0.02] border-b border-white/[0.06]">
-                      <span className="w-4 shrink-0" />
-                      <span className="flex-1 text-[9px] text-white/25 uppercase tracking-wider font-semibold">Market</span>
-                      <span className="w-[80px] text-right text-[9px] text-white/25 uppercase tracking-wider font-semibold">YES %</span>
-                      <span className="w-16 text-right text-[9px] text-white/25 uppercase tracking-wider font-semibold">Spread</span>
-                    </div>
-                    {(signals.top_edges ?? []).slice(0, 6).map((e, i) => {
-                      const spread = e.edge_pct ?? e.spread_pct_of_price;
-                      return (
-                        <a key={i} href={e.slug ? `https://polymarket.com/event/${e.slug}` : "#"} target="_blank" rel="noopener noreferrer"
-                          className="flex items-center gap-3 px-3 py-2.5 hover:bg-white/[0.04] transition-colors group border-t border-white/[0.04] first:border-t-0">
-                          <span className="w-4 shrink-0 text-[9px] text-white/20 font-mono text-right">{i + 1}</span>
-                          <p className="flex-1 min-w-0 text-[11px] text-white/70 truncate group-hover:text-white/90 transition-colors">{e.question || "—"}</p>
-                          <div className="flex items-center gap-1.5 w-[80px] justify-end shrink-0">
-                            {e.yes_pct != null ? (
-                              <>
-                                <div className="w-10 h-1 rounded-full bg-white/[0.06] overflow-hidden">
-                                  <div className="h-full rounded-full" style={{ width: `${e.yes_pct}%`, background: e.yes_pct >= 60 ? '#22c55e' : e.yes_pct <= 40 ? '#ef4444' : '#3b82f6' }} />
-                                </div>
-                                <span className={`text-[11px] font-bold font-mono w-7 text-right ${e.yes_pct >= 60 ? 'text-emerald-400' : e.yes_pct <= 40 ? 'text-red-400' : 'text-blue-400'}`}>{e.yes_pct}%</span>
-                              </>
-                            ) : <span className="text-[10px] text-white/25 w-full text-right">—</span>}
-                          </div>
-                          <span className="w-16 text-right text-[11px] font-bold font-mono text-amber-400 shrink-0">
-                            {spread != null ? `${spread.toFixed(1)}%` : '—'}
-                          </span>
-                        </a>
-                      );
-                    })}
-                  </div>
+          {/* Top Edges — full width */}
+          {signals && (signals.top_edges?.length ?? 0) > 0 && (
+            <div className="mb-6">
+              <div className="flex items-center gap-2 mb-3">
+                <Target className="w-4 h-4 text-amber-400" />
+                <h3 className="text-sm font-bold text-white/90 tracking-wide uppercase">Top Edges</h3>
+                <InfoTooltip text="Spread as a % of the YES price — higher means a wider bid-ask gap relative to the current price. A wide spread signals a pricing inefficiency or market-making opportunity: the market maker is uncertain, leaving room for a sharper bet." />
+              </div>
+              <div className="rounded-lg border border-white/[0.06] overflow-hidden">
+                <div className="flex items-center gap-3 px-3 py-1.5 bg-white/[0.02] border-b border-white/[0.06]">
+                  <span className="w-4 shrink-0" />
+                  <span className="flex-1 text-[9px] text-white/25 uppercase tracking-wider font-semibold">Market</span>
+                  <span className="w-[100px] text-right text-[9px] text-white/25 uppercase tracking-wider font-semibold">YES %</span>
+                  <span className="w-20 text-right text-[9px] text-white/25 uppercase tracking-wider font-semibold">Spread</span>
                 </div>
-              )}
+                {(signals.top_edges ?? []).slice(0, 6).map((e, i) => {
+                  const spread = e.edge_pct ?? e.spread_pct_of_price;
+                  return (
+                    <a key={i} href={e.slug ? `https://polymarket.com/event/${e.slug}` : "#"} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-3 px-3 py-2.5 hover:bg-white/[0.04] transition-colors group border-t border-white/[0.04] first:border-t-0">
+                      <span className="w-4 shrink-0 text-[9px] text-white/20 font-mono text-right">{i + 1}</span>
+                      <p className="flex-1 min-w-0 text-[11px] text-white/70 truncate group-hover:text-white/90 transition-colors">{e.question || "—"}</p>
+                      <div className="flex items-center gap-1.5 w-[100px] justify-end shrink-0">
+                        {e.yes_pct != null ? (
+                          <>
+                            <div className="w-12 h-1 rounded-full bg-white/[0.06] overflow-hidden">
+                              <div className="h-full rounded-full" style={{ width: `${e.yes_pct}%`, background: e.yes_pct >= 60 ? '#22c55e' : e.yes_pct <= 40 ? '#ef4444' : '#3b82f6' }} />
+                            </div>
+                            <span className={`text-[11px] font-bold font-mono w-8 text-right ${e.yes_pct >= 60 ? 'text-emerald-400' : e.yes_pct <= 40 ? 'text-red-400' : 'text-blue-400'}`}>{e.yes_pct}%</span>
+                          </>
+                        ) : <span className="text-[10px] text-white/25 w-full text-right">—</span>}
+                      </div>
+                      <span className="w-20 text-right text-[11px] font-bold font-mono text-amber-400 shrink-0">
+                        {spread != null ? `${spread.toFixed(1)}%` : '—'}
+                      </span>
+                    </a>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Order Book Divergence */}
+          {signals && (signals.top_mispricings?.length ?? 0) > 0 && (
+            <div className="mb-6">
               {(signals.top_mispricings?.length ?? 0) > 0 && (
                 <div>
                   <div className="flex items-center gap-2 mb-3">
