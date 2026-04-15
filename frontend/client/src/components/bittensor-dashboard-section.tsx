@@ -501,7 +501,7 @@ function SubnetChartPanel({
         </span>
       </div>
 
-      {/* 7-day price chart */}
+      {/* Price chart — area if history available, multi-timeframe bar chart otherwise */}
       {chartData.length >= 2 ? (
         <div style={{ height: 130 }}>
           <ResponsiveContainer width="100%" height="100%">
@@ -525,11 +525,45 @@ function SubnetChartPanel({
             </AreaChart>
           </ResponsiveContainer>
         </div>
-      ) : (
-        <div className="h-[130px] flex items-center justify-center text-white/20 text-xs">
-          7-day price history not available for this subnet
-        </div>
-      )}
+      ) : (() => {
+        const tfData = [
+          { label: "1H",  pct: num(subnet.price_change_1h) },
+          { label: "24H", pct: num(subnet.price_change_24h) },
+          { label: "7D",  pct: num(subnet.price_change_7d) },
+          { label: "30D", pct: num(subnet.price_change_30d) },
+        ];
+        const maxAbs = Math.max(...tfData.map(d => Math.abs(d.pct)), 1);
+        return (
+          <div style={{ height: 130 }}>
+            <div className="flex items-end justify-around h-full gap-2 pb-1">
+              {tfData.map(({ label, pct }) => {
+                const isPos = pct >= 0;
+                const barPct = Math.abs(pct) / maxAbs;
+                const barH = Math.max(barPct * 80, 4);
+                return (
+                  <div key={label} className="flex flex-col items-center gap-1 flex-1">
+                    <span className={`text-[10px] font-mono font-bold ${isPos ? "text-emerald-400" : "text-red-400"}`}>
+                      {pct >= 0 ? "+" : ""}{pct.toFixed(1)}%
+                    </span>
+                    <div className="w-full flex items-end justify-center" style={{ height: 80 }}>
+                      <div
+                        className="w-full rounded-t-sm transition-all"
+                        style={{
+                          height: barH,
+                          background: isPos
+                            ? "linear-gradient(to top, #059669, #10b98180)"
+                            : "linear-gradient(to top, #dc2626, #ef444480)",
+                        }}
+                      />
+                    </div>
+                    <span className="text-[9px] text-white/30 font-mono">{label}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 
