@@ -481,12 +481,18 @@ function SectorPerformanceTable({
 
 // ─── C: Relative Strength Chart ───────────────────────────────────────────────
 function SectorRotationChart({
-  sectors, leaders, laggards, loading, selectedTickers, onToggleTicker,
+  sectors, loading, selectedTickers, onToggleTicker,
 }: {
-  sectors: SectorRow[]; leaders: SectorRow[]; laggards: SectorRow[]; loading: boolean;
+  sectors: SectorRow[]; loading: boolean;
   selectedTickers: Set<string>; onToggleTicker: (t: string) => void;
 }) {
   const [tf, setTf] = useState<Timeframe>("7d");
+
+  const pctForTf = (row: SectorRow): number | null =>
+    tf === "1d" ? row.change_1d :
+    tf === "7d" ? row.change_7d :
+    tf === "30d" ? row.change_30d :
+    tf === "ytd" ? row.change_ytd : row.change_1y;
 
   const chartData = useMemo(() => buildChartData(sectors, tf), [sectors, tf]);
 
@@ -494,6 +500,17 @@ function SectorRotationChart({
     () => SECTORS.map(s => s.ticker).filter(t => selectedTickers.has(t)),
     [selectedTickers],
   );
+
+  const { topLeaders, topLaggards } = useMemo(() => {
+    const withVal = sectors
+      .map(r => ({ r, val: pctForTf(r) }))
+      .filter(({ val }) => val != null)
+      .sort((a, b) => (b.val ?? 0) - (a.val ?? 0));
+    return {
+      topLeaders:  withVal.slice(0, 3).map(x => x.r),
+      topLaggards: withVal.slice(-3).reverse().map(x => x.r),
+    };
+  }, [sectors, tf]);
 
   if (loading) {
     return (
@@ -504,11 +521,8 @@ function SectorRotationChart({
     );
   }
 
-  const topLeaders  = leaders.slice(0, 3);
-  const topLaggards = laggards.slice(0, 3);
-
   return (
-    <GlassCard className="p-4 sm:p-6 h-full flex flex-col">
+    <GlassCard className="p-4 sm:p-6">
       <SectionHeader icon={TrendingUp} title="Relative Strength" badge="Normalised" color="blue"
         right={
           <div className="flex gap-1 bg-white/5 rounded-lg p-0.5">
@@ -529,7 +543,7 @@ function SectorRotationChart({
             <div key={r.ticker} className="flex items-center gap-2 mb-1">
               <div className="w-1.5 h-1.5 rounded-full" style={{ background: SECTOR_COLOR[r.ticker] }} />
               <span className="text-xs font-mono font-bold text-white">{r.ticker}</span>
-              <span className={`text-xs ml-auto ${pctCls(r.change_7d)}`}>{fmtPct(r.change_7d, 1)}</span>
+              <span className={`text-xs ml-auto ${pctCls(pctForTf(r))}`}>{fmtPct(pctForTf(r), 1)}</span>
             </div>
           )) : <span className="text-xs text-gray-600">—</span>}
         </div>
@@ -539,7 +553,7 @@ function SectorRotationChart({
             <div key={r.ticker} className="flex items-center gap-2 mb-1">
               <div className="w-1.5 h-1.5 rounded-full" style={{ background: SECTOR_COLOR[r.ticker] }} />
               <span className="text-xs font-mono font-bold text-white">{r.ticker}</span>
-              <span className={`text-xs ml-auto ${pctCls(r.change_7d)}`}>{fmtPct(r.change_7d, 1)}</span>
+              <span className={`text-xs ml-auto ${pctCls(pctForTf(r))}`}>{fmtPct(pctForTf(r), 1)}</span>
             </div>
           )) : <span className="text-xs text-gray-600">—</span>}
         </div>
@@ -560,7 +574,7 @@ function SectorRotationChart({
       </div>
       {/* Chart */}
       {chartData.length > 0 ? (
-        <div className="flex-1 min-h-[208px]">
+        <div style={{ height: 260 }}>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData} margin={{ top: 4, right: 10, left: -20, bottom: 0 }}>
               <XAxis dataKey="date" tick={{ fontSize: 9, fill: "#64748b" }} tickLine={false} axisLine={false} />
@@ -578,7 +592,7 @@ function SectorRotationChart({
           </ResponsiveContainer>
         </div>
       ) : (
-        <div className="flex-1 min-h-[208px] flex items-center justify-center text-gray-600 text-sm">
+        <div className="h-[260px] flex items-center justify-center text-gray-600 text-sm">
           Series data not yet available for {tf.toUpperCase()} timeframe
         </div>
       )}
@@ -976,7 +990,7 @@ export default function StocksSectorsPage() {
 
         {/* C: Chart — full width */}
         <SectorRotationChart
-          sectors={sectors} leaders={leaders} laggards={laggards}
+          sectors={sectors}
           loading={dashLoading && !dash}
           selectedTickers={selectedTickers} onToggleTicker={toggleTicker}
         />
