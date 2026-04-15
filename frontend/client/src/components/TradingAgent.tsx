@@ -653,9 +653,6 @@ export default function TradingAgent() {
     } else {
       payload.reasoning_model = selectedModel;
     }
-    if (selectedStrategy && selectedStrategy !== 'default') {
-      payload.playbook_id = selectedStrategy;
-    }
     if (csvData) setCsvData(null);
     if (csvFileName) setCsvFileName(null);
 
@@ -3037,6 +3034,19 @@ export default function TradingAgent() {
           <button className="mobile-toggle" onClick={() => setRightSidebarOpen(!rightSidebarOpen)} style={{ display:'none', alignItems:'center', justifyContent:'center', width:28, height:28, background:'transparent', border:`1px solid ${C.border}`, borderRadius:3, color:C.dim, cursor:'pointer', fontSize:12, fontFamily:font }}>⚙</button>
         </div>
       </div>
+
+      {/* Strategy-aware terminal banner */}
+      {selectedStrategy !== 'default' && (
+        <div style={{ display:'flex', alignItems:'center', gap:8, padding:'5px 14px', background:'rgba(99,102,241,0.06)', borderBottom:'1px solid rgba(99,102,241,0.15)', flexShrink:0 }}>
+          <span style={{ display:'inline-block', width:6, height:6, borderRadius:'50%', background:'#6366f1', flexShrink:0 }} />
+          <span style={{ fontSize:9, color:'#818cf8', fontFamily:"'JetBrains Mono', monospace", fontWeight:600 }}>
+            {strategyPlaybooks.find(p => p.id === selectedStrategy)?.short_label || selectedStrategy} playbook selected
+          </span>
+          <span style={{ fontSize:9, color:'#4b5563', fontFamily:"'JetBrains Mono', monospace" }}>
+            — strategy-aware terminal reasoning coming next. Watchlist & Portfolio scoring already active.
+          </span>
+        </div>
+      )}
 
       {/* MAIN BODY */}
       <div style={{ display:'flex', flex:1, overflow:'hidden' }}>
