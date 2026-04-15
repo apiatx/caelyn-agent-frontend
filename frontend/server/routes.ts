@@ -955,13 +955,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Dev-only: check if the caller is the platform owner (used to gate the QA panel)
-  app.get('/api/dev/owner-check', (req, res) => {
+  // Supports both locally-issued JWTs and FastAPI-issued JWTs.
+  app.get('/api/dev/owner-check', async (req, res) => {
+    if (!LOCAL_USERNAME) return res.json({ isOwner: false });
     const authHeader = req.headers.authorization || '';
     const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
     if (!token) return res.json({ isOwner: false });
-    const payload = verifyLocalToken(token);
-    const isOwner = !!(payload?.user_id && LOCAL_USERNAME && payload.user_id === LOCAL_USERNAME);
-    return res.json({ isOwner });
+
+    // 1. Try local JWT first (fast, no network)
+    const localPayload = verifyLocalToken(token);
+    if (localPayload?.user_id) {
+      return res.json({ isOwner: localPayload.user_id === LOCAL_USERNAME });
+    }
+
+    // 2. Fall back to FastAPI verify (handles tokens issued by FastAPI backend)
+    try {
+      const verifyRes = await fetch(`${AGENT_URL}/api/auth/verify`, {
+        headers: { 'X-API-Key': AGENT_KEY, Authorization: authHeader },
+        signal: AbortSignal.timeout(5000),
+      });
+      if (verifyRes.ok) {
+        const data = await verifyRes.json();
+        const userId = data?.user_id || data?.username || '';
+        return res.json({ isOwner: userId === LOCAL_USERNAME });
+      }
+    } catch (_) { /* FastAPI unreachable */ }
+
+    return res.json({ isOwner: false });
   });
 
   // === Bittensor / TAO Dashboard — proxy to FastAPI backend ===
