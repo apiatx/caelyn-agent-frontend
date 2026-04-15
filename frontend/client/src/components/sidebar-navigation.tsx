@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Activity, BarChart3, TrendingUp, ChartLine, Brain, Zap, DollarSign, Building2, Layers, Coins, ChevronRight, ChevronDown, ChevronLeft, Wallet, Users, MessageSquare, Rocket, Globe, ArrowLeftRight, Search, Menu, X, Gamepad2, Gem, CalendarDays, Settings, Info, Newspaper, ScrollText, Monitor, Eye, Waves, LogOut, FlaskConical } from "lucide-react";
 import { useLocation } from "wouter";
 import caelynLogo from "@assets/ChatGPT_Image_Feb_20,_2026,_01_10_21_AM_1771571543846.png";
@@ -28,15 +28,7 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
   const [expandedItems, setExpandedItems] = useState<string[]>(['crypto-stocks']);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [isOwner, setIsOwner] = useState(false);
-  const { logout, getAuthHeaders } = useAuth();
-
-  useEffect(() => {
-    fetch("/api/dev/owner-check", { headers: getAuthHeaders() })
-      .then(r => r.ok ? r.json() : { isOwner: false })
-      .then(d => setIsOwner(!!d.isOwner))
-      .catch(() => setIsOwner(false));
-  }, []);
+  const { logout } = useAuth();
 
   const navigateTo = (url: string) => {
     setLocation(url);
@@ -390,12 +382,12 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
       icon: <MessageSquare className="w-4 h-4" />,
       path: '/app/onchain/social'
     },
-    ...(isOwner ? [{
+    {
       id: 'dev-qa',
       label: 'QA Panel',
       icon: <FlaskConical className="w-4 h-4" />,
       path: '/app/dev/qa'
-    }] : []),
+    },
   ];
 
   const hasActiveDescendant = (item: NavItem): boolean => {

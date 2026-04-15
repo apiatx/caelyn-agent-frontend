@@ -1,5 +1,4 @@
 import { useState, useCallback, useRef } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { CheckCircle, XCircle, Loader2, Play, RotateCcw, Copy, Check, ChevronDown, ChevronRight, FlaskConical, Wifi, WifiOff, AlertTriangle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -396,14 +395,6 @@ export default function DevQAPage() {
   const [globalRunning, setGlobalRunning] = useState(false);
   const abortRef = useRef(false);
 
-  // Check owner access
-  const { data: ownerData, isLoading: ownerLoading } = useQuery<{ isOwner: boolean }>({
-    queryKey: ["dev-owner-check"],
-    queryFn: () => fetch("/api/dev/owner-check", { headers: getAuthHeaders() }).then(r => r.json()),
-    staleTime: 60_000,
-    retry: false,
-  });
-
   const authHeaders = getAuthHeaders();
   const mockTests = buildMockTests();
   const liveTests = buildLiveTests(authHeaders);
@@ -430,22 +421,6 @@ export default function DevQAPage() {
   const passCount = activeTests.filter(d => results[d.id]?.status === "pass").length;
   const failCount = activeTests.filter(d => results[d.id]?.status === "fail").length;
   const ranCount = passCount + failCount;
-
-  if (ownerLoading) {
-    return (
-      <div className="min-h-screen bg-[#050608] flex items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-white/30" />
-      </div>
-    );
-  }
-
-  if (!ownerData?.isOwner) {
-    return (
-      <div className="min-h-screen bg-[#050608] flex items-center justify-center">
-        <div className="text-white/30 text-sm">Access denied.</div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-[#050608] text-white p-6">
