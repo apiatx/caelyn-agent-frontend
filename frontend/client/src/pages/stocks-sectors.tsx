@@ -558,15 +558,15 @@ function SectorRotationChart({
           )) : <span className="text-xs text-gray-600">—</span>}
         </div>
       </div>
-      {/* Sector toggles */}
-      <div className="flex flex-wrap gap-1.5 mb-4">
+      {/* Sector toggles — horizontally scrollable on narrow screens */}
+      <div className="flex gap-1.5 mb-4 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
         {SECTORS.map(s => {
           const on = selectedTickers.has(s.ticker);
           return (
             <button key={s.ticker} onClick={() => onToggleTicker(s.ticker)}
-              className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs font-mono font-medium border transition-all ${on ? "text-white border-transparent" : "text-gray-600 border-white/10"}`}
+              className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs font-mono font-medium border transition-all flex-shrink-0 whitespace-nowrap ${on ? "text-white border-transparent" : "text-gray-600 border-white/10"}`}
               style={on ? { background: `${s.color}30`, borderColor: `${s.color}60` } : {}}>
-              <span className="w-1.5 h-1.5 rounded-full" style={{ background: on ? s.color : "#374151" }} />
+              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: on ? s.color : "#374151" }} />
               {s.ticker}
             </button>
           );
