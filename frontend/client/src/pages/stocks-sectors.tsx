@@ -645,33 +645,35 @@ function SectorSnapshotPanel({ sectors, loading, selectedTickers, onSelectTicker
         }
       />
       {loading ? (
-        <div className="flex gap-1.5">
-          {Array.from({length: 11}).map((_, i) => <Skel key={i} h={40} className="flex-1" />)}
+        <div className="flex gap-1.5 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
+          {Array.from({length: 11}).map((_, i) => <div key={i} className="flex-shrink-0" style={{ width: 68, height: 40, borderRadius: 8, background: "rgba(255,255,255,0.04)" }} />)}
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gap: "6px" }}>
-          {sorted.map(row => {
-            const val   = pctByTf(row);
-            const color = SECTOR_COLOR[row.ticker] ?? "#64748b";
-            const sel   = selectedTickers.has(row.ticker);
-            return (
-              <div key={row.ticker} onClick={() => onSelectTicker(row.ticker)}
-                className={`rounded-lg cursor-pointer transition-all border ${sel ? "border-white/20 scale-[1.02]" : "border-white/[0.04] hover:border-white/10"}`}
-                style={{ background: `${color}${sel ? "18" : "0c"}`, padding: "5px 7px" }}>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 3, flexWrap: "nowrap" }}>
-                  <span style={{ fontFamily: "monospace", fontWeight: 700, color: "#fff", fontSize: 10, whiteSpace: "nowrap" }}>{row.ticker}</span>
-                  <span style={{ fontFamily: "monospace", fontWeight: 700, fontSize: 10, whiteSpace: "nowrap", color: val != null ? (val >= 0 ? "#22c55e" : "#ef4444") : "#64748b" }}>
-                    {fmtPct(val, 1)}
-                  </span>
-                </div>
-                {row.regime_tag && (
-                  <div style={{ fontSize: 9, fontWeight: 600, color: tagColor(row.regime_tag), marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                    {row.regime_tag}
+        <div className="overflow-x-auto" style={{ scrollbarWidth: "none" }}>
+          <div style={{ display: "flex", gap: 6, minWidth: "max-content" }}>
+            {sorted.map(row => {
+              const val   = pctByTf(row);
+              const color = SECTOR_COLOR[row.ticker] ?? "#64748b";
+              const sel   = selectedTickers.has(row.ticker);
+              return (
+                <div key={row.ticker} onClick={() => onSelectTicker(row.ticker)}
+                  className={`rounded-lg cursor-pointer transition-all border flex-shrink-0 ${sel ? "border-white/20 scale-[1.02]" : "border-white/[0.04] hover:border-white/10"}`}
+                  style={{ background: `${color}${sel ? "18" : "0c"}`, padding: "5px 10px", minWidth: 72 }}>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 3, flexWrap: "nowrap" }}>
+                    <span style={{ fontFamily: "monospace", fontWeight: 700, color: "#fff", fontSize: 10, whiteSpace: "nowrap" }}>{row.ticker}</span>
+                    <span style={{ fontFamily: "monospace", fontWeight: 700, fontSize: 10, whiteSpace: "nowrap", color: val != null ? (val >= 0 ? "#22c55e" : "#ef4444") : "#64748b" }}>
+                      {fmtPct(val, 1)}
+                    </span>
                   </div>
-                )}
-              </div>
-            );
-          })}
+                  {row.regime_tag && (
+                    <div style={{ fontSize: 9, fontWeight: 600, color: tagColor(row.regime_tag), marginTop: 2, whiteSpace: "nowrap" }}>
+                      {row.regime_tag}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
     </GlassCard>
