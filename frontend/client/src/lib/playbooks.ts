@@ -4,6 +4,10 @@ import type {
   PortfolioPlaybookResponse,
   PlaybookAnalyzeRequest,
   PlaybookAnalyzeResponse,
+  PlaybookDiscoverRequest,
+  PlaybookDiscoverResponse,
+  SupplyChainMapRequest,
+  SupplyChainMapResponse,
 } from "@/types/playbook";
 
 const AGENT_KEY = "hippo_ak_7f3x9k2m4p8q1w5t";
@@ -56,5 +60,29 @@ export async function analyzePlaybook(
     body: JSON.stringify(req),
   });
   if (!res.ok) throw new Error(`playbooks/analyze failed: ${res.status}`);
+  return res.json();
+}
+
+export async function discoverPlaybook(
+  req: PlaybookDiscoverRequest
+): Promise<PlaybookDiscoverResponse> {
+  const res = await fetch("/api/playbooks/discover", {
+    method: "POST",
+    headers: proxyHeaders(),
+    body: JSON.stringify(req),
+  });
+  if (!res.ok) throw new Error(`playbooks/discover failed: ${res.status}`);
+  return res.json();
+}
+
+export async function supplyChainMap(
+  req: SupplyChainMapRequest
+): Promise<SupplyChainMapResponse> {
+  const res = await fetch("/api/playbooks/supply-chain-map", {
+    method: "POST",
+    headers: proxyHeaders(),
+    body: JSON.stringify(req),
+  });
+  if (!res.ok) throw new Error(`playbooks/supply-chain-map failed: ${res.status}`);
   return res.json();
 }

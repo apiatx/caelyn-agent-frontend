@@ -10,7 +10,7 @@ import {
 } from './tradingAgentCollabState';
 import WatchlistAnalysis, { tryParseWatchlistAnalysis } from './WatchlistAnalysis';
 import { StockDetailModal } from './StockDetailModal';
-import { analyzePlaybook } from '@/lib/playbooks';
+import { analyzePlaybook, discoverPlaybook, supplyChainMap } from '@/lib/playbooks';
 
 const AGENT_BACKEND_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
 const AGENT_API_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
@@ -336,6 +336,14 @@ export default function TradingAgent() {
   const [strategyPlaybooks, setStrategyPlaybooks] = useState<Array<{id:string;name:string;short_label:string;ui_color?:string}>>([]);
   const [strategyDropdownOpen, setStrategyDropdownOpen] = useState(false);
   const strategyDropdownRef = useRef<HTMLDivElement>(null);
+  // Serenity discovery controls — only affect explicit user-triggered discovery actions, never auto-fire
+  const [discoveryAnchor, setDiscoveryAnchor] = useState<string>('NVDA');
+  const [discoveryTheme, setDiscoveryTheme] = useState<string>('');
+  const [discoveryRegion, setDiscoveryRegion] = useState<string>('Global');
+  const [discoveryHiddenOnly, setDiscoveryHiddenOnly] = useState<boolean>(false);
+  const [discoveryDepth, setDiscoveryDepth] = useState<number>(3);
+  const [discoveryIncludeForeign, setDiscoveryIncludeForeign] = useState<boolean>(true);
+  const [discoveryIncludeProxies, setDiscoveryIncludeProxies] = useState<boolean>(true);
 
   useEffect(() => {
     scrollAnchorRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -627,6 +635,102 @@ export default function TradingAgent() {
     } catch (err: any) {
       const errMsg: PanelMessage = { role: 'assistant', content: `Follow-up failed: ${err.message || 'Unknown error'}`, timestamp: Date.now() };
       setPanels(prev => prev.map(p => p.id === panelId ? { ...p, thread: [...(p.thread || []), errMsg] } : p));
+    }
+  }
+
+  // ── Serenity-only discovery helpers ─────────────────────────────────────────
+  // These are only called by explicit user clicks — never auto-fired.
+
+  async function runDiscovery(opts: {
+    mode?: string;
+    theme_ids?: string[];
+    include_foreign?: boolean;
+    hidden_only?: boolean;
+    label: string;
+  }) {
+    if (loadingRef.current) return;
+    loadingRef.current = true;
+    setLoading(true);
+    setError(null);
+    setExpandedTicker(null);
+    setLoadingStage(`Running ${opts.label}...`);
+
+    const payload: Record<string, any> = {
+      playbook_id: 'serenity',
+      mode: opts.mode || 'theme_scan',
+      depth: discoveryDepth,
+      include_foreign: opts.include_foreign ?? discoveryIncludeForeign,
+      include_proxies: discoveryIncludeProxies,
+      hidden_only: opts.hidden_only ?? discoveryHiddenOnly,
+    };
+    if (discoveryAnchor && discoveryAnchor !== 'AI Power') payload.anchor_ticker = discoveryAnchor;
+    if (opts.theme_ids && opts.theme_ids.length) payload.theme_ids = opts.theme_ids;
+    else if (discoveryTheme) payload.theme_ids = [discoveryTheme.toLowerCase().replace(/[\s/]+/g, '_')];
+    if (discoveryRegion !== 'Global') payload.region = discoveryRegion;
+
+    try {
+      const data = await discoverPlaybook(payload);
+      const newPanel: Panel = {
+        id: Date.now(), title: opts.label, userQuery: '',
+        data: { role: 'assistant', content: data.summary || data.analysis || '',
+          parsed: { ...data, display_type: 'serenity_discovery', _label: opts.label } },
+        timestamp: Date.now(), thread: [],
+      };
+      setPanels(prev => [...prev, newPanel]);
+    } catch (err: any) {
+      const failPanel: Panel = {
+        id: Date.now(), title: opts.label, userQuery: '',
+        data: { role: 'assistant',
+          content: `Discovery failed: ${err.message || 'Unknown error'}. You can retry — discovery is rate-limit sensitive.`,
+          parsed: null },
+        timestamp: Date.now(), thread: [],
+      };
+      setPanels(prev => [...prev, failPanel]);
+      setError(err.message || 'Discovery error');
+    } finally {
+      setLoadingStage(''); setLoading(false); loadingRef.current = false;
+    }
+  }
+
+  async function runSupplyChainMap() {
+    if (loadingRef.current) return;
+    loadingRef.current = true;
+    setLoading(true);
+    setError(null);
+    setExpandedTicker(null);
+    const label = `Supply Chain Map — ${discoveryAnchor}${discoveryTheme ? ` / ${discoveryTheme}` : ''}`;
+    setLoadingStage(`Mapping supply chain...`);
+
+    const payload: Record<string, any> = {
+      playbook_id: 'serenity',
+      anchor: discoveryAnchor !== 'AI Power' ? discoveryAnchor : undefined,
+      theme: discoveryTheme || undefined,
+      region: discoveryRegion !== 'Global' ? discoveryRegion : undefined,
+      depth: discoveryDepth,
+      include_foreign: discoveryIncludeForeign,
+    };
+
+    try {
+      const data = await supplyChainMap(payload as any);
+      const newPanel: Panel = {
+        id: Date.now(), title: label, userQuery: '',
+        data: { role: 'assistant', content: data.summary || '',
+          parsed: { ...data, display_type: 'serenity_supply_chain', _label: label } },
+        timestamp: Date.now(), thread: [],
+      };
+      setPanels(prev => [...prev, newPanel]);
+    } catch (err: any) {
+      const failPanel: Panel = {
+        id: Date.now(), title: label, userQuery: '',
+        data: { role: 'assistant',
+          content: `Supply chain map failed: ${err.message || 'Unknown error'}. You can retry.`,
+          parsed: null },
+        timestamp: Date.now(), thread: [],
+      };
+      setPanels(prev => [...prev, failPanel]);
+      setError(err.message || 'Supply chain map error');
+    } finally {
+      setLoadingStage(''); setLoading(false); loadingRef.current = false;
     }
   }
 
@@ -2651,7 +2755,120 @@ export default function TradingAgent() {
     </div>;
   }
 
-  const knownTypes = ['trades','investments','fundamentals','technicals','analysis','dashboard','sector_rotation','earnings_catalyst','commodities','portfolio','briefing','crypto','trending','screener','trending_now','cross_market','csv_watchlist','csv_watchlist_analysis','playbook_analysis'];
+  const knownTypes = ['trades','investments','fundamentals','technicals','analysis','dashboard','sector_rotation','earnings_catalyst','commodities','portfolio','briefing','crypto','trending','screener','trending_now','cross_market','csv_watchlist','csv_watchlist_analysis','playbook_analysis','serenity_discovery','serenity_supply_chain'];
+
+  function renderSerenityDiscovery(data: any) {
+    const label = data._label || 'Serenity Discovery';
+    const PBC = '#6366f1';
+    const summaryText = data.summary || data.analysis || '';
+    const candidates: any[] = data.candidates || data.top_candidates || [];
+
+    const scoreBar = (score?: number) => score != null ? (
+      <span style={{ display:'inline-block', padding:'1px 6px', borderRadius:3, fontSize:8, fontWeight:700, fontFamily:font, background: score >= 70 ? `${C.green}18` : score >= 40 ? `${C.gold}18` : `${C.red}18`, color: score >= 70 ? C.green : score >= 40 ? C.gold : C.red, border:`1px solid ${score >= 70 ? C.green : score >= 40 ? C.gold : C.red}30` }}>{Math.round(score)}</span>
+    ) : null;
+
+    return <div>
+      {/* Header */}
+      <div style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 14px', background:`${PBC}10`, border:`1px solid ${PBC}25`, borderRadius:8, marginBottom:10 }}>
+        <span style={{ display:'inline-block', width:8, height:8, borderRadius:'50%', background:PBC }} />
+        <span style={{ color:PBC, fontWeight:700, fontSize:11, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.06em' }}>{label}</span>
+        {candidates.length > 0 && <span style={{ color:C.dim, fontSize:9, fontFamily:font }}>{candidates.length} candidates</span>}
+      </div>
+
+      {/* Summary */}
+      {summaryText && summaryText.trim() && (
+        <div style={{ padding:'14px 18px', background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont, marginBottom:10 }}
+          dangerouslySetInnerHTML={{ __html: formatAnalysis(summaryText) }} />
+      )}
+
+      {/* Candidates */}
+      {candidates.length > 0 && <div>
+        <div style={{ color:C.bright, fontSize:11, fontWeight:700, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.04em', marginBottom:8 }}>Candidates</div>
+        <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+          {candidates.map((c: any, i: number) => {
+            const ticker = c.ticker || c.symbol || '';
+            const tags: string[] = c.theme_tags || [];
+            const fc = c.foreign_coverage || {};
+            return <div key={i} style={{ background:C.card, border:`1px solid ${C.border}`, borderLeft:`3px solid ${PBC}`, borderRadius:8, padding:'12px 16px' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap', marginBottom:c.rationale ? 6 : 0 }}>
+                {ticker && <span style={{ color:C.blue, fontWeight:700, fontSize:14, fontFamily:font }}>{ticker}</span>}
+                {c.name && <span style={{ color:C.dim, fontSize:11, fontFamily:sansFont }}>{c.name}</span>}
+                {c.country && <span style={{ padding:'1px 6px', borderRadius:3, fontSize:8, fontWeight:600, fontFamily:font, color:C.gold, background:`${C.gold}10`, border:`1px solid ${C.gold}25` }}>{c.country}</span>}
+                {c.exchange && <span style={{ color:C.dim, fontSize:9, fontFamily:font }}>{c.exchange}</span>}
+                {c.chain_layer && <span style={{ padding:'1px 6px', borderRadius:3, fontSize:8, fontWeight:600, fontFamily:font, color:C.blue, background:`${C.blue}10`, border:`1px solid ${C.blue}25` }}>{c.chain_layer}</span>}
+                {scoreBar(c.bottleneck_score ?? c.confidence)}
+                {c.hiddenness_score != null && <span style={{ fontSize:9, color:C.dim, fontFamily:font }}>hidden:{Math.round(c.hiddenness_score)}</span>}
+              </div>
+              {tags.length > 0 && <div style={{ display:'flex', gap:4, flexWrap:'wrap', marginBottom:4 }}>
+                {tags.map((t: string, j: number) => <span key={j} style={{ padding:'1px 6px', borderRadius:3, fontSize:8, fontWeight:600, fontFamily:font, color:PBC, background:`${PBC}10`, border:`1px solid ${PBC}25` }}>{t}</span>)}
+              </div>}
+              {c.rationale && <div style={{ color:C.text, fontSize:12, fontFamily:sansFont, lineHeight:1.5, marginBottom:4 }}>{c.rationale}</div>}
+              {(fc.adr || c.adr_proxy || fc.etf_proxy || c.etf_proxy) && (
+                <div style={{ fontSize:10, color:C.dim, fontFamily:font }}>
+                  {(fc.adr || c.adr_proxy) && <span style={{ marginRight:8 }}>ADR: <span style={{ color:C.bright }}>{fc.adr || c.adr_proxy}</span></span>}
+                  {(fc.etf_proxy || c.etf_proxy) && <span>ETF proxy: <span style={{ color:C.bright }}>{fc.etf_proxy || c.etf_proxy}</span></span>}
+                </div>
+              )}
+            </div>;
+          })}
+        </div>
+      </div>}
+    </div>;
+  }
+
+  function renderSupplyChainMap(data: any) {
+    const label = data._label || data.anchor || 'Supply Chain Map';
+    const PBC = '#6366f1';
+    const summaryText = data.summary || '';
+    // layers can be [{ label, nodes }] or fall back to grouping flat nodes by layer
+    const layers: { label: string; nodes: any[] }[] = data.layers ||
+      (() => {
+        const nodes: any[] = data.nodes || [];
+        const map: Record<string, any[]> = {};
+        nodes.forEach((n: any) => { const l = n.layer || 'Other'; (map[l] = map[l] || []).push(n); });
+        return Object.entries(map).map(([lbl, ns]) => ({ label: lbl, nodes: ns }));
+      })();
+
+    const nodeCard = (n: any, i: number) => (
+      <div key={i} style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'6px 10px', background:C.bg, border:`1px solid ${n.is_foreign ? C.gold+'40' : C.border}`, borderRadius:6, marginRight:6, marginBottom:6 }}>
+        {n.ticker && <span style={{ color:C.blue, fontWeight:700, fontSize:12, fontFamily:font }}>{n.ticker}</span>}
+        {n.name && <span style={{ color:C.dim, fontSize:10, fontFamily:sansFont }}>{n.name}</span>}
+        {n.country && <span style={{ padding:'1px 5px', borderRadius:3, fontSize:8, fontWeight:600, fontFamily:font, color:C.gold, background:`${C.gold}10`, border:`1px solid ${C.gold}25` }}>{n.country}</span>}
+        {n.confidence != null && <span style={{ fontSize:8, color:C.dim, fontFamily:font }}>{Math.round(n.confidence * 100)}%</span>}
+        {n.adr_proxy && <span style={{ fontSize:8, color:C.green, fontFamily:font }}>ADR:{n.adr_proxy}</span>}
+      </div>
+    );
+
+    return <div>
+      {/* Header */}
+      <div style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 14px', background:`${PBC}10`, border:`1px solid ${PBC}25`, borderRadius:8, marginBottom:10 }}>
+        <span style={{ display:'inline-block', width:8, height:8, borderRadius:'50%', background:PBC }} />
+        <span style={{ color:PBC, fontWeight:700, fontSize:11, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.06em' }}>{label}</span>
+      </div>
+
+      {/* Summary */}
+      {summaryText && summaryText.trim() && (
+        <div style={{ padding:'14px 18px', background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont, marginBottom:10 }}
+          dangerouslySetInnerHTML={{ __html: formatAnalysis(summaryText) }} />
+      )}
+
+      {/* Layers */}
+      {layers.map((layer, li) => (
+        <div key={li} style={{ marginBottom:10 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:6 }}>
+            <span style={{ color:C.dim, fontSize:8, fontWeight:700, fontFamily:font, textTransform:'uppercase', padding:'1px 6px', background:`${PBC}10`, border:`1px solid ${PBC}20`, borderRadius:3 }}>Layer {li + 1}</span>
+            <span style={{ color:C.bright, fontSize:12, fontWeight:700, fontFamily:sansFont }}>{layer.label}</span>
+            <span style={{ color:C.dim, fontSize:9, fontFamily:font }}>({layer.nodes?.length || 0})</span>
+          </div>
+          <div style={{ display:'flex', flexWrap:'wrap' }}>
+            {(layer.nodes || []).map((n: any, ni: number) => nodeCard(n, ni))}
+          </div>
+        </div>
+      ))}
+
+      {layers.length === 0 && <div style={{ color:C.dim, fontSize:12, fontFamily:sansFont, padding:'12px 0' }}>No chain data returned.</div>}
+    </div>;
+  }
 
   function renderPlaybookAnalysis(data: any) {
     const playbookId = data._playbook_id || data.playbook_id || '';
@@ -2738,6 +2955,8 @@ export default function TradingAgent() {
 
     return <div>
       {displayType === 'playbook_analysis' && renderPlaybookAnalysis(msg.parsed)}
+      {displayType === 'serenity_discovery' && renderSerenityDiscovery(msg.parsed)}
+      {displayType === 'serenity_supply_chain' && renderSupplyChainMap(msg.parsed)}
       {displayType === 'trades' && renderTrades(s)}
       {displayType === 'investments' && renderInvestments(s)}
       {displayType === 'fundamentals' && renderFundamentals(s)}
@@ -2754,7 +2973,7 @@ export default function TradingAgent() {
       {displayType === 'earnings_catalyst' && renderEarningsCatalyst(s)}
       {displayType === 'csv_watchlist' && renderCsvWatchlist(s)}
       {(displayType === 'chat' || !knownTypes.includes(displayType)) && analysisText && analysisText.trim() && <div style={{ padding:22, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont }} dangerouslySetInnerHTML={{ __html: formatAnalysis(analysisText) }} />}
-      {displayType && displayType !== 'chat' && displayType !== 'cross_market' && displayType !== 'trending_now' && displayType !== 'trades' && displayType !== 'playbook_analysis' && knownTypes.includes(displayType) && analysisText && analysisText.trim() && <div style={{ marginTop:16, padding:22, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont }} dangerouslySetInnerHTML={{ __html: formatAnalysis(analysisText) }} />}
+      {displayType && displayType !== 'chat' && displayType !== 'cross_market' && displayType !== 'trending_now' && displayType !== 'trades' && displayType !== 'playbook_analysis' && displayType !== 'serenity_discovery' && displayType !== 'serenity_supply_chain' && knownTypes.includes(displayType) && analysisText && analysisText.trim() && <div style={{ marginTop:16, padding:22, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont }} dangerouslySetInnerHTML={{ __html: formatAnalysis(analysisText) }} />}
     </div>;
   }
 
@@ -3194,6 +3413,40 @@ export default function TradingAgent() {
         </div>
       )}
 
+      {/* Serenity discovery controls — only shown when strategy = serenity */}
+      {selectedStrategy === 'serenity' && (
+        <div style={{ display:'flex', alignItems:'center', gap:6, padding:'5px 12px', background:'rgba(99,102,241,0.04)', borderBottom:'1px solid rgba(99,102,241,0.12)', flexShrink:0, flexWrap:'wrap' }}>
+          {/* Anchor */}
+          <span style={{ fontSize:8, color:'#6b7280', fontFamily:"'JetBrains Mono', monospace", fontWeight:600, textTransform:'uppercase' }}>Anchor</span>
+          {(['NVDA','MSFT','GOOGL','AMZN','META','TSM','AI Power'] as const).map(a => (
+            <button key={a} onClick={() => setDiscoveryAnchor(a)} style={{ padding:'2px 8px', fontSize:9, fontWeight:600, fontFamily:"'JetBrains Mono', monospace", background: discoveryAnchor === a ? 'rgba(99,102,241,0.25)' : 'transparent', color: discoveryAnchor === a ? '#a5b4fc' : '#6b7280', border:`1px solid ${discoveryAnchor === a ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.08)'}`, borderRadius:4, cursor:'pointer' }}>{a}</button>
+          ))}
+          <span style={{ width:1, height:14, background:'rgba(255,255,255,0.08)', margin:'0 2px', flexShrink:0 }} />
+          {/* Theme */}
+          <span style={{ fontSize:8, color:'#6b7280', fontFamily:"'JetBrains Mono', monospace", fontWeight:600, textTransform:'uppercase' }}>Theme</span>
+          {(['Photonics','Packaging','Grid','Memory','Defense','Cooling','Semicap'] as const).map(t => (
+            <button key={t} onClick={() => setDiscoveryTheme(prev => prev === t ? '' : t)} style={{ padding:'2px 8px', fontSize:9, fontWeight:600, fontFamily:"'JetBrains Mono', monospace", background: discoveryTheme === t ? 'rgba(99,102,241,0.2)' : 'transparent', color: discoveryTheme === t ? '#a5b4fc' : '#6b7280', border:`1px solid ${discoveryTheme === t ? 'rgba(99,102,241,0.35)' : 'rgba(255,255,255,0.08)'}`, borderRadius:4, cursor:'pointer' }}>{t}</button>
+          ))}
+          <span style={{ width:1, height:14, background:'rgba(255,255,255,0.08)', margin:'0 2px', flexShrink:0 }} />
+          {/* Region */}
+          <span style={{ fontSize:8, color:'#6b7280', fontFamily:"'JetBrains Mono', monospace", fontWeight:600, textTransform:'uppercase' }}>Region</span>
+          {(['Global','US','JP','KR','TW','EU'] as const).map(r => (
+            <button key={r} onClick={() => setDiscoveryRegion(r)} style={{ padding:'2px 8px', fontSize:9, fontWeight:600, fontFamily:"'JetBrains Mono', monospace", background: discoveryRegion === r ? 'rgba(99,102,241,0.2)' : 'transparent', color: discoveryRegion === r ? '#a5b4fc' : '#6b7280', border:`1px solid ${discoveryRegion === r ? 'rgba(99,102,241,0.35)' : 'rgba(255,255,255,0.08)'}`, borderRadius:4, cursor:'pointer' }}>{r}</button>
+          ))}
+          <span style={{ width:1, height:14, background:'rgba(255,255,255,0.08)', margin:'0 2px', flexShrink:0 }} />
+          {/* Depth */}
+          <span style={{ fontSize:8, color:'#6b7280', fontFamily:"'JetBrains Mono', monospace", fontWeight:600, textTransform:'uppercase' }}>Depth</span>
+          {([2,3,4] as const).map(d => (
+            <button key={d} onClick={() => setDiscoveryDepth(d)} style={{ padding:'2px 8px', fontSize:9, fontWeight:600, fontFamily:"'JetBrains Mono', monospace", background: discoveryDepth === d ? 'rgba(99,102,241,0.2)' : 'transparent', color: discoveryDepth === d ? '#a5b4fc' : '#6b7280', border:`1px solid ${discoveryDepth === d ? 'rgba(99,102,241,0.35)' : 'rgba(255,255,255,0.08)'}`, borderRadius:4, cursor:'pointer' }}>{d}</button>
+          ))}
+          <span style={{ width:1, height:14, background:'rgba(255,255,255,0.08)', margin:'0 2px', flexShrink:0 }} />
+          {/* Toggles */}
+          <button onClick={() => setDiscoveryHiddenOnly(v => !v)} style={{ padding:'2px 8px', fontSize:9, fontWeight:600, fontFamily:"'JetBrains Mono', monospace", background: discoveryHiddenOnly ? 'rgba(99,102,241,0.2)' : 'transparent', color: discoveryHiddenOnly ? '#a5b4fc' : '#6b7280', border:`1px solid ${discoveryHiddenOnly ? 'rgba(99,102,241,0.35)' : 'rgba(255,255,255,0.08)'}`, borderRadius:4, cursor:'pointer' }}>Hidden Only</button>
+          <button onClick={() => setDiscoveryIncludeForeign(v => !v)} style={{ padding:'2px 8px', fontSize:9, fontWeight:600, fontFamily:"'JetBrains Mono', monospace", background: discoveryIncludeForeign ? 'rgba(99,102,241,0.2)' : 'transparent', color: discoveryIncludeForeign ? '#a5b4fc' : '#6b7280', border:`1px solid ${discoveryIncludeForeign ? 'rgba(99,102,241,0.35)' : 'rgba(255,255,255,0.08)'}`, borderRadius:4, cursor:'pointer' }}>Foreign</button>
+          <button onClick={() => setDiscoveryIncludeProxies(v => !v)} style={{ padding:'2px 8px', fontSize:9, fontWeight:600, fontFamily:"'JetBrains Mono', monospace", background: discoveryIncludeProxies ? 'rgba(99,102,241,0.2)' : 'transparent', color: discoveryIncludeProxies ? '#a5b4fc' : '#6b7280', border:`1px solid ${discoveryIncludeProxies ? 'rgba(99,102,241,0.35)' : 'rgba(255,255,255,0.08)'}`, borderRadius:4, cursor:'pointer' }}>Proxies</button>
+        </div>
+      )}
+
       {/* MAIN BODY */}
       <div style={{ display:'flex', flex:1, overflow:'hidden' }}>
         {/* LEFT RAIL */}
@@ -3225,6 +3478,30 @@ export default function TradingAgent() {
                 )}
               </div>
             ))}
+
+            {/* Serenity discovery preset group — only shown when strategy = serenity */}
+            {selectedStrategy === 'serenity' && (
+              <div style={{ marginTop:4, borderTop:'1px solid rgba(99,102,241,0.2)', paddingTop:4 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:4, padding:'6px 8px' }}>
+                  <span style={{ display:'inline-block', width:6, height:6, borderRadius:'50%', background:'#6366f1' }} />
+                  <span style={{ color:'#818cf8', fontSize:10, fontWeight:700, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.04em' }}>Serenity Discovery</span>
+                </div>
+                <div style={{ paddingLeft:4 }}>
+                  {[
+                    { l: 'Hidden Bottlenecks', fn: () => runDiscovery({ mode: 'giant_chain', hidden_only: true, label: 'Hidden Bottlenecks' }) },
+                    { l: 'Supply Chain Map', fn: () => runSupplyChainMap() },
+                    { l: 'Foreign Bottlenecks', fn: () => runDiscovery({ mode: 'theme_scan', include_foreign: true, label: 'Foreign Bottlenecks' }) },
+                    { l: 'AI Power Chokepoints', fn: () => runDiscovery({ mode: 'theme_scan', theme_ids: ['ai_power'], label: 'AI Power Chokepoints' }) },
+                    { l: 'Photonics / CPO Chain', fn: () => runDiscovery({ mode: 'theme_scan', theme_ids: ['photonics_cpo'], label: 'Photonics / CPO Chain' }) },
+                    { l: 'Packaging / Test', fn: () => runDiscovery({ mode: 'theme_scan', theme_ids: ['packaging_test'], label: 'Packaging / Test Bottlenecks' }) },
+                  ].map(item => (
+                    <div key={item.l} className="rail-item" onClick={() => { if (!loading) { item.fn(); setLeftRailOpen(false); } }} style={{ padding:'5px 10px', cursor:loading ? 'not-allowed' : 'pointer', color:'#818cf8', fontSize:11, fontFamily:sansFont, borderRadius:2, transition:'all 0.1s', opacity:loading ? 0.5 : 1 }}>
+                      {item.l}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

@@ -1,0 +1,237 @@
+Prompt
+
+You are working in my frontend CaelynAI UI repo.
+
+You already implemented:
+
+strategy dropdown on AI Terminal
+strategy scoring on Watchlist
+strategy scoring on Portfolio
+Default-safe behavior
+
+Good.
+
+Now implement the next UI layer for Serenity discovery mode, triggered only when the user explicitly runs it through frontend preset prompts / terminal actions.
+
+This is not a background scanner.
+It is on-demand only.
+
+Non-negotiable guardrails
+Do not change Default AI Terminal behavior at all.
+Do not modify /api/query behavior for Default mode.
+Do not create any background auto-scanning behavior.
+Only run discovery when the user explicitly chooses a Serenity discovery preset or action.
+Do not change S&J UI behavior beyond shared evidence rendering if needed.
+Keep this additive and terminal-native.
+Do not clutter the app with a giant new page unless necessary.
+Preserve existing Watchlist and Portfolio behavior.
+Important backend assumptions
+
+The discovery backend is on-demand only and rate-limit aware.
+
+Your UI must respect that:
+
+no automatic polling
+no eager prefetching of discovery results
+no firing multiple discovery calls on control changes
+only call discovery routes when the user explicitly clicks Run / preset actions
+Objective
+
+Add explicit Serenity discovery actions to the frontend terminal and render the new discovery/supply-chain outputs cleanly.
+
+This should support user flows like:
+hidden bottlenecks under NVDA
+photonics choke points
+AI power bottlenecks
+advanced packaging/test bottlenecks
+foreign bottlenecks by country/theme
+supply-chain map for a giant/ticker/theme
+Part 1 — Add frontend proxy routes
+
+If needed, add proxy routes for:
+
+POST /api/playbooks/discover
+POST /api/playbooks/supply-chain-map
+updated POST /api/playbooks/analyze if needed
+
+Use the same proxy style already used for playbook routes.
+
+Part 2 — Add typed frontend models
+
+Add/update types for:
+
+PlaybookDiscoverRequest
+PlaybookDiscoverResponse
+SupplyChainMapRequest
+SupplyChainMapResponse
+DiscoveryCandidate
+ChainMapNode
+ChainMapEdge
+ForeignCoverageInfo
+
+Keep types tight and reusable.
+
+Part 3 — Add Serenity discovery preset actions to the AI Terminal UI
+
+Because this app is preset/prompt driven, implement explicit user-triggered Serenity-only actions.
+
+Add a Serenity discovery preset group in the terminal action UI
+
+Examples:
+
+Hidden Bottlenecks
+Supply Chain Map
+Foreign Bottlenecks
+AI Power Chokepoints
+Photonics/CPO Chain
+Packaging/Test Bottlenecks
+
+These should only appear or be active when:
+
+strategy dropdown = Serenity
+
+If strategy is Default or S&J, hide or disable these actions.
+
+Part 4 — Add compact discovery controls
+
+When strategy = Serenity, add a compact, terminal-style control strip for discovery.
+
+Suggested controls:
+
+Anchor: NVDA / MSFT / GOOGL / AMZN / META / TSM / AI Power
+Theme: Photonics / Packaging / Grid / Memory / Defense / Cooling / Semicap
+Region: Global / US / JP / KR / TW / EU
+Hidden only: toggle
+Depth: 2 / 3 / 4
+Include foreign: toggle
+Include proxies: toggle
+
+Important:
+
+changing these controls should not auto-run requests
+they only affect the next explicit Run / preset action
+Part 5 — Request behavior
+
+When the user clicks a Serenity discovery preset or Run action, do not use /api/query.
+
+Instead call:
+
+/api/playbooks/discover
+or
+/api/playbooks/supply-chain-map
+or
+/api/playbooks/analyze with discovery context
+Example mapping
+“Hidden Bottlenecks”
+
+Call /api/playbooks/discover with:
+
+playbook_id: serenity
+mode: giant_chain or theme_scan
+selected giant/theme
+selected region/foreign/depth options
+“Supply Chain Map”
+
+Call /api/playbooks/supply-chain-map
+
+“Foreign Bottlenecks”
+
+Call /api/playbooks/discover with:
+
+include_foreign: true
+country filters derived from region control
+“Photonics/CPO Chain”
+
+Call /api/playbooks/discover with:
+
+theme_ids: ["photonics_cpo"]
+Part 6 — Render discovery results cleanly
+
+Render discovery responses in a terminal-native structured block.
+
+Show:
+summary text
+top candidates
+country/exchange
+theme tags
+chain layer tags
+bottleneck/hiddenness/confidence scores
+coverage status
+ADR/ETF proxy if relevant
+
+Keep it compact and useful.
+
+For supply-chain map responses
+
+Render:
+
+anchor/theme heading
+layered sections
+companies grouped by chain layer
+country badges
+confidence/evidence tags
+
+Do not build a heavy graph visualization in v1 unless there is already a simple pattern.
+Layered lists/cards are enough.
+
+Part 7 — Preserve mode branching
+Default
+exact current /api/query behavior unchanged
+Serenity
+standard strategy reasoning may use /api/playbooks/analyze
+discovery presets use /api/playbooks/discover and /api/playbooks/supply-chain-map
+S&J
+continue to use /api/playbooks/analyze
+do not show Serenity-specific bottleneck discovery controls
+Part 8 — Optional useful actions
+
+If easy, add result actions like:
+
+Analyze with Serenity
+Analyze with S&J
+Open Supply Chain Map
+Add to Watchlist
+
+Do not overcomplicate.
+
+Part 9 — Failure handling
+
+If discovery route fails:
+
+do not break terminal
+show compact inline error
+allow retry
+do not auto-retry aggressively
+
+Because discovery is rate-limit sensitive.
+
+Part 10 — Acceptance criteria
+
+When complete:
+
+Default mode
+unchanged
+still uses /api/query
+Serenity mode
+can run user-triggered discovery presets
+can render discovery results
+can render supply-chain map results
+can show foreign-aware results cleanly
+does not auto-fire requests
+S&J mode
+remains strategy-analyze only
+not turned into a bottleneck scanner
+Watchlist / Portfolio
+still work unchanged
+Part 11 — Deliverables
+
+When done, report:
+
+files added/modified
+proxy routes added
+preset actions added
+discovery controls added
+how discovery responses render
+how Default / Serenity / S&J differ in terminal behavior
+how failures are handled
+confirmation no background auto-scanning was introduced

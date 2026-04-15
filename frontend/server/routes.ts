@@ -2813,6 +2813,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/playbooks/discover', async (req, res) => {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 90000);
+      const r = await fetch(`${PB_URL}/api/playbooks/discover`, {
+        method: 'POST',
+        headers: pbHdr(),
+        body: JSON.stringify(req.body),
+        signal: ctrl.signal,
+      });
+      if (!r.ok) return res.status(r.status).json({ error: 'playbooks/discover failed' });
+      res.json(await r.json());
+    } catch (e: any) {
+      console.error('[playbooks/discover] error:', e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post('/api/playbooks/supply-chain-map', async (req, res) => {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 90000);
+      const r = await fetch(`${PB_URL}/api/playbooks/supply-chain-map`, {
+        method: 'POST',
+        headers: pbHdr(),
+        body: JSON.stringify(req.body),
+        signal: ctrl.signal,
+      });
+      if (!r.ok) return res.status(r.status).json({ error: 'playbooks/supply-chain-map failed' });
+      res.json(await r.json());
+    } catch (e: any) {
+      console.error('[playbooks/supply-chain-map] error:', e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   app.post('/api/playbooks/analyze', async (req, res) => {
     try {
       const ctrl = new AbortController();
