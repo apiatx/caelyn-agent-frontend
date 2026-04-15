@@ -22,6 +22,8 @@ import { openSecureLink } from "@/utils/security";
 import {
   LineChart,
   Line,
+  AreaChart,
+  Area,
   BarChart,
   Bar,
   XAxis,
@@ -430,6 +432,117 @@ function SignalBreakdownPanel({
   );
 }
 
+// ─── Subnet Chart Dropdown Panel ─────────────────────────────────────────────
+
+function SubnetChartPanel({
+  subnet,
+  onClose,
+  colSpan,
+}: {
+  subnet: SubnetData;
+  onClose: (e: React.MouseEvent) => void;
+  colSpan?: number;
+}) {
+  const history = subnet.seven_day_price_history ?? [];
+  const ch24h = num(subnet.price_change_24h);
+  const ch7d  = num(subnet.price_change_7d);
+  const ch30d = num(subnet.price_change_30d);
+  const buyVol  = num(subnet.buy_volume_24h);
+  const sellVol = num(subnet.sell_volume_24h);
+  const buyPct  = buyVol + sellVol > 0 ? (buyVol / (buyVol + sellVol)) * 100 : 50;
+  const isPositive = ch7d >= 0;
+  const strokeColor = isPositive ? "#10b981" : "#ef4444";
+
+  const chartData = history.map((price, i) => ({
+    day:   i === history.length - 1 ? "Now" : `-${history.length - 1 - i}d`,
+    price: +Number(price).toFixed(8),
+  }));
+  const minP = history.length > 0 ? Math.min(...history) * 0.997 : 0;
+  const maxP = history.length > 0 ? Math.max(...history) * 1.003 : 1;
+
+  const content = (
+    <div className="bg-[#06080e] border-t border-orange-500/30 p-4">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-white/40 text-xs font-mono">SN{subnet.netuid}</span>
+          <span className="text-white font-semibold text-sm">{subnet.name}</span>
+          {subnet.symbol && (
+            <Badge className="bg-white/10 text-white/60 border-white/10 text-[9px] px-1 py-0">
+              {subnet.symbol}
+            </Badge>
+          )}
+          <span className="w-px h-3 bg-white/10 mx-0.5" />
+          <span className="text-white font-mono text-sm">{fmtTao(num(subnet.price))}</span>
+          <span className={`text-xs font-mono ${pctColor(ch24h)}`}>{fmtPct(ch24h)} 24h</span>
+          <span className={`text-xs font-mono ${pctColor(ch7d)}`}>{fmtPct(ch7d)} 7d</span>
+          <span className={`text-xs font-mono ${pctColor(ch30d)}`}>{fmtPct(ch30d)} 30d</span>
+        </div>
+        <button
+          onClick={onClose}
+          className="ml-4 text-white/30 hover:text-white/60 transition-colors shrink-0"
+          title="Close chart"
+        >
+          <ChevronUp className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Stats */}
+      <div className="flex flex-wrap gap-x-4 gap-y-1 mb-3 text-xs">
+        <span className="text-white/40">Mkt Cap: <span className="text-white/70 font-mono">{fmtTao(num(subnet.market_cap))}</span></span>
+        <span className="text-white/40">TAO Pool: <span className="text-white/70 font-mono">{fmtTao(num(subnet.tao_in))}</span></span>
+        <span className="text-white/40">Emission: <span className="text-orange-400 font-mono">{num(subnet.emission_pct).toFixed(2)}%</span></span>
+        <span className="text-white/40">Vol 24h: <span className="text-white/70 font-mono">{fmtTao(num(subnet.volume_24h))}</span></span>
+        <span className="text-white/40">Buy%: <span className={`font-mono ${buyPct >= 55 ? "text-emerald-400" : buyPct <= 45 ? "text-red-400" : "text-white/60"}`}>{buyPct.toFixed(0)}%</span></span>
+        <span className="flex items-center gap-1.5">
+          <StageBadge stage={subnet.rotation_stage ?? 1} />
+          <RSIBadge rsi={subnet.rsi_7d ?? 50} />
+          <SignalScoreBar score={subnet.signal_score ?? 0} />
+        </span>
+      </div>
+
+      {/* 7-day price chart */}
+      {chartData.length >= 2 ? (
+        <div style={{ height: 130 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={chartData} margin={{ top: 4, right: 8, left: -4, bottom: 0 }}>
+              <defs>
+                <linearGradient id={`sngrad${subnet.netuid}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="10%" stopColor={strokeColor} stopOpacity={0.25} />
+                  <stop offset="95%" stopColor={strokeColor} stopOpacity={0.02} />
+                </linearGradient>
+              </defs>
+              <XAxis dataKey="day" tick={{ fontSize: 9, fill: "#475569" }} tickLine={false} axisLine={false} />
+              <YAxis domain={[minP, maxP]} tick={{ fontSize: 9, fill: "#475569" }} tickLine={false} axisLine={false}
+                tickFormatter={(v: number) => fmtTao(v)} width={70} />
+              <Tooltip
+                contentStyle={{ background: "#0d1117", border: "1px solid #1e2940", borderRadius: 6, fontSize: 10 }}
+                labelStyle={{ color: "#64748b" }}
+                formatter={(v: any) => [fmtTao(Number(v)), "Price"]}
+              />
+              <Area type="monotone" dataKey="price" stroke={strokeColor} strokeWidth={1.5}
+                fill={`url(#sngrad${subnet.netuid})`} dot={false} connectNulls />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      ) : (
+        <div className="h-[130px] flex items-center justify-center text-white/20 text-xs">
+          7-day price history not available for this subnet
+        </div>
+      )}
+    </div>
+  );
+
+  if (colSpan !== undefined) {
+    return (
+      <tr>
+        <td colSpan={colSpan} className="p-0">{content}</td>
+      </tr>
+    );
+  }
+  return content;
+}
+
 // ─── Signal Card (top movers) ────────────────────────────────────────────────
 
 function SignalCard({
@@ -544,9 +657,7 @@ function DashboardSkeleton() {
 
 export default function BittensorDashboardSection() {
   const [activeTab, setActiveTab] = useState<TabId>("signal");
-  const [expandedSignalRow, setExpandedSignalRow] = useState<number | null>(
-    null
-  );
+  const [chartNetuid, setChartNetuid] = useState<number | null>(null);
   const [selectedNetuid, setSelectedNetuid] = useState<number | null>(null);
   const [showMetagraph, setShowMetagraph] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -686,6 +797,12 @@ export default function BittensorDashboardSection() {
       return signalSortDir === "asc" ? av - bv : bv - av;
     });
   }, [subnets, signalSortKey, signalSortDir]);
+
+  // Chart toggle
+  const toggleChart = (netuid: number, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setChartNetuid((n) => (n === netuid ? null : netuid));
+  };
 
   // Sort helpers
   const handleSignalSort = (key: string) => {
@@ -951,13 +1068,22 @@ export default function BittensorDashboardSection() {
               <SignalCard
                 key={s.netuid}
                 subnet={s}
-                onClick={() => {
-                  setSelectedNetuid(s.netuid);
-                  setActiveTab("signal");
-                }}
+                onClick={() => toggleChart(s.netuid)}
               />
             ))}
           </div>
+          {(() => {
+            const expanded = topSignal.find((s) => s.netuid === chartNetuid);
+            if (!expanded) return null;
+            return (
+              <div className="mt-3">
+                <SubnetChartPanel
+                  subnet={expanded}
+                  onClose={(e) => toggleChart(expanded.netuid, e)}
+                />
+              </div>
+            );
+          })()}
         </div>
       )}
 
@@ -1075,12 +1201,12 @@ export default function BittensorDashboardSection() {
                         buyVol + sellVol > 0
                           ? (buyVol / (buyVol + sellVol)) * 100
                           : 50;
-                      const isExpanded = expandedSignalRow === s.netuid;
+                      const isExpanded = chartNetuid === s.netuid;
 
                       return (
                         <React.Fragment key={s.netuid}>
                           <tr
-                            onClick={() => setExpandedSignalRow(isExpanded ? null : s.netuid)}
+                            onClick={() => toggleChart(s.netuid)}
                             className={`cursor-pointer border-b border-white/[0.04] transition-colors ${
                               isExpanded
                                 ? "bg-orange-500/10"
@@ -1142,15 +1268,24 @@ export default function BittensorDashboardSection() {
                               />
                             </td>
                           </tr>
-                          {isExpanded && s.signal_breakdown && (
-                            <tr>
-                              <td colSpan={13} className="p-0">
-                                <SignalBreakdownPanel
-                                  breakdown={s.signal_breakdown}
-                                  subnet={s}
-                                />
-                              </td>
-                            </tr>
+                          {isExpanded && (
+                            <>
+                              <SubnetChartPanel
+                                subnet={s}
+                                onClose={(e) => toggleChart(s.netuid, e)}
+                                colSpan={13}
+                              />
+                              {s.signal_breakdown && (
+                                <tr>
+                                  <td colSpan={13} className="p-0">
+                                    <SignalBreakdownPanel
+                                      breakdown={s.signal_breakdown}
+                                      subnet={s}
+                                    />
+                                  </td>
+                                </tr>
+                              )}
+                            </>
                           )}
                         </React.Fragment>
                       );
@@ -1262,17 +1397,18 @@ export default function BittensorDashboardSection() {
                         buyVol + sellVol > 0
                           ? (buyVol / (buyVol + sellVol)) * 100
                           : 50;
-                      const isSelected = selectedNetuid === s.netuid;
+                      const isChartOpen = chartNetuid === s.netuid;
 
                       return (
+                        <React.Fragment key={s.netuid}>
                         <tr
-                          key={s.netuid}
                           onClick={() => {
-                            setSelectedNetuid(isSelected ? null : s.netuid);
+                            toggleChart(s.netuid);
+                            setSelectedNetuid((n) => n === s.netuid ? null : s.netuid);
                             setShowMetagraph(false);
                           }}
                           className={`border-b border-white/[0.04] cursor-pointer transition-colors ${
-                            isSelected
+                            isChartOpen
                               ? "bg-orange-500/10"
                               : "hover:bg-white/[0.04]"
                           }`}
@@ -1381,6 +1517,14 @@ export default function BittensorDashboardSection() {
                             </div>
                           </td>
                         </tr>
+                        {isChartOpen && (
+                          <SubnetChartPanel
+                            subnet={s}
+                            onClose={(e) => toggleChart(s.netuid, e)}
+                            colSpan={17}
+                          />
+                        )}
+                        </React.Fragment>
                       );
                     })}
                   </tbody>
@@ -1429,44 +1573,61 @@ export default function BittensorDashboardSection() {
                   </tr>
                 </thead>
                 <tbody>
-                  {socialSubnets.map((s, idx) => (
-                      <tr
-                        key={s.netuid}
-                        className="border-b border-white/[0.04] hover:bg-white/[0.04]"
-                      >
-                        <td className="px-3 py-2 text-white/40 font-mono text-xs">
-                          {idx + 1}
-                        </td>
-                        <td className="px-3 py-2 text-white font-medium whitespace-nowrap">
-                          <span className="text-white/40 font-mono mr-1.5">
-                            {s.netuid}
-                          </span>
-                          {s.name}
-                          {s.symbol && (
-                            <span className="text-white/30 ml-1 text-[10px]">
-                              {s.symbol}
+                  {socialSubnets.map((s, idx) => {
+                    const isChartOpen = chartNetuid === s.netuid;
+                    return (
+                      <React.Fragment key={s.netuid}>
+                        <tr
+                          onClick={() => toggleChart(s.netuid)}
+                          className={`border-b border-white/[0.04] cursor-pointer transition-colors ${isChartOpen ? "bg-orange-500/10" : "hover:bg-white/[0.04]"}`}
+                        >
+                          <td className="px-3 py-2 text-white/40 font-mono text-xs">
+                            {idx + 1}
+                          </td>
+                          <td className="px-3 py-2 text-white font-medium whitespace-nowrap">
+                            <span className="text-white/40 font-mono mr-1.5">
+                              {s.netuid}
                             </span>
-                          )}
-                        </td>
-                        <td className="px-3 py-2 text-white/70 font-mono">
-                          {fmtNumber(s.latest_total_messages ?? 0)}
-                        </td>
-                        <td className="px-3 py-2 text-white/70 font-mono">
-                          {fmtNumber(s.latest_unique_authors ?? 0)}
-                        </td>
-                        <td className="px-3 py-2 text-white/70 font-mono">
-                          {fmtNumber(s.total_analyses_24h ?? 0)}
-                        </td>
-                        <td className="px-3 py-2 text-white/50 font-mono text-[10px]">
-                          {s.last_analysis_timestamp
-                            ? new Date(s.last_analysis_timestamp).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
-                            : "—"}
-                        </td>
-                        <td className="px-3 py-2">
-                          <SignalScoreBar score={s.signal_score ?? 0} />
-                        </td>
-                      </tr>
-                    ))}
+                            {s.name}
+                            {s.symbol && (
+                              <span className="text-white/30 ml-1 text-[10px]">
+                                {s.symbol}
+                              </span>
+                            )}
+                            {isChartOpen ? (
+                              <ChevronUp className="w-3 h-3 inline ml-1 text-white/30" />
+                            ) : (
+                              <ChevronDown className="w-3 h-3 inline ml-1 text-white/30" />
+                            )}
+                          </td>
+                          <td className="px-3 py-2 text-white/70 font-mono">
+                            {fmtNumber(s.latest_total_messages ?? 0)}
+                          </td>
+                          <td className="px-3 py-2 text-white/70 font-mono">
+                            {fmtNumber(s.latest_unique_authors ?? 0)}
+                          </td>
+                          <td className="px-3 py-2 text-white/70 font-mono">
+                            {fmtNumber(s.total_analyses_24h ?? 0)}
+                          </td>
+                          <td className="px-3 py-2 text-white/50 font-mono text-[10px]">
+                            {s.last_analysis_timestamp
+                              ? new Date(s.last_analysis_timestamp).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
+                              : "—"}
+                          </td>
+                          <td className="px-3 py-2">
+                            <SignalScoreBar score={s.signal_score ?? 0} />
+                          </td>
+                        </tr>
+                        {isChartOpen && (
+                          <SubnetChartPanel
+                            subnet={s}
+                            onClose={(e) => toggleChart(s.netuid, e)}
+                            colSpan={7}
+                          />
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -1518,16 +1679,23 @@ export default function BittensorDashboardSection() {
                   <tbody>
                     {sustainSubnets.map((s) => {
                       const taoNeeded = s.tao_needed_to_sustain ?? 0;
+                      const isChartOpen = chartNetuid === s.netuid;
                       return (
+                        <React.Fragment key={s.netuid}>
                         <tr
-                          key={s.netuid}
-                          className="border-b border-white/[0.04] hover:bg-white/[0.04]"
+                          onClick={() => toggleChart(s.netuid)}
+                          className={`border-b border-white/[0.04] cursor-pointer transition-colors ${isChartOpen ? "bg-orange-500/10" : "hover:bg-white/[0.04]"}`}
                         >
                           <td className="px-3 py-2 text-white font-medium whitespace-nowrap">
                             <span className="text-white/40 font-mono mr-1.5">
                               {s.netuid}
                             </span>
                             {s.name}
+                            {isChartOpen ? (
+                              <ChevronUp className="w-3 h-3 inline ml-1 text-white/30" />
+                            ) : (
+                              <ChevronDown className="w-3 h-3 inline ml-1 text-white/30" />
+                            )}
                           </td>
                           <td className="px-3 py-2 text-white font-mono">
                             {fmtTao(num(s.price))}
@@ -1565,6 +1733,14 @@ export default function BittensorDashboardSection() {
                             {fmtTao(num(s.unrealized_pnl_tao))}
                           </td>
                         </tr>
+                        {isChartOpen && (
+                          <SubnetChartPanel
+                            subnet={s}
+                            onClose={(e) => toggleChart(s.netuid, e)}
+                            colSpan={8}
+                          />
+                        )}
+                        </React.Fragment>
                       );
                     })}
                   </tbody>
@@ -1609,6 +1785,7 @@ export default function BittensorDashboardSection() {
             Object.values(byStage).forEach(arr => arr.sort((a, b) => (b.rotation_stage_confidence ?? 0) - (a.rotation_stage_confidence ?? 0)));
             const stageLabels: Record<number, string> = { 1: "Accumulating", 2: "Early Breakout", 3: "Momentum", 4: "Distributing", 5: "Declining", 6: "Recovery" };
             return (
+              <>
               <div className="overflow-x-auto">
                 <div className="grid grid-cols-6 gap-2 min-w-[900px]">
                   {[1, 2, 3, 4, 5, 6].map(stage => {
@@ -1626,8 +1803,8 @@ export default function BittensorDashboardSection() {
                             return (
                               <div
                                 key={s.netuid}
-                                onClick={() => { setSelectedNetuid(s.netuid); setActiveTab("signal"); }}
-                                className="bg-white/[0.03] border border-white/[0.06] rounded-md p-2 cursor-pointer hover:bg-white/[0.06] transition-colors"
+                                onClick={() => toggleChart(s.netuid)}
+                                className={`bg-white/[0.03] border border-white/[0.06] rounded-md p-2 cursor-pointer transition-colors ${chartNetuid === s.netuid ? "bg-orange-500/10 border-orange-500/30" : "hover:bg-white/[0.06]"}`}
                               >
                                 <div className="flex items-center gap-1 mb-1">
                                   <span className="text-white text-[11px] font-medium truncate">{s.name}</span>
@@ -1651,6 +1828,19 @@ export default function BittensorDashboardSection() {
                   })}
                 </div>
               </div>
+              {(() => {
+                const expanded = subnets.find(s => s.netuid === chartNetuid);
+                if (!expanded) return null;
+                return (
+                  <div className="mt-3">
+                    <SubnetChartPanel
+                      subnet={expanded}
+                      onClose={(e) => toggleChart(expanded.netuid, e)}
+                    />
+                  </div>
+                );
+              })()}
+              </>
             );
           })()}
 
@@ -1683,28 +1873,39 @@ export default function BittensorDashboardSection() {
                         </tr>
                       </thead>
                       <tbody>
-                        {opps.map((s, idx) => (
-                          <tr key={s.netuid} className="border-b border-white/[0.04] hover:bg-white/[0.04] cursor-pointer" onClick={() => { setSelectedNetuid(s.netuid); setActiveTab("signal"); }}>
-                            <td className="px-3 py-2 text-white/40 font-mono">{idx + 1}</td>
-                            <td className="px-3 py-2 text-white font-medium whitespace-nowrap">{s.name} <span className="text-white/30 text-[10px] ml-1">{s.symbol}</span></td>
-                            <td className="px-3 py-2"><StageBadge stage={s.rotation_stage ?? 1} /></td>
-                            <td className="px-3 py-2">
-                              <div className="flex items-center gap-1.5">
-                                <div className="relative w-12 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                                  <div className="absolute h-full rounded-full bg-emerald-500" style={{ width: `${s.accumulation_score ?? 0}%` }} />
-                                </div>
-                                <span className="text-emerald-400 font-mono">{(s.accumulation_score ?? 0).toFixed(0)}</span>
-                              </div>
-                            </td>
-                            <td className="px-3 py-2"><RSIBadge rsi={s.rsi_7d ?? 50} /></td>
-                            <td className="px-3 py-2 text-white font-mono">{fmtTao(num(s.price))}</td>
-                            <td className={`px-3 py-2 font-mono ${pctColor(num(s.price_change_24h))}`}>{fmtPct(num(s.price_change_24h))}</td>
-                            <td className={`px-3 py-2 font-mono ${pctColor(num(s.price_change_7d))}`}>{fmtPct(num(s.price_change_7d))}</td>
-                            <td className="px-3 py-2 text-white/70 font-mono">{num(s.emission_pct).toFixed(2)}%</td>
-                            <td className="px-3 py-2"><EmissionOpportunityBar score={s.emission_opportunity ?? 1} /></td>
-                            <td className="px-3 py-2"><Sparkline data={s.seven_day_price_history} positive={num(s.price_change_7d) >= 0} /></td>
-                          </tr>
-                        ))}
+                        {opps.map((s, idx) => {
+                          const isChartOpen = chartNetuid === s.netuid;
+                          return (
+                            <React.Fragment key={s.netuid}>
+                              <tr className={`border-b border-white/[0.04] cursor-pointer transition-colors ${isChartOpen ? "bg-orange-500/10" : "hover:bg-white/[0.04]"}`}
+                                onClick={() => toggleChart(s.netuid)}>
+                                <td className="px-3 py-2 text-white/40 font-mono">{idx + 1}</td>
+                                <td className="px-3 py-2 text-white font-medium whitespace-nowrap">{s.name} <span className="text-white/30 text-[10px] ml-1">{s.symbol}</span>
+                                  {isChartOpen ? <ChevronUp className="w-3 h-3 inline ml-1 text-white/30" /> : <ChevronDown className="w-3 h-3 inline ml-1 text-white/30" />}
+                                </td>
+                                <td className="px-3 py-2"><StageBadge stage={s.rotation_stage ?? 1} /></td>
+                                <td className="px-3 py-2">
+                                  <div className="flex items-center gap-1.5">
+                                    <div className="relative w-12 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                                      <div className="absolute h-full rounded-full bg-emerald-500" style={{ width: `${s.accumulation_score ?? 0}%` }} />
+                                    </div>
+                                    <span className="text-emerald-400 font-mono">{(s.accumulation_score ?? 0).toFixed(0)}</span>
+                                  </div>
+                                </td>
+                                <td className="px-3 py-2"><RSIBadge rsi={s.rsi_7d ?? 50} /></td>
+                                <td className="px-3 py-2 text-white font-mono">{fmtTao(num(s.price))}</td>
+                                <td className={`px-3 py-2 font-mono ${pctColor(num(s.price_change_24h))}`}>{fmtPct(num(s.price_change_24h))}</td>
+                                <td className={`px-3 py-2 font-mono ${pctColor(num(s.price_change_7d))}`}>{fmtPct(num(s.price_change_7d))}</td>
+                                <td className="px-3 py-2 text-white/70 font-mono">{num(s.emission_pct).toFixed(2)}%</td>
+                                <td className="px-3 py-2"><EmissionOpportunityBar score={s.emission_opportunity ?? 1} /></td>
+                                <td className="px-3 py-2"><Sparkline data={s.seven_day_price_history} positive={num(s.price_change_7d) >= 0} /></td>
+                              </tr>
+                              {isChartOpen && (
+                                <SubnetChartPanel subnet={s} onClose={(e) => toggleChart(s.netuid, e)} colSpan={11} />
+                              )}
+                            </React.Fragment>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -1745,19 +1946,30 @@ export default function BittensorDashboardSection() {
                         </tr>
                       </thead>
                       <tbody>
-                        {emSorted.map((s, idx) => (
-                          <tr key={s.netuid} className="border-b border-white/[0.04] hover:bg-white/[0.04] cursor-pointer" onClick={() => { setSelectedNetuid(s.netuid); setActiveTab("signal"); }}>
-                            <td className="px-3 py-2 text-white/40 font-mono">{idx + 1}</td>
-                            <td className="px-3 py-2 text-white font-medium whitespace-nowrap">{s.name} <span className="text-white/30 text-[10px] ml-1">{s.symbol}</span></td>
-                            <td className="px-3 py-2"><EmissionOpportunityBar score={s.emission_opportunity ?? 1} /></td>
-                            <td className="px-3 py-2 text-white/70 font-mono">{num(s.emission_pct).toFixed(2)}%</td>
-                            <td className="px-3 py-2 text-white/80 font-mono">{fmtTao(num(s.market_cap))}</td>
-                            <td className="px-3 py-2 text-white/70 font-mono">{fmtTao(num(s.tao_in))}</td>
-                            <td className="px-3 py-2 text-white/60 font-mono">{(s.pool_depth_ratio ?? 0).toFixed(4)}</td>
-                            <td className="px-3 py-2 text-white font-mono">{fmtTao(num(s.price))}</td>
-                            <td className={`px-3 py-2 font-mono ${pctColor(num(s.price_change_7d))}`}>{fmtPct(num(s.price_change_7d))}</td>
-                          </tr>
-                        ))}
+                        {emSorted.map((s, idx) => {
+                          const isChartOpen = chartNetuid === s.netuid;
+                          return (
+                            <React.Fragment key={s.netuid}>
+                              <tr className={`border-b border-white/[0.04] cursor-pointer transition-colors ${isChartOpen ? "bg-orange-500/10" : "hover:bg-white/[0.04]"}`}
+                                onClick={() => toggleChart(s.netuid)}>
+                                <td className="px-3 py-2 text-white/40 font-mono">{idx + 1}</td>
+                                <td className="px-3 py-2 text-white font-medium whitespace-nowrap">{s.name} <span className="text-white/30 text-[10px] ml-1">{s.symbol}</span>
+                                  {isChartOpen ? <ChevronUp className="w-3 h-3 inline ml-1 text-white/30" /> : <ChevronDown className="w-3 h-3 inline ml-1 text-white/30" />}
+                                </td>
+                                <td className="px-3 py-2"><EmissionOpportunityBar score={s.emission_opportunity ?? 1} /></td>
+                                <td className="px-3 py-2 text-white/70 font-mono">{num(s.emission_pct).toFixed(2)}%</td>
+                                <td className="px-3 py-2 text-white/80 font-mono">{fmtTao(num(s.market_cap))}</td>
+                                <td className="px-3 py-2 text-white/70 font-mono">{fmtTao(num(s.tao_in))}</td>
+                                <td className="px-3 py-2 text-white/60 font-mono">{(s.pool_depth_ratio ?? 0).toFixed(4)}</td>
+                                <td className="px-3 py-2 text-white font-mono">{fmtTao(num(s.price))}</td>
+                                <td className={`px-3 py-2 font-mono ${pctColor(num(s.price_change_7d))}`}>{fmtPct(num(s.price_change_7d))}</td>
+                              </tr>
+                              {isChartOpen && (
+                                <SubnetChartPanel subnet={s} onClose={(e) => toggleChart(s.netuid, e)} colSpan={9} />
+                              )}
+                            </React.Fragment>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
