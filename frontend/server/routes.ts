@@ -2588,6 +2588,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add tickers to an existing watchlist
+  app.patch('/api/watchlist/:wid/tickers', async (req, res) => {
+    const { wid } = req.params;
+    if (['news','list','debug','upload'].includes(wid)) return res.status(400).json({ error: 'Invalid watchlist ID' });
+    try {
+      const { tickers: newTickers } = req.body;
+      if (!newTickers || !Array.isArray(newTickers) || !newTickers.length) {
+        return res.status(400).json({ error: 'tickers array is required' });
+      }
+      // Fetch current watchlist to get existing tickers
+      const ctrl1 = new AbortController();
+      setTimeout(() => ctrl1.abort(), 10000);
+      const currentRes = await fetch(`${WL_URL}/api/watchlist/${wid}`, { headers: wlHdr(), signal: ctrl1.signal });
+      if (!currentRes.ok) return res.status(currentRes.status).json({ error: 'Watchlist not found' });
+      const current = await currentRes.json();
+
+      // Deduplicate: only add tickers not already present
+      const existing: string[] = Array.isArray(current.tickers) ? current.tickers : [];
+      const existingUpper = new Set(existing.map((t: string) => t.toUpperCase()));
+      const toAdd = (newTickers as string[]).filter(t => !existingUpper.has(t.toUpperCase()));
+      if (!toAdd.length) {
+        return res.json({ message: 'All tickers already in watchlist', added: 0 });
+      }
+      const merged = [...existing, ...toAdd];
+
+      // Try PATCH then PUT on FastAPI to update the ticker list
+      const ctrl2 = new AbortController();
+      setTimeout(() => ctrl2.abort(), 15000);
+      let r = await fetch(`${WL_URL}/api/watchlist/${wid}`, {
+        method: 'PATCH',
+        headers: { ...wlHdr() },
+        body: JSON.stringify({ tickers: merged }),
+        signal: ctrl2.signal,
+      });
+      if (r.status === 405) {
+        const ctrl3 = new AbortController();
+        setTimeout(() => ctrl3.abort(), 15000);
+        r = await fetch(`${WL_URL}/api/watchlist/${wid}`, {
+          method: 'PUT',
+          headers: { ...wlHdr() },
+          body: JSON.stringify({ tickers: merged, name: current.name }),
+          signal: ctrl3.signal,
+        });
+      }
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) return res.status(r.status).json({ error: data.detail || data.message || `Backend ${r.status}` });
+      res.json({ ...data, added: toAdd.length, tickers: merged });
+    } catch (e: any) {
+      res.status(500).json({ error: e?.name === 'AbortError' ? 'Timed out' : (e?.message || 'Add tickers failed') });
+    }
+  });
+
   // Get specific watchlist
   app.get('/api/watchlist/:wid', async (req, res, next) => {
     const { wid } = req.params;

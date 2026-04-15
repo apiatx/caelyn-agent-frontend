@@ -464,7 +464,10 @@ export default function WatchlistPage() {
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const [refreshError, setRefreshError] = useState<string | null>(null);
+  const [addTickerInput, setAddTickerInput] = useState('');
+  const [addTickerStatus, setAddTickerStatus] = useState<null | 'success' | 'duplicate' | 'error'>(null);
   const csvInputRef = useRef<HTMLInputElement>(null);
+  const addInputRef = useRef<HTMLInputElement>(null);
   const autoTriggeredRef = useRef<Set<string>>(new Set());
 
   useEffect(() => { ensureBlinkStyle(); }, []);
@@ -572,6 +575,40 @@ export default function WatchlistPage() {
       setRenamingId(null);
     },
   });
+
+  /* ── add tickers to active watchlist ────────────────────────────── */
+  const addTickersMut = useMutation({
+    mutationFn: async (tickers: string[]) => {
+      if (!activeId) throw new Error('No active watchlist');
+      const r = await fetch(`/api/watchlist/${activeId}/tickers`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tickers }),
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || `Error ${r.status}`);
+      return data;
+    },
+    onSuccess: (data) => {
+      setAddTickerInput('');
+      setAddTickerStatus(data.added === 0 ? 'duplicate' : 'success');
+      setTimeout(() => setAddTickerStatus(null), 2000);
+      qc.invalidateQueries({ queryKey: ['/api/watchlist', activeId] });
+      qc.invalidateQueries({ queryKey: ['/api/watchlist/list'] });
+    },
+    onError: () => {
+      setAddTickerStatus('error');
+      setTimeout(() => setAddTickerStatus(null), 3000);
+    },
+  });
+
+  function handleAddTickers() {
+    const raw = addTickerInput.trim();
+    if (!raw || !activeId) return;
+    const tickers = raw.split(/[\s,;]+/).map(t => t.trim().toUpperCase()).filter(Boolean);
+    if (!tickers.length) return;
+    addTickersMut.mutate(tickers);
+  }
 
   const handleTickerClick = useCallback((ticker: string) => {
     setSelectedTicker(ticker);
@@ -1361,6 +1398,69 @@ export default function WatchlistPage() {
                 WATCHLIST
               </span>
             </div>
+
+            {/* Add tickers inline input */}
+            {activeId && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <input
+                    ref={addInputRef}
+                    type="text"
+                    value={addTickerInput}
+                    onChange={e => { setAddTickerInput(e.target.value); setAddTickerStatus(null); }}
+                    onKeyDown={e => { if (e.key === 'Enter') handleAddTickers(); }}
+                    placeholder="Add tickers"
+                    disabled={addTickersMut.isPending}
+                    style={{
+                      width: 130,
+                      height: 26,
+                      padding: '0 28px 0 8px',
+                      borderRadius: 4,
+                      background: addTickerStatus === 'success' ? `${C.green}15`
+                        : addTickerStatus === 'error' ? `${C.red}15`
+                        : addTickerStatus === 'duplicate' ? `${C.amber}15`
+                        : C.card2,
+                      border: `1px solid ${
+                        addTickerStatus === 'success' ? `${C.green}60`
+                        : addTickerStatus === 'error' ? `${C.red}60`
+                        : addTickerStatus === 'duplicate' ? `${C.amber}60`
+                        : C.border
+                      }`,
+                      color: addTickerStatus === 'success' ? C.green
+                        : addTickerStatus === 'error' ? C.red
+                        : addTickerStatus === 'duplicate' ? C.amber
+                        : C.dim,
+                      fontFamily: C.font,
+                      fontSize: 10,
+                      outline: 'none',
+                      transition: 'border-color 0.15s, background 0.15s',
+                      opacity: addTickersMut.isPending ? 0.6 : 1,
+                    }}
+                    onFocus={e => { if (!addTickerStatus) e.currentTarget.style.borderColor = C.teal; }}
+                    onBlur={e => { if (!addTickerStatus) e.currentTarget.style.borderColor = C.border; }}
+                  />
+                  {/* Status icon or submit button inside the input */}
+                  <span style={{
+                    position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
+                    fontSize: 11, lineHeight: 1, pointerEvents: addTickersMut.isPending ? 'none' : 'auto',
+                    cursor: addTickerInput.trim() && !addTickersMut.isPending ? 'pointer' : 'default',
+                    color: addTickerStatus === 'success' ? C.green
+                      : addTickerStatus === 'error' ? C.red
+                      : addTickerStatus === 'duplicate' ? C.amber
+                      : addTickerInput.trim() ? C.teal : C.dim,
+                    transition: 'color 0.15s',
+                  }}
+                    onClick={handleAddTickers}
+                  >
+                    {addTickersMut.isPending ? '…'
+                      : addTickerStatus === 'success' ? '✓'
+                      : addTickerStatus === 'duplicate' ? '='
+                      : addTickerStatus === 'error' ? '✕'
+                      : '+'}
+                  </span>
+                </div>
+              </div>
+            )}
 
             {/* Center: summary text */}
             <div style={{
