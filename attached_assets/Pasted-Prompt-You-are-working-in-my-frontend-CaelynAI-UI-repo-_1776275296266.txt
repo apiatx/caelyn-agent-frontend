@@ -1,0 +1,188 @@
+Prompt
+
+You are working in my frontend CaelynAI UI repo.
+
+You already added:
+
+strategy selector on AI Terminal
+strategy selector on Watchlist
+strategy selector on Portfolio
+default-safe behavior
+no more /api/query payload mutation
+
+Good.
+
+Now implement the real terminal strategy mode wiring using the new backend route:
+
+POST /api/playbooks/analyze
+
+This must preserve the current exact AI Terminal behavior in Default mode.
+
+Non-negotiable guardrails
+Do not change the current Default AI Terminal behavior at all.
+Do not modify the existing Default /api/query request path.
+Only non-default strategy selections should use the new playbook terminal route.
+Watchlist and Portfolio behavior should remain intact.
+Do not remove the current dropdown.
+Do not break the current terminal rendering.
+Keep this additive and backwards compatible.
+Objective
+
+Wire AI Terminal so that:
+
+Default → existing /api/query behavior unchanged
+Serenity → new /api/playbooks/analyze
+S&J → new /api/playbooks/analyze
+
+The response should render naturally inside the terminal UI.
+
+Required route/proxy work
+
+If needed, add a frontend proxy route for:
+
+POST /api/playbooks/analyze
+
+Use the same proxy pattern already used for:
+
+/api/playbooks
+/api/playbooks/score-watchlist
+/api/playbooks/score-portfolio
+
+Keep it clean and minimal.
+
+TradingAgent behavior
+Default mode
+
+Must stay exactly as-is:
+
+same request path
+same payload
+same rendering
+same model/orchestrator behavior
+Non-default strategy mode
+
+When user selects Serenity or S&J:
+
+do not call /api/query
+instead call /api/playbooks/analyze
+
+Build the request body from available page context.
+
+Terminal request body guidance
+
+For strategy mode, send something like:
+
+{
+  "playbook_id": "serenity",
+  "query": "<user input>",
+  "context_mode": "watchlist",
+  "tickers": [...],
+  "holdings": [...],
+  "limit": 10,
+  "include_breakdown": true
+}
+Context rules
+
+Use the best available context safely:
+
+if terminal has easy access to active watchlist tickers, use context_mode: "watchlist"
+if on portfolio-aware context and holdings are available, use context_mode: "portfolio"
+otherwise use context_mode: "custom" with extracted tickers from prompt if easy
+otherwise use context_mode: "universe" or empty custom context
+
+Do not overcomplicate. Prefer safe explicit tickers if available.
+
+If TradingAgent does not naturally have watchlist/portfolio context, send:
+
+context_mode: "custom"
+tickers: []
+
+That is acceptable for v1.
+
+Terminal response rendering
+
+Do not redesign the whole terminal.
+
+Adapt the new /api/playbooks/analyze response into the existing terminal display structure as cleanly as possible.
+
+At minimum show:
+
+strategy-aware answer text
+top ranked ideas
+low-fit/rejected ideas if present
+concise reasoning
+
+If needed, create a small response adapter function that maps playbook analyze responses into the existing render schema.
+
+Do not break Default mode rendering.
+
+UX behavior
+While loading
+
+Show a terminal-appropriate loading state:
+
+e.g. “Running Serenity playbook analysis…”
+Header / context cue
+
+When non-default strategy mode is active and a strategy analyze response is shown, display a subtle cue in the response header like:
+
+Serenity Playbook Analysis
+S&J Playbook Analysis
+If strategy route fails
+
+Do not break terminal.
+Show a non-blocking inline error and allow retry.
+
+Optional but good
+
+If easy, include compact strategy result blocks under the response, like:
+
+Top Fits
+Weak Fits
+Key Risks
+
+But do not clutter the terminal.
+
+Files likely involved
+
+Adapt to repo structure, but likely:
+
+frontend/server/routes.ts
+frontend/client/src/lib/playbooks.ts
+frontend/client/src/components/TradingAgent.tsx
+maybe frontend/client/src/types/playbook.ts
+Acceptance criteria
+
+When complete:
+
+Default mode
+behaves exactly as before
+still uses /api/query
+unchanged rendering
+Serenity / S&J mode
+uses /api/playbooks/analyze
+returns and renders strategy-aware terminal output
+does not touch /api/query
+Existing Watchlist and Portfolio
+still work unchanged
+Deliverables
+
+When done, report:
+
+files added/modified
+exact Default vs strategy-mode behavior
+proxy route added
+how strategy responses are rendered
+how failures are handled
+confirmation Default mode remains untouched
+My recommendation on order
+
+Do these in this sequence:
+
+backend prompt first
+verify backend POST /api/playbooks/analyze
+then run the frontend prompt
+test all three terminal modes:
+Default
+Serenity
+S&J

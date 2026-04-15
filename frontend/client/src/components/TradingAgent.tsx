@@ -10,6 +10,7 @@ import {
 } from './tradingAgentCollabState';
 import WatchlistAnalysis, { tryParseWatchlistAnalysis } from './WatchlistAnalysis';
 import { StockDetailModal } from './StockDetailModal';
+import { analyzePlaybook } from '@/lib/playbooks';
 
 const AGENT_BACKEND_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
 const AGENT_API_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
@@ -629,11 +630,88 @@ export default function TradingAgent() {
     }
   }
 
+  async function runPlaybookAnalysis(queryText: string, freshChat?: boolean) {
+    const playbook = strategyPlaybooks.find(p => p.id === selectedStrategy);
+    const playbookLabel = playbook?.short_label || selectedStrategy;
+
+    // Extract uppercase ticker-looking tokens from the query (1-5 letters)
+    const rawMatches = queryText.match(/\b[A-Z]{1,5}\b/g) || [];
+    const tickers = [...new Set(rawMatches.filter(t => t.length >= 2))].slice(0, 20);
+    const contextMode = tickers.length > 0 ? 'custom' : 'universe';
+
+    loadingRef.current = true;
+    setLoading(true);
+    setError(null);
+    setExpandedTicker(null);
+    setPrompt('');
+    if (freshChat) setConversationId(null);
+
+    setLoadingStage(`Running ${playbookLabel} playbook analysis...`);
+
+    try {
+      const data = await analyzePlaybook({
+        playbook_id: selectedStrategy,
+        query: queryText,
+        context_mode: contextMode,
+        tickers,
+        limit: 10,
+        include_breakdown: true,
+      });
+
+      const analysisText = data.analysis || data.summary || data.message || '';
+      const newPanel: Panel = {
+        id: Date.now(),
+        title: queryText || `${playbookLabel} Analysis`,
+        userQuery: queryText,
+        data: {
+          role: 'assistant',
+          content: analysisText,
+          parsed: {
+            ...data,
+            display_type: 'playbook_analysis',
+            _playbook_id: selectedStrategy,
+            _playbook_label: playbookLabel,
+          },
+        },
+        timestamp: Date.now(),
+        thread: [],
+      };
+      setPanels(prev => [...prev, newPanel]);
+    } catch (err: any) {
+      const failPanel: Panel = {
+        id: Date.now(),
+        title: queryText || `${playbookLabel} Analysis`,
+        userQuery: queryText,
+        data: {
+          role: 'assistant',
+          content: `${playbookLabel} playbook analysis failed: ${err.message || 'Unknown error'}. You can retry or switch to Default mode.`,
+          parsed: null,
+        },
+        timestamp: Date.now(),
+        thread: [],
+      };
+      setPanels(prev => [...prev, failPanel]);
+      setError(err.message || 'Playbook analysis error');
+    } finally {
+      setLoadingStage('');
+      setLoading(false);
+      loadingRef.current = false;
+    }
+  }
+
   async function askAgent(customPrompt?: string, freshChat?: boolean, presetIntent?: string | null) {
     const queryText = (customPrompt ?? prompt ?? '').trim();
 
     if (!queryText && !presetIntent && !csvData) return;
     if (loadingRef.current) { console.log('[GUARD] Already loading, ignoring duplicate call'); return; }
+
+    // ── STRATEGY MODE: non-default strategy → playbook analyze route ──────
+    // Preset intents and CSV analysis always use the default /api/query path.
+    if (selectedStrategy !== 'default' && !presetIntent && !csvData) {
+      await runPlaybookAnalysis(queryText, freshChat);
+      return;
+    }
+    // ── DEFAULT MODE: existing /api/query path continues below ─────────────
 
     const url = `${AGENT_BACKEND_URL}/api/query`;
     const payload: Record<string, any> = {
@@ -2573,7 +2651,74 @@ export default function TradingAgent() {
     </div>;
   }
 
-  const knownTypes = ['trades','investments','fundamentals','technicals','analysis','dashboard','sector_rotation','earnings_catalyst','commodities','portfolio','briefing','crypto','trending','screener','trending_now','cross_market','csv_watchlist','csv_watchlist_analysis'];
+  const knownTypes = ['trades','investments','fundamentals','technicals','analysis','dashboard','sector_rotation','earnings_catalyst','commodities','portfolio','briefing','crypto','trending','screener','trending_now','cross_market','csv_watchlist','csv_watchlist_analysis','playbook_analysis'];
+
+  function renderPlaybookAnalysis(data: any) {
+    const playbookId = data._playbook_id || data.playbook_id || '';
+    const label = data._playbook_label || data.playbook_id || 'Strategy';
+    const pbColor = strategyPlaybooks.find(p => p.id === playbookId)?.ui_color || '#6366f1';
+    const analysisText = data.analysis || data.summary || data.message || '';
+    const topFits: any[] = data.top_fits || data.top_ideas || data.ranked_ideas || [];
+    const lowFits: any[] = data.low_fits || data.rejected || data.weak_fits || [];
+    const reasoning: string = data.reasoning || '';
+
+    return <div>
+      {/* Strategy header */}
+      <div style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 14px', background:`${pbColor}10`, border:`1px solid ${pbColor}25`, borderRadius:8, marginBottom:10 }}>
+        <span style={{ display:'inline-block', width:8, height:8, borderRadius:'50%', background:pbColor, flexShrink:0 }} />
+        <span style={{ color:pbColor, fontWeight:700, fontSize:11, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.06em' }}>{label} Playbook Analysis</span>
+      </div>
+
+      {/* Main analysis text */}
+      {analysisText && analysisText.trim() && (
+        <div style={{ padding:'16px 20px', background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont, marginBottom:10 }}
+          dangerouslySetInnerHTML={{ __html: formatAnalysis(analysisText) }} />
+      )}
+
+      {/* Top Fits */}
+      {topFits.length > 0 && <div style={{ marginBottom:10 }}>
+        <div style={{ color:C.bright, fontSize:11, fontWeight:700, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.04em', marginBottom:8 }}>Top Fits</div>
+        <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+          {topFits.map((idea: any, i: number) => {
+            const ticker = idea.ticker || idea.symbol || idea.name || '';
+            const score = idea.score != null ? idea.score : idea.final_score;
+            const scoreColor = score >= 80 ? C.green : score >= 60 ? C.gold : C.red;
+            return <div key={i} style={{ background:C.card, border:`1px solid ${C.border}`, borderLeft:`3px solid ${pbColor}`, borderRadius:8, padding:'12px 16px' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:4 }}>
+                {ticker && <span style={{ color:C.blue, fontWeight:700, fontSize:14, fontFamily:font }}>{ticker}</span>}
+                {score != null && <Badge color={scoreColor}>{Math.round(score)}</Badge>}
+              </div>
+              {(idea.rationale || idea.thesis || idea.reason) && (
+                <div style={{ color:C.text, fontSize:12, fontFamily:sansFont, lineHeight:1.5 }}>{idea.rationale || idea.thesis || idea.reason}</div>
+              )}
+              {idea.risks && idea.risks.length > 0 && (
+                <div style={{ marginTop:4, color:C.red, fontSize:10, fontFamily:sansFont }}>{idea.risks.slice(0, 2).join(' · ')}</div>
+              )}
+            </div>;
+          })}
+        </div>
+      </div>}
+
+      {/* Weak / Rejected */}
+      {lowFits.length > 0 && <div style={{ marginBottom:10 }}>
+        <div style={{ color:C.dim, fontSize:11, fontWeight:700, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.04em', marginBottom:6 }}>Weak Fits / Filtered</div>
+        <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+          {lowFits.map((idea: any, i: number) => {
+            const t = idea.ticker || idea.symbol || idea.name || (typeof idea === 'string' ? idea : '');
+            return t ? <span key={i} style={{ padding:'3px 10px', borderRadius:4, fontSize:10, fontWeight:600, fontFamily:font, color:C.dim, background:C.bg, border:`1px solid ${C.border}` }}>{t}</span> : null;
+          })}
+        </div>
+      </div>}
+
+      {/* Reasoning */}
+      {reasoning && reasoning.trim() && (
+        <div style={{ padding:'12px 16px', background:`${C.blue}06`, border:`1px solid ${C.blue}15`, borderRadius:8, color:C.text, fontSize:12, fontFamily:sansFont, lineHeight:1.6 }}>
+          <div style={{ color:C.blue, fontSize:9, fontWeight:700, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:6 }}>Reasoning</div>
+          {reasoning}
+        </div>
+      )}
+    </div>;
+  }
 
   function renderAssistantMessage(msg: {role: string, content: string, parsed?: any}) {
     const s = msg.parsed?.structured || (msg.parsed?.display_type ? msg.parsed : {});
@@ -2592,6 +2737,7 @@ export default function TradingAgent() {
     }
 
     return <div>
+      {displayType === 'playbook_analysis' && renderPlaybookAnalysis(msg.parsed)}
       {displayType === 'trades' && renderTrades(s)}
       {displayType === 'investments' && renderInvestments(s)}
       {displayType === 'fundamentals' && renderFundamentals(s)}
@@ -2608,7 +2754,7 @@ export default function TradingAgent() {
       {displayType === 'earnings_catalyst' && renderEarningsCatalyst(s)}
       {displayType === 'csv_watchlist' && renderCsvWatchlist(s)}
       {(displayType === 'chat' || !knownTypes.includes(displayType)) && analysisText && analysisText.trim() && <div style={{ padding:22, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont }} dangerouslySetInnerHTML={{ __html: formatAnalysis(analysisText) }} />}
-      {displayType && displayType !== 'chat' && displayType !== 'cross_market' && displayType !== 'trending_now' && displayType !== 'trades' && knownTypes.includes(displayType) && analysisText && analysisText.trim() && <div style={{ marginTop:16, padding:22, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont }} dangerouslySetInnerHTML={{ __html: formatAnalysis(analysisText) }} />}
+      {displayType && displayType !== 'chat' && displayType !== 'cross_market' && displayType !== 'trending_now' && displayType !== 'trades' && displayType !== 'playbook_analysis' && knownTypes.includes(displayType) && analysisText && analysisText.trim() && <div style={{ marginTop:16, padding:22, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont }} dangerouslySetInnerHTML={{ __html: formatAnalysis(analysisText) }} />}
     </div>;
   }
 
@@ -3043,7 +3189,7 @@ export default function TradingAgent() {
             {strategyPlaybooks.find(p => p.id === selectedStrategy)?.short_label || selectedStrategy} playbook selected
           </span>
           <span style={{ fontSize:9, color:'#4b5563', fontFamily:"'JetBrains Mono', monospace" }}>
-            — strategy-aware terminal reasoning coming next. Watchlist & Portfolio scoring already active.
+            — queries will use playbook analysis · preset buttons use default mode
           </span>
         </div>
       )}

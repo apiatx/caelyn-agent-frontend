@@ -2813,5 +2813,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/playbooks/analyze', async (req, res) => {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 90000);
+      const r = await fetch(`${PB_URL}/api/playbooks/analyze`, {
+        method: 'POST',
+        headers: pbHdr(),
+        body: JSON.stringify(req.body),
+        signal: ctrl.signal,
+      });
+      if (!r.ok) return res.status(r.status).json({ error: 'playbooks/analyze failed' });
+      res.json(await r.json());
+    } catch (e: any) {
+      console.error('[playbooks/analyze] error:', e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   return httpServer;
 }

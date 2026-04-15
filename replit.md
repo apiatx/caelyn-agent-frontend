@@ -48,7 +48,7 @@ Token stored as `caelyn_token` in localStorage/sessionStorage.
 - **API client**: `frontend/client/src/lib/playbooks.ts` — `fetchPlaybooks()`, `scoreWatchlist(playbookId, tickers)`, `scorePortfolio(playbookId, holdings)`
 - **Proxy routes** (in `routes.ts` at end): `GET /api/playbooks`, `POST /api/playbooks/score-watchlist`, `POST /api/playbooks/score-portfolio` → FastAPI
 - **Shared UI**: `frontend/client/src/components/strategy-selector.tsx` — dropdown component; `frontend/client/src/components/playbook-score-panel.tsx` — `WatchlistScorePanel`, `PortfolioScorePanel`
-- **AI Terminal** (`TradingAgent.tsx`): `selectedStrategy` state (default='default'); strategy selector inline in command bar after model buttons; if `selectedStrategy !== 'default'`, adds `playbook_id` to `/api/query` payload. **Default = zero payload change.**
+- **AI Terminal** (`TradingAgent.tsx`): `selectedStrategy` state (default='default'); strategy selector inline in command bar after model buttons. **Default = zero change to `/api/query` payload or behavior.** Non-default + freeform query → `runPlaybookAnalysis()` calls `POST /api/playbooks/analyze` instead of `/api/query`. Preset buttons and CSV always use Default `/api/query` path. Response rendered via `renderPlaybookAnalysis()` with `display_type: 'playbook_analysis'`.
 - **Watchlist** (`watchlist.tsx`): `StrategySelector` in header bar; `WatchlistScorePanel` shown below signal strip when strategy selected
 - **Portfolio** (`portfolio-section.tsx`): `StrategySelector` below header; `PortfolioScorePanel` uses DeBankPortfolio `topTokens` as holdings
 - **FastAPI playbooks**: `serenity` and `sjcapital`; backend returns `id`, `name`, `short_label`, `ui_color`, `description`, `enabled`

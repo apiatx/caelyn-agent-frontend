@@ -2,6 +2,8 @@ import type {
   PlaybookSummary,
   WatchlistPlaybookResponse,
   PortfolioPlaybookResponse,
+  PlaybookAnalyzeRequest,
+  PlaybookAnalyzeResponse,
 } from "@/types/playbook";
 
 const AGENT_KEY = "hippo_ak_7f3x9k2m4p8q1w5t";
@@ -42,5 +44,17 @@ export async function scorePortfolio(
     body: JSON.stringify({ playbook_id: playbookId, holdings }),
   });
   if (!res.ok) throw new Error(`score-portfolio failed: ${res.status}`);
+  return res.json();
+}
+
+export async function analyzePlaybook(
+  req: PlaybookAnalyzeRequest
+): Promise<PlaybookAnalyzeResponse> {
+  const res = await fetch("/api/playbooks/analyze", {
+    method: "POST",
+    headers: proxyHeaders(),
+    body: JSON.stringify(req),
+  });
+  if (!res.ok) throw new Error(`playbooks/analyze failed: ${res.status}`);
   return res.json();
 }
