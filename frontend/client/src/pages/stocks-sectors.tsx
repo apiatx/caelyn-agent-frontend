@@ -865,6 +865,93 @@ function SectorAnalysisPanel({ analysis, analysisTs, loading, isNull, onRefresh,
   );
 }
 
+// ─── Sector Rotation Signals (from Prophetik investor data) ──────────────────
+
+interface BackendSectorEntry { sector: string; mentions?: number; stocks?: string[]; }
+interface BackendSectorRotation {
+  strongest_positive_sectors?: BackendSectorEntry[];
+  strongest_negative_sectors?: BackendSectorEntry[];
+  emerging_leadership?: BackendSectorEntry[];
+  fading_leadership?: BackendSectorEntry[];
+}
+interface InvestorSectorSignal {
+  sector: string;
+  type: "positive" | "negative" | "emerging" | "fading";
+  stocks?: string[];
+  mentions?: number;
+}
+
+function transformInvestorSectors(sr?: BackendSectorRotation): InvestorSectorSignal[] {
+  if (!sr) return [];
+  const out: InvestorSectorSignal[] = [];
+  (sr.strongest_positive_sectors ?? []).forEach(e => out.push({ sector: e.sector, type: "positive", stocks: e.stocks, mentions: e.mentions }));
+  (sr.strongest_negative_sectors ?? []).forEach(e => out.push({ sector: e.sector, type: "negative", stocks: e.stocks, mentions: e.mentions }));
+  (sr.emerging_leadership ?? []).forEach(e => out.push({ sector: e.sector, type: "emerging", stocks: e.stocks }));
+  (sr.fading_leadership ?? []).forEach(e => out.push({ sector: e.sector, type: "fading", stocks: e.stocks }));
+  return out;
+}
+
+const ISIGNAL_CONFIG = {
+  positive: { label: "Positive",        text: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
+  negative: { label: "Negative",        text: "text-red-400",     bg: "bg-red-500/10",     border: "border-red-500/20"     },
+  emerging: { label: "Emerging Leader", text: "text-blue-400",    bg: "bg-blue-500/10",    border: "border-blue-500/20"    },
+  fading:   { label: "Fading",          text: "text-amber-400",   bg: "bg-amber-500/10",   border: "border-amber-500/20"   },
+} as const;
+
+function InvestorSectorCard({ signal }: { signal: InvestorSectorSignal }) {
+  const cfg = ISIGNAL_CONFIG[signal.type];
+  return (
+    <div className={`rounded-xl p-4 border ${cfg.border} ${cfg.bg}`}>
+      <div className="flex items-center justify-between mb-2">
+        <span className={`text-[8px] font-bold uppercase tracking-widest ${cfg.text}`}>{cfg.label}</span>
+        {signal.mentions != null && <span className="text-[8px] text-white/25">{signal.mentions} mentions</span>}
+      </div>
+      <p className="text-sm font-bold text-white/90 mb-3">{signal.sector}</p>
+      {(signal.stocks?.length ?? 0) > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {signal.stocks!.map(t => (
+            <span key={t} className={`text-[8px] font-bold font-mono px-1.5 py-0.5 rounded border ${cfg.border} ${cfg.text} bg-black/20`}>{t}</span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PredictSectorRotationSignals() {
+  const { data: overview, isLoading } = useQuery<any>({
+    queryKey: ["predict-investor-overview"],
+    queryFn: () => fetch("/api/predict/investor/overview").then(r => r.ok ? r.json() : null).catch(() => null),
+    staleTime: 5 * 60_000,
+    refetchInterval: 5 * 60_000,
+  });
+  const investorSectors = transformInvestorSectors(overview?.sector_rotation);
+
+  return (
+    <GlassCard className="p-5">
+      <div className="flex items-center gap-2 mb-4">
+        <div className="w-5 h-5 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+          <Layers className="w-3 h-3 text-white" />
+        </div>
+        <h3 className="text-base font-semibold text-white">Sector Rotation Signals</h3>
+        <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/30 text-xs">PREDICTION MARKET FLOWS</Badge>
+      </div>
+      <p className="text-xs text-white/30 mb-4">Which sectors are implied to be in or out by prediction market money flows</p>
+      {isLoading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {[...Array(4)].map((_, i) => <div key={i} className="h-32 rounded-xl bg-white/[0.04] animate-pulse" />)}
+        </div>
+      ) : investorSectors.length === 0 ? (
+        <div className="text-center py-8 text-white/30 text-sm">Sector signals not yet available.</div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {investorSectors.map((s, i) => <InvestorSectorCard key={s.sector + s.type + i} signal={s} />)}
+        </div>
+      )}
+    </GlassCard>
+  );
+}
+
 // ─── TradingView ETF Heatmap (preserved) ─────────────────────────────────────
 const ETFHeatmapWidget = memo(function ETFHeatmapWidget() {
   const container = useRef<HTMLDivElement>(null);
@@ -898,6 +985,7 @@ export default function StocksSectorsPage() {
   const [selectedTickers, setSelectedTickers] = useState<Set<string>>(
     new Set(SECTORS.map(s => s.ticker)),
   );
+  const [externalResourcesOpen, setExternalResourcesOpen] = useState(false);
   const toggleTicker  = useCallback((t: string) => setSelectedTickers(prev => { const n = new Set(prev); n.has(t) ? n.delete(t) : n.add(t); return n; }), []);
   const selectTicker  = useCallback((t: string) => setSelectedTickers(prev => { const n = new Set(prev); n.add(t); return n; }), []);
 
@@ -995,6 +1083,9 @@ export default function StocksSectorsPage() {
           selectedTickers={selectedTickers} onToggleTicker={toggleTicker}
         />
 
+        {/* Sector Rotation Signals from Prophetik */}
+        <PredictSectorRotationSignals />
+
         {/* E: Agent Analysis */}
         <SectorAnalysisPanel
           analysis={analysis}
@@ -1005,64 +1096,91 @@ export default function StocksSectorsPage() {
           refreshing={refreshMutation.isPending}
         />
 
-        {/* ── PRESERVED: TradingView ETF Heatmap ── */}
+        {/* ── External Resources (expandable accordion) ── */}
         <GlassCard className="p-3 sm:p-4 lg:p-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-6">
-            <div className="flex items-center gap-2">
-              <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full flex items-center justify-center">
-                <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+          <button
+            onClick={() => setExternalResourcesOpen(v => !v)}
+            className="w-full flex items-center justify-between group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-6 h-6 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full flex items-center justify-center flex-shrink-0">
+                <ExternalLink className="w-3 h-3 text-white" />
               </div>
-              <h3 className="text-lg sm:text-xl font-semibold text-white">ETF Heatmap</h3>
-              <Badge className="bg-teal-500/20 text-teal-400 border-teal-500/30 text-xs">ALL US ETFs</Badge>
+              <h3 className="text-base sm:text-lg font-semibold text-white">External Resources</h3>
+              <Badge className="bg-teal-500/20 text-teal-400 border-teal-500/30 text-xs">ETF HEATMAP · SCREENER · TOOLS</Badge>
             </div>
-          </div>
-          <div className="w-full h-[600px] sm:h-[700px] rounded-lg overflow-hidden border border-white/[0.06]">
-            <ETFHeatmapWidget />
-          </div>
-        </GlassCard>
+            <div className="flex items-center gap-2 text-white/40 group-hover:text-white/70 transition-colors">
+              <span className="text-xs">{externalResourcesOpen ? "Collapse" : "Expand"}</span>
+              {externalResourcesOpen
+                ? <ChevronUp className="w-4 h-4" />
+                : <ChevronDown className="w-4 h-4" />
+              }
+            </div>
+          </button>
 
-        {/* ── PRESERVED: Stage Analysis Screener + External Links ── */}
-        <GlassCard className="p-3 sm:p-4 lg:p-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-6">
-            <div className="flex items-center gap-2">
-              <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+          {externalResourcesOpen && (
+            <div className="mt-6 space-y-8">
+              {/* ETF Heatmap */}
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-4 h-4 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full flex items-center justify-center flex-shrink-0">
+                    <BarChart3 className="w-2.5 h-2.5 text-white" />
+                  </div>
+                  <h4 className="text-sm font-semibold text-white">ETF Heatmap</h4>
+                  <Badge className="bg-teal-500/20 text-teal-400 border-teal-500/30 text-xs">ALL US ETFs</Badge>
+                </div>
+                <div className="w-full h-[600px] sm:h-[700px] rounded-lg overflow-hidden border border-white/[0.06]">
+                  <ETFHeatmapWidget />
+                </div>
               </div>
-              <h3 className="text-lg sm:text-xl font-semibold text-white">Stage Analysis Screener</h3>
-              <Badge className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-white border-white/[0.06] text-xs">SECTORS & FUNDS</Badge>
+
+              {/* Stage Analysis Screener */}
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0">
+                      <BarChart3 className="w-2.5 h-2.5 text-white" />
+                    </div>
+                    <h4 className="text-sm font-semibold text-white">Stage Analysis Screener</h4>
+                    <Badge className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-white border-white/[0.06] text-xs">SECTORS & FUNDS</Badge>
+                  </div>
+                  <button onClick={() => openInNewTab("https://screener.nextbigtrade.com/#/markets")}
+                    className="text-purple-400 hover:text-purple-300 text-xs flex items-center gap-1">
+                    <ExternalLink className="w-3 h-3" /> Open Full View
+                  </button>
+                </div>
+                <iframe src="https://screener.nextbigtrade.com/#/markets"
+                  className="w-full h-[600px] rounded-lg border border-white/[0.06]"
+                  title="Next Big Trade Sectors Screener" loading="eager" referrerPolicy="no-referrer"
+                  sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
+                  allow="fullscreen; clipboard-write; autoplay; camera; microphone; geolocation" frameBorder="0" />
+              </div>
+
+              {/* External Link Buttons */}
+              <div className="space-y-3">
+                <button onClick={() => openInNewTab("https://www.vaneck.com/us/en/investments/social-sentiment-etf-buzz/overview/")}
+                  className="w-full bg-gradient-to-br from-amber-500/10 to-yellow-600/10 hover:from-amber-500/20 hover:to-yellow-600/20 border border-amber-500/20 hover:border-amber-400/40 rounded-lg p-4 transition-all duration-300 text-left group">
+                  <div className="text-sm font-medium text-white group-hover:text-amber-300 mb-1">BUZZ Social Sentiment ETF</div>
+                  <div className="text-xs text-crypto-silver">VanEck social sentiment ETF overview and performance</div>
+                </button>
+                <button onClick={() => openInNewTab("https://www.ssga.com/us/en/institutional/resources/sector-tracker#currentTab=dayOne&fundTicker=xle")}
+                  className="w-full bg-gradient-to-br from-yellow-500/10 to-amber-600/10 hover:from-yellow-500/20 hover:to-amber-600/20 border border-yellow-500/20 hover:border-yellow-400/40 rounded-lg p-4 transition-all duration-300 text-left group">
+                  <div className="text-sm font-medium text-white group-hover:text-yellow-300 mb-1">SPDR Sector Tracker</div>
+                  <div className="text-xs text-crypto-silver">State Street sector performance and ETF analysis</div>
+                </button>
+                <button onClick={() => openInNewTab("https://www.slickcharts.com/")}
+                  className="w-full bg-gradient-to-br from-blue-500/10 to-cyan-600/10 hover:from-blue-500/20 hover:to-cyan-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group">
+                  <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">SlickCharts Indices</div>
+                  <div className="text-xs text-crypto-silver">Stock market indices and data</div>
+                </button>
+                <button onClick={() => openInNewTab("https://www.etf.com/")}
+                  className="w-full bg-gradient-to-br from-green-500/10 to-emerald-600/10 hover:from-green-500/20 hover:to-emerald-600/20 border border-green-500/20 hover:border-green-400/40 rounded-lg p-4 transition-all duration-300 text-left group">
+                  <div className="text-sm font-medium text-white group-hover:text-green-300 mb-1">ETF.com</div>
+                  <div className="text-xs text-crypto-silver">ETF research, news and analysis</div>
+                </button>
+              </div>
             </div>
-            <button onClick={() => openInNewTab("https://screener.nextbigtrade.com/#/markets")}
-              className="text-purple-400 hover:text-purple-300 text-xs sm:text-sm flex items-center gap-1">
-              <ExternalLink className="w-3 h-3" /> Open Full View
-            </button>
-          </div>
-          <div className="w-full space-y-6">
-            <iframe src="https://screener.nextbigtrade.com/#/markets"
-              className="w-full h-[600px] rounded-lg border border-white/[0.06]"
-              title="Next Big Trade Sectors Screener" loading="eager" referrerPolicy="no-referrer"
-              sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
-              allow="fullscreen; clipboard-write; autoplay; camera; microphone; geolocation" frameBorder="0" />
-            <button onClick={() => openInNewTab("https://www.vaneck.com/us/en/investments/social-sentiment-etf-buzz/overview/")}
-              className="w-full bg-gradient-to-br from-amber-500/10 to-yellow-600/10 hover:from-amber-500/20 hover:to-yellow-600/20 border border-amber-500/20 hover:border-amber-400/40 rounded-lg p-4 transition-all duration-300 text-left group">
-              <div className="text-sm font-medium text-white group-hover:text-amber-300 mb-1">BUZZ Social Sentiment ETF</div>
-              <div className="text-xs text-crypto-silver">VanEck social sentiment ETF overview and performance</div>
-            </button>
-            <button onClick={() => openInNewTab("https://www.ssga.com/us/en/institutional/resources/sector-tracker#currentTab=dayOne&fundTicker=xle")}
-              className="w-full bg-gradient-to-br from-yellow-500/10 to-amber-600/10 hover:from-yellow-500/20 hover:to-amber-600/20 border border-yellow-500/20 hover:border-yellow-400/40 rounded-lg p-4 transition-all duration-300 text-left group">
-              <div className="text-sm font-medium text-white group-hover:text-yellow-300 mb-1">SPDR Sector Tracker</div>
-              <div className="text-xs text-crypto-silver">State Street sector performance and ETF analysis</div>
-            </button>
-            <button onClick={() => openInNewTab("https://www.slickcharts.com/")}
-              className="w-full bg-gradient-to-br from-blue-500/10 to-cyan-600/10 hover:from-blue-500/20 hover:to-cyan-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group">
-              <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">SlickCharts Indices</div>
-              <div className="text-xs text-crypto-silver">Stock market indices and data</div>
-            </button>
-            <button onClick={() => openInNewTab("https://www.etf.com/")}
-              className="w-full bg-gradient-to-br from-green-500/10 to-emerald-600/10 hover:from-green-500/20 hover:to-emerald-600/20 border border-green-500/20 hover:border-green-400/40 rounded-lg p-4 transition-all duration-300 text-left group">
-              <div className="text-sm font-medium text-white group-hover:text-green-300 mb-1">ETF.com</div>
-              <div className="text-xs text-crypto-silver">ETF research, news and analysis</div>
-            </button>
-          </div>
+          )}
         </GlassCard>
 
       </main>

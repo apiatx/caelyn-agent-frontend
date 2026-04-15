@@ -2463,7 +2463,7 @@ const openInNewTab = (url: string) => {
 // ─── Main Page ────────────────────────────────────────────────────
 
 export default function PredictPage() {
-  const [activeTab, setActiveTab] = useState<"gambler" | "investor">("gambler");
+  const [activeTab, setActiveTab] = useState<"gambler" | "investor">("investor");
 
   const { data: pageSignals = null } = useQuery<SignalsData | null>({
     queryKey: ['predict-signals'],
@@ -2513,8 +2513,28 @@ export default function PredictPage() {
             </h1>
             <p className="text-xs text-white/30">Prediction Markets Intelligence Dashboard</p>
           </div>
-          {/* Header action buttons — 4 square tiles, side by side */}
+          {/* Tab Switcher + action buttons — same row */}
           <div className="flex items-center gap-2 flex-shrink-0">
+            {/* ── Tab Switcher ── */}
+            <div className="flex items-center gap-1 p-1 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+              {(["investor", "gambler"] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`relative px-4 py-2 rounded-lg text-[11px] font-bold uppercase tracking-widest transition-all duration-200 ${
+                    activeTab === tab
+                      ? tab === "investor"
+                        ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/25"
+                        : "bg-blue-500/15 text-blue-300 border border-blue-500/25"
+                      : "text-white/30 hover:text-white/55 border border-transparent"
+                  }`}
+                >
+                  {tab === "investor" ? "📈 Investor" : "🎲 Gambler"}
+                </button>
+              ))}
+            </div>
+            {/* Divider */}
+            <div className="w-px h-8 bg-white/[0.08] mx-1 flex-shrink-0" />
             <CaelynPredictsDropdown signals={pageSignals} />
             <CaelynAnalyzesDropdown />
             <a
@@ -2538,25 +2558,6 @@ export default function PredictPage() {
         </div>
 
         <div className="w-32 h-0.5 rounded-full mt-3 mb-4" style={{ background: 'linear-gradient(135deg, #2090d0, #3b82f6, #80d8f8)' }} />
-
-        {/* ── Tab Switcher ──────────────────────────────────────────── */}
-        <div className="flex items-center gap-1 p-1 rounded-xl bg-white/[0.04] border border-white/[0.06] w-fit">
-          {(["investor", "gambler"] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`relative px-5 py-2 rounded-lg text-[11px] font-bold uppercase tracking-widest transition-all duration-200 ${
-                activeTab === tab
-                  ? tab === "investor"
-                    ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/25"
-                    : "bg-blue-500/15 text-blue-300 border border-blue-500/25"
-                  : "text-white/30 hover:text-white/55 border border-transparent"
-              }`}
-            >
-              {tab === "investor" ? "📈 Investor" : "🎲 Gambler"}
-            </button>
-          ))}
-        </div>
       </div>
 
       {/* Main Content */}
