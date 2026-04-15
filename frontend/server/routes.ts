@@ -954,6 +954,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ success: true });
   });
 
+  // Dev-only: check if the caller is the platform owner (used to gate the QA panel)
+  app.get('/api/dev/owner-check', (req, res) => {
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+    if (!token) return res.json({ isOwner: false });
+    const payload = verifyLocalToken(token);
+    const isOwner = !!(payload?.user_id && LOCAL_USERNAME && payload.user_id === LOCAL_USERNAME);
+    return res.json({ isOwner });
+  });
+
   // === Bittensor / TAO Dashboard — proxy to FastAPI backend ===
   // Server-side cache — always returns instantly, refreshes in background
   const _taoCache: Record<string, { data: any; ts: number; fetching: boolean }> = {};
