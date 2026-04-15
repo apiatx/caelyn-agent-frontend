@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, memo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Newspaper, Send, Loader2, MessageSquare, ExternalLink, Clock, RefreshCw, Sparkles, CalendarDays, TrendingUp } from 'lucide-react';
 import { openSecureLink } from '@/utils/security';
 import { Button } from '@/components/ui/button';
@@ -203,30 +204,20 @@ function WeeklySummarySkeleton() {
 // ─── Weekly Summary Component ─────────────────────────────────────
 
 function WeeklySummary() {
-  const [data, setData] = useState<WeeklySummaryData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const { data, isLoading, isError } = useQuery<WeeklySummaryData>({
+    queryKey: ['notifai-weekly-summary'],
+    queryFn: async () => {
+      const res = await fetch('/api/notifai/weekly-summary', { headers: proxyHeaders() });
+      if (!res.ok) throw new Error('Failed');
+      return res.json();
+    },
+    staleTime: 10 * 60_000,
+    retry: 1,
+  });
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch('/api/notifai/weekly-summary', { headers: proxyHeaders() });
-        if (!res.ok) throw new Error();
-        const json = await res.json();
-        if (!cancelled) setData(json);
-      } catch {
-        if (!cancelled) setError(true);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
+  if (isLoading) return <WeeklySummarySkeleton />;
 
-  if (loading) return <WeeklySummarySkeleton />;
-
-  if (error || !data) {
+  if (isError || !data) {
     return (
       <div style={{
         padding: '20px 24px', borderRadius: 14,
@@ -316,24 +307,16 @@ function WeeklySummary() {
 // ─── The Brief Component ──────────────────────────────────────────
 
 function TheBrief() {
-  const [data, setData] = useState<TheBriefData | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch('/api/notifai/the-brief', { headers: proxyHeaders() });
-        if (!res.ok) throw new Error();
-        const json = await res.json();
-        if (!cancelled) setData(json);
-      } catch {
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
+  const { data, isLoading: loading } = useQuery<TheBriefData>({
+    queryKey: ['notifai-the-brief'],
+    queryFn: async () => {
+      const res = await fetch('/api/notifai/the-brief', { headers: proxyHeaders() });
+      if (!res.ok) throw new Error('Failed');
+      return res.json();
+    },
+    staleTime: 10 * 60_000,
+    retry: 1,
+  });
 
   const sortedEarningsEntries = data
     ? Object.entries(data.earnings_by_day).sort(([a], [b]) => a.localeCompare(b))

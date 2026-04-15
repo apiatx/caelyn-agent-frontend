@@ -60,6 +60,7 @@ import AboutPage from "@/pages/about";
 import WatchlistPage from "@/pages/watchlist";
 
 import NotFound from "@/pages/not-found";
+import { GlobalPrefetch } from "@/contexts/GlobalDataContext";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -200,6 +201,7 @@ function AppInner() {
 
   return (
     <AuthGuard>
+      <GlobalPrefetch />
       <ChatbotProvider>
         <TooltipProvider>
           <Toaster />

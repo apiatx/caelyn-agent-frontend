@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { createPortal } from "react-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { GlassCard } from "@/components/ui/glass-card";
@@ -2456,42 +2457,23 @@ const openInNewTab = (url: string) => {
 
 export default function PredictPage() {
   const [activeTab, setActiveTab] = useState<"gambler" | "investor">("gambler");
-  const [pageSignals, setPageSignals] = useState<SignalsData | null>(null);
-  const [scoredRaw, setScoredRaw] = useState<ScoredMarket[]>([]);
-  const scoredFetchingRef = useRef(false);
+
+  const { data: pageSignals = null } = useQuery<SignalsData | null>({
+    queryKey: ['predict-signals'],
+    queryFn: () => fetch('/api/predict/signals').then(r => r.ok ? r.json() : null).catch(() => null),
+    staleTime: 60_000,
+    refetchInterval: 120_000,
+  });
+
+  const { data: scoredRaw = [] } = useQuery<ScoredMarket[]>({
+    queryKey: ['predict-scored'],
+    queryFn: fetchScoredMarkets,
+    staleTime: 90_000,
+    refetchInterval: 90_000,
+  });
 
   // Memoize the scored lookup map — only recomputes when raw data changes
   const scoredLookup = useMemo(() => buildScoredLookup(scoredRaw), [scoredRaw]);
-
-  // Stable fetch function for scored data with in-flight guard
-  const refreshScored = useCallback(async () => {
-    if (scoredFetchingRef.current) return;
-    scoredFetchingRef.current = true;
-    try {
-      const scored = await fetchScoredMarkets();
-      if (scored.length > 0) setScoredRaw(scored);
-      // If fetch returns empty, keep previous data (stale-while-revalidate)
-    } catch {
-      // Silently keep previous data
-    } finally {
-      scoredFetchingRef.current = false;
-    }
-  }, []);
-
-  // Initial data fetch
-  useEffect(() => {
-    fetch("/api/predict/signals")
-      .then((r) => r.ok ? r.json() : null)
-      .then((d) => { if (d) setPageSignals(d); })
-      .catch(() => {});
-    refreshScored();
-  }, [refreshScored]);
-
-  // Poll scored data every 90 seconds
-  useEffect(() => {
-    const iv = setInterval(refreshScored, 90_000);
-    return () => clearInterval(iv);
-  }, [refreshScored]);
 
   return (
     <div className="min-h-screen text-white relative" style={{ background: '#050608', fontFamily: "'Outfit', sans-serif" }}>

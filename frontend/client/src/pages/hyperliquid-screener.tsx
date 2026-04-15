@@ -1025,7 +1025,7 @@ function SvgSparkline({ candles, gradId }: { candles: HLCandle[]; gradId: string
 }
 
 function CoinChartPanel({ coin, interval }: { coin: string; interval: ChartInterval }) {
-  const { data, isLoading } = useQuery({
+  const { data: primary, isLoading: primaryLoading } = useQuery({
     queryKey: ['hl-candles', coin, interval],
     queryFn: async () => {
       const r = await fetch(`/api/hyperliquid/candles?coin=${encodeURIComponent(coin)}&interval=${interval}&limit=${CHART_LIMITS[interval]}`);
@@ -1036,7 +1036,27 @@ function CoinChartPanel({ coin, interval }: { coin: string; interval: ChartInter
     gcTime:    30 * 60_000,
     retry: 1,
   });
-  const candles = data?.candles ?? [];
+
+  const primaryCandles = primary?.candles ?? [];
+  const needsFallback = !primaryLoading && primaryCandles.length <= 1 && interval !== '1d';
+
+  const { data: fallback, isLoading: fallbackLoading } = useQuery({
+    queryKey: ['hl-candles', coin, '1d'],
+    queryFn: async () => {
+      const r = await fetch(`/api/hyperliquid/candles?coin=${encodeURIComponent(coin)}&interval=1d&limit=${CHART_LIMITS['1d']}`);
+      if (!r.ok) throw new Error(`Candles fallback ${r.status}`);
+      return r.json() as Promise<{ candles: HLCandle[] }>;
+    },
+    enabled: needsFallback,
+    staleTime: 5 * 60_000,
+    gcTime:    30 * 60_000,
+    retry: 1,
+  });
+
+  const candles = primaryCandles.length > 1 ? primaryCandles : (fallback?.candles ?? []);
+  const isLoading = primaryLoading || (needsFallback && fallbackLoading);
+  const displayInterval = primaryCandles.length > 1 ? interval : (fallback ? '1d' : interval);
+
   const last  = candles.length > 0 ? parseFloat(candles[candles.length - 1].c) : null;
   const first = candles.length > 0 ? parseFloat(candles[0].c) : null;
   const chg   = last != null && first != null ? ((last - first) / Math.abs(first)) * 100 : null;
@@ -1045,12 +1065,15 @@ function CoinChartPanel({ coin, interval }: { coin: string; interval: ChartInter
     p >= 1000 ? `$${p.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
     : p >= 1   ? `$${p.toFixed(2)}`
     :            `$${p.toFixed(5)}`;
-  const gradId = `sg-${coin.replace(/[^a-z0-9]/gi, '')}-${interval}`;
+  const gradId = `sg-${coin.replace(/[^a-z0-9]/gi, '')}-${displayInterval}`;
   return (
     <div style={{ borderBottom: `1px solid ${C.dimLow}` }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 12px 2px' }}>
         <span style={{ fontSize: 10, fontWeight: 700, color: C.text, fontFamily: C.font }}>{coin}</span>
         {last != null && <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font }}>{fmtPx(last)}</span>}
+        {displayInterval !== interval && (
+          <span style={{ fontSize: 7, color: C.dimLow, fontFamily: C.font }}>({displayInterval})</span>
+        )}
         {chg  != null && (
           <span style={{ fontSize: 9, fontWeight: 700, color: isUp ? C.green : C.red, marginLeft: 'auto', fontFamily: C.font }}>
             {isUp ? '+' : ''}{chg.toFixed(2)}%
@@ -1064,8 +1087,8 @@ function CoinChartPanel({ coin, interval }: { coin: string; interval: ChartInter
           <SvgSparkline candles={candles} gradId={gradId} />
         ) : (
           <div style={{ height: 56, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3 }}>
-            <span style={{ fontSize: 8, color: C.dimLow }}>No {interval} data on Hyperliquid</span>
-            <span style={{ fontSize: 7, color: C.dimLow, opacity: 0.6 }}>Try 1h or 1d</span>
+            <span style={{ fontSize: 8, color: C.dimLow }}>No chart data available</span>
+            <span style={{ fontSize: 7, color: C.dimLow, opacity: 0.6 }}>Try a different interval</span>
           </div>
         )}
       </div>
@@ -1074,7 +1097,7 @@ function CoinChartPanel({ coin, interval }: { coin: string; interval: ChartInter
 }
 
 function ChartListModal({ title, coins: rawCoins, onClose }: { title: string; coins: string[]; onClose: () => void }) {
-  const [iv, setIv] = useState<ChartInterval>('1h');
+  const [iv, setIv] = useState<ChartInterval>('1d');
   const coins = [...new Set(rawCoins)]; // deduplicate
   return (
     <div
