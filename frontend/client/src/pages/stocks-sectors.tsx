@@ -237,24 +237,24 @@ function RegimeSummaryHeader({ data, loading }: { data: DashboardData | undefine
     <GlassCard className="p-4 sm:p-6">
       <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
             <BarChart3 className="w-5 h-5 text-teal-400" />
             <h1 className="text-xl sm:text-2xl font-bold text-white">Sector Rotation</h1>
+            {data?.updated_at && (
+              <span className="flex items-center gap-1 text-xs text-gray-500 ml-1">
+                <Clock className="w-3 h-3" /> Market: {fmtTs(data.updated_at)}
+              </span>
+            )}
+            {loading && <Skel w={120} h={14} />}
           </div>
           <p className="text-sm text-gray-400 max-w-xl">
             Real-time sector leadership, macro regime, and forward-looking rotation analysis
           </p>
-          {data && (
-            <div className="flex flex-wrap gap-4 mt-3 text-xs text-gray-500">
-              {data.updated_at && (
-                <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> Market: {fmtTs(data.updated_at)}</span>
-              )}
-              {data.analysis_updated_at && (
-                <span className="flex items-center gap-1"><Bot className="w-3 h-3" /> AI: {data.analysis_updated_at}</span>
-              )}
+          {data?.analysis_updated_at && (
+            <div className="flex flex-wrap gap-4 mt-2 text-xs text-gray-500">
+              <span className="flex items-center gap-1"><Bot className="w-3 h-3" /> AI: {data.analysis_updated_at}</span>
             </div>
           )}
-          {loading && <div className="flex gap-3 mt-3"><Skel w={140} h={14} /><Skel w={160} h={14} /></div>}
         </div>
         {/* Regime badges + macro pills */}
         <div className="flex flex-col gap-3">
@@ -606,8 +606,18 @@ function SectorSnapshotPanel({ sectors, loading, selectedTickers, onSelectTicker
     [sectors],
   );
 
+  const tagColor = (tag: string | null) => {
+    if (tag === "Leading")   return "#22c55e";
+    if (tag === "Improving") return "#0ea5e9";
+    if (tag === "Weakening") return "#f59e0b";
+    if (tag === "Lagging")   return "#ef4444";
+    return "#64748b";
+  };
+
+  const cols = sorted.length || 11;
+
   return (
-    <GlassCard className="p-4 sm:p-6 h-full flex flex-col">
+    <GlassCard className="p-3 sm:p-4">
       <SectionHeader icon={Layers} title="Snapshot" color="amber"
         right={
           <div className="flex gap-1 bg-white/5 rounded-lg p-0.5">
@@ -620,29 +630,36 @@ function SectorSnapshotPanel({ sectors, loading, selectedTickers, onSelectTicker
           </div>
         }
       />
-      <div className="flex-1 overflow-y-auto min-h-0">
-        {loading
-          ? <div className="grid grid-cols-2 gap-2">{Array.from({length:11}).map((_,i)=><Skel key={i} h={56} />)}</div>
-          : (
-            <div className="grid grid-cols-2 gap-2">
-              {sorted.map(row => {
-                const val   = pctByTf(row);
-                const color = SECTOR_COLOR[row.ticker] ?? "#64748b";
-                const sel   = selectedTickers.has(row.ticker);
-                return (
-                  <div key={row.ticker} onClick={() => onSelectTicker(row.ticker)}
-                    className={`rounded-lg p-2.5 border cursor-pointer transition-all ${sel ? "border-white/20 scale-[1.02]" : "border-white/[0.04] hover:border-white/10"}`}
-                    style={{ background: `${color}${sel ? "18" : "0c"}` }}>
-                    <div className="font-mono font-bold text-white text-xs">{row.ticker}</div>
-                    <div className={`text-sm font-bold font-mono tabular-nums mt-0.5 ${pctCls(val)}`}>{fmtPct(val, 1)}</div>
-                    {row.regime_tag && <Badge className={`border text-[9px] px-1 py-0 mt-1 leading-3 ${TAG_STYLES[row.regime_tag] ?? ""}`}>{row.regime_tag}</Badge>}
+      {loading ? (
+        <div className="flex gap-1.5">
+          {Array.from({length: 11}).map((_, i) => <Skel key={i} h={40} className="flex-1" />)}
+        </div>
+      ) : (
+        <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gap: "6px" }}>
+          {sorted.map(row => {
+            const val   = pctByTf(row);
+            const color = SECTOR_COLOR[row.ticker] ?? "#64748b";
+            const sel   = selectedTickers.has(row.ticker);
+            return (
+              <div key={row.ticker} onClick={() => onSelectTicker(row.ticker)}
+                className={`rounded-lg cursor-pointer transition-all border ${sel ? "border-white/20 scale-[1.02]" : "border-white/[0.04] hover:border-white/10"}`}
+                style={{ background: `${color}${sel ? "18" : "0c"}`, padding: "5px 7px" }}>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 3, flexWrap: "nowrap" }}>
+                  <span style={{ fontFamily: "monospace", fontWeight: 700, color: "#fff", fontSize: 10, whiteSpace: "nowrap" }}>{row.ticker}</span>
+                  <span style={{ fontFamily: "monospace", fontWeight: 700, fontSize: 10, whiteSpace: "nowrap", color: val != null ? (val >= 0 ? "#22c55e" : "#ef4444") : "#64748b" }}>
+                    {fmtPct(val, 1)}
+                  </span>
+                </div>
+                {row.regime_tag && (
+                  <div style={{ fontSize: 9, fontWeight: 600, color: tagColor(row.regime_tag), marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {row.regime_tag}
                   </div>
-                );
-              })}
-            </div>
-          )
-        }
-      </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </GlassCard>
   );
 }
@@ -945,28 +962,24 @@ export default function StocksSectorsPage() {
           </GlassCard>
         )}
 
+        {/* D: Snapshot — full-width one-row strip */}
+        <SectorSnapshotPanel
+          sectors={sectors} loading={dashLoading && !dash}
+          selectedTickers={selectedTickers} onSelectTicker={selectTicker}
+        />
+
         {/* B: Performance Table */}
         <SectorPerformanceTable
           sectors={sectors} loading={dashLoading && !dash}
           selectedTickers={selectedTickers} onSelectTicker={selectTicker}
         />
 
-        {/* C + D: Chart + Snapshot side by side — equal height */}
-        <div className="grid xl:grid-cols-3 gap-4 lg:gap-6 items-stretch">
-          <div className="xl:col-span-2 h-full">
-            <SectorRotationChart
-              sectors={sectors} leaders={leaders} laggards={laggards}
-              loading={dashLoading && !dash}
-              selectedTickers={selectedTickers} onToggleTicker={toggleTicker}
-            />
-          </div>
-          <div className="xl:col-span-1 h-full">
-            <SectorSnapshotPanel
-              sectors={sectors} loading={dashLoading && !dash}
-              selectedTickers={selectedTickers} onSelectTicker={selectTicker}
-            />
-          </div>
-        </div>
+        {/* C: Chart — full width */}
+        <SectorRotationChart
+          sectors={sectors} leaders={leaders} laggards={laggards}
+          loading={dashLoading && !dash}
+          selectedTickers={selectedTickers} onToggleTicker={toggleTicker}
+        />
 
         {/* E: Agent Analysis */}
         <SectorAnalysisPanel
