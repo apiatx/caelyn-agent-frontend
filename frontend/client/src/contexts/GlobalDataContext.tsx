@@ -91,7 +91,26 @@ export function GlobalPrefetch() {
 
     // ── Prophetik ───────────────────────────────────────────────────────────
     pre(["predict-signals"],         "/api/predict/signals",         undefined, 60_000);
-    pre(["predict-scored"],          "/api/predict/scored?limit=200", undefined, 90_000);
+    qc.prefetchQuery({
+      queryKey: ["predict-scored"],
+      queryFn: async () => {
+        const data = await safeFetch("/api/predict/scored?limit=200");
+        if (!data) return [];
+        const arr = Array.isArray(data) ? data : ((data as any).markets ?? (data as any).results ?? (data as any).scored ?? []);
+        return arr.map((m: any) => ({
+          ...m,
+          composite_score: m.composite_score ?? m.score ?? undefined,
+          question: m.question ?? m.title ?? m.market_title ?? undefined,
+          yes_pct: m.yes_pct ?? (m.yes_price != null ? Math.round(m.yes_price * 100) : undefined),
+          trap_risk_score: m.trap_risk_score ?? m.trap_score ?? undefined,
+          execution_quality_score: m.execution_quality_score ?? m.exec_score ?? undefined,
+          conviction_score: m.conviction_score ?? undefined,
+          flow_score: m.flow_score ?? undefined,
+          participation_quality_score: m.participation_quality_score ?? undefined,
+        }));
+      },
+      staleTime: 90_000,
+    });
     pre(["predict-signal-changes"],  "/api/predict/signal-changes",  undefined, 90_000);
     pre(["predict-investor-overview"],"/api/predict/investor/overview", undefined, 5 * 60_000);
 

@@ -189,9 +189,16 @@ async function fetchScoredMarkets(): Promise<ScoredMarket[]> {
 }
 
 /** Build a lookup map keyed by question (lowercased, trimmed) for fuzzy matching */
-function buildScoredLookup(scored: ScoredMarket[]): Map<string, ScoredMarket> {
+function buildScoredLookup(scored: ScoredMarket[] | unknown): Map<string, ScoredMarket> {
   const map = new Map<string, ScoredMarket>();
-  for (const s of scored) {
+  const arr: ScoredMarket[] = Array.isArray(scored)
+    ? scored
+    : Array.isArray((scored as any)?.markets)
+      ? (scored as any).markets
+      : Array.isArray((scored as any)?.results)
+        ? (scored as any).results
+        : [];
+  for (const s of arr) {
     const key = (s.question || s.title || "").toLowerCase().trim();
     if (key) map.set(key, s);
     if (s.condition_id) map.set(s.condition_id, s);
@@ -2465,7 +2472,7 @@ export default function PredictPage() {
     refetchInterval: 120_000,
   });
 
-  const { data: scoredRaw = [] } = useQuery<ScoredMarket[]>({
+  const { data: scoredRaw } = useQuery<ScoredMarket[]>({
     queryKey: ['predict-scored'],
     queryFn: fetchScoredMarkets,
     staleTime: 90_000,
@@ -2473,7 +2480,7 @@ export default function PredictPage() {
   });
 
   // Memoize the scored lookup map — only recomputes when raw data changes
-  const scoredLookup = useMemo(() => buildScoredLookup(scoredRaw), [scoredRaw]);
+  const scoredLookup = useMemo(() => buildScoredLookup(scoredRaw ?? []), [scoredRaw]);
 
   return (
     <div className="min-h-screen text-white relative" style={{ background: '#050608', fontFamily: "'Outfit', sans-serif" }}>
