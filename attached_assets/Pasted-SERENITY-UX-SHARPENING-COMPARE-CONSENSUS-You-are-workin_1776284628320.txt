@@ -1,0 +1,251 @@
+SERENITY UX SHARPENING + COMPARE/CONSENSUS
+
+You are working in my frontend CaelynAI UI repo.
+
+You already implemented:
+
+strategy dropdown
+Serenity discovery controls
+Serenity discovery presets
+supply-chain map rendering
+Watchlist / Portfolio strategy scoring
+Default-safe behavior
+
+Good.
+
+Now implement the next UI/product upgrade so Serenity discovery feels sharper, more useful, and more competitive as a scanner experience.
+
+Objective
+
+Improve the Serenity terminal experience so it:
+
+surfaces the best ideas faster
+makes foreign/proxy results more usable
+exposes better “why this surfaced” context
+allows compare / consensus views against S&J
+still preserves:
+Default mode untouched
+S&J not turned into a bottleneck scanner
+no background scanning
+Non-negotiable guardrails
+Do not change Default AI Terminal behavior at all.
+Do not modify /api/query behavior for Default mode.
+Do not introduce background polling or auto-scanning.
+Only run discovery/compare when the user explicitly clicks an action.
+Do not show Serenity discovery controls in S&J mode.
+Do not clutter the terminal with huge walls of UI.
+Preserve Watchlist and Portfolio behavior.
+Keep this additive and terminal-native.
+New backend assumptions
+
+The backend may now expose:
+
+richer discovery candidate fields
+additional discovery ranking buckets
+POST /api/playbooks/compare
+
+Build for those if present, but do not break if some are missing.
+Graceful optional rendering is important.
+
+Part 1 — Add proxy route for compare
+
+If needed, add:
+
+POST /api/playbooks/compare
+
+Use the same proxy pattern as other playbook routes.
+
+Part 2 — Update types
+
+Extend frontend playbook/discovery types to support new optional backend fields such as:
+
+best_blend_score
+visibility_bucket
+chain_role_type
+hiddenness_reason
+confidence_penalties
+data_gaps
+why_now
+why_hidden
+what_to_verify_next
+comparable_names
+consensus_fit
+
+And top-level sections like:
+
+top_hidden_bottlenecks
+top_foreign_specialists
+top_us_accessible_foreign_proxies
+highest_confidence_candidates
+best_blend_candidates
+
+Also add compare response types.
+
+Do not break existing render logic if fields are absent.
+
+Part 3 — Improve discovery result surfacing
+Objective
+
+Make discovery results feel more instantly “here are the best ideas.”
+
+When Serenity discovery returns results:
+
+if the backend provides special ranking buckets, render them first in a compact way
+especially show:
+Best Blend
+Hidden Bottlenecks
+Foreign Specialists
+US-Accessible Foreign Proxies
+Highest Confidence
+
+Do not hide the normal results list.
+Just surface the best buckets first.
+
+UI guidance
+
+A compact highlighted section at the top is enough.
+No giant dashboard needed.
+
+Part 4 — Improve candidate cards
+
+For each discovery candidate card, prominently show:
+
+ticker
+company name
+country / exchange
+layer depth
+best_blend_score if available
+bottleneck criticality
+hiddenness
+supply-chain confidence
+visibility bucket
+chain role type
+coverage_status
+data_confidence
+direct_tradable / proxy
+
+Also render short textual fields if present:
+
+why_now
+why_hidden
+what_to_verify_next
+
+These should make the card feel much more actionable.
+
+Part 5 — Add compare / consensus actions
+Add result actions like:
+Compare vs S&J
+Analyze with Serenity
+Analyze with S&J
+Open Supply Chain Map
+Add to Watchlist
+
+When the user clicks Compare vs S&J, call:
+
+POST /api/playbooks/compare
+
+For one or multiple tickers depending on what makes sense in the UI.
+
+Compare result rendering
+
+Render compare results in a compact terminal-native block showing:
+
+Serenity score
+S&J score
+delta
+classification:
+Serenity Only
+S&J Only
+Consensus
+Low Fit Both
+short explanation of why they differ
+
+This is high-value and should feel useful, not bulky.
+
+Part 6 — Add a lightweight “Consensus” preset/action
+
+If Serenity discovery returns strong candidates, let the user run:
+
+Consensus Check
+or
+Compare Top Results
+
+This should compare the top discovered candidates across Serenity and S&J.
+
+Do this only by explicit click.
+No auto-compare.
+
+Part 7 — Improve foreign/proxy rendering
+
+Because foreign results matter now, make them clearer.
+
+Show prominently
+country badge
+exchange
+coverage status
+data confidence
+ADR/US proxy if available
+whether directly tradable
+UX guidance
+
+If a foreign idea is strong but only partial coverage, the UI should make that obvious without making it look broken.
+
+This honesty is a feature, not a bug.
+
+Part 8 — Keep branching clean
+Default
+unchanged
+still /api/query
+Serenity
+discovery + supply chain + compare + analyze allowed
+S&J
+analyze only
+no Serenity-specific discovery controls
+
+Do not muddy this.
+
+Part 9 — Failure and loading behavior
+
+Discovery/compare are rate-limit-sensitive.
+
+If these requests fail:
+
+show compact inline error
+allow retry
+no auto-retry spam
+
+Loading copy examples:
+
+Running Serenity bottleneck discovery...
+Comparing Serenity vs S&J...
+Building supply-chain map...
+Part 10 — Acceptance criteria
+
+When complete:
+
+Default mode
+unchanged
+Serenity mode
+discovery results feel more surfaced and curated
+candidate cards are richer and more actionable
+compare/consensus can be run explicitly
+foreign/proxy usability is clearer
+S&J mode
+still analyze-only
+not turned into Serenity-lite
+General
+no background scans
+no default-mode regression
+Part 11 — Deliverables
+
+When done, report:
+
+files added/modified
+proxy routes added
+compare/consensus actions added
+new result sections added
+how candidate cards improved
+how compare results render
+how Default / Serenity / S&J differ now
+failure handling
+confirmation no background auto-scanning was introduced

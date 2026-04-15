@@ -10,7 +10,7 @@ import {
 } from './tradingAgentCollabState';
 import WatchlistAnalysis, { tryParseWatchlistAnalysis } from './WatchlistAnalysis';
 import { StockDetailModal } from './StockDetailModal';
-import { analyzePlaybook, discoverPlaybook, supplyChainMap, fetchDiscoveryCapabilities } from '@/lib/playbooks';
+import { analyzePlaybook, discoverPlaybook, supplyChainMap, fetchDiscoveryCapabilities, comparePlaybook } from '@/lib/playbooks';
 import type { PlaybookDiscoveryCapabilities } from '@/types/playbook';
 
 const AGENT_BACKEND_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
@@ -754,6 +754,38 @@ export default function TradingAgent() {
       };
       setPanels(prev => [...prev, failPanel]);
       setError(err.message || 'Supply chain map error');
+    } finally {
+      setLoadingStage(''); setLoading(false); loadingRef.current = false;
+    }
+  }
+
+  async function runCompare(tickers: string[], label?: string) {
+    if (!tickers.length || loadingRef.current) return;
+    loadingRef.current = true;
+    setLoading(true);
+    setError(null);
+    setExpandedTicker(null);
+    const lbl = label || `Compare vs S&J — ${tickers.slice(0, 3).join(', ')}${tickers.length > 3 ? '…' : ''}`;
+    setLoadingStage('Comparing Serenity vs S&J...');
+    try {
+      const data = await comparePlaybook({ tickers, playbook_ids: ['serenity', 'sjcapital'] });
+      const newPanel: Panel = {
+        id: Date.now(), title: lbl, userQuery: '',
+        data: { role: 'assistant', content: data.summary || '',
+          parsed: { ...data, display_type: 'serenity_compare', _label: lbl } },
+        timestamp: Date.now(), thread: [],
+      };
+      setPanels(prev => [...prev, newPanel]);
+    } catch (err: any) {
+      const failPanel: Panel = {
+        id: Date.now(), title: lbl, userQuery: '',
+        data: { role: 'assistant',
+          content: `Compare failed: ${err.message || 'Unknown error'}. You can retry — this endpoint is rate-limit sensitive.`,
+          parsed: null },
+        timestamp: Date.now(), thread: [],
+      };
+      setPanels(prev => [...prev, failPanel]);
+      setError(err.message || 'Compare error');
     } finally {
       setLoadingStage(''); setLoading(false); loadingRef.current = false;
     }
@@ -2780,7 +2812,115 @@ export default function TradingAgent() {
     </div>;
   }
 
-  const knownTypes = ['trades','investments','fundamentals','technicals','analysis','dashboard','sector_rotation','earnings_catalyst','commodities','portfolio','briefing','crypto','trending','screener','trending_now','cross_market','csv_watchlist','csv_watchlist_analysis','playbook_analysis','serenity_discovery','serenity_supply_chain'];
+  const knownTypes = ['trades','investments','fundamentals','technicals','analysis','dashboard','sector_rotation','earnings_catalyst','commodities','portfolio','briefing','crypto','trending','screener','trending_now','cross_market','csv_watchlist','csv_watchlist_analysis','playbook_analysis','serenity_discovery','serenity_supply_chain','serenity_compare'];
+
+  function renderCompareResult(data: any) {
+    const label: string = data._label || 'Compare — Serenity vs S&J';
+    const PBC = '#6366f1';
+    const rows: any[] = data.results || [];
+    const summaryText: string = data.summary || '';
+
+    const classColor = (cls?: string) => {
+      if (!cls) return C.dim;
+      const c = cls.toLowerCase();
+      if (c.includes('consensus')) return C.green;
+      if (c.includes('serenity')) return PBC;
+      if (c.includes('s&j') || c.includes('sj')) return C.gold;
+      return C.red;
+    };
+
+    const scoreCell = (val?: number, color?: string) => val == null
+      ? <span style={{ color:C.dim, fontSize:11, fontFamily:font }}>—</span>
+      : <span style={{ color: color || C.bright, fontWeight:700, fontSize:13, fontFamily:font }}>{Math.round(val)}</span>;
+
+    return <div>
+      {/* Header */}
+      <div style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 14px', background:`${PBC}10`, border:`1px solid ${PBC}25`, borderRadius:8, marginBottom:10, flexWrap:'wrap' }}>
+        <span style={{ display:'inline-block', width:8, height:8, borderRadius:'50%', background:PBC, flexShrink:0 }} />
+        <span style={{ color:PBC, fontWeight:700, fontSize:11, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.06em' }}>{label}</span>
+        {rows.length > 0 && <span style={{ color:C.dim, fontSize:9, fontFamily:font }}>{rows.length} tickers</span>}
+      </div>
+
+      {/* Summary */}
+      {summaryText && summaryText.trim() && (
+        <div style={{ padding:'12px 16px', background:C.card, border:`1px solid ${C.border}`, borderRadius:8, color:C.text, lineHeight:1.7, fontSize:12, fontFamily:sansFont, marginBottom:10 }}
+          dangerouslySetInnerHTML={{ __html: formatAnalysis(summaryText) }} />
+      )}
+
+      {/* Classification overview pills */}
+      {(data.consensus_tickers?.length || data.serenity_only?.length || data.sj_only?.length || data.low_fit_both?.length) && (
+        <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginBottom:10 }}>
+          {data.consensus_tickers?.length > 0 && (
+            <div style={{ padding:'4px 12px', borderRadius:5, background:`${C.green}10`, border:`1px solid ${C.green}30` }}>
+              <span style={{ fontSize:8, fontWeight:700, fontFamily:font, color:C.green, textTransform:'uppercase', display:'block', marginBottom:2 }}>Consensus</span>
+              <span style={{ fontSize:11, fontWeight:700, fontFamily:font, color:C.green }}>{data.consensus_tickers.join(' · ')}</span>
+            </div>
+          )}
+          {data.serenity_only?.length > 0 && (
+            <div style={{ padding:'4px 12px', borderRadius:5, background:`${PBC}10`, border:`1px solid ${PBC}30` }}>
+              <span style={{ fontSize:8, fontWeight:700, fontFamily:font, color:PBC, textTransform:'uppercase', display:'block', marginBottom:2 }}>Serenity Only</span>
+              <span style={{ fontSize:11, fontWeight:700, fontFamily:font, color:PBC }}>{data.serenity_only.join(' · ')}</span>
+            </div>
+          )}
+          {data.sj_only?.length > 0 && (
+            <div style={{ padding:'4px 12px', borderRadius:5, background:`${C.gold}10`, border:`1px solid ${C.gold}30` }}>
+              <span style={{ fontSize:8, fontWeight:700, fontFamily:font, color:C.gold, textTransform:'uppercase', display:'block', marginBottom:2 }}>S&J Only</span>
+              <span style={{ fontSize:11, fontWeight:700, fontFamily:font, color:C.gold }}>{data.sj_only.join(' · ')}</span>
+            </div>
+          )}
+          {data.low_fit_both?.length > 0 && (
+            <div style={{ padding:'4px 12px', borderRadius:5, background:`${C.red}10`, border:`1px solid ${C.red}30` }}>
+              <span style={{ fontSize:8, fontWeight:700, fontFamily:font, color:C.red, textTransform:'uppercase', display:'block', marginBottom:2 }}>Low Fit Both</span>
+              <span style={{ fontSize:11, fontWeight:700, fontFamily:font, color:C.red }}>{data.low_fit_both.join(' · ')}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Per-ticker rows */}
+      {rows.length > 0 && (
+        <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+          {rows.map((row: any, i: number) => {
+            const ticker = row.ticker || '';
+            const name = row.company_name || row.name || '';
+            const cls = row.classification || '';
+            const clsClr = classColor(cls);
+            const delta = row.delta ?? ((row.serenity_score != null && row.sj_score != null) ? row.serenity_score - row.sj_score : undefined);
+            return (
+              <div key={i} style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 14px', background:C.card, border:`1px solid ${C.border}`, borderLeft:`3px solid ${clsClr}`, borderRadius:7, flexWrap:'wrap' }}>
+                {/* Ticker + name */}
+                <div style={{ minWidth:80 }}>
+                  {ticker && <span style={{ color:C.blue, fontWeight:700, fontSize:13, fontFamily:font, display:'block' }}>{ticker}</span>}
+                  {name && <span style={{ color:C.dim, fontSize:10, fontFamily:sansFont }}>{name}</span>}
+                </div>
+                {/* Classification badge */}
+                {cls && <span style={{ padding:'2px 8px', borderRadius:4, fontSize:9, fontWeight:700, fontFamily:font, color:clsClr, background:`${clsClr}12`, border:`1px solid ${clsClr}30`, whiteSpace:'nowrap' }}>{cls}</span>}
+                {/* Score columns */}
+                <div style={{ display:'flex', gap:14, alignItems:'center' }}>
+                  <div style={{ textAlign:'center' }}>
+                    <span style={{ display:'block', fontSize:7, color:'#818cf8', fontFamily:font, fontWeight:700, textTransform:'uppercase', marginBottom:1 }}>Serenity</span>
+                    {scoreCell(row.serenity_score, '#818cf8')}
+                  </div>
+                  <div style={{ textAlign:'center' }}>
+                    <span style={{ display:'block', fontSize:7, color:C.gold, fontFamily:font, fontWeight:700, textTransform:'uppercase', marginBottom:1 }}>S&J</span>
+                    {scoreCell(row.sj_score, C.gold)}
+                  </div>
+                  {delta != null && (
+                    <div style={{ textAlign:'center' }}>
+                      <span style={{ display:'block', fontSize:7, color:C.dim, fontFamily:font, fontWeight:700, textTransform:'uppercase', marginBottom:1 }}>Δ</span>
+                      <span style={{ color: delta > 0 ? '#818cf8' : delta < 0 ? C.gold : C.dim, fontWeight:700, fontSize:11, fontFamily:font }}>{delta > 0 ? '+' : ''}{Math.round(delta)}</span>
+                    </div>
+                  )}
+                </div>
+                {/* Explanation */}
+                {row.explanation && <span style={{ color:C.dim, fontSize:11, fontFamily:sansFont, flex:1, minWidth:120 }}>{row.explanation}</span>}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>;
+  }
 
   function renderSerenityDiscovery(data: any) {
     const label = data._label || 'Serenity Discovery';
@@ -2823,11 +2963,59 @@ export default function TradingAgent() {
           dangerouslySetInnerHTML={{ __html: formatAnalysis(summaryText) }} />
       )}
 
-      {/* Candidates */}
+      {/* Ranked buckets — surface best ideas first */}
+      {(() => {
+        const buckets: { key: string; label: string; color: string; items: any[] }[] = [
+          { key: 'best_blend_candidates',              label: 'Best Blend',              color: C.green,  items: data.best_blend_candidates              || [] },
+          { key: 'highest_confidence_candidates',      label: 'Highest Confidence',      color: C.blue,   items: data.highest_confidence_candidates      || [] },
+          { key: 'top_hidden_bottlenecks',             label: 'Hidden Bottlenecks',      color: PBC,      items: data.top_hidden_bottlenecks             || [] },
+          { key: 'top_us_accessible_foreign_proxies',  label: 'US-Accessible Foreign',   color: C.gold,   items: data.top_us_accessible_foreign_proxies  || [] },
+          { key: 'top_foreign_specialists',            label: 'Foreign Specialists',     color: C.gold,   items: data.top_foreign_specialists            || [] },
+        ].filter(b => b.items.length > 0);
+        if (!buckets.length) return null;
+        return (
+          <div style={{ marginBottom:14 }}>
+            <div style={{ color:C.bright, fontSize:10, fontWeight:700, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.04em', marginBottom:8 }}>Ranked Buckets</div>
+            <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+              {buckets.map(b => (
+                <div key={b.key} style={{ padding:'8px 12px', background:`${b.color}08`, border:`1px solid ${b.color}25`, borderLeft:`3px solid ${b.color}`, borderRadius:7 }}>
+                  <div style={{ color:b.color, fontSize:9, fontWeight:700, fontFamily:font, textTransform:'uppercase', marginBottom:5 }}>{b.label}</div>
+                  <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+                    {b.items.map((c: any, j: number) => {
+                      const tk = c.ticker || c.symbol || '';
+                      const nm = c.company_name || c.name || '';
+                      const blend = c.best_blend_score ?? c.scores?.bottleneck_criticality_score ?? c.bottleneck_score;
+                      return (
+                        <div key={j} style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'3px 8px', background:C.bg, border:`1px solid ${b.color}30`, borderRadius:5 }}>
+                          {tk && <span style={{ color:C.blue, fontWeight:700, fontSize:11, fontFamily:font }}>{tk}</span>}
+                          {nm && tk !== nm && <span style={{ color:C.dim, fontSize:9, fontFamily:sansFont }}>{nm}</span>}
+                          {c.country && c.country !== 'US' && <span style={{ fontSize:8, color:C.gold, fontFamily:font }}>{c.country}</span>}
+                          {blend != null && <span style={{ fontSize:9, fontWeight:700, fontFamily:font, color: blend >= 70 ? C.green : blend >= 40 ? C.gold : C.red }}>{Math.round(blend)}</span>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* Compare top results across both playbooks */}
+            {buckets.some(b => b.items.length) && (() => {
+              const topTickers = [...new Set(buckets.flatMap(b => b.items.map((c: any) => c.ticker || c.symbol)).filter(Boolean))].slice(0, 8) as string[];
+              return topTickers.length > 0 ? (
+                <button onClick={() => { if (!loading) runCompare(topTickers, `Consensus Check — Top ${topTickers.length} Candidates`); }} style={{ marginTop:8, padding:'3px 12px', fontSize:9, fontWeight:600, fontFamily:font, background:`${C.green}10`, color:C.green, border:`1px solid ${C.green}30`, borderRadius:4, cursor:loading ? 'not-allowed' : 'pointer', opacity:loading ? 0.5 : 1 }}>
+                  Consensus Check (Compare Top {topTickers.length})
+                </button>
+              ) : null;
+            })()}
+          </div>
+        );
+      })()}
+
+      {/* Full candidate list */}
       {candidates.length > 0 && (
         <div>
           <div style={{ color:C.bright, fontSize:10, fontWeight:700, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.04em', marginBottom:8 }}>
-            Top Candidates ({candidates.length})
+            All Candidates ({candidates.length})
           </div>
           <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
             {candidates.map((c: any, i: number) => {
@@ -2836,20 +3024,30 @@ export default function TradingAgent() {
               const themes: string[] = c.themes || c.theme_tags || [];
               const giants: string[] = c.giant_anchors || [];
               const scores = c.scores || {};
-              // Flatten scores: prefer nested .scores, fall back to flat fields
               const criticality = scores.bottleneck_criticality_score ?? c.bottleneck_score;
               const hidden     = scores.hiddenness_score ?? c.hiddenness_score;
               const depth      = scores.chain_depth_score;
-              const scConf     = scores.supply_chain_confidence_score ?? c.confidence != null ? Math.round((c.confidence || 0) * 100) : undefined;
+              const scConf     = scores.supply_chain_confidence_score ?? (c.confidence != null ? Math.round((c.confidence || 0) * 100) : undefined);
               const proxyAcc   = scores.proxy_accessibility_score;
+              const blend      = c.best_blend_score;
               // Access / coverage
               const coverageStatus = c.coverage_status;
               const dataConf       = c.data_confidence;
               const directTrade    = c.direct_tradable;
               const adr    = c.adr_ticker || c.adr_proxy;
               const etfProxy = c.us_access_proxy || c.etf_proxy;
+              // narrative
               const thesis = c.thesis_summary || c.rationale || c.fit_reasoning || '';
               const fitReason = c.fit_reasoning && c.fit_reasoning !== thesis ? c.fit_reasoning : '';
+              // "why surfaced" fields — new optional backend fields
+              const whyNow   = c.why_now;
+              const whyHidden = c.why_hidden;
+              const verifyNext = c.what_to_verify_next;
+              const hiddenReason = c.hiddenness_reason;
+              const visBucket = c.visibility_bucket;
+              const roleType  = c.chain_role_type;
+              const penalties: string[] = c.confidence_penalties || [];
+              const dataGaps:  string[] = c.data_gaps || [];
 
               return (
                 <div key={i} style={{ background:C.card, border:`1px solid ${C.border}`, borderLeft:`3px solid ${PBC}`, borderRadius:8, padding:'12px 16px' }}>
@@ -2864,11 +3062,14 @@ export default function TradingAgent() {
                         {c.chain_layer || `L${c.layer_depth}`}
                       </span>
                     )}
+                    {roleType && <span style={{ padding:'1px 6px', borderRadius:3, fontSize:8, fontWeight:600, fontFamily:font, color:C.dim, border:`1px solid ${C.border}` }}>{roleType}</span>}
+                    {visBucket && <span style={{ padding:'1px 6px', borderRadius:3, fontSize:8, fontWeight:600, fontFamily:font, color:'#818cf8', background:'rgba(99,102,241,0.08)', border:'1px solid rgba(99,102,241,0.2)' }}>{visBucket}</span>}
                   </div>
 
-                  {/* Score chips row */}
-                  {(criticality != null || hidden != null || depth != null || scConf != null || proxyAcc != null) && (
+                  {/* Score chips — blend first if present */}
+                  {(blend != null || criticality != null || hidden != null || depth != null || scConf != null || proxyAcc != null) && (
                     <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:8 }}>
+                      {blend != null && scoreChip('Blend', blend)}
                       {scoreChip('Criticality', criticality)}
                       {scoreChip('Hiddenness', hidden)}
                       {scoreChip('Chain Depth', depth)}
@@ -2877,15 +3078,15 @@ export default function TradingAgent() {
                     </div>
                   )}
 
-                  {/* Coverage row — PROMINENT per spec */}
+                  {/* Coverage row — PROMINENT */}
                   {(coverageStatus || dataConf != null || directTrade != null || adr || etfProxy) && (
-                    <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap', padding:'6px 10px', background:'rgba(99,102,241,0.04)', border:'1px solid rgba(99,102,241,0.12)', borderRadius:6, marginBottom:8 }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap', padding:'5px 10px', background:'rgba(99,102,241,0.04)', border:'1px solid rgba(99,102,241,0.12)', borderRadius:6, marginBottom:8 }}>
                       {coverageStatus && coverageBadge(coverageStatus)}
                       {dataConf && <span style={{ fontSize:9, fontFamily:font, color:C.dim }}>Data: <span style={{ color:C.bright }}>{dataConf}</span></span>}
-                      {directTrade === true && <span style={{ padding:'2px 7px', borderRadius:3, fontSize:9, fontWeight:700, fontFamily:font, color:C.green, background:`${C.green}10`, border:`1px solid ${C.green}30` }}>Direct</span>}
-                      {directTrade === false && <span style={{ padding:'2px 7px', borderRadius:3, fontSize:9, fontWeight:700, fontFamily:font, color:C.gold, background:`${C.gold}10`, border:`1px solid ${C.gold}30` }}>Indirect</span>}
-                      {adr && <span style={{ fontSize:9, fontFamily:font, color:C.dim }}>ADR: <span style={{ color:C.bright, fontWeight:700 }}>{adr}</span></span>}
-                      {etfProxy && !adr && <span style={{ fontSize:9, fontFamily:font, color:C.dim }}>Proxy: <span style={{ color:C.bright, fontWeight:700 }}>{etfProxy}</span></span>}
+                      {directTrade === true && <span style={{ padding:'2px 6px', borderRadius:3, fontSize:9, fontWeight:700, fontFamily:font, color:C.green, background:`${C.green}10`, border:`1px solid ${C.green}30` }}>Direct</span>}
+                      {directTrade === false && <span style={{ padding:'2px 6px', borderRadius:3, fontSize:9, fontWeight:700, fontFamily:font, color:C.gold, background:`${C.gold}10`, border:`1px solid ${C.gold}30` }}>Indirect</span>}
+                      {adr && <span style={{ fontSize:9, fontFamily:font, color:C.dim }}>ADR: <span style={{ color:C.green, fontWeight:700 }}>{adr}</span></span>}
+                      {etfProxy && !adr && <span style={{ fontSize:9, fontFamily:font, color:C.dim }}>Proxy: <span style={{ color:C.green, fontWeight:700 }}>{etfProxy}</span></span>}
                     </div>
                   )}
 
@@ -2898,14 +3099,39 @@ export default function TradingAgent() {
                   )}
 
                   {/* Thesis / rationale */}
-                  {thesis && <div style={{ color:C.text, fontSize:12, fontFamily:sansFont, lineHeight:1.6, marginBottom:fitReason ? 4 : 0 }}>{thesis}</div>}
-                  {fitReason && <div style={{ color:C.dim, fontSize:11, fontFamily:sansFont, lineHeight:1.5 }}>{fitReason}</div>}
+                  {thesis && <div style={{ color:C.text, fontSize:12, fontFamily:sansFont, lineHeight:1.6, marginBottom:4 }}>{thesis}</div>}
+                  {fitReason && <div style={{ color:C.dim, fontSize:11, fontFamily:sansFont, lineHeight:1.5, marginBottom:4 }}>{fitReason}</div>}
+
+                  {/* "Why surfaced" context — these make the card actionable */}
+                  {(whyNow || whyHidden || hiddenReason) && (
+                    <div style={{ display:'flex', flexDirection:'column', gap:3, padding:'6px 10px', background:'rgba(99,102,241,0.03)', border:'1px solid rgba(99,102,241,0.1)', borderRadius:5, marginBottom:6 }}>
+                      {whyNow && <div style={{ fontSize:11, fontFamily:sansFont, color:C.text }}><span style={{ color:PBC, fontWeight:700 }}>Why now: </span>{whyNow}</div>}
+                      {whyHidden && <div style={{ fontSize:11, fontFamily:sansFont, color:C.text }}><span style={{ color:PBC, fontWeight:700 }}>Why hidden: </span>{whyHidden}</div>}
+                      {hiddenReason && !whyHidden && <div style={{ fontSize:11, fontFamily:sansFont, color:C.dim }}>{hiddenReason}</div>}
+                    </div>
+                  )}
+                  {verifyNext && (
+                    <div style={{ fontSize:11, fontFamily:sansFont, color:C.dim, marginBottom:6 }}>
+                      <span style={{ color:C.gold, fontWeight:700 }}>Verify: </span>{verifyNext}
+                    </div>
+                  )}
+
+                  {/* Penalties / data gaps — honest uncertainty */}
+                  {(penalties.length > 0 || dataGaps.length > 0) && (
+                    <div style={{ display:'flex', gap:4, flexWrap:'wrap', marginBottom:6 }}>
+                      {penalties.map((p: string, j: number) => <span key={`p${j}`} style={{ padding:'1px 6px', borderRadius:3, fontSize:8, fontFamily:font, color:C.red, background:`${C.red}08`, border:`1px solid ${C.red}20` }}>−{p}</span>)}
+                      {dataGaps.map((g: string, j: number) => <span key={`dg${j}`} style={{ padding:'1px 6px', borderRadius:3, fontSize:8, fontFamily:font, color:C.dim, border:`1px solid ${C.border}` }}>gap:{g}</span>)}
+                    </div>
+                  )}
 
                   {/* Action buttons */}
                   {ticker && (
                     <div style={{ display:'flex', gap:6, marginTop:8, flexWrap:'wrap' }}>
                       <button onClick={() => { if (!loading) runSupplyChainMap({ anchorOverride: ticker }); }} style={{ padding:'3px 10px', fontSize:9, fontWeight:600, fontFamily:font, background:'transparent', color:PBC, border:`1px solid ${PBC}40`, borderRadius:4, cursor:loading ? 'not-allowed' : 'pointer', opacity:loading ? 0.5 : 1 }}>
                         Supply Chain Map
+                      </button>
+                      <button onClick={() => { if (!loading) runCompare([ticker], `Compare vs S&J — ${ticker}`); }} style={{ padding:'3px 10px', fontSize:9, fontWeight:600, fontFamily:font, background:'transparent', color:C.gold, border:`1px solid ${C.gold}40`, borderRadius:4, cursor:loading ? 'not-allowed' : 'pointer', opacity:loading ? 0.5 : 1 }}>
+                        Compare vs S&J
                       </button>
                       <button onClick={() => { if (!loading) { const q = `Serenity analysis: ${ticker}${name ? ` (${name})` : ''}`; runPlaybookAnalysis(q); } }} style={{ padding:'3px 10px', fontSize:9, fontWeight:600, fontFamily:font, background:'transparent', color:C.blue, border:`1px solid ${C.blue}40`, borderRadius:4, cursor:loading ? 'not-allowed' : 'pointer', opacity:loading ? 0.5 : 1 }}>
                         Analyze
@@ -3104,6 +3330,7 @@ export default function TradingAgent() {
       {displayType === 'playbook_analysis' && renderPlaybookAnalysis(msg.parsed)}
       {displayType === 'serenity_discovery' && renderSerenityDiscovery(msg.parsed)}
       {displayType === 'serenity_supply_chain' && renderSupplyChainMap(msg.parsed)}
+      {displayType === 'serenity_compare' && renderCompareResult(msg.parsed)}
       {displayType === 'trades' && renderTrades(s)}
       {displayType === 'investments' && renderInvestments(s)}
       {displayType === 'fundamentals' && renderFundamentals(s)}
@@ -3120,7 +3347,7 @@ export default function TradingAgent() {
       {displayType === 'earnings_catalyst' && renderEarningsCatalyst(s)}
       {displayType === 'csv_watchlist' && renderCsvWatchlist(s)}
       {(displayType === 'chat' || !knownTypes.includes(displayType)) && analysisText && analysisText.trim() && <div style={{ padding:22, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont }} dangerouslySetInnerHTML={{ __html: formatAnalysis(analysisText) }} />}
-      {displayType && displayType !== 'chat' && displayType !== 'cross_market' && displayType !== 'trending_now' && displayType !== 'trades' && displayType !== 'playbook_analysis' && displayType !== 'serenity_discovery' && displayType !== 'serenity_supply_chain' && knownTypes.includes(displayType) && analysisText && analysisText.trim() && <div style={{ marginTop:16, padding:22, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont }} dangerouslySetInnerHTML={{ __html: formatAnalysis(analysisText) }} />}
+      {displayType && displayType !== 'chat' && displayType !== 'cross_market' && displayType !== 'trending_now' && displayType !== 'trades' && displayType !== 'playbook_analysis' && displayType !== 'serenity_discovery' && displayType !== 'serenity_supply_chain' && displayType !== 'serenity_compare' && knownTypes.includes(displayType) && analysisText && analysisText.trim() && <div style={{ marginTop:16, padding:22, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont }} dangerouslySetInnerHTML={{ __html: formatAnalysis(analysisText) }} />}
     </div>;
   }
 
@@ -3643,12 +3870,18 @@ export default function TradingAgent() {
                 </div>
                 <div style={{ paddingLeft:4 }}>
                   {[
-                    { l: 'Hidden Bottlenecks', fn: () => runDiscovery({ mode: 'giant_chain', hidden_only: true, label: 'Hidden Bottlenecks' }) },
+                    { l: 'Hidden Bottlenecks', fn: () => runDiscovery({ mode: 'giant_chain', only_hidden: true, label: 'Hidden Bottlenecks' }) },
                     { l: 'Supply Chain Map', fn: () => runSupplyChainMap() },
                     { l: 'Foreign Bottlenecks', fn: () => runDiscovery({ mode: 'theme_scan', include_foreign: true, label: 'Foreign Bottlenecks' }) },
                     { l: 'AI Power Chokepoints', fn: () => runDiscovery({ mode: 'theme_scan', theme_ids: ['ai_power'], label: 'AI Power Chokepoints' }) },
                     { l: 'Photonics / CPO Chain', fn: () => runDiscovery({ mode: 'theme_scan', theme_ids: ['photonics_cpo'], label: 'Photonics / CPO Chain' }) },
                     { l: 'Packaging / Test', fn: () => runDiscovery({ mode: 'theme_scan', theme_ids: ['packaging_test'], label: 'Packaging / Test Bottlenecks' }) },
+                    { l: 'Consensus Check', fn: () => {
+                        // Compare the anchor ticker against both playbooks as a quick consensus check
+                        const tickers = discoveryAnchor && discoveryAnchor !== 'AI Power' ? [discoveryAnchor] : [];
+                        if (tickers.length) runCompare(tickers, `Consensus Check — ${tickers.join(', ')}`);
+                        else runDiscovery({ mode: 'theme_scan', label: 'Consensus Discovery', include_foreign: discoveryIncludeForeign });
+                    }},
                   ].map(item => (
                     <div key={item.l} className="rail-item" onClick={() => { if (!loading) { item.fn(); setLeftRailOpen(false); } }} style={{ padding:'5px 10px', cursor:loading ? 'not-allowed' : 'pointer', color:'#818cf8', fontSize:11, fontFamily:sansFont, borderRadius:2, transition:'all 0.1s', opacity:loading ? 0.5 : 1 }}>
                       {item.l}

@@ -9,6 +9,8 @@ import type {
   SupplyChainMapRequest,
   SupplyChainMapResponse,
   PlaybookDiscoveryCapabilities,
+  PlaybookCompareRequest,
+  PlaybookCompareResponse,
 } from "@/types/playbook";
 
 const AGENT_KEY = "hippo_ak_7f3x9k2m4p8q1w5t";
@@ -91,5 +93,17 @@ export async function supplyChainMap(
     body: JSON.stringify(req),
   });
   if (!res.ok) throw new Error(`playbooks/supply-chain-map failed: ${res.status}`);
+  return res.json();
+}
+
+export async function comparePlaybook(
+  req: PlaybookCompareRequest
+): Promise<PlaybookCompareResponse> {
+  const res = await fetch("/api/playbooks/compare", {
+    method: "POST",
+    headers: proxyHeaders(),
+    body: JSON.stringify(req),
+  });
+  if (!res.ok) throw new Error(`playbooks/compare failed: ${res.status}`);
   return res.json();
 }

@@ -103,6 +103,19 @@ export interface DiscoveryCandidate {
   bottleneck_score?: number;
   hiddenness_score?: number;
   confidence?: number;
+  // richer ranking fields (optional — gracefully absent)
+  best_blend_score?: number;
+  visibility_bucket?: string;
+  chain_role_type?: string;
+  hiddenness_reason?: string;
+  confidence_penalties?: string[];
+  data_gaps?: string[];
+  comparable_names?: string[];
+  consensus_fit?: string;
+  // "why this surfaced" narrative fields
+  why_now?: string;
+  why_hidden?: string;
+  what_to_verify_next?: string;
   // narrative
   thesis_summary?: string;
   fit_reasoning?: string;
@@ -161,8 +174,49 @@ export interface PlaybookDiscoverResponse {
   analysis?: string;
   top_candidates?: DiscoveryCandidate[];
   candidates?: DiscoveryCandidate[];
+  // optional ranked buckets — render first if present
+  top_hidden_bottlenecks?: DiscoveryCandidate[];
+  top_foreign_specialists?: DiscoveryCandidate[];
+  top_us_accessible_foreign_proxies?: DiscoveryCandidate[];
+  highest_confidence_candidates?: DiscoveryCandidate[];
+  best_blend_candidates?: DiscoveryCandidate[];
   chain_map_preview?: unknown;
   meta?: DiscoveryMeta;
+  error?: string;
+  [key: string]: unknown;
+}
+
+// ── Compare / Consensus ──────────────────────────────────────────────────────
+
+export interface PlaybookCompareRequest {
+  tickers: string[];
+  playbook_ids?: string[];        // defaults to ["serenity","sjcapital"] if omitted
+  context_mode?: string;
+  [key: string]: unknown;
+}
+
+export interface CompareResultRow {
+  ticker?: string;
+  company_name?: string;
+  name?: string;
+  serenity_score?: number;
+  sj_score?: number;
+  delta?: number;
+  classification?: string;       // "Consensus" | "Serenity Only" | "S&J Only" | "Low Fit Both"
+  explanation?: string;
+  consensus_fit?: string;
+  [key: string]: unknown;
+}
+
+export interface PlaybookCompareResponse {
+  tickers?: string[];
+  playbook_ids?: string[];
+  results?: CompareResultRow[];
+  summary?: string;
+  consensus_tickers?: string[];
+  serenity_only?: string[];
+  sj_only?: string[];
+  low_fit_both?: string[];
   error?: string;
   [key: string]: unknown;
 }

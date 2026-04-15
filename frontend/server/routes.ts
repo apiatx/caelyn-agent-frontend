@@ -2880,5 +2880,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/playbooks/compare', async (req, res) => {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 90000);
+      const r = await fetch(`${PB_URL}/api/playbooks/compare`, {
+        method: 'POST',
+        headers: pbHdr(),
+        body: JSON.stringify(req.body),
+        signal: ctrl.signal,
+      });
+      if (!r.ok) return res.status(r.status).json({ error: 'playbooks/compare failed' });
+      res.json(await r.json());
+    } catch (e: any) {
+      console.error('[playbooks/compare] error:', e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   return httpServer;
 }
