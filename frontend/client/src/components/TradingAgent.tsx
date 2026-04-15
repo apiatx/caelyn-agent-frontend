@@ -10,7 +10,8 @@ import {
 } from './tradingAgentCollabState';
 import WatchlistAnalysis, { tryParseWatchlistAnalysis } from './WatchlistAnalysis';
 import { StockDetailModal } from './StockDetailModal';
-import { analyzePlaybook, discoverPlaybook, supplyChainMap } from '@/lib/playbooks';
+import { analyzePlaybook, discoverPlaybook, supplyChainMap, fetchDiscoveryCapabilities } from '@/lib/playbooks';
+import type { PlaybookDiscoveryCapabilities } from '@/types/playbook';
 
 const AGENT_BACKEND_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
 const AGENT_API_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
@@ -344,10 +345,21 @@ export default function TradingAgent() {
   const [discoveryDepth, setDiscoveryDepth] = useState<number>(3);
   const [discoveryIncludeForeign, setDiscoveryIncludeForeign] = useState<boolean>(true);
   const [discoveryIncludeProxies, setDiscoveryIncludeProxies] = useState<boolean>(true);
+  const [discoveryCapabilities, setDiscoveryCapabilities] = useState<PlaybookDiscoveryCapabilities | null>(null);
+  const capabilitiesFetchedRef = useRef(false);
 
   useEffect(() => {
     scrollAnchorRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [panels, loading]);
+
+  // Load discovery capabilities once when Serenity is first selected; cache for session
+  useEffect(() => {
+    if (selectedStrategy !== 'serenity' || capabilitiesFetchedRef.current) return;
+    capabilitiesFetchedRef.current = true;
+    fetchDiscoveryCapabilities()
+      .then(caps => setDiscoveryCapabilities(caps))
+      .catch(() => { /* graceful — controls fall back to hardcoded lists */ });
+  }, [selectedStrategy]);
 
   useEffect(() => {
     try { sessionStorage.setItem('caelyn_panels', JSON.stringify(panels)); } catch {}
@@ -645,7 +657,7 @@ export default function TradingAgent() {
     mode?: string;
     theme_ids?: string[];
     include_foreign?: boolean;
-    hidden_only?: boolean;
+    only_hidden?: boolean;
     label: string;
   }) {
     if (loadingRef.current) return;
@@ -655,21 +667,32 @@ export default function TradingAgent() {
     setExpandedTicker(null);
     setLoadingStage(`Running ${opts.label}...`);
 
-    const payload: Record<string, any> = {
+    // Build request using real backend field names
+    const payload: Record<string, unknown> = {
       playbook_id: 'serenity',
       mode: opts.mode || 'theme_scan',
-      depth: discoveryDepth,
+      max_depth: discoveryDepth,
       include_foreign: opts.include_foreign ?? discoveryIncludeForeign,
-      include_proxies: discoveryIncludeProxies,
-      hidden_only: opts.hidden_only ?? discoveryHiddenOnly,
+      include_adr_or_etf_proxies: discoveryIncludeProxies,
+      only_hidden: opts.only_hidden ?? discoveryHiddenOnly,
+      limit: 20,
     };
-    if (discoveryAnchor && discoveryAnchor !== 'AI Power') payload.anchor_ticker = discoveryAnchor;
+    // Anchor: use giant_anchors array when backend supports it (from capabilities), else anchor_ticker
+    if (discoveryAnchor && discoveryAnchor !== 'AI Power') {
+      if (discoveryCapabilities?.giant_anchors) {
+        payload.giant_anchors = [discoveryAnchor];
+      } else {
+        payload.anchor_ticker = discoveryAnchor;
+      }
+    }
+    // Theme
     if (opts.theme_ids && opts.theme_ids.length) payload.theme_ids = opts.theme_ids;
     else if (discoveryTheme) payload.theme_ids = [discoveryTheme.toLowerCase().replace(/[\s/]+/g, '_')];
+    // Region
     if (discoveryRegion !== 'Global') payload.region = discoveryRegion;
 
     try {
-      const data = await discoverPlaybook(payload);
+      const data = await discoverPlaybook(payload as any);
       const newPanel: Panel = {
         id: Date.now(), title: opts.label, userQuery: '',
         data: { role: 'assistant', content: data.summary || data.analysis || '',
@@ -692,23 +715,25 @@ export default function TradingAgent() {
     }
   }
 
-  async function runSupplyChainMap() {
+  async function runSupplyChainMap(opts?: { anchorOverride?: string; themeOverride?: string }) {
     if (loadingRef.current) return;
     loadingRef.current = true;
     setLoading(true);
     setError(null);
     setExpandedTicker(null);
-    const label = `Supply Chain Map — ${discoveryAnchor}${discoveryTheme ? ` / ${discoveryTheme}` : ''}`;
+    const anchor = opts?.anchorOverride ?? discoveryAnchor;
+    const theme = opts?.themeOverride ?? discoveryTheme;
+    const label = `Supply Chain Map — ${anchor}${theme ? ` / ${theme}` : ''}`;
     setLoadingStage(`Mapping supply chain...`);
 
-    const payload: Record<string, any> = {
+    const payload: Record<string, unknown> = {
       playbook_id: 'serenity',
-      anchor: discoveryAnchor !== 'AI Power' ? discoveryAnchor : undefined,
-      theme: discoveryTheme || undefined,
-      region: discoveryRegion !== 'Global' ? discoveryRegion : undefined,
-      depth: discoveryDepth,
       include_foreign: discoveryIncludeForeign,
+      max_depth: discoveryDepth,
     };
+    if (anchor && anchor !== 'AI Power') payload.anchor = anchor;
+    if (theme) payload.theme = theme;
+    if (discoveryRegion !== 'Global') payload.region = discoveryRegion;
 
     try {
       const data = await supplyChainMap(payload as any);
@@ -2760,113 +2785,235 @@ export default function TradingAgent() {
   function renderSerenityDiscovery(data: any) {
     const label = data._label || 'Serenity Discovery';
     const PBC = '#6366f1';
-    const summaryText = data.summary || data.analysis || '';
-    const candidates: any[] = data.candidates || data.top_candidates || [];
+    const summaryText: string = data.summary || data.analysis || '';
+    const candidates: any[] = data.top_candidates || data.candidates || [];
+    const meta = data.meta || {};
 
-    const scoreBar = (score?: number) => score != null ? (
-      <span style={{ display:'inline-block', padding:'1px 6px', borderRadius:3, fontSize:8, fontWeight:700, fontFamily:font, background: score >= 70 ? `${C.green}18` : score >= 40 ? `${C.gold}18` : `${C.red}18`, color: score >= 70 ? C.green : score >= 40 ? C.gold : C.red, border:`1px solid ${score >= 70 ? C.green : score >= 40 ? C.gold : C.red}30` }}>{Math.round(score)}</span>
-    ) : null;
+    // Compact numeric chip — green/amber/red by value, label above number
+    const scoreChip = (title: string, val?: number) => val == null ? null : (
+      <div style={{ display:'flex', flexDirection:'column', alignItems:'center', padding:'4px 8px', background: val >= 70 ? `${C.green}12` : val >= 40 ? `${C.gold}12` : `rgba(239,68,68,0.1)`, border:`1px solid ${val >= 70 ? C.green : val >= 40 ? C.gold : '#ef4444'}30`, borderRadius:5, minWidth:48 }}>
+        <span style={{ fontSize:7, fontWeight:700, fontFamily:font, color: val >= 70 ? C.green : val >= 40 ? C.gold : '#ef4444', textTransform:'uppercase', letterSpacing:'0.04em', marginBottom:1 }}>{title}</span>
+        <span style={{ fontSize:11, fontWeight:700, fontFamily:font, color: val >= 70 ? C.green : val >= 40 ? C.gold : '#ef4444' }}>{Math.round(val)}</span>
+      </div>
+    );
+
+    // Coverage / access badge — shown prominently
+    const coverageBadge = (status?: string) => {
+      if (!status) return null;
+      const s = status.toLowerCase();
+      const ok = s.includes('accessible') || s.includes('listed') || s.includes('direct');
+      const warn = s.includes('adr') || s.includes('proxy') || s.includes('partial');
+      const clr = ok ? C.green : warn ? C.gold : C.red;
+      return <span style={{ padding:'2px 7px', borderRadius:3, fontSize:9, fontWeight:700, fontFamily:font, color:clr, background:`${clr}12`, border:`1px solid ${clr}30` }}>{status}</span>;
+    };
 
     return <div>
       {/* Header */}
-      <div style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 14px', background:`${PBC}10`, border:`1px solid ${PBC}25`, borderRadius:8, marginBottom:10 }}>
-        <span style={{ display:'inline-block', width:8, height:8, borderRadius:'50%', background:PBC }} />
+      <div style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 14px', background:`${PBC}10`, border:`1px solid ${PBC}25`, borderRadius:8, marginBottom:10, flexWrap:'wrap' }}>
+        <span style={{ display:'inline-block', width:8, height:8, borderRadius:'50%', background:PBC, flexShrink:0 }} />
         <span style={{ color:PBC, fontWeight:700, fontSize:11, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.06em' }}>{label}</span>
         {candidates.length > 0 && <span style={{ color:C.dim, fontSize:9, fontFamily:font }}>{candidates.length} candidates</span>}
+        {meta.depth != null && <span style={{ color:C.dim, fontSize:9, fontFamily:font }}>depth {meta.depth}</span>}
+        {meta.anchor && <span style={{ color:C.blue, fontSize:9, fontFamily:font, fontWeight:700 }}>↳ {meta.anchor}</span>}
       </div>
 
       {/* Summary */}
       {summaryText && summaryText.trim() && (
-        <div style={{ padding:'14px 18px', background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont, marginBottom:10 }}
+        <div style={{ padding:'14px 18px', background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont, marginBottom:12 }}
           dangerouslySetInnerHTML={{ __html: formatAnalysis(summaryText) }} />
       )}
 
       {/* Candidates */}
-      {candidates.length > 0 && <div>
-        <div style={{ color:C.bright, fontSize:11, fontWeight:700, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.04em', marginBottom:8 }}>Candidates</div>
-        <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-          {candidates.map((c: any, i: number) => {
-            const ticker = c.ticker || c.symbol || '';
-            const tags: string[] = c.theme_tags || [];
-            const fc = c.foreign_coverage || {};
-            return <div key={i} style={{ background:C.card, border:`1px solid ${C.border}`, borderLeft:`3px solid ${PBC}`, borderRadius:8, padding:'12px 16px' }}>
-              <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap', marginBottom:c.rationale ? 6 : 0 }}>
-                {ticker && <span style={{ color:C.blue, fontWeight:700, fontSize:14, fontFamily:font }}>{ticker}</span>}
-                {c.name && <span style={{ color:C.dim, fontSize:11, fontFamily:sansFont }}>{c.name}</span>}
-                {c.country && <span style={{ padding:'1px 6px', borderRadius:3, fontSize:8, fontWeight:600, fontFamily:font, color:C.gold, background:`${C.gold}10`, border:`1px solid ${C.gold}25` }}>{c.country}</span>}
-                {c.exchange && <span style={{ color:C.dim, fontSize:9, fontFamily:font }}>{c.exchange}</span>}
-                {c.chain_layer && <span style={{ padding:'1px 6px', borderRadius:3, fontSize:8, fontWeight:600, fontFamily:font, color:C.blue, background:`${C.blue}10`, border:`1px solid ${C.blue}25` }}>{c.chain_layer}</span>}
-                {scoreBar(c.bottleneck_score ?? c.confidence)}
-                {c.hiddenness_score != null && <span style={{ fontSize:9, color:C.dim, fontFamily:font }}>hidden:{Math.round(c.hiddenness_score)}</span>}
-              </div>
-              {tags.length > 0 && <div style={{ display:'flex', gap:4, flexWrap:'wrap', marginBottom:4 }}>
-                {tags.map((t: string, j: number) => <span key={j} style={{ padding:'1px 6px', borderRadius:3, fontSize:8, fontWeight:600, fontFamily:font, color:PBC, background:`${PBC}10`, border:`1px solid ${PBC}25` }}>{t}</span>)}
-              </div>}
-              {c.rationale && <div style={{ color:C.text, fontSize:12, fontFamily:sansFont, lineHeight:1.5, marginBottom:4 }}>{c.rationale}</div>}
-              {(fc.adr || c.adr_proxy || fc.etf_proxy || c.etf_proxy) && (
-                <div style={{ fontSize:10, color:C.dim, fontFamily:font }}>
-                  {(fc.adr || c.adr_proxy) && <span style={{ marginRight:8 }}>ADR: <span style={{ color:C.bright }}>{fc.adr || c.adr_proxy}</span></span>}
-                  {(fc.etf_proxy || c.etf_proxy) && <span>ETF proxy: <span style={{ color:C.bright }}>{fc.etf_proxy || c.etf_proxy}</span></span>}
+      {candidates.length > 0 && (
+        <div>
+          <div style={{ color:C.bright, fontSize:10, fontWeight:700, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.04em', marginBottom:8 }}>
+            Top Candidates ({candidates.length})
+          </div>
+          <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+            {candidates.map((c: any, i: number) => {
+              const ticker = c.ticker || c.symbol || '';
+              const name = c.company_name || c.name || '';
+              const themes: string[] = c.themes || c.theme_tags || [];
+              const giants: string[] = c.giant_anchors || [];
+              const scores = c.scores || {};
+              // Flatten scores: prefer nested .scores, fall back to flat fields
+              const criticality = scores.bottleneck_criticality_score ?? c.bottleneck_score;
+              const hidden     = scores.hiddenness_score ?? c.hiddenness_score;
+              const depth      = scores.chain_depth_score;
+              const scConf     = scores.supply_chain_confidence_score ?? c.confidence != null ? Math.round((c.confidence || 0) * 100) : undefined;
+              const proxyAcc   = scores.proxy_accessibility_score;
+              // Access / coverage
+              const coverageStatus = c.coverage_status;
+              const dataConf       = c.data_confidence;
+              const directTrade    = c.direct_tradable;
+              const adr    = c.adr_ticker || c.adr_proxy;
+              const etfProxy = c.us_access_proxy || c.etf_proxy;
+              const thesis = c.thesis_summary || c.rationale || c.fit_reasoning || '';
+              const fitReason = c.fit_reasoning && c.fit_reasoning !== thesis ? c.fit_reasoning : '';
+
+              return (
+                <div key={i} style={{ background:C.card, border:`1px solid ${C.border}`, borderLeft:`3px solid ${PBC}`, borderRadius:8, padding:'12px 16px' }}>
+                  {/* Identity row */}
+                  <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap', marginBottom:6 }}>
+                    {ticker && <span style={{ color:C.blue, fontWeight:700, fontSize:14, fontFamily:font }}>{ticker}</span>}
+                    {name && <span style={{ color:C.dim, fontSize:11, fontFamily:sansFont }}>{name}</span>}
+                    {c.country && <span style={{ padding:'1px 6px', borderRadius:3, fontSize:8, fontWeight:600, fontFamily:font, color:C.gold, background:`${C.gold}10`, border:`1px solid ${C.gold}25` }}>{c.country}</span>}
+                    {c.exchange && <span style={{ color:C.dim, fontSize:9, fontFamily:font }}>{c.exchange}</span>}
+                    {(c.chain_layer || c.layer_depth != null) && (
+                      <span style={{ padding:'1px 6px', borderRadius:3, fontSize:8, fontWeight:600, fontFamily:font, color:C.blue, background:`${C.blue}10`, border:`1px solid ${C.blue}25` }}>
+                        {c.chain_layer || `L${c.layer_depth}`}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Score chips row */}
+                  {(criticality != null || hidden != null || depth != null || scConf != null || proxyAcc != null) && (
+                    <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:8 }}>
+                      {scoreChip('Criticality', criticality)}
+                      {scoreChip('Hiddenness', hidden)}
+                      {scoreChip('Chain Depth', depth)}
+                      {scoreChip('SC Confidence', scConf)}
+                      {scoreChip('Proxy Access', proxyAcc)}
+                    </div>
+                  )}
+
+                  {/* Coverage row — PROMINENT per spec */}
+                  {(coverageStatus || dataConf != null || directTrade != null || adr || etfProxy) && (
+                    <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap', padding:'6px 10px', background:'rgba(99,102,241,0.04)', border:'1px solid rgba(99,102,241,0.12)', borderRadius:6, marginBottom:8 }}>
+                      {coverageStatus && coverageBadge(coverageStatus)}
+                      {dataConf && <span style={{ fontSize:9, fontFamily:font, color:C.dim }}>Data: <span style={{ color:C.bright }}>{dataConf}</span></span>}
+                      {directTrade === true && <span style={{ padding:'2px 7px', borderRadius:3, fontSize:9, fontWeight:700, fontFamily:font, color:C.green, background:`${C.green}10`, border:`1px solid ${C.green}30` }}>Direct</span>}
+                      {directTrade === false && <span style={{ padding:'2px 7px', borderRadius:3, fontSize:9, fontWeight:700, fontFamily:font, color:C.gold, background:`${C.gold}10`, border:`1px solid ${C.gold}30` }}>Indirect</span>}
+                      {adr && <span style={{ fontSize:9, fontFamily:font, color:C.dim }}>ADR: <span style={{ color:C.bright, fontWeight:700 }}>{adr}</span></span>}
+                      {etfProxy && !adr && <span style={{ fontSize:9, fontFamily:font, color:C.dim }}>Proxy: <span style={{ color:C.bright, fontWeight:700 }}>{etfProxy}</span></span>}
+                    </div>
+                  )}
+
+                  {/* Theme + giant anchor tags */}
+                  {(themes.length > 0 || giants.length > 0) && (
+                    <div style={{ display:'flex', gap:4, flexWrap:'wrap', marginBottom:6 }}>
+                      {giants.map((g: string, j: number) => <span key={`g${j}`} style={{ padding:'1px 6px', borderRadius:3, fontSize:8, fontWeight:600, fontFamily:font, color:C.blue, background:`${C.blue}10`, border:`1px solid ${C.blue}25` }}>↑{g}</span>)}
+                      {themes.map((t: string, j: number) => <span key={`t${j}`} style={{ padding:'1px 6px', borderRadius:3, fontSize:8, fontWeight:600, fontFamily:font, color:PBC, background:`${PBC}10`, border:`1px solid ${PBC}25` }}>{t}</span>)}
+                    </div>
+                  )}
+
+                  {/* Thesis / rationale */}
+                  {thesis && <div style={{ color:C.text, fontSize:12, fontFamily:sansFont, lineHeight:1.6, marginBottom:fitReason ? 4 : 0 }}>{thesis}</div>}
+                  {fitReason && <div style={{ color:C.dim, fontSize:11, fontFamily:sansFont, lineHeight:1.5 }}>{fitReason}</div>}
+
+                  {/* Action buttons */}
+                  {ticker && (
+                    <div style={{ display:'flex', gap:6, marginTop:8, flexWrap:'wrap' }}>
+                      <button onClick={() => { if (!loading) runSupplyChainMap({ anchorOverride: ticker }); }} style={{ padding:'3px 10px', fontSize:9, fontWeight:600, fontFamily:font, background:'transparent', color:PBC, border:`1px solid ${PBC}40`, borderRadius:4, cursor:loading ? 'not-allowed' : 'pointer', opacity:loading ? 0.5 : 1 }}>
+                        Supply Chain Map
+                      </button>
+                      <button onClick={() => { if (!loading) { const q = `Serenity analysis: ${ticker}${name ? ` (${name})` : ''}`; runPlaybookAnalysis(q); } }} style={{ padding:'3px 10px', fontSize:9, fontWeight:600, fontFamily:font, background:'transparent', color:C.blue, border:`1px solid ${C.blue}40`, borderRadius:4, cursor:loading ? 'not-allowed' : 'pointer', opacity:loading ? 0.5 : 1 }}>
+                        Analyze
+                      </button>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>;
-          })}
+              );
+            })}
+          </div>
         </div>
-      </div>}
+      )}
     </div>;
   }
 
   function renderSupplyChainMap(data: any) {
-    const label = data._label || data.anchor || 'Supply Chain Map';
+    const label = data._label || (data.anchor ? `Supply Chain Map — ${data.anchor}` : 'Supply Chain Map');
     const PBC = '#6366f1';
-    const summaryText = data.summary || '';
-    // layers can be [{ label, nodes }] or fall back to grouping flat nodes by layer
-    const layers: { label: string; nodes: any[] }[] = data.layers ||
-      (() => {
-        const nodes: any[] = data.nodes || [];
-        const map: Record<string, any[]> = {};
-        nodes.forEach((n: any) => { const l = n.layer || 'Other'; (map[l] = map[l] || []).push(n); });
-        return Object.entries(map).map(([lbl, ns]) => ({ label: lbl, nodes: ns }));
-      })();
+    const summaryText: string = data.summary || '';
+    const anchor: string = data.anchor || '';
+    const anchorType: string = data.anchor_type || '';
+    const countryTags: string[] = data.country_tags || [];
+    const adrProxies: Record<string, string> = data.adr_etf_proxies || {};
+    const confidence: number | undefined = data.confidence;
 
-    const nodeCard = (n: any, i: number) => (
-      <div key={i} style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'6px 10px', background:C.bg, border:`1px solid ${n.is_foreign ? C.gold+'40' : C.border}`, borderRadius:6, marginRight:6, marginBottom:6 }}>
-        {n.ticker && <span style={{ color:C.blue, fontWeight:700, fontSize:12, fontFamily:font }}>{n.ticker}</span>}
-        {n.name && <span style={{ color:C.dim, fontSize:10, fontFamily:sansFont }}>{n.name}</span>}
-        {n.country && <span style={{ padding:'1px 5px', borderRadius:3, fontSize:8, fontWeight:600, fontFamily:font, color:C.gold, background:`${C.gold}10`, border:`1px solid ${C.gold}25` }}>{n.country}</span>}
-        {n.confidence != null && <span style={{ fontSize:8, color:C.dim, fontFamily:font }}>{Math.round(n.confidence * 100)}%</span>}
-        {n.adr_proxy && <span style={{ fontSize:8, color:C.green, fontFamily:font }}>ADR:{n.adr_proxy}</span>}
-      </div>
-    );
+    // Normalize layers — backend returns { layer_index, label, nodes[] }
+    // Fallback: group flat nodes by their .layer field
+    const rawLayers: any[] = data.layers && data.layers.length ? data.layers : [];
+    const layers: { idx: number; label: string; nodes: any[] }[] = rawLayers.length
+      ? rawLayers.map((l: any, i: number) => ({ idx: l.layer_index ?? i + 1, label: l.label || `Layer ${i + 1}`, nodes: l.nodes || [] }))
+      : (() => {
+          const flatNodes: any[] = data.nodes || [];
+          const map: Record<string, { idx: number; label: string; nodes: any[] }> = {};
+          flatNodes.forEach((n: any) => {
+            const k = n.layer || 'Other';
+            if (!map[k]) map[k] = { idx: Object.keys(map).length + 1, label: k, nodes: [] };
+            map[k].nodes.push(n);
+          });
+          return Object.values(map);
+        })();
+
+    const nodeCard = (n: any, ni: number) => {
+      const tk = n.ticker || '';
+      const nm = n.company_name || n.name || '';
+      const isForeign = n.is_foreign || (n.country && !['US','USA'].includes(n.country.toUpperCase()));
+      const proxy = n.us_access_proxy || n.adr_ticker || n.adr_proxy || adrProxies[tk];
+      const score = n.bottleneck_score;
+      const conf  = n.confidence;
+      return (
+        <div key={ni} style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'5px 10px', background:C.bg, border:`1px solid ${isForeign ? C.gold + '50' : C.border}`, borderRadius:6, marginRight:5, marginBottom:5 }}>
+          {tk && <span style={{ color:C.blue, fontWeight:700, fontSize:12, fontFamily:font }}>{tk}</span>}
+          {nm && tk !== nm && <span style={{ color:C.dim, fontSize:10, fontFamily:sansFont, maxWidth:120, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{nm}</span>}
+          {n.country && <span style={{ padding:'1px 5px', borderRadius:3, fontSize:8, fontWeight:600, fontFamily:font, color: isForeign ? C.gold : C.dim, background: isForeign ? `${C.gold}10` : 'transparent', border:`1px solid ${isForeign ? C.gold + '30' : 'transparent'}` }}>{n.country}</span>}
+          {score != null && <span style={{ fontSize:8, fontWeight:700, fontFamily:font, color: score >= 70 ? C.green : score >= 40 ? C.gold : C.red }}>{Math.round(score)}</span>}
+          {conf != null && score == null && <span style={{ fontSize:8, color:C.dim, fontFamily:font }}>{typeof conf === 'number' && conf <= 1 ? `${Math.round(conf*100)}%` : `${Math.round(conf)}%`}</span>}
+          {proxy && <span style={{ fontSize:8, color:C.green, fontFamily:font, fontWeight:700 }}>→{proxy}</span>}
+        </div>
+      );
+    };
 
     return <div>
       {/* Header */}
-      <div style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 14px', background:`${PBC}10`, border:`1px solid ${PBC}25`, borderRadius:8, marginBottom:10 }}>
-        <span style={{ display:'inline-block', width:8, height:8, borderRadius:'50%', background:PBC }} />
+      <div style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 14px', background:`${PBC}10`, border:`1px solid ${PBC}25`, borderRadius:8, marginBottom:10, flexWrap:'wrap' }}>
+        <span style={{ display:'inline-block', width:8, height:8, borderRadius:'50%', background:PBC, flexShrink:0 }} />
         <span style={{ color:PBC, fontWeight:700, fontSize:11, fontFamily:font, textTransform:'uppercase', letterSpacing:'0.06em' }}>{label}</span>
+        {anchorType && <span style={{ padding:'1px 6px', borderRadius:3, fontSize:8, fontWeight:600, fontFamily:font, color:C.blue, background:`${C.blue}10`, border:`1px solid ${C.blue}25` }}>{anchorType}</span>}
+        {confidence != null && <span style={{ fontSize:9, color:C.dim, fontFamily:font }}>confidence {typeof confidence === 'number' && confidence <= 1 ? `${Math.round(confidence * 100)}%` : `${Math.round(confidence)}%`}</span>}
+        {countryTags.map((ct, i) => <span key={i} style={{ padding:'1px 5px', borderRadius:3, fontSize:8, fontWeight:600, fontFamily:font, color:C.gold, background:`${C.gold}10`, border:`1px solid ${C.gold}25` }}>{ct}</span>)}
       </div>
 
       {/* Summary */}
       {summaryText && summaryText.trim() && (
-        <div style={{ padding:'14px 18px', background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont, marginBottom:10 }}
+        <div style={{ padding:'14px 18px', background:C.card, border:`1px solid ${C.border}`, borderRadius:10, color:C.text, lineHeight:1.75, fontSize:13, fontFamily:sansFont, marginBottom:12 }}
           dangerouslySetInnerHTML={{ __html: formatAnalysis(summaryText) }} />
       )}
 
+      {/* ADR/ETF proxy index — only if populated */}
+      {Object.keys(adrProxies).length > 0 && (
+        <div style={{ display:'flex', gap:8, flexWrap:'wrap', padding:'6px 12px', background:'rgba(16,185,129,0.04)', border:'1px solid rgba(16,185,129,0.15)', borderRadius:6, marginBottom:12 }}>
+          <span style={{ fontSize:9, fontWeight:700, fontFamily:font, color:C.dim, textTransform:'uppercase', alignSelf:'center' }}>US Access</span>
+          {Object.entries(adrProxies).map(([tk, pr]) => (
+            <span key={tk} style={{ fontSize:9, fontFamily:font, color:C.dim }}>{tk}: <span style={{ color:C.green, fontWeight:700 }}>{pr}</span></span>
+          ))}
+        </div>
+      )}
+
       {/* Layers */}
-      {layers.map((layer, li) => (
-        <div key={li} style={{ marginBottom:10 }}>
+      {layers.length > 0 ? layers.map((layer, li) => (
+        <div key={li} style={{ marginBottom:12 }}>
           <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:6 }}>
-            <span style={{ color:C.dim, fontSize:8, fontWeight:700, fontFamily:font, textTransform:'uppercase', padding:'1px 6px', background:`${PBC}10`, border:`1px solid ${PBC}20`, borderRadius:3 }}>Layer {li + 1}</span>
+            <span style={{ color:C.dim, fontSize:8, fontWeight:700, fontFamily:font, textTransform:'uppercase', padding:'1px 6px', background:`${PBC}10`, border:`1px solid ${PBC}20`, borderRadius:3 }}>L{layer.idx}</span>
             <span style={{ color:C.bright, fontSize:12, fontWeight:700, fontFamily:sansFont }}>{layer.label}</span>
-            <span style={{ color:C.dim, fontSize:9, fontFamily:font }}>({layer.nodes?.length || 0})</span>
+            <span style={{ color:C.dim, fontSize:9, fontFamily:font }}>({layer.nodes.length})</span>
           </div>
           <div style={{ display:'flex', flexWrap:'wrap' }}>
-            {(layer.nodes || []).map((n: any, ni: number) => nodeCard(n, ni))}
+            {layer.nodes.map((n: any, ni: number) => nodeCard(n, ni))}
           </div>
         </div>
-      ))}
+      )) : <div style={{ color:C.dim, fontSize:12, fontFamily:sansFont, padding:'12px 0' }}>No chain data returned — backend may need an anchor or theme to build the map.</div>}
 
-      {layers.length === 0 && <div style={{ color:C.dim, fontSize:12, fontFamily:sansFont, padding:'12px 0' }}>No chain data returned.</div>}
+      {/* Action: run discovery on this anchor */}
+      {anchor && !loading && (
+        <div style={{ marginTop:8 }}>
+          <button onClick={() => runDiscovery({ mode:'giant_chain', label:`Hidden Bottlenecks — ${anchor}`, only_hidden: true })} style={{ padding:'3px 10px', fontSize:9, fontWeight:600, fontFamily:font, background:'transparent', color:PBC, border:`1px solid ${PBC}40`, borderRadius:4, cursor:'pointer' }}>
+            Discover Hidden Bottlenecks
+          </button>
+        </div>
+      )}
     </div>;
   }
 
@@ -3414,38 +3561,46 @@ export default function TradingAgent() {
       )}
 
       {/* Serenity discovery controls — only shown when strategy = serenity */}
-      {selectedStrategy === 'serenity' && (
-        <div style={{ display:'flex', alignItems:'center', gap:6, padding:'5px 12px', background:'rgba(99,102,241,0.04)', borderBottom:'1px solid rgba(99,102,241,0.12)', flexShrink:0, flexWrap:'wrap' }}>
-          {/* Anchor */}
-          <span style={{ fontSize:8, color:'#6b7280', fontFamily:"'JetBrains Mono', monospace", fontWeight:600, textTransform:'uppercase' }}>Anchor</span>
-          {(['NVDA','MSFT','GOOGL','AMZN','META','TSM','AI Power'] as const).map(a => (
-            <button key={a} onClick={() => setDiscoveryAnchor(a)} style={{ padding:'2px 8px', fontSize:9, fontWeight:600, fontFamily:"'JetBrains Mono', monospace", background: discoveryAnchor === a ? 'rgba(99,102,241,0.25)' : 'transparent', color: discoveryAnchor === a ? '#a5b4fc' : '#6b7280', border:`1px solid ${discoveryAnchor === a ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.08)'}`, borderRadius:4, cursor:'pointer' }}>{a}</button>
-          ))}
-          <span style={{ width:1, height:14, background:'rgba(255,255,255,0.08)', margin:'0 2px', flexShrink:0 }} />
-          {/* Theme */}
-          <span style={{ fontSize:8, color:'#6b7280', fontFamily:"'JetBrains Mono', monospace", fontWeight:600, textTransform:'uppercase' }}>Theme</span>
-          {(['Photonics','Packaging','Grid','Memory','Defense','Cooling','Semicap'] as const).map(t => (
-            <button key={t} onClick={() => setDiscoveryTheme(prev => prev === t ? '' : t)} style={{ padding:'2px 8px', fontSize:9, fontWeight:600, fontFamily:"'JetBrains Mono', monospace", background: discoveryTheme === t ? 'rgba(99,102,241,0.2)' : 'transparent', color: discoveryTheme === t ? '#a5b4fc' : '#6b7280', border:`1px solid ${discoveryTheme === t ? 'rgba(99,102,241,0.35)' : 'rgba(255,255,255,0.08)'}`, borderRadius:4, cursor:'pointer' }}>{t}</button>
-          ))}
-          <span style={{ width:1, height:14, background:'rgba(255,255,255,0.08)', margin:'0 2px', flexShrink:0 }} />
-          {/* Region */}
-          <span style={{ fontSize:8, color:'#6b7280', fontFamily:"'JetBrains Mono', monospace", fontWeight:600, textTransform:'uppercase' }}>Region</span>
-          {(['Global','US','JP','KR','TW','EU'] as const).map(r => (
-            <button key={r} onClick={() => setDiscoveryRegion(r)} style={{ padding:'2px 8px', fontSize:9, fontWeight:600, fontFamily:"'JetBrains Mono', monospace", background: discoveryRegion === r ? 'rgba(99,102,241,0.2)' : 'transparent', color: discoveryRegion === r ? '#a5b4fc' : '#6b7280', border:`1px solid ${discoveryRegion === r ? 'rgba(99,102,241,0.35)' : 'rgba(255,255,255,0.08)'}`, borderRadius:4, cursor:'pointer' }}>{r}</button>
-          ))}
-          <span style={{ width:1, height:14, background:'rgba(255,255,255,0.08)', margin:'0 2px', flexShrink:0 }} />
-          {/* Depth */}
-          <span style={{ fontSize:8, color:'#6b7280', fontFamily:"'JetBrains Mono', monospace", fontWeight:600, textTransform:'uppercase' }}>Depth</span>
-          {([2,3,4] as const).map(d => (
-            <button key={d} onClick={() => setDiscoveryDepth(d)} style={{ padding:'2px 8px', fontSize:9, fontWeight:600, fontFamily:"'JetBrains Mono', monospace", background: discoveryDepth === d ? 'rgba(99,102,241,0.2)' : 'transparent', color: discoveryDepth === d ? '#a5b4fc' : '#6b7280', border:`1px solid ${discoveryDepth === d ? 'rgba(99,102,241,0.35)' : 'rgba(255,255,255,0.08)'}`, borderRadius:4, cursor:'pointer' }}>{d}</button>
-          ))}
-          <span style={{ width:1, height:14, background:'rgba(255,255,255,0.08)', margin:'0 2px', flexShrink:0 }} />
-          {/* Toggles */}
-          <button onClick={() => setDiscoveryHiddenOnly(v => !v)} style={{ padding:'2px 8px', fontSize:9, fontWeight:600, fontFamily:"'JetBrains Mono', monospace", background: discoveryHiddenOnly ? 'rgba(99,102,241,0.2)' : 'transparent', color: discoveryHiddenOnly ? '#a5b4fc' : '#6b7280', border:`1px solid ${discoveryHiddenOnly ? 'rgba(99,102,241,0.35)' : 'rgba(255,255,255,0.08)'}`, borderRadius:4, cursor:'pointer' }}>Hidden Only</button>
-          <button onClick={() => setDiscoveryIncludeForeign(v => !v)} style={{ padding:'2px 8px', fontSize:9, fontWeight:600, fontFamily:"'JetBrains Mono', monospace", background: discoveryIncludeForeign ? 'rgba(99,102,241,0.2)' : 'transparent', color: discoveryIncludeForeign ? '#a5b4fc' : '#6b7280', border:`1px solid ${discoveryIncludeForeign ? 'rgba(99,102,241,0.35)' : 'rgba(255,255,255,0.08)'}`, borderRadius:4, cursor:'pointer' }}>Foreign</button>
-          <button onClick={() => setDiscoveryIncludeProxies(v => !v)} style={{ padding:'2px 8px', fontSize:9, fontWeight:600, fontFamily:"'JetBrains Mono', monospace", background: discoveryIncludeProxies ? 'rgba(99,102,241,0.2)' : 'transparent', color: discoveryIncludeProxies ? '#a5b4fc' : '#6b7280', border:`1px solid ${discoveryIncludeProxies ? 'rgba(99,102,241,0.35)' : 'rgba(255,255,255,0.08)'}`, borderRadius:4, cursor:'pointer' }}>Proxies</button>
-        </div>
-      )}
+      {selectedStrategy === 'serenity' && (() => {
+        const capAnchors = discoveryCapabilities?.giant_anchors?.length
+          ? discoveryCapabilities.giant_anchors.slice(0, 8)
+          : ['NVDA','MSFT','GOOGL','AMZN','META','TSM'];
+        // Always append "AI Power" as a special no-anchor option
+        const anchors = capAnchors.includes('AI Power') ? capAnchors : [...capAnchors, 'AI Power'];
+        const capThemes = discoveryCapabilities?.themes?.length
+          ? discoveryCapabilities.themes.slice(0, 9)
+          : ['Photonics','Packaging','Grid','Memory','Defense','Cooling','Semicap'];
+        const capRegions = discoveryCapabilities?.supported_regions?.length
+          ? ['Global', ...discoveryCapabilities.supported_regions.filter((r: string) => r !== 'Global')]
+          : ['Global','US','JP','KR','TW','EU'];
+        const capDepths = discoveryCapabilities?.depth_options?.length
+          ? discoveryCapabilities.depth_options
+          : [2, 3, 4];
+        const pill = (label: string, active: boolean, onClick: () => void) => (
+          <button key={label} onClick={onClick} style={{ padding:'2px 8px', fontSize:9, fontWeight:600, fontFamily:"'JetBrains Mono', monospace", background: active ? 'rgba(99,102,241,0.25)' : 'transparent', color: active ? '#a5b4fc' : '#6b7280', border:`1px solid ${active ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.08)'}`, borderRadius:4, cursor:'pointer', transition:'all 0.1s', whiteSpace:'nowrap' }}>{label}</button>
+        );
+        const sep = <span style={{ width:1, height:14, background:'rgba(255,255,255,0.08)', margin:'0 2px', flexShrink:0 }} />;
+        const lbl = (t: string) => <span style={{ fontSize:8, color:'#6b7280', fontFamily:"'JetBrains Mono', monospace", fontWeight:600, textTransform:'uppercase', flexShrink:0 }}>{t}</span>;
+        return (
+          <div style={{ display:'flex', alignItems:'center', gap:5, padding:'5px 12px', background:'rgba(99,102,241,0.04)', borderBottom:'1px solid rgba(99,102,241,0.12)', flexShrink:0, flexWrap:'wrap' }}>
+            {lbl('Anchor')}
+            {anchors.map(a => pill(a, discoveryAnchor === a, () => setDiscoveryAnchor(a)))}
+            {sep}
+            {lbl('Theme')}
+            {capThemes.map(t => pill(t, discoveryTheme === t, () => setDiscoveryTheme(prev => prev === t ? '' : t)))}
+            {sep}
+            {lbl('Region')}
+            {capRegions.map(r => pill(r, discoveryRegion === r, () => setDiscoveryRegion(r)))}
+            {sep}
+            {lbl('Depth')}
+            {capDepths.map(d => pill(String(d), discoveryDepth === d, () => setDiscoveryDepth(d)))}
+            {sep}
+            {pill('Hidden Only', discoveryHiddenOnly, () => setDiscoveryHiddenOnly(v => !v))}
+            {pill('Foreign', discoveryIncludeForeign, () => setDiscoveryIncludeForeign(v => !v))}
+            {pill('Proxies', discoveryIncludeProxies, () => setDiscoveryIncludeProxies(v => !v))}
+          </div>
+        );
+      })()}
 
       {/* MAIN BODY */}
       <div style={{ display:'flex', flex:1, overflow:'hidden' }}>

@@ -2764,6 +2764,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const PB_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
   const pbHdr = () => ({ 'X-API-Key': PB_KEY, 'Content-Type': 'application/json' });
 
+  app.get('/api/playbooks/discovery-capabilities', async (req, res) => {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 10000);
+      const r = await fetch(`${PB_URL}/api/playbooks/discovery-capabilities`, { headers: pbHdr(), signal: ctrl.signal });
+      if (!r.ok) return res.status(r.status).json({ error: 'discovery-capabilities failed' });
+      res.json(await r.json());
+    } catch (e: any) {
+      console.error('[playbooks/discovery-capabilities] error:', e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   app.get('/api/playbooks', async (req, res) => {
     try {
       const ctrl = new AbortController();

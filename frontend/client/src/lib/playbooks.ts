@@ -8,6 +8,7 @@ import type {
   PlaybookDiscoverResponse,
   SupplyChainMapRequest,
   SupplyChainMapResponse,
+  PlaybookDiscoveryCapabilities,
 } from "@/types/playbook";
 
 const AGENT_KEY = "hippo_ak_7f3x9k2m4p8q1w5t";
@@ -22,6 +23,12 @@ function proxyHeaders(): Record<string, string> {
 export async function fetchPlaybooks(): Promise<PlaybookSummary[]> {
   const res = await fetch("/api/playbooks", { headers: proxyHeaders() });
   if (!res.ok) throw new Error(`Playbooks fetch failed: ${res.status}`);
+  return res.json();
+}
+
+export async function fetchDiscoveryCapabilities(): Promise<PlaybookDiscoveryCapabilities> {
+  const res = await fetch("/api/playbooks/discovery-capabilities", { headers: proxyHeaders() });
+  if (!res.ok) throw new Error(`discovery-capabilities failed: ${res.status}`);
   return res.json();
 }
 

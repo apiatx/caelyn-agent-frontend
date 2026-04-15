@@ -58,67 +58,170 @@ export const STRATEGY_FIT_LABEL = (score: number): { label: string; color: strin
   return { label: "Low Fit", color: "#ef4444" };
 };
 
-// ── Discovery / Supply-Chain ────────────────────────────────────────────────
+// ── Discovery Capabilities ───────────────────────────────────────────────────
 
-export interface PlaybookDiscoverRequest {
-  playbook_id: string;
-  mode?: "giant_chain" | "theme_scan" | string;
-  anchor_ticker?: string;
-  theme?: string;
-  theme_ids?: string[];
-  region?: string;
-  hidden_only?: boolean;
-  depth?: number;
-  include_foreign?: boolean;
-  include_proxies?: boolean;
-  [key: string]: any;
+export interface PlaybookDiscoveryCapabilities {
+  playbook_id?: string;
+  supported_modes?: string[];
+  giant_anchors?: string[];
+  themes?: string[];
+  supported_countries?: string[];
+  supported_regions?: string[];
+  depth_options?: number[];
+  max_depth?: number;
+  notes?: string[];
+  [key: string]: unknown;
 }
 
-export interface ForeignCoverageInfo {
-  country?: string;
-  exchange?: string;
-  adr?: string;
-  etf_proxy?: string;
-  coverage_status?: string;
+// ── Discovery Scores (per candidate) ────────────────────────────────────────
+
+export interface DiscoveryScores {
+  chain_depth_score?: number;
+  bottleneck_criticality_score?: number;
+  hiddenness_score?: number;
+  supply_chain_confidence_score?: number;
+  proxy_accessibility_score?: number;
+  [key: string]: number | undefined;
 }
+
+// ── Discovery Candidate ──────────────────────────────────────────────────────
 
 export interface DiscoveryCandidate {
   ticker?: string;
+  symbol?: string;
+  company_name?: string;
   name?: string;
   country?: string;
   exchange?: string;
+  layer_depth?: number;
   chain_layer?: string;
+  themes?: string[];
   theme_tags?: string[];
+  giant_anchors?: string[];
+  scores?: DiscoveryScores;
+  // legacy flat fields the backend may also return
   bottleneck_score?: number;
   hiddenness_score?: number;
   confidence?: number;
+  // narrative
+  thesis_summary?: string;
+  fit_reasoning?: string;
   rationale?: string;
-  foreign_coverage?: ForeignCoverageInfo;
+  // coverage / access
+  coverage_status?: string;
+  data_confidence?: string;
+  direct_tradable?: boolean;
+  us_access_proxy?: string;
+  adr_ticker?: string;
   adr_proxy?: string;
   etf_proxy?: string;
+  // enrichment
+  market_cap_usd?: number;
+  price?: number;
+  enriched?: boolean;
+}
+
+// ── Discovery Meta ───────────────────────────────────────────────────────────
+
+export interface DiscoveryMeta {
+  mode?: string;
+  anchor?: string;
+  themes?: string[];
+  depth?: number;
+  total_candidates?: number;
+  [key: string]: unknown;
+}
+
+// ── Discovery Request / Response ─────────────────────────────────────────────
+
+export interface PlaybookDiscoverRequest {
+  playbook_id: string;
+  mode?: string;
+  // anchor / theme
+  giant_anchors?: string[];
+  anchor_ticker?: string;
+  theme_ids?: string[];
+  // filters
+  country?: string;
+  region?: string;
+  include_foreign?: boolean;
+  only_hidden?: boolean;
+  // depth / pagination
+  max_depth?: number;
+  limit?: number;
+  // proxy behavior
+  include_adr_or_etf_proxies?: boolean;
+  [key: string]: unknown;
 }
 
 export interface PlaybookDiscoverResponse {
-  playbook_id: string;
+  playbook_id?: string;
   mode?: string;
   summary?: string;
   analysis?: string;
-  candidates?: DiscoveryCandidate[];
   top_candidates?: DiscoveryCandidate[];
+  candidates?: DiscoveryCandidate[];
+  chain_map_preview?: unknown;
+  meta?: DiscoveryMeta;
   error?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
-export interface ChainMapNode {
+// ── Supply-Chain Map ─────────────────────────────────────────────────────────
+
+export interface ChainNode {
   ticker?: string;
   name?: string;
-  layer?: string;
+  company_name?: string;
   country?: string;
-  theme_tags?: string[];
+  exchange?: string;
+  us_access_proxy?: string;
+  adr_ticker?: string;
+  adr_proxy?: string;
+  etf_proxy?: string;
+  bottleneck_score?: number;
   confidence?: number;
   is_foreign?: boolean;
-  adr_proxy?: string;
+  themes?: string[];
+  [key: string]: unknown;
 }
+
+export interface ChainLayer {
+  layer_index?: number;
+  label?: string;
+  nodes: ChainNode[];
+}
+
+export interface SupplyChainMapRequest {
+  playbook_id: string;
+  anchor?: string;
+  giant?: string;
+  theme?: string;
+  region?: string;
+  include_foreign?: boolean;
+  max_depth?: number;
+  [key: string]: unknown;
+}
+
+export interface SupplyChainMapResponse {
+  playbook_id?: string;
+  anchor?: string;
+  anchor_type?: string;
+  theme?: string;
+  summary?: string;
+  layers?: ChainLayer[];
+  country_tags?: string[];
+  adr_etf_proxies?: Record<string, string>;
+  confidence?: number;
+  meta?: DiscoveryMeta;
+  // fallback flat fields
+  nodes?: ChainNode[];
+  error?: string;
+  [key: string]: unknown;
+}
+
+// Legacy aliases used by older renderers — kept for backward compat
+export type ChainMapNode = ChainNode;
 
 export interface ChainMapEdge {
   from?: string;
@@ -127,26 +230,12 @@ export interface ChainMapEdge {
   strength?: number;
 }
 
-export interface SupplyChainMapRequest {
-  playbook_id: string;
-  anchor?: string;
-  theme?: string;
-  region?: string;
-  depth?: number;
-  include_foreign?: boolean;
-  [key: string]: any;
-}
-
-export interface SupplyChainMapResponse {
-  playbook_id: string;
-  anchor?: string;
-  theme?: string;
-  summary?: string;
-  layers?: { label: string; nodes: ChainMapNode[] }[];
-  nodes?: ChainMapNode[];
-  edges?: ChainMapEdge[];
-  error?: string;
-  [key: string]: any;
+export interface ForeignCoverageInfo {
+  country?: string;
+  exchange?: string;
+  adr?: string;
+  etf_proxy?: string;
+  coverage_status?: string;
 }
 
 // ── Analyze ──────────────────────────────────────────────────────────────────
@@ -178,10 +267,16 @@ export interface PlaybookAnalyzeResponse {
   analysis?: string;
   summary?: string;
   message?: string;
+  answer?: string;
   top_fits?: PlaybookAnalyzeIdea[];
   low_fits?: PlaybookAnalyzeIdea[];
   rejected?: PlaybookAnalyzeIdea[];
   reasoning?: string;
+  // Serenity analyze-with-discovery context
+  discovery_used?: boolean;
+  discovery_mode?: string;
+  discovery_context?: unknown;
+  top_ranked?: DiscoveryCandidate[];
   error?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
