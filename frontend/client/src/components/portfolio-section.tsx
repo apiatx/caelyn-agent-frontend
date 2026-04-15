@@ -1,5 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Wallet, ExternalLink, TrendingUp, Edit3, Save, Plus, Activity, ChevronDown, BarChart3, Brain } from "lucide-react";
+import StrategySelector from "@/components/strategy-selector";
+import { PortfolioScorePanel } from "@/components/playbook-score-panel";
+import { fetchPlaybooks, scorePortfolio } from "@/lib/playbooks";
+import type { PlaybookSummary, PortfolioPlaybookResponse } from "@/types/playbook";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,6 +42,27 @@ export default function PortfolioSection() {
   const [taoWalletAddress, setTaoWalletAddress] = useState('');
   const [isBaseHoldingsOpen, setIsBaseHoldingsOpen] = useState(true);
   const [isTaoHoldingsOpen, setIsTaoHoldingsOpen] = useState(false);
+  const [strategyPlaybooks, setStrategyPlaybooks] = useState<PlaybookSummary[]>([]);
+  const [selectedStrategy, setSelectedStrategy] = useState<string>('default');
+  const [strategyScoreData, setStrategyScoreData] = useState<PortfolioPlaybookResponse | null>(null);
+  const [strategyScoreLoading, setStrategyScoreLoading] = useState(false);
+
+  useEffect(() => {
+    fetchPlaybooks().then(setStrategyPlaybooks).catch(() => {});
+  }, []);
+
+  const runPortfolioScore = useCallback((strategyId: string, tokens: Array<{symbol: string; value: number; totalValue: number}>) => {
+    if (strategyId === 'default' || !tokens.length) return;
+    const holdings = tokens
+      .filter(t => t.symbol && t.value > 0)
+      .map(t => ({ ticker: t.symbol.toUpperCase(), weight: t.totalValue > 0 ? t.value / t.totalValue : undefined }));
+    if (!holdings.length) return;
+    setStrategyScoreLoading(true);
+    scorePortfolio(strategyId, holdings)
+      .then(setStrategyScoreData)
+      .catch(() => {})
+      .finally(() => setStrategyScoreLoading(false));
+  }, []);
 
   // Get DeBank portfolio data using the BASE wallet address
   const { data: debankData, isLoading: isDebankLoading } = useDeBankPortfolio(
@@ -104,7 +129,54 @@ export default function PortfolioSection() {
         </div>
         <p className="text-lg text-white/80 font-medium tracking-wide">Cross-Chain Portfolio Management & Analytics</p>
         <div className="w-32 h-1 bg-gradient-to-r from-cyan-500 to-emerald-500 mx-auto mt-4 rounded-full"></div>
+        {strategyPlaybooks.length > 0 && (
+          <div className="flex justify-center mt-5">
+            <StrategySelector
+              playbooks={strategyPlaybooks}
+              selectedId={selectedStrategy}
+              onChange={(id) => {
+                setSelectedStrategy(id);
+                if (id !== 'default') {
+                  const tokens = (debankData?.data?.topTokens || []).map(t => ({
+                    symbol: t.symbol,
+                    value: t.value,
+                    totalValue: debankData?.data?.totalValue || 1,
+                  }));
+                  runPortfolioScore(id, tokens);
+                } else {
+                  setStrategyScoreData(null);
+                }
+              }}
+            />
+          </div>
+        )}
       </div>
+
+      {/* Strategy Score Panel */}
+      {selectedStrategy !== 'default' && (strategyScoreData || strategyScoreLoading) && (
+        <div>
+          {strategyScoreLoading && !strategyScoreData ? (
+            <div style={{ padding: 16, textAlign: 'center', fontSize: 12, color: '#6b7280', fontFamily: "'JetBrains Mono', monospace" }}>
+              Scoring portfolio against {strategyPlaybooks.find(p => p.id === selectedStrategy)?.short_label || selectedStrategy}…
+            </div>
+          ) : strategyScoreData ? (
+            <PortfolioScorePanel
+              data={strategyScoreData}
+              playbookName={strategyPlaybooks.find(p => p.id === selectedStrategy)?.name || selectedStrategy}
+              playbookColor={strategyPlaybooks.find(p => p.id === selectedStrategy)?.ui_color}
+              loading={strategyScoreLoading}
+              onRescore={() => {
+                const tokens = (debankData?.data?.topTokens || []).map(t => ({
+                  symbol: t.symbol,
+                  value: t.value,
+                  totalValue: debankData?.data?.totalValue || 1,
+                }));
+                runPortfolioScore(selectedStrategy, tokens);
+              }}
+            />
+          ) : null}
+        </div>
+      )}
 
       {/* Portfolio Sections - Individual Glass Cards */}
       <div className="space-y-8">

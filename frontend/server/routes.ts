@@ -2759,5 +2759,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch { res.json({}); }
   });
 
+  // ── Playbook / Strategy routes ──────────────────────────────────────
+  const PB_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
+  const PB_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+  const pbHdr = () => ({ 'X-API-Key': PB_KEY, 'Content-Type': 'application/json' });
+
+  app.get('/api/playbooks', async (req, res) => {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 8000);
+      const r = await fetch(`${PB_URL}/api/playbooks`, { headers: pbHdr(), signal: ctrl.signal });
+      if (!r.ok) return res.status(r.status).json({ error: 'Playbooks fetch failed' });
+      res.json(await r.json());
+    } catch (e: any) {
+      console.error('[playbooks] fetch error:', e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post('/api/playbooks/score-watchlist', async (req, res) => {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 60000);
+      const r = await fetch(`${PB_URL}/api/playbooks/score-watchlist`, {
+        method: 'POST',
+        headers: pbHdr(),
+        body: JSON.stringify(req.body),
+        signal: ctrl.signal,
+      });
+      if (!r.ok) return res.status(r.status).json({ error: 'score-watchlist failed' });
+      res.json(await r.json());
+    } catch (e: any) {
+      console.error('[playbooks/score-watchlist] error:', e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post('/api/playbooks/score-portfolio', async (req, res) => {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 60000);
+      const r = await fetch(`${PB_URL}/api/playbooks/score-portfolio`, {
+        method: 'POST',
+        headers: pbHdr(),
+        body: JSON.stringify(req.body),
+        signal: ctrl.signal,
+      });
+      if (!r.ok) return res.status(r.status).json({ error: 'score-portfolio failed' });
+      res.json(await r.json());
+    } catch (e: any) {
+      console.error('[playbooks/score-portfolio] error:', e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   return httpServer;
 }

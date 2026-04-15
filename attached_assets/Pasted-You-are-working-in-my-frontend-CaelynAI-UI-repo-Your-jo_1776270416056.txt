@@ -1,0 +1,277 @@
+You are working in my frontend CaelynAI UI repo.
+
+Your job is to add strategy selection UI backed by the new backend playbook framework.
+
+This must support:
+
+AI Terminal page
+Watchlist page
+Portfolio page
+
+The strategy selector should currently support:
+
+Serenity
+S&J
+
+And it must be built to support adding more strategies later without rewriting the UI.
+
+Non-negotiable guardrails
+Do not break existing page behavior.
+Do not rewrite the current AI Terminal flow unless needed for additive strategy support.
+Do not remove existing controls or data displays.
+Keep this additive and backwards compatible.
+Use a shared reusable strategy selector component.
+Do not hardcode fragile one-off logic separately on each page.
+If backend playbook routes fail, UI should degrade gracefully and preserve existing page functionality.
+Do not make strategy selection mandatory if old flows can still work without it.
+Preserve current visual style and terminal aesthetic.
+What to build
+
+Create a shared strategy selection system and integrate it into:
+
+AI Terminal page
+Watchlist page
+Portfolio page
+Shared component
+
+Create a reusable component like:
+
+StrategySelector
+or PlaybookSelector
+
+It should:
+
+load available strategies from backend GET /api/playbooks
+display them in a dropdown
+show label + maybe short description on hover or subtext
+support future strategies automatically
+
+Use safe loading and fallback states.
+
+UI behavior
+AI Terminal page
+
+Add a strategy dropdown in the controls/header area.
+
+Behavior:
+
+user can choose Serenity or S&J
+selected strategy should be stored in page state
+when relevant AI terminal actions or strategy-aware requests are made, include playbook_id
+do not break existing non-strategy terminal functionality
+
+For v1:
+
+if the terminal has a query payload that can safely carry extra metadata, include:
+{
+  "playbook_id": "serenity"
+}
+
+or
+
+{
+  "playbook_id": "sjcapital"
+}
+
+Only do this if it is backwards compatible and won’t break the current backend query path.
+
+If unsafe, keep the selector local for now and use it only for future strategy-aware calls or display.
+
+Watchlist page
+
+Add strategy dropdown near watchlist tools/filter controls.
+
+Behavior:
+
+when selected, call backend POST /api/playbooks/score-watchlist
+pass watchlist tickers + selected playbook
+display returned scores/rankings
+preserve existing watchlist UI and data
+add a strategy-specific overlay layer rather than replacing the current watchlist tables/cards
+
+Recommended additions:
+
+a new column: Strategy Fit
+optional badge: High Fit, Moderate Fit, Low Fit
+optional expand/click for score breakdown
+
+If there is a cleaner UI pattern in the existing design system, use that, but do not clutter the page.
+
+Portfolio page
+
+Add strategy dropdown near portfolio controls/header.
+
+Behavior:
+
+when selected, call backend POST /api/playbooks/score-portfolio
+pass holdings + selected playbook
+display:
+portfolio alignment score
+strongest aligned holdings
+weakest aligned holdings
+per-holding strategy fit
+
+Again: this should enhance the existing portfolio page, not replace it.
+
+Recommended additions:
+
+summary card: Playbook Alignment
+per-holding column: Strategy Fit
+optional mini panel: Why this portfolio fits / clashes with selected strategy
+Shared state
+
+Implement a shared model for selected strategy on a per-page basis.
+
+If there is already a good global state system in the app, use it carefully.
+If not, local page state is fine for v1.
+
+Optional enhancement:
+
+remember last selected strategy in localStorage
+but do not overcomplicate
+API integration
+
+Use the new backend routes:
+
+GET /api/playbooks
+POST /api/playbooks/score-watchlist
+POST /api/playbooks/score-portfolio
+
+Use graceful fallbacks:
+
+if strategy list fails to load, show default choices if safe
+if playbook scoring fails, keep original page content working and show a non-blocking error state
+Data display recommendations
+Strategy dropdown labels
+
+Show:
+
+Serenity
+S&J
+
+Internally map to:
+
+serenity
+sjcapital
+Strategy fit display
+
+Normalize score into user-friendly UI:
+
+80+ = High Fit
+60–79 = Moderate Fit
+<60 = Low Fit
+
+Use existing app styling. Do not invent a completely different design language.
+
+Breakdown display
+
+If backend returns factor breakdowns, show them in a compact tooltip/popover/modal/drawer, depending on current UI patterns.
+
+Example:
+
+Bottleneck Exposure
+Sector Strength
+Valuation Discount
+Revenue Acceleration
+Dilution Risk
+
+Keep it concise and readable.
+
+AI Terminal integration guidance
+
+This part must be careful.
+
+Do not force the main AI Terminal chat/query flow to depend on the new playbook engine unless that contract already supports extra optional metadata safely.
+
+Safer v1 pattern:
+
+add the dropdown now
+store selection in UI state
+include it only in strategy-aware requests or as optional metadata
+do not break the main terminal experience if backend ignores it
+
+If there is an obvious safe place to attach playbook_id to terminal query payloads without side effects, do it.
+Otherwise leave the selector visible and ready, but do not force deeper coupling yet.
+
+Component/file suggestions
+
+Adapt to repo structure, but likely something like:
+
+src/components/strategy/StrategySelector.tsx
+src/lib/api/playbooks.ts
+src/types/playbook.ts
+
+Then integrate into:
+
+AI Terminal page/component
+Watchlist page/component
+Portfolio page/component
+Types
+
+Add typed frontend models for:
+
+PlaybookSummary
+PlaybookScoreResult
+WatchlistPlaybookResponse
+PortfolioPlaybookResponse
+
+Do not rely on loose any if avoidable.
+
+UX expectations
+
+The dropdown should feel native to the platform, not bolted on.
+
+It should look like:
+
+an intentional research mode selector
+not a weird admin setting
+
+Keep it clean and terminal-like.
+
+Failure handling
+
+If any playbook request fails:
+
+do not blank the page
+do not break current tables/charts/cards
+show a lightweight inline error or subtle fallback state
+allow retry
+Acceptance criteria
+
+When complete:
+
+AI Terminal
+strategy dropdown visible
+selection works
+page remains fully functional
+Watchlist
+strategy dropdown visible
+watchlist can be scored with selected strategy
+strategy fit is visible per ticker
+existing watchlist behavior remains intact
+Portfolio
+strategy dropdown visible
+portfolio can be scored with selected strategy
+portfolio alignment summary visible
+per-holding strategy fit visible
+existing portfolio behavior remains intact
+Reusability
+adding a new strategy later should only require backend config + minimal UI updates
+shared selector component used across pages
+Deliverables
+
+When done, provide:
+
+files added/modified
+where selector was integrated
+how API calls are made
+how failures are handled
+screenshots or clear summary of what changed
+confirmation that no existing core page behavior was broken
+Important philosophy
+
+This is phase 1 strategy support.
+It must feel solid, minimal, and extensible.
+Do not overbuild.
+Do not break existing page flows.
+Do not scatter logic everywhere.

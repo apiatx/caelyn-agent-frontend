@@ -43,6 +43,16 @@ Token stored as `caelyn_token` in localStorage/sessionStorage.
 - Investor proxy routes: `/investor/overview`, `/investor/regime`, `/investor/watchlists`, `/investor/themes`
 - Category filter for markets: backend proxy `/api/predict/markets?tag=<ExactCasing>` (9 valid tags)
 
+## Strategy / Playbook System
+- **Types**: `frontend/client/src/types/playbook.ts` — `PlaybookSummary`, `PlaybookScoreResult`, `WatchlistPlaybookResponse`, `PortfolioPlaybookResponse`, `STRATEGY_FIT_LABEL(score)`
+- **API client**: `frontend/client/src/lib/playbooks.ts` — `fetchPlaybooks()`, `scoreWatchlist(playbookId, tickers)`, `scorePortfolio(playbookId, holdings)`
+- **Proxy routes** (in `routes.ts` at end): `GET /api/playbooks`, `POST /api/playbooks/score-watchlist`, `POST /api/playbooks/score-portfolio` → FastAPI
+- **Shared UI**: `frontend/client/src/components/strategy-selector.tsx` — dropdown component; `frontend/client/src/components/playbook-score-panel.tsx` — `WatchlistScorePanel`, `PortfolioScorePanel`
+- **AI Terminal** (`TradingAgent.tsx`): `selectedStrategy` state (default='default'); strategy selector inline in command bar after model buttons; if `selectedStrategy !== 'default'`, adds `playbook_id` to `/api/query` payload. **Default = zero payload change.**
+- **Watchlist** (`watchlist.tsx`): `StrategySelector` in header bar; `WatchlistScorePanel` shown below signal strip when strategy selected
+- **Portfolio** (`portfolio-section.tsx`): `StrategySelector` below header; `PortfolioScorePanel` uses DeBankPortfolio `topTokens` as holdings
+- **FastAPI playbooks**: `serenity` and `sjcapital`; backend returns `id`, `name`, `short_label`, `ui_color`, `description`, `enabled`
+
 ## Dev Notes
 - Vite config requires `server.allowedHosts: 'all'` for Replit preview
 - Backend API key in `AGENT_API_KEY` constant across various pages

@@ -331,6 +331,10 @@ export default function TradingAgent() {
   const commandInputRef = useRef<HTMLInputElement>(null);
   const loadingRef = useRef(false);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const [selectedStrategy, setSelectedStrategy] = useState<string>('default');
+  const [strategyPlaybooks, setStrategyPlaybooks] = useState<Array<{id:string;name:string;short_label:string;ui_color?:string}>>([]);
+  const [strategyDropdownOpen, setStrategyDropdownOpen] = useState(false);
+  const strategyDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     scrollAnchorRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -356,6 +360,23 @@ export default function TradingAgent() {
       .then(r => r.ok ? r.json() : null)
       .then(data => { if (data) setCollabOptions(data); })
       .catch(e => console.error('[COLLAB_OPTIONS]', e));
+  }, []);
+
+  useEffect(() => {
+    fetch('/api/playbooks')
+      .then(r => r.ok ? r.json() : [])
+      .then((data: any[]) => { if (Array.isArray(data)) setStrategyPlaybooks(data); })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (strategyDropdownRef.current && !strategyDropdownRef.current.contains(e.target as Node)) {
+        setStrategyDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
   }, []);
 
   useEffect(() => {
@@ -631,6 +652,9 @@ export default function TradingAgent() {
       Object.assign(payload, buildCollabPayload(collabConfig, selectedModel));
     } else {
       payload.reasoning_model = selectedModel;
+    }
+    if (selectedStrategy && selectedStrategy !== 'default') {
+      payload.playbook_id = selectedStrategy;
     }
     if (csvData) setCsvData(null);
     if (csvFileName) setCsvFileName(null);
@@ -2943,6 +2967,41 @@ export default function TradingAgent() {
           ] as const).map(({ id, label }) => (
             <button key={id} onClick={() => { setSelectedModel(id); setCollabConfig(null); }} style={{ padding:'3px 8px', borderRadius:10, fontSize:9, fontWeight:600, fontFamily:"'JetBrains Mono', monospace", background: !collabConfig && selectedModel === id ? '#3b82f6' : 'rgba(255,255,255,0.04)', color: !collabConfig && selectedModel === id ? '#ffffff' : '#6b7280', border:'none', cursor:'pointer', transition:'all 0.15s' }}>{label}</button>
           ))}
+          {/* Strategy / Playbook selector */}
+          {strategyPlaybooks.length > 0 && (
+            <div ref={strategyDropdownRef} style={{ position:'relative', display:'inline-block', marginLeft:4 }}>
+              <button
+                onClick={() => setStrategyDropdownOpen(!strategyDropdownOpen)}
+                style={{ padding:'3px 9px', borderRadius:10, fontSize:9, fontWeight:700, fontFamily:"'JetBrains Mono', monospace", background: selectedStrategy !== 'default' ? 'rgba(99,102,241,0.18)' : 'rgba(255,255,255,0.03)', color: selectedStrategy !== 'default' ? '#a5b4fc' : '#6b7280', border: selectedStrategy !== 'default' ? '1px solid rgba(99,102,241,0.4)' : '1px solid rgba(255,255,255,0.07)', cursor:'pointer', transition:'all 0.15s', display:'flex', alignItems:'center', gap:4, letterSpacing:'0.2px' }}
+              >
+                {selectedStrategy !== 'default' ? (strategyPlaybooks.find(p => p.id === selectedStrategy)?.short_label || selectedStrategy) : 'Strategy'}
+                {' ▾'}
+              </button>
+              {strategyDropdownOpen && (
+                <div style={{ position:'absolute', top:'calc(100% + 4px)', left:0, minWidth:240, background:'rgba(12,13,20,0.98)', border:'1px solid rgba(99,102,241,0.25)', borderRadius:10, boxShadow:'0 8px 32px rgba(0,0,0,0.6)', zIndex:1100, overflow:'hidden' }}>
+                  <div style={{ padding:'8px 12px 6px', borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
+                    <div style={{ fontSize:9, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.5px', color:'#6b7280', fontFamily:"'JetBrains Mono', monospace" }}>Strategy Playbook</div>
+                  </div>
+                  {[{ id:'default', name:'Default', short_label:'Default', ui_color:undefined as string|undefined }, ...strategyPlaybooks].map(pb => {
+                    const isSel = selectedStrategy === pb.id;
+                    return (
+                      <div key={pb.id} onClick={() => { setSelectedStrategy(pb.id); setStrategyDropdownOpen(false); }} style={{ display:'flex', alignItems:'flex-start', gap:8, padding:'8px 12px', cursor:'pointer', background: isSel ? 'rgba(99,102,241,0.1)' : 'transparent', borderLeft: isSel ? '2px solid #6366f1' : '2px solid transparent', transition:'background 0.1s' }}>
+                        <div style={{ width:12, height:12, borderRadius:'50%', border: isSel ? '2px solid #6366f1' : '2px solid #4b5563', display:'flex', alignItems:'center', justifyContent:'center', marginTop:2, flexShrink:0 }}>
+                          {isSel && <div style={{ width:6, height:6, borderRadius:'50%', background:'#6366f1' }} />}
+                        </div>
+                        <div>
+                          <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:2 }}>
+                            {pb.ui_color && <span style={{ display:'inline-block', width:7, height:7, borderRadius:'50%', background:pb.ui_color }} />}
+                            <span style={{ fontSize:11, fontWeight:700, color: isSel ? '#e0e0e0' : '#d1d5db', fontFamily:"'JetBrains Mono', monospace" }}>{pb.short_label || pb.name}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
         </div>
         <div style={{ position:'relative', flex:1 }}>
           <input

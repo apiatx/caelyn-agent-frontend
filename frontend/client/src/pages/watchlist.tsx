@@ -4,6 +4,10 @@ import WatchlistAnalysis from '@/components/WatchlistAnalysis';
 import type { AnalysisSection, TickerCard } from '@/components/WatchlistAnalysis';
 import { StockDetailModal } from '@/components/StockDetailModal';
 import { RefreshCw, ExternalLink, Plus, Upload, FileText } from 'lucide-react';
+import StrategySelector from '@/components/strategy-selector';
+import { WatchlistScorePanel } from '@/components/playbook-score-panel';
+import { fetchPlaybooks, scoreWatchlist } from '@/lib/playbooks';
+import type { PlaybookSummary, WatchlistPlaybookResponse } from '@/types/playbook';
 
 /* ── color tokens (Hyperliquid style) ──────────────────────────────── */
 const C = {
@@ -469,8 +473,25 @@ export default function WatchlistPage() {
   const csvInputRef = useRef<HTMLInputElement>(null);
   const addInputRef = useRef<HTMLInputElement>(null);
   const autoTriggeredRef = useRef<Set<string>>(new Set());
+  const [strategyPlaybooks, setStrategyPlaybooks] = useState<PlaybookSummary[]>([]);
+  const [selectedStrategy, setSelectedStrategy] = useState<string>('default');
+  const [strategyScoreData, setStrategyScoreData] = useState<WatchlistPlaybookResponse | null>(null);
+  const [strategyScoreLoading, setStrategyScoreLoading] = useState(false);
 
   useEffect(() => { ensureBlinkStyle(); }, []);
+
+  useEffect(() => {
+    fetchPlaybooks().then(setStrategyPlaybooks).catch(() => {});
+  }, []);
+
+  const runStrategyScore = useCallback((strategyId: string, tickers: string[]) => {
+    if (strategyId === 'default' || !tickers.length) return;
+    setStrategyScoreLoading(true);
+    scoreWatchlist(strategyId, tickers.slice(0, 50))
+      .then(setStrategyScoreData)
+      .catch(() => {})
+      .finally(() => setStrategyScoreLoading(false));
+  }, []);
 
   /* ── list of all watchlists ──────────────────────────────────────── */
   const { data: wlMetas, refetch: refetchMetas } = useQuery<WatchlistMeta[]>({
@@ -1477,6 +1498,23 @@ export default function WatchlistPage() {
                 : (analysis?.summary || '')}
             </div>
 
+            {/* Strategy selector */}
+            {strategyPlaybooks.length > 0 && (
+              <StrategySelector
+                playbooks={strategyPlaybooks}
+                selectedId={selectedStrategy}
+                onChange={(id) => {
+                  setSelectedStrategy(id);
+                  if (id !== 'default') {
+                    runStrategyScore(id, allTickerSymbols);
+                  } else {
+                    setStrategyScoreData(null);
+                  }
+                }}
+                compact
+              />
+            )}
+
             {/* Right: error + last analyzed + refresh */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
               {refreshError && !refreshMut.isPending && (
@@ -1538,6 +1576,25 @@ export default function WatchlistPage() {
 
             {/* ── Row 1: Signal Summary Strip ── */}
             {newFmt ? renderNewFormatSignalStrip() : renderLegacySignalStrip()}
+
+            {/* ── Strategy Score Panel ── */}
+            {selectedStrategy !== 'default' && (strategyScoreData || strategyScoreLoading) && (
+              <div style={{ padding: '0 20px' }}>
+                {strategyScoreLoading && !strategyScoreData ? (
+                  <div style={{ padding: 16, textAlign: 'center', fontSize: 11, color: C.dim, fontFamily: C.font }}>
+                    Scoring {allTickerSymbols.length} tickers against {strategyPlaybooks.find(p => p.id === selectedStrategy)?.short_label || selectedStrategy}…
+                  </div>
+                ) : strategyScoreData ? (
+                  <WatchlistScorePanel
+                    data={strategyScoreData}
+                    playbookName={strategyPlaybooks.find(p => p.id === selectedStrategy)?.name || selectedStrategy}
+                    playbookColor={strategyPlaybooks.find(p => p.id === selectedStrategy)?.ui_color}
+                    loading={strategyScoreLoading}
+                    onRescore={() => runStrategyScore(selectedStrategy, allTickerSymbols)}
+                  />
+                ) : null}
+              </div>
+            )}
 
             {/* ── Row 2: Section panels (new format) / Category panels (legacy) ── */}
             <div style={{ padding: '16px 20px', position: 'relative', minHeight: refreshMut.isPending ? 280 : undefined }}>
