@@ -443,22 +443,42 @@ function SubnetChartPanel({
   onClose: (e: React.MouseEvent) => void;
   colSpan?: number;
 }) {
-  const history = subnet.seven_day_price_history ?? [];
+  const [tf, setTf] = React.useState<"1H" | "4H" | "1D">("1D");
+
   const ch24h = num(subnet.price_change_24h);
   const ch7d  = num(subnet.price_change_7d);
   const ch30d = num(subnet.price_change_30d);
   const buyVol  = num(subnet.buy_volume_24h);
   const sellVol = num(subnet.sell_volume_24h);
   const buyPct  = buyVol + sellVol > 0 ? (buyVol / (buyVol + sellVol)) * 100 : 50;
-  const isPositive = ch7d >= 0;
-  const strokeColor = isPositive ? "#10b981" : "#ef4444";
 
-  const chartData = history.map((price, i) => ({
-    day:   i === history.length - 1 ? "Now" : `-${history.length - 1 - i}d`,
-    price: +Number(price).toFixed(8),
+  // Fetch hourly price history on demand for this specific subnet
+  const { data: histData, isLoading: histLoading } = useQuery<{ points: { timestamp: string; price: number }[] }>({
+    queryKey: [`subnet-price-history`, subnet.netuid],
+    queryFn: () => fetch(`/api/bittensor/subnet/${subnet.netuid}/price-history`).then(r => r.ok ? r.json() : { points: [] }),
+    staleTime: 5 * 60_000,
+    retry: 1,
+  });
+
+  const allPoints = histData?.points ?? [];
+
+  // Slice based on selected timeframe (data is ~25 hourly points = ~24h)
+  const slicedPoints = React.useMemo(() => {
+    if (!allPoints.length) return [];
+    const count = tf === "1H" ? 6 : tf === "4H" ? 12 : allPoints.length;
+    return allPoints.slice(-count);
+  }, [allPoints, tf]);
+
+  const chartData = slicedPoints.map(p => ({
+    time: new Date(p.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    price: +Number(p.price).toFixed(8),
   }));
-  const minP = history.length > 0 ? Math.min(...history) * 0.997 : 0;
-  const maxP = history.length > 0 ? Math.max(...history) * 1.003 : 1;
+
+  const prices = chartData.map(d => d.price);
+  const minP = prices.length > 0 ? Math.min(...prices) * 0.998 : 0;
+  const maxP = prices.length > 0 ? Math.max(...prices) * 1.002 : 1;
+  const isPositive = prices.length >= 2 ? prices[prices.length - 1] >= prices[0] : ch7d >= 0;
+  const strokeColor = isPositive ? "#10b981" : "#ef4444";
 
   const content = (
     <div className="bg-[#06080e] border-t border-orange-500/30 p-4">
@@ -501,18 +521,35 @@ function SubnetChartPanel({
         </span>
       </div>
 
-      {/* Price chart — area if history available, multi-timeframe bar chart otherwise */}
-      {chartData.length >= 2 ? (
-        <div style={{ height: 130 }}>
+      {/* Timeframe selector + price chart */}
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-[9px] text-white/20 uppercase tracking-widest">Price Action</span>
+        <div className="flex gap-0.5 bg-white/[0.04] rounded-md p-0.5">
+          {(["1H", "4H", "1D"] as const).map(t => (
+            <button key={t} onClick={() => setTf(t)}
+              className={`px-2 py-0.5 rounded text-[10px] font-mono font-medium transition-colors ${tf === t ? "bg-orange-500/20 text-orange-300" : "text-white/30 hover:text-white/60"}`}>
+              {t}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ height: 130 }}>
+        {histLoading ? (
+          <div className="h-full flex items-center justify-center text-white/20 text-xs animate-pulse">
+            Loading price data…
+          </div>
+        ) : chartData.length >= 2 ? (
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData} margin={{ top: 4, right: 8, left: -4, bottom: 0 }}>
+            <AreaChart data={chartData} margin={{ top: 4, right: 4, left: -4, bottom: 0 }}>
               <defs>
                 <linearGradient id={`sngrad${subnet.netuid}`} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="10%" stopColor={strokeColor} stopOpacity={0.25} />
                   <stop offset="95%" stopColor={strokeColor} stopOpacity={0.02} />
                 </linearGradient>
               </defs>
-              <XAxis dataKey="day" tick={{ fontSize: 9, fill: "#475569" }} tickLine={false} axisLine={false} />
+              <XAxis dataKey="time" tick={{ fontSize: 9, fill: "#475569" }} tickLine={false} axisLine={false}
+                interval="preserveStartEnd" />
               <YAxis domain={[minP, maxP]} tick={{ fontSize: 9, fill: "#475569" }} tickLine={false} axisLine={false}
                 tickFormatter={(v: number) => fmtTao(v)} width={70} />
               <Tooltip
@@ -524,46 +561,12 @@ function SubnetChartPanel({
                 fill={`url(#sngrad${subnet.netuid})`} dot={false} connectNulls />
             </AreaChart>
           </ResponsiveContainer>
-        </div>
-      ) : (() => {
-        const tfData = [
-          { label: "1H",  pct: num(subnet.price_change_1h) },
-          { label: "24H", pct: num(subnet.price_change_24h) },
-          { label: "7D",  pct: num(subnet.price_change_7d) },
-          { label: "30D", pct: num(subnet.price_change_30d) },
-        ];
-        const maxAbs = Math.max(...tfData.map(d => Math.abs(d.pct)), 1);
-        return (
-          <div style={{ height: 130 }}>
-            <div className="flex items-end justify-around h-full gap-2 pb-1">
-              {tfData.map(({ label, pct }) => {
-                const isPos = pct >= 0;
-                const barPct = Math.abs(pct) / maxAbs;
-                const barH = Math.max(barPct * 80, 4);
-                return (
-                  <div key={label} className="flex flex-col items-center gap-1 flex-1">
-                    <span className={`text-[10px] font-mono font-bold ${isPos ? "text-emerald-400" : "text-red-400"}`}>
-                      {pct >= 0 ? "+" : ""}{pct.toFixed(1)}%
-                    </span>
-                    <div className="w-full flex items-end justify-center" style={{ height: 80 }}>
-                      <div
-                        className="w-full rounded-t-sm transition-all"
-                        style={{
-                          height: barH,
-                          background: isPos
-                            ? "linear-gradient(to top, #059669, #10b98180)"
-                            : "linear-gradient(to top, #dc2626, #ef444480)",
-                        }}
-                      />
-                    </div>
-                    <span className="text-[9px] text-white/30 font-mono">{label}</span>
-                  </div>
-                );
-              })}
-            </div>
+        ) : (
+          <div className="h-full flex items-center justify-center text-white/20 text-xs">
+            No price data available for this subnet
           </div>
-        );
-      })()}
+        )}
+      </div>
     </div>
   );
 

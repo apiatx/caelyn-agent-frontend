@@ -1031,6 +1031,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/bittensor/subnet/:netuid/price-history', async (req, res) => {
+    // On-demand per-subnet price history — 5 min TTL to respect rate limits
+    const { netuid } = req.params;
+    const cacheKey = `price-hist-${netuid}`;
+    if (_serveTao(res, cacheKey, `/api/bittensor/subnets/dynamic-history?netuids=${netuid}`, 5 * 60_000, 15000)) return;
+    try {
+      const raw = await _fetchTao(`/api/bittensor/subnets/dynamic-history?netuids=${netuid}`, 15000);
+      // Normalise: convert object-keyed data to array of points for this netuid
+      const points: { timestamp: string; price: number }[] = Object.values(raw.data ?? raw)
+        .filter((p: any) => p.netuid === Number(netuid))
+        .map((p: any) => ({ timestamp: p.timestamp, price: p.price }))
+        .sort((a: any, b: any) => a.timestamp.localeCompare(b.timestamp));
+      _taoCache[cacheKey] = { data: { points }, ts: Date.now(), fetching: false };
+      res.json({ points });
+    } catch (error) {
+      console.error('[bittensor] price-history proxy error:', error);
+      res.status(503).json({ error: 'Failed to load price history' });
+    }
+  });
+
   app.get('/api/bittensor/price/history', async (req, res) => {
     if (_serveTao(res, 'price-history', '/api/bittensor/price/history', TAO_HIST_TTL, 15000)) return;
     try {
