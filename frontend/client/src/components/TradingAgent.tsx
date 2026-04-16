@@ -347,6 +347,8 @@ export default function TradingAgent() {
   const [discoveryIncludeProxies, setDiscoveryIncludeProxies] = useState<boolean>(true);
   const [discoveryCapabilities, setDiscoveryCapabilities] = useState<PlaybookDiscoveryCapabilities | null>(null);
   const capabilitiesFetchedRef = useRef(false);
+  // Serenity advanced override — when false, Customize/model-selector controls are hidden in non-default modes
+  const [serenityAdvancedOverride, setSerenityAdvancedOverride] = useState(false);
 
   useEffect(() => {
     scrollAnchorRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -354,6 +356,7 @@ export default function TradingAgent() {
 
   // Load discovery capabilities once when Serenity is first selected; cache for session
   useEffect(() => {
+    setSerenityAdvancedOverride(false); // always reset advanced override on mode switch
     if (selectedStrategy !== 'serenity' || capabilitiesFetchedRef.current) return;
     capabilitiesFetchedRef.current = true;
     fetchDiscoveryCapabilities()
@@ -653,7 +656,7 @@ export default function TradingAgent() {
   // ── Serenity-only discovery helpers ─────────────────────────────────────────
   // These are only called by explicit user clicks — never auto-fired.
 
-  async function runDiscovery(opts: {
+  async function runDiscovery(opts: { // route=/api/playbooks/discover
     mode?: string;
     theme_ids?: string[];
     include_foreign?: boolean;
@@ -869,10 +872,12 @@ export default function TradingAgent() {
     // ── STRATEGY MODE: non-default strategy → playbook analyze route ──────
     // Preset intents and CSV analysis always use the default /api/query path.
     if (selectedStrategy !== 'default' && !presetIntent && !csvData) {
+      console.log('[ROUTE] mode=', selectedStrategy, '| action=freeform | route=/api/playbooks/analyze | customizeActive=false');
       await runPlaybookAnalysis(queryText, freshChat);
       return;
     }
     // ── DEFAULT MODE: existing /api/query path continues below ─────────────
+    console.log('[ROUTE] mode=', selectedStrategy, '| action=', presetIntent ? `preset:${presetIntent}` : csvData ? 'csv' : 'freeform', '| route=/api/query | collabActive=', !!collabConfig, '| model=', selectedModel);
 
     const url = `${AGENT_BACKEND_URL}/api/query`;
     const payload: Record<string, any> = {
@@ -3594,16 +3599,14 @@ export default function TradingAgent() {
         <button onClick={() => csvInputRef.current?.click()} title="Upload CSV watchlist" style={{ width:28, height:28, display:'flex', alignItems:'center', justifyContent:'center', background: csvData ? 'rgba(32,144,208,0.2)' : 'transparent', border: csvData ? '1px solid rgba(32,144,208,0.4)' : '1px solid rgba(255,255,255,0.08)', borderRadius:3, color: csvData ? '#a78bfa' : '#666', cursor:'pointer', fontSize:14, flexShrink:0 }}>+</button>
         {csvFileName && <div style={{ display:'flex', alignItems:'center', gap:4, padding:'2px 8px', background:'rgba(32,144,208,0.15)', border:'1px solid rgba(32,144,208,0.3)', borderRadius:3, fontSize:10, color:'#a78bfa', fontFamily:'monospace', flexShrink:0, maxWidth:160, overflow:'hidden' }}><span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{csvFileName}</span><span onClick={() => { setCsvData(null); setCsvFileName(null); }} style={{ cursor:'pointer', color:'#ef4444', fontWeight:700, flexShrink:0 }}>x</span></div>}
         <div style={{ display:'flex', gap:3, alignItems:'center', flexShrink:0 }}>
-          {/* Caelyn — automatic smart mode */}
-          <button
+          {/* Caelyn — Default mode only */}
+          {selectedStrategy === 'default' && <button
             onClick={() => { if (!collabConfig) setCollabConfig(DEFAULT_COLLAB_STATE); }}
             title="Automatic multi-model intelligence"
             style={{ padding:'3px 8px', borderRadius:10, fontSize:9, fontWeight:700, fontFamily:"'JetBrains Mono', monospace", background: collabConfig ? 'linear-gradient(135deg, #8b5cf6, #3b82f6, #06b6d4)' : 'rgba(139,92,246,0.08)', color: collabConfig ? '#ffffff' : '#a78bfa', border: collabConfig ? 'none' : '1px solid rgba(139,92,246,0.25)', cursor:'pointer', transition:'all 0.15s', textShadow: collabConfig ? '0 1px 2px rgba(0,0,0,0.3)' : 'none', boxShadow: collabConfig ? '0 0 8px rgba(139,92,246,0.4)' : 'none', flexShrink:0 }}
-          >
-            Caelyn
-          </button>
-          {/* Customize — advanced collaboration settings dropdown */}
-          <div className="agent-collab-wrapper" style={{ position:'relative', display:'inline-block' }}>
+          >Caelyn</button>}
+          {/* Customize — Default mode only */}
+          {selectedStrategy === 'default' && <div className="agent-collab-wrapper" style={{ position:'relative', display:'inline-block' }}>
             <button key="customize_trigger" style={{ padding:'3px 7px', borderRadius:10, fontSize:9, fontWeight:600, fontFamily:"'JetBrains Mono', monospace", background: 'rgba(255,255,255,0.03)', color: collabConfig ? 'rgba(167,139,250,0.7)' : '#4b5563', border: '1px solid rgba(255,255,255,0.07)', cursor:'pointer', transition:'all 0.15s', letterSpacing:'0.2px' }}>
               Customize ▾
             </button>
@@ -3692,8 +3695,9 @@ export default function TradingAgent() {
                 </>);
               })()}
             </div>
-          </div>
-          {([
+          </div>}
+          {/* Model pills — Default mode only */}
+          {selectedStrategy === 'default' && ([
             { id: 'claude', label: 'Claude' },
             { id: 'gpt-4o', label: 'ChatGPT' },
             { id: 'grok', label: 'Grok' },
@@ -3702,6 +3706,37 @@ export default function TradingAgent() {
             { id: 'deepseek', label: 'Deepseek' },
           ] as const).map(({ id, label }) => (
             <button key={id} onClick={() => { setSelectedModel(id); setCollabConfig(null); }} style={{ padding:'3px 8px', borderRadius:10, fontSize:9, fontWeight:600, fontFamily:"'JetBrains Mono', monospace", background: !collabConfig && selectedModel === id ? '#3b82f6' : 'rgba(255,255,255,0.04)', color: !collabConfig && selectedModel === id ? '#ffffff' : '#6b7280', border:'none', cursor:'pointer', transition:'all 0.15s' }}>{label}</button>
+          ))}
+          {/* Non-default: Guided Brain indicator */}
+          {selectedStrategy !== 'default' && (
+            <div style={{ display:'flex', alignItems:'center', gap:5, padding:'2px 10px', background:'rgba(99,102,241,0.08)', border:'1px solid rgba(99,102,241,0.2)', borderRadius:10 }}>
+              <span style={{ display:'inline-block', width:6, height:6, borderRadius:'50%', background:'#6366f1', flexShrink:0 }} />
+              <span style={{ fontSize:9, fontWeight:700, color:'#818cf8', fontFamily:"'JetBrains Mono', monospace", whiteSpace:'nowrap' }}>
+                {selectedStrategy === 'serenity' ? 'Guided Brain' : 'Playbook Mode'}
+              </span>
+            </div>
+          )}
+          {/* Non-default: Advanced override toggle */}
+          {selectedStrategy !== 'default' && !serenityAdvancedOverride && (
+            <button onClick={() => setSerenityAdvancedOverride(true)} title="Model settings only affect preset-button runs in non-default modes" style={{ padding:'2px 8px', borderRadius:10, fontSize:9, fontWeight:600, fontFamily:"'JetBrains Mono', monospace", background:'transparent', color:'#4b5563', border:'1px solid rgba(255,255,255,0.07)', cursor:'pointer' }}>
+              Advanced ▾
+            </button>
+          )}
+          {selectedStrategy !== 'default' && serenityAdvancedOverride && (
+            <button onClick={() => setSerenityAdvancedOverride(false)} style={{ padding:'2px 8px', borderRadius:10, fontSize:9, fontWeight:600, fontFamily:"'JetBrains Mono', monospace", background:'rgba(245,158,11,0.12)', color:'#d97706', border:'1px solid rgba(245,158,11,0.3)', cursor:'pointer' }}>
+              Advanced ✕
+            </button>
+          )}
+          {/* Non-default: model pills shown only when Advanced override is active (affects preset runs via /api/query only) */}
+          {selectedStrategy !== 'default' && serenityAdvancedOverride && (
+            <span style={{ fontSize:8, color:'#4b5563', fontFamily:"'JetBrains Mono', monospace", whiteSpace:'nowrap' }}>preset runs only:</span>
+          )}
+          {selectedStrategy !== 'default' && serenityAdvancedOverride && ([
+            { id: 'claude', label: 'Claude' }, { id: 'gpt-4o', label: 'ChatGPT' },
+            { id: 'grok', label: 'Grok' }, { id: 'gemini', label: 'Gemini' },
+            { id: 'perplexity', label: 'Perplexity' },
+          ] as const).map(({ id, label }) => (
+            <button key={id} onClick={() => { setSelectedModel(id); setCollabConfig(null); }} style={{ padding:'3px 7px', borderRadius:10, fontSize:9, fontWeight:600, fontFamily:"'JetBrains Mono', monospace", background: !collabConfig && selectedModel === id ? '#3b82f6' : 'rgba(255,255,255,0.04)', color: !collabConfig && selectedModel === id ? '#ffffff' : '#6b7280', border:'none', cursor:'pointer', transition:'all 0.15s' }}>{label}</button>
           ))}
           {/* Strategy / Playbook selector */}
           {strategyPlaybooks.length > 0 && (

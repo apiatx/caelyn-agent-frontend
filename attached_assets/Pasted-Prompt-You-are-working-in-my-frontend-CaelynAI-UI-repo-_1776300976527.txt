@@ -1,0 +1,251 @@
+Prompt
+
+You are working in my frontend CaelynAI UI repo.
+
+Your job is to perform a full audit and debug pass on the AI Terminal mode system, specifically around the interaction between:
+
+Default mode
+Serenity mode
+S&J mode
+the existing Customize / collaboration / reasoning-model settings
+the new Serenity discovery controls:
+Anchor
+Theme
+Region
+Depth
+Hidden Only
+Foreign
+Proxies
+terminal preset buttons
+freeform terminal queries
+route selection:
+/api/query
+/api/playbooks/analyze
+/api/playbooks/discover
+/api/playbooks/supply-chain-map
+
+This is an audit-first debugging task, not a feature expansion task.
+
+Core concern to investigate
+
+I suspect the terminal mode system is now too mixed up.
+
+Specifically, I want you to determine whether:
+
+Serenity mode is accidentally still influenced by the old Default-mode Customize / collaboration / reasoning-model settings
+Serenity header controls are creating ambiguous or conflicting routing behavior
+freeform queries, preset buttons, and action buttons are using inconsistent route selection
+too many user-facing variable controls in Serenity mode are creating bad UX and pulling users away from the intended “guided brain” behavior
+Serenity mode should lock or hide some of the old default settings unless the user explicitly enables advanced override
+
+The terminal used to work in Serenity mode before the most recent control expansion. I want the root cause identified cleanly.
+
+Non-negotiable guardrails
+Do not change Default mode behavior unless absolutely necessary for a bug fix.
+Do not modify /api/query usage for Default mode.
+Do not add more feature surface area before the audit is complete.
+Do not assume the current mode interactions are correct.
+Do not do broad refactors until the actual routing/state issue is identified.
+Prefer a minimal, safe cleanup over a clever rewrite.
+Preserve existing Watchlist and Portfolio behavior.
+What I want audited
+1. Mode-state architecture
+
+Audit all state that influences terminal behavior:
+
+selected strategy mode (Default, Serenity, S&J)
+selected reasoning model
+collaboration preset
+collaborating agents
+Serenity controls:
+anchor
+theme
+region
+depth
+hidden only
+foreign
+proxies
+preset action selection
+freeform text submission flow
+
+I want a clear written explanation of:
+
+which states are active in which modes
+which states should be ignored in which modes
+which states currently leak into the wrong mode
+2. Route-selection logic
+
+Audit exactly how TradingAgent currently chooses between:
+
+/api/query
+/api/playbooks/analyze
+/api/playbooks/discover
+/api/playbooks/supply-chain-map
+
+For each of these user flows:
+
+Default freeform query
+S&J freeform query
+Serenity freeform query
+Serenity preset discovery action
+Serenity supply-chain-map action
+result-card action buttons like Analyze / Compare / Supply Chain Map
+
+I want a clear matrix of:
+
+user action
+selected mode
+selected route
+payload shape
+whether Customize settings currently affect it
+3. Customize/settings contamination audit
+
+This is critical.
+
+Audit whether the old Customize UI settings currently affect Serenity mode in any of these ways:
+
+reasoning model selection
+collaboration preset
+collaborating agent checkboxes
+provider selection assumptions
+freeform terminal behavior
+preset actions
+
+If Serenity mode is currently still using those settings implicitly or visually suggests that it does, identify it clearly.
+
+4. Serenity UX contract audit
+
+I want you to assess whether the current Serenity UX violates this intended product behavior:
+
+Intended Serenity UX
+Serenity should behave like one guided brain
+it should automatically choose the correct route based on user action
+it should not require the user to choose models/agents for normal use
+it should guide the user toward current bottlenecks/themes/regime
+advanced overrides should be optional, not the default experience
+
+Tell me where the current UI deviates from that.
+
+Required output before major edits
+
+Before making major changes, provide me with:
+
+a concise diagnosis of what is actually mixed up
+a mode/routing matrix
+a recommended cleanup plan with the smallest safe surface area
+a recommendation on whether Customize should be:
+hidden in Serenity mode
+disabled in Serenity mode
+relabeled as “Advanced Override”
+or left visible but clearly scoped to Default mode only
+My strong suspicion / likely desired fix
+
+I suspect the correct UX should be:
+
+Default mode
+current Customize settings fully active
+/api/query
+S&J mode
+playbook analyze mode
+Customize settings should not drive route/provider logic by default
+optional advanced override only if explicitly enabled
+Serenity mode
+Serenity-specific guided behavior should take precedence
+freeform Serenity query → /api/playbooks/analyze
+Serenity discovery presets → /api/playbooks/discover
+Serenity chain map actions → /api/playbooks/supply-chain-map
+old Customize settings should be locked, hidden, or advanced-only
+Serenity controls should have good defaults so the user does not need to micro-steer everything
+
+Audit whether this is the right fix.
+
+If the audit confirms it, implement the cleanup
+
+If the audit confirms the above, implement the following safely:
+
+A. Clean mode separation
+
+Make terminal branching explicit and deterministic:
+
+Default → /api/query
+S&J → /api/playbooks/analyze
+Serenity freeform → /api/playbooks/analyze
+Serenity discovery presets → /api/playbooks/discover
+Serenity chain map → /api/playbooks/supply-chain-map
+
+No ambiguous mixed route logic.
+
+B. Serenity should be guided by default
+
+When Serenity mode is selected:
+
+use sensible defaults for anchor/theme/region/depth if user has not changed them
+do not require them to select everything manually
+keep controls available, but make them optional refinements
+C. Lock/hide old Customize logic in Serenity unless advanced override is explicitly enabled
+
+Recommended implementation:
+
+in Serenity mode, show a small label like:
+Serenity uses built-in discovery logic and provider routing
+hide or disable old Customize controls by default
+optionally add a small advanced toggle:
+Enable Advanced Override
+only if enabled should old Customize settings appear/usefully apply
+
+If that’s too much for one pass, at minimum visually disable or relabel them while in Serenity mode.
+
+D. Prevent stale mixed state
+
+If the user switches:
+
+from Default → Serenity
+from Serenity → Default
+from Serenity → S&J
+
+make sure mode-specific state does not wrongly leak into terminal requests.
+
+Debugging requirements
+
+Add lightweight console/log instrumentation as needed during debugging to confirm:
+
+current mode
+selected action type
+chosen route
+whether advanced override is active
+final request payload shape
+
+Do not leave noisy logging everywhere permanently.
+
+Acceptance criteria
+
+When complete:
+
+Default mode
+behaves exactly as before
+Customize settings behave normally
+/api/query unchanged
+S&J mode
+analyze-only
+not affected by Serenity discovery controls
+old Customize settings do not muddy route behavior by default
+Serenity mode
+behaves like one guided brain
+freeform query uses /api/playbooks/analyze
+discovery presets use /api/playbooks/discover
+chain map uses /api/playbooks/supply-chain-map
+no confusing dependency on old Customize panel by default
+controls help refine, not force the user down a rabbit hole
+General
+no background auto-scanning introduced
+no Watchlist/Portfolio regression
+Deliverables
+
+When done, provide:
+
+diagnosis of the original issue
+exact files modified
+mode/routing matrix before vs after
+what happened to Customize in Serenity mode
+how stale mixed state was prevented
+confirmation Default mode remains untouched
