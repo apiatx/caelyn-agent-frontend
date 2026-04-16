@@ -1,0 +1,129 @@
+Prompt
+
+You are working in my frontend CaelynAI UI repo.
+
+We already cleaned up the mode contamination problem, but Serenity mode still exposes too many scanner controls as the primary UX.
+
+I need Serenity to behave like a guided brain first, with optional scan controls second.
+
+New product requirement
+
+When strategy = Serenity:
+	1.	Serenity should default to an Auto / Guided mode
+	2.	the current scan controls should not be always visible in the header
+	3.	they should live behind a compact button/icon like:
+	•	Refine Scan
+	•	or a filter/settings icon
+	4.	no specific anchor (like NVDA) should be preselected by default
+	5.	the primary Serenity experience should feel like:
+	•	the brain chooses the strongest current bottleneck path
+	•	the user can refine only if they want
+
+Specific UI changes required
+
+1. Add a Serenity default state
+When Serenity is selected and the user has not explicitly opened/refined scan settings:
+	•	show a small label such as:
+	•	Serenity Brain: Auto
+	•	Auto-detecting strongest bottleneck path
+	•	hide the current control strip by default
+
+2. Move existing Serenity controls into a collapsible panel
+The current controls:
+	•	Anchor
+	•	Theme
+	•	Region
+	•	Depth
+	•	Hidden Only
+	•	Foreign
+	•	Proxies
+
+should only appear when the user explicitly clicks:
+	•	Refine Scan
+or a filter/settings icon
+
+This panel should be compact and terminal-native.
+
+3. Change default values
+Do not preselect:
+	•	NVDA
+	•	any theme
+	•	any region
+	•	any depth
+
+Instead default to:
+	•	Anchor: Auto
+	•	Theme: Auto
+	•	Region: Global
+	•	Depth: Auto
+	•	Less Obvious Names: off by default or sensible default if already used in backend
+	•	Include Foreign: on or off based on current safest product choice, but label clearly
+	•	Include ADR/ETF Proxies: on if useful, but label clearly
+
+4. Rename confusing labels
+Replace:
+	•	Depth 2 / 3 / 4
+with something clearer like:
+	•	Direct
+	•	Upstream
+	•	Deep Upstream
+
+Replace:
+	•	Hidden Only
+with:
+	•	Less Obvious Names
+or
+	•	Hidden Specialists
+
+Replace:
+	•	Proxies
+with:
+	•	Include ADR/ETF Proxies
+or
+	•	Include US Proxies
+
+5. Add brief help text / tooltips
+Explain:
+	•	what Serenity Auto mode does
+	•	what chain depth means
+	•	what “Less Obvious Names” means
+	•	what “Include ADR/ETF Proxies” means
+
+Keep it concise.
+
+6. Make the main Serenity actions guided
+Primary visible Serenity actions should be things like:
+	•	Run Serenity Scan
+	•	Top Hidden Bottlenecks
+	•	Supply Chain Map
+	•	Foreign Specialists
+
+The refined controls should only influence those actions if the user has opened and changed them.
+
+7. Preserve all existing route branching
+Do not change route contracts:
+	•	Default → /api/query
+	•	Serenity freeform/analyze → /api/playbooks/analyze
+	•	Serenity discovery → /api/playbooks/discover
+	•	Serenity chain map → /api/playbooks/supply-chain-map
+	•	S&J → /api/playbooks/analyze
+
+This is a UX restructuring, not a routing rewrite.
+
+Acceptance criteria
+
+When complete:
+	•	Serenity mode no longer dumps all controls in the header by default
+	•	no hardcoded NVDA default
+	•	Serenity feels guided first, configurable second
+	•	confusing labels are improved
+	•	refined scan settings are still available, but optional
+	•	Default mode remains untouched
+	•	S&J remains untouched
+
+Provide:
+	1.	files changed
+	2.	what the new Serenity default state is
+	3.	what labels were renamed
+	4.	how refine-scan works now
+	5.	confirmation Default mode was untouched

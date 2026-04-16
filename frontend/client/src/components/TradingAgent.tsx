@@ -338,13 +338,15 @@ export default function TradingAgent() {
   const [strategyDropdownOpen, setStrategyDropdownOpen] = useState(false);
   const strategyDropdownRef = useRef<HTMLDivElement>(null);
   // Serenity discovery controls — only affect explicit user-triggered discovery actions, never auto-fire
-  const [discoveryAnchor, setDiscoveryAnchor] = useState<string>('NVDA');
+  // All default to Auto / no preselection so Serenity starts in Guided Brain mode
+  const [discoveryAnchor, setDiscoveryAnchor] = useState<string>('');      // '' = Auto
   const [discoveryTheme, setDiscoveryTheme] = useState<string>('');
   const [discoveryRegion, setDiscoveryRegion] = useState<string>('Global');
   const [discoveryHiddenOnly, setDiscoveryHiddenOnly] = useState<boolean>(false);
-  const [discoveryDepth, setDiscoveryDepth] = useState<number>(3);
+  const [discoveryDepth, setDiscoveryDepth] = useState<number>(0);          // 0 = Auto
   const [discoveryIncludeForeign, setDiscoveryIncludeForeign] = useState<boolean>(true);
   const [discoveryIncludeProxies, setDiscoveryIncludeProxies] = useState<boolean>(true);
+  const [serenityRefineOpen, setSerenityRefineOpen] = useState<boolean>(false);
   const [discoveryCapabilities, setDiscoveryCapabilities] = useState<PlaybookDiscoveryCapabilities | null>(null);
   const capabilitiesFetchedRef = useRef(false);
   // Serenity advanced override — when false, Customize/model-selector controls are hidden in non-default modes
@@ -357,6 +359,7 @@ export default function TradingAgent() {
   // Load discovery capabilities once when Serenity is first selected; cache for session
   useEffect(() => {
     setSerenityAdvancedOverride(false); // always reset advanced override on mode switch
+    setSerenityRefineOpen(false);       // always collapse refine panel on mode switch
     if (selectedStrategy !== 'serenity' || capabilitiesFetchedRef.current) return;
     capabilitiesFetchedRef.current = true;
     fetchDiscoveryCapabilities()
@@ -674,7 +677,7 @@ export default function TradingAgent() {
     const payload: Record<string, unknown> = {
       playbook_id: 'serenity',
       mode: opts.mode || 'theme_scan',
-      max_depth: discoveryDepth,
+      ...(discoveryDepth > 0 ? { max_depth: discoveryDepth } : {}), // 0 = Auto, omit to let backend choose
       include_foreign: opts.include_foreign ?? discoveryIncludeForeign,
       include_adr_or_etf_proxies: discoveryIncludeProxies,
       only_hidden: opts.only_hidden ?? discoveryHiddenOnly,
@@ -3822,44 +3825,92 @@ export default function TradingAgent() {
         </div>
       )}
 
-      {/* Serenity discovery controls — only shown when strategy = serenity */}
+      {/* Serenity: compact status bar — always visible when strategy = serenity */}
       {selectedStrategy === 'serenity' && (() => {
-        const capAnchors = discoveryCapabilities?.giant_anchors?.length
-          ? discoveryCapabilities.giant_anchors.slice(0, 8)
-          : ['NVDA','MSFT','GOOGL','AMZN','META','TSM'];
-        // Always append "AI Power" as a special no-anchor option
-        const anchors = capAnchors.includes('AI Power') ? capAnchors : [...capAnchors, 'AI Power'];
-        const capThemes = discoveryCapabilities?.themes?.length
-          ? discoveryCapabilities.themes.slice(0, 9)
-          : ['Photonics','Packaging','Grid','Memory','Defense','Cooling','Semicap'];
-        const capRegions = discoveryCapabilities?.supported_regions?.length
-          ? ['Global', ...discoveryCapabilities.supported_regions.filter((r: string) => r !== 'Global')]
-          : ['Global','US','JP','KR','TW','EU'];
-        const capDepths = discoveryCapabilities?.depth_options?.length
-          ? discoveryCapabilities.depth_options
-          : [2, 3, 4];
-        const pill = (label: string, active: boolean, onClick: () => void) => (
-          <button key={label} onClick={onClick} style={{ padding:'2px 8px', fontSize:9, fontWeight:600, fontFamily:"'JetBrains Mono', monospace", background: active ? 'rgba(99,102,241,0.25)' : 'transparent', color: active ? '#a5b4fc' : '#6b7280', border:`1px solid ${active ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.08)'}`, borderRadius:4, cursor:'pointer', transition:'all 0.1s', whiteSpace:'nowrap' }}>{label}</button>
-        );
-        const sep = <span style={{ width:1, height:14, background:'rgba(255,255,255,0.08)', margin:'0 2px', flexShrink:0 }} />;
-        const lbl = (t: string) => <span style={{ fontSize:8, color:'#6b7280', fontFamily:"'JetBrains Mono', monospace", fontWeight:600, textTransform:'uppercase', flexShrink:0 }}>{t}</span>;
+        // Derive a readable summary of any non-default settings
+        const hasCustomAnchor = discoveryAnchor !== '';
+        const hasCustomTheme  = discoveryTheme !== '';
+        const hasCustomDepth  = discoveryDepth > 0;
+        const hasCustomRegion = discoveryRegion !== 'Global';
+        const hasAnyOverride  = hasCustomAnchor || hasCustomTheme || hasCustomDepth || hasCustomRegion || discoveryHiddenOnly;
+        const depthLabel = (d: number) => d === 2 ? 'Direct' : d === 3 ? 'Upstream' : d === 4 ? 'Deep' : 'Auto';
         return (
-          <div style={{ display:'flex', alignItems:'center', gap:5, padding:'5px 12px', background:'rgba(99,102,241,0.04)', borderBottom:'1px solid rgba(99,102,241,0.12)', flexShrink:0, flexWrap:'wrap' }}>
-            {lbl('Anchor')}
-            {anchors.map(a => pill(a, discoveryAnchor === a, () => setDiscoveryAnchor(a)))}
-            {sep}
-            {lbl('Theme')}
-            {capThemes.map(t => pill(t, discoveryTheme === t, () => setDiscoveryTheme(prev => prev === t ? '' : t)))}
-            {sep}
-            {lbl('Region')}
-            {capRegions.map(r => pill(r, discoveryRegion === r, () => setDiscoveryRegion(r)))}
-            {sep}
-            {lbl('Depth')}
-            {capDepths.map(d => pill(String(d), discoveryDepth === d, () => setDiscoveryDepth(d)))}
-            {sep}
-            {pill('Hidden Only', discoveryHiddenOnly, () => setDiscoveryHiddenOnly(v => !v))}
-            {pill('Foreign', discoveryIncludeForeign, () => setDiscoveryIncludeForeign(v => !v))}
-            {pill('Proxies', discoveryIncludeProxies, () => setDiscoveryIncludeProxies(v => !v))}
+          <div style={{ flexShrink:0, borderBottom:'1px solid rgba(99,102,241,0.12)', background:'rgba(99,102,241,0.03)' }}>
+            {/* Status row */}
+            <div style={{ display:'flex', alignItems:'center', gap:8, padding:'5px 14px' }}>
+              <span style={{ display:'inline-block', width:6, height:6, borderRadius:'50%', background: hasAnyOverride ? '#f59e0b' : '#6366f1', flexShrink:0 }} />
+              <span style={{ fontSize:9, fontWeight:700, color:'#818cf8', fontFamily:"'JetBrains Mono', monospace" }}>
+                Serenity Brain
+              </span>
+              <span style={{ fontSize:9, color:'#4b5563', fontFamily:"'JetBrains Mono', monospace" }}>·</span>
+              <span style={{ fontSize:9, color: hasAnyOverride ? '#f59e0b' : '#6b7280', fontFamily:"'JetBrains Mono', monospace" }}
+                    title="Serenity auto-selects the strongest supply chain bottleneck path. Override optional.">
+                {hasAnyOverride
+                  ? [hasCustomAnchor && discoveryAnchor, hasCustomTheme && discoveryTheme, hasCustomDepth && depthLabel(discoveryDepth), hasCustomRegion && discoveryRegion, discoveryHiddenOnly && 'Less Obvious'].filter(Boolean).join(' · ')
+                  : 'Auto — brain chooses strongest path'}
+              </span>
+              {hasAnyOverride && (
+                <button onClick={() => { setDiscoveryAnchor(''); setDiscoveryTheme(''); setDiscoveryDepth(0); setDiscoveryRegion('Global'); setDiscoveryHiddenOnly(false); }}
+                  style={{ fontSize:8, color:'#6b7280', fontFamily:"'JetBrains Mono', monospace", background:'transparent', border:'none', cursor:'pointer', padding:'0 4px', textDecoration:'underline' }}
+                  title="Reset all scan filters to Auto">
+                  reset
+                </button>
+              )}
+              <div style={{ flex:1 }} />
+              <button
+                onClick={() => setSerenityRefineOpen(v => !v)}
+                title="Show optional scan filters — anchor, theme, region, depth, etc."
+                style={{ display:'flex', alignItems:'center', gap:4, padding:'2px 9px', fontSize:9, fontWeight:600, fontFamily:"'JetBrains Mono', monospace", background: serenityRefineOpen ? 'rgba(99,102,241,0.2)' : 'transparent', color: serenityRefineOpen ? '#a5b4fc' : '#6b7280', border:`1px solid ${serenityRefineOpen ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.1)'}`, borderRadius:4, cursor:'pointer', transition:'all 0.1s' }}
+              >
+                <span>⚙</span>
+                <span>Refine Scan {serenityRefineOpen ? '▴' : '▾'}</span>
+              </button>
+            </div>
+
+            {/* Collapsible refine panel */}
+            {serenityRefineOpen && (() => {
+              const capAnchors = discoveryCapabilities?.giant_anchors?.length
+                ? discoveryCapabilities.giant_anchors.slice(0, 8)
+                : ['NVDA','MSFT','GOOGL','AMZN','META','TSM'];
+              const anchors = ['', ...capAnchors.filter(a => a !== 'AI Power')];
+              const capThemes = discoveryCapabilities?.themes?.length
+                ? discoveryCapabilities.themes.slice(0, 9)
+                : ['Photonics','Packaging','Grid','Memory','Defense','Cooling','Semicap'];
+              const capRegions = discoveryCapabilities?.supported_regions?.length
+                ? ['Global', ...discoveryCapabilities.supported_regions.filter((r: string) => r !== 'Global')]
+                : ['Global','US','JP','KR','TW','EU'];
+              const pill = (label: string, active: boolean, onClick: () => void, tip?: string) => (
+                <button key={label} onClick={onClick} title={tip}
+                  style={{ padding:'2px 8px', fontSize:9, fontWeight:600, fontFamily:"'JetBrains Mono', monospace", background: active ? 'rgba(99,102,241,0.25)' : 'transparent', color: active ? '#a5b4fc' : '#6b7280', border:`1px solid ${active ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.08)'}`, borderRadius:4, cursor:'pointer', transition:'all 0.1s', whiteSpace:'nowrap' }}>{label}</button>
+              );
+              const sep = <span style={{ width:1, height:14, background:'rgba(255,255,255,0.06)', margin:'0 3px', flexShrink:0 }} />;
+              const lbl = (t: string, tip?: string) => (
+                <span title={tip} style={{ fontSize:8, color:'#4b5563', fontFamily:"'JetBrains Mono', monospace", fontWeight:700, textTransform:'uppercase', flexShrink:0, cursor: tip ? 'help' : undefined }}>{t}{tip ? ' ?' : ''}</span>
+              );
+              return (
+                <div style={{ display:'flex', alignItems:'center', gap:5, padding:'5px 14px 7px', flexWrap:'wrap' }}>
+                  {lbl('Anchor', 'Giant anchor ticker — the supply chain is traced from this company. Auto lets Serenity choose.')}
+                  {anchors.map(a => pill(a === '' ? 'Auto' : a, discoveryAnchor === a, () => setDiscoveryAnchor(a)))}
+                  {sep}
+                  {lbl('Theme', 'Filter candidates to a specific supply chain theme.')}
+                  {pill('Auto', discoveryTheme === '', () => setDiscoveryTheme(''))}
+                  {capThemes.map(t => pill(t, discoveryTheme === t, () => setDiscoveryTheme(prev => prev === t ? '' : t)))}
+                  {sep}
+                  {lbl('Region', 'Restrict candidates to a geographic region.')}
+                  {capRegions.map(r => pill(r, discoveryRegion === r, () => setDiscoveryRegion(r)))}
+                  {sep}
+                  {lbl('Depth', 'Chain depth: Direct = immediate suppliers, Upstream = 2-3 layers back, Deep = 4+ layers.')}
+                  {pill('Auto', discoveryDepth === 0, () => setDiscoveryDepth(0), 'Let Serenity choose depth automatically')}
+                  {pill('Direct', discoveryDepth === 2, () => setDiscoveryDepth(2), 'Immediate supply chain connections only')}
+                  {pill('Upstream', discoveryDepth === 3, () => setDiscoveryDepth(3), 'Up to 3 layers back in the supply chain')}
+                  {pill('Deep', discoveryDepth === 4, () => setDiscoveryDepth(4), 'Deep supply chain trace, 4+ layers back')}
+                  {sep}
+                  {pill('Less Obvious', discoveryHiddenOnly, () => setDiscoveryHiddenOnly(v => !v), 'Surface less well-known names that analysts typically overlook')}
+                  {pill('Foreign', discoveryIncludeForeign, () => setDiscoveryIncludeForeign(v => !v), 'Include non-US listed companies in results')}
+                  {pill('US Proxies', discoveryIncludeProxies, () => setDiscoveryIncludeProxies(v => !v), 'Include ADR or ETF proxies for companies not directly US-tradeable')}
+                </div>
+              );
+            })()}
           </div>
         );
       })()}
