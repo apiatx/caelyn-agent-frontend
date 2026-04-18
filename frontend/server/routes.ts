@@ -2898,5 +2898,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/playbooks/serenity-regime', async (req, res) => {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 12000);
+      const r = await fetch(`${PB_URL}/api/playbooks/serenity-regime`, { headers: pbHdr(), signal: ctrl.signal });
+      if (!r.ok) return res.status(r.status).json({ error: 'serenity-regime failed' });
+      res.json(await r.json());
+    } catch (e: any) {
+      console.error('[playbooks/serenity-regime] error:', e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   return httpServer;
 }

@@ -11,6 +11,7 @@ import type {
   PlaybookDiscoveryCapabilities,
   PlaybookCompareRequest,
   PlaybookCompareResponse,
+  SerenityRegimeResponse,
 } from "@/types/playbook";
 
 const AGENT_KEY = "hippo_ak_7f3x9k2m4p8q1w5t";
@@ -105,5 +106,11 @@ export async function comparePlaybook(
     body: JSON.stringify(req),
   });
   if (!res.ok) throw new Error(`playbooks/compare failed: ${res.status}`);
+  return res.json();
+}
+
+export async function fetchSerenityRegime(): Promise<SerenityRegimeResponse> {
+  const res = await fetch("/api/playbooks/serenity-regime", { headers: proxyHeaders() });
+  if (!res.ok) throw new Error(`serenity-regime failed: ${res.status}`);
   return res.json();
 }

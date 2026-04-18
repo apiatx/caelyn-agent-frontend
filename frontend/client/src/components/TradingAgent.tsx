@@ -10,7 +10,8 @@ import {
 } from './tradingAgentCollabState';
 import WatchlistAnalysis, { tryParseWatchlistAnalysis } from './WatchlistAnalysis';
 import { StockDetailModal } from './StockDetailModal';
-import { analyzePlaybook, discoverPlaybook, supplyChainMap, fetchDiscoveryCapabilities, comparePlaybook } from '@/lib/playbooks';
+import { analyzePlaybook, discoverPlaybook, supplyChainMap, fetchDiscoveryCapabilities, comparePlaybook, fetchSerenityRegime } from '@/lib/playbooks';
+import type { SerenityRegimeResponse } from '@/types/playbook';
 import type { PlaybookDiscoveryCapabilities } from '@/types/playbook';
 
 const AGENT_BACKEND_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
@@ -348,6 +349,7 @@ export default function TradingAgent() {
   const [discoveryIncludeProxies, setDiscoveryIncludeProxies] = useState<boolean>(true);
   const [serenityRefineOpen, setSerenityRefineOpen] = useState<boolean>(false);
   const [discoveryCapabilities, setDiscoveryCapabilities] = useState<PlaybookDiscoveryCapabilities | null>(null);
+  const [serenityRegime, setSerenityRegime] = useState<SerenityRegimeResponse | null>(null);
   const capabilitiesFetchedRef = useRef(false);
   // Serenity advanced override — when false, Customize/model-selector controls are hidden in non-default modes
   const [serenityAdvancedOverride, setSerenityAdvancedOverride] = useState(false);
@@ -365,6 +367,10 @@ export default function TradingAgent() {
     fetchDiscoveryCapabilities()
       .then(caps => setDiscoveryCapabilities(caps))
       .catch(() => { /* graceful — controls fall back to hardcoded lists */ });
+    // Fetch regime context once — non-blocking, graceful on failure
+    fetchSerenityRegime()
+      .then(regime => setSerenityRegime(regime))
+      .catch(() => { /* graceful — status bar falls back to generic auto label */ });
   }, [selectedStrategy]);
 
   useEffect(() => {
@@ -2937,6 +2943,9 @@ export default function TradingAgent() {
     const candidates: any[] = data.top_candidates || data.candidates || [];
     const meta = data.meta || {};
 
+    // Regime / auto context — may be present when backend ran auto mode
+    const rc: any = data.regime_context || data.auto_regime || null;
+
     // Compact numeric chip — green/amber/red by value, label above number
     const scoreChip = (title: string, val?: number) => val == null ? null : (
       <div style={{ display:'flex', flexDirection:'column', alignItems:'center', padding:'4px 8px', background: val >= 70 ? `${C.green}12` : val >= 40 ? `${C.gold}12` : `rgba(239,68,68,0.1)`, border:`1px solid ${val >= 70 ? C.green : val >= 40 ? C.gold : '#ef4444'}30`, borderRadius:5, minWidth:48 }}>
@@ -2964,6 +2973,36 @@ export default function TradingAgent() {
         {meta.depth != null && <span style={{ color:C.dim, fontSize:9, fontFamily:font }}>depth {meta.depth}</span>}
         {meta.anchor && <span style={{ color:C.blue, fontSize:9, fontFamily:font, fontWeight:700 }}>↳ {meta.anchor}</span>}
       </div>
+
+      {/* Regime context block — shown when backend included auto-mode context */}
+      {rc && (rc.summary || rc.top_themes?.length || rc.top_anchors?.length) && (
+        <div style={{ padding:'10px 14px', background:'rgba(99,102,241,0.06)', border:'1px solid rgba(99,102,241,0.18)', borderRadius:8, marginBottom:10, display:'flex', flexDirection:'column', gap:5 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap' }}>
+            <span style={{ fontSize:8, fontWeight:700, fontFamily:font, color:'#6366f1', textTransform:'uppercase', letterSpacing:'0.06em' }}>Serenity chose</span>
+            {rc.top_themes?.length > 0 && (
+              <span style={{ fontSize:9, fontFamily:font, color:'#a5b4fc', fontWeight:600 }}>{rc.top_themes.slice(0,3).join(' + ')}</span>
+            )}
+            {rc.top_anchors?.length > 0 && (
+              <span style={{ fontSize:9, fontFamily:font, color:'#6b7280' }}>· anchors: {rc.top_anchors.slice(0,3).join(', ')}</span>
+            )}
+            {rc.confidence && (
+              <span style={{ fontSize:9, fontFamily:font, color: rc.confidence.toLowerCase().includes('high') ? '#10b981' : '#f59e0b', fontWeight:600, marginLeft:4 }}>
+                {rc.confidence} confidence
+              </span>
+            )}
+          </div>
+          {rc.why_now && (
+            <div style={{ fontSize:9, fontFamily:font, color:'#6b7280', fontStyle:'italic', lineHeight:1.5 }}>
+              {rc.why_now}
+            </div>
+          )}
+          {rc.summary && rc.summary !== rc.why_now && (
+            <div style={{ fontSize:9, fontFamily:font, color:'#9ca3af', lineHeight:1.5 }}>
+              {rc.summary}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Summary */}
       {summaryText && summaryText.trim() && (
@@ -3827,35 +3866,59 @@ export default function TradingAgent() {
 
       {/* Serenity: compact status bar — always visible when strategy = serenity */}
       {selectedStrategy === 'serenity' && (() => {
-        // Derive a readable summary of any non-default settings
         const hasCustomAnchor = discoveryAnchor !== '';
         const hasCustomTheme  = discoveryTheme !== '';
         const hasCustomDepth  = discoveryDepth > 0;
         const hasCustomRegion = discoveryRegion !== 'Global';
         const hasAnyOverride  = hasCustomAnchor || hasCustomTheme || hasCustomDepth || hasCustomRegion || discoveryHiddenOnly;
         const depthLabel = (d: number) => d === 2 ? 'Direct' : d === 3 ? 'Upstream' : d === 4 ? 'Deep' : 'Auto';
+        const resetToAuto = () => { setDiscoveryAnchor(''); setDiscoveryTheme(''); setDiscoveryDepth(0); setDiscoveryRegion('Global'); setDiscoveryHiddenOnly(false); };
+
+        // Normalise regime: backend may put it at top-level or in regime_context/auto_regime
+        const rc = serenityRegime
+          ? (serenityRegime.regime_context || serenityRegime.auto_regime || serenityRegime)
+          : null;
+        const regimeLabel    = rc?.label;
+        const regimeSummary  = rc?.summary;
+        const regimeThemes   = rc?.top_themes?.slice(0, 3) || [];
+        const regimeAnchors  = rc?.top_anchors?.slice(0, 3) || [];
+        const regimeConfidence = rc?.confidence;
+        const regimeWhyNow   = rc?.why_now;
+
+        // Auto status line — prefer regime data; fall back to generic
+        const autoStatusLine = regimeSummary || regimeLabel
+          ? (regimeSummary || regimeLabel)!
+          : 'Auto — brain chooses strongest path';
+
         return (
           <div style={{ flexShrink:0, borderBottom:'1px solid rgba(99,102,241,0.12)', background:'rgba(99,102,241,0.03)' }}>
-            {/* Status row */}
+            {/* Primary status row */}
             <div style={{ display:'flex', alignItems:'center', gap:8, padding:'5px 14px' }}>
               <span style={{ display:'inline-block', width:6, height:6, borderRadius:'50%', background: hasAnyOverride ? '#f59e0b' : '#6366f1', flexShrink:0 }} />
               <span style={{ fontSize:9, fontWeight:700, color:'#818cf8', fontFamily:"'JetBrains Mono', monospace" }}>
                 Serenity Brain
               </span>
               <span style={{ fontSize:9, color:'#4b5563', fontFamily:"'JetBrains Mono', monospace" }}>·</span>
-              <span style={{ fontSize:9, color: hasAnyOverride ? '#f59e0b' : '#6b7280', fontFamily:"'JetBrains Mono', monospace" }}
-                    title="Serenity auto-selects the strongest supply chain bottleneck path. Override optional.">
-                {hasAnyOverride
-                  ? [hasCustomAnchor && discoveryAnchor, hasCustomTheme && discoveryTheme, hasCustomDepth && depthLabel(discoveryDepth), hasCustomRegion && discoveryRegion, discoveryHiddenOnly && 'Less Obvious'].filter(Boolean).join(' · ')
-                  : 'Auto — brain chooses strongest path'}
-              </span>
-              {hasAnyOverride && (
-                <button onClick={() => { setDiscoveryAnchor(''); setDiscoveryTheme(''); setDiscoveryDepth(0); setDiscoveryRegion('Global'); setDiscoveryHiddenOnly(false); }}
-                  style={{ fontSize:8, color:'#6b7280', fontFamily:"'JetBrains Mono', monospace", background:'transparent', border:'none', cursor:'pointer', padding:'0 4px', textDecoration:'underline' }}
-                  title="Reset all scan filters to Auto">
-                  reset
-                </button>
+
+              {hasAnyOverride ? (
+                <>
+                  <span style={{ fontSize:9, color:'#f59e0b', fontFamily:"'JetBrains Mono', monospace", fontWeight:600 }}>Auto overridden</span>
+                  <span style={{ fontSize:9, color:'#6b7280', fontFamily:"'JetBrains Mono', monospace" }}>
+                    {[hasCustomAnchor && discoveryAnchor, hasCustomTheme && discoveryTheme, hasCustomDepth && depthLabel(discoveryDepth), hasCustomRegion && discoveryRegion, discoveryHiddenOnly && 'Less Obvious'].filter(Boolean).join(' · ')}
+                  </span>
+                  <button onClick={resetToAuto}
+                    style={{ fontSize:8, color:'#818cf8', fontFamily:"'JetBrains Mono', monospace", background:'transparent', border:'none', cursor:'pointer', padding:'0 4px', textDecoration:'underline' }}
+                    title="Return to Auto — let Serenity choose anchor, theme, and depth">
+                    Return to Auto
+                  </button>
+                </>
+              ) : (
+                <span style={{ fontSize:9, color:'#6b7280', fontFamily:"'JetBrains Mono', monospace" }}
+                      title="Serenity auto-selects the strongest supply chain bottleneck path based on live regime analysis.">
+                  {autoStatusLine}
+                </span>
               )}
+
               <div style={{ flex:1 }} />
               <button
                 onClick={() => setSerenityRefineOpen(v => !v)}
@@ -3866,6 +3929,34 @@ export default function TradingAgent() {
                 <span>Refine Scan {serenityRefineOpen ? '▴' : '▾'}</span>
               </button>
             </div>
+
+            {/* Regime detail row — only in Auto mode when regime data is available */}
+            {!hasAnyOverride && rc && (regimeThemes.length > 0 || regimeAnchors.length > 0 || regimeWhyNow) && (
+              <div style={{ display:'flex', alignItems:'center', gap:10, padding:'0 14px 5px', flexWrap:'wrap' }}>
+                {regimeThemes.length > 0 && (
+                  <span style={{ fontSize:8, fontFamily:"'JetBrains Mono', monospace", color:'#6b7280' }}>
+                    <span style={{ color:'#4b5563', textTransform:'uppercase', fontSize:7, fontWeight:700 }}>themes </span>
+                    {regimeThemes.join(', ')}
+                  </span>
+                )}
+                {regimeAnchors.length > 0 && (
+                  <span style={{ fontSize:8, fontFamily:"'JetBrains Mono', monospace", color:'#6b7280' }}>
+                    <span style={{ color:'#4b5563', textTransform:'uppercase', fontSize:7, fontWeight:700 }}>anchors </span>
+                    {regimeAnchors.join(', ')}
+                  </span>
+                )}
+                {regimeConfidence && (
+                  <span style={{ fontSize:8, fontFamily:"'JetBrains Mono', monospace", color: regimeConfidence.toLowerCase().includes('high') ? '#10b981' : '#f59e0b' }}>
+                    {regimeConfidence} confidence
+                  </span>
+                )}
+                {regimeWhyNow && (
+                  <span style={{ fontSize:8, fontFamily:"'JetBrains Mono', monospace", color:'#4b5563', fontStyle:'italic', maxWidth:340, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }} title={regimeWhyNow}>
+                    {regimeWhyNow}
+                  </span>
+                )}
+              </div>
+            )}
 
             {/* Collapsible refine panel */}
             {serenityRefineOpen && (() => {

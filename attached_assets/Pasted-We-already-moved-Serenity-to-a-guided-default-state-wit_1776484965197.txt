@@ -1,0 +1,192 @@
+We already moved Serenity to a guided default state with optional refine controls. Good.
+
+Now implement the next layer:
+
+Objective
+
+Make Serenity Auto mode feel like a real guided brain by showing:
+
+what path Serenity chose
+why it chose it
+what themes/anchors it is prioritizing right now
+without forcing the user to manually set anchor/theme/depth
+
+This should be driven by the backend regime layer.
+
+Non-negotiable guardrails
+Do not change Default AI Terminal behavior at all.
+Do not modify /api/query behavior for Default mode.
+Do not turn Serenity back into a giant control panel.
+Do not expose more knobs by default.
+Do not introduce background polling.
+Only fetch regime data when Serenity mode is active and useful.
+Preserve S&J behavior unchanged.
+Keep this terminal-native and compact.
+Important backend assumptions
+
+Backend may now provide:
+
+GET /api/playbooks/serenity-regime
+regime_context or auto_regime in auto discovery/analyze responses
+richer discovery-capabilities metadata about Auto mode
+
+Use those as the source of truth.
+
+Part 1 — Add proxy route if needed
+
+Add proxy support for:
+
+GET /api/playbooks/serenity-regime
+
+Use the same existing proxy pattern.
+
+Part 2 — Update frontend types
+
+Add/update types for:
+
+SerenityRegimeResponse
+RegimeContext
+optional auto_regime / regime_context fields on discover/analyze responses
+
+Include fields like:
+
+label
+summary
+top_themes
+top_anchors
+top_regions
+recommended_mode
+recommended_depth
+confidence
+why_now
+evidence_signals
+rejected_or_lower_priority_paths
+
+Do not break if some fields are missing.
+
+Part 3 — Show Serenity Auto status clearly
+
+When strategy = Serenity and no manual refine settings are active:
+
+show a compact Auto panel like:
+
+Serenity Brain · Auto
+summary line:
+“Focusing on Packaging & Photonics bottlenecks”
+secondary line:
+top anchors/themes
+confidence
+optional short why-now line
+
+This should replace vague “brain chooses strongest path” text with something real.
+
+Do not make it huge.
+
+Part 4 — Load regime info when Serenity becomes active
+
+When Serenity mode is selected:
+
+fetch GET /api/playbooks/serenity-regime
+cache it locally in component state
+do not poll repeatedly
+do not block the whole UI if it fails
+
+Use it to populate the Auto summary area.
+
+If the user later explicitly refines anchor/theme/depth, the UI should indicate:
+
+Auto overridden
+or similar
+Part 5 — Show what Auto chose in discovery results
+
+When a Serenity discovery/analyze response includes regime_context or auto_regime, render a compact context block above the results:
+
+Example:
+
+Serenity chose: Advanced Packaging + Semicap
+Anchors: NVDA, TSM
+Why now: Fresh evidence and strongest bottleneck density
+Confidence: High
+
+This is what makes Auto mode feel intelligent.
+
+Part 6 — Keep refine controls secondary
+
+Refine Scan should remain collapsed by default.
+
+If user opens it and changes values:
+
+show Auto overridden
+show active manual filters clearly
+do not pretend the regime layer is still driving everything
+
+Add a one-click:
+
+Return to Auto
+
+if not already present.
+
+Part 7 — Improve labels further if needed
+
+Use the backend-provided semantics if available for:
+
+chain depth labels
+hidden names definition
+proxy definition
+auto mode description
+
+Do not hardcode conflicting language if backend now exposes better labels.
+
+Part 8 — Preserve route branching
+
+No change here:
+
+Default → /api/query
+Serenity auto/freeform analyze → /api/playbooks/analyze
+Serenity discovery presets → /api/playbooks/discover
+Serenity chain map → /api/playbooks/supply-chain-map
+S&J → /api/playbooks/analyze
+
+Do not muddy this.
+
+Part 9 — Loading/failure behavior
+
+If serenity-regime fails:
+
+do not break Serenity mode
+fall back to the current generic Auto label
+allow the rest of the mode to work normally
+
+No aggressive retries.
+
+Part 10 — Acceptance criteria
+
+When complete:
+
+Serenity Auto
+no hardcoded NVDA default
+shows what path Serenity currently prefers
+explains why briefly
+still keeps controls secondary
+Refined mode
+clearly shows Auto is overridden
+one-click return to Auto
+Default
+unchanged
+S&J
+unchanged
+Part 11 — Deliverables
+
+When done, report:
+
+files added/modified
+proxy route added
+how Serenity Auto now displays current regime/path
+how manual override vs Auto is shown
+how failures fall back safely
+confirmation Default and S&J were untouched
+Final instruction
+
+Do not add more controls.
+Do not redesign everything.
+Do not create a macro dashboard.

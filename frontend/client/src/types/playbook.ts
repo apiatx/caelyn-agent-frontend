@@ -182,6 +182,9 @@ export interface PlaybookDiscoverResponse {
   best_blend_candidates?: DiscoveryCandidate[];
   chain_map_preview?: unknown;
   meta?: DiscoveryMeta;
+  // regime / auto context — may be included by backend when auto mode ran
+  regime_context?: RegimeContext;
+  auto_regime?: RegimeContext;
   error?: string;
   [key: string]: unknown;
 }
@@ -292,6 +295,41 @@ export interface ForeignCoverageInfo {
   coverage_status?: string;
 }
 
+// ── Serenity Regime ──────────────────────────────────────────────────────────
+
+export interface RegimeContext {
+  label?: string;
+  summary?: string;
+  top_themes?: string[];
+  top_anchors?: string[];
+  top_regions?: string[];
+  recommended_mode?: string;
+  recommended_depth?: number;
+  confidence?: string;
+  why_now?: string;
+  evidence_signals?: string[];
+  rejected_or_lower_priority_paths?: string[];
+  [key: string]: unknown;
+}
+
+export interface SerenityRegimeResponse {
+  regime_context?: RegimeContext;
+  auto_regime?: RegimeContext;
+  label?: string;
+  summary?: string;
+  top_themes?: string[];
+  top_anchors?: string[];
+  top_regions?: string[];
+  recommended_mode?: string;
+  recommended_depth?: number;
+  confidence?: string;
+  why_now?: string;
+  evidence_signals?: string[];
+  rejected_or_lower_priority_paths?: string[];
+  error?: string;
+  [key: string]: unknown;
+}
+
 // ── Analyze ──────────────────────────────────────────────────────────────────
 
 export interface PlaybookAnalyzeRequest {
@@ -331,6 +369,9 @@ export interface PlaybookAnalyzeResponse {
   discovery_mode?: string;
   discovery_context?: unknown;
   top_ranked?: DiscoveryCandidate[];
+  // regime / auto context — may be included by backend when auto mode ran
+  regime_context?: RegimeContext;
+  auto_regime?: RegimeContext;
   error?: string;
   [key: string]: unknown;
 }
