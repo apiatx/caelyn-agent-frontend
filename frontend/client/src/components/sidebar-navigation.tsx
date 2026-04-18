@@ -115,6 +115,12 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
       icon: <TrendingUp className="w-4 h-4" />,
       children: [
         {
+          id: 'strategy-screener',
+          label: 'Strategy Screener',
+          icon: <ScrollText className="w-4 h-4" />,
+          path: '/app/strategy-screener'
+        },
+        {
           id: 'stocks-screening',
           label: 'Screening',
           icon: <Search className="w-4 h-4" />,

@@ -2898,6 +2898,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ── Strategy Screener routes ──────────────────────────────────────
+  app.get('/api/strategy-screener/latest', async (req, res) => {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 15000);
+      const r = await fetch(`${PB_URL}/api/strategy-screener/latest`, { headers: pbHdr(), signal: ctrl.signal });
+      if (!r.ok) return res.status(r.status).json({ error: 'strategy-screener/latest failed' });
+      res.json(await r.json());
+    } catch (e: any) {
+      console.error('[strategy-screener/latest] error:', e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.get('/api/strategy-screener/config', async (req, res) => {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 10000);
+      const r = await fetch(`${PB_URL}/api/strategy-screener/config`, { headers: pbHdr(), signal: ctrl.signal });
+      if (!r.ok) return res.status(r.status).json({ error: 'strategy-screener/config failed' });
+      res.json(await r.json());
+    } catch (e: any) {
+      console.error('[strategy-screener/config] error:', e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.get('/api/strategy-screener/report/:snapshotId/:ticker', async (req, res) => {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 20000);
+      const { snapshotId, ticker } = req.params;
+      const r = await fetch(`${PB_URL}/api/strategy-screener/report/${encodeURIComponent(snapshotId)}/${encodeURIComponent(ticker)}`, {
+        headers: pbHdr(), signal: ctrl.signal,
+      });
+      if (!r.ok) return res.status(r.status).json({ error: 'strategy-screener/report failed' });
+      res.json(await r.json());
+    } catch (e: any) {
+      console.error('[strategy-screener/report] error:', e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post('/api/strategy-screener/refresh', async (req, res) => {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 120000);
+      const r = await fetch(`${PB_URL}/api/strategy-screener/refresh`, {
+        method: 'POST',
+        headers: pbHdr(),
+        signal: ctrl.signal,
+      });
+      if (!r.ok) return res.status(r.status).json({ error: 'strategy-screener/refresh failed' });
+      res.json(await r.json());
+    } catch (e: any) {
+      console.error('[strategy-screener/refresh] error:', e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   app.get('/api/playbooks/serenity-regime', async (req, res) => {
     try {
       const ctrl = new AbortController();

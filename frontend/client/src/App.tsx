@@ -59,6 +59,7 @@ import InsiderActivityPage from "@/pages/stocks-insider-activity";
 import WhaleWatchPage from "@/pages/whale-watch";
 import AboutPage from "@/pages/about";
 import WatchlistPage from "@/pages/watchlist";
+import StrategyScreenerPage from "@/pages/strategy-screener";
 
 import NotFound from "@/pages/not-found";
 import { GlobalPrefetch } from "@/contexts/GlobalDataContext";
@@ -181,6 +182,8 @@ function Router() {
       <Route path="/portfolio" component={PortfolioPage} />
       <Route path="/app/watchlist" component={WatchlistPage} />
       <Route path="/watchlist" component={WatchlistPage} />
+      <Route path="/app/strategy-screener" component={StrategyScreenerPage} />
+      <Route path="/strategy-screener" component={StrategyScreenerPage} />
       <Route path="/app/about" component={AboutPage} />
       <Route path="/about" component={AboutPage} />
       <Route component={NotFound} />

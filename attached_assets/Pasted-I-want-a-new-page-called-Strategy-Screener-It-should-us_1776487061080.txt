@@ -1,0 +1,174 @@
+I want a new page called Strategy Screener.
+
+It should use the new backend Strategy Screener snapshot/report routes and feel like a proactive, curated Serenity publication page — not a prompt-driven terminal mode.
+
+Core objective
+
+Build a new page that:
+
+shows the latest Serenity strategy screener snapshot
+shows a ranked list of stocks
+opens a full deep report for a clicked stock
+looks more like the attached screenshots than the AI terminal
+is powered by persisted backend snapshot data
+includes a manual refresh button if available
+does not interfere with the AI Terminal page
+Non-negotiable guardrails
+Do not change Default AI Terminal behavior.
+Do not turn this page into another terminal chat page.
+Do not reuse the terminal UI as-is.
+Do not remove existing pages or routes.
+Keep this as a new page / new surface.
+Use the backend snapshot/report APIs, not live prompt-driven calls.
+Do not auto-refresh aggressively.
+The page should feel curated, readable, and long-form.
+Page requirements
+New page
+
+Create a new route/page such as:
+
+/strategy-screener
+
+Add it to the sidebar/navigation cleanly.
+
+Page layout
+
+The page should have:
+
+1. Header / hero
+
+Show:
+
+page title: Strategy Screener
+latest snapshot summary
+generated date
+cadence label (e.g. Biweekly)
+refresh button if backend supports it
+maybe a small Serenity badge / note:
+“Powered by Serenity playbook”
+2. Results list/table
+
+Show a ranked list similar to the attached inspiration:
+
+index
+symbol
+company / role
+theme
+market cap
+layer
+market / country
+grade
+
+Keep it clean and premium.
+
+3. Full report view
+
+When a row is clicked:
+
+open a detail panel / drawer / side pane / dedicated subview
+show the full report sections:
+headline/meta line
+summary
+why it matters
+supply chain map
+competitors
+catalysts
+rerating case
+key risk
+why hidden
+what to verify next
+what would break thesis
+
+This should feel like the attached long-form report.
+
+API integration
+
+Use new backend routes like:
+
+GET /api/strategy-screener/latest
+GET /api/strategy-screener/report/{snapshot_id}/{ticker}
+POST /api/strategy-screener/refresh
+GET /api/strategy-screener/config
+
+Add proxy routes if needed.
+
+Do not fetch live discovery data directly here.
+
+UX details
+Default state
+
+On page load:
+
+fetch latest snapshot
+show summary and ranked list
+Clicking a stock
+fetch full report if not already loaded
+render it cleanly
+allow back/close
+Refresh
+
+If refresh is supported:
+
+show a subtle button like Refresh Snapshot
+on click call refresh route
+show loading state
+then reload latest snapshot
+Empty/failure states
+do not break page
+show compact, polished fallback states
+Design direction
+
+Use the app’s existing dark premium aesthetic, but this page should feel:
+
+more editorial
+more readable
+less like a chat terminal
+more like a research publication
+
+Use the attached screenshots as style inspiration:
+
+strong title
+clear meta line
+readable long-form sections
+ranked list with grades
+premium spacing
+
+Do not go overboard with charts or unnecessary widgets in v1.
+
+Likely files
+
+Adapt to repo structure, but likely:
+
+new page component
+new API lib functions
+new types
+proxy route additions
+sidebar/navigation integration
+Acceptance criteria
+
+When complete:
+
+new Strategy Screener page exists
+latest snapshot loads from backend
+ranked stock list displays cleanly
+clicking a stock loads and shows full report
+refresh button works if backend route exists
+AI Terminal remains untouched
+page feels like a proactive Serenity publication, not a prompt flow
+Deliverables
+
+When done, report:
+
+files added/modified
+routes/pages added
+API routes used
+how full report is rendered
+how refresh works
+confirmation AI Terminal was untouched
+Final instruction
+
+This page should feel like:
+
+a curated Serenity issue
+a publication
+a strategy screener journal
