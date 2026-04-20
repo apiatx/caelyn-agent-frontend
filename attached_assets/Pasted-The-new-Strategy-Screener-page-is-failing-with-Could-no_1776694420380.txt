@@ -1,0 +1,147 @@
+The new Strategy Screener page is failing with:
+
+Could not load snapshot: Failed to execute 'json' on 'Response': Unexpected token '<', '<!DOCTYPE ...' is not valid JSON
+
+Backend verification already proved:
+
+all /api/strategy-screener/* backend routes return valid JSON
+content-type is correct
+no redirects
+no HTML
+no auth/login wrapper
+
+So the problem is frontend-side API routing / base URL / proxy usage.
+
+This is an audit + minimal fix task.
+Do not refactor unrelated code.
+
+Core objective
+
+Find exactly why the Strategy Screener page is receiving HTML instead of JSON, and fix it with the smallest safe change.
+
+What to audit first
+1. Exact fetch URLs used by the Strategy Screener page
+
+Audit all API calls for:
+
+latest snapshot
+report
+refresh
+config
+
+I want to know the exact string/URL being requested in the browser/runtime.
+
+Check whether they are using:
+
+relative paths
+proxy paths
+environment base URLs
+hardcoded backend URLs
+mismatched dev vs production behavior
+2. Frontend proxy route usage
+
+Audit frontend/server/routes.ts and confirm:
+
+proxy routes exist for:
+GET /api/strategy-screener/latest
+GET /api/strategy-screener/report/:snapshotId/:ticker
+POST /api/strategy-screener/refresh
+GET /api/strategy-screener/config
+these routes are reachable
+they are registered before any fallback/catch-all SPA route
+no route path typos exist
+3. API helper usage
+
+Audit the screener API helper file.
+
+Check whether it is:
+
+using the same API pattern as the rest of the app
+incorrectly using a frontend-relative path that resolves to HTML
+bypassing the working proxy pattern used elsewhere
+4. Environment/base URL logic
+
+Audit whether the Strategy Screener page/API lib is using:
+
+VITE_API_BASE_URL
+AGENT_BACKEND_URL
+some other env
+or no env at all
+
+Determine whether the deployed frontend has a missing or wrong base URL.
+
+Required debugging instrumentation
+
+Before fixing, add temporary debug logging in the Strategy Screener API helper:
+
+For each request, log:
+
+final request URL
+response status
+response content-type
+
+If content-type is not JSON:
+
+read response text
+log first 200 characters
+throw a clean error with:
+path
+status
+content-type
+
+Do not leave noisy logs everywhere permanently, but use them long enough to identify root cause.
+
+Most likely fix paths to check first
+Fix path A — use the frontend proxy consistently
+
+If the rest of the app uses frontend proxy routes, make Strategy Screener use those same proxy paths consistently.
+
+Example:
+
+use /api/strategy-screener/latest
+not a miscomputed external URL
+not a relative non-API route
+Fix path B — correct base URL usage
+
+If this page bypasses the proxy and should call backend directly, make sure the absolute backend URL is correct in deployed frontend config.
+
+Fix path C — route ordering
+
+If proxy routes are being swallowed by a catch-all fallback, move them above the fallback route.
+
+Error handling requirement
+
+Update the screener API helper so it never blindly calls response.json().
+
+Do this safely:
+
+inspect content-type
+if JSON → parse normally
+if HTML/text → throw a descriptive error instead of JSON parsing failure
+
+Example:
+
+“Expected JSON from /api/strategy-screener/latest, got text/html (likely wrong frontend route or base URL).”
+
+This will make future debugging much easier.
+
+Acceptance criteria
+
+When complete:
+
+Strategy Screener page loads latest snapshot successfully
+no HTML is parsed as JSON
+latest snapshot list renders
+report route works on row click
+refresh route works
+AI Terminal remains untouched
+only minimal files changed
+Deliverables
+
+When done, provide:
+
+exact root cause
+exact files modified
+broken URL/path vs fixed URL/path
+whether proxy route ordering was involved
+confirmation the page now loads correctly
