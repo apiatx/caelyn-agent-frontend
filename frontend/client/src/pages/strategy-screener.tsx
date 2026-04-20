@@ -187,7 +187,7 @@ function TradingViewChart({ ticker, exchange }: { ticker: string; exchange?: str
   ].join('');
 
   return (
-    <div style={{ flexShrink: 0, borderBottom: `1px solid ${C.border}`, background: C.bg }}>
+    <div style={{ borderBottom: `1px solid ${C.border}`, background: C.bg, marginBottom: 24 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 22px 0' }}>
         <span style={{ fontFamily: C.font, fontSize: 9, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
           Chart · {sym}
@@ -276,11 +276,10 @@ function ReportPanel({
         {entry.why_now && <span style={{ fontFamily:C.sans, fontSize:11, color:C.dim, fontStyle:'italic', flex:1, minWidth:120 }}>{entry.why_now}</span>}
       </div>
 
-      {/* TradingView chart */}
-      <TradingViewChart ticker={tk} exchange={entry.exchange || entry.market} />
-
-      {/* Report body */}
-      <div style={{ flex:1, overflowY:'auto', padding:'24px 22px' }}>
+      {/* Report body — chart + text scroll together */}
+      <div style={{ flex:1, overflowY:'auto' }}>
+        <TradingViewChart ticker={tk} exchange={entry.exchange || entry.market} />
+        <div style={{ padding:'24px 22px' }}>
         {isLoading && (
           <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:10, padding:'40px 0', color:C.dim }}>
             <Loader2 size={18} style={{ animation:'spin 1s linear infinite', color:C.indigo }} />
@@ -315,6 +314,7 @@ function ReportPanel({
             {entry.why_now && <ReportSection title="Why Now" content={entry.why_now} />}
           </div>
         )}
+        </div>
       </div>
     </div>
   );
