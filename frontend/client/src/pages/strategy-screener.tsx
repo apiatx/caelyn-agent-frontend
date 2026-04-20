@@ -157,6 +157,59 @@ function ReportSection({ title, content }: { title: string; content?: string }) 
   );
 }
 
+/* ── TradingView Chart ───────────────────────────────────────────── */
+function TradingViewChart({ ticker, exchange }: { ticker: string; exchange?: string }) {
+  if (!ticker) return null;
+
+  const sym = exchange
+    ? `${exchange.toUpperCase()}:${ticker.toUpperCase()}`
+    : ticker.toUpperCase();
+
+  const studies = encodeURIComponent(
+    ['RSI@tv-basicstudies', 'MACD@tv-basicstudies', 'BB@tv-basicstudies'].join('|')
+  );
+
+  const src = [
+    'https://www.tradingview.com/widgetembed/',
+    `?symbol=${encodeURIComponent(sym)}`,
+    '&interval=D',
+    '&theme=dark',
+    '&style=1',
+    '&locale=en',
+    '&enable_publishing=false',
+    '&allow_symbol_change=true',
+    '&save_image=false',
+    '&hide_top_toolbar=0',
+    '&hide_side_toolbar=0',
+    '&withdateranges=1',
+    '&hideideas=1',
+    `&studies=${studies}`,
+  ].join('');
+
+  return (
+    <div style={{ flexShrink: 0, borderBottom: `1px solid ${C.border}`, background: C.bg }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 22px 0' }}>
+        <span style={{ fontFamily: C.font, fontSize: 9, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+          Chart · {sym}
+        </span>
+        <span style={{ fontFamily: C.font, fontSize: 9, color: C.muted }}>RSI · MACD · BB</span>
+      </div>
+      <iframe
+        key={sym}
+        src={src}
+        style={{
+          width: '100%',
+          height: 380,
+          border: 'none',
+          display: 'block',
+        }}
+        allow="fullscreen"
+        title={`${ticker} chart`}
+      />
+    </div>
+  );
+}
+
 /* ── Report Panel ────────────────────────────────────────────────── */
 function ReportPanel({
   entry,
@@ -222,6 +275,9 @@ function ReportPanel({
         {entry.market_cap_usd && <span style={{ fontFamily:C.font, fontSize:10, color:C.dim }}>{fmtCap(entry.market_cap_usd)}</span>}
         {entry.why_now && <span style={{ fontFamily:C.sans, fontSize:11, color:C.dim, fontStyle:'italic', flex:1, minWidth:120 }}>{entry.why_now}</span>}
       </div>
+
+      {/* TradingView chart */}
+      <TradingViewChart ticker={tk} exchange={entry.exchange || entry.market} />
 
       {/* Report body */}
       <div style={{ flex:1, overflowY:'auto', padding:'24px 22px' }}>
