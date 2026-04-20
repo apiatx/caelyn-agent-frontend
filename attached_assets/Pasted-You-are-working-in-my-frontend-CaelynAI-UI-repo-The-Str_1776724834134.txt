@@ -1,0 +1,159 @@
+You are working in my frontend CaelynAI UI repo.
+
+The Strategy Screener page is already working.
+
+Now implement the next UX upgrade:
+
+Objective
+
+Add user controls to the Strategy Screener page for:
+
+market cap bucket dropdown
+layer dropdown
+sort dropdown
+
+The page should default to:
+
+showing the latest snapshot
+ranked by best fit to Serenity logic
+
+The user should then be able to filter by:
+
+market cap bucket
+layer
+
+and sort by:
+
+best fit
+market cap
+layer
+grade
+
+This should use backend-filtered snapshot results, not live discovery.
+
+Non-negotiable guardrails
+Do not modify AI Terminal behavior.
+Do not change backend contracts beyond consuming the new filter/sort params.
+Do not turn this page into a live scanner.
+Do not auto-refresh aggressively.
+Keep the page editorial/publication-like, not terminal-like.
+Clicking a stock should still open the full report exactly as before.
+Do not break the existing unfiltered latest snapshot flow.
+Controls to add
+1. Market cap dropdown
+
+Options:
+
+All
+Large Cap ($100B+)
+Mid Cap ($20B–$99B)
+Small Cap ($2.5B–$19B)
+Micro Cap (<$2.5B)
+2. Layer dropdown
+
+Options:
+
+All
+Layer 1
+Layer 2
+Layer 3
+3. Sort dropdown
+
+Options:
+
+Best Fit
+Market Cap
+Layer
+Grade
+
+Default = Best Fit
+
+Behavior
+
+When the user changes any of these controls:
+
+refetch the latest snapshot list using the selected query params
+do not rerun report generation
+do not trigger refresh endpoint
+only update the list view
+
+The full report drawer/panel behavior stays the same.
+
+API usage
+
+Update the screener API lib to support query params for:
+
+market_cap_bucket
+layer
+sort_by
+limit=20
+
+Use the backend config endpoint if useful to populate dropdown labels/options.
+
+If simpler, you may hardcode the labels in the page as long as the backend IDs match exactly.
+
+UX/layout guidance
+
+Add these controls in a clean toolbar near the page header / snapshot summary.
+
+Suggested layout:
+
+left: page title + summary
+right: Refresh Snapshot button
+under that: compact filter/sort row
+
+Keep it premium and readable.
+
+Do not overcrowd the page.
+
+Optional nice touches
+
+If easy, show a small line like:
+
+Showing 20 Small Cap • Layer 3 • Sorted by Best Fit
+
+But keep it subtle.
+
+Full report behavior
+
+Clicking a stock row/card should still:
+
+fetch the full report
+open the side drawer/panel
+render exactly as before
+
+No changes needed unless required for filtered lists.
+
+Acceptance criteria
+
+When complete:
+
+Strategy Screener page has:
+market cap dropdown
+layer dropdown
+sort dropdown
+default view remains best-fit ranked
+changing filters updates the list only
+clicking a stock still opens full report
+refresh button still works
+AI Terminal remains untouched
+Deliverables
+
+When done, provide:
+
+files modified
+what controls were added
+how query params are passed
+how the filtered list state works
+confirmation report drawer behavior is unchanged
+confirmation AI Terminal was untouched
+Final instruction
+
+This should feel like:
+
+a better screener browsing experience
+not a new product
+not a live terminal
+not a giant dashboard
+
+Keep it tight and clean.

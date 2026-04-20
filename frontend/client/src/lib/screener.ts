@@ -28,8 +28,21 @@ async function parseJsonSafely<T>(res: Response, path: string): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export async function fetchLatestSnapshot(): Promise<ScreenerSnapshot> {
-  const path = '/api/strategy-screener/latest';
+export interface ScreenerFilters {
+  market_cap_bucket?: string;
+  layer?: string;
+  sort_by?: string;
+  limit?: number;
+}
+
+export async function fetchLatestSnapshot(filters?: ScreenerFilters): Promise<ScreenerSnapshot> {
+  const params = new URLSearchParams();
+  if (filters?.market_cap_bucket) params.set('market_cap_bucket', filters.market_cap_bucket);
+  if (filters?.layer) params.set('layer', filters.layer);
+  if (filters?.sort_by) params.set('sort_by', filters.sort_by);
+  if (filters?.limit) params.set('limit', String(filters.limit));
+  const qs = params.toString();
+  const path = `/api/strategy-screener/latest${qs ? `?${qs}` : ''}`;
   const res = await fetch(path, { headers: screenerHeaders() });
   if (!res.ok) {
     const body = await res.text().catch(() => '');

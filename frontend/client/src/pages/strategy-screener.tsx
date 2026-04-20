@@ -1,6 +1,7 @@
-import { useState, useCallback } from 'react';
-import { RefreshCw, X, ChevronRight, ArrowLeft, ExternalLink, AlertCircle, Loader2 } from 'lucide-react';
+import { useState, useCallback, useMemo } from 'react';
+import { RefreshCw, X, ChevronRight, ArrowLeft, AlertCircle, Loader2, SlidersHorizontal } from 'lucide-react';
 import { fetchLatestSnapshot, fetchReport, refreshSnapshot } from '@/lib/screener';
+import type { ScreenerFilters } from '@/lib/screener';
 import type { ScreenerSnapshot, ScreenerEntry, ScreenerReport } from '@/types/screener';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
@@ -25,6 +26,29 @@ const C = {
   font:     "'JetBrains Mono','Fira Code',monospace",
   sans:     "'SF Pro Display',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
 };
+
+/* ── Filter option definitions ───────────────────────────────────── */
+const MARKET_CAP_OPTIONS = [
+  { value: '',       label: 'All Caps' },
+  { value: 'large',  label: 'Large Cap  ($100B+)' },
+  { value: 'mid',    label: 'Mid Cap  ($20B–$99B)' },
+  { value: 'small',  label: 'Small Cap  ($2.5B–$19B)' },
+  { value: 'micro',  label: 'Micro Cap  (<$2.5B)' },
+];
+
+const LAYER_OPTIONS = [
+  { value: '',  label: 'All Layers' },
+  { value: '1', label: 'Layer 1' },
+  { value: '2', label: 'Layer 2' },
+  { value: '3', label: 'Layer 3' },
+];
+
+const SORT_OPTIONS = [
+  { value: 'best_fit',   label: 'Best Fit' },
+  { value: 'market_cap', label: 'Market Cap' },
+  { value: 'layer',      label: 'Layer' },
+  { value: 'grade',      label: 'Grade' },
+];
 
 /* ── Helpers ─────────────────────────────────────────────────────── */
 function fmtCap(v?: number): string {
@@ -320,11 +344,63 @@ function ReportPanel({
   );
 }
 
+/* ── Compact select ──────────────────────────────────────────────── */
+function FilterSelect({
+  value,
+  onChange,
+  options,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+}) {
+  const active = value !== '';
+  return (
+    <select
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      style={{
+        padding: '5px 28px 5px 10px',
+        background: active ? `rgba(99,102,241,0.12)` : C.card,
+        border: `1px solid ${active ? 'rgba(99,102,241,0.4)' : C.border}`,
+        borderRadius: 5,
+        color: active ? C.indigoFg : C.dim,
+        fontFamily: C.font,
+        fontSize: 10,
+        cursor: 'pointer',
+        outline: 'none',
+        appearance: 'none',
+        WebkitAppearance: 'none',
+        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2364748b'/%3E%3C/svg%3E")`,
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'right 8px center',
+        minWidth: 130,
+      }}
+    >
+      {options.map(o => (
+        <option key={o.value} value={o.value} style={{ background: C.surface, color: C.text }}>
+          {o.label}
+        </option>
+      ))}
+    </select>
+  );
+}
+
 /* ── Main page ───────────────────────────────────────────────────── */
 export default function StrategyScreenerPage() {
   const [selectedEntry, setSelectedEntry] = useState<ScreenerEntry | null>(null);
   const [refreshMsg, setRefreshMsg] = useState<string>('');
+  const [marketCap, setMarketCap] = useState('');
+  const [layer, setLayer] = useState('');
+  const [sortBy, setSortBy] = useState('best_fit');
   const qc = useQueryClient();
+
+  const filters = useMemo<ScreenerFilters>(() => ({
+    market_cap_bucket: marketCap || undefined,
+    layer: layer || undefined,
+    sort_by: sortBy !== 'best_fit' ? sortBy : undefined,
+    limit: 20,
+  }), [marketCap, layer, sortBy]);
 
   const {
     data: snapshot,
@@ -332,8 +408,8 @@ export default function StrategyScreenerPage() {
     error,
     refetch,
   } = useQuery<ScreenerSnapshot>({
-    queryKey: ['strategy-screener-latest'],
-    queryFn: fetchLatestSnapshot,
+    queryKey: ['strategy-screener-latest', marketCap, layer, sortBy],
+    queryFn: () => fetchLatestSnapshot(filters),
     staleTime: 5 * 60 * 1000,
     retry: 1,
   });
@@ -357,6 +433,13 @@ export default function StrategyScreenerPage() {
   const handleRowClick = useCallback((e: ScreenerEntry) => {
     setSelectedEntry(e);
   }, []);
+
+  // Build active filter summary string
+  const filterSummaryParts: string[] = [];
+  if (marketCap) filterSummaryParts.push(MARKET_CAP_OPTIONS.find(o => o.value === marketCap)?.label?.split('  ')[0] ?? marketCap);
+  if (layer) filterSummaryParts.push(LAYER_OPTIONS.find(o => o.value === layer)?.label ?? layer);
+  filterSummaryParts.push(SORT_OPTIONS.find(o => o.value === sortBy)?.label ?? sortBy);
+  const filterSummary = `Showing ${entries.length} · ${filterSummaryParts.join(' · ')}`;
 
   return (
     <div style={{ minHeight:'100vh', background:C.bg, color:C.text }}>
@@ -442,8 +525,26 @@ export default function StrategyScreenerPage() {
           </div>
         </div>
 
+        {/* ── Filter toolbar ───────────────────────────────────── */}
+        <div style={{ display:'flex', alignItems:'center', gap:10, padding:'14px 0', borderBottom:`1px solid ${C.borderFaint}`, flexWrap:'wrap' }}>
+          <SlidersHorizontal size={12} style={{ color:C.muted, flexShrink:0 }} />
+          <FilterSelect value={marketCap} onChange={setMarketCap} options={MARKET_CAP_OPTIONS} />
+          <FilterSelect value={layer} onChange={setLayer} options={LAYER_OPTIONS} />
+          <span style={{ color:C.muted, fontFamily:C.font, fontSize:9, padding:'0 2px' }}>sort</span>
+          <FilterSelect value={sortBy} onChange={setSortBy} options={SORT_OPTIONS} />
+          {(marketCap || layer || sortBy !== 'best_fit') && (
+            <button
+              onClick={() => { setMarketCap(''); setLayer(''); setSortBy('best_fit'); }}
+              style={{ marginLeft:4, padding:'4px 10px', background:'transparent', border:`1px solid ${C.border}`, borderRadius:4, color:C.muted, fontFamily:C.font, fontSize:9, cursor:'pointer' }}
+            >
+              Reset
+            </button>
+          )}
+          {isLoading && <Loader2 size={11} style={{ color:C.indigo, animation:'spin 1s linear infinite', marginLeft:4 }} />}
+        </div>
+
         {/* ── Content area ─────────────────────────────────────── */}
-        {isLoading && <LoadingState />}
+        {isLoading && !snapshot && <LoadingState />}
         {error && !snapshot && (
           <ErrorState
             message={`Could not load snapshot: ${(error as Error).message || 'Unknown error'}`}
@@ -459,6 +560,11 @@ export default function StrategyScreenerPage() {
 
         {snapshot && !snapshot.error && (
           <>
+            {/* Active filter summary */}
+            <div style={{ padding:'10px 0 0', fontFamily:C.font, fontSize:9, color:C.muted }}>
+              {filterSummary}
+            </div>
+
             {/* Stats strip */}
             <div style={{ display:'flex', alignItems:'center', gap:24, padding:'16px 0', borderBottom:`1px solid ${C.borderFaint}`, flexWrap:'wrap' }}>
               <div>
