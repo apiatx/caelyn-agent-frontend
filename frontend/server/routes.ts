@@ -2903,7 +2903,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const ctrl = new AbortController();
       setTimeout(() => ctrl.abort(), 15000);
-      const r = await fetch(`${PB_URL}/api/strategy-screener/latest`, { headers: pbHdr(), signal: ctrl.signal });
+      const qs = new URLSearchParams(req.query as Record<string, string>).toString();
+      const url = `${PB_URL}/api/strategy-screener/latest${qs ? `?${qs}` : ''}`;
+      console.log('[strategy-screener/latest] → proxying to:', url);
+      const r = await fetch(url, { headers: pbHdr(), signal: ctrl.signal });
       if (!r.ok) return res.status(r.status).json({ error: 'strategy-screener/latest failed' });
       res.json(await r.json());
     } catch (e: any) {

@@ -43,12 +43,15 @@ export async function fetchLatestSnapshot(filters?: ScreenerFilters): Promise<Sc
   if (filters?.limit) params.set('limit', String(filters.limit));
   const qs = params.toString();
   const path = `/api/strategy-screener/latest${qs ? `?${qs}` : ''}`;
+  console.log('[screener] fetchLatestSnapshot → filters:', JSON.stringify(filters), '→ url:', path);
   const res = await fetch(path, { headers: screenerHeaders() });
   if (!res.ok) {
     const body = await res.text().catch(() => '');
     throw new Error(`${path} failed: ${res.status} — ${body.slice(0, 120)}`);
   }
-  return parseJsonSafely<ScreenerSnapshot>(res, path);
+  const data = await parseJsonSafely<ScreenerSnapshot>(res, path);
+  console.log('[screener] response → entries:', (data as any).entries?.length ?? (data as any).ranked_list?.length ?? (data as any).results?.length ?? '?', '| filtered_result_count:', (data as any).filtered_result_count, '| available_result_count:', (data as any).available_result_count);
+  return data;
 }
 
 export async function fetchReport(snapshotId: string, ticker: string): Promise<ScreenerReport> {

@@ -1,0 +1,166 @@
+The Strategy Screener filter/sort UX was added, but it is not behaving correctly.
+
+Current bug
+
+When the user selects:
+
+a specific market cap bucket
+or a specific layer
+
+the page still appears to show all results instead of truly filtered results.
+
+Also, I want:
+
+All Caps default to show 25+ results
+bucket views to show up to 20
+filtered dropdowns to actually work
+sorting to work on the filtered result set
+
+This is an audit-first debug task, then fix with the smallest safe change.
+
+Non-negotiable guardrails
+Do not modify AI Terminal behavior.
+Do not touch /api/query.
+Do not turn this page into a live scanner.
+Do not change the report drawer behavior.
+Do not add background behavior.
+Do not refactor unrelated pages.
+Keep the Strategy Screener page editorial and readable.
+What to audit first
+1. Confirm exact request URL being sent
+
+For every change to:
+
+market cap dropdown
+layer dropdown
+sort dropdown
+
+log the exact request URL being sent to:
+
+GET /api/strategy-screener/latest
+
+I want to verify whether query params are actually being appended correctly.
+
+Specifically verify:
+
+market_cap_bucket
+layer
+sort_by
+limit
+2. Confirm React Query key and refetch behavior
+
+Audit whether the page query key actually changes when:
+
+market cap changes
+layer changes
+sort changes
+
+If the key is not changing correctly, filtered refetches may not happen.
+
+3. Confirm the page is rendering the filtered response
+
+Audit the render path and confirm the page is rendering the results from the filtered backend response, not some stale cached snapshot object or previously derived local array.
+
+4. Confirm limit behavior
+
+Current product requirement:
+
+All Caps should show 25+
+specific market cap bucket should show up to 20
+filtered layer views should also respect the current list limit
+
+Audit whether frontend is hardcoding limit=20 for all cases.
+
+That is likely wrong.
+
+Required product behavior to implement
+Result-count behavior
+
+Implement this exact behavior:
+
+if marketCap = all
+send limit=30 (or another clearly 25+ value, but use 30 unless already specified elsewhere)
+if marketCap != all
+send limit=20
+
+Layer filtering should not change that behavior by itself.
+
+Filter behavior
+All Caps = no market_cap_bucket param
+All Layers = no layer param
+Best Fit = no sort_by param if backend default already handles it cleanly
+otherwise pass the exact backend IDs
+Dropdowns must actually refetch list data
+
+Changing any filter or sort must:
+
+update local state
+update request params
+trigger a new GET /api/strategy-screener/latest
+re-render the list from the returned payload
+Summary line
+
+Add or fix a subtle summary line like:
+
+Showing 28 • All Caps • All Layers • Best Fit
+Showing 12 • Small Cap • Layer 2 • Grade
+
+This should reflect the actual current response.
+
+Use backend metadata if available:
+
+filtered_result_count
+available_result_count
+active_filters
+active_sort
+
+Do not fake it from local assumptions if the backend already returns the truth.
+
+Required debugging instrumentation
+
+Temporarily log:
+
+selected marketCap, layer, sortBy
+final filters object
+final request URL
+response filtered_result_count
+response available_result_count
+response results.length
+
+Use these logs to identify whether the problem is:
+
+request not changing
+backend not filtering
+wrong render source
+
+Remove or reduce noisy logs after confirming the fix.
+
+Most likely failure points to check
+marketCap = "all" still passing a bucket param accidentally
+layer stored as string but backend expects int
+sortBy = "best_fit" omitted correctly, but other sorts not passed
+limit always hardcoded to 20
+page rendering stale data instead of query response
+query key not including one of the filter states
+local memoized array overriding server response
+Acceptance criteria
+
+When complete:
+
+All Caps shows 25+ results
+Large / Mid / Small / Micro each show filtered results, not the full list
+Layer 1 / 2 / 3 actually filter results
+sorting works on the filtered set
+report drawer behavior is unchanged
+refresh behavior is unchanged
+AI Terminal untouched
+Deliverables
+
+When done, provide:
+
+root cause
+exact files modified
+request URL examples before vs after
+how the limit logic now works
+confirmation the page now truly filters and sorts
+confirmation report drawer is unchanged

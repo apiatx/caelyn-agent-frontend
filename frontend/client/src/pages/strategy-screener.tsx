@@ -361,7 +361,10 @@ function FilterSelect({
       onChange={e => onChange(e.target.value)}
       style={{
         padding: '5px 28px 5px 10px',
-        background: active ? `rgba(99,102,241,0.12)` : C.card,
+        backgroundColor: active ? `rgba(99,102,241,0.12)` : C.card,
+        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2364748b'/%3E%3C/svg%3E")`,
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'right 8px center',
         border: `1px solid ${active ? 'rgba(99,102,241,0.4)' : C.border}`,
         borderRadius: 5,
         color: active ? C.indigoFg : C.dim,
@@ -371,9 +374,6 @@ function FilterSelect({
         outline: 'none',
         appearance: 'none',
         WebkitAppearance: 'none',
-        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2364748b'/%3E%3C/svg%3E")`,
-        backgroundRepeat: 'no-repeat',
-        backgroundPosition: 'right 8px center',
         minWidth: 130,
       }}
     >
@@ -399,7 +399,7 @@ export default function StrategyScreenerPage() {
     market_cap_bucket: marketCap || undefined,
     layer: layer || undefined,
     sort_by: sortBy !== 'best_fit' ? sortBy : undefined,
-    limit: 20,
+    limit: marketCap ? 20 : 30,
   }), [marketCap, layer, sortBy]);
 
   const {
@@ -434,12 +434,12 @@ export default function StrategyScreenerPage() {
     setSelectedEntry(e);
   }, []);
 
-  // Build active filter summary string
-  const filterSummaryParts: string[] = [];
-  if (marketCap) filterSummaryParts.push(MARKET_CAP_OPTIONS.find(o => o.value === marketCap)?.label?.split('  ')[0] ?? marketCap);
-  if (layer) filterSummaryParts.push(LAYER_OPTIONS.find(o => o.value === layer)?.label ?? layer);
-  filterSummaryParts.push(SORT_OPTIONS.find(o => o.value === sortBy)?.label ?? sortBy);
-  const filterSummary = `Showing ${entries.length} · ${filterSummaryParts.join(' · ')}`;
+  // Build filter summary — prefer backend metadata when available
+  const resultCount = (snapshot as any)?.filtered_result_count ?? (snapshot as any)?.available_result_count ?? entries.length;
+  const mcLabel = MARKET_CAP_OPTIONS.find(o => o.value === marketCap)?.label?.split('  ')[0] ?? 'All Caps';
+  const layerLabel = LAYER_OPTIONS.find(o => o.value === layer)?.label ?? 'All Layers';
+  const sortLabel = SORT_OPTIONS.find(o => o.value === sortBy)?.label ?? 'Best Fit';
+  const filterSummary = `Showing ${resultCount} · ${mcLabel} · ${layerLabel} · ${sortLabel}`;
 
   return (
     <div style={{ minHeight:'100vh', background:C.bg, color:C.text }}>
