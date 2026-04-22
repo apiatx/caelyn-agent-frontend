@@ -120,6 +120,25 @@ export interface HomeSectionStatus {
   fear_greed?: string;
   trending?: string;
   trending_on_x?: string;
+  news?: string;
+  crypto_fg?: string;
+}
+
+// News articles folded into the Home composed payload (Node-side, reuses NEWS_CACHE)
+// Shape matches getHomeNewsArticles() in server/routes.ts
+export interface HomeNewsArticle {
+  title: string;
+  description: string;
+  source: string;
+  url: string;
+  published: string;
+  image?: string | null;
+}
+
+export interface HomeNewsSection {
+  articles: HomeNewsArticle[];
+  source: string;
+  count: number;
 }
 
 export interface HomeDashboardPayload {
@@ -133,6 +152,7 @@ export interface HomeDashboardPayload {
   movers: HomeMovers;
   trending_on_x: HomeTrendingOnX;
   fear_greed: HomeFearGreed;
+  news?: HomeNewsSection;
   section_status: HomeSectionStatus;
   timing?: { total_seconds: number };
   from_cache?: boolean;

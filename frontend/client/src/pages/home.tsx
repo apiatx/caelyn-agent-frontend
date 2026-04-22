@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import {
@@ -268,37 +267,16 @@ function FearGreedGauge({
 export default function HomePage() {
   const [, setLocation] = useLocation();
 
-  // Home aggregator (backend composes already-cached services; no extra API calls)
+  // Home aggregator — the page makes exactly ONE network request. The
+  // Express proxy composes: backend /api/home/dashboard + news articles
+  // (already in NEWS_CACHE) + crypto fear/greed (already in CMC cache).
   const { data, isLoading, isError } = useQuery<HomeDashboardPayload>({
     queryKey: ["/api/home/dashboard"],
     staleTime: 60_000,
   });
 
-  // Latest news — reuses existing RSS proxy (server-side cached 5 min)
-  const { data: newsData } = useQuery<{ articles: any[] }>({
-    queryKey: ["/api/proxy/news/feed"],
-    staleTime: 5 * 60_000,
-  });
-
-  // Crypto fear-greed already lives inside the crypto market-overview payload
-  // the app calls elsewhere — we piggyback on that same cached endpoint.
-  const { data: cmcOverview } = useQuery<any>({
-    queryKey: ["/api/coinmarketcap/market-overview"],
-    staleTime: 5 * 60_000,
-  });
-
-  const cryptoFG = useMemo<HomeFearGreedSide | null>(() => {
-    const raw = cmcOverview?.fearGreedIndex;
-    if (!raw) return null;
-    const score = raw.value ?? raw.index_value ?? raw.score;
-    const rating = raw.value_classification ?? raw.classification ?? raw.label;
-    return {
-      score: typeof score === "number" ? score : score ? parseFloat(String(score)) : null,
-      rating: rating || null,
-      signal: null,
-      historical: null,
-    };
-  }, [cmcOverview]);
+  const newsArticles = data?.news?.articles || [];
+  const cryptoFG = data?.fear_greed?.crypto || null;
 
   const greeting = data?.greeting?.text || "Welcome back";
   const marketLabel = data?.greeting?.market?.label || "Markets";
@@ -565,7 +543,7 @@ export default function HomePage() {
             <GlassCard className="p-4">
               <SectionHeader icon={Newspaper} title="Latest News" accent="Cross-market" />
               <div className="divide-y divide-white/[0.04]">
-                {(newsData?.articles || []).slice(0, 8).map((a: any, i: number) => (
+                {newsArticles.slice(0, 8).map((a: any, i: number) => (
                   <a
                     key={i}
                     href={a.url}
@@ -594,7 +572,7 @@ export default function HomePage() {
                     </div>
                   </a>
                 ))}
-                {(!newsData?.articles || newsData.articles.length === 0) && (
+                {newsArticles.length === 0 && (
                   <div className="text-sm text-white/40 py-6 text-center">
                     News feed loading…
                   </div>
@@ -605,23 +583,56 @@ export default function HomePage() {
 
           <div className="lg:col-span-1">
             <GlassCard className="p-4 h-full">
-              <SectionHeader
-                icon={LineChart}
-                title="Trending on X"
-                accent={
-                  data?.trending_on_x?.generated_at
-                    ? `Updated ${new Date(data.trending_on_x.generated_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`
-                    : "Weekly"
-                }
-                action={
-                  data?.trending_on_x?.refresh_in_progress ? (
-                    <span className="text-[10px] text-white/45 flex items-center gap-1">
-                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-300 animate-pulse" />
-                      refreshing
-                    </span>
-                  ) : null
-                }
-              />
+              {(() => {
+                const tx = data?.trending_on_x;
+                const generatedAt = tx?.generated_at ? new Date(tx.generated_at) : null;
+                // Explicit "Updated <time>" using relative formatting (e.g., "2 days ago", "5h ago").
+                // Backend snapshot is weekly-cached so we show both absolute + relative.
+                const relativeUpdated = (() => {
+                  if (!generatedAt) return "Weekly";
+                  const ageMs = Date.now() - generatedAt.getTime();
+                  const ageSec = Math.max(0, Math.floor(ageMs / 1000));
+                  if (ageSec < 60) return `Updated ${ageSec}s ago`;
+                  const ageMin = Math.floor(ageSec / 60);
+                  if (ageMin < 60) return `Updated ${ageMin}m ago`;
+                  const ageHr = Math.floor(ageMin / 60);
+                  if (ageHr < 24) return `Updated ${ageHr}h ago`;
+                  const ageDay = Math.floor(ageHr / 24);
+                  return `Updated ${ageDay}d ago`;
+                })();
+                // Stale if backend marked stale OR age_seconds > 7 days
+                const ageSeconds = typeof tx?.age_seconds === "number" ? tx.age_seconds : null;
+                const isStale = tx?.is_stale === true || (ageSeconds !== null && ageSeconds > 7 * 86400);
+                const isRefreshing = tx?.refresh_in_progress === true;
+                return (
+                  <SectionHeader
+                    icon={LineChart}
+                    title="Trending on X"
+                    accent={relativeUpdated}
+                    action={
+                      <div className="flex items-center gap-1.5">
+                        {isStale && (
+                          <span
+                            className="text-[10px] px-1.5 py-0.5 rounded border border-amber-500/30 text-amber-300 bg-amber-500/10"
+                            title="Snapshot is older than 7 days"
+                          >
+                            stale
+                          </span>
+                        )}
+                        {isRefreshing && (
+                          <span
+                            className="text-[10px] text-amber-300 flex items-center gap-1 px-1.5 py-0.5 rounded border border-amber-500/25 bg-amber-500/10"
+                            title="A weekly refresh is in progress server-side"
+                          >
+                            <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-300 animate-pulse" />
+                            refreshing
+                          </span>
+                        )}
+                      </div>
+                    }
+                  />
+                );
+              })()}
               <div className="space-y-2">
                 {(data?.trending_on_x?.top_tickers || []).slice(0, 8).map((t, i) => (
                   <div

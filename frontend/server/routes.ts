@@ -1526,6 +1526,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }
 
+  // Reusable news-article fetcher for the Home aggregator. Reads and writes
+  // the same NEWS_CACHE used by /api/proxy/news/feed, so there's no net-new
+  // RSS traffic when both routes are warm.
+  async function getHomeNewsArticles(category: string = 'finance', limit: number = 8): Promise<any[]> {
+    const cat = category.toLowerCase();
+    const cached = NEWS_CACHE.get(cat);
+    if (cached && Date.now() - cached.ts < NEWS_CACHE_TTL) {
+      return cached.articles.slice(0, limit);
+    }
+    const Parser = (await import('rss-parser')).default;
+    const parser = new Parser({
+      timeout: 15000,
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; NewsAggregator/1.0)' },
+      customFields: {
+        item: [
+          ['media:content', 'mediaContent'],
+          ['media:thumbnail', 'mediaThumbnail'],
+        ],
+      },
+    });
+    const feeds = RSS_FEEDS[cat] || RSS_FEEDS['finance'];
+    const allArticles: any[] = [];
+    const feedResults = await Promise.allSettled(
+      feeds.map(async (feedUrl) => {
+        try {
+          const feed = await parser.parseURL(feedUrl);
+          return (feed.items || []).map((item: any) => {
+            const image =
+              item.mediaContent?.$.url ||
+              item.mediaThumbnail?.$.url ||
+              item.enclosure?.url ||
+              '';
+            return {
+              title: item.title || '',
+              description: (item.contentSnippet || item.content || item.summary || '').slice(0, 300),
+              source: feed.title || '',
+              url: item.link || '',
+              published: item.isoDate || item.pubDate || '',
+              image,
+            };
+          });
+        } catch {
+          return [];
+        }
+      })
+    );
+    for (const r of feedResults) {
+      if (r.status === 'fulfilled') allArticles.push(...r.value);
+    }
+    allArticles.sort((a, b) => {
+      const da = new Date(a.published).getTime() || 0;
+      const db = new Date(b.published).getTime() || 0;
+      return db - da;
+    });
+    const seen = new Set<string>();
+    const unique = allArticles.filter((a) => {
+      const key = a.title.toLowerCase().trim();
+      if (seen.has(key) || !key) return false;
+      seen.add(key);
+      return true;
+    });
+    const top40 = unique.slice(0, 40);
+    NEWS_CACHE.set(cat, { articles: top40, ts: Date.now() });
+    return top40.slice(0, limit);
+  }
+
   app.get('/api/notifai/weekly-summary', async (req, res) => {
     try {
       const fwdHeaders: Record<string,string> = { 'X-API-Key': AGENT_KEY };
@@ -2212,26 +2278,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const SR_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
   const srHdr  = () => ({ 'X-API-Key': SR_KEY, 'Content-Type': 'application/json' });
 
-  // === Home dashboard (single aggregator — composes already-cached upstream services) ===
-  // Piggybacks on upstream caches in the Python backend; no net-new API work
-  // happens here except one fetch per page load (deduped by react-query).
+  // === Home dashboard (SINGLE composed aggregator) ===
+  // Rules (strict):
+  //   - The Home page makes exactly ONE network request: this route.
+  //   - This route returns backend /api/home/dashboard payload PLUS the two
+  //     bits that used to live in separate Home queries: news articles
+  //     (already on 5-min NEWS_CACHE) and crypto fear/greed (already on the
+  //     MarketOverviewService cache). Both are read from in-process caches
+  //     that other routes already keep warm — this route does NOT add net-new
+  //     third-party API traffic; upstream cache TTLs are reused as-is.
+  //   - Upstream failures are soft: news/crypto are best-effort and never
+  //     break the primary dashboard payload.
   app.get('/api/home/dashboard', async (req, res) => {
-    try {
+    const qs = req.query.force === 'true' ? '?force=true' : '';
+
+    // Fire the three sources in parallel. Each is independently guarded so a
+    // failure in one never blocks the others.
+    const backendP = (async () => {
       const controller = new AbortController();
       const tid = setTimeout(() => controller.abort(), 30_000);
-      const qs = req.query.force === 'true' ? '?force=true' : '';
-      const r = await fetch(`${SR_URL}/api/home/dashboard${qs}`, {
-        headers: srHdr(),
-        signal: controller.signal,
-      });
-      clearTimeout(tid);
-      if (!r.ok) {
-        return res.status(r.status).json({ error: `Backend ${r.status}` });
+      try {
+        const r = await fetch(`${SR_URL}/api/home/dashboard${qs}`, {
+          headers: srHdr(),
+          signal: controller.signal,
+        });
+        if (!r.ok) throw new Error(`Backend ${r.status}`);
+        return await r.json();
+      } finally {
+        clearTimeout(tid);
       }
-      res.json(await r.json());
+    })();
+
+    const newsP = (async () => {
+      try {
+        const articles = await getHomeNewsArticles('finance', 8);
+        return articles;
+      } catch (e) {
+        console.warn('[Home] News compose failed soft:', (e as any)?.message);
+        return [];
+      }
+    })();
+
+    const cryptoFgP = (async () => {
+      try {
+        const overview: any = await marketOverviewService.getMarketOverview();
+        const fg = overview?.fearGreedIndex;
+        if (!fg) return null;
+        const rawScore = fg.value ?? fg.index_value ?? fg.score ?? null;
+        const score = typeof rawScore === 'number' ? rawScore : rawScore ? parseFloat(String(rawScore)) : null;
+        const rating = fg.value_classification ?? fg.classification ?? fg.label ?? null;
+        return { score, rating, signal: null as string | null, historical: null };
+      } catch (e) {
+        console.warn('[Home] Crypto FG compose failed soft:', (e as any)?.message);
+        return null;
+      }
+    })();
+
+    try {
+      const [backend, news, cryptoFg] = await Promise.all([backendP, newsP, cryptoFgP]);
+
+      // Attach composed fields on top of the backend payload. Backend's
+      // `fear_greed.crypto` is always null (see home_service._extract_fear_greed);
+      // we populate it here from the already-cached CMC overview.
+      const composed = {
+        ...backend,
+        news: { articles: news, source: 'rss', count: (news || []).length },
+        fear_greed: {
+          ...(backend.fear_greed || {}),
+          crypto: cryptoFg,
+        },
+        section_status: {
+          ...(backend.section_status || {}),
+          news: (news && news.length > 0) ? 'ok' : 'unavailable',
+          crypto_fg: cryptoFg ? 'ok' : 'unavailable',
+        },
+      };
+      res.json(composed);
     } catch (e: any) {
       res.status(500).json({
-        error: e?.name === 'AbortError' ? 'Request timed out (30s)' : 'Home dashboard unavailable',
+        error: e?.name === 'AbortError' ? 'Request timed out (30s)' : (e?.message || 'Home dashboard unavailable'),
       });
     }
   });
