@@ -181,13 +181,78 @@ function ReportSection({ title, content }: { title: string; content?: string }) 
   );
 }
 
-/* ── TradingView Chart ───────────────────────────────────────────── */
-function TradingViewChart({ ticker, exchange }: { ticker: string; exchange?: string }) {
-  if (!ticker) return null;
+/* ── TradingView symbol builder ──────────────────────────────────── */
+// Maps raw exchange names/codes → TradingView-specific exchange prefixes.
+// Partial/substring matching is used for verbose names like "NASDAQ Global Select Market".
+const TV_EX: Record<string, string> = {
+  // ── US ──────────────────────────────────────────────────────────
+  'NASDAQ': 'NASDAQ', 'NMS': 'NASDAQ', 'NGS': 'NASDAQ', 'NGM': 'NASDAQ', 'NCM': 'NASDAQ',
+  'NYSE': 'NYSE', 'NYQ': 'NYSE',
+  'NYSE AMERICAN': 'AMEX', 'NYSE ARCA': 'AMEX', 'AMEX': 'AMEX', 'ARCA': 'AMEX',
+  'OTC': 'OTC', 'OTCMKTS': 'OTC', 'OTCPK': 'OTC', 'OTCBB': 'OTC', 'OTCQB': 'OTC', 'OTCQX': 'OTC',
+  'CBOE': 'CBOE',
+  // ── Canada ──────────────────────────────────────────────────────
+  'TSX': 'TSX', 'TSE': 'TSX', 'TORONTO': 'TSX',
+  'TSXV': 'TSXV', 'CVE': 'TSXV',
+  // ── UK ──────────────────────────────────────────────────────────
+  'LSE': 'LSE', 'LON': 'LSE', 'LONDON': 'LSE',
+  // ── Australia ───────────────────────────────────────────────────
+  'ASX': 'ASX',
+  // ── Hong Kong ───────────────────────────────────────────────────
+  'HKEX': 'HKEX', 'HKG': 'HKEX', 'HK': 'HKEX',
+  // ── Singapore ───────────────────────────────────────────────────
+  'SGX': 'SGX',
+  // ── South Korea ─────────────────────────────────────────────────
+  'KRX': 'KRX', 'KOSPI': 'KRX', 'KOSDAQ': 'KOSDAQ',
+  // ── Japan ───────────────────────────────────────────────────────
+  'TYO': 'TSE', 'JPX': 'TSE', 'OSA': 'TSE', 'JASDAQ': 'TSE',
+  // ── Germany ─────────────────────────────────────────────────────
+  'XETRA': 'XETR', 'XETR': 'XETR', 'FWB': 'FWB',
+  // ── France / Pan-Europe ─────────────────────────────────────────
+  'EURONEXT': 'EURONEXT', 'EPA': 'EURONEXT', 'AMS': 'EURONEXT',
+  // ── Switzerland ─────────────────────────────────────────────────
+  'SIX': 'SIX', 'SWX': 'SIX',
+  // ── India ───────────────────────────────────────────────────────
+  'NSE': 'NSE', 'BSE': 'BSE',
+  // ── China ───────────────────────────────────────────────────────
+  'SSE': 'SSE', 'SHA': 'SSE', 'SZSE': 'SZSE', 'SHE': 'SZSE',
+  // ── Brazil ──────────────────────────────────────────────────────
+  'B3': 'BMFBOVESPA', 'BOVESPA': 'BMFBOVESPA', 'BVMF': 'BMFBOVESPA',
+  // ── Other ───────────────────────────────────────────────────────
+  'JSE': 'JSE', 'BMV': 'BMV', 'BVB': 'BVB', 'TADAWUL': 'TADAWUL',
+  'TASE': 'TASE', 'IDX': 'IDX', 'SET': 'SET', 'BURSA': 'MYX',
+};
 
-  const sym = exchange
-    ? `${exchange.toUpperCase()}:${ticker.toUpperCase()}`
-    : ticker.toUpperCase();
+function buildTVSymbol(entry: ScreenerEntry): string {
+  // For foreign stocks with a US ADR or proxy, use the US ticker — always resolvable
+  const usTicker = entry.adr_ticker || entry.adr_proxy || entry.us_access_proxy;
+  if (usTicker && entry.direct_tradable === false) {
+    return usTicker.toUpperCase();
+  }
+
+  const tk = (entry.ticker || entry.symbol || '').toUpperCase();
+  if (!tk) return '';
+
+  const rawEx = (entry.exchange || entry.market || '').toUpperCase().trim();
+  if (!rawEx) return tk;
+
+  // Exact match
+  if (TV_EX[rawEx]) return `${TV_EX[rawEx]}:${tk}`;
+
+  // Partial/substring match — handles verbose names like "NASDAQ Global Select Market"
+  for (const [key, val] of Object.entries(TV_EX)) {
+    if (rawEx.startsWith(key) || rawEx.includes(key)) return `${val}:${tk}`;
+  }
+
+  // Unknown exchange: omit prefix so TradingView uses global symbol search
+  return tk;
+}
+
+/* ── TradingView Chart ───────────────────────────────────────────── */
+function TradingViewChart({ symbol }: { symbol: string }) {
+  if (!symbol) return null;
+
+  const sym = symbol;
 
   const studies = encodeURIComponent(
     ['RSI@tv-basicstudies', 'MACD@tv-basicstudies', 'BB@tv-basicstudies'].join('|')
@@ -302,7 +367,7 @@ function ReportPanel({
 
       {/* Report body — chart + text scroll together */}
       <div style={{ flex:1, overflowY:'auto' }}>
-        <TradingViewChart ticker={tk} exchange={entry.exchange || entry.market} />
+        <TradingViewChart symbol={buildTVSymbol(entry)} />
         <div style={{ padding:'24px 22px' }}>
         {isLoading && (
           <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:10, padding:'40px 0', color:C.dim }}>
