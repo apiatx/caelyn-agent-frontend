@@ -603,83 +603,6 @@ function SectorRotationChart({
 // ─── D: Compact heatmap side panel ───────────────────────────────────────────
 const TAG_ORDER: Record<string, number> = { Leading: 0, Improving: 1, Weakening: 2, Lagging: 3 };
 
-function SectorSnapshotPanel({ sectors, loading, selectedTickers, onSelectTicker }: {
-  sectors: SectorRow[]; loading: boolean;
-  selectedTickers: Set<string>; onSelectTicker: (t: string) => void;
-}) {
-  const [tf, setTf] = useState<Timeframe>("7d");
-  const pctByTf = (row: SectorRow) =>
-    tf === "1d" ? row.change_1d : tf === "7d" ? row.change_7d : tf === "30d" ? row.change_30d : tf === "ytd" ? row.change_ytd : row.change_1y;
-
-  const sorted = useMemo(() =>
-    [...sectors].sort((a, b) => {
-      const ao = TAG_ORDER[a.regime_tag ?? ""] ?? 4;
-      const bo = TAG_ORDER[b.regime_tag ?? ""] ?? 4;
-      return ao - bo;
-    }),
-    [sectors],
-  );
-
-  const tagColor = (tag: string | null) => {
-    if (tag === "Leading")   return "#22c55e";
-    if (tag === "Improving") return "#0ea5e9";
-    if (tag === "Weakening") return "#f59e0b";
-    if (tag === "Lagging")   return "#ef4444";
-    return "#64748b";
-  };
-
-  const cols = sorted.length || 11;
-
-  return (
-    <GlassCard className="p-3 sm:p-4">
-      <SectionHeader icon={Layers} title="Snapshot" color="amber"
-        right={
-          <div className="flex gap-1 bg-white/5 rounded-lg p-0.5">
-            {(["1d","7d","30d"] as Timeframe[]).map(t => (
-              <button key={t} onClick={() => setTf(t)}
-                className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${tf === t ? "bg-amber-500 text-white" : "text-gray-400 hover:text-white"}`}>
-                {t.toUpperCase()}
-              </button>
-            ))}
-          </div>
-        }
-      />
-      {loading ? (
-        <div className="flex gap-1.5 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
-          {Array.from({length: 11}).map((_, i) => <div key={i} className="flex-shrink-0" style={{ width: 68, height: 40, borderRadius: 8, background: "rgba(255,255,255,0.04)" }} />)}
-        </div>
-      ) : (
-        <div className="overflow-x-auto" style={{ scrollbarWidth: "none" }}>
-          <div style={{ display: "flex", gap: 6, minWidth: "max-content" }}>
-            {sorted.map(row => {
-              const val   = pctByTf(row);
-              const color = SECTOR_COLOR[row.ticker] ?? "#64748b";
-              const sel   = selectedTickers.has(row.ticker);
-              return (
-                <div key={row.ticker} onClick={() => onSelectTicker(row.ticker)}
-                  className={`rounded-lg cursor-pointer transition-all border flex-shrink-0 ${sel ? "border-white/20 scale-[1.02]" : "border-white/[0.04] hover:border-white/10"}`}
-                  style={{ background: `${color}${sel ? "18" : "0c"}`, padding: "5px 10px", minWidth: 72 }}>
-                  <div style={{ display: "flex", alignItems: "baseline", gap: 3, flexWrap: "nowrap" }}>
-                    <span style={{ fontFamily: "monospace", fontWeight: 700, color: "#fff", fontSize: 10, whiteSpace: "nowrap" }}>{row.ticker}</span>
-                    <span style={{ fontFamily: "monospace", fontWeight: 700, fontSize: 10, whiteSpace: "nowrap", color: val != null ? (val >= 0 ? "#22c55e" : "#ef4444") : "#64748b" }}>
-                      {fmtPct(val, 1)}
-                    </span>
-                  </div>
-                  {row.regime_tag && (
-                    <div style={{ fontSize: 9, fontWeight: 600, color: tagColor(row.regime_tag), marginTop: 2, whiteSpace: "nowrap" }}>
-                      {row.regime_tag}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-    </GlassCard>
-  );
-}
-
 // ─── E: Agent Analysis Panel ──────────────────────────────────────────────────
 function SectorAnalysisPanel({ analysis, analysisTs, loading, isNull, onRefresh, refreshing }: {
   analysis: Analysis | null | undefined;
@@ -1065,12 +988,6 @@ export default function StocksSectorsPage() {
             </div>
           </GlassCard>
         )}
-
-        {/* D: Snapshot — full-width one-row strip */}
-        <SectorSnapshotPanel
-          sectors={sectors} loading={dashLoading && !dash}
-          selectedTickers={selectedTickers} onSelectTicker={selectTicker}
-        />
 
         {/* B: Performance Table */}
         <SectorPerformanceTable

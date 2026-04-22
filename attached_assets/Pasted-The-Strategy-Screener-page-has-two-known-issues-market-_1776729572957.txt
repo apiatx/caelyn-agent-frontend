@@ -1,0 +1,86 @@
+The Strategy Screener page has two known issues:
+
+market cap dropdown buckets are not behaving correctly
+many rows have missing market cap display
+
+Backend is being fixed first for market-cap enrichment/classification.
+
+Your job is to do a frontend audit + minimal follow-up fix after backend is corrected.
+
+Non-negotiable guardrails
+Do not modify AI Terminal behavior.
+Do not touch /api/query.
+Do not redesign the Strategy Screener page.
+Do not work around broken backend classification with fake frontend logic.
+Use backend as source of truth for filtered list results.
+Keep report drawer behavior unchanged.
+What to audit
+1. Confirm filtered requests again
+
+For each market cap dropdown selection, log the exact request URL and confirm frontend sends:
+
+market_cap_bucket=large_cap
+market_cap_bucket=mid_cap
+market_cap_bucket=small_cap
+market_cap_bucket=micro_cap
+
+Make sure the IDs exactly match backend IDs.
+
+2. Confirm frontend renders backend-filtered results only
+
+Audit that the page renders:
+
+the results from the latest filtered backend response
+not a stale or locally memoized filtered array
+3. Confirm market cap display uses backend field
+
+Display market_cap_usd cleanly when present.
+
+If missing/null:
+
+show —
+or N/A
+but do not invent a value
+4. Use backend metadata if added
+
+If backend now returns:
+
+market_cap_bucket
+market_cap_missing
+or related metadata
+
+use that where helpful, but keep UI clean.
+
+Required behavior
+Dropdown behavior
+
+When user selects a market cap bucket:
+
+list must update to show only that bucket from backend response
+if zero results, show a clean empty state like:
+No Small Cap results in the current snapshot
+All Caps behavior
+
+When All Caps is selected:
+
+show the broader list (25+ if backend snapshot now contains enough names)
+do not impose local hidden filtering
+Market cap display
+
+If backend now provides more populated market_cap_usd, show it consistently in the table/list.
+
+Acceptance criteria
+Large/Mid/Small/Micro dropdowns all actually work
+market cap values display when backend provides them
+empty states are clean if a bucket has no results
+report drawer unchanged
+AI Terminal untouched
+Deliverables
+
+When done, provide:
+
+whether any frontend bug remained after backend fix
+files modified
+example request URLs per bucket
+confirmation market cap values now display correctly
+confirmation report drawer unchanged
