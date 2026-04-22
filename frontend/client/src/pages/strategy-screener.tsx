@@ -192,7 +192,7 @@ const TV_EX: Record<string, string> = {
   'OTC': 'OTC', 'OTCMKTS': 'OTC', 'OTCPK': 'OTC', 'OTCBB': 'OTC', 'OTCQB': 'OTC', 'OTCQX': 'OTC',
   'CBOE': 'CBOE',
   // ── Canada ──────────────────────────────────────────────────────
-  'TSX': 'TSX', 'TSE': 'TSX', 'TORONTO': 'TSX',
+  'TSX': 'TSX', 'TORONTO': 'TSX',
   'TSXV': 'TSXV', 'CVE': 'TSXV',
   // ── UK ──────────────────────────────────────────────────────────
   'LSE': 'LSE', 'LON': 'LSE', 'LONDON': 'LSE',
@@ -204,8 +204,8 @@ const TV_EX: Record<string, string> = {
   'SGX': 'SGX',
   // ── South Korea ─────────────────────────────────────────────────
   'KRX': 'KRX', 'KOSPI': 'KRX', 'KOSDAQ': 'KOSDAQ',
-  // ── Japan ───────────────────────────────────────────────────────
-  'TYO': 'TSE', 'JPX': 'TSE', 'OSA': 'TSE', 'JASDAQ': 'TSE',
+  // ── Japan — TradingView uses TSE for Tokyo Stock Exchange ────────
+  'TSE': 'TSE', 'TYO': 'TSE', 'JPX': 'TSE', 'OSA': 'TSE', 'JASDAQ': 'TSE',
   // ── Germany ─────────────────────────────────────────────────────
   'XETRA': 'XETR', 'XETR': 'XETR', 'FWB': 'FWB',
   // ── France / Pan-Europe ─────────────────────────────────────────
@@ -223,29 +223,62 @@ const TV_EX: Record<string, string> = {
   'TASE': 'TASE', 'IDX': 'IDX', 'SET': 'SET', 'BURSA': 'MYX',
 };
 
-function buildTVSymbol(entry: ScreenerEntry): string {
-  // For foreign stocks with a US ADR or proxy, use the US ticker — always resolvable
-  const usTicker = entry.adr_ticker || entry.adr_proxy || entry.us_access_proxy;
-  if (usTicker && entry.direct_tradable === false) {
-    return usTicker.toUpperCase();
-  }
+// TradingView exchange codes that are US markets — alphabetical tickers here are valid
+const TV_US_EXCHANGES = new Set(['NASDAQ', 'NYSE', 'AMEX', 'OTC', 'CBOE']);
 
+// Native tickers on these foreign exchanges are numeric (009150, 6981, etc.)
+// An all-letter ticker paired with one of these is a US OTC ADR — route to OTC:
+const TV_NUMERIC_EXCHANGES = new Set([
+  'TSE', 'KRX', 'KOSDAQ', 'SSE', 'SZSE', 'HKEX', 'NSE', 'BSE',
+  'IDX', 'SET', 'MYX', 'TADAWUL', 'TASE',
+]);
+
+function looksLikeOtcAdr(tk: string): boolean {
+  // US OTC ADR tickers are purely alphabetical (e.g. MRAAY, SEMCY, SSNLF)
+  // Native foreign tickers are numeric or contain dots/hyphens (009150, 6981.T)
+  return /^[A-Z]{1,6}$/.test(tk);
+}
+
+function buildTVSymbol(entry: ScreenerEntry): string {
   const tk = (entry.ticker || entry.symbol || '').toUpperCase();
   if (!tk) return '';
 
-  const rawEx = (entry.exchange || entry.market || '').toUpperCase().trim();
-  if (!rawEx) return tk;
-
-  // Exact match
-  if (TV_EX[rawEx]) return `${TV_EX[rawEx]}:${tk}`;
-
-  // Partial/substring match — handles verbose names like "NASDAQ Global Select Market"
-  for (const [key, val] of Object.entries(TV_EX)) {
-    if (rawEx.startsWith(key) || rawEx.includes(key)) return `${val}:${tk}`;
+  // 1. Explicit US ADR/proxy: always use it — drop direct_tradable guard
+  const usTicker = entry.adr_ticker || entry.adr_proxy || entry.us_access_proxy;
+  if (usTicker) {
+    const utk = usTicker.toUpperCase();
+    // Well-known ADRs on major US exchanges resolve fine without prefix via TV search
+    // OTC-style (pure alpha, ≥4 chars) need OTC: prefix
+    return looksLikeOtcAdr(utk) ? `OTC:${utk}` : utk;
   }
 
-  // Unknown exchange: omit prefix so TradingView uses global symbol search
-  return tk;
+  const rawEx = (entry.exchange || entry.market || '').toUpperCase().trim();
+  if (!rawEx) {
+    // No exchange: if country is non-US and ticker looks like an OTC ADR, prefix OTC:
+    const country = (entry.country || '').toUpperCase();
+    const isNonUs = country && country !== 'US' && country !== 'USA';
+    if (isNonUs && looksLikeOtcAdr(tk)) return `OTC:${tk}`;
+    return tk;
+  }
+
+  // Resolve to TradingView exchange code
+  let tvEx: string | undefined = TV_EX[rawEx];
+  if (!tvEx) {
+    for (const [key, val] of Object.entries(TV_EX)) {
+      if (rawEx.startsWith(key) || rawEx.includes(key)) { tvEx = val; break; }
+    }
+  }
+
+  if (!tvEx) return tk; // Unknown exchange — bare ticker, let TV search
+
+  // 2. If the mapped exchange is a foreign numeric-ticker market but the ticker is
+  //    all-alphabetical, it's a US OTC ADR being listed under its home exchange.
+  //    Route to OTC: so TradingView can find it.
+  if (!TV_US_EXCHANGES.has(tvEx) && TV_NUMERIC_EXCHANGES.has(tvEx) && looksLikeOtcAdr(tk)) {
+    return `OTC:${tk}`;
+  }
+
+  return `${tvEx}:${tk}`;
 }
 
 /* ── TradingView Chart ───────────────────────────────────────────── */
