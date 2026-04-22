@@ -2212,6 +2212,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const SR_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
   const srHdr  = () => ({ 'X-API-Key': SR_KEY, 'Content-Type': 'application/json' });
 
+  // === Home dashboard (single aggregator — composes already-cached upstream services) ===
+  // Piggybacks on upstream caches in the Python backend; no net-new API work
+  // happens here except one fetch per page load (deduped by react-query).
+  app.get('/api/home/dashboard', async (req, res) => {
+    try {
+      const controller = new AbortController();
+      const tid = setTimeout(() => controller.abort(), 30_000);
+      const qs = req.query.force === 'true' ? '?force=true' : '';
+      const r = await fetch(`${SR_URL}/api/home/dashboard${qs}`, {
+        headers: srHdr(),
+        signal: controller.signal,
+      });
+      clearTimeout(tid);
+      if (!r.ok) {
+        return res.status(r.status).json({ error: `Backend ${r.status}` });
+      }
+      res.json(await r.json());
+    } catch (e: any) {
+      res.status(500).json({
+        error: e?.name === 'AbortError' ? 'Request timed out (30s)' : 'Home dashboard unavailable',
+      });
+    }
+  });
+
   app.get('/api/sector-rotation/dashboard', async (req, res) => {
     try {
       const controller = new AbortController();

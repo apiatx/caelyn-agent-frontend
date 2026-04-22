@@ -8,6 +8,7 @@ import { ChatbotProvider } from "@/contexts/ChatbotContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import ChatbotWidget from "@/components/ChatbotWidget";
 import LoginPage from "@/pages/login";
+import HomePage from "@/pages/home";
 import Dashboard from "@/pages/dashboard";
 import TopChartsPage from "@/pages/top-charts";
 import AltcoinsPage from "@/pages/altcoins";
@@ -88,8 +89,10 @@ function Router() {
   return (
     <Switch>
       <Route path="/login" component={LoginPage} />
-      <Route path="/"><Redirect to="/app/caelyn-ai" /></Route>
-      <Route path="/app"><Redirect to="/app/caelyn-ai" /></Route>
+      <Route path="/"><Redirect to="/app/home" /></Route>
+      <Route path="/app"><Redirect to="/app/home" /></Route>
+      <Route path="/app/home" component={HomePage} />
+      <Route path="/home" component={HomePage} />
       <Route path="/app/market-overview" component={Dashboard} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/app/charts/majors" component={TopChartsPage} />
