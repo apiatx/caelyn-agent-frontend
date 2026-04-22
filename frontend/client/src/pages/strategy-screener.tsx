@@ -293,7 +293,7 @@ function TradingViewChart({ symbol }: { symbol: string }) {
           display: 'block',
         }}
         allow="fullscreen"
-        title={`${ticker} chart`}
+        title={`${sym} chart`}
       />
     </div>
   );
