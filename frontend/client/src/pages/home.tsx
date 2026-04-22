@@ -157,8 +157,10 @@ function MoverRow({ row }: { row: HomeMoverRow }) {
 }
 
 function ThemeRow({ theme }: { theme: HomeThemePerformanceItem }) {
-  const chg = theme.change_1d ?? theme.change_5d ?? 0;
-  const bar = Math.max(-100, Math.min(100, (chg || 0) * 8));
+  // Use the 30D change for the bar (most meaningful signal from sector rotation)
+  const chg30 = theme.change_30d ?? theme.change_7d ?? theme.change_1d ?? 0;
+  // Scale: 30D changes are typically -10% to +10%, so 5x gives a readable bar
+  const bar = Math.max(-100, Math.min(100, (chg30 || 0) * 5));
   const tagColor =
     theme.regime_tag === "Leading"
       ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/20"
@@ -188,11 +190,11 @@ function ThemeRow({ theme }: { theme: HomeThemePerformanceItem }) {
       <div className={`col-span-1 text-right text-xs font-medium ${pctColor(theme.change_1d)}`}>
         {fmtPct(theme.change_1d, 2)}
       </div>
-      <div className={`col-span-1 text-right text-xs ${pctColor(theme.change_5d)}`}>
-        {fmtPct(theme.change_5d, 1)}
+      <div className={`col-span-1 text-right text-xs ${pctColor(theme.change_7d)}`}>
+        {fmtPct(theme.change_7d, 1)}
       </div>
-      <div className={`col-span-1 text-right text-xs ${pctColor(theme.change_1m)}`}>
-        {fmtPct(theme.change_1m, 1)}
+      <div className={`col-span-1 text-right text-xs ${pctColor(theme.change_30d)}`}>
+        {fmtPct(theme.change_30d, 1)}
       </div>
       <div className="col-span-12 h-px bg-white/[0.04] mt-1" />
     </div>
@@ -449,10 +451,10 @@ export default function HomePage() {
               />
               <div className="grid grid-cols-12 gap-2 text-[10px] uppercase tracking-wider text-white/40 px-2 mb-1">
                 <div className="col-span-4">Sector</div>
-                <div className="col-span-5 text-center">Relative</div>
+                <div className="col-span-5 text-center">30D relative</div>
                 <div className="col-span-1 text-right">1D</div>
-                <div className="col-span-1 text-right">5D</div>
-                <div className="col-span-1 text-right">1M</div>
+                <div className="col-span-1 text-right">7D</div>
+                <div className="col-span-1 text-right">30D</div>
               </div>
               {isLoading &&
                 Array.from({ length: 8 }).map((_, i) => (
@@ -472,33 +474,47 @@ export default function HomePage() {
             </GlassCard>
           </div>
 
-          {/* Right rail: Trending dashboards / ideas */}
+          {/* Right rail: Trending Ideas (Stocktwits) */}
           <div className="lg:col-span-1">
             <GlassCard className="p-4 h-full">
-              <SectionHeader icon={Sparkles} title="Trending Dashboards" />
+              <SectionHeader
+                icon={Sparkles}
+                title="Trending Ideas"
+                accent="Stocktwits"
+              />
               <div className="space-y-2">
-                {(data?.trending_dashboards || []).slice(0, 6).map((d, i) => (
-                  <div
-                    key={d.id || i}
-                    className="p-3 rounded-lg border border-white/[0.06] bg-white/[0.02] hover:border-white/15 transition-colors cursor-pointer"
-                    onClick={() => setLocation("/app/watchlist")}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm font-medium text-white/90 truncate">
-                        {d.name}
+                {isLoading &&
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <Skeleton key={i} className="h-14 rounded bg-white/[0.04]" />
+                  ))}
+                {!isLoading &&
+                  (data?.trending_ideas || []).slice(0, 8).map((d, i) => (
+                    <div
+                      key={d.ticker || i}
+                      className="p-3 rounded-lg border border-white/[0.06] bg-white/[0.02] hover:border-white/15 transition-colors cursor-pointer"
+                      onClick={() => setLocation(`/app/caelyn-ai?q=${encodeURIComponent(d.ticker)}`)}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="text-sm font-semibold text-white/90 truncate">
+                          ${d.ticker}
+                        </div>
+                        {typeof d.watchlist_count === "number" && d.watchlist_count > 0 && (
+                          <Badge
+                            variant="outline"
+                            className="h-5 text-[10px] border-white/10 text-white/60 shrink-0"
+                          >
+                            {d.watchlist_count.toLocaleString()} watching
+                          </Badge>
+                        )}
                       </div>
-                      <Badge variant="outline" className="h-5 text-[10px] border-white/10 text-white/60">
-                        {d.kind}
-                      </Badge>
+                      <div className="text-[11px] text-white/50 mt-1 line-clamp-1">
+                        {d.title}
+                      </div>
                     </div>
-                    <div className="text-[11px] text-white/45 mt-1">
-                      {d.ticker_count} tickers
-                    </div>
-                  </div>
-                ))}
-                {(!data?.trending_dashboards || data.trending_dashboards.length === 0) && (
+                  ))}
+                {!isLoading && (!data?.trending_ideas || data.trending_ideas.length === 0) && (
                   <div className="text-xs text-white/40 py-4 text-center">
-                    No saved dashboards yet. Build one from the Watchlist page.
+                    No trending ideas right now.
                   </div>
                 )}
               </div>
@@ -589,29 +605,86 @@ export default function HomePage() {
 
           <div className="lg:col-span-1">
             <GlassCard className="p-4 h-full">
-              <SectionHeader icon={LineChart} title="Trending Research" />
+              <SectionHeader
+                icon={LineChart}
+                title="Trending on X"
+                accent={
+                  data?.trending_on_x?.generated_at
+                    ? `Updated ${new Date(data.trending_on_x.generated_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`
+                    : "Weekly"
+                }
+                action={
+                  data?.trending_on_x?.refresh_in_progress ? (
+                    <span className="text-[10px] text-white/45 flex items-center gap-1">
+                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-300 animate-pulse" />
+                      refreshing
+                    </span>
+                  ) : null
+                }
+              />
               <div className="space-y-2">
-                {(data?.trending_research || []).map((r, i) => (
+                {(data?.trending_on_x?.top_tickers || []).slice(0, 8).map((t, i) => (
                   <div
-                    key={i}
-                    className="p-3 rounded-lg border border-white/[0.06] bg-white/[0.02]"
+                    key={t.symbol || i}
+                    className="p-3 rounded-lg border border-white/[0.06] bg-white/[0.02] hover:border-white/15 transition-colors cursor-pointer"
+                    onClick={() => setLocation(`/app/caelyn-ai?q=${encodeURIComponent(t.symbol)}`)}
                   >
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="h-5 text-[10px] border-white/10 text-white/60">
-                        {r.kind.replace("_", " ")}
-                      </Badge>
-                      <div className="text-sm font-medium text-white/90 truncate">
-                        {r.title}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="text-sm font-semibold text-white/90 truncate">
+                        ${t.symbol}
                       </div>
+                      {t.sentiment && (
+                        <Badge
+                          variant="outline"
+                          className={`h-5 text-[10px] shrink-0 ${
+                            /bull/i.test(t.sentiment)
+                              ? "border-emerald-500/25 text-emerald-300"
+                              : /bear/i.test(t.sentiment)
+                              ? "border-rose-500/25 text-rose-300"
+                              : "border-white/10 text-white/60"
+                          }`}
+                        >
+                          {t.sentiment}
+                        </Badge>
+                      )}
                     </div>
-                    <div className="text-[11px] text-white/50 mt-1 line-clamp-2">
-                      {r.summary}
-                    </div>
+                    {t.rationale && (
+                      <div className="text-[11px] text-white/50 mt-1 line-clamp-2">
+                        {t.rationale}
+                      </div>
+                    )}
+                    {typeof t.mentions === "number" && t.mentions > 0 && (
+                      <div className="text-[10px] text-white/35 mt-1">
+                        {t.mentions} mention{t.mentions === 1 ? "" : "s"}
+                      </div>
+                    )}
                   </div>
                 ))}
-                {(!data?.trending_research || data.trending_research.length === 0) && (
+                {(!data?.trending_on_x?.top_tickers ||
+                  data.trending_on_x.top_tickers.length === 0) && (
                   <div className="text-xs text-white/40 py-4 text-center">
-                    No trending items right now.
+                    No weekly X consensus snapshot available yet.
+                    {data?.trending_on_x?.refresh_in_progress && (
+                      <div className="mt-1 text-white/30">Generating now — check back shortly.</div>
+                    )}
+                  </div>
+                )}
+                {data?.trending_on_x?.key_themes && data.trending_on_x.key_themes.length > 0 && (
+                  <div className="pt-2 border-t border-white/[0.05]">
+                    <div className="text-[10px] uppercase tracking-wider text-white/40 mb-1">
+                      Key themes
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {data.trending_on_x.key_themes.slice(0, 6).map((theme, i) => (
+                        <Badge
+                          key={i}
+                          variant="outline"
+                          className="h-5 text-[10px] border-white/10 text-white/65"
+                        >
+                          {theme}
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>

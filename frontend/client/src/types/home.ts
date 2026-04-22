@@ -42,9 +42,12 @@ export interface HomeThemePerformanceItem {
   name: string | null;
   ticker: string | null;
   rotation_score: number | null;
+  relative_strength_rank?: number | null;
+  // Actual SectorSnapshot schema fields returned by the backend
   change_1d: number | null;
-  change_5d: number | null;
-  change_1m: number | null;
+  change_7d: number | null;
+  change_30d: number | null;
+  change_ytd?: number | null;
   regime_tag: string | null;
 }
 
@@ -56,12 +59,12 @@ export interface HomeThemePerformance {
   laggards?: Array<Record<string, unknown>>;
 }
 
-export interface HomeTrendingDashboard {
-  id: string | null;
-  name: string;
-  kind: string;
-  ticker_count: number;
-  updated_at?: string | null;
+// Trending Ideas — sourced from Stocktwits trending feed
+export interface HomeTrendingIdea {
+  ticker: string;
+  title: string;
+  watchlist_count: number | null;
+  source: "stocktwits" | string;
 }
 
 export interface HomeMoverRow {
@@ -78,12 +81,24 @@ export interface HomeMovers {
   losers: HomeMoverRow[];
 }
 
-export interface HomeTrendingResearchItem {
-  kind: string;
-  title: string | null;
-  summary: string | null;
-  source: string;
-  id?: string | null;
+// Trending on X — weekly cached consensus from select trader accounts
+export interface HomeTrendingOnXTicker {
+  symbol: string;
+  mentions: number | null;
+  sentiment: string | null;
+  rationale: string;
+  accounts?: string[];
+}
+
+export interface HomeTrendingOnX {
+  generated_at: string | null;
+  top_tickers: HomeTrendingOnXTicker[];
+  key_themes: string[];
+  notable_accounts: string[];
+  is_stale: boolean;
+  age_seconds?: number | null;
+  refresh_in_progress: boolean;
+  available: boolean;
 }
 
 export interface HomeFearGreedSide {
@@ -104,6 +119,7 @@ export interface HomeSectionStatus {
   movers?: string;
   fear_greed?: string;
   trending?: string;
+  trending_on_x?: string;
 }
 
 export interface HomeDashboardPayload {
@@ -113,9 +129,9 @@ export interface HomeDashboardPayload {
   macro_cards: HomeMacroCard[];
   highlighted_companies: HomeHighlightedCompany[];
   theme_performance: HomeThemePerformance;
-  trending_dashboards: HomeTrendingDashboard[];
+  trending_ideas: HomeTrendingIdea[];
   movers: HomeMovers;
-  trending_research: HomeTrendingResearchItem[];
+  trending_on_x: HomeTrendingOnX;
   fear_greed: HomeFearGreed;
   section_status: HomeSectionStatus;
   timing?: { total_seconds: number };
