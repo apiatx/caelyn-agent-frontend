@@ -641,9 +641,9 @@ export default function HomePage() {
       {/* A. Top live ticker strip */}
       <div
         className="relative z-10 w-full border-b border-white/5 backdrop-blur-lg"
-        style={{ height: 60, background: "rgba(5,6,8,0.92)" }}
+        style={{ height: 60, overflow: "hidden", background: "rgba(5,6,8,0.92)" }}
       >
-        <div style={{ height: 110 }}>
+        <div style={{ height: 60 }}>
           <TickerTapeWidget />
         </div>
       </div>
