@@ -11,7 +11,7 @@ Full-stack crypto and stock market intelligence platform built with React (Vite)
 ## Key Pages
 1. **AI Terminal** (`/app/caelyn-ai`) — Agent-driven market Q&A
 2. **Macro Dashboard** (`/app/macro-terminal`) — React Query; keys: `['/api/macro/rates']`, `['/api/macro/spy-history']`
-3. **Sector Rotation** (`/app/stocks/sectors`) — React Query; keys: `["sector-rotation-dashboard"]`, `["sector-rotation-analysis"]`
+3. **Sectors** (`/app/stocks/sectors`) — React Query; keys: `["sector-rotation-dashboard"]`, `["sector-rotation-analysis"]`. Sidebar label: "Sectors". Page title: "Sectors". Includes `WinningSectorsHero` (renders `dash.leaders[]` prominently) and `TopStocksPanel` (renders `analysis.top_stocks_to_watch[]` grouped by role).
 4. **NotifAI** (`/app/notifai`) — useQuery; keys: `['notifai-weekly-summary']`, `['notifai-the-brief']`
 5. **Watchlist** (`/app/watchlist`) — React Query; key: `['/api/watchlist/list']`
 6. **Portfolio** (`/app/portfolio`) — Static page, no backend fetches

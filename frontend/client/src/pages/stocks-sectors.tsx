@@ -76,18 +76,35 @@ interface CurrentLeadership {
   laggards:    string[];
   explanation: string;
 }
+interface TopStock {
+  ticker:      string;
+  name?:       string | null;
+  role?:       string | null;
+  sector?:     string | null;
+  price?:      number | null;
+  change_1d?:  number | null;
+  change_7d?:  number | null;
+  market_cap?: number | null;
+  pe_ratio?:   number | null;
+  catalyst?:   string | null;
+  reason?:     string | null;
+  tv_symbol?:  string | null;
+  [key: string]: any;
+}
 interface Analysis {
-  market_regime?:     string | null;
-  macro_regime?:      string | null;
-  leadership_style?:  string | null;
-  summary:            string | null;
-  current_leadership: CurrentLeadership | null;
-  outlook_1_4_weeks:  string | null;
-  outlook_1_3_months: string | null;
-  scenarios:          Scenario[];
-  watch_items:        string[];
-  sources:            Source[];
-  generated_at?:      string | null;
+  market_regime?:          string | null;
+  macro_regime?:           string | null;
+  leadership_style?:       string | null;
+  summary:                 string | null;
+  current_leadership:      CurrentLeadership | null;
+  outlook_1_4_weeks:       string | null;
+  outlook_1_3_months:      string | null;
+  scenarios:               Scenario[];
+  watch_items:             string[];
+  sources:                 Source[];
+  generated_at?:           string | null;
+  top_stocks_to_watch?:    TopStock[];
+  winning_sector_etfs?:    any[];
 }
 interface DashboardData {
   updated_at:          string | null;
@@ -239,7 +256,7 @@ function RegimeSummaryHeader({ data, loading }: { data: DashboardData | undefine
         <div>
           <div className="flex items-center gap-2 mb-1 flex-wrap">
             <BarChart3 className="w-5 h-5 text-teal-400" />
-            <h1 className="text-xl sm:text-2xl font-bold text-white">Sector Rotation</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-white">Sectors</h1>
             {data?.updated_at && (
               <span className="flex items-center gap-1 text-xs text-gray-500 ml-1">
                 <Clock className="w-3 h-3" /> Market: {fmtTs(data.updated_at)}
@@ -300,7 +317,7 @@ function RegimeSummaryHeader({ data, loading }: { data: DashboardData | undefine
 }
 
 // ─── TradingView per-ticker chart (loads on demand) ──────────────────────────
-const TVTickerChart = memo(function TVTickerChart({ ticker }: { ticker: string }) {
+const TVTickerChart = memo(function TVTickerChart({ ticker, symbol }: { ticker: string; symbol?: string }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!ref.current) return;
@@ -312,7 +329,7 @@ const TVTickerChart = memo(function TVTickerChart({ ticker }: { ticker: string }
       autosize: false,
       width: "100%",
       height: 550,
-      symbol: `AMEX:${ticker}`,
+      symbol: symbol || `AMEX:${ticker}`,
       interval: "D",
       timezone: "Etc/UTC",
       theme: "dark",
@@ -334,6 +351,187 @@ const TVTickerChart = memo(function TVTickerChart({ ticker }: { ticker: string }
     </div>
   );
 });
+
+// ─── A2: Winning Sectors Hero ─────────────────────────────────────────────────
+function WinningSectorsHero({ leaders, loading }: { leaders: SectorRow[]; loading: boolean }) {
+  if (loading) {
+    return (
+      <GlassCard className="p-4 sm:p-6">
+        <SectionHeader icon={TrendingUp} title="Winning Sectors" color="green" />
+        <div className="grid sm:grid-cols-2 gap-4">
+          <Skel h={110} /><Skel h={110} />
+        </div>
+      </GlassCard>
+    );
+  }
+  if (!leaders.length) return null;
+  return (
+    <GlassCard className="p-4 sm:p-6">
+      <SectionHeader icon={TrendingUp} title="Winning Sectors" badge="TOP LEADERS" color="green" />
+      <div className="grid sm:grid-cols-2 gap-4">
+        {leaders.map(row => {
+          const color = SECTOR_COLOR[row.ticker] ?? "#22c55e";
+          const tagCls = row.regime_tag ? (TAG_STYLES[row.regime_tag] ?? "") : "";
+          return (
+            <div key={row.ticker}
+              className="rounded-xl border p-4"
+              style={{ borderColor: `${color}40`, background: `${color}08` }}>
+              <div className="flex items-start justify-between gap-2 mb-3">
+                <div>
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: color }} />
+                    <span className="text-lg font-bold font-mono text-white">{row.ticker}</span>
+                    {row.relative_strength_rank != null && (
+                      <span className="text-[10px] text-gray-500 font-mono">#{row.relative_strength_rank}</span>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-400 ml-4">{row.name}</p>
+                </div>
+                <div className="flex flex-col items-end gap-1">
+                  {row.regime_tag && (
+                    <Badge className={`border text-[10px] px-1.5 py-0 ${tagCls}`}>{row.regime_tag}</Badge>
+                  )}
+                  {row.rotation_score != null && (
+                    <span className="text-[10px] text-gray-500">Score {row.rotation_score.toFixed(0)}</span>
+                  )}
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-2 mb-3">
+                {[["1D", row.change_1d], ["7D", row.change_7d], ["30D", row.change_30d]] .map(([label, val]) => (
+                  <div key={label as string} className="text-center rounded-lg bg-black/30 py-1.5 px-1">
+                    <div className="text-[9px] text-gray-600 mb-0.5">{label}</div>
+                    <div className={`text-sm font-bold font-mono ${pctCls(val as number | null)}`}>
+                      {fmtPct(val as number | null, 1)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {row.rotation_score != null && (
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full transition-all" style={{ width: `${row.rotation_score}%`, background: color }} />
+                  </div>
+                  <span className="text-[10px] text-gray-500 tabular-nums">{row.rotation_score.toFixed(0)}/100</span>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </GlassCard>
+  );
+}
+
+// ─── A3: Top Stocks in Winning Sectors ────────────────────────────────────────
+const ROLE_CONFIG: Record<string, { label: string; color: string; border: string; bg: string; badge: string }> = {
+  momentum_leader: { label: "Momentum Leaders",    color: "text-emerald-400", border: "border-emerald-500/25", bg: "bg-emerald-500/10", badge: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" },
+  bottleneck_enabler: { label: "Bottleneck / Enablers", color: "text-amber-400", border: "border-amber-500/25", bg: "bg-amber-500/10",   badge: "bg-amber-500/20 text-amber-300 border-amber-500/30"   },
+  bottleneck:      { label: "Bottleneck / Enablers", color: "text-amber-400", border: "border-amber-500/25", bg: "bg-amber-500/10",   badge: "bg-amber-500/20 text-amber-300 border-amber-500/30"   },
+  anchor_giant:    { label: "Anchor Giants",        color: "text-blue-400",   border: "border-blue-500/25",  bg: "bg-blue-500/10",    badge: "bg-blue-500/20 text-blue-300 border-blue-500/30"    },
+  anchor:          { label: "Anchor Giants",        color: "text-blue-400",   border: "border-blue-500/25",  bg: "bg-blue-500/10",    badge: "bg-blue-500/20 text-blue-300 border-blue-500/30"    },
+};
+const DEFAULT_ROLE_CFG = { label: "Notable Stocks", color: "text-gray-400", border: "border-white/10", bg: "bg-white/5", badge: "bg-white/10 text-gray-300 border-white/10" };
+
+function roleCfg(role?: string | null) {
+  if (!role) return DEFAULT_ROLE_CFG;
+  const key = role.toLowerCase().replace(/[\s-]/g, "_");
+  return ROLE_CONFIG[key] ?? DEFAULT_ROLE_CFG;
+}
+
+function TopStockRow({ stock }: { stock: TopStock }) {
+  const [expanded, setExpanded] = useState(false);
+  const cfg = roleCfg(stock.role);
+  const tvSym = stock.tv_symbol || stock.ticker;
+  return (
+    <div className={`rounded-xl border ${cfg.border} overflow-hidden`}>
+      <button
+        onClick={() => setExpanded(v => !v)}
+        className={`w-full text-left p-3 sm:p-4 hover:bg-white/[0.03] transition-colors ${expanded ? "bg-white/[0.04]" : ""}`}
+      >
+        <div className="flex items-start gap-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap mb-1">
+              <span className="font-mono font-bold text-white text-sm">{stock.ticker}</span>
+              {stock.name && <span className="text-xs text-gray-400 truncate">{stock.name}</span>}
+              {stock.role && (
+                <Badge className={`border text-[10px] px-1.5 py-0 ${cfg.badge}`}>
+                  {stock.role.replace(/_/g, " ")}
+                </Badge>
+              )}
+              {stock.sector && <span className="text-[10px] text-gray-600">{stock.sector}</span>}
+            </div>
+            <div className="flex flex-wrap gap-3 text-xs font-mono">
+              {stock.price != null && <span className="text-white">${fmtPx(stock.price)}</span>}
+              {stock.change_1d != null && <span className={pctCls(stock.change_1d)}>{fmtPct(stock.change_1d)} 1D</span>}
+              {stock.change_7d != null && <span className={pctCls(stock.change_7d)}>{fmtPct(stock.change_7d)} 7D</span>}
+              {stock.pe_ratio != null && <span className="text-gray-500">P/E {stock.pe_ratio.toFixed(1)}</span>}
+              {stock.market_cap != null && (
+                <span className="text-gray-500">
+                  {stock.market_cap >= 1e12 ? `$${(stock.market_cap/1e12).toFixed(1)}T`
+                    : stock.market_cap >= 1e9 ? `$${(stock.market_cap/1e9).toFixed(1)}B`
+                    : `$${(stock.market_cap/1e6).toFixed(0)}M`}
+                </span>
+              )}
+            </div>
+            {stock.catalyst && <p className="text-xs text-gray-400 mt-1 leading-relaxed">{stock.catalyst}</p>}
+            {stock.reason && !stock.catalyst && <p className="text-xs text-gray-500 mt-1 leading-relaxed">{stock.reason}</p>}
+          </div>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <span className="text-[10px] text-gray-600">{expanded ? "Hide" : "Chart"}</span>
+            {expanded ? <ChevronUp className="w-3.5 h-3.5 text-gray-500" /> : <ChevronDown className="w-3.5 h-3.5 text-gray-500" />}
+          </div>
+        </div>
+      </button>
+      {expanded && (
+        <div className="border-t border-white/[0.04] px-4 py-3 bg-black/30">
+          {stock.reason && stock.catalyst && (
+            <p className="text-xs text-gray-500 mb-3 leading-relaxed"><span className="text-gray-400 font-medium">Why included: </span>{stock.reason}</p>
+          )}
+          <TVTickerChart ticker={stock.ticker} symbol={tvSym} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TopStocksPanel({ stocks }: { stocks: TopStock[] | undefined }) {
+  if (!stocks?.length) return null;
+
+  const groups: Record<string, TopStock[]> = {};
+  for (const s of stocks) {
+    const cfg = roleCfg(s.role);
+    const key = cfg.label;
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(s);
+  }
+  const groupOrder = ["Momentum Leaders", "Bottleneck / Enablers", "Anchor Giants", "Notable Stocks"];
+  const orderedGroups = [
+    ...groupOrder.filter(g => groups[g]),
+    ...Object.keys(groups).filter(g => !groupOrder.includes(g)),
+  ];
+
+  return (
+    <GlassCard className="p-4 sm:p-6">
+      <SectionHeader icon={Activity} title="Top Stocks in Winning Sectors" badge={`${stocks.length} NAMES`} color="amber" />
+      <div className="space-y-5">
+        {orderedGroups.map(groupLabel => {
+          const groupStocks = groups[groupLabel];
+          const cfg = roleCfg(groupStocks[0]?.role);
+          return (
+            <div key={groupLabel}>
+              <div className={`text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-1.5 ${cfg.color}`}>
+                <Zap className="w-3.5 h-3.5" />{groupLabel}
+              </div>
+              <div className="space-y-2">
+                {groupStocks.map(s => <TopStockRow key={s.ticker} stock={s} />)}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </GlassCard>
+  );
+}
 
 // ─── B: Sector Performance Table ──────────────────────────────────────────────
 type SortKey = "ticker" | "price" | "change_1d" | "change_7d" | "change_30d" | "change_ytd" | "change_1y" | "rotation_score";
@@ -952,7 +1150,8 @@ export default function StocksSectorsPage() {
       if (!r.ok) throw new Error(`${r.status}`);
       return r.json();
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
+      if (data?.summary) qc.setQueryData(["sector-rotation-analysis"], data);
       qc.invalidateQueries({ queryKey: ["sector-rotation-analysis"] });
       qc.invalidateQueries({ queryKey: ["sector-rotation-dashboard"] });
     },
@@ -989,6 +1188,12 @@ export default function StocksSectorsPage() {
           </GlassCard>
         )}
 
+        {/* A2: Winning Sectors Hero */}
+        <WinningSectorsHero leaders={leaders} loading={dashLoading && !dash} />
+
+        {/* A3: Top Stocks in Winning Sectors (visible once analysis has data) */}
+        <TopStocksPanel stocks={analysis?.top_stocks_to_watch} />
+
         {/* B: Performance Table */}
         <SectorPerformanceTable
           sectors={sectors} loading={dashLoading && !dash}
@@ -1009,7 +1214,7 @@ export default function StocksSectorsPage() {
         <SectorAnalysisPanel
           analysis={analysis}
           analysisTs={analysisTs}
-          loading={(analysisLoading && !analysisRaw && !dash?.analysis) && (dashLoading && !dash)}
+          loading={analysisLoading && !analysisRaw && !dash?.analysis}
           isNull={analysisNull}
           onRefresh={() => refreshMutation.mutate()}
           refreshing={refreshMutation.isPending}
