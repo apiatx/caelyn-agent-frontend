@@ -1,0 +1,71 @@
+Full audit complete. Here's what I found and what needs to change:
+
+Audit findings:
+
+watchlist_snapshot rows are missing rsi and signal_label — the exact fields that make highlighted_companies useful
+trending_ideas has a hard [:8] cap in _extract_trending_ideas() — should be removed
+trending_on_x.top_tickers has a picks[:12] cap in the x_consensus cache (not home_service) — 8 returned today because the AI response picked 8 this week, no unnecessary backend cap
+X rationale text is already full-length (225 chars, no truncation)
+Now implementing all three fixes:
+
+
+4 actions
+The app crashed (probably a conflict with the log check — it was running). Let me make all the edits in parallel, then restart:
+
+
+2 actions
+Now pass csv_row into the snapshot builder and remove the Stocktwits [:8] cap:
+
+
+4 actions
+Also raise the x_consensus_cache ticker cap from 12 to 20 so more X tickers can come through when the AI returns them:
+
+
+5 actions
+All changes verified. Run factor tests and commit:
+
+
+2 actions
+876/876. Commit and push:
+
+
+2 actions
+Pushed to main. Full delivery report:
+
+1. Files changed
+
+backend/services/home_service.py
+backend/services/x_consensus_cache.py
+2. Exact previous difference between Highlighted Companies and Watchlist Snapshot
+
+Field	highlighted_companies	watchlist_snapshot (before)
+symbol	✓	✓
+current_price	✓	✓
+change_1d_pct	✓	✓
+volume_vs_avg	✓	✓
+options_signal	✓	✓
+rsi	✓	✗ missing
+signal_label	✓	✗ missing
+The only unique value in HC was those two fields. WS had all 121 tickers, HC had only 10 (signal-ranked subset).
+
+3. Signal fields folded into Watchlist Snapshot
+
+rsi — from csv_data["Relative Strength Index (RSI)"] (the enriched watchlist CSV, no new API call)
+signal_label — computed by the existing _signal_label() helper using live change_pct + RSI + relative volume. Labels like "vol spike, hot", "momentum, trending up", "momentum", etc.
+69 of 121 rows now have a non-null signal_label. Zero new provider calls — purely reuses the csv_index already built from the watchlist.
+
+4. Exact backend counts now returned
+
+trending_on_x.top_tickers: 8 (unchanged — the weekly AI analysis cached 8 consensus picks this week; no backend cap was hiding extra tickers; the x_consensus cap was raised from 12 → 20 for future refreshes)
+trending_ideas: 15 (was 8 — the [:8] hard cap in _extract_trending_ideas() was removed; Stocktwits returns the full list)
+5. Backend truncation found and fixed
+
+Yes — trending[:8] in _extract_trending_ideas() was silently capping Stocktwits results at 8. Removed. Now returns the full Stocktwits trending list (15 today).
+
+6. X rationale text
+
+Already full-length — 225 characters, no server-side truncation. The full thesis/rationale/summary field from the consensus analysis is passed through unchanged.
+
+7. highlighted_companies status
+
+Remains in the payload with 10 rows for full backward compatibility. It's now a redundant subset of watchlist_snapshot (which is the richer source of truth), but the frontend can migrate on its own schedule.

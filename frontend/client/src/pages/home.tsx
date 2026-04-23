@@ -427,9 +427,9 @@ function SnapshotTable({
                 {row.volume_vs_avg != null ? `${fmtNum(row.volume_vs_avg, 1)}×` : "—"}
               </div>
               <div className="col-span-2 text-right">
-                {row.options_signal ? (
-                  <Badge variant="outline" className="text-[9px] px-1 h-4 border-indigo-500/30 text-indigo-300">
-                    {row.options_signal}
+                {(row.signal_label || row.options_signal) ? (
+                  <Badge variant="outline" className="text-[9px] px-1 h-4 border-indigo-500/30 text-indigo-300 truncate max-w-full">
+                    {row.signal_label || row.options_signal}
                   </Badge>
                 ) : <span className="text-[10px] text-white/25">—</span>}
               </div>
@@ -590,6 +590,8 @@ function TickerInfoPopup({
 
   const flow = (data?.unusual_options_flows || []).find(f => f.symbol === symbol);
 
+  const xTicker = (data?.trending_on_x?.top_tickers || []).find(t => t.symbol === symbol);
+
   const mover = [
     ...(data?.movers?.gainers || []),
     ...(data?.movers?.losers || []),
@@ -651,19 +653,27 @@ function TickerInfoPopup({
         </div>
 
         {/* Extra data strip */}
-        {(flow || snapshot) && (
-          <div className="px-5 py-3 border-t border-white/[0.06] flex flex-wrap gap-x-6 gap-y-1.5">
-            {snapshot?.rsi != null && (
-              <div className="text-xs text-white/45">RSI <span className="text-white/80 font-medium ml-1">{snapshot.rsi.toFixed(1)}</span></div>
-            )}
-            {snapshot?.volume_vs_avg != null && (
-              <div className="text-xs text-white/45">Vol× <span className="text-white/80 font-medium ml-1">{snapshot.volume_vs_avg.toFixed(2)}x</span></div>
-            )}
-            {flow?.composite_score != null && (
-              <div className="text-xs text-white/45">Flow score <span className="text-white/80 font-medium ml-1">{flow.composite_score.toFixed(1)}</span></div>
+        {(flow || snapshot || xTicker) && (
+          <div className="px-5 py-3 border-t border-white/[0.06] space-y-2">
+            <div className="flex flex-wrap gap-x-6 gap-y-1.5">
+              {snapshot?.rsi != null && (
+                <div className="text-xs text-white/45">RSI <span className="text-white/80 font-medium ml-1">{snapshot.rsi.toFixed(1)}</span></div>
+              )}
+              {snapshot?.volume_vs_avg != null && (
+                <div className="text-xs text-white/45">Vol× <span className="text-white/80 font-medium ml-1">{snapshot.volume_vs_avg.toFixed(2)}x</span></div>
+              )}
+              {flow?.composite_score != null && (
+                <div className="text-xs text-white/45">Flow score <span className="text-white/80 font-medium ml-1">{flow.composite_score.toFixed(1)}</span></div>
+              )}
+            </div>
+            {xTicker?.rationale && (
+              <div className="text-xs text-white/65 leading-relaxed border-l-2 border-indigo-500/40 pl-3">
+                <div className="text-[10px] uppercase tracking-wider text-indigo-400/70 mb-0.5">Trending on X</div>
+                {xTicker.rationale}
+              </div>
             )}
             {flow?.rationale && (
-              <div className="text-xs text-white/50 w-full">{flow.rationale}</div>
+              <div className="text-xs text-white/55 leading-relaxed">{flow.rationale}</div>
             )}
           </div>
         )}
@@ -822,10 +832,10 @@ export default function HomePage() {
           )}
         </div>
 
-        {/* F + G + E. Three-column row: Theme Performance | Highlighted Companies | Latest News */}
+        {/* F + G. Two-column row: Theme Performance (2/3) | Latest News (1/3) */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
-          {/* Theme Performance */}
-          <div className="lg:col-span-1">
+          {/* Theme Performance — 2/3 width */}
+          <div className="lg:col-span-2">
             <GlassCard className="p-4">
               {(() => {
                 const subThemes = data?.sub_theme_performance;
@@ -874,52 +884,7 @@ export default function HomePage() {
             </GlassCard>
           </div>
 
-          {/* Middle: Highlighted Companies — list view */}
-          <div className="lg:col-span-1">
-            <GlassCard className="p-4 h-full">
-              <SectionHeader icon={Star} title="Highlighted Companies" accent="watchlist leaders" />
-              <div className="space-y-0.5">
-                {isLoading && Array.from({ length: 6 }).map((_, i) => (
-                  <Skeleton key={i} className="h-9 rounded bg-white/[0.04]" />
-                ))}
-                {!isLoading && (data?.highlighted_companies || []).slice(0, 12).map((c, i) => {
-                  const sym = c.symbol || (c as any).ticker;
-                  if (!sym) return null;
-                  const up = (c.change_1d_pct ?? 0) >= 0;
-                  return (
-                    <div
-                      key={sym || i}
-                      className="flex items-center justify-between px-2 py-2 rounded hover:bg-white/[0.04] transition-colors cursor-pointer"
-                      onClick={() => openTicker(sym)}
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-xs font-semibold text-white/90 shrink-0">{sym}</span>
-                        {c.signal_label && (
-                          <Badge variant="outline" className="h-4 px-1 text-[9px] border-indigo-500/25 text-indigo-300 shrink-0 hidden sm:inline-flex">
-                            {c.signal_label}
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        {c.current_price != null && (
-                          <span className="text-[11px] text-white/55">${fmtNum(c.current_price)}</span>
-                        )}
-                        <span className={`text-xs font-semibold tabular-nums flex items-center gap-0.5 ${pctColor(c.change_1d_pct)}`}>
-                          {c.change_1d_pct !== null && (up ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />)}
-                          {fmtPct(c.change_1d_pct)}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-                {!isLoading && (!data?.highlighted_companies || data.highlighted_companies.length === 0) && (
-                  <div className="text-xs text-white/40 py-6 text-center">No highlighted companies.</div>
-                )}
-              </div>
-            </GlassCard>
-          </div>
-
-          {/* Right: Latest News */}
+          {/* Right: Latest News — 1/3 width */}
           <div className="lg:col-span-1">
             <GlassCard className="p-4 h-full">
               <SectionHeader icon={Newspaper} title="Latest News" accent="Cross-market" />
@@ -1023,7 +988,7 @@ export default function HomePage() {
               );
             })()}
             <div className="space-y-1.5">
-              {(data?.trending_on_x?.top_tickers || []).slice(0, 6).map((t, i) => (
+              {(data?.trending_on_x?.top_tickers || []).map((t, i) => (
                 <div key={t.symbol || i} className="px-2 py-2 rounded-lg border border-white/[0.05] bg-white/[0.02] hover:border-white/12 transition-colors cursor-pointer" onClick={() => openTicker(t.symbol)}>
                   <div className="flex items-center justify-between gap-1.5">
                     <span className="text-xs font-semibold text-white/90 truncate">${t.symbol}</span>
@@ -1047,7 +1012,7 @@ export default function HomePage() {
               {isLoading && Array.from({ length: 5 }).map((_, i) => (
                 <Skeleton key={i} className="h-10 rounded bg-white/[0.04]" />
               ))}
-              {!isLoading && (data?.trending_ideas || []).slice(0, 6).map((d, i) => (
+              {!isLoading && (data?.trending_ideas || []).map((d, i) => (
                 <div key={d.ticker || i} className="px-2 py-2 rounded-lg border border-white/[0.05] bg-white/[0.02] hover:border-white/12 transition-colors cursor-pointer" onClick={() => openTicker(d.ticker)}>
                   <div className="flex items-center justify-between gap-1.5">
                     <span className="text-xs font-semibold text-white/90 truncate">${d.ticker}</span>
