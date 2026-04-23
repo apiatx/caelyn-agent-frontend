@@ -2358,7 +2358,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // If options flows are still pending, fire a background force-refresh so the
       // backend starts computing immediately rather than waiting for its next cycle.
       const flowStatus = (backend as any)?.section_status?.unusual_options_flows;
-      if (flowStatus === 'precompute_pending') {
+      const dataState  = (backend as any)?.unusual_options_meta?.data_state;
+      // Fire background warm-up kick whenever the home fast cache hasn't run yet
+      if (flowStatus === 'precompute_pending' || flowStatus === 'no_data_yet' ||
+          dataState === 'no_data_yet' || dataState === 'none') {
         setImmediate(async () => {
           try {
             const ctrl = new AbortController();

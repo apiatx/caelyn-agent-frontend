@@ -451,11 +451,22 @@ function UnusualFlowsSection({
   onTickerClick?: (symbol: string) => void;
 }) {
   const hasResults     = (flows?.length ?? 0) > 0;
-  // Statuses that mean the scanner hasn't completed a valid scan yet
-  const NOT_READY_STATUSES = new Set(["precompute_pending", "unavailable", "warming", "warmup", "error", ""]);
+  // Statuses where the scanner hasn't produced valid data yet.
+  // Covers both section_status values AND unusual_options_meta.data_state values.
+  const NOT_READY_STATUSES = new Set([
+    "precompute_pending",   // section_status legacy
+    "unavailable",          // section_status — backend error / not configured
+    "warming",              // section_status / data_state
+    "warmup",               // section_status alias
+    "error",                // section_status
+    "no_data_yet",          // data_state — home fast cache hasn't run yet
+    "none",                 // data_state source="none"
+    "",                     // any unknown/empty
+  ]);
   const isNotReady     = !hasResults && (!status || NOT_READY_STATUSES.has(status));
-  const isBgRefreshing = status === "refresh_in_progress";
-  const isFastCache    = status === "ok_fast_cache";
+  const isBgRefreshing = status === "refresh_in_progress" || status === "stale" || status === "stale_but_available";
+  // Live / ok statuses — covers both old section_status and new data_state values
+  const isFastCache    = status === "ok_fast_cache" || status === "live_ok";
   const isOk           = status === "ok" || isFastCache;
   // Only show true-zero message when a completed scan found nothing
   const isTrueZero     = !loading && isOk && !hasResults && !isBgRefreshing;
@@ -504,7 +515,11 @@ function UnusualFlowsSection({
           <div className="flex items-center justify-between gap-2 mb-0.5">
             <div className="flex items-center gap-2 min-w-0">
               <span className="text-xs font-semibold text-white/90 shrink-0">{f.symbol}</span>
-              {f.signal && <Badge variant="outline" className="h-4 px-1 text-[9px] border-indigo-500/30 text-indigo-300 shrink-0">{f.signal}</Badge>}
+              {(f.flow_signal || f.primary_signal || f.signal) && (
+                <Badge variant="outline" className="h-4 px-1 text-[9px] border-indigo-500/30 text-indigo-300 shrink-0">
+                  {f.flow_signal || f.primary_signal || f.signal}
+                </Badge>
+              )}
             </div>
             {f.composite_score != null && (
               <span className="text-xs font-mono text-white/55 shrink-0">score {f.composite_score.toFixed(1)}</span>
@@ -705,9 +720,13 @@ export default function HomePage() {
     // Poll every 30 s while options flows haven't appeared yet
     refetchInterval: (query) => {
       const d = query.state.data as HomeDashboardPayload | undefined;
-      const pending = d?.section_status?.unusual_options_flows === "precompute_pending";
-      const empty   = !d?.unusual_options_flows?.length;
-      return (pending || empty) && !query.state.error ? 30_000 : false;
+      const flowStatus = d?.section_status?.unusual_options_flows;
+      const dataState  = (d as any)?.unusual_options_meta?.data_state;
+      // Poll every 30s while the home fast cache hasn't produced results yet.
+      const notReady = !d?.unusual_options_flows?.length ||
+        flowStatus === "precompute_pending" || flowStatus === "no_data_yet" ||
+        dataState === "no_data_yet" || dataState === "none";
+      return notReady && !query.state.error ? 30_000 : false;
     },
   });
 
@@ -958,7 +977,13 @@ export default function HomePage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
           <UnusualFlowsSection
             flows={data?.unusual_options_flows}
-            status={data?.section_status?.unusual_options_flows}
+            status={
+              // Prefer unusual_options_meta.data_state (backend commit e4f40b7f+)
+              // which carries richer state info (live_ok, stale, no_data_yet, etc.).
+              // Fall back to section_status.unusual_options_flows for older payloads.
+              (data as any)?.unusual_options_meta?.data_state ||
+              data?.section_status?.unusual_options_flows
+            }
             loading={isLoading}
             onTickerClick={openTicker}
           />

@@ -1,0 +1,131 @@
+Continue working in the frontend repo only:
+
+* Frontend repo: https://github.com/apiatx/caelyn-agent-frontend.git
+
+Workflow rules:
+
+* Work directly on `main`
+* Do NOT create a branch
+* Do NOT create a PR
+* Commit directly to `main`
+* Push directly to `main`
+
+Critical issue:
+Backend is now returning live unusual options flow data, but the Home UI is still displaying no data.
+
+Important backend handoff:
+
+* backend commit `e4f40b7f` reports:
+
+  * Home returns 8 unusual options flows in ~0.88s
+  * `data_state: live_ok`
+  * `source: home_fast_cache`
+  * Home fast loop runs every 90s
+  * unusual options rows are present in the Home payload
+* This means the current bug is almost certainly frontend rendering / frontend state handling / stale proxy caching, not backend Tradier speed. 
+
+PRIMARY GOAL
+Find exactly why the Home page Unusual Options Flows section is not rendering the live backend data that now exists.
+
+AUDIT FIRST — NO GUESSING
+
+1. Open the live Home page in browser devtools
+2. Inspect the actual network response for the Home payload endpoint
+3. Verify these exact fields in the live response:
+
+   * `unusual_options_flows`
+   * `unusual_options_flows.length`
+   * `unusual_options_meta`
+   * `unusual_options_meta.data_state`
+   * `unusual_options_meta.source`
+4. Compare those exact live payload values to the rendering logic in `home.tsx`
+5. Determine exactly where the rows are being dropped:
+
+   * wrong field path
+   * stale query cache
+   * stale frontend proxy response
+   * status guard still wrong
+   * row-shape mismatch
+   * filtering/slicing logic
+   * conditional branch falling into empty state incorrectly
+
+VERY IMPORTANT
+Do not assume the bug.
+Prove it by comparing:
+
+* actual live `/api/home/dashboard` response
+  vs
+* exact frontend render conditions
+
+SPECIFIC CHECKS
+A. Network / payload
+
+* Is the browser actually receiving 8 rows?
+* Or is the frontend proxy returning an older stale payload?
+* If stale, fix the proxy/query caching problem
+
+B. Render conditions
+
+* Does Home still key off `section_status.unusual_options_flows` instead of `unusual_options_meta.data_state`?
+* Does it treat anything other than one exact status string as empty?
+* Does it ignore results when `flows.length > 0`?
+
+C. Row shape
+
+* Inspect one live `unusual_options_flows[0]`
+* Compare its keys to what the card/list component expects
+* If the UI expects old field names, update it to the current backend row shape
+
+D. Empty-state logic
+
+* Enforce this rule:
+
+  * if rows exist, render them
+  * if no rows and `data_state` indicates warming/refreshing, show warming/refreshing
+  * only show “No unusual options activity detected” when backend explicitly indicates true zero-results
+
+IMPLEMENT
+Fix only what is needed:
+
+* query/proxy freshness
+* field-path mismatch
+* render guards
+* row-shape mismatch
+* empty-state semantics
+
+DO NOT
+
+* do not add new fetches
+* do not add polling hacks
+* do not change backend
+* do not guess
+
+VERIFY
+Before finishing, prove:
+
+1. the live network response contains options rows
+2. the Home UI now renders those rows
+3. the page no longer falsely shows “No unusual options activity detected” when rows exist
+4. query count did not increase
+
+DELIVERABLES
+When done, report:
+
+1. exact frontend files changed
+2. exact root cause
+3. whether the bug was:
+
+   * stale payload
+   * stale proxy cache
+   * wrong field path
+   * wrong state guard
+   * row-shape mismatch
+4. exact live counts seen in the network response before the fix
+5. confirmation changes were committed and pushed directly to `main`
+
+EXECUTION STYLE
+
+* inspect the actual network response first
+* compare payload to rendering logic
+* fix the real drop point
+* then commit and push directly to `main`
