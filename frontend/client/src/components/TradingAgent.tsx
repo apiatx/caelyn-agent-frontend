@@ -635,6 +635,7 @@ export default function TradingAgent() {
       preset_intent: null,
       conversation_id: convId || null,
       history,
+      ...buildCollabPayload(collabConfig, selectedModel),
     };
 
     try {
@@ -896,15 +897,17 @@ export default function TradingAgent() {
       ...(csvData ? { csv_data: csvData } : {}),
     };
     if (presetIntent) {
-      // Per-preset model overrides — avoids unnecessary slow models for fast presets
+      // Per-preset reasoning family overrides — family alias, backend picks exact model/tier
       const PRESET_MODEL_OVERRIDES: Record<string, string> = {
         crypto: 'grok',
       };
-      payload.reasoning_model = PRESET_MODEL_OVERRIDES[presetIntent] ?? 'agent_collab';
+      payload.collaboration_mode = 'auto';
+      payload.reasoning_model = PRESET_MODEL_OVERRIDES[presetIntent] ?? 'claude';
+      payload.collab_agents = [];
     } else if (collabConfig) {
       Object.assign(payload, buildCollabPayload(collabConfig, selectedModel));
     } else {
-      payload.reasoning_model = selectedModel;
+      Object.assign(payload, buildCollabPayload(null, selectedModel));
     }
     if (csvData) setCsvData(null);
     if (csvFileName) setCsvFileName(null);

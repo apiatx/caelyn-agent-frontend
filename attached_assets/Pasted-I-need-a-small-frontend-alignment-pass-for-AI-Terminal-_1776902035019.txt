@@ -1,0 +1,63 @@
+I need a small frontend alignment pass for AI Terminal to match the new backend routing system. This is NOT a redesign. Keep changes minimal and preserve the current UI/UX.
+
+Goal:
+Ensure the frontend sends clean, explicit intent so the backend router can optimize Auto mode while preserving Custom Collaboration and explicit reasoning-model choices.
+
+Important product rules:
+- Auto mode = backend is allowed to optimize provider family / tier / collaborator set
+- Full Collaboration = preserve the app’s predefined collaboration behavior
+- Custom Collaboration = preserve exactly what the user selected
+- Solo explicit reasoning model choice = preserve the chosen family; backend may optimize exact tier within that family
+- Frontend should send intent clearly, not try to do backend routing itself
+
+Please inspect the current AI Terminal payload construction and make only the minimal changes needed.
+
+What I want:
+
+1. Ensure every AI Terminal request includes an explicit:
+   - collaboration_mode: "auto" | "full" | "custom"
+
+2. Ensure reasoning model selection is sent as a FAMILY ALIAS where possible, not a heavyweight exact model ID:
+   - "claude"
+   - "grok"
+   - "gemini"
+   - "perplexity"
+   - "deepseek"
+   - "gpt-4o" or "openai" depending on current backend compatibility
+   Preserve exact model IDs only if there is already an advanced explicit-model path.
+
+3. Ensure collaborator selections are sent as an explicit list of family aliases:
+   - collab_agents: ["grok", "gemini", "perplexity"]
+   In Custom Collaboration mode, this list must exactly reflect the checked boxes.
+
+4. If easy and backward-compatible, add optional:
+   - reasoning_mode: "fast" | "balanced" | "premium"
+   Do NOT redesign the UI just for this.
+   If no UI exists yet, it is acceptable to omit the field or default it safely where appropriate.
+
+5. Do NOT add frontend-side routing logic.
+   Specifically do NOT:
+   - infer prompt complexity in the browser
+   - remap provider families to exact raw models in frontend
+   - prune collaborators in frontend based on prompt
+   - override Custom selections
+
+6. Verify the payload behavior in each mode:
+   - Auto
+   - Full Collaboration
+   - Custom Collaboration
+   - Solo explicit reasoning family selection
+
+Deliverables:
+- files changed
+- before/after payload shapes for the 4 modes above
+- any backend assumptions relied on
+- confirmation that Custom Collaboration preserves explicit user selections exactly
+
+Constraints:
+- minimal, surgical changes only
+- preserve current visual design
+- do not break existing presets
+- do not change styling unless necessary
+- work directly on main
+- commit and push directly to main

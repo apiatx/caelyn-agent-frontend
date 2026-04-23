@@ -44,32 +44,36 @@ export function applyPresetState(preset: CollabPreset): CollabState {
 
 export function buildCollabPayload(collabState: CollabState | null, selectedModel: string) {
   if (!collabState) {
-    // Direct model mode — single model, no collab
-    return { reasoning_model: selectedModel };
-  }
-
-  if (collabState.selectedPresetId === 'default') {
-    // Caelyn / Auto mode — let backend handle all routing
+    // Solo explicit family selection — single model, no collaboration
     return {
-      reasoning_model: 'agent_collab',
-      primary_model: null,
-      collab_agents: [],
+      collaboration_mode: 'auto' as const,
+      reasoning_model: selectedModel,
+      collab_agents: [] as string[],
     };
   }
 
-  if (collabState.selectedPresetId === 'full_collab') {
-    // Full collab — all selected agents reason independently
+  if (collabState.selectedPresetId === 'default') {
+    // Auto mode — backend handles routing; supply primary + default data-gathering agents
     return {
-      reasoning_model: 'all_agents',
-      primary_model: collabState.primaryModel || 'claude',
+      collaboration_mode: 'auto' as const,
+      reasoning_model: collabState.primaryModel || 'claude',
       collab_agents: collabState.collabAgents,
     };
   }
 
-  // Custom collab — explicit collaborator selections
+  if (collabState.selectedPresetId === 'full_collab') {
+    // Full collaboration — all agents reason independently, synthesis model combines
+    return {
+      collaboration_mode: 'full' as const,
+      reasoning_model: collabState.primaryModel || 'claude',
+      collab_agents: collabState.collabAgents,
+    };
+  }
+
+  // Custom collaboration — exact user checkbox selections preserved, no pruning
   return {
-    reasoning_model: collabState.reasoningModelRequest || 'agent_collab',
-    primary_model: collabState.primaryModel || 'claude',
+    collaboration_mode: 'custom' as const,
+    reasoning_model: collabState.primaryModel || 'claude',
     collab_agents: collabState.collabAgents,
   };
 }
