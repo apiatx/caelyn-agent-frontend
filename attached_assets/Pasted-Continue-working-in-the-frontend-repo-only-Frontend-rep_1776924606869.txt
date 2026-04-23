@@ -1,0 +1,70 @@
+Continue working in the frontend repo only:
+
+* Frontend repo: https://github.com/apiatx/caelyn-agent-frontend.git
+
+Workflow rules:
+
+* Work directly on `main`
+* Do NOT create a branch
+* Do NOT create a PR
+* Commit directly to `main`
+* Push directly to `main`
+
+Project constraints:
+
+* Preserve the current Home page structure and styling
+* Do not add new fetches unless backend changes require a minimal payload adjustment
+* This repo is the display layer. 
+
+This is likely a small/no-op frontend pass unless backend changes payload shape. Audit first.
+
+PRIMARY GOAL
+The Home page `Unusual Options Flows` section should reflect a backend refresh cadence of 10 minutes instead of the old 30-minute cadence.
+
+FRONTEND TASK
+Audit the current Home page unusual-options-flows rendering and determine:
+
+* whether the frontend is showing any stale copy/status that implies 30-minute refresh
+* whether the frontend displays `updated_at` or section status in a way that needs to be adjusted for the faster backend cadence
+* whether any UI label/help text should be updated to reflect the faster refresh
+
+IMPORTANT
+
+* Do NOT implement frontend polling loops
+* Do NOT add timers
+* Do NOT add direct calls to Tradier/Public/options endpoints
+* Home should continue consuming the Home payload only
+* If backend payload shape is unchanged, make no unnecessary frontend changes
+
+IF NEEDED
+If backend adds or changes fields like:
+
+* `updated_at`
+* refresh status
+* cache age
+* section status text
+
+Then update the Home Unusual Options Flows card to display that cleanly.
+
+VERIFY
+Before finishing, verify:
+
+* Home still uses the same page query count
+* no frontend polling was added
+* Unusual Options Flows section cleanly reflects backend freshness if available
+
+DELIVERABLES
+When done, report:
+
+1. whether any frontend files changed
+2. whether payload shape changed for this section
+3. whether any UI freshness/status copy changed
+4. confirmation no new fetches or polling were added
+5. confirmation changes were committed and pushed directly to `main`, or that no frontend changes were required
+
+EXECUTION STYLE
+
+* Audit first
+* Change only what the backend change actually requires
+* Do not invent work
+* Then commit and push directly to `main` if needed

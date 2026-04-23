@@ -449,8 +449,9 @@ function UnusualFlowsSection({
   status?: string;
   loading: boolean;
 }) {
-  const isPending = status === "precompute_pending";
-  const isEmpty   = !loading && (!flows || flows.length === 0);
+  const isPending    = status === "precompute_pending";
+  const isFastCache  = status === "ok_fast_cache";
+  const isEmpty      = !loading && (!flows || flows.length === 0);
 
   return (
     <GlassCard className="p-4">
@@ -458,12 +459,19 @@ function UnusualFlowsSection({
         icon={Zap}
         title="Unusual Options Flows"
         accent={isPending ? "warming up" : flows?.length ? `${flows.length} signals` : "options screening"}
-        action={isPending ? (
-          <span className="text-[10px] px-1.5 py-0.5 rounded border border-amber-500/30 text-amber-300 bg-amber-500/10 flex items-center gap-1">
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-300 animate-pulse" />
-            precompute warming
-          </span>
-        ) : undefined}
+        action={
+          isPending ? (
+            <span className="text-[10px] px-1.5 py-0.5 rounded border border-amber-500/30 text-amber-300 bg-amber-500/10 flex items-center gap-1">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-300 animate-pulse" />
+              precompute warming
+            </span>
+          ) : isFastCache ? (
+            <span className="text-[10px] px-1.5 py-0.5 rounded border border-emerald-500/25 text-emerald-400 bg-emerald-500/10 flex items-center gap-1">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              10-min cache
+            </span>
+          ) : undefined
+        }
       />
       {loading && Array.from({ length: 3 }).map((_, i) => (
         <Skeleton key={i} className="h-10 my-1 rounded bg-white/[0.04]" />
@@ -472,7 +480,7 @@ function UnusualFlowsSection({
         <div className="flex items-start gap-2.5 py-2 px-1">
           <AlertCircle className="w-3.5 h-3.5 text-amber-400/80 mt-0.5 shrink-0" />
           <p className="text-xs text-white/50">
-            Options flow analysis runs on a 30-minute precompute cycle. Data will appear automatically once the cache warms after restart.
+            Options flow analysis runs on a 10-minute precompute cycle. Data will appear automatically once the cache warms after restart.
           </p>
         </div>
       )}

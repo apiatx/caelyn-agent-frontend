@@ -1,0 +1,97 @@
+Let me audit the current options pipeline before touching anything:
+
+
+26 actions
+Now I have the full picture. Let me read the startup section to wire in the new loop:
+
+
+3 actions
+I have everything I need. Let me now read the exact section after the options precompute loop to find the right insertion point:
+
+
+2 actions
+Now I have the complete picture. Here's my implementation plan:
+
+Root cause: Home reads from options_screener_lkg_v1:{tab} which the existing loop populates (effectively every ~3-4 min, not 30 min — the docstring was stale). But after restart the LKG is empty and Home shows precompute_pending
+Solution: Dedicated lightweight Home loop — focused 27-ticker seed list, minimal prefilter (Tradier quotes only, no Finviz/FMP/Finnhub), 10-min cadence, own cache key home:unusual_options:v1
+
+4 actions
+Now add the _home_options_precompute_loop function right after the existing loop ends:
+
+
+2 actions
+Now wire the new loop into startup and update home_service.py to read the fast cache:
+
+
+3 actions
+Also add updated_at to each row in _extract_unusual_options_flows:
+
+
+2 actions
+Update _extract_unusual_options_flows to include updated_at and normalize field names per the spec:
+
+
+2 actions
+Now update build_home_dashboard to pass updated_at from the home fast cache to the extractor, and update section_status to reflect cache source:
+
+
+6 actions
+Now update section_status to distinguish the home fast cache from the LKG fallback:
+
+
+6 actions
+Now restart and verify the new loop appears in logs and the Home payload reflects it:
+
+
+6 actions
+The loop ran — I can see [OPTIONS_FLOW] [megacap] Pipeline: 27 inspected → 24 scored in the logs. Let me check the cache now:
+
+
+3 actions
+The cache is in-process — need to check via HTTP:
+
+
+2 actions
+The fast cache is live. Let me run factor tests and commit:
+
+
+2 actions
+876/876. Committing:
+
+
+2 actions
+Pushed to main. Full delivery report:
+
+1. Backend files changed
+
+backend/main.py — new constants + _home_options_precompute_loop() + wired in startup
+backend/services/home_service.py — updated _build_options_lkg_index(), _extract_unusual_options_flows(), section_status
+2. Root cause of the perceived 30-minute cadence
+
+The docstring in _options_precompute_loop() said "Runs every 30 minutes" but the actual code was asyncio.sleep(60) — a stale comment. Real effective per-tab cadence was already ~3-4 minutes. However, after every app restart all LKG caches are empty until the loop warms them (~5-8 min post-init). The Home page had no dedicated cache of its own, so it was entirely dependent on the LKG tabs.
+
+3. New cadence for Home unusual options flows
+
+Every 10 minutes (_HOME_OPTIONS_INTERVAL = 600s), stored in home:unusual_options:v1 (TTL 700s). The loop runs its first pass immediately after the 120s init wait — so Home has fresh options flow data within ~3 minutes of startup.
+
+4. Exact data sources in the 10-minute path
+
+Tradier batch quote for 27 seed tickers (one API call, already cached at 60s TTL)
+Sorts seeds by |change_pct| × 0.6 + vol_ratio × 0.4 to rank highest-signal tickers first
+Builds a minimal prefilter snapshot from those Tradier quotes only — this is the key bypass: passing a non-None prefilter_snapshot to run_live_scan() skips build_prefilter_snapshot() entirely, so zero Finviz / FMP / Finnhub calls
+TradierFlowEngine.run_live_scan() — inspects Tradier options chains for the top 8 sorted candidates using existing composite scoring logic
+5. AI usage: confirmed NONE
+
+TradierFlowEngine and options_flow_engine contain zero references to Anthropic, OpenAI, Claude, Grok, Gemini, or Perplexity. The minimal prefilter path adds no additional AI calls.
+
+6. Full Options Flow page cadence
+
+Unchanged. _options_precompute_loop() and all options_screener_lkg_v1:{tab} caches operate exactly as before. Home fast cache is additive, not a replacement.
+
+7. Live verification
+
+section_status.unusual_options_flows: ok_fast_cache   ← fast path active
+8 rows, all source_tab=home_fast_cache
+MRVL(72.8), RKLB(69.9), NVDA(69.2), AAPL(69.0)
+updated_at: 2026-04-23T06:08:25Z  ← per-row timestamp
+factor tests: 876/876 passing
