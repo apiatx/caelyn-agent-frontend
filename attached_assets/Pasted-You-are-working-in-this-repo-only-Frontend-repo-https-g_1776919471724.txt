@@ -1,0 +1,191 @@
+You are working in this repo only:
+
+* Frontend repo: https://github.com/apiatx/caelyn-agent-frontend.git
+
+Workflow rules:
+
+* Work directly on `main`
+* Do NOT create a branch
+* Do NOT create a PR
+* Commit directly to `main`
+* Push directly to `main`
+* Make small logical commits as you go
+
+Project context:
+
+* This repo is the frontend display layer. 
+* The goal for the Home page is a 360-degree “today’s alpha” dashboard where I can see everything in one place, while minimizing API requests by reusing what already exists across the app. 
+* Do NOT change the Home page layout structure that already exists, especially sections like Market Snapshot.
+* Your job is to audit the existing Home page and implement only the UI/data-wiring changes needed to support the desired sections cleanly.
+
+PRIMARY GOAL
+Audit and improve the Home page so it supports these sections cleanly:
+
+Already have:
+
+* Trending Ideas
+* Theme Performance
+* Top Movers
+* Top Losers
+* Trending on X
+* Latest News
+* Fear and Greed
+
+Need to add:
+
+* Unusual Options Flows
+* Hyperliquid Top Signals
+* Watchlist Snapshot
+* Portfolio Snapshot
+
+Important nuance:
+
+* Hyperliquid Top Signals should use the exact top signals already displayed on the Hyperliquid page
+* No need to rebuild that on the backend if the data is already available from an existing endpoint/path
+* Just present it more cleanly on Home
+
+Theme Performance nuance:
+
+* It is currently too duplicate-y with the Sectors page
+* Longer term it should become more granular/sub-thematic
+* But do not invent a big frontend-only fake solution
+* For now, render whatever the backend reliably provides and leave the layout ready for richer sub-theme rows later
+
+NON-NEGOTIABLE FRONTEND RULES
+
+* Audit first. Do not guess.
+* Reuse existing components/cards/tables/styles/hooks where possible.
+* Do not create extra page-level fetches if current architecture can stay consolidated.
+* Prefer one Home query / one Home proxy route if backend supports it.
+* Do not create polling loops.
+* Do not create fake placeholder sections with dead copy.
+* Preserve current dark CaelynAI aesthetic.
+* Do not redesign the page or move major existing layout blocks unless absolutely required.
+* Do not touch unrelated pages except where shared components/hooks/types truly need reuse.
+
+PHASE 1 — AUDIT
+Inspect the current frontend implementation and identify:
+
+1. Current Home page data flow
+
+* how many queries Home is making
+* whether it still fetches anything outside the Home payload
+* what types/interfaces power Home
+
+2. Existing reusable UI sources/components for:
+
+* Hyperliquid Top Signals
+* options flow cards/tables
+* watchlist tables
+* portfolio tables
+* movers/losers
+* theme performance rows
+* Trending on X
+* Latest News
+* Fear and Greed
+
+3. Sidebar/nav and route assumptions
+
+* confirm nothing about layout/navigation needs to change for this task
+
+PHASE 2 — IMPLEMENT HOME PAGE IMPROVEMENTS
+Implement the Home page improvements with minimum churn.
+
+A. Keep existing sections/layout intact
+Do not change page structure like Market Snapshot.
+Just extend the current Home page cleanly.
+
+B. Add Unusual Options Flows section
+
+* Use backend-provided Home payload if backend adds `unusual_options_flows`
+* Present as a clean compact section
+* Prioritize readability:
+
+  * symbol
+  * signal / unusualness
+  * flow metric
+  * short rationale
+* Reuse styles/components from existing options flow UI where practical
+* Do not make the Home page call a separate options endpoint if backend has folded this into Home payload
+
+C. Add Hyperliquid Top Signals section
+
+* Reuse the exact top signals already shown on the Hyperliquid page
+* Do not rebuild logic on frontend
+* Prefer reusing the same endpoint/path/data family already used by that page
+* If backend can include this in Home payload, use that
+* If not yet included, use the lightest existing frontend path possible and document it
+* Present it more cleanly/compactly than the full Hyperliquid page
+
+D. Add Watchlist Snapshot section
+
+* Use backend-provided `watchlist_snapshot`
+* Render sortable compact rows with:
+
+  * symbol
+  * current price
+  * 1d %
+  * options signal
+  * volume increase
+* Keep the UI compact and clean
+
+E. Add Portfolio Snapshot section
+
+* Use backend-provided `portfolio_snapshot`
+* Same rendering philosophy as Watchlist Snapshot
+
+F. Theme Performance
+
+* Keep rendering stable
+* If backend remains sector-level for now, do not fake sub-themes
+* Make the component ready to accept richer sub-theme rows later without a rewrite
+
+G. Latest News / Fear and Greed / Movers / Losers / Trending Ideas / Trending on X
+
+* Keep these working
+* If backend consolidated them into the Home payload, remove extra fetches and wire them from the single Home response
+* Ensure empty/error states are graceful and not misleading
+
+PHASE 3 — QUERY MINIMIZATION
+The Home page should be as consolidated as possible.
+Strong preference:
+
+* one Home query only
+* one frontend proxy path only
+
+If Home still needs any extra fetches after your audit:
+
+* document exactly why
+* document whether they can be removed after backend changes land
+* do not add new ones
+
+PHASE 4 — VERIFY
+Before finishing, verify:
+
+* Home renders with the existing layout intact
+* Unusual Options Flows renders from real backend data
+* Hyperliquid Top Signals matches the existing Hyperliquid page source/data
+* Watchlist Snapshot renders sortable rows
+* Portfolio Snapshot renders sortable rows
+* No dead placeholder text remains
+* No new polling loops were added
+* Query count did not increase
+
+DELIVERABLES
+When done, report:
+
+1. exact frontend files changed
+2. exact reusable components/hooks/pages you borrowed from
+3. how many queries the Home page now performs
+4. whether Hyperliquid Top Signals is using the exact existing source from the Hyperliquid page
+5. whether Watchlist Snapshot and Portfolio Snapshot are sortable and what fields are shown
+6. whether the page layout was preserved
+7. confirmation changes were committed and pushed directly to `main`
+
+EXECUTION STYLE
+
+* Audit first
+* Reuse existing UI pieces
+* Keep Home dense, clean, and useful
+* Do not get cute and redesign the app
+* Then commit and push directly to `main`

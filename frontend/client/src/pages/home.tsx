@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
+import { useState } from "react";
 import {
   Search,
   TrendingUp,
@@ -13,6 +14,13 @@ import {
   LineChart,
   Star,
   BarChart3,
+  Briefcase,
+  Wallet,
+  Zap,
+  AlertCircle,
+  ChevronUp,
+  ChevronDown,
+  ChevronsUpDown,
 } from "lucide-react";
 import TickerTapeWidget from "@/components/TickerTapeWidget";
 import { GlassCard } from "@/components/glass-card";
@@ -25,7 +33,14 @@ import type {
   HomeMacroCard,
   HomeMoverRow,
   HomeThemePerformanceItem,
+  HomeSnapshotItem,
+  HomeUnusualOptionsFlowItem,
 } from "@/types/home";
+
+// ── Lightweight HL signal types (mirrors hl-advanced-signals shape) ──────────
+interface HLRSLeader  { symbol: string; rs_score: number; return_1h: number; return_4h: number; return_24h: number; }
+interface HLOIRegime  { symbol: string; regime: string; price_change_24h_pct?: number; oi_change_1h_pct: number; regime_score: number; }
+interface HLAdvSigs   { relative_strength_leaders: HLRSLeader[]; oi_regime_shift: HLOIRegime[]; as_of?: string; }
 
 // ───────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -260,6 +275,213 @@ function FearGreedGauge({
   );
 }
 
+// ── Snapshot table (portfolio / watchlist) ────────────────────────────────
+type SnapSort = "symbol" | "current_price" | "change_1d_pct" | "volume_vs_avg";
+
+function SnapshotTable({
+  items, loading, title, icon: Icon, accent, status,
+}: {
+  items: HomeSnapshotItem[] | undefined;
+  loading: boolean;
+  title: string;
+  icon: React.ElementType;
+  accent: string;
+  status?: string;
+}) {
+  const [sortKey, setSortKey]   = useState<SnapSort>("change_1d_pct");
+  const [sortDir, setSortDir]   = useState<"asc" | "desc">("desc");
+
+  const toggle = (k: SnapSort) => {
+    if (sortKey === k) setSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setSortKey(k); setSortDir("desc"); }
+  };
+  const SortIcon = ({ k }: { k: SnapSort }) => {
+    if (sortKey !== k) return <ChevronsUpDown className="w-2.5 h-2.5 opacity-30" />;
+    return sortDir === "asc" ? <ChevronUp className="w-2.5 h-2.5" /> : <ChevronDown className="w-2.5 h-2.5" />;
+  };
+
+  const sorted = [...(items || [])].sort((a, b) => {
+    const av = a[sortKey] ?? (sortDir === "asc" ? Infinity : -Infinity);
+    const bv = b[sortKey] ?? (sortDir === "asc" ? Infinity : -Infinity);
+    if (typeof av === "string") return sortDir === "asc" ? av.localeCompare(bv as string) : (bv as string).localeCompare(av);
+    return sortDir === "asc" ? (av as number) - (bv as number) : (bv as number) - (av as number);
+  });
+
+  const isEmpty = !loading && (!items || items.length === 0);
+  const isUnavailable = status === "unavailable" || status === "error";
+
+  return (
+    <GlassCard className="p-4">
+      <SectionHeader icon={Icon} title={title} accent={accent} />
+      {loading && Array.from({ length: 4 }).map((_, i) => (
+        <Skeleton key={i} className="h-8 my-1 rounded bg-white/[0.04]" />
+      ))}
+      {!loading && isEmpty && (
+        <div className="text-xs text-white/40 py-4 text-center">
+          {isUnavailable ? "No data available." : "No positions to display."}
+        </div>
+      )}
+      {!loading && sorted.length > 0 && (
+        <>
+          <div className="grid grid-cols-12 gap-1 text-[10px] uppercase tracking-wider text-white/35 px-2 mb-1">
+            <button className="col-span-3 text-left flex items-center gap-0.5" onClick={() => toggle("symbol")}>Symbol <SortIcon k="symbol" /></button>
+            <button className="col-span-3 text-right flex items-center justify-end gap-0.5" onClick={() => toggle("current_price")}>Price <SortIcon k="current_price" /></button>
+            <button className="col-span-2 text-right flex items-center justify-end gap-0.5" onClick={() => toggle("change_1d_pct")}>1D% <SortIcon k="change_1d_pct" /></button>
+            <button className="col-span-2 text-right flex items-center justify-end gap-0.5" onClick={() => toggle("volume_vs_avg")}>Vol× <SortIcon k="volume_vs_avg" /></button>
+            <div className="col-span-2 text-right">Signal</div>
+          </div>
+          {sorted.map((row) => (
+            <div key={row.symbol} className="grid grid-cols-12 gap-1 items-center px-2 py-1.5 rounded hover:bg-white/[0.03] transition-colors">
+              <div className="col-span-3 flex items-center gap-1.5 min-w-0">
+                <span className="text-xs font-semibold text-white/90 truncate">{row.symbol}</span>
+                {row.asset_type && (
+                  <Badge variant="outline" className="h-4 px-1 text-[9px] border-white/10 text-white/40 hidden sm:inline-flex">
+                    {row.asset_type}
+                  </Badge>
+                )}
+              </div>
+              <div className="col-span-3 text-right text-xs text-white/80 tabular-nums">
+                {row.current_price != null ? `$${fmtNum(row.current_price)}` : "—"}
+              </div>
+              <div className={`col-span-2 text-right text-xs font-medium tabular-nums ${pctColor(row.change_1d_pct)}`}>
+                {fmtPct(row.change_1d_pct)}
+              </div>
+              <div className="col-span-2 text-right text-xs text-white/60 tabular-nums">
+                {row.volume_vs_avg != null ? `${fmtNum(row.volume_vs_avg, 1)}×` : "—"}
+              </div>
+              <div className="col-span-2 text-right">
+                {row.options_signal ? (
+                  <Badge variant="outline" className="text-[9px] px-1 h-4 border-indigo-500/30 text-indigo-300">
+                    {row.options_signal}
+                  </Badge>
+                ) : <span className="text-[10px] text-white/25">—</span>}
+              </div>
+            </div>
+          ))}
+        </>
+      )}
+    </GlassCard>
+  );
+}
+
+// ── Unusual Options Flows ─────────────────────────────────────────────────
+function UnusualFlowsSection({
+  flows, status, loading,
+}: {
+  flows: HomeUnusualOptionsFlowItem[] | undefined;
+  status?: string;
+  loading: boolean;
+}) {
+  const isPending = status === "precompute_pending";
+  const isEmpty   = !loading && (!flows || flows.length === 0);
+
+  return (
+    <GlassCard className="p-4">
+      <SectionHeader
+        icon={Zap}
+        title="Unusual Options Flows"
+        accent={isPending ? "warming up" : flows?.length ? `${flows.length} signals` : "options screening"}
+        action={isPending ? (
+          <span className="text-[10px] px-1.5 py-0.5 rounded border border-amber-500/30 text-amber-300 bg-amber-500/10 flex items-center gap-1">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-300 animate-pulse" />
+            precompute warming
+          </span>
+        ) : undefined}
+      />
+      {loading && Array.from({ length: 3 }).map((_, i) => (
+        <Skeleton key={i} className="h-10 my-1 rounded bg-white/[0.04]" />
+      ))}
+      {!loading && isPending && (
+        <div className="flex items-start gap-2.5 py-2 px-1">
+          <AlertCircle className="w-3.5 h-3.5 text-amber-400/80 mt-0.5 shrink-0" />
+          <p className="text-xs text-white/50">
+            Options flow analysis runs on a 30-minute precompute cycle. Data will appear automatically once the cache warms after restart.
+          </p>
+        </div>
+      )}
+      {!loading && !isPending && isEmpty && (
+        <div className="text-xs text-white/40 py-4 text-center">No unusual options activity detected.</div>
+      )}
+      {!loading && !isPending && (flows || []).map((f, i) => (
+        <div key={f.symbol || i} className="flex items-center justify-between px-2 py-2 rounded hover:bg-white/[0.03] transition-colors border-b border-white/[0.04] last:border-0">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="text-xs font-semibold text-white/90">{f.symbol}</span>
+            {f.signal && <Badge variant="outline" className="h-4 px-1 text-[9px] border-indigo-500/30 text-indigo-300">{f.signal}</Badge>}
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+            {f.composite_score != null && (
+              <span className="text-xs font-mono text-white/60">score {f.composite_score.toFixed(1)}</span>
+            )}
+            {f.rationale && <span className="text-[11px] text-white/45 max-w-[180px] truncate hidden sm:block">{f.rationale}</span>}
+          </div>
+        </div>
+      ))}
+    </GlassCard>
+  );
+}
+
+// ── Hyperliquid Top Signals (compact) ─────────────────────────────────────
+function HLTopSignals({ signals, loading }: { signals: HLAdvSigs | undefined; loading: boolean }) {
+  const rsLeaders = (signals?.relative_strength_leaders || []).slice(0, 5);
+  const oiShifts  = (signals?.oi_regime_shift || []).slice(0, 4);
+
+  const OI_REGIME_CLR: Record<string, string> = {
+    "Fresh Longs":      "text-emerald-300 border-emerald-500/25",
+    "Fresh Shorts":     "text-rose-300 border-rose-500/25",
+    "Short Covering":   "text-amber-300 border-amber-500/25",
+    "Long Liquidation": "text-orange-300 border-orange-500/25",
+  };
+
+  return (
+    <GlassCard className="p-4">
+      <SectionHeader icon={Activity} title="Hyperliquid Top Signals" accent="Perps · live" />
+      {loading && Array.from({ length: 5 }).map((_, i) => (
+        <Skeleton key={i} className="h-8 my-1 rounded bg-white/[0.04]" />
+      ))}
+      {!loading && !signals && (
+        <div className="text-xs text-white/40 py-4 text-center">Signals unavailable.</div>
+      )}
+      {!loading && rsLeaders.length > 0 && (
+        <>
+          <div className="text-[10px] uppercase tracking-wider text-white/35 mb-1.5 px-1">RS Leaders</div>
+          {rsLeaders.map((r) => (
+            <div key={r.symbol} className="flex items-center justify-between px-2 py-1.5 rounded hover:bg-white/[0.03] border-b border-white/[0.03] last:border-0">
+              <span className="text-xs font-semibold text-white/90 w-20 shrink-0">{r.symbol}</span>
+              <div className="flex gap-3 text-xs font-mono">
+                <span className={pctColor(r.return_1h)}>{fmtPct(r.return_1h, 2)} 1h</span>
+                <span className={pctColor(r.return_4h)}>{fmtPct(r.return_4h, 2)} 4h</span>
+                <span className={pctColor(r.return_24h)}>{fmtPct(r.return_24h, 2)} 24h</span>
+              </div>
+              <span className="text-[10px] text-white/40 tabular-nums ml-2 hidden sm:block">RS {r.rs_score.toFixed(1)}</span>
+            </div>
+          ))}
+        </>
+      )}
+      {!loading && oiShifts.length > 0 && (
+        <div className="mt-3">
+          <div className="text-[10px] uppercase tracking-wider text-white/35 mb-1.5 px-1">OI Regime Shifts</div>
+          {oiShifts.map((r) => (
+            <div key={r.symbol} className="flex items-center justify-between px-2 py-1.5 rounded hover:bg-white/[0.03] border-b border-white/[0.03] last:border-0">
+              <span className="text-xs font-semibold text-white/90 w-20 shrink-0">{r.symbol}</span>
+              <Badge variant="outline" className={`h-5 text-[9px] px-1.5 ${OI_REGIME_CLR[r.regime] || "text-white/60 border-white/10"}`}>
+                {r.regime}
+              </Badge>
+              <div className="flex gap-2 text-xs font-mono ml-2">
+                {r.oi_change_1h_pct != null && (
+                  <span className={pctColor(r.oi_change_1h_pct)}>{fmtPct(r.oi_change_1h_pct, 1)} OI</span>
+                )}
+                {r.price_change_24h_pct != null && (
+                  <span className={pctColor(r.price_change_24h_pct)}>{fmtPct(r.price_change_24h_pct, 1)} 24h</span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </GlassCard>
+  );
+}
+
 // ───────────────────────────────────────────────────────────────────────────
 // Main page
 // ───────────────────────────────────────────────────────────────────────────
@@ -267,15 +489,47 @@ function FearGreedGauge({
 export default function HomePage() {
   const [, setLocation] = useLocation();
 
-  // Home aggregator — the page makes exactly ONE network request. The
-  // Express proxy composes: backend /api/home/dashboard + news articles
-  // (already in NEWS_CACHE) + crypto fear/greed (already in CMC cache).
+  // Home aggregator — primary query. The Express proxy composes:
+  // backend /api/home/dashboard + news (NEWS_CACHE) + crypto FG (CMC cache).
   const { data, isLoading, isError } = useQuery<HomeDashboardPayload>({
     queryKey: ["/api/home/dashboard"],
     staleTime: 60_000,
   });
 
-  const newsArticles = data?.news?.articles || [];
+  // Hyperliquid top signals — secondary query using the same cache key as the
+  // HL page. If the user visited /app/hyperliquid-screener, this is free from
+  // React Query cache. No polling on Home (HL page owns that 30s interval).
+  const { data: hlSignals, isLoading: hlLoading } = useQuery<HLAdvSigs>({
+    queryKey: ["hl-advanced-signals"],
+    queryFn: async () => {
+      const r = await fetch("/api/hyperliquid/signals");
+      if (!r.ok) throw new Error(`HL signals ${r.status}`);
+      return r.json();
+    },
+    staleTime: 2 * 60_000,
+    refetchOnWindowFocus: false,
+  });
+
+  // Prefer backend-provided latest_news (FMP). Fall back to proxy-composed
+  // news.articles (RSS, may have images) when latest_news is absent or empty.
+  const newsArticles = (() => {
+    const backend = data?.latest_news;
+    if (backend && backend.length > 0) {
+      return backend.map(n => ({
+        title:       n.headline,
+        description: n.summary || "",
+        url:         n.url,
+        source:      n.source || "Market News",
+        published:   n.published_at || "",
+        image:       null as string | null,
+      }));
+    }
+    return (data?.news?.articles || []) as Array<{
+      title: string; description: string; url: string;
+      source: string; published: string; image?: string | null;
+    }>;
+  })();
+
   const cryptoFG = data?.fear_greed?.crypto || null;
 
   const greeting = data?.greeting?.text || "Welcome back";
@@ -535,6 +789,36 @@ export default function HomePage() {
               )}
             </div>
           </GlassCard>
+        </div>
+
+        {/* H2. Portfolio Snapshot + Watchlist Snapshot */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
+          <SnapshotTable
+            items={data?.portfolio_snapshot}
+            loading={isLoading}
+            title="Portfolio Snapshot"
+            icon={Briefcase}
+            accent="tracked positions"
+            status={data?.section_status?.portfolio_snapshot}
+          />
+          <SnapshotTable
+            items={data?.watchlist_snapshot}
+            loading={isLoading}
+            title="Watchlist Snapshot"
+            icon={Wallet}
+            accent="watchlist"
+            status={data?.section_status?.watchlist_snapshot}
+          />
+        </div>
+
+        {/* H3. Unusual Options Flows + Hyperliquid Top Signals */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
+          <UnusualFlowsSection
+            flows={data?.unusual_options_flows}
+            status={data?.section_status?.unusual_options_flows}
+            loading={isLoading}
+          />
+          <HLTopSignals signals={hlSignals} loading={hlLoading} />
         </div>
 
         {/* I + J. News + Trending research */}

@@ -1,0 +1,41 @@
+876/876 tests pass. Let me do Phase 3 verification — a fresh call to get the full real payload, including verifying what happens when options LKG cache warms up:
+
+
+3 actions
+All verified. Let me commit and report:
+
+
+10 actions
+Done. Here's the complete delivery report:
+
+Phase 1 — Audit findings
+
+Panel	Was it in Home?	Source
+theme_performance	✓ Already present	sector_rotation service (5 min cache)
+trending_ideas	✓ Already present	Stocktwits trending cache
+movers (gainers/losers)	✓ Already present	FMP + Finviz merge
+trending_on_x	✓ Already present	weekly disk cache
+fear_greed	✓ Already present	fear_greed provider cache
+unusual_options_flows	✗ Missing	Added — LKG option precompute caches
+watchlist_snapshot	✗ Missing	Added — Tradier batch quote + LKG
+portfolio_snapshot	✗ Missing	Added — Tradier batch quote + LKG
+latest_news	✗ Missing	Added — FMP market news (FMP_TTL cache)
+Phase 2 — What was built (one file changed: services/home_service.py)
+
+unusual_options_flows — reads all 4 tab LKG caches (options_screener_lkg_v1:{tab}) that the 30-minute precompute loop writes. Zero new API calls. Sorted by composite_score descending — the highest composite scores ARE the most unusual activity, not just the largest megacap volumes. When the LKG cache is cold (first 30 min after restart), section_status correctly says precompute_pending.
+
+watchlist_snapshot / portfolio_snapshot — one Tradier get_quotes() batch call per section (already cached), options signal overlaid from the same LKG index. Portfolio never exposes shares, avg_cost, cost_basis, or market value — only symbol, asset_type, current_price, change_1d_pct, volume_vs_avg, options_signal.
+
+latest_news — folded into the Home aggregator via fmp.get_market_news() (already cached at FMP_TTL). No new provider.
+
+Phase 3 — Live verification (today, 0.23s response time)
+
+portfolio_snapshot[0]: NVDA $202.50  +1.32%  11.23x vol  asset_type=stock
+latest_news[0]:        WSJ — "U.S. Officials Try to Get a Grip on Private Credit Risk"
+theme_performance[0]:  XLK (Tech) +17% 30d  rotation_score=80.6  regime=Leading
+top_movers[0]:         AKAN +214.15%
+top_losers[0]:         CAR -37.82%
+unusual_options_flows: precompute_pending (correct — LKG warms in 30 min)
+Factor tests:          876/876 passing
+
+Home can now be rendered from one backend response. No new providers introduced. Committed and pushed to main.
