@@ -1,0 +1,71 @@
+This is a surgical frontend layout + rendering fix for the new "Sectors" page. Do NOT redesign the page. Keep the current terminal style and make only the changes requested.
+
+Problems to fix:
+1. "Winning Sectors" should NOT be its own separate section anymore.
+2. The winning sectors should instead appear as small ticker-style indicators at the top-right of the "Top Stocks in Winning Sectors" section so the user can quickly confirm the winning sectors while looking at the stocks.
+3. The "Top Stocks in Winning Sectors" section should move below the main top section (where it fits naturally in the page flow), not as a standalone hero separated above everything.
+4. The "Sector Rotation Signals / PREDICTION MARKET FLOWS" section should move toward the bottom of the page, above:
+   - "External Resources / ETF HEATMAP · SCREENER · TOOLS"
+5. The current stock rows are rendering as empty/hollow placeholders. Frontend should confirm whether it is receiving empty data vs mis-rendering populated data, and fix any frontend-side rendering assumptions if needed.
+
+Goal:
+Refine the Sectors page layout so it is cleaner and more useful while staying within the current design system.
+
+PHASE 1 — Audit current page structure
+1. Read the current Sectors page component structure and identify:
+   - where WinningSectorsHero is rendered
+   - where TopStocksPanel is rendered
+   - where Sector Rotation Signals / Prediction Market Flows is rendered
+   - where External Resources is rendered
+2. Confirm what data the TopStocksPanel receives right now.
+3. Check whether the empty stock rows are caused by:
+   - empty backend data
+   - wrong frontend field names
+   - rendering placeholder rows even when the objects are incomplete
+
+PHASE 2 — Remove standalone WinningSectors section
+4. Remove the standalone "Winning Sectors" hero section from its current position.
+5. Do NOT delete the useful sector-summary data — reuse it inside the Top Stocks section.
+
+PHASE 3 — Embed winning-sector indicators into Top Stocks section
+6. In the "Top Stocks in Winning Sectors" section header area, add compact ticker-style indicators at the top-right for the current winning sector(s), using the backend leader data already available.
+7. These should be small, scannable chips/tickers such as:
+   - XLK
+   - XLB
+   etc.
+8. Keep them visually subtle but clearly visible.
+
+PHASE 4 — Reposition sections
+9. Move "Top Stocks in Winning Sectors" lower in the page so it sits below the main top page content where it fits naturally.
+10. Move the "Sector Rotation Signals / PREDICTION MARKET FLOWS" section to the bottom area of the page, directly above:
+   - External Resources / ETF HEATMAP · SCREENER · TOOLS
+11. Do not change functionality — this is a layout reorder.
+
+PHASE 5 — Fix TopStocksPanel rendering behavior
+12. If backend data is empty, do NOT render hollow placeholder rows.
+13. Instead:
+   - either render nothing for the list area, or
+   - render one clean empty state message
+14. If data exists but field names are mismatched, fix the mapping so rows render correctly.
+15. Make sure each row shows the core renderable fields that exist today.
+16. Keep TradingView chart expansion behavior intact.
+
+PHASE 6 — Verification
+17. Verify the page still compiles/runs cleanly.
+18. Confirm the new layout order is correct.
+19. Confirm the Top Stocks section no longer shows empty ghost rows when no stock data exists.
+20. Confirm winning sector chips appear inside the Top Stocks section header area.
+
+Deliverables:
+- files changed
+- exact section order before/after
+- root cause of empty row rendering (frontend-side, if any)
+- confirmation that winning sectors are now shown as header chips instead of a standalone section
+
+Constraints:
+- surgical changes only
+- no redesign
+- keep current styling language
+- do not break chart expansion
+- work directly on main
+- commit and push directly to main

@@ -352,77 +352,7 @@ const TVTickerChart = memo(function TVTickerChart({ ticker, symbol }: { ticker: 
   );
 });
 
-// ─── A2: Winning Sectors Hero ─────────────────────────────────────────────────
-function WinningSectorsHero({ leaders, loading }: { leaders: SectorRow[]; loading: boolean }) {
-  if (loading) {
-    return (
-      <GlassCard className="p-4 sm:p-6">
-        <SectionHeader icon={TrendingUp} title="Winning Sectors" color="green" />
-        <div className="grid sm:grid-cols-2 gap-4">
-          <Skel h={110} /><Skel h={110} />
-        </div>
-      </GlassCard>
-    );
-  }
-  if (!leaders.length) return null;
-  return (
-    <GlassCard className="p-4 sm:p-6">
-      <SectionHeader icon={TrendingUp} title="Winning Sectors" badge="TOP LEADERS" color="green" />
-      <div className="grid sm:grid-cols-2 gap-4">
-        {leaders.map(row => {
-          const color = SECTOR_COLOR[row.ticker] ?? "#22c55e";
-          const tagCls = row.regime_tag ? (TAG_STYLES[row.regime_tag] ?? "") : "";
-          return (
-            <div key={row.ticker}
-              className="rounded-xl border p-4"
-              style={{ borderColor: `${color}40`, background: `${color}08` }}>
-              <div className="flex items-start justify-between gap-2 mb-3">
-                <div>
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: color }} />
-                    <span className="text-lg font-bold font-mono text-white">{row.ticker}</span>
-                    {row.relative_strength_rank != null && (
-                      <span className="text-[10px] text-gray-500 font-mono">#{row.relative_strength_rank}</span>
-                    )}
-                  </div>
-                  <p className="text-xs text-gray-400 ml-4">{row.name}</p>
-                </div>
-                <div className="flex flex-col items-end gap-1">
-                  {row.regime_tag && (
-                    <Badge className={`border text-[10px] px-1.5 py-0 ${tagCls}`}>{row.regime_tag}</Badge>
-                  )}
-                  {row.rotation_score != null && (
-                    <span className="text-[10px] text-gray-500">Score {row.rotation_score.toFixed(0)}</span>
-                  )}
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-2 mb-3">
-                {[["1D", row.change_1d], ["7D", row.change_7d], ["30D", row.change_30d]] .map(([label, val]) => (
-                  <div key={label as string} className="text-center rounded-lg bg-black/30 py-1.5 px-1">
-                    <div className="text-[9px] text-gray-600 mb-0.5">{label}</div>
-                    <div className={`text-sm font-bold font-mono ${pctCls(val as number | null)}`}>
-                      {fmtPct(val as number | null, 1)}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {row.rotation_score != null && (
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                    <div className="h-full rounded-full transition-all" style={{ width: `${row.rotation_score}%`, background: color }} />
-                  </div>
-                  <span className="text-[10px] text-gray-500 tabular-nums">{row.rotation_score.toFixed(0)}/100</span>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </GlassCard>
-  );
-}
-
-// ─── A3: Top Stocks in Winning Sectors ────────────────────────────────────────
+// ─── D: Top Stocks in Winning Sectors ────────────────────────────────────────
 const ROLE_CONFIG: Record<string, { label: string; color: string; border: string; bg: string; badge: string }> = {
   momentum_leader: { label: "Momentum Leaders",    color: "text-emerald-400", border: "border-emerald-500/25", bg: "bg-emerald-500/10", badge: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" },
   bottleneck_enabler: { label: "Bottleneck / Enablers", color: "text-amber-400", border: "border-amber-500/25", bg: "bg-amber-500/10",   badge: "bg-amber-500/20 text-amber-300 border-amber-500/30"   },
@@ -494,15 +424,35 @@ function TopStockRow({ stock }: { stock: TopStock }) {
   );
 }
 
-function TopStocksPanel({ stocks }: { stocks: TopStock[] | undefined }) {
-  if (!stocks?.length) return null;
+function TopStocksPanel({ stocks, leaders }: { stocks: TopStock[] | undefined; leaders: SectorRow[] }) {
+  const hasStocks  = (stocks?.length ?? 0) > 0;
+  const hasLeaders = leaders.length > 0;
+  if (!hasStocks && !hasLeaders) return null;
+
+  const leaderChips = hasLeaders ? (
+    <div className="flex items-center gap-1.5 flex-wrap">
+      {leaders.map(l => {
+        const color = SECTOR_COLOR[l.ticker] ?? "#22c55e";
+        return (
+          <span key={l.ticker}
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-semibold border"
+            style={{ borderColor: `${color}40`, color, background: `${color}12` }}>
+            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: color }} />
+            {l.ticker}
+          </span>
+        );
+      })}
+    </div>
+  ) : undefined;
 
   const groups: Record<string, TopStock[]> = {};
-  for (const s of stocks) {
-    const cfg = roleCfg(s.role);
-    const key = cfg.label;
-    if (!groups[key]) groups[key] = [];
-    groups[key].push(s);
+  if (hasStocks) {
+    for (const s of stocks!) {
+      const cfg = roleCfg(s.role);
+      const key = cfg.label;
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(s);
+    }
   }
   const groupOrder = ["Momentum Leaders", "Bottleneck / Enablers", "Anchor Giants", "Notable Stocks"];
   const orderedGroups = [
@@ -512,23 +462,33 @@ function TopStocksPanel({ stocks }: { stocks: TopStock[] | undefined }) {
 
   return (
     <GlassCard className="p-4 sm:p-6">
-      <SectionHeader icon={Activity} title="Top Stocks in Winning Sectors" badge={`${stocks.length} NAMES`} color="amber" />
-      <div className="space-y-5">
-        {orderedGroups.map(groupLabel => {
-          const groupStocks = groups[groupLabel];
-          const cfg = roleCfg(groupStocks[0]?.role);
-          return (
-            <div key={groupLabel}>
-              <div className={`text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-1.5 ${cfg.color}`}>
-                <Zap className="w-3.5 h-3.5" />{groupLabel}
+      <SectionHeader
+        icon={Activity}
+        title="Top Stocks in Winning Sectors"
+        badge={hasStocks ? `${stocks!.length} NAMES` : undefined}
+        color="amber"
+        right={leaderChips}
+      />
+      {hasStocks ? (
+        <div className="space-y-5">
+          {orderedGroups.map(groupLabel => {
+            const groupStocks = groups[groupLabel];
+            const cfg = roleCfg(groupStocks[0]?.role);
+            return (
+              <div key={groupLabel}>
+                <div className={`text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-1.5 ${cfg.color}`}>
+                  <Zap className="w-3.5 h-3.5" />{groupLabel}
+                </div>
+                <div className="space-y-2">
+                  {groupStocks.map(s => <TopStockRow key={s.ticker} stock={s} />)}
+                </div>
               </div>
-              <div className="space-y-2">
-                {groupStocks.map(s => <TopStockRow key={s.ticker} stock={s} />)}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      ) : (
+        <p className="text-xs text-gray-600 py-2">No stock data yet — run agent analysis to populate top names in these sectors.</p>
+      )}
     </GlassCard>
   );
 }
@@ -1188,12 +1148,6 @@ export default function StocksSectorsPage() {
           </GlassCard>
         )}
 
-        {/* A2: Winning Sectors Hero */}
-        <WinningSectorsHero leaders={leaders} loading={dashLoading && !dash} />
-
-        {/* A3: Top Stocks in Winning Sectors (visible once analysis has data) */}
-        <TopStocksPanel stocks={analysis?.top_stocks_to_watch} />
-
         {/* B: Performance Table */}
         <SectorPerformanceTable
           sectors={sectors} loading={dashLoading && !dash}
@@ -1207,8 +1161,8 @@ export default function StocksSectorsPage() {
           selectedTickers={selectedTickers} onToggleTicker={toggleTicker}
         />
 
-        {/* Sector Rotation Signals from Prophetik */}
-        <PredictSectorRotationSignals />
+        {/* D: Top Stocks in Winning Sectors — winning sector chips in header */}
+        <TopStocksPanel stocks={analysis?.top_stocks_to_watch} leaders={leaders} />
 
         {/* E: Agent Analysis */}
         <SectorAnalysisPanel
@@ -1219,6 +1173,9 @@ export default function StocksSectorsPage() {
           onRefresh={() => refreshMutation.mutate()}
           refreshing={refreshMutation.isPending}
         />
+
+        {/* F: Sector Rotation Signals from Prophetik */}
+        <PredictSectorRotationSignals />
 
         {/* ── External Resources (expandable accordion) ── */}
         <GlassCard className="p-3 sm:p-4 lg:p-6">
