@@ -2,7 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useState } from "react";
 import {
-  Search,
   TrendingUp,
   TrendingDown,
   Newspaper,
@@ -650,26 +649,6 @@ export default function HomePage() {
       </div>
 
       <div className="relative z-10 max-w-[1540px] mx-auto px-5 lg:px-8 pt-10 pb-6">
-        {/* B. Centered search bar (visual — hooks into existing global nav) */}
-        <div className="flex justify-center mb-6">
-          <div className="w-full max-w-[680px]">
-            <div
-              className="flex items-center gap-2 px-4 py-3 rounded-xl border border-white/10 bg-white/[0.03] backdrop-blur-xl hover:border-white/20 transition-colors cursor-pointer"
-              onClick={() => setLocation("/app/caelyn-ai")}
-              title="Open AI Terminal"
-            >
-              <Search className="w-4 h-4 text-white/40" />
-              <div className="flex-1 text-sm text-white/50">
-                Ask Caelyn about a ticker, a theme, or a market regime…
-              </div>
-              <div className="hidden md:flex items-center gap-1 text-[10px] text-white/40">
-                <kbd className="px-1.5 py-0.5 rounded border border-white/10 bg-white/[0.04]">⌘</kbd>
-                <kbd className="px-1.5 py-0.5 rounded border border-white/10 bg-white/[0.04]">K</kbd>
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* C. Greeting & market status */}
         <div className="flex flex-wrap items-end justify-between gap-4 mb-5">
           <div>
