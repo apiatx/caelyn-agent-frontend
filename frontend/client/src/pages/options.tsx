@@ -1604,14 +1604,15 @@ function MasterScreener({
   const [sortField, setSortField] = useState<SortField>("score");
   const [sortDir, setSortDir]    = useState<SortDir>("desc");
 
-  // Screener payload shape: { tickers[], data_state, result_count, stale,
-  //   cache_age_seconds, refresh_in_progress, next_refresh_in_seconds, updated_at, source }
-  const rawTickers: TickerResult[] = Array.isArray(screenerData?.tickers) ? screenerData.tickers : [];
-  const dataState: string          = screenerData?.data_state || "no_data_yet";
-  const isStale: boolean           = screenerData?.stale ?? false;
-  const cacheAge: number | null    = screenerData?.cache_age_seconds ?? null;
-  const refreshInProgress: boolean = screenerData?.refresh_in_progress ?? false;
-  const nextRefresh: number | null = screenerData?.next_refresh_in_seconds ?? null;
+  // Screener payload shape — backend wraps inner data in a .response key,
+  // metadata (stale, cache_age_seconds, data_state) may live at top level or inside .response
+  const resp = screenerData?.response ?? screenerData;
+  const rawTickers: TickerResult[] = Array.isArray(resp?.tickers) ? resp.tickers : [];
+  const dataState: string          = screenerData?.data_state || resp?.data_state || "no_data_yet";
+  const isStale: boolean           = screenerData?.stale ?? resp?.stale ?? false;
+  const cacheAge: number | null    = screenerData?.cache_age_seconds ?? resp?.cache_age_seconds ?? null;
+  const refreshInProgress: boolean = screenerData?.refresh_in_progress ?? resp?.refresh_in_progress ?? false;
+  const nextRefresh: number | null = screenerData?.next_refresh_in_seconds ?? resp?.next_refresh_in_seconds ?? null;
   const hasData = rawTickers.length > 0;
 
   const overallState = (() => {
