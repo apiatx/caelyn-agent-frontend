@@ -491,24 +491,26 @@ function ContractsMini({ contracts, side }: { contracts: OptionContract[]; side:
   return (
     <div style={{ marginBottom: 10 }}>
       <div style={{ color, fontSize: 10, fontWeight: 700, fontFamily: font, textTransform: "uppercase", marginBottom: 6 }}>Legacy Top {side}s</div>
-      <div style={{ background: C.cardAlt, border: `1px solid ${color}20`, borderRadius: 7, overflow: "hidden" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "70px 60px 70px 70px 55px 55px 50px", padding: "6px 10px", background: `${color}08`, fontSize: 9, fontFamily: font, textTransform: "uppercase", color: C.dim }}>
-          <span>Strike</span><span>Expiry</span><span style={{ textAlign: "right" }}>Vol</span><span style={{ textAlign: "right" }}>OI</span><span style={{ textAlign: "right" }}>V/OI</span><span style={{ textAlign: "right" }}>IV</span><span style={{ textAlign: "right" }}>Δ</span>
+      <div style={{ overflowX: "auto", borderRadius: 7, border: `1px solid ${color}20` }}>
+        <div style={{ minWidth: 430, background: C.cardAlt, borderRadius: 7, overflow: "hidden" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "70px 60px 70px 70px 55px 55px 50px", padding: "6px 10px", background: `${color}08`, fontSize: 9, fontFamily: font, textTransform: "uppercase", color: C.dim }}>
+            <span>Strike</span><span>Expiry</span><span style={{ textAlign: "right" }}>Vol</span><span style={{ textAlign: "right" }}>OI</span><span style={{ textAlign: "right" }}>V/OI</span><span style={{ textAlign: "right" }}>IV</span><span style={{ textAlign: "right" }}>Δ</span>
+          </div>
+          {contracts.slice(0, 6).map((raw, i) => {
+            const c = normalizeContract(raw);
+            return (
+              <div key={`${c.contract_symbol || c.symbol || i}`} style={{ display: "grid", gridTemplateColumns: "70px 60px 70px 70px 55px 55px 50px", padding: "5px 10px", borderTop: `1px solid ${C.border}`, fontSize: 11, fontFamily: font }}>
+                <span style={{ color, fontWeight: 700 }}>${c.strike}</span>
+                <span style={{ color: C.dim, fontSize: 10 }}>{compactDate(c.expiration)}</span>
+                <span style={{ textAlign: "right", color: C.bright }}>{fmtVol(c.volume)}</span>
+                <span style={{ textAlign: "right", color: C.text }}>{fmtVol(c.openInterest)}</span>
+                <span style={{ textAlign: "right", color: voiColor(c.volumeToOi) }}>{c.volumeToOi != null ? `${fmtNum(c.volumeToOi, 1)}×` : "—"}</span>
+                <span style={{ textAlign: "right", color: C.yellow }}>{c.iv != null ? fmtRatioPct(c.iv) : "—"}</span>
+                <span style={{ textAlign: "right", color: C.text }}>{c.delta != null ? fmtNum(c.delta, 2) : "—"}</span>
+              </div>
+            );
+          })}
         </div>
-        {contracts.slice(0, 6).map((raw, i) => {
-          const c = normalizeContract(raw);
-          return (
-            <div key={`${c.contract_symbol || c.symbol || i}`} style={{ display: "grid", gridTemplateColumns: "70px 60px 70px 70px 55px 55px 50px", padding: "5px 10px", borderTop: `1px solid ${C.border}`, fontSize: 11, fontFamily: font }}>
-              <span style={{ color, fontWeight: 700 }}>${c.strike}</span>
-              <span style={{ color: C.dim, fontSize: 10 }}>{compactDate(c.expiration)}</span>
-              <span style={{ textAlign: "right", color: C.bright }}>{fmtVol(c.volume)}</span>
-              <span style={{ textAlign: "right", color: C.text }}>{fmtVol(c.openInterest)}</span>
-              <span style={{ textAlign: "right", color: voiColor(c.volumeToOi) }}>{c.volumeToOi != null ? `${fmtNum(c.volumeToOi, 1)}×` : "—"}</span>
-              <span style={{ textAlign: "right", color: C.yellow }}>{c.iv != null ? fmtRatioPct(c.iv) : "—"}</span>
-              <span style={{ textAlign: "right", color: C.text }}>{c.delta != null ? fmtNum(c.delta, 2) : "—"}</span>
-            </div>
-          );
-        })}
       </div>
     </div>
   );
@@ -534,28 +536,57 @@ function TopContractsSection({ ticker, historyReady }: { ticker: TickerResult; h
         const spreadWide = contract.spread_pct != null && contract.spread_pct > 15;
         const liquidityText = String(contract.contract_liquidity_quality || (spreadWide ? "wide spread" : contract.openInterest && contract.openInterest > 500 ? "strong liquidity" : "standard liquidity"));
         return (
-          <div key={`${contract.contract_symbol || contract.symbol || index}`} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, padding: "8px 12px" }}>
-            {/* Row 1: identity + key metrics inline */}
-            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              <span style={{ color: C.bright, fontFamily: font, fontWeight: 700, fontSize: 12, minWidth: 40 }}>{contract.underlying || ticker.ticker}</span>
+          <div key={`${contract.contract_symbol || contract.symbol || index}`} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, padding: "8px 12px", minWidth: 0 }}>
+            {/* Row 1: identity badges + strike/expiry — wraps freely */}
+            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
+              <span style={{ color: C.bright, fontFamily: font, fontWeight: 700, fontSize: 12 }}>{contract.underlying || ticker.ticker}</span>
               <Badge color={sideColor(contract.side)} sm>{contract.side || "?"}</Badge>
               <Badge color={scoreColor(normalizeScore(contract.contract_score))} sm>Score {normalizeScore(contract.contract_score) != null ? fmtNum(normalizeScore(contract.contract_score), 0) : "—"}</Badge>
               {spreadWide ? <Badge color={C.red} sm>Wide Spread</Badge> : contract.contract_liquidity_quality ? <Badge color={liquidityText.toLowerCase().includes("strong") ? C.green : C.blue} sm>{contract.contract_liquidity_quality}</Badge> : null}
               {contract.repeated_flow_score != null ? <Badge color={historyReady ? C.purple : C.orange} sm>{historyReady ? `Repeated ${fmtNum(normalizeScore(contract.repeated_flow_score), 0)}` : "Rpt Limited"}</Badge> : null}
               <span style={{ color: sideColor(contract.side), fontFamily: font, fontWeight: 700, fontSize: 11 }}>${contract.strike} · {compactDate(contract.expiration)}{contract.dte != null ? ` · ${contract.dte}D` : ""}</span>
-              <span style={{ flex: 1 }} />
-              {/* Inline metrics */}
-              <span style={metricStyle}>Bid/Ask</span> <span style={{ ...valStyle, color: C.text }}>{contract.bid != null && contract.ask != null ? `${fmtMoney(contract.bid)}/${fmtMoney(contract.ask)}` : "—"}</span>
-              <span style={metricStyle}>Vol/OI</span> <span style={{ ...valStyle, color: C.blue }}>{`${fmtVol(contract.volume)}/${fmtVol(contract.openInterest)}`}{contract.volumeToOi != null ? ` (${fmtNum(contract.volumeToOi, 1)}×)` : ""}</span>
-              <span style={metricStyle}>IV</span> <span style={{ ...valStyle, color: C.yellow }}>{contract.iv != null ? fmtRatioPct(contract.iv) : "—"}</span>
-              <span style={metricStyle}>Δ</span> <span style={{ ...valStyle, color: C.green }}>{fmtNum(contract.delta, 2)}</span>
-              <span style={metricStyle}>BE</span> <span style={{ ...valStyle, color: C.orange }}>{fmtMoney(contract.break_even)}{contract.break_even_distance_pct != null ? ` (${fmtSmartPct(contract.break_even_distance_pct)})` : ""}</span>
-              {contract.premium_traded_estimate != null && (<><span style={metricStyle}>Prem</span> <span style={{ ...valStyle, color: C.purple }}>{fmtMoney(contract.premium_traded_estimate, 0)}</span></>)}
             </div>
-            {/* Row 2 (optional): thesis + scores */}
+            {/* Row 2: key metrics in a responsive grid — never overflows */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: "4px 10px" }}>
+              {contract.bid != null && contract.ask != null && (
+                <div>
+                  <div style={metricStyle}>Bid / Ask</div>
+                  <div style={{ ...valStyle, color: C.text }}>{fmtMoney(contract.bid)} / {fmtMoney(contract.ask)}</div>
+                </div>
+              )}
+              <div>
+                <div style={metricStyle}>Vol / OI</div>
+                <div style={{ ...valStyle, color: C.blue }}>{fmtVol(contract.volume)} / {fmtVol(contract.openInterest)}{contract.volumeToOi != null ? ` (${fmtNum(contract.volumeToOi, 1)}×)` : ""}</div>
+              </div>
+              {contract.iv != null && (
+                <div>
+                  <div style={metricStyle}>IV</div>
+                  <div style={{ ...valStyle, color: C.yellow }}>{fmtRatioPct(contract.iv)}</div>
+                </div>
+              )}
+              {contract.delta != null && (
+                <div>
+                  <div style={metricStyle}>Delta</div>
+                  <div style={{ ...valStyle, color: C.green }}>{fmtNum(contract.delta, 2)}</div>
+                </div>
+              )}
+              {contract.break_even != null && (
+                <div>
+                  <div style={metricStyle}>Break-even</div>
+                  <div style={{ ...valStyle, color: C.orange }}>{fmtMoney(contract.break_even)}{contract.break_even_distance_pct != null ? ` (${fmtSmartPct(contract.break_even_distance_pct)})` : ""}</div>
+                </div>
+              )}
+              {contract.premium_traded_estimate != null && (
+                <div>
+                  <div style={metricStyle}>Premium</div>
+                  <div style={{ ...valStyle, color: C.purple }}>{fmtMoney(contract.premium_traded_estimate, 0)}</div>
+                </div>
+              )}
+            </div>
+            {/* Row 3 (optional): thesis + scores */}
             {(contract.short_thesis || contract.flow_score != null || contract.asymmetry_score != null) && (
-              <div style={{ marginTop: 4, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                {contract.short_thesis ? <span style={{ color: C.dim, fontSize: 11, lineHeight: 1.4, flex: 1, minWidth: 200 }}>{contract.short_thesis}</span> : null}
+              <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                {contract.short_thesis ? <span style={{ color: C.dim, fontSize: 11, lineHeight: 1.4, flex: 1, minWidth: 160 }}>{contract.short_thesis}</span> : null}
                 {contract.flow_score != null ? <Badge color={C.blue} sm>Flow {fmtNum(normalizeScore(contract.flow_score), 0)}</Badge> : null}
                 {contract.asymmetry_score != null ? <Badge color={C.green} sm>Asymmetry {fmtNum(normalizeScore(contract.asymmetry_score), 0)}</Badge> : null}
                 {contract.iv_rank != null && !historyReady ? <Badge color={C.orange} sm>History Limited</Badge> : null}
@@ -630,8 +661,8 @@ function TickerDetailPanel({ symbol, ticker }: { symbol: string; ticker: TickerR
   const riskItems = ensureArray(ticker.risks);
 
   return (
-    <div style={{ display: "grid", gap: 12 }} onClick={e => e.stopPropagation()}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
+    <div style={{ display: "grid", gap: 12, minWidth: 0 }} onClick={e => e.stopPropagation()}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
         <DetailList
           title="Signal thesis"
           items={[
@@ -691,7 +722,7 @@ function TickerDetailPanel({ symbol, ticker }: { symbol: string; ticker: TickerR
 
       <TVChart symbol={ticker.ticker} />
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
         {smaData.length > 1 && (
           <div style={chartStyle}>
             {chartLabel("SMA 20 / 50")}
@@ -788,7 +819,7 @@ function TickerDetailPanel({ symbol, ticker }: { symbol: string; ticker: TickerR
 
       {/* Volume summary + Legacy top calls/puts side by side */}
       {(volumeSummary || !!ticker.top_calls?.length || !!ticker.top_puts?.length) && (
-        <div style={{ display: "grid", gridTemplateColumns: volumeSummary && (!!ticker.top_calls?.length || !!ticker.top_puts?.length) ? "1fr 2fr" : "1fr", gap: 12, marginTop: 4 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12, marginTop: 4 }}>
           {volumeSummary && (
             <div style={chartStyle}>
               {chartLabel("30-Day Volume Summary")}
@@ -1436,7 +1467,7 @@ function TickerDetailModal({ ticker, onClose }: { ticker: TickerResult; onClose:
     >
       <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.76)" }} />
       <div
-        style={{ position: "relative", background: C.bg, border: `1px solid ${C.border}`, borderRadius: 12, width: "92%", maxWidth: 920, maxHeight: "calc(100vh - 48px)", overflowY: "auto" }}
+        style={{ position: "relative", background: C.bg, border: `1px solid ${C.border}`, borderRadius: 12, width: "92%", maxWidth: 920, maxHeight: "calc(100vh - 48px)", overflowY: "auto", overflowX: "hidden" }}
         onClick={e => e.stopPropagation()}
       >
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 18px", borderBottom: `1px solid ${C.border}`, position: "sticky", top: 0, background: C.bg, zIndex: 1 }}>
@@ -1456,7 +1487,7 @@ function TickerDetailModal({ ticker, onClose }: { ticker: TickerResult; onClose:
             <X className="w-4 h-4" />
           </button>
         </div>
-        <div style={{ padding: "16px 18px" }}>
+        <div style={{ padding: "16px 18px", minWidth: 0, overflow: "hidden" }}>
           <TickerDetailPanel symbol={ticker.ticker} ticker={ticker} />
         </div>
       </div>
