@@ -1600,6 +1600,16 @@ export default function OptionsPage() {
   // Always use stable knownAvailableTabs so tabs never jump around on click
   const availableTabs: ScanTab[] = knownAvailableTabs;
   const hasData = tickers.length > 0;
+  // Detect scanner-warming state: response received but produced zero ranked tickers.
+  // This is distinct from a true zero-result (completed scan that found nothing).
+  // Backend may signal this via explicit fields; we also infer it from the response shape.
+  const explicitWarmup = !!(
+    (data as any)?.cache_warming === true ||
+    (data as any)?.scan_status === "warming" ||
+    (data as any)?.scan_status === "precompute_pending"
+  );
+  // When the scan returned 0 tickers and we have no previous stale data, treat as warming.
+  const isWarmingUp = !hasData && data != null && !loading && !error && (explicitWarmup || !fromCache);
   const degradedSources = ensureArray((pipelineStats as any)?.degraded_sources || (mktSum as any)?.degraded_sources);
 
   const filterEntries = Object.entries(filterDefaults).filter(([, value]) => value !== null && value !== undefined && value !== "").slice(0, 8);
@@ -1762,12 +1772,22 @@ export default function OptionsPage() {
             <div style={{ background: `${C.red}10`, border: `1px solid ${C.red}30`, borderRadius: 10, padding: "14px 18px", color: C.red, fontSize: 13, fontFamily: sans }}>⚠ {error}</div>
           )}
 
-          {!loading && !isRefreshing && !error && data && tickers.length === 0 && (
+          {isWarmingUp && (
+            <div style={{ background: `${C.blue}06`, border: `1px solid ${C.blue}18`, borderRadius: 10, padding: "28px 20px", textAlign: "center", animation: "fadeIn 0.3s ease" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 8 }}>
+                <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: C.blue, animation: "pulse 1.4s ease-in-out infinite" }} />
+                <span style={{ color: C.blue, fontSize: 14, fontWeight: 700, fontFamily: font }}>Warming live options scanner…</span>
+              </div>
+              <div style={{ color: C.text, fontSize: 12, lineHeight: 1.6 }}>
+                The scanner is building its first ranked result set. Data will appear automatically — no action needed.
+              </div>
+            </div>
+          )}
+          {!loading && !isRefreshing && !error && data && tickers.length === 0 && !isWarmingUp && (
             <div style={{ background: `${C.yellow}08`, border: `1px solid ${C.yellow}25`, borderRadius: 10, padding: "24px 20px", textAlign: "center", animation: "fadeIn 0.3s ease" }}>
-              <div style={{ color: C.yellow, fontSize: 14, fontWeight: 700, fontFamily: font, marginBottom: 8 }}>No tickers returned</div>
+              <div style={{ color: C.yellow, fontSize: 14, fontWeight: 700, fontFamily: font, marginBottom: 8 }}>No ranked tickers</div>
               <div style={{ color: C.text, fontSize: 12, lineHeight: 1.6, marginBottom: 14 }}>
-                The scan completed but returned zero ranked tickers. This usually means the cache is still warming up after a fresh deploy.
-                Click Refresh to retry once the backend cache is ready.
+                The scan completed but found no tickers meeting the current signal thresholds.
               </div>
               <button onClick={() => fetchDashboard()} style={{ padding: "8px 20px", background: `${C.blue}18`, border: `1px solid ${C.blue}40`, borderRadius: 7, color: C.blue, fontSize: 12, fontWeight: 600, fontFamily: font, cursor: "pointer" }}>
                 <RefreshCw className="w-3 h-3" style={{ display: "inline-block", marginRight: 6, verticalAlign: "middle" }} />

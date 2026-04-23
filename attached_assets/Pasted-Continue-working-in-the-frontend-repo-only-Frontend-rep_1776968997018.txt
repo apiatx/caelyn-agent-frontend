@@ -1,0 +1,99 @@
+Continue working in the frontend repo only:
+
+* Frontend repo: https://github.com/apiatx/caelyn-agent-frontend.git
+
+Workflow rules:
+
+* Work directly on `main`
+* Do NOT create a branch
+* Do NOT create a PR
+* Commit directly to `main`
+* Push directly to `main`
+
+This is a targeted UX/state fix for options-flow rendering. Do not broaden scope.
+
+PRIMARY GOAL
+Fix the Home `Unusual Options Flows` section and the main `Options Flow` page so the UI never misleadingly says "No unusual options activity detected" when the real situation is:
+
+* refresh in progress
+* stale snapshot available
+* cache warming
+* background scan still running
+
+AUDIT FIRST
+Inspect the current frontend rendering for:
+
+1. Home Unusual Options Flows
+2. Options Flow page
+3. empty/loading/error/status states for options data
+
+Determine:
+
+* what exact payload fields currently drive the empty state
+* whether the frontend treats cold/warming/refreshing the same as true zero-results
+* whether stale snapshot metadata is already available but ignored
+* whether the UI could display last-updated/source/refreshing state more honestly
+
+IMPLEMENT
+Assume backend will provide snapshot metadata or already does.
+
+Required UI behavior:
+A. Home Unusual Options Flows
+
+* if results exist, always render them
+* if results are stale but valid, still render them
+* if refresh is in progress, show a subtle “refreshing” indicator, not an empty state
+* only show “No unusual options activity detected” if backend explicitly indicates a completed scan with zero valid results
+* if there is literally no snapshot yet, show a distinct warmup state like:
+
+  * “Warming live options scanner…”
+    not “no unusual activity”
+
+B. Options Flow page
+
+* same state distinction:
+
+  * warming
+  * refreshing
+  * stale but available
+  * live
+  * true zero-results
+* do not blank the page during recompute if a usable snapshot exists
+
+C. Metadata display
+If backend provides these fields, surface them cleanly:
+
+* updated_at
+* source
+* refresh_in_progress
+* stale
+* result_count
+
+D. No new fetches / no polling hacks
+
+* do not add timers or polling loops unless there is already an existing query refetch policy that just needs a small adjustment
+* do not bypass the normal data flow
+
+VERIFY
+Before finishing, verify:
+
+1. Home no longer shows false empty-state messaging during warmup/refresh
+2. Options Flow page also preserves usable data during recompute
+3. no new fetches or polling hacks were added
+4. UI truthfully distinguishes zero-results from no-data-yet
+
+DELIVERABLES
+When done, report:
+
+1. exact frontend files changed
+2. exact cause of the misleading empty-state behavior
+3. what new UI states are now supported
+4. whether query count changed
+5. confirmation changes were committed and pushed directly to `main`
+
+EXECUTION STYLE
+
+* Audit first
+* Fix the state semantics
+* Keep the UI honest
+* Then commit and push directly to `main`

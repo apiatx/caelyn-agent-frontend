@@ -450,37 +450,52 @@ function UnusualFlowsSection({
   loading: boolean;
   onTickerClick?: (symbol: string) => void;
 }) {
-  const isPending    = status === "precompute_pending";
-  const isFastCache  = status === "ok_fast_cache";
-  const isEmpty      = !loading && (!flows || flows.length === 0);
+  const hasResults     = (flows?.length ?? 0) > 0;
+  // Statuses that mean the scanner hasn't completed a valid scan yet
+  const NOT_READY_STATUSES = new Set(["precompute_pending", "unavailable", "warming", "warmup", "error", ""]);
+  const isNotReady     = !hasResults && (!status || NOT_READY_STATUSES.has(status));
+  const isBgRefreshing = status === "refresh_in_progress";
+  const isFastCache    = status === "ok_fast_cache";
+  const isOk           = status === "ok" || isFastCache;
+  // Only show true-zero message when a completed scan found nothing
+  const isTrueZero     = !loading && isOk && !hasResults && !isBgRefreshing;
 
   return (
     <GlassCard className="p-4">
       <SectionHeader
         icon={Zap}
         title="Unusual Options Flows"
-        accent={flows?.length ? `${flows.length} signals` : "live screening"}
+        accent={hasResults ? `${flows!.length} signals` : isNotReady ? "live screening" : "options screening"}
         action={
-          isFastCache ? (
+          isFastCache && hasResults ? (
             <span className="text-[10px] px-1.5 py-0.5 rounded border border-emerald-500/25 text-emerald-400 bg-emerald-500/10 flex items-center gap-1">
               <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400" />
               live
             </span>
-          ) : isPending ? (
+          ) : isBgRefreshing ? (
             <span className="text-[10px] px-1.5 py-0.5 rounded border border-white/10 text-white/40 flex items-center gap-1">
               <span className="inline-block w-1.5 h-1.5 rounded-full bg-white/30 animate-pulse" />
-              loading
+              refreshing
+            </span>
+          ) : isNotReady ? (
+            <span className="text-[10px] px-1.5 py-0.5 rounded border border-white/10 text-white/35 flex items-center gap-1">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-white/25 animate-pulse" />
+              scanning
             </span>
           ) : undefined
         }
       />
-      {(loading || isPending) && Array.from({ length: 3 }).map((_, i) => (
+      {(loading || isNotReady) && Array.from({ length: 3 }).map((_, i) => (
         <Skeleton key={i} className="h-10 my-1 rounded bg-white/[0.04]" />
       ))}
-      {!loading && !isPending && isEmpty && (
+      {!loading && isNotReady && (
+        <div className="text-xs text-white/35 py-2 px-1 text-center">Warming live options scanner…</div>
+      )}
+      {!loading && isTrueZero && (
         <div className="text-xs text-white/40 py-4 text-center">No unusual options activity detected.</div>
       )}
-      {!loading && !isPending && (flows || []).map((f, i) => (
+      {/* Always render results if they exist — even stale / refreshing */}
+      {hasResults && (flows || []).map((f, i) => (
         <div
           key={f.symbol || i}
           className="px-2 py-2.5 rounded hover:bg-white/[0.03] transition-colors border-b border-white/[0.04] last:border-0 cursor-pointer"
