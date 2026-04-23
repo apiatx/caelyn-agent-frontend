@@ -350,7 +350,7 @@ function FearGreedGauge({
 type SnapSort = "symbol" | "current_price" | "change_1d_pct" | "volume_vs_avg";
 
 function SnapshotTable({
-  items, loading, title, icon: Icon, accent, status, limit = 999,
+  items, loading, title, icon: Icon, accent, status, limit = 999, scrollable = false,
 }: {
   items: HomeSnapshotItem[] | undefined;
   loading: boolean;
@@ -359,6 +359,7 @@ function SnapshotTable({
   accent: string;
   status?: string;
   limit?: number;
+  scrollable?: boolean;
 }) {
   const [sortKey, setSortKey]   = useState<SnapSort>("change_1d_pct");
   const [sortDir, setSortDir]   = useState<"asc" | "desc">("desc");
@@ -396,6 +397,7 @@ function SnapshotTable({
       )}
       {!loading && sorted.length > 0 && (
         <>
+          {/* Column headers — always visible above the scroll area */}
           <div className="grid grid-cols-12 gap-1 text-[10px] uppercase tracking-wider text-white/35 px-2 mb-1">
             <button className="col-span-3 text-left flex items-center gap-0.5" onClick={() => toggle("symbol")}>Symbol {sortIcon("symbol")}</button>
             <button className="col-span-3 text-right flex items-center justify-end gap-0.5" onClick={() => toggle("current_price")}>Price {sortIcon("current_price")}</button>
@@ -403,7 +405,9 @@ function SnapshotTable({
             <button className="col-span-2 text-right flex items-center justify-end gap-0.5" onClick={() => toggle("volume_vs_avg")}>Vol× {sortIcon("volume_vs_avg")}</button>
             <div className="col-span-2 text-right">Signal</div>
           </div>
-          {sorted.slice(0, limit).map((row) => (
+          {/* Rows — scrollable when scrollable=true, all items shown */}
+          <div className={scrollable ? "overflow-y-auto max-h-[320px] pr-0.5" : ""}>
+          {sorted.slice(0, scrollable ? sorted.length : limit).map((row) => (
             <div key={row.symbol} className="grid grid-cols-12 gap-1 items-center px-2 py-1.5 rounded hover:bg-white/[0.03] transition-colors">
               <div className="col-span-3 flex items-center gap-1.5 min-w-0">
                 <span className="text-xs font-semibold text-white/90 truncate">{row.symbol}</span>
@@ -431,6 +435,7 @@ function SnapshotTable({
               </div>
             </div>
           ))}
+          </div>{/* end scroll container */}
         </>
       )}
     </GlassCard>
@@ -644,7 +649,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      <div className="relative z-10 max-w-[1540px] mx-auto px-5 lg:px-8 py-6">
+      <div className="relative z-10 max-w-[1540px] mx-auto px-5 lg:px-8 pt-10 pb-6">
         {/* B. Centered search bar (visual — hooks into existing global nav) */}
         <div className="flex justify-center mb-6">
           <div className="w-full max-w-[680px]">
@@ -801,48 +806,35 @@ export default function HomePage() {
             </GlassCard>
           </div>
 
-          {/* Right rail: Trending Ideas (Stocktwits) */}
+          {/* Right rail: Latest News */}
           <div className="lg:col-span-1">
             <GlassCard className="p-4 h-full">
-              <SectionHeader
-                icon={Sparkles}
-                title="Trending Ideas"
-                accent="Stocktwits"
-              />
-              <div className="space-y-2">
-                {isLoading &&
-                  Array.from({ length: 5 }).map((_, i) => (
-                    <Skeleton key={i} className="h-14 rounded bg-white/[0.04]" />
-                  ))}
-                {!isLoading &&
-                  (data?.trending_ideas || []).slice(0, 8).map((d, i) => (
-                    <div
-                      key={d.ticker || i}
-                      className="p-3 rounded-lg border border-white/[0.06] bg-white/[0.02] hover:border-white/15 transition-colors cursor-pointer"
-                      onClick={() => setLocation(`/app/caelyn-ai?q=${encodeURIComponent(d.ticker)}`)}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="text-sm font-semibold text-white/90 truncate">
-                          ${d.ticker}
-                        </div>
-                        {typeof d.watchlist_count === "number" && d.watchlist_count > 0 && (
-                          <Badge
-                            variant="outline"
-                            className="h-5 text-[10px] border-white/10 text-white/60 shrink-0"
-                          >
-                            {d.watchlist_count.toLocaleString()} watching
-                          </Badge>
+              <SectionHeader icon={Newspaper} title="Latest News" accent="Cross-market" />
+              <div className="divide-y divide-white/[0.04]">
+                {isLoading && Array.from({ length: 5 }).map((_, i) => (
+                  <Skeleton key={i} className="h-14 my-1 rounded bg-white/[0.04]" />
+                ))}
+                {newsArticles.slice(0, 8).map((a: any, i: number) => (
+                  <a
+                    key={i}
+                    href={a.url}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="flex items-start gap-2.5 p-2.5 hover:bg-white/[0.03] rounded-md transition-colors"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs text-white/90 line-clamp-2">{a.title}</div>
+                      <div className="text-[10px] text-white/40 mt-0.5 flex items-center gap-1.5">
+                        <span className="truncate">{a.source}</span>
+                        {a.published && (
+                          <span className="text-white/25">· {new Date(a.published).toLocaleDateString()}</span>
                         )}
                       </div>
-                      <div className="text-[11px] text-white/50 mt-1 line-clamp-1">
-                        {d.title}
-                      </div>
                     </div>
-                  ))}
-                {!isLoading && (!data?.trending_ideas || data.trending_ideas.length === 0) && (
-                  <div className="text-xs text-white/40 py-4 text-center">
-                    No trending ideas right now.
-                  </div>
+                  </a>
+                ))}
+                {newsArticles.length === 0 && !isLoading && (
+                  <div className="text-sm text-white/40 py-6 text-center">News feed loading…</div>
                 )}
               </div>
             </GlassCard>
@@ -895,6 +887,7 @@ export default function HomePage() {
             icon={Briefcase}
             accent="tracked positions"
             status={data?.section_status?.portfolio_snapshot}
+            scrollable
           />
           <SnapshotTable
             items={data?.watchlist_snapshot}
@@ -903,7 +896,7 @@ export default function HomePage() {
             icon={Wallet}
             accent="top movers from watchlist"
             status={data?.section_status?.watchlist_snapshot}
-            limit={15}
+            scrollable
           />
         </div>
 
@@ -917,170 +910,116 @@ export default function HomePage() {
           <HLTopSignals signals={hlSignals} loading={hlLoading} />
         </div>
 
-        {/* I + J. News + Trending research */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
-          <div className="lg:col-span-2">
-            <GlassCard className="p-4">
-              <SectionHeader icon={Newspaper} title="Latest News" accent="Cross-market" />
-              <div className="divide-y divide-white/[0.04]">
-                {newsArticles.slice(0, 8).map((a: any, i: number) => (
-                  <a
-                    key={i}
-                    href={a.url}
-                    target="_blank"
-                    rel="noreferrer noopener"
-                    className="flex items-start gap-3 p-3 hover:bg-white/[0.03] rounded-md transition-colors"
-                  >
-                    {a.image && (
-                      <img
-                        src={a.image}
-                        alt=""
-                        className="w-14 h-14 rounded-md object-cover border border-white/5 shrink-0"
-                        onError={(e) => ((e.currentTarget.style.display = "none"))}
-                      />
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <div className="text-sm text-white/90 line-clamp-2">{a.title}</div>
-                      <div className="text-[11px] text-white/40 mt-1 flex items-center gap-2">
-                        <span className="truncate">{a.source}</span>
-                        {a.published && (
-                          <span className="text-white/25">
-                            · {new Date(a.published).toLocaleDateString()}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </a>
-                ))}
-                {newsArticles.length === 0 && (
-                  <div className="text-sm text-white/40 py-6 text-center">
-                    News feed loading…
-                  </div>
-                )}
-              </div>
-            </GlassCard>
-          </div>
-
-          <div className="lg:col-span-1">
-            <GlassCard className="p-4 h-full">
-              {(() => {
-                const tx = data?.trending_on_x;
-                const generatedAt = tx?.generated_at ? new Date(tx.generated_at) : null;
-                // Explicit "Updated <time>" using relative formatting (e.g., "2 days ago", "5h ago").
-                // Backend snapshot is weekly-cached so we show both absolute + relative.
-                const relativeUpdated = (() => {
-                  if (!generatedAt) return "Weekly";
-                  const ageMs = Date.now() - generatedAt.getTime();
-                  const ageSec = Math.max(0, Math.floor(ageMs / 1000));
-                  if (ageSec < 60) return `Updated ${ageSec}s ago`;
-                  const ageMin = Math.floor(ageSec / 60);
-                  if (ageMin < 60) return `Updated ${ageMin}m ago`;
-                  const ageHr = Math.floor(ageMin / 60);
-                  if (ageHr < 24) return `Updated ${ageHr}h ago`;
-                  const ageDay = Math.floor(ageHr / 24);
-                  return `Updated ${ageDay}d ago`;
-                })();
-                // Stale if backend marked stale OR age_seconds > 7 days
-                const ageSeconds = typeof tx?.age_seconds === "number" ? tx.age_seconds : null;
-                const isStale = tx?.is_stale === true || (ageSeconds !== null && ageSeconds > 7 * 86400);
-                const isRefreshing = tx?.refresh_in_progress === true;
-                return (
-                  <SectionHeader
-                    icon={LineChart}
-                    title="Trending on X"
-                    accent={relativeUpdated}
-                    action={
-                      <div className="flex items-center gap-1.5">
-                        {isStale && (
-                          <span
-                            className="text-[10px] px-1.5 py-0.5 rounded border border-amber-500/30 text-amber-300 bg-amber-500/10"
-                            title="Snapshot is older than 7 days"
-                          >
-                            stale
-                          </span>
-                        )}
-                        {isRefreshing && (
-                          <span
-                            className="text-[10px] text-amber-300 flex items-center gap-1 px-1.5 py-0.5 rounded border border-amber-500/25 bg-amber-500/10"
-                            title="A weekly refresh is in progress server-side"
-                          >
-                            <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-300 animate-pulse" />
-                            refreshing
-                          </span>
-                        )}
-                      </div>
-                    }
-                  />
-                );
-              })()}
-              <div className="space-y-2">
-                {(data?.trending_on_x?.top_tickers || []).slice(0, 8).map((t, i) => (
-                  <div
-                    key={t.symbol || i}
-                    className="p-3 rounded-lg border border-white/[0.06] bg-white/[0.02] hover:border-white/15 transition-colors cursor-pointer"
-                    onClick={() => setLocation(`/app/caelyn-ai?q=${encodeURIComponent(t.symbol)}`)}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="text-sm font-semibold text-white/90 truncate">
-                        ${t.symbol}
-                      </div>
-                      {t.sentiment && (
-                        <Badge
-                          variant="outline"
-                          className={`h-5 text-[10px] shrink-0 ${
-                            /bull/i.test(t.sentiment)
-                              ? "border-emerald-500/25 text-emerald-300"
-                              : /bear/i.test(t.sentiment)
-                              ? "border-rose-500/25 text-rose-300"
-                              : "border-white/10 text-white/60"
-                          }`}
-                        >
-                          {t.sentiment}
-                        </Badge>
+        {/* I + J. Social sentiment — Trending on X | Trending on Stocktwits */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
+          <GlassCard className="p-4">
+            {(() => {
+              const tx = data?.trending_on_x;
+              const generatedAt = tx?.generated_at ? new Date(tx.generated_at) : null;
+              const relativeUpdated = (() => {
+                if (!generatedAt) return "Weekly";
+                const ageMs = Date.now() - generatedAt.getTime();
+                const ageSec = Math.max(0, Math.floor(ageMs / 1000));
+                if (ageSec < 60) return `Updated ${ageSec}s ago`;
+                const ageMin = Math.floor(ageSec / 60);
+                if (ageMin < 60) return `Updated ${ageMin}m ago`;
+                const ageHr = Math.floor(ageMin / 60);
+                if (ageHr < 24) return `Updated ${ageHr}h ago`;
+                const ageDay = Math.floor(ageHr / 24);
+                return `Updated ${ageDay}d ago`;
+              })();
+              const ageSeconds = typeof tx?.age_seconds === "number" ? tx.age_seconds : null;
+              const isStale = tx?.is_stale === true || (ageSeconds !== null && ageSeconds > 7 * 86400);
+              const isRefreshing = tx?.refresh_in_progress === true;
+              return (
+                <SectionHeader
+                  icon={LineChart}
+                  title="Trending on X"
+                  accent={relativeUpdated}
+                  action={
+                    <div className="flex items-center gap-1.5">
+                      {isStale && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded border border-amber-500/30 text-amber-300 bg-amber-500/10" title="Snapshot is older than 7 days">stale</span>
+                      )}
+                      {isRefreshing && (
+                        <span className="text-[10px] text-amber-300 flex items-center gap-1 px-1.5 py-0.5 rounded border border-amber-500/25 bg-amber-500/10" title="A weekly refresh is in progress server-side">
+                          <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-300 animate-pulse" />
+                          refreshing
+                        </span>
                       )}
                     </div>
-                    {t.rationale && (
-                      <div className="text-[11px] text-white/50 mt-1 line-clamp-2">
-                        {t.rationale}
-                      </div>
-                    )}
-                    {typeof t.mentions === "number" && t.mentions > 0 && (
-                      <div className="text-[10px] text-white/35 mt-1">
-                        {t.mentions} mention{t.mentions === 1 ? "" : "s"}
-                      </div>
+                  }
+                />
+              );
+            })()}
+            <div className="space-y-2">
+              {(data?.trending_on_x?.top_tickers || []).slice(0, 8).map((t, i) => (
+                <div
+                  key={t.symbol || i}
+                  className="p-3 rounded-lg border border-white/[0.06] bg-white/[0.02] hover:border-white/15 transition-colors cursor-pointer"
+                  onClick={() => setLocation(`/app/caelyn-ai?q=${encodeURIComponent(t.symbol)}`)}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-sm font-semibold text-white/90 truncate">${t.symbol}</div>
+                    {t.sentiment && (
+                      <Badge variant="outline" className={`h-5 text-[10px] shrink-0 ${/bull/i.test(t.sentiment) ? "border-emerald-500/25 text-emerald-300" : /bear/i.test(t.sentiment) ? "border-rose-500/25 text-rose-300" : "border-white/10 text-white/60"}`}>
+                        {t.sentiment}
+                      </Badge>
                     )}
                   </div>
-                ))}
-                {(!data?.trending_on_x?.top_tickers ||
-                  data.trending_on_x.top_tickers.length === 0) && (
-                  <div className="text-xs text-white/40 py-4 text-center">
-                    No weekly X consensus snapshot available yet.
-                    {data?.trending_on_x?.refresh_in_progress && (
-                      <div className="mt-1 text-white/30">Generating now — check back shortly.</div>
+                  {t.rationale && <div className="text-[11px] text-white/50 mt-1 line-clamp-2">{t.rationale}</div>}
+                  {typeof t.mentions === "number" && t.mentions > 0 && (
+                    <div className="text-[10px] text-white/35 mt-1">{t.mentions} mention{t.mentions === 1 ? "" : "s"}</div>
+                  )}
+                </div>
+              ))}
+              {(!data?.trending_on_x?.top_tickers || data.trending_on_x.top_tickers.length === 0) && (
+                <div className="text-xs text-white/40 py-4 text-center">
+                  No weekly X consensus snapshot available yet.
+                  {data?.trending_on_x?.refresh_in_progress && <div className="mt-1 text-white/30">Generating now — check back shortly.</div>}
+                </div>
+              )}
+              {data?.trending_on_x?.key_themes && data.trending_on_x.key_themes.length > 0 && (
+                <div className="pt-2 border-t border-white/[0.05]">
+                  <div className="text-[10px] uppercase tracking-wider text-white/40 mb-1">Key themes</div>
+                  <div className="flex flex-wrap gap-1">
+                    {data.trending_on_x.key_themes.slice(0, 6).map((theme, i) => (
+                      <Badge key={i} variant="outline" className="h-5 text-[10px] border-white/10 text-white/65">{theme}</Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </GlassCard>
+
+          <GlassCard className="p-4">
+            <SectionHeader icon={Sparkles} title="Trending on Stocktwits" accent="Stocktwits" />
+            <div className="space-y-2">
+              {isLoading && Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-14 rounded bg-white/[0.04]" />
+              ))}
+              {!isLoading && (data?.trending_ideas || []).slice(0, 8).map((d, i) => (
+                <div
+                  key={d.ticker || i}
+                  className="p-3 rounded-lg border border-white/[0.06] bg-white/[0.02] hover:border-white/15 transition-colors cursor-pointer"
+                  onClick={() => setLocation(`/app/caelyn-ai?q=${encodeURIComponent(d.ticker)}`)}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-sm font-semibold text-white/90 truncate">${d.ticker}</div>
+                    {typeof d.watchlist_count === "number" && d.watchlist_count > 0 && (
+                      <Badge variant="outline" className="h-5 text-[10px] border-white/10 text-white/60 shrink-0">
+                        {d.watchlist_count.toLocaleString()} watching
+                      </Badge>
                     )}
                   </div>
-                )}
-                {data?.trending_on_x?.key_themes && data.trending_on_x.key_themes.length > 0 && (
-                  <div className="pt-2 border-t border-white/[0.05]">
-                    <div className="text-[10px] uppercase tracking-wider text-white/40 mb-1">
-                      Key themes
-                    </div>
-                    <div className="flex flex-wrap gap-1">
-                      {data.trending_on_x.key_themes.slice(0, 6).map((theme, i) => (
-                        <Badge
-                          key={i}
-                          variant="outline"
-                          className="h-5 text-[10px] border-white/10 text-white/65"
-                        >
-                          {theme}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </GlassCard>
-          </div>
+                  <div className="text-[11px] text-white/50 mt-1 line-clamp-1">{d.title}</div>
+                </div>
+              ))}
+              {!isLoading && (!data?.trending_ideas || data.trending_ideas.length === 0) && (
+                <div className="text-xs text-white/40 py-4 text-center">No trending ideas right now.</div>
+              )}
+            </div>
+          </GlassCard>
         </div>
 
         {/* K. Fear & Greed — equities + crypto */}

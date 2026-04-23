@@ -1,0 +1,132 @@
+Continue working in the frontend repo only:
+
+* Frontend repo: https://github.com/apiatx/caelyn-agent-frontend.git
+
+Workflow rules:
+
+* Work directly on `main`
+* Do NOT create a branch
+* Do NOT create a PR
+* Commit directly to `main`
+* Push directly to `main`
+
+Project constraints:
+
+* Preserve the current Home page overall structure and dark CaelynAI aesthetic
+* Do not add new data fetches unless absolutely necessary
+* Minimize query count and reuse current Home payload
+* This repo is the display layer. 
+* The Home page goal is an all-in-one dashboard while minimizing API requests by reusing what already exists. 
+
+This is a UI/layout cleanup pass. Do not broaden scope.
+
+PRIMARY FIXES
+
+1. Make Watchlist Snapshot and Portfolio Snapshot fully scrollable inside each glass card
+
+* Right now I can only effectively see the top slice of each list
+* I know the full data is there because changing sort reveals different names
+* I need to be able to scroll vertically within each card to see the full contents of:
+
+  * Watchlist Snapshot
+  * Portfolio Snapshot
+* Do not truncate these sections to only top names
+* Keep sorting intact
+* Preferred behavior:
+
+  * fixed/controlled card body height
+  * internal vertical scroll within the table/list area
+  * headers remain visible if easy, but do not overengineer
+* The goal is simple: I can scroll through the whole returned list inside each section cleanly
+
+2. Improve section layout / consolidation
+   Reorder these sections:
+
+* Move `Latest News` up next to `Theme Performance`
+* Move `Trending Ideas` next to `Trending on X`
+* Rename `Trending Ideas` to `Trending on Stocktwits`
+
+Important:
+
+* Do not break the rest of the page layout
+* Preserve overall layout feel, just improve placement and grouping
+* This should make the page feel more consolidated and logically grouped:
+
+  * Theme/sub-theme signal + Latest News together
+  * social sentiment blocks together:
+
+    * Trending on X
+    * Trending on Stocktwits
+
+3. Clean up the page header spacing
+
+* The header/search area at the top needs better spacing
+* Specifically, move the “Ask Caelyn about a ticker, a theme, or a market regime…” bar down a bit so it sits more cleanly beneath the ticker tape widget
+* It currently feels jammed too high / too close to the ticker strip
+* Clean up the vertical spacing/padding/margins at the top of the page so the header feels intentional and premium
+
+AUDIT FIRST
+Before changing code, inspect:
+
+* current layout grid for Home
+* current glass card/body overflow behavior
+* current SnapshotTable container sizing
+* current top-page spacing between ticker tape and search/input header
+* current section ordering implementation
+
+IMPLEMENT
+A. Snapshot scroll fix
+
+* For Watchlist Snapshot and Portfolio Snapshot only, ensure the card content area supports vertical scrolling
+* Do not remove sorting
+* Do not hide rows behind clipped container height without scroll
+* If there is a shared SnapshotTable component, add a clean prop-based way to enable scrollable containers rather than a hack
+
+B. Section reorder
+
+* Move `Latest News` to the slot next to `Theme Performance`
+* Move `Trending on Stocktwits` next to `Trending on X`
+* Rename displayed label from `Trending Ideas` to `Trending on Stocktwits`
+* Do not change the backend payload name unless required; display label change is enough if payload remains `trending_ideas`
+
+C. Header spacing cleanup
+
+* Add cleaner spacing so the top search/input bar sits lower and fits naturally below the ticker tape widget
+* Keep the premium dark look
+* Do not make the header huge
+* Just reduce the cramped feeling
+
+VERIFY
+Before finishing, verify:
+
+* Watchlist Snapshot card scrolls through the full list
+* Portfolio Snapshot card scrolls through the full list
+* sorting still works in both
+* Latest News is now next to Theme Performance
+* Trending on Stocktwits is now next to Trending on X
+* top header spacing is visibly cleaner
+* no new page-level fetches were added
+* query count did not increase
+
+DELIVERABLES
+When done, report:
+
+1. exact frontend files changed
+2. exact reason the snapshot sections were not fully viewable before
+3. how you implemented scrollability
+4. whether sorting still works
+5. confirmation section ordering changes:
+
+   * Latest News next to Theme Performance
+   * Trending on Stocktwits next to Trending on X
+6. what you changed in the header spacing
+7. whether query count changed
+8. confirmation changes were committed and pushed directly to `main`
+
+EXECUTION STYLE
+
+* Audit first
+* Make the page cleaner, not busier
+* Fix overflow/scroll behavior properly
+* Keep layout coherent
+* Then commit and push directly to `main`
