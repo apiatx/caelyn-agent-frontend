@@ -1,0 +1,119 @@
+I need a small but precise frontend fix to AI Terminal collaboration presets. Do NOT redesign the page. Keep the current UI structure and styling. This is a semantics/payload alignment fix.
+
+Product intent:
+The top model-selection row is SOLO AGENT MODE.
+The Customize dropdown is for COLLABORATION MODE.
+
+These are different things and must stay different.
+
+Current problem:
+The previous “Default” preset was removed/replaced by “Auto,” which is incorrect.
+I need BOTH “Default” and “Auto” as separate collaboration presets inside the Customize dropdown.
+
+Correct semantics required:
+
+1. Top row (Claude / ChatGPT / Grok / Gemini / Perplexity / DeepSeek)
+- This is solo agent mode
+- Clicking one means the user explicitly wants a single reasoning family
+- Backend may optimize the exact model within that family
+- Backend should NOT auto-pick a different family here
+
+2. Customize dropdown presets must include BOTH:
+- Default
+- Auto
+- Full Collaboration
+- Custom Collaboration
+
+Definitions:
+A. Default
+- Fixed collaboration preset
+- Reasoning model: Claude
+- Collaborators: Grok + Gemini
+- This is the user’s preferred default collaboration stack
+- It is NOT dynamic provider-family auto-routing
+- Backend may still optimize the exact model within Claude/Grok/Gemini families, but must preserve the chosen families
+
+B. Auto
+- Dynamic collaboration preset
+- Backend/router is allowed to choose which provider families collaborate based on the prompt
+- This is the true router-driven preset
+
+C. Full Collaboration
+- Existing full-collaboration preset behavior stays intact
+
+D. Custom Collaboration
+- User manually selects reasoning family + collaborator families
+- Preserve exactly what user selects
+
+What I want changed in frontend:
+
+PHASE 1 — Restore correct preset structure
+1. In the Customize dropdown, add/restore a separate “Default” preset entry in addition to “Auto”.
+2. Keep current visual style and layout. No redesign.
+3. Update preset labels/descriptions so they are explicit:
+   - Default: something like “Claude synthesizes + Grok social/X + Gemini web”
+   - Auto: something like “Agent selects the best collaboration mix for the prompt”
+4. Keep Full Collaboration and Custom Collaboration underneath.
+
+PHASE 2 — Fix preset state semantics
+5. Ensure preset state clearly distinguishes:
+   - default preset
+   - auto preset
+   - full collaboration
+   - custom collaboration
+6. Do NOT overload “auto” to mean the old default fixed stack.
+
+PHASE 3 — Fix payload construction
+7. Update the AI Terminal request payload builder so these modes send the correct backend intent:
+
+A. Solo top-row selection:
+- Send reasoning_model as the chosen family alias
+- Send collab_agents: []
+- Do NOT masquerade this as auto collaboration
+- Use collaboration_mode appropriate for explicit solo intent if the current frontend/backend contract supports it; otherwise preserve current safe behavior while ensuring reasoning_model is explicit and unambiguous
+
+B. Default preset:
+- Send collaboration_mode indicating a fixed preset / default collaboration mode
+- Send reasoning_model: "claude"
+- Send collab_agents: ["grok", "gemini"]
+- Send any preset identifier needed so backend can distinguish this from Auto
+
+C. Auto preset:
+- Send collaboration_mode / preset identifier indicating true dynamic auto-routing mode
+- Send reasoning_model in whatever way backend expects to trigger router-managed provider-family selection
+- collab_agents should not pretend to be the fixed default stack
+
+D. Full Collaboration:
+- Preserve existing behavior
+
+E. Custom Collaboration:
+- Preserve exact explicit user selections
+- reasoning_model must reflect current UI-selected reasoning family
+- collab_agents must exactly match checked collaborator boxes
+
+8. Follow-up requests must preserve the active mode/preset as well.
+
+PHASE 4 — UI copy and state consistency
+9. Ensure the selected preset displayed in the UI matches the actual payload behavior.
+10. Make sure switching between top-row solo mode and Customize presets updates state cleanly and predictably.
+11. No hidden stale state bugs where old preset values survive after switching modes.
+
+Deliverables:
+- files changed
+- before/after preset state model
+- before/after payload examples for:
+  - solo Claude
+  - Default preset
+  - Auto preset
+  - Full Collaboration
+  - Custom Collaboration
+- confirmation that Default and Auto are now distinct and correctly represented in UI + payload
+
+Constraints:
+- minimal surgical changes only
+- keep styling/layout intact
+- no redesign
+- do not add frontend-side routing logic
+- do not break existing chat/follow-up flow
+- work directly on main
+- commit and push directly to main

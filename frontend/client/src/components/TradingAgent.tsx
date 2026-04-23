@@ -3664,13 +3664,13 @@ export default function TradingAgent() {
               {/* PRESETS */}
               {(() => {
                 const fallbackPresets = [
-                  { id: 'default', label: 'Auto', primary: 'claude', agents: ['grok', 'perplexity'], lock_agents: true, lock_reasoning: false },
+                  { id: 'default', label: 'Default', primary: 'claude', agents: ['grok', 'gemini'], lock_agents: true, lock_reasoning: false },
+                  { id: 'auto', label: 'Auto', primary: 'claude', agents: [], lock_agents: true, lock_reasoning: false },
                   { id: 'full_collab', label: 'Full Collaboration', primary: 'claude', agents: ['claude', 'grok', 'gpt-4o', 'gemini', 'perplexity'], lock_agents: true, lock_reasoning: false },
                   { id: 'custom_collab', label: 'Custom Collaboration', primary: 'claude', agents: ['grok', 'perplexity'], lock_agents: false, lock_reasoning: false },
                 ];
-                const PRESET_LABEL_OVERRIDE: Record<string, string> = { default: 'Auto' };
                 const presetDefs = (collabOptions?.collab_presets?.length ? collabOptions.collab_presets : fallbackPresets).map((p: any) => ({
-                  id: p.id, label: PRESET_LABEL_OVERRIDE[p.id] || p.label || p.name || p.id, primary: p.primary || 'claude', reasoning_model: p.reasoning_model || (p.id === 'full_collab' ? 'all_agents' : 'agent_collab'),
+                  id: p.id, label: p.label || p.name || p.id, primary: p.primary || 'claude', reasoning_model: p.reasoning_model || 'claude',
                   agents: p.agents || [], lock_agents: p.lock_agents ?? true, lock_reasoning: p.lock_reasoning ?? false,
                 }));
                 const activePreset = presetDefs.find(p => p.id === collabConfig?.selectedPresetId) || presetDefs[0];
@@ -3686,7 +3686,8 @@ export default function TradingAgent() {
                     </div>
                     <div style={{ display:'flex', flexDirection:'column' }}>
                       <span style={{ fontSize:11, color: collabConfig?.selectedPresetId === preset.id ? '#e0e0e0' : '#9ca3af', fontFamily:"'JetBrains Mono', monospace" }}>{preset.label || preset.name}</span>
-                      {collabConfig?.selectedPresetId === preset.id && preset.id === 'default' && <span style={{ fontSize:9, color:'#6b7280', fontFamily:"'JetBrains Mono', monospace", marginTop:2 }}>Data sources (Grok X + Perplexity + proprietary) → {(() => { const models: Record<string, string> = { claude: 'Claude', 'gpt-4o': 'ChatGPT', gemini: 'Gemini', grok: 'Grok', perplexity: 'Perplexity' }; return models[collabConfig?.reasoningModelUI || 'claude'] || collabConfig?.reasoningModelUI || 'Claude'; })()} synthesizes</span>}
+                      {collabConfig?.selectedPresetId === preset.id && preset.id === 'default' && <span style={{ fontSize:9, color:'#6b7280', fontFamily:"'JetBrains Mono', monospace", marginTop:2 }}>Claude synthesizes + Grok social/X + Gemini web</span>}
+                      {collabConfig?.selectedPresetId === preset.id && preset.id === 'auto' && <span style={{ fontSize:9, color:'#6b7280', fontFamily:"'JetBrains Mono', monospace", marginTop:2 }}>Agent selects the best collaboration mix for the prompt</span>}
                       {collabConfig?.selectedPresetId === preset.id && preset.id === 'full_collab' && <span style={{ fontSize:9, color:'#6b7280', fontFamily:"'JetBrains Mono', monospace", marginTop:2 }}>All agents reason independently → synthesis model combines</span>}
                       {collabConfig?.selectedPresetId === preset.id && preset.id === 'custom_collab' && <span style={{ fontSize:9, color:'#6b7280', fontFamily:"'JetBrains Mono', monospace", marginTop:2 }}>Custom agent selection → synthesis model combines</span>}
                     </div>

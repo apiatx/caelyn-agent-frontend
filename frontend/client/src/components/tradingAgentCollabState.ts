@@ -21,10 +21,10 @@ export interface CollabState {
 
 export const DEFAULT_COLLAB_STATE: CollabState = {
   selectedPresetId: 'default',
-  reasoningModelRequest: 'agent_collab',
+  reasoningModelRequest: 'claude',
   primaryModel: 'claude',
   reasoningModelUI: 'claude',
-  collabAgents: ['grok', 'perplexity'],
+  collabAgents: ['grok', 'gemini'],
   lockAgents: true,
   lockReasoning: false,
 };
@@ -44,20 +44,30 @@ export function applyPresetState(preset: CollabPreset): CollabState {
 
 export function buildCollabPayload(collabState: CollabState | null, selectedModel: string) {
   if (!collabState) {
-    // Solo explicit family selection — single model, no collaboration
+    // Solo explicit family selection — one model, no collaborators, unambiguous
     return {
-      collaboration_mode: 'auto' as const,
+      collaboration_mode: 'custom' as const,
       reasoning_model: selectedModel,
       collab_agents: [] as string[],
     };
   }
 
   if (collabState.selectedPresetId === 'default') {
-    // Auto mode — backend handles routing; supply primary + default data-gathering agents
+    // Default fixed preset — Claude synthesizes, Grok + Gemini gather
+    // Backend must preserve chosen families; may optimize within each family
+    return {
+      collaboration_mode: 'default' as const,
+      reasoning_model: collabState.primaryModel || 'claude',
+      collab_agents: collabState.collabAgents,
+    };
+  }
+
+  if (collabState.selectedPresetId === 'auto') {
+    // Auto preset — backend/router picks provider families dynamically per prompt
     return {
       collaboration_mode: 'auto' as const,
       reasoning_model: collabState.primaryModel || 'claude',
-      collab_agents: collabState.collabAgents,
+      collab_agents: [] as string[],
     };
   }
 
