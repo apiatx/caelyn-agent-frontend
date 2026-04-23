@@ -174,6 +174,8 @@ interface OptionContract {
 interface TickerResult {
   ticker: string;
   category?: string | null;
+  asset_type?: string | null;
+  market_cap_bucket?: string | null;
   underlying_price?: number | null;
   price_change_pct?: number | null;
   expiration_focus?: Array<string | number> | null;
@@ -1474,6 +1476,8 @@ function TickerDetailModal({ ticker, onClose }: { ticker: TickerResult; onClose:
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
             <span style={{ color: C.bright, fontSize: 16, fontWeight: 800, fontFamily: font }}>{ticker.ticker}</span>
             {ticker.primary_signal && <Badge color={getSignalColor(ticker.primary_signal)}>{ticker.primary_signal}</Badge>}
+            {ticker.asset_type && <Badge color={C.blue}>{ticker.asset_type}</Badge>}
+            {ticker.market_cap_bucket && <Badge color={C.purple}>{ticker.market_cap_bucket}</Badge>}
             {ticker.composite_score != null && (
               <span style={{ color: scoreColor(normalizeScore(ticker.composite_score)), fontFamily: font, fontSize: 11 }}>
                 score {fmtNum(normalizeScore(ticker.composite_score), 0)}
@@ -1516,6 +1520,8 @@ function CompactTickerRow({ t, rank, onClick }: { t: TickerResult; rank: number;
         <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 3 }}>
           <span style={{ color: C.bright, fontFamily: font, fontWeight: 800, fontSize: 13 }}>{t.ticker}</span>
           {t.primary_signal && <Badge color={signalColor} sm>{t.primary_signal}</Badge>}
+          {t.asset_type && <Badge color={C.dim} sm>{t.asset_type}</Badge>}
+          {t.market_cap_bucket && <Badge color={C.dim} sm>{t.market_cap_bucket}</Badge>}
           {pchgPct != null && (
             <span style={{ color: pchgPct >= 0 ? C.green : C.red, fontFamily: font, fontSize: 10 }}>
               {pchgPct >= 0 ? "+" : ""}{pchgPct.toFixed(1)}%
@@ -1800,7 +1806,7 @@ export default function OptionsPage() {
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           <Zap className="w-5 h-5" style={{ color: C.green }} />
           <span style={{ color: C.bright, fontSize: 17, fontWeight: 800, fontFamily: font, letterSpacing: "-0.02em" }}>OPTIONS FLOW</span>
-          <span style={{ color: C.dim, fontSize: 11, fontFamily: font }}>· all 4 scans load simultaneously</span>
+          <span style={{ color: C.dim, fontSize: 11, fontFamily: font }}>· master screener · 4 category views</span>
           <div style={{ marginLeft: "auto" }}>
             <DataIngestionWidget />
           </div>

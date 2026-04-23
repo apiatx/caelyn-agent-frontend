@@ -36,6 +36,7 @@ import type {
   HomeUnusualOptionsFlowItem,
   HomeSubThemeItem,
   HomeHighlightedCompany,
+  HomeUnusualOptionsMeta,
 } from "@/types/home";
 
 // ── Lightweight HL signal types (mirrors hl-advanced-signals shape) ──────────
@@ -515,11 +516,21 @@ function UnusualFlowsSection({
           onClick={() => onTickerClick?.(f.symbol)}
         >
           <div className="flex items-center justify-between gap-2 mb-0.5">
-            <div className="flex items-center gap-2 min-w-0">
+            <div className="flex items-center gap-2 min-w-0 flex-wrap">
               <span className="text-xs font-semibold text-white/90 shrink-0">{f.symbol}</span>
-              {(f.flow_signal || f.primary_signal || f.signal) && (
+              {(f.primary_signal || f.flow_signal || f.signal) && (
                 <Badge variant="outline" className="h-4 px-1 text-[9px] border-indigo-500/30 text-indigo-300 shrink-0">
-                  {f.flow_signal || f.primary_signal || f.signal}
+                  {f.primary_signal || f.flow_signal || f.signal}
+                </Badge>
+              )}
+              {f.asset_type && (
+                <Badge variant="outline" className="h-4 px-1 text-[9px] border-white/10 text-white/40 shrink-0">
+                  {f.asset_type}
+                </Badge>
+              )}
+              {f.market_cap_bucket && (
+                <Badge variant="outline" className="h-4 px-1 text-[9px] border-white/10 text-white/35 shrink-0">
+                  {f.market_cap_bucket}
                 </Badge>
               )}
             </div>
@@ -723,7 +734,7 @@ export default function HomePage() {
     refetchInterval: (query) => {
       const d = query.state.data as HomeDashboardPayload | undefined;
       const flowStatus = d?.section_status?.unusual_options_flows;
-      const dataState  = (d as any)?.unusual_options_meta?.data_state;
+      const dataState  = d?.unusual_options_meta?.data_state;
       // Poll every 30s while the home fast cache hasn't produced results yet.
       const notReady = !d?.unusual_options_flows?.length ||
         flowStatus === "precompute_pending" || flowStatus === "no_data_yet" ||
@@ -980,10 +991,9 @@ export default function HomePage() {
           <UnusualFlowsSection
             flows={data?.unusual_options_flows}
             status={
-              // Prefer unusual_options_meta.data_state (backend commit e4f40b7f+)
-              // which carries richer state info (live_ok, stale, no_data_yet, etc.).
+              // Prefer unusual_options_meta.data_state (master screener state).
               // Fall back to section_status.unusual_options_flows for older payloads.
-              (data as any)?.unusual_options_meta?.data_state ||
+              data?.unusual_options_meta?.data_state ||
               data?.section_status?.unusual_options_flows
             }
             loading={isLoading}

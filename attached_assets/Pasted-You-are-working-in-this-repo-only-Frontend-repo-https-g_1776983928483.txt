@@ -1,0 +1,117 @@
+You are working in this repo only:
+
+* Frontend repo: https://github.com/apiatx/caelyn-agent-frontend.git
+
+Workflow rules:
+
+* Work directly on `main`
+* Do NOT create a branch
+* Do NOT create a PR
+* Commit directly to `main`
+* Push directly to `main`
+
+Project constraints:
+
+* This repo is the display layer.
+* Reuse the new backend master screener architecture.
+* Do NOT rip out the current ticker click -> popup/detail UX.
+* Do NOT add unnecessary new fetches.
+
+Important backend handoff:
+
+* Backend moved from 4 primary pipelines to 1 master unusual-options screener
+* Master screener rows now include:
+
+  * `asset_type`
+  * `market_cap_bucket`
+* `/api/options/dashboard?tab=X` and `/api/options/all-tabs` are now derived views of the master snapshot, not separate truth pipelines
+* Home unusual options should also derive from the master screener
+* Rate limiting is now under control
+* Architecture is simplified, but frontend must stop assuming old per-tab truth behavior. 
+
+PRIMARY GOALS
+
+1. Update the Options page to treat the backend as a single master screener with filtered category views
+2. Preserve the existing ticker click -> popup/detail/modal experience
+3. Update the Home Unusual Options Flow section to trust the repaired master-snapshot-backed payload
+4. Make the UI clearly reflect snapshot freshness/state without blanking
+
+AUDIT FIRST
+Inspect the current frontend options implementation and identify:
+
+* where it still assumes 4 separate primary pipelines
+* whether it is using `/api/options/all-tabs`
+* how category panels are populated now
+* how ticker click opens the detail modal/popup
+* what payload shape that modal expects
+* whether any row-shape assumptions are now stale after the master screener transition
+
+IMPLEMENT
+
+PART 1 — Options page
+
+* Keep the unified multi-panel page
+* Continue showing:
+
+  * ETFs
+  * Megacaps
+  * Large Caps
+  * Small Caps
+* But treat them as filtered views of the same backend screener truth source
+* If `/api/options/all-tabs` is already returning those filtered slices cleanly, keep using it
+* If the page can instead use one master screener payload plus frontend filtering without increasing fetches or complexity, use the cleanest approach
+
+PART 2 — Detail modal compatibility
+This is critical:
+
+* Preserve the current ability to click a ticker row and open the richer popup/modal/detail panel
+* Preserve chart/data/contracts/context behavior
+* Do NOT regress the detail view
+* If row fields changed, add a clean adapter layer so screener rows still resolve into the existing detail path
+
+PART 3 — Home page unusual options
+
+* Update the Home Unusual Options Flow section so it reflects the master screener-backed ranking
+* Do not keep old assumptions that collapse or overfilter the list
+* If backend returns more robust metadata or row fields, render them cleanly
+
+PART 4 — State semantics
+For both Home and Options:
+
+* distinguish:
+
+  * live_ok
+  * stale_but_available
+  * refresh_in_progress
+  * true_zero_results
+  * no_data_yet
+* If rows exist, render them even when stale
+* Do not show misleading blank/empty states during refresh
+
+VERIFY
+Before finishing, verify:
+
+1. Options page category panels render from the new master-snapshot-derived backend views
+2. Clicking a ticker still opens the richer detail/popup path correctly
+3. Home unusual options renders from the repaired backend output
+4. No new unnecessary fetch fan-out was added
+5. Query count is reasonable and not worse than before
+
+DELIVERABLES
+When done, report:
+
+1. exact frontend files changed
+2. exact old assumptions removed
+3. how the Options page now consumes the master screener-derived data
+4. confirmation ticker popup/detail still works
+5. how Home unusual options was updated
+6. whether query count changed
+7. confirmation changes were committed and pushed directly to `main`
+
+EXECUTION STYLE
+
+* Audit first
+* Preserve detail UX
+* Simplify around the backend master screener
+* Keep stale-but-available visible
+* Then commit and push directly to `main`

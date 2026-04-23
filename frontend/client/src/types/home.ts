@@ -185,13 +185,30 @@ export interface HomeSnapshotItem {
   signal_label?:  string | null;
 }
 
-// Unusual options flows — populated after 30-min precompute warms
+// Unusual options flows — derived from master screener snapshot
 export interface HomeUnusualOptionsFlowItem {
-  symbol:           string;
-  composite_score?: number | null;
-  signal?:          string | null;
-  rationale?:       string | null;
-  [key: string]:    any;
+  symbol:              string;
+  composite_score?:    number | null;
+  // signal field names from master screener (prefer primary_signal)
+  primary_signal?:     string | null;
+  flow_signal?:        string | null;
+  signal?:             string | null;
+  rationale?:          string | null;
+  // master screener categorisation fields
+  asset_type?:         string | null;
+  market_cap_bucket?:  string | null;
+  // allow any additional master screener fields
+  [key: string]:       any;
+}
+
+// Unusual options meta — freshness/state from master screener
+export interface HomeUnusualOptionsMeta {
+  data_state: string;
+  source?:    string | null;
+  result_count?: number | null;
+  cache_age_seconds?: number | null;
+  stale?: boolean | null;
+  refresh_in_progress?: boolean | null;
 }
 
 export interface HomeDashboardPayload {
@@ -211,6 +228,7 @@ export interface HomeDashboardPayload {
   portfolio_snapshot?:      HomeSnapshotItem[];
   watchlist_snapshot?:      HomeSnapshotItem[];
   unusual_options_flows?:   HomeUnusualOptionsFlowItem[];
+  unusual_options_meta?:    HomeUnusualOptionsMeta;
   section_status:           HomeSectionStatus;
   timing?:                  { total_seconds: number };
   from_cache?:              boolean;
