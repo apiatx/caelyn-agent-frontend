@@ -756,9 +756,9 @@ export default function HomePage() {
       {/* A. Top live ticker strip */}
       <div
         className="relative z-10 w-full border-b border-white/5 backdrop-blur-lg"
-        style={{ height: 60, overflow: "hidden", background: "rgba(5,6,8,0.92)" }}
+        style={{ height: 90, overflow: "hidden", background: "rgba(5,6,8,0.92)" }}
       >
-        <div style={{ height: 60 }}>
+        <div style={{ height: 90 }}>
           <TickerTapeWidget />
         </div>
       </div>
@@ -822,36 +822,10 @@ export default function HomePage() {
           )}
         </div>
 
-        {/* E. Highlighted companies — watchlist-driven hot names */}
-        {data?.highlighted_companies && data.highlighted_companies.length > 0 && (
-          <div className="mb-6">
-            <SectionHeader
-              icon={Star}
-              title="Highlighted Companies"
-              accent="strongest from your watchlist"
-            />
-            <div className="flex gap-2 flex-wrap">
-              {data.highlighted_companies.slice(0, 12).map((c, i) => {
-                // Guard: old cached shape used `ticker` not `symbol`; normalise both.
-                const sym = c.symbol || (c as any).ticker;
-                if (!sym) return null;
-                const normalized = sym === c.symbol ? c : { ...c, symbol: sym, current_price: null, change_1d_pct: null, volume_vs_avg: null };
-                return (
-                  <HighlightedCompanyCard
-                    key={sym || i}
-                    c={normalized}
-                    onClick={() => openTicker(sym)}
-                  />
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* F + G. Two-column main content */}
+        {/* F + G + E. Three-column row: Theme Performance | Highlighted Companies | Latest News */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
-          {/* Sub-theme leaders — main panel (cols 1-2) */}
-          <div className="lg:col-span-2">
+          {/* Theme Performance */}
+          <div className="lg:col-span-1">
             <GlassCard className="p-4">
               {(() => {
                 const subThemes = data?.sub_theme_performance;
@@ -900,7 +874,52 @@ export default function HomePage() {
             </GlassCard>
           </div>
 
-          {/* Right rail: Latest News */}
+          {/* Middle: Highlighted Companies — list view */}
+          <div className="lg:col-span-1">
+            <GlassCard className="p-4 h-full">
+              <SectionHeader icon={Star} title="Highlighted Companies" accent="watchlist leaders" />
+              <div className="space-y-0.5">
+                {isLoading && Array.from({ length: 6 }).map((_, i) => (
+                  <Skeleton key={i} className="h-9 rounded bg-white/[0.04]" />
+                ))}
+                {!isLoading && (data?.highlighted_companies || []).slice(0, 12).map((c, i) => {
+                  const sym = c.symbol || (c as any).ticker;
+                  if (!sym) return null;
+                  const up = (c.change_1d_pct ?? 0) >= 0;
+                  return (
+                    <div
+                      key={sym || i}
+                      className="flex items-center justify-between px-2 py-2 rounded hover:bg-white/[0.04] transition-colors cursor-pointer"
+                      onClick={() => openTicker(sym)}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-xs font-semibold text-white/90 shrink-0">{sym}</span>
+                        {c.signal_label && (
+                          <Badge variant="outline" className="h-4 px-1 text-[9px] border-indigo-500/25 text-indigo-300 shrink-0 hidden sm:inline-flex">
+                            {c.signal_label}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {c.current_price != null && (
+                          <span className="text-[11px] text-white/55">${fmtNum(c.current_price)}</span>
+                        )}
+                        <span className={`text-xs font-semibold tabular-nums flex items-center gap-0.5 ${pctColor(c.change_1d_pct)}`}>
+                          {c.change_1d_pct !== null && (up ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />)}
+                          {fmtPct(c.change_1d_pct)}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+                {!isLoading && (!data?.highlighted_companies || data.highlighted_companies.length === 0) && (
+                  <div className="text-xs text-white/40 py-6 text-center">No highlighted companies.</div>
+                )}
+              </div>
+            </GlassCard>
+          </div>
+
+          {/* Right: Latest News */}
           <div className="lg:col-span-1">
             <GlassCard className="p-4 h-full">
               <SectionHeader icon={Newspaper} title="Latest News" accent="Cross-market" />
@@ -968,8 +987,9 @@ export default function HomePage() {
           <HLTopSignals signals={hlSignals} loading={hlLoading} />
         </div>
 
-        {/* I + J. Social sentiment — Trending on X | Trending on Stocktwits */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
+        {/* I + J + H. Four-across: Trending on X | Trending on Stocktwits | Top Movers | Top Losers */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
+          {/* Trending on X */}
           <GlassCard className="p-4">
             {(() => {
               const tx = data?.trending_on_x;
@@ -978,13 +998,12 @@ export default function HomePage() {
                 if (!generatedAt) return "Weekly";
                 const ageMs = Date.now() - generatedAt.getTime();
                 const ageSec = Math.max(0, Math.floor(ageMs / 1000));
-                if (ageSec < 60) return `Updated ${ageSec}s ago`;
+                if (ageSec < 60) return `${ageSec}s ago`;
                 const ageMin = Math.floor(ageSec / 60);
-                if (ageMin < 60) return `Updated ${ageMin}m ago`;
+                if (ageMin < 60) return `${ageMin}m ago`;
                 const ageHr = Math.floor(ageMin / 60);
-                if (ageHr < 24) return `Updated ${ageHr}h ago`;
-                const ageDay = Math.floor(ageHr / 24);
-                return `Updated ${ageDay}d ago`;
+                if (ageHr < 24) return `${ageHr}h ago`;
+                return `${Math.floor(ageHr / 24)}d ago`;
               })();
               const ageSeconds = typeof tx?.age_seconds === "number" ? tx.age_seconds : null;
               const isStale = tx?.is_stale === true || (ageSeconds !== null && ageSeconds > 7 * 86400);
@@ -995,82 +1014,48 @@ export default function HomePage() {
                   title="Trending on X"
                   accent={relativeUpdated}
                   action={
-                    <div className="flex items-center gap-1.5">
-                      {isStale && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded border border-amber-500/30 text-amber-300 bg-amber-500/10" title="Snapshot is older than 7 days">stale</span>
-                      )}
-                      {isRefreshing && (
-                        <span className="text-[10px] text-amber-300 flex items-center gap-1 px-1.5 py-0.5 rounded border border-amber-500/25 bg-amber-500/10" title="A weekly refresh is in progress server-side">
-                          <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-300 animate-pulse" />
-                          refreshing
-                        </span>
-                      )}
+                    <div className="flex items-center gap-1">
+                      {isStale && <span className="text-[9px] px-1 py-0.5 rounded border border-amber-500/30 text-amber-300 bg-amber-500/10">stale</span>}
+                      {isRefreshing && <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-300 animate-pulse" />}
                     </div>
                   }
                 />
               );
             })()}
-            <div className="space-y-2">
-              {(data?.trending_on_x?.top_tickers || []).slice(0, 8).map((t, i) => (
-                <div
-                  key={t.symbol || i}
-                  className="p-3 rounded-lg border border-white/[0.06] bg-white/[0.02] hover:border-white/15 transition-colors cursor-pointer"
-                  onClick={() => openTicker(t.symbol)}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="text-sm font-semibold text-white/90 truncate">${t.symbol}</div>
+            <div className="space-y-1.5">
+              {(data?.trending_on_x?.top_tickers || []).slice(0, 6).map((t, i) => (
+                <div key={t.symbol || i} className="px-2 py-2 rounded-lg border border-white/[0.05] bg-white/[0.02] hover:border-white/12 transition-colors cursor-pointer" onClick={() => openTicker(t.symbol)}>
+                  <div className="flex items-center justify-between gap-1.5">
+                    <span className="text-xs font-semibold text-white/90 truncate">${t.symbol}</span>
                     {t.sentiment && (
-                      <Badge variant="outline" className={`h-5 text-[10px] shrink-0 ${/bull/i.test(t.sentiment) ? "border-emerald-500/25 text-emerald-300" : /bear/i.test(t.sentiment) ? "border-rose-500/25 text-rose-300" : "border-white/10 text-white/60"}`}>
-                        {t.sentiment}
-                      </Badge>
+                      <Badge variant="outline" className={`h-4 text-[9px] px-1 shrink-0 ${/bull/i.test(t.sentiment) ? "border-emerald-500/25 text-emerald-300" : /bear/i.test(t.sentiment) ? "border-rose-500/25 text-rose-300" : "border-white/10 text-white/55"}`}>{t.sentiment}</Badge>
                     )}
                   </div>
-                  {t.rationale && <div className="text-[11px] text-white/50 mt-1 line-clamp-2">{t.rationale}</div>}
-                  {typeof t.mentions === "number" && t.mentions > 0 && (
-                    <div className="text-[10px] text-white/35 mt-1">{t.mentions} mention{t.mentions === 1 ? "" : "s"}</div>
-                  )}
+                  {t.rationale && <div className="text-[10px] text-white/45 mt-0.5 line-clamp-1">{t.rationale}</div>}
                 </div>
               ))}
               {(!data?.trending_on_x?.top_tickers || data.trending_on_x.top_tickers.length === 0) && (
-                <div className="text-xs text-white/40 py-4 text-center">
-                  No weekly X consensus snapshot available yet.
-                  {data?.trending_on_x?.refresh_in_progress && <div className="mt-1 text-white/30">Generating now — check back shortly.</div>}
-                </div>
-              )}
-              {data?.trending_on_x?.key_themes && data.trending_on_x.key_themes.length > 0 && (
-                <div className="pt-2 border-t border-white/[0.05]">
-                  <div className="text-[10px] uppercase tracking-wider text-white/40 mb-1">Key themes</div>
-                  <div className="flex flex-wrap gap-1">
-                    {data.trending_on_x.key_themes.slice(0, 6).map((theme, i) => (
-                      <Badge key={i} variant="outline" className="h-5 text-[10px] border-white/10 text-white/65">{theme}</Badge>
-                    ))}
-                  </div>
-                </div>
+                <div className="text-xs text-white/40 py-4 text-center">No snapshot yet.</div>
               )}
             </div>
           </GlassCard>
 
+          {/* Trending on Stocktwits */}
           <GlassCard className="p-4">
             <SectionHeader icon={Sparkles} title="Trending on Stocktwits" accent="Stocktwits" />
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               {isLoading && Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-14 rounded bg-white/[0.04]" />
+                <Skeleton key={i} className="h-10 rounded bg-white/[0.04]" />
               ))}
-              {!isLoading && (data?.trending_ideas || []).slice(0, 8).map((d, i) => (
-                <div
-                  key={d.ticker || i}
-                  className="p-3 rounded-lg border border-white/[0.06] bg-white/[0.02] hover:border-white/15 transition-colors cursor-pointer"
-                  onClick={() => openTicker(d.ticker)}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="text-sm font-semibold text-white/90 truncate">${d.ticker}</div>
+              {!isLoading && (data?.trending_ideas || []).slice(0, 6).map((d, i) => (
+                <div key={d.ticker || i} className="px-2 py-2 rounded-lg border border-white/[0.05] bg-white/[0.02] hover:border-white/12 transition-colors cursor-pointer" onClick={() => openTicker(d.ticker)}>
+                  <div className="flex items-center justify-between gap-1.5">
+                    <span className="text-xs font-semibold text-white/90 truncate">${d.ticker}</span>
                     {typeof d.watchlist_count === "number" && d.watchlist_count > 0 && (
-                      <Badge variant="outline" className="h-5 text-[10px] border-white/10 text-white/60 shrink-0">
-                        {d.watchlist_count.toLocaleString()} watching
-                      </Badge>
+                      <Badge variant="outline" className="h-4 text-[9px] px-1 border-white/10 text-white/55 shrink-0">{d.watchlist_count.toLocaleString()}</Badge>
                     )}
                   </div>
-                  <div className="text-[11px] text-white/50 mt-1 line-clamp-1">{d.title}</div>
+                  {d.title && <div className="text-[10px] text-white/45 mt-0.5 line-clamp-1">{d.title}</div>}
                 </div>
               ))}
               {!isLoading && (!data?.trending_ideas || data.trending_ideas.length === 0) && (
@@ -1078,15 +1063,13 @@ export default function HomePage() {
               )}
             </div>
           </GlassCard>
-        </div>
 
-        {/* H. Top movers / losers */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
+          {/* Top Movers */}
           <GlassCard className="p-4">
-            <SectionHeader icon={TrendingUp} title="Top Movers" accent="Equities · today" />
+            <SectionHeader icon={TrendingUp} title="Top Movers" accent="today" />
             <div className="divide-y divide-white/[0.04]">
               {isLoading && Array.from({ length: 6 }).map((_, i) => (
-                <Skeleton key={i} className="h-10 my-1 rounded bg-white/[0.04]" />
+                <Skeleton key={i} className="h-9 my-0.5 rounded bg-white/[0.04]" />
               ))}
               {!isLoading && (data?.movers?.gainers || []).slice(0, 8).map((row, i) => (
                 <MoverRow key={i} row={row} onClick={row.ticker ? () => openTicker(row.ticker!) : undefined} />
@@ -1096,11 +1079,13 @@ export default function HomePage() {
               )}
             </div>
           </GlassCard>
+
+          {/* Top Losers */}
           <GlassCard className="p-4">
-            <SectionHeader icon={TrendingDown} title="Top Losers" accent="Equities · today" />
+            <SectionHeader icon={TrendingDown} title="Top Losers" accent="today" />
             <div className="divide-y divide-white/[0.04]">
               {isLoading && Array.from({ length: 6 }).map((_, i) => (
-                <Skeleton key={i} className="h-10 my-1 rounded bg-white/[0.04]" />
+                <Skeleton key={i} className="h-9 my-0.5 rounded bg-white/[0.04]" />
               ))}
               {!isLoading && (data?.movers?.losers || []).slice(0, 8).map((row, i) => (
                 <MoverRow key={i} row={row} onClick={row.ticker ? () => openTicker(row.ticker!) : undefined} />
