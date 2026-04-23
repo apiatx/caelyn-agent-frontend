@@ -1566,9 +1566,9 @@ function CompactTickerRow({ t, rank, onClick }: { t: TickerResult; rank: number;
   );
 }
 
-// ─── Master Screener — one unified ranked list with filters + sort ─────────
+// ─── Master Screener — single endpoint, client-side filter + sort ──────────
 type FilterChip = "all" | "etf" | "stock" | "megacap" | "large" | "small";
-type SortField  = "score" | "symbol" | "move" | "vol" | "pc" | "signal";
+type SortField  = "score" | "symbol" | "move" | "vol" | "oi" | "pc" | "confidence" | "ivskew";
 
 const FILTER_CHIPS: Array<{ key: FilterChip; label: string }> = [
   { key: "all",     label: "All" },
@@ -1579,84 +1579,78 @@ const FILTER_CHIPS: Array<{ key: FilterChip; label: string }> = [
   { key: "small",   label: "Small Cap" },
 ];
 
+const confColor = (c?: string | null) => {
+  const s = (c || "").toLowerCase();
+  if (s === "high")   return C.green;
+  if (s === "medium") return C.yellow;
+  if (s === "low")    return C.red;
+  return C.dim;
+};
+
 function MasterScreener({
-  allTabsData,
+  screenerData,
   pageLoading,
   pageRefreshing,
   onRefresh,
   onTickerSelect,
 }: {
-  allTabsData: any;
+  screenerData: any;
   pageLoading: boolean;
   pageRefreshing: boolean;
   onRefresh: () => void;
   onTickerSelect: (t: TickerResult) => void;
 }) {
-  const [filter, setFilter]     = useState<FilterChip>("all");
+  const [filter, setFilter]      = useState<FilterChip>("all");
   const [sortField, setSortField] = useState<SortField>("score");
-  const [sortDir, setSortDir]   = useState<SortDir>("desc");
+  const [sortDir, setSortDir]    = useState<SortDir>("desc");
 
-  const tabs = allTabsData?.tabs || {};
+  // Screener payload shape: { tickers[], data_state, result_count, stale,
+  //   cache_age_seconds, refresh_in_progress, next_refresh_in_seconds, updated_at, source }
+  const rawTickers: TickerResult[] = Array.isArray(screenerData?.tickers) ? screenerData.tickers : [];
+  const dataState: string          = screenerData?.data_state || "no_data_yet";
+  const isStale: boolean           = screenerData?.stale ?? false;
+  const cacheAge: number | null    = screenerData?.cache_age_seconds ?? null;
+  const refreshInProgress: boolean = screenerData?.refresh_in_progress ?? false;
+  const nextRefresh: number | null = screenerData?.next_refresh_in_seconds ?? null;
+  const hasData = rawTickers.length > 0;
 
-  // Page-level freshness derived from all tabs
-  const hasAnyData     = SCAN_TAB_ORDER.some(t => (tabs[t]?.tickers || []).length > 0);
-  const anyRefreshing  = SCAN_TAB_ORDER.some(t => tabs[t]?.refresh_in_progress);
-  const anyStale       = SCAN_TAB_ORDER.some(t => tabs[t]?.stale);
-  const allDataStates  = SCAN_TAB_ORDER.map(t => tabs[t]?.data_state).filter(Boolean) as string[];
-  const overallState   = (() => {
-    if (allDataStates.some(s => s === "live_ok")) return "live_ok";
-    if (allDataStates.some(s => s === "stale_but_available") || anyStale) return "stale_but_available";
-    if (allDataStates.some(s => s === "refresh_in_progress") || anyRefreshing) return "refresh_in_progress";
-    if (allDataStates.every(s => s === "true_zero_results")) return "true_zero_results";
+  const overallState = (() => {
+    if (dataState === "live_ok")              return "live_ok";
+    if (dataState === "stale_but_available" || isStale) return "stale_but_available";
+    if (dataState === "refresh_in_progress"  || refreshInProgress || pageRefreshing) return "refresh_in_progress";
+    if (dataState === "true_zero_results")   return "true_zero_results";
     return "no_data_yet";
   })();
 
-  // Merge all tabs → single deduped master list, preserving source tab for fallback
-  const masterList = useMemo(() => {
-    const seen = new Set<string>();
-    const rows: Array<TickerResult & { _tab: ScanTab }> = [];
-    for (const tab of SCAN_TAB_ORDER) {
-      for (const t of (tabs[tab]?.tickers || []) as TickerResult[]) {
-        if (!seen.has(t.ticker)) {
-          seen.add(t.ticker);
-          rows.push({ ...t, _tab: tab });
-        }
-      }
-    }
-    return rows;
-  }, [tabs]);
-
-  // Apply filter chip
+  // Apply filter chip — uses asset_type and market_cap_bucket from screener payload
   const filtered = useMemo(() => {
-    if (filter === "all") return masterList;
-    return masterList.filter(t => {
-      const assetType  = (t.asset_type  || (t._tab === "etf" ? "etf" : "stock")).toLowerCase();
-      const capBucket  = (t.market_cap_bucket || t._tab).toLowerCase();
-      if (filter === "etf")     return assetType === "etf";
-      if (filter === "stock")   return assetType !== "etf";
-      if (filter === "megacap") return capBucket === "megacap";
-      if (filter === "large")   return capBucket === "large_cap";
-      if (filter === "small")   return capBucket === "small_cap";
+    if (filter === "all") return rawTickers;
+    return rawTickers.filter(t => {
+      const at  = (t.asset_type        || "stock").toLowerCase();
+      const cap = (t.market_cap_bucket || "").toLowerCase();
+      if (filter === "etf")     return at === "etf";
+      if (filter === "stock")   return at !== "etf";
+      if (filter === "megacap") return cap === "megacap";
+      if (filter === "large")   return cap === "large" || cap === "large_cap";
+      if (filter === "small")   return cap === "small" || cap === "small_cap";
       return true;
     });
-  }, [masterList, filter]);
+  }, [rawTickers, filter]);
 
   // Apply sort
   const sorted = useMemo(() => {
     const dir = sortDir === "asc" ? 1 : -1;
     return [...filtered].sort((a, b) => {
       switch (sortField) {
-        case "score":  return dir * ((normalizeScore(b.composite_score) ?? -1) - (normalizeScore(a.composite_score) ?? -1));
-        case "symbol": return dir * a.ticker.localeCompare(b.ticker);
-        case "move": {
-          const av = safeNum(a.price_change_pct) ?? 0;
-          const bv = safeNum(b.price_change_pct) ?? 0;
-          return dir * (bv - av);
-        }
-        case "vol":    return dir * ((b.total_volume ?? 0) - (a.total_volume ?? 0));
-        case "pc":     return dir * ((b.pc_ratio ?? 0) - (a.pc_ratio ?? 0));
-        case "signal": return dir * (a.primary_signal || "").localeCompare(b.primary_signal || "");
-        default:       return 0;
+        case "score":      return dir * ((normalizeScore(b.composite_score) ?? -1) - (normalizeScore(a.composite_score) ?? -1));
+        case "symbol":     return dir * a.ticker.localeCompare(b.ticker);
+        case "move":       return dir * ((safeNum(b.price_change_pct) ?? 0) - (safeNum(a.price_change_pct) ?? 0));
+        case "vol":        return dir * ((b.total_volume ?? 0) - (a.total_volume ?? 0));
+        case "oi":         return dir * ((b.total_oi ?? 0) - (a.total_oi ?? 0));
+        case "pc":         return dir * ((b.pc_ratio ?? 0) - (a.pc_ratio ?? 0));
+        case "confidence": return dir * ((b.confidence_score ?? 0) - (a.confidence_score ?? 0));
+        case "ivskew":     return dir * ((safeNum(b.iv_skew) ?? 0) - (safeNum(a.iv_skew) ?? 0));
+        default:           return 0;
       }
     });
   }, [filtered, sortField, sortDir]);
@@ -1666,8 +1660,7 @@ function MasterScreener({
     else { setSortField(field); setSortDir("desc"); }
   };
 
-  // Column header helper
-  const ColHdr = ({ field, label, style }: { field: SortField; label: string; style?: React.CSSProperties }) => (
+  const ColHdr = ({ field, label }: { field: SortField; label: string }) => (
     <span
       onClick={() => toggleSort(field)}
       style={{
@@ -1678,33 +1671,34 @@ function MasterScreener({
         letterSpacing: "0.06em",
         userSelect: "none" as const,
         display: "inline-flex", alignItems: "center", gap: 2,
-        ...style,
       }}
     >
       {label}{sortField === field ? (sortDir === "desc" ? " ↓" : " ↑") : ""}
     </span>
   );
 
-  // Page-level status element
   const StatusEl = () => {
-    if (pageLoading && !hasAnyData) return null;
+    if (pageLoading && !hasData) return null;
+    const dot = (color: string, anim = false) => (
+      <span style={{ width: 5, height: 5, borderRadius: "50%", background: color, display: "inline-block", ...(anim ? { animation: "pulse 1.4s ease-in-out infinite" } : {}) }} />
+    );
     if (overallState === "live_ok")
-      return <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: C.green, fontSize: 10, fontFamily: font }}><span style={{ width: 5, height: 5, borderRadius: "50%", background: C.green, display: "inline-block" }} />live</span>;
-    if (overallState === "refresh_in_progress" || pageRefreshing)
-      return <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: C.blue, fontSize: 10, fontFamily: font }}><span style={{ width: 5, height: 5, borderRadius: "50%", background: C.blue, display: "inline-block", animation: "pulse 1.4s ease-in-out infinite" }} />refreshing</span>;
-    if (overallState === "stale_but_available" || anyStale)
-      return <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: C.yellow, fontSize: 10, fontFamily: font }}><span style={{ width: 5, height: 5, borderRadius: "50%", background: C.yellow, display: "inline-block", animation: "pulse 1.4s ease-in-out infinite" }} />stale snapshot</span>;
+      return <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: C.green, fontSize: 10, fontFamily: font }}>{dot(C.green)} live</span>;
+    if (overallState === "refresh_in_progress")
+      return <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: C.blue, fontSize: 10, fontFamily: font }}>{dot(C.blue, true)} refreshing{nextRefresh != null ? ` · next in ${nextRefresh}s` : ""}</span>;
+    if (overallState === "stale_but_available")
+      return <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: C.yellow, fontSize: 10, fontFamily: font }}>{dot(C.yellow, true)} stale{cacheAge != null ? ` · ${cacheAge}s old` : ""}</span>;
     if (overallState === "no_data_yet")
-      return <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: C.blue, fontSize: 10, fontFamily: font }}><span style={{ width: 5, height: 5, borderRadius: "50%", background: C.blue, display: "inline-block", animation: "pulse 1.4s ease-in-out infinite" }} />scanning…</span>;
+      return <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: C.blue, fontSize: 10, fontFamily: font }}>{dot(C.blue, true)} scanning…</span>;
     return null;
   };
 
-  // Grid template — rank | ticker | score | signal | move | vol | p/c | context
-  const ROW_GRID = "24px 150px 90px 110px 72px 72px 56px 1fr";
+  // rank | ticker | score | signal+conf | move% | vol | OI | P/C | thesis
+  const ROW_GRID = "24px 152px 82px 120px 65px 62px 62px 50px 1fr";
 
-  if (pageLoading && !hasAnyData) {
+  if (pageLoading && !hasData) {
     return (
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, color: C.blue, padding: 40 }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, padding: 40 }}>
         <div style={{ width: 16, height: 16, border: `2px solid ${C.border}`, borderTop: `2px solid ${C.blue}`, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
         <div style={{ color: C.dim, fontSize: 11, fontFamily: font }}>Loading master screener…</div>
       </div>
@@ -1714,7 +1708,7 @@ function MasterScreener({
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden" }}>
 
-      {/* ── Controls: filter chips + count + status + refresh ── */}
+      {/* ── Controls bar ── */}
       <div style={{ padding: "8px 16px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", flexShrink: 0, background: C.bg }}>
         <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
           {FILTER_CHIPS.map(f => (
@@ -1728,52 +1722,48 @@ function MasterScreener({
                 color: filter === f.key ? C.blue : C.dim,
                 fontSize: 10, fontFamily: font, cursor: "pointer", transition: "all 0.12s",
               }}
-            >
-              {f.label}
-            </button>
+            >{f.label}</button>
           ))}
         </div>
         <span style={{ flex: 1 }} />
         {sorted.length > 0 && <span style={{ color: C.dim, fontSize: 10, fontFamily: font }}>{sorted.length} signals</span>}
         <StatusEl />
         <button
-          onClick={onRefresh}
-          disabled={pageLoading}
-          title="Refresh"
+          onClick={onRefresh} disabled={pageLoading} title="Refresh"
           style={{ background: "none", border: "none", cursor: pageLoading ? "not-allowed" : "pointer", color: pageLoading ? C.border : C.dim, padding: 2, display: "flex", alignItems: "center" }}
         >
           <RefreshCw className={`w-3 h-3 ${pageRefreshing ? "animate-spin" : ""}`} />
         </button>
       </div>
 
-      {/* ── Stale notice bar ── */}
-      {hasAnyData && (overallState === "stale_but_available" || anyStale || pageRefreshing) && (
+      {/* ── Stale / refresh notice ── */}
+      {hasData && (isStale || pageRefreshing || refreshInProgress) && (
         <div style={{ padding: "5px 16px", background: `${C.yellow}08`, borderBottom: `1px solid ${C.yellow}15`, display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
           <span style={{ width: 4, height: 4, borderRadius: "50%", background: C.yellow, display: "inline-block", animation: "pulse 1.4s ease-in-out infinite" }} />
           <span style={{ color: C.yellow, fontSize: 10, fontFamily: font }}>
-            {pageRefreshing ? "Refresh in progress — showing last snapshot" : "Stale snapshot — live data may differ"}
+            {refreshInProgress || pageRefreshing ? "Refresh in progress — showing last snapshot" : `Stale snapshot${cacheAge != null ? ` · ${cacheAge}s old` : ""}`}
           </span>
         </div>
       )}
 
-      {/* ── Column headers (clickable to sort) ── */}
+      {/* ── Column headers ── */}
       <div style={{ display: "grid", gridTemplateColumns: ROW_GRID, gap: 0, padding: "5px 16px", borderBottom: `1px solid ${C.border}`, background: C.cardAlt, flexShrink: 0 }}>
         <span style={{ color: C.dim, fontSize: 9, fontFamily: font }}>#</span>
-        <ColHdr field="symbol" label="Ticker" />
-        <ColHdr field="score"  label="Score" />
-        <ColHdr field="signal" label="Signal" />
-        <ColHdr field="move"   label="Move %" />
-        <ColHdr field="vol"    label="Vol" />
-        <ColHdr field="pc"     label="P/C" />
-        <span style={{ color: C.dim, fontSize: 9, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>Context</span>
+        <ColHdr field="symbol"     label="Ticker" />
+        <ColHdr field="score"      label="Score" />
+        <ColHdr field="confidence" label="Signal / Conf" />
+        <ColHdr field="move"       label="Move %" />
+        <ColHdr field="vol"        label="Vol" />
+        <ColHdr field="oi"         label="OI" />
+        <ColHdr field="pc"         label="P/C" />
+        <span style={{ color: C.dim, fontSize: 9, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>Thesis</span>
       </div>
 
       {/* ── Rows ── */}
       <div style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
 
-        {/* Warming / no data */}
-        {!hasAnyData && overallState === "no_data_yet" && (
-          <div style={{ padding: "48px 20px", textAlign: "center" }}>
+        {!hasData && overallState === "no_data_yet" && (
+          <div style={{ padding: "52px 20px", textAlign: "center" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7, marginBottom: 8, color: C.blue, fontSize: 12, fontFamily: font }}>
               <span style={{ width: 7, height: 7, borderRadius: "50%", background: C.blue, display: "inline-block", animation: "pulse 1.4s ease-in-out infinite" }} />
               Warming scanner…
@@ -1781,29 +1771,28 @@ function MasterScreener({
             <div style={{ color: C.dim, fontSize: 11 }}>First results are building — will appear automatically</div>
           </div>
         )}
-
-        {/* True zero */}
-        {!hasAnyData && overallState === "true_zero_results" && (
-          <div style={{ padding: "48px 20px", textAlign: "center", color: C.dim, fontSize: 12 }}>
+        {!hasData && overallState === "true_zero_results" && (
+          <div style={{ padding: "52px 20px", textAlign: "center", color: C.dim, fontSize: 12 }}>
             Scan complete — no unusual options signals above threshold
           </div>
         )}
-
-        {/* Filter yields zero from non-empty master list */}
-        {hasAnyData && sorted.length === 0 && (
-          <div style={{ padding: "32px 20px", textAlign: "center", color: C.dim, fontSize: 11 }}>
+        {hasData && sorted.length === 0 && (
+          <div style={{ padding: "36px 20px", textAlign: "center", color: C.dim, fontSize: 11 }}>
             No signals match the current filter
           </div>
         )}
 
         {sorted.map((t, i) => {
-          const score = normalizeScore(t.composite_score);
-          const sigColor = getSignalColor(t.primary_signal);
-          const pchg = safeNum(t.price_change_pct);
+          const score   = normalizeScore(t.composite_score);
+          const sigClr  = getSignalColor(t.primary_signal);
+          const confClr = confColor(t.confidence);
+          const pchg    = safeNum(t.price_change_pct);
           const pchgPct = pchg != null ? (Math.abs(pchg) <= 1 ? pchg * 100 : pchg) : null;
-          const assetLabel  = t.asset_type  || (t._tab === "etf" ? "ETF" : "");
-          const capLabel    = t.market_cap_bucket || (t._tab !== "etf" ? SCAN_TAB_SHORT[t._tab] : "");
-          const contextText = (t.stock_context_summary || t.options_context_summary || "").slice(0, 120);
+          const assetLbl = (t.asset_type || "").toUpperCase();
+          const capLbl   = t.market_cap_bucket || "";
+          // Thesis: prefer explicit thesis string, fall back to context summary
+          const thesisArr = Array.isArray(t.thesis) ? t.thesis : (t.thesis ? [t.thesis] : []);
+          const thesisText = (thesisArr[0] || t.stock_context_summary || t.options_context_summary || "").slice(0, 140);
           return (
             <div
               key={t.ticker}
@@ -1819,7 +1808,7 @@ function MasterScreener({
               {/* Rank */}
               <span style={{ color: C.dim, fontSize: 10, fontFamily: font }}>{i + 1}</span>
 
-              {/* Ticker + price + category badges */}
+              {/* Ticker + price + badges */}
               <div style={{ minWidth: 0 }}>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
                   <span style={{ color: C.bright, fontFamily: font, fontWeight: 800, fontSize: 12 }}>{t.ticker}</span>
@@ -1828,8 +1817,8 @@ function MasterScreener({
                   )}
                 </div>
                 <div style={{ display: "flex", gap: 3, marginTop: 2, flexWrap: "wrap" }}>
-                  {assetLabel && <Badge color={C.dim} sm>{assetLabel.toUpperCase()}</Badge>}
-                  {capLabel && assetLabel.toLowerCase() !== "etf" && <Badge color={C.dim} sm>{capLabel}</Badge>}
+                  {assetLbl && <Badge color={C.dim} sm>{assetLbl}</Badge>}
+                  {capLbl && assetLbl !== "ETF" && <Badge color={C.dim} sm>{capLbl}</Badge>}
                 </div>
               </div>
 
@@ -1837,7 +1826,7 @@ function MasterScreener({
               <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
                 {score != null ? (
                   <>
-                    <div style={{ width: 36, height: 3, background: C.border, borderRadius: 999, flexShrink: 0 }}>
+                    <div style={{ width: 32, height: 3, background: C.border, borderRadius: 999, flexShrink: 0 }}>
                       <div style={{ width: `${score}%`, height: "100%", background: scoreColor(score), borderRadius: 999 }} />
                     </div>
                     <span style={{ color: scoreColor(score), fontSize: 11, fontFamily: font, fontWeight: 700 }}>{fmtNum(score, 0)}</span>
@@ -1845,12 +1834,17 @@ function MasterScreener({
                 ) : <span style={{ color: C.dim, fontSize: 10 }}>—</span>}
               </div>
 
-              {/* Signal */}
-              <div>
+              {/* Signal + confidence badge stacked */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                 {t.primary_signal
-                  ? <Badge color={sigColor}>{t.primary_signal}</Badge>
+                  ? <Badge color={sigClr}>{t.primary_signal}</Badge>
                   : <span style={{ color: C.dim, fontSize: 10, fontFamily: font }}>—</span>
                 }
+                {t.confidence && (
+                  <span style={{ color: confClr, fontSize: 9, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                    {t.confidence} conf
+                  </span>
+                )}
               </div>
 
               {/* Move % */}
@@ -1863,14 +1857,19 @@ function MasterScreener({
                 {t.total_volume != null ? fmtVol(t.total_volume) : "—"}
               </span>
 
+              {/* OI */}
+              <span style={{ color: C.text, fontFamily: font, fontSize: 11 }}>
+                {t.total_oi != null ? fmtVol(t.total_oi) : "—"}
+              </span>
+
               {/* P/C */}
               <span style={{ color: t.pc_ratio != null ? pcColor(t.pc_ratio) : C.dim, fontFamily: font, fontSize: 11 }}>
                 {t.pc_ratio != null ? fmtNum(t.pc_ratio, 2) : "—"}
               </span>
 
-              {/* Context excerpt */}
+              {/* Thesis / context excerpt */}
               <span style={{ color: C.dim, fontSize: 10, lineHeight: 1.4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
-                {contextText}
+                {thesisText}
               </span>
             </div>
           );
@@ -1880,16 +1879,16 @@ function MasterScreener({
   );
 }
 
-// ─── Main Options Flow page (unified 2×2 layout, single all-tabs fetch) ──
+// ─── Main Options Flow page (master screener — single /api/options/screener fetch) ──
 export default function OptionsPage() {
-  // ── All-tabs data (single fetch, 4 panels rendered from it) ──────────────
-  const [allTabsData, setAllTabsData] = useState<any>(null);
-  const [pageLoading, setPageLoading] = useState(true);
+  // ── Screener data (single fetch, all categories merged by backend) ────────
+  const [screenerData, setScreenerData] = useState<any>(null);
+  const [pageLoading, setPageLoading]   = useState(true);
   const [pageRefreshing, setPageRefreshing] = useState(false);
-  const [fetchError, setFetchError] = useState("");
+  const [fetchError, setFetchError]     = useState("");
   const refreshTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const fetchAllTabs = useCallback(async (background = false) => {
+  const fetchScreener = useCallback(async (background = false) => {
     if (background) {
       setPageRefreshing(true);
     } else {
@@ -1899,14 +1898,14 @@ export default function OptionsPage() {
     try {
       const ctrl = new AbortController();
       const tid = setTimeout(() => ctrl.abort(), 30_000);
-      const res = await window.fetch(`${API_BASE}/all-tabs`, { headers: authHeaders(), signal: ctrl.signal });
+      const res = await window.fetch(`${API_BASE}/screener`, { headers: authHeaders(), signal: ctrl.signal });
       clearTimeout(tid);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
-      setAllTabsData(json);
+      setScreenerData(json);
       setFetchError("");
     } catch (e: any) {
-      if (!background) setFetchError(e.name === "AbortError" ? "Timed out loading scans" : (e.message || "Failed"));
+      if (!background) setFetchError(e.name === "AbortError" ? "Timed out loading screener" : (e.message || "Failed"));
     } finally {
       if (!background) setPageLoading(false);
       setPageRefreshing(false);
@@ -1914,10 +1913,10 @@ export default function OptionsPage() {
   }, []);
 
   useEffect(() => {
-    fetchAllTabs(false);
-    refreshTimerRef.current = setInterval(() => fetchAllTabs(true), 120_000);
+    fetchScreener(false);
+    refreshTimerRef.current = setInterval(() => fetchScreener(true), 120_000);
     return () => { if (refreshTimerRef.current) clearInterval(refreshTimerRef.current); };
-  }, [fetchAllTabs]);
+  }, [fetchScreener]);
 
   // ── Chat ─────────────────────────────────────────────────────────────────
   const [selectedTicker, setSelectedTicker] = useState<TickerResult | null>(null);
@@ -1977,16 +1976,16 @@ export default function OptionsPage() {
       {fetchError && !pageLoading && (
         <div style={{ margin: "10px 16px 0", padding: "10px 14px", background: `${C.red}10`, border: `1px solid ${C.red}25`, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <span style={{ color: C.red, fontSize: 11, fontFamily: font }}>⚠ {fetchError}</span>
-          <button onClick={() => fetchAllTabs(false)} style={{ padding: "4px 12px", background: `${C.blue}14`, border: `1px solid ${C.blue}35`, borderRadius: 6, color: C.blue, fontSize: 11, fontFamily: font, cursor: "pointer" }}>Retry</button>
+          <button onClick={() => fetchScreener(false)} style={{ padding: "4px 12px", background: `${C.blue}14`, border: `1px solid ${C.blue}35`, borderRadius: 6, color: C.blue, fontSize: 11, fontFamily: font, cursor: "pointer" }}>Retry</button>
         </div>
       )}
 
-      {/* Master screener — one ranked list, client-side filter + sort */}
+      {/* Master screener — /api/options/screener, client-side filter + sort */}
       <MasterScreener
-        allTabsData={allTabsData}
+        screenerData={screenerData}
         pageLoading={pageLoading}
         pageRefreshing={pageRefreshing}
-        onRefresh={() => fetchAllTabs(true)}
+        onRefresh={() => fetchScreener(true)}
         onTickerSelect={setSelectedTicker}
       />
 

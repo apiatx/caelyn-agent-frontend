@@ -1211,7 +1211,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // === Options Flow — all-tabs endpoint (single call, all 4 categories) ===
+  // === Options Flow — master screener endpoint (primary data source) ===
+  app.get('/api/options/screener', async (req, res) => {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+      const fwdHeaders: Record<string,string> = { 'X-API-Key': AGENT_KEY };
+      if (req.headers.authorization) fwdHeaders['Authorization'] = req.headers.authorization as string;
+      const qs = new URLSearchParams();
+      if (req.query.asset_type)        qs.set('asset_type',        String(req.query.asset_type));
+      if (req.query.market_cap_bucket) qs.set('market_cap_bucket', String(req.query.market_cap_bucket));
+      if (req.query.limit)             qs.set('limit',             String(req.query.limit));
+      const qsStr = qs.toString() ? `?${qs.toString()}` : '';
+      const response = await fetch(`${AGENT_URL}/api/options/screener${qsStr}`, {
+        method: 'GET',
+        headers: fwdHeaders,
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      if (!response.ok) {
+        const text = await response.text();
+        return res.status(response.status).json({ error: `Agent returned ${response.status}`, detail: text.slice(0, 200) });
+      }
+      const data = await response.json();
+      res.json(data);
+    } catch (error: any) {
+      console.error('[options/screener] error:', error);
+      res.status(500).json({ error: error?.name === 'AbortError' ? 'Request timed out' : 'Failed to fetch options screener' });
+    }
+  });
+
+  // === Options Flow — all-tabs endpoint (legacy, kept for compatibility) ===
   app.get('/api/options/all-tabs', async (req, res) => {
     try {
       const controller = new AbortController();
