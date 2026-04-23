@@ -354,11 +354,15 @@ const TVTickerChart = memo(function TVTickerChart({ ticker, symbol }: { ticker: 
 
 // ─── D: Top Stocks in Winning Sectors ────────────────────────────────────────
 const ROLE_CONFIG: Record<string, { label: string; color: string; border: string; bg: string; badge: string }> = {
-  momentum_leader: { label: "Momentum Leaders",    color: "text-emerald-400", border: "border-emerald-500/25", bg: "bg-emerald-500/10", badge: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" },
-  bottleneck_enabler: { label: "Bottleneck / Enablers", color: "text-amber-400", border: "border-amber-500/25", bg: "bg-amber-500/10",   badge: "bg-amber-500/20 text-amber-300 border-amber-500/30"   },
-  bottleneck:      { label: "Bottleneck / Enablers", color: "text-amber-400", border: "border-amber-500/25", bg: "bg-amber-500/10",   badge: "bg-amber-500/20 text-amber-300 border-amber-500/30"   },
-  anchor_giant:    { label: "Anchor Giants",        color: "text-blue-400",   border: "border-blue-500/25",  bg: "bg-blue-500/10",    badge: "bg-blue-500/20 text-blue-300 border-blue-500/30"    },
-  anchor:          { label: "Anchor Giants",        color: "text-blue-400",   border: "border-blue-500/25",  bg: "bg-blue-500/10",    badge: "bg-blue-500/20 text-blue-300 border-blue-500/30"    },
+  momentum_leader:    { label: "Momentum Leaders",      color: "text-emerald-400", border: "border-emerald-500/25", bg: "bg-emerald-500/10", badge: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" },
+  bottleneck_enabler: { label: "Bottleneck / Enablers", color: "text-amber-400",   border: "border-amber-500/25",  bg: "bg-amber-500/10",   badge: "bg-amber-500/20 text-amber-300 border-amber-500/30"   },
+  bottleneck:         { label: "Bottleneck / Enablers", color: "text-amber-400",   border: "border-amber-500/25",  bg: "bg-amber-500/10",   badge: "bg-amber-500/20 text-amber-300 border-amber-500/30"   },
+  anchor_giant:       { label: "Anchor Giants",         color: "text-blue-400",    border: "border-blue-500/25",   bg: "bg-blue-500/10",    badge: "bg-blue-500/20 text-blue-300 border-blue-500/30"    },
+  anchor:             { label: "Anchor Giants",         color: "text-blue-400",    border: "border-blue-500/25",   bg: "bg-blue-500/10",    badge: "bg-blue-500/20 text-blue-300 border-blue-500/30"    },
+  leading:            { label: "Leading",               color: "text-emerald-400", border: "border-emerald-500/25", bg: "bg-emerald-500/10", badge: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" },
+  improving:          { label: "Improving",             color: "text-teal-400",    border: "border-teal-500/25",   bg: "bg-teal-500/10",    badge: "bg-teal-500/20 text-teal-300 border-teal-500/30"    },
+  weakening:          { label: "Weakening",             color: "text-amber-400",   border: "border-amber-500/25",  bg: "bg-amber-500/10",   badge: "bg-amber-500/20 text-amber-300 border-amber-500/30"   },
+  lagging:            { label: "Lagging",               color: "text-rose-400",    border: "border-rose-500/25",   bg: "bg-rose-500/10",    badge: "bg-rose-500/20 text-rose-300 border-rose-500/30"    },
 };
 const DEFAULT_ROLE_CFG = { label: "Notable Stocks", color: "text-gray-400", border: "border-white/10", bg: "bg-white/5", badge: "bg-white/10 text-gray-300 border-white/10" };
 
@@ -429,6 +433,21 @@ function TopStocksPanel({ stocks, leaders }: { stocks: TopStock[] | undefined; l
   const hasLeaders = leaders.length > 0;
   if (!hasStocks && !hasLeaders) return null;
 
+  // Prefer analysis stocks; fall back to dashboard leaders immediately
+  const usingFallback = !hasStocks && hasLeaders;
+  const displayItems: TopStock[] = hasStocks
+    ? stocks!
+    : leaders.map(l => ({
+        ticker:    l.ticker,
+        name:      l.name,
+        price:     l.price,
+        change_1d: l.change_1d,
+        change_7d: l.change_7d,
+        change_30d: l.change_30d,
+        role:      l.regime_tag?.toLowerCase() ?? undefined,
+      }));
+
+  // Winning-sector chips shown in section header (always from leaders)
   const leaderChips = hasLeaders ? (
     <div className="flex items-center gap-1.5 flex-wrap">
       {leaders.map(l => {
@@ -445,9 +464,10 @@ function TopStocksPanel({ stocks, leaders }: { stocks: TopStock[] | undefined; l
     </div>
   ) : undefined;
 
+  // Group only when showing analysis stocks (leaders are a small flat list)
   const groups: Record<string, TopStock[]> = {};
-  if (hasStocks) {
-    for (const s of stocks!) {
+  if (!usingFallback) {
+    for (const s of displayItems) {
       const cfg = roleCfg(s.role);
       const key = cfg.label;
       if (!groups[key]) groups[key] = [];
@@ -465,11 +485,17 @@ function TopStocksPanel({ stocks, leaders }: { stocks: TopStock[] | undefined; l
       <SectionHeader
         icon={Activity}
         title="Top Stocks in Winning Sectors"
-        badge={hasStocks ? `${stocks!.length} NAMES` : undefined}
+        badge={usingFallback ? `${displayItems.length} SECTORS` : `${displayItems.length} NAMES`}
         color="amber"
         right={leaderChips}
       />
-      {hasStocks ? (
+      {usingFallback ? (
+        // Flat list of sector leaders from dashboard — no group headers
+        <div className="space-y-2">
+          {displayItems.map(s => <TopStockRow key={s.ticker} stock={s} />)}
+        </div>
+      ) : (
+        // Grouped list from analysis
         <div className="space-y-5">
           {orderedGroups.map(groupLabel => {
             const groupStocks = groups[groupLabel];
@@ -486,8 +512,6 @@ function TopStocksPanel({ stocks, leaders }: { stocks: TopStock[] | undefined; l
             );
           })}
         </div>
-      ) : (
-        <p className="text-xs text-gray-600 py-2">No stock data yet — run agent analysis to populate top names in these sectors.</p>
       )}
     </GlassCard>
   );
