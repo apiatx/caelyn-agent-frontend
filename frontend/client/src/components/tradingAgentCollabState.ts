@@ -47,6 +47,7 @@ export function buildCollabPayload(collabState: CollabState | null, selectedMode
     // Solo explicit family selection — one model, no collaborators, unambiguous
     return {
       collaboration_mode: 'custom' as const,
+      collab_preset: null as null,
       reasoning_model: selectedModel,
       collab_agents: [] as string[],
     };
@@ -57,6 +58,7 @@ export function buildCollabPayload(collabState: CollabState | null, selectedMode
     // Backend must preserve chosen families; may optimize within each family
     return {
       collaboration_mode: 'default' as const,
+      collab_preset: 'default' as const,
       reasoning_model: collabState.primaryModel || 'claude',
       collab_agents: collabState.collabAgents,
     };
@@ -66,6 +68,7 @@ export function buildCollabPayload(collabState: CollabState | null, selectedMode
     // Auto preset — backend/router picks provider families dynamically per prompt
     return {
       collaboration_mode: 'auto' as const,
+      collab_preset: 'auto' as const,
       reasoning_model: collabState.primaryModel || 'claude',
       collab_agents: [] as string[],
     };
@@ -75,6 +78,7 @@ export function buildCollabPayload(collabState: CollabState | null, selectedMode
     // Full collaboration — all agents reason independently, synthesis model combines
     return {
       collaboration_mode: 'full' as const,
+      collab_preset: 'full_collab' as const,
       reasoning_model: collabState.primaryModel || 'claude',
       collab_agents: collabState.collabAgents,
     };
@@ -83,6 +87,7 @@ export function buildCollabPayload(collabState: CollabState | null, selectedMode
   // Custom collaboration — exact user checkbox selections preserved, no pruning
   return {
     collaboration_mode: 'custom' as const,
+    collab_preset: 'custom_collab' as const,
     reasoning_model: collabState.primaryModel || 'claude',
     collab_agents: collabState.collabAgents,
   };

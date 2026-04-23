@@ -902,6 +902,7 @@ export default function TradingAgent() {
         crypto: 'grok',
       };
       payload.collaboration_mode = 'auto';
+      payload.collab_preset = null;
       payload.reasoning_model = PRESET_MODEL_OVERRIDES[presetIntent] ?? 'claude';
       payload.collab_agents = [];
     } else if (collabConfig) {
