@@ -1,0 +1,107 @@
+This is a surgical frontend implementation for renaming "Sector Rotation" to "Sectors" and upgrading the page behavior. Do NOT redesign the app. Audit first, then implement carefully.
+
+Goal:
+Update the current "Sector Rotation" page into a "Sectors" page that:
+1. is renamed everywhere in the frontend UI,
+2. shows the strongest sector(s) over key timeframes,
+3. displays the key stocks in those winning sector(s),
+4. clearly surfaces momentum leaders, bottleneck/enabling names, and anchor giants,
+5. supports expandable TradingView chart embeds for displayed stocks,
+6. fixes the "agent analysis" button flow,
+7. loads and displays the last saved analysis after refresh until the user manually generates a new one.
+
+Critical product intent:
+- This page should show where the real action is.
+- Usually one sector stands out, but sometimes there may be multiple.
+- The displayed stocks should not be a random list; they should be meaningful.
+- The user should immediately see:
+  - winning sector(s)
+  - why they are winning
+  - the top names in them
+  - financials
+  - catalysts
+  - expandable TradingView chart iframe
+  - saved/latest agent analysis
+- No brittle hacks. Use the backend contract cleanly.
+
+PHASE 1 — Audit existing frontend implementation
+1. Read the current Sector Rotation page/component, its route, sidebar/nav references, and all related API hooks/types/components.
+2. Identify:
+   - current page route and display name
+   - current sector data fetching logic
+   - current "agent analysis" button flow and rendering
+   - current persistence behavior on refresh
+   - any existing card/list/chart components that can be reused
+3. Provide a concise implementation plan before major edits.
+
+PHASE 2 — Rename "Sector Rotation" to "Sectors"
+4. Rename the page label everywhere in frontend UI where the user sees it:
+   - sidebar/nav
+   - page title/header
+   - any tabs/breadcrumbs/title strings
+5. Avoid breaking existing route structure unless necessary. If current route path is fine, label rename only is acceptable.
+
+PHASE 3 — Render winning sectors properly
+6. Update the page to consume the upgraded backend sectors payload.
+7. Display:
+   - ranked/top sector(s)
+   - timeframe performance for at least 1D / 7D / 30D and any other returned ranges
+   - visually clear indication of the winning sector(s)
+8. Make the page easy to scan. Reuse existing dashboard card/table components if possible.
+
+PHASE 4 — Render top stocks in winning sector(s)
+9. Build/update the stock display section so it clearly groups names by role:
+   - Momentum Leaders
+   - Bottleneck / Enablers
+   - Anchor Giants
+10. For each stock card/row, render whatever backend returns, prioritizing:
+   - ticker / company name
+   - role label
+   - key financial fields
+   - catalyst summary
+   - reason for inclusion
+11. Do not invent fields on frontend. Render only what backend supplies.
+
+PHASE 5 — TradingView expandable chart
+12. Add an expandable/collapsible chart area for each stock (or a clean shared chart panel if that fits the current design better) using TradingView iframe/embed patterns already used elsewhere in the app if available.
+13. Keep it lightweight:
+   - collapsed by default
+   - expands when user clicks
+   - symbol should come from backend-provided chart/tradingview symbol if available
+14. Reuse existing TradingView component/util if one already exists.
+
+PHASE 6 — Fix agent analysis UX
+15. Audit the current "agent analysis" button flow and wire it to the corrected backend generate-analysis endpoint.
+16. On click:
+   - show loading state
+   - call backend generate-analysis endpoint
+   - render the returned analysis
+   - update the page with the saved analysis result returned from backend
+17. On page load/refresh:
+   - fetch and display the last saved analysis from the page payload if it exists
+18. This saved analysis must remain visible until the user manually generates a new one.
+19. Do NOT clear it just because the page reloaded.
+
+PHASE 7 — State handling / persistence behavior
+20. Ensure state is clean:
+   - initial page load hydrates from backend
+   - generate-analysis replaces current analysis state with returned saved result
+   - refresh rehydrates the same saved result
+21. Avoid stale state bugs where old and new analysis mix together.
+
+PHASE 8 — UI constraints
+22. Keep this visually aligned with the existing terminal/dashboard style.
+23. No major redesign.
+24. No broken loading spinners or empty states.
+25. Add empty/fallback states only if needed.
+
+Deliverables:
+- files changed
+- route/label changes made
+- how winning sectors are rendered
+- how stock groups are rendered
+- how TradingView expansion was implemented
+- how saved analysis is loaded on refresh
+- any backend assumptions / API fields expected
+
+Work directly on main. Commit and push directly to main. No new branch, no PR.
