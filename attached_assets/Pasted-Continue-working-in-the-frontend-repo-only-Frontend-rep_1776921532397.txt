@@ -1,0 +1,106 @@
+Continue working in the frontend repo only:
+
+* Frontend repo: https://github.com/apiatx/caelyn-agent-frontend.git
+
+Workflow rules:
+
+* Work directly on `main`
+* Do NOT create a branch
+* Do NOT create a PR
+* Commit directly to `main`
+* Push directly to `main`
+
+The recent Home pass still has two important problems that need fixing once the backend update lands.
+
+PRIMARY FIXES
+
+1. Theme Performance still looks like a duplicate of the Sectors page.
+
+* Once backend sends the improved sub-theme payload, update the Home section so it presents **sub-theme leaders**, not broad sectors
+* This should feel like a “where should I look?” panel
+* It should highlight niche winning pockets and the symbols leading them
+* Keep it clean and compact, not bloated
+
+2. Highlighted Companies / Watchlist Snapshot are wrong
+
+* Highlighted Companies is currently showing Stocktwits-trending names instead of stocks from my watchlist
+* Watchlist Snapshot is blank
+* Once backend fixes the source-of-truth, wire both sections from the real watchlist payload
+* These should surface the hot / strongest watchlist names from my saved watchlist
+
+CONSTRAINTS
+
+* Audit first
+* Preserve the current Home layout structure
+* Do not redesign the page
+* Reuse existing Home components/styles where possible
+* Minimize queries; do not add new page-level fetches if backend folded this into Home
+* Keep dark CaelynAI aesthetic
+* No fake placeholder content
+
+PHASE 1 — AUDIT CURRENT FRONTEND BUGS
+Inspect the current Home page and identify:
+
+* why Highlighted Companies is rendering the wrong source
+* whether it is wired to the wrong payload field
+* whether Watchlist Snapshot is blank because of bad field mapping, empty guards, table assumptions, or backend payload mismatch
+* how Theme Performance is currently rendered and what needs to change to support sub-theme rows
+
+PHASE 2 — IMPLEMENT
+A. Theme Performance -> Sub-theme leaders
+Once backend provides the improved payload:
+
+* render the new sub-theme rows/cards cleanly
+* each row should make it easy to scan:
+
+  * sub-theme name
+  * 1D / 7D context
+  * leader symbols
+  * short pattern summary if present
+* do not make it look like a generic sector table anymore
+* keep layout compact and visually high-signal
+
+B. Highlighted Companies
+
+* wire it from the real watchlist-driven Home field, not Stocktwits
+* show the strongest names from my watchlist
+* keep it visually distinct from Watchlist Snapshot, but both should come from the same source of truth
+* good compact fields:
+
+  * symbol
+  * current price
+  * 1D %
+  * signal badge
+  * volume increase if available
+
+C. Watchlist Snapshot
+
+* fix the blank state by wiring the correct field path once backend is updated
+* render sortable rows if the table already supports it
+* if data exists, do not accidentally suppress it behind over-defensive empty guards
+
+PHASE 3 — VERIFY
+After wiring:
+
+* confirm Theme Performance is no longer just a sector duplicate
+* confirm Highlighted Companies shows watchlist names, not Stocktwits names
+* confirm Watchlist Snapshot is populated from the watchlist source of truth
+* confirm no extra page-level fetches were added
+
+PHASE 4 — DELIVERABLES
+When done, report:
+
+1. exact frontend files changed
+2. exact reason Highlighted Companies was showing the wrong names before
+3. exact reason Watchlist Snapshot was blank before
+4. whether Theme Performance now uses the new sub-theme payload
+5. whether any query count changed
+6. confirmation changes were committed and pushed directly to `main`
+
+EXECUTION STYLE
+
+* Audit first
+* Wire to the corrected backend payload
+* Keep the page structure intact
+* Make the Home page more actionable, not more crowded
+* Then commit and push directly to `main`

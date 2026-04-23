@@ -35,6 +35,8 @@ import type {
   HomeThemePerformanceItem,
   HomeSnapshotItem,
   HomeUnusualOptionsFlowItem,
+  HomeSubThemeItem,
+  HomeHighlightedCompany,
 } from "@/types/home";
 
 // ── Lightweight HL signal types (mirrors hl-advanced-signals shape) ──────────
@@ -215,6 +217,75 @@ function ThemeRow({ theme }: { theme: HomeThemePerformanceItem }) {
   );
 }
 
+// ── Sub-theme leaders row (replaces sector ThemeRow on Home) ─────────────
+function SubThemeRow({ item }: { item: HomeSubThemeItem }) {
+  const chg = item.avg_change_1d;
+  const breadth = item.breadth_score ?? 0;
+  const breadthColor =
+    breadth >= 80 ? "text-emerald-300" :
+    breadth >= 50 ? "text-amber-300"   : "text-rose-300";
+  return (
+    <div className="flex items-start gap-3 px-2 py-2.5 rounded-md hover:bg-white/[0.03] transition-colors border-b border-white/[0.04] last:border-0">
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-sm font-medium text-white/90">{item.sub_theme}</span>
+          {(item.leader_symbols || []).slice(0, 4).map(sym => (
+            <span key={sym} className="text-[10px] px-1.5 py-0.5 rounded border border-white/10 bg-white/[0.04] text-white/70 font-mono">{sym}</span>
+          ))}
+          {item.leader_count > 4 && (
+            <span className="text-[10px] text-white/35">+{item.leader_count - 4}</span>
+          )}
+        </div>
+        {item.pattern_summary && (
+          <div className="text-[11px] text-white/45 mt-0.5 truncate">{item.pattern_summary}</div>
+        )}
+      </div>
+      <div className="flex items-center gap-3 shrink-0 text-right">
+        <div className="hidden sm:block">
+          <div className="text-[9px] uppercase tracking-wide text-white/30">breadth</div>
+          <div className={`text-xs font-medium ${breadthColor}`}>{breadth.toFixed(0)}%</div>
+        </div>
+        <div>
+          <div className="text-[9px] uppercase tracking-wide text-white/30">1D</div>
+          <div className={`text-sm font-semibold tabular-nums ${pctColor(chg)}`}>{fmtPct(chg)}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Highlighted Company card (watchlist-driven, rich fields) ──────────────
+function HighlightedCompanyCard({ c, onClick }: { c: HomeHighlightedCompany; onClick?: () => void }) {
+  const up = (c.change_1d_pct ?? 0) >= 0;
+  return (
+    <div
+      className="p-3 rounded-lg border border-white/[0.07] bg-white/[0.02] hover:border-white/20 transition-colors cursor-pointer min-w-[130px]"
+      onClick={onClick}
+    >
+      <div className="flex items-center justify-between gap-1.5 mb-1">
+        <span className="text-sm font-bold text-white/95">{c.symbol}</span>
+        {c.signal_label && (
+          <Badge variant="outline" className="h-4 px-1 text-[9px] border-indigo-500/25 text-indigo-300 shrink-0 truncate max-w-[80px]">
+            {c.signal_label}
+          </Badge>
+        )}
+      </div>
+      <div className="flex items-end justify-between gap-2">
+        <div className="text-xs text-white/60">
+          {c.current_price != null ? `$${fmtNum(c.current_price)}` : "—"}
+        </div>
+        <div className={`text-xs font-semibold tabular-nums flex items-center gap-0.5 ${pctColor(c.change_1d_pct)}`}>
+          {c.change_1d_pct !== null && (up ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />)}
+          {fmtPct(c.change_1d_pct)}
+        </div>
+      </div>
+      {c.volume_vs_avg != null && c.volume_vs_avg > 1.5 && (
+        <div className="text-[9px] text-amber-400/70 mt-0.5">vol {fmtNum(c.volume_vs_avg, 1)}×</div>
+      )}
+    </div>
+  );
+}
+
 function FearGreedGauge({
   title,
   side,
@@ -279,7 +350,7 @@ function FearGreedGauge({
 type SnapSort = "symbol" | "current_price" | "change_1d_pct" | "volume_vs_avg";
 
 function SnapshotTable({
-  items, loading, title, icon: Icon, accent, status,
+  items, loading, title, icon: Icon, accent, status, limit = 999,
 }: {
   items: HomeSnapshotItem[] | undefined;
   loading: boolean;
@@ -287,6 +358,7 @@ function SnapshotTable({
   icon: React.ElementType;
   accent: string;
   status?: string;
+  limit?: number;
 }) {
   const [sortKey, setSortKey]   = useState<SnapSort>("change_1d_pct");
   const [sortDir, setSortDir]   = useState<"asc" | "desc">("desc");
@@ -295,10 +367,11 @@ function SnapshotTable({
     if (sortKey === k) setSortDir(d => d === "asc" ? "desc" : "asc");
     else { setSortKey(k); setSortDir("desc"); }
   };
-  const SortIcon = ({ k }: { k: SnapSort }) => {
-    if (sortKey !== k) return <ChevronsUpDown className="w-2.5 h-2.5 opacity-30" />;
-    return sortDir === "asc" ? <ChevronUp className="w-2.5 h-2.5" /> : <ChevronDown className="w-2.5 h-2.5" />;
-  };
+  // Plain function (not a JSX component) to avoid "invalid hook call" from inline components
+  const sortIcon = (k: SnapSort) =>
+    sortKey !== k
+      ? <ChevronsUpDown className="w-2.5 h-2.5 opacity-30" />
+      : sortDir === "asc" ? <ChevronUp className="w-2.5 h-2.5" /> : <ChevronDown className="w-2.5 h-2.5" />;
 
   const sorted = [...(items || [])].sort((a, b) => {
     const av = a[sortKey] ?? (sortDir === "asc" ? Infinity : -Infinity);
@@ -324,13 +397,13 @@ function SnapshotTable({
       {!loading && sorted.length > 0 && (
         <>
           <div className="grid grid-cols-12 gap-1 text-[10px] uppercase tracking-wider text-white/35 px-2 mb-1">
-            <button className="col-span-3 text-left flex items-center gap-0.5" onClick={() => toggle("symbol")}>Symbol <SortIcon k="symbol" /></button>
-            <button className="col-span-3 text-right flex items-center justify-end gap-0.5" onClick={() => toggle("current_price")}>Price <SortIcon k="current_price" /></button>
-            <button className="col-span-2 text-right flex items-center justify-end gap-0.5" onClick={() => toggle("change_1d_pct")}>1D% <SortIcon k="change_1d_pct" /></button>
-            <button className="col-span-2 text-right flex items-center justify-end gap-0.5" onClick={() => toggle("volume_vs_avg")}>Vol× <SortIcon k="volume_vs_avg" /></button>
+            <button className="col-span-3 text-left flex items-center gap-0.5" onClick={() => toggle("symbol")}>Symbol {sortIcon("symbol")}</button>
+            <button className="col-span-3 text-right flex items-center justify-end gap-0.5" onClick={() => toggle("current_price")}>Price {sortIcon("current_price")}</button>
+            <button className="col-span-2 text-right flex items-center justify-end gap-0.5" onClick={() => toggle("change_1d_pct")}>1D% {sortIcon("change_1d_pct")}</button>
+            <button className="col-span-2 text-right flex items-center justify-end gap-0.5" onClick={() => toggle("volume_vs_avg")}>Vol× {sortIcon("volume_vs_avg")}</button>
             <div className="col-span-2 text-right">Signal</div>
           </div>
-          {sorted.map((row) => (
+          {sorted.slice(0, limit).map((row) => (
             <div key={row.symbol} className="grid grid-cols-12 gap-1 items-center px-2 py-1.5 rounded hover:bg-white/[0.03] transition-colors">
               <div className="col-span-3 flex items-center gap-1.5 min-w-0">
                 <span className="text-xs font-semibold text-white/90 truncate">{row.symbol}</span>
@@ -650,59 +723,81 @@ export default function HomePage() {
           )}
         </div>
 
-        {/* E. Highlighted companies row */}
+        {/* E. Highlighted companies — watchlist-driven hot names */}
         {data?.highlighted_companies && data.highlighted_companies.length > 0 && (
-          <>
+          <div className="mb-6">
             <SectionHeader
               icon={Star}
               title="Highlighted Companies"
-              accent="From your watchlist"
+              accent="strongest from your watchlist"
             />
-            <div className="flex gap-2 flex-wrap mb-6">
-              {data.highlighted_companies.map((c) => (
-                <div
-                  key={c.ticker}
-                  className="px-3 py-1.5 rounded-md border border-white/10 bg-white/[0.03] text-xs font-medium text-white/85 hover:border-white/20 transition-colors cursor-default"
-                >
-                  {c.ticker}
-                </div>
-              ))}
+            <div className="flex gap-2 flex-wrap">
+              {data.highlighted_companies.slice(0, 12).map((c, i) => {
+                // Guard: old cached shape used `ticker` not `symbol`; normalise both.
+                const sym = c.symbol || (c as any).ticker;
+                if (!sym) return null;
+                const normalized = sym === c.symbol ? c : { ...c, symbol: sym, current_price: null, change_1d_pct: null, volume_vs_avg: null };
+                return (
+                  <HighlightedCompanyCard
+                    key={sym || i}
+                    c={normalized}
+                    onClick={() => setLocation(`/app/caelyn-ai?q=${encodeURIComponent(sym)}`)}
+                  />
+                );
+              })}
             </div>
-          </>
+          </div>
         )}
 
         {/* F + G. Two-column main content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
-          {/* Theme performance — main panel (cols 1-2) */}
+          {/* Sub-theme leaders — main panel (cols 1-2) */}
           <div className="lg:col-span-2">
             <GlassCard className="p-4">
-              <SectionHeader
-                icon={BarChart3}
-                title="Theme Performance"
-                accent={data?.theme_performance?.updated_at ? "sector rotation" : undefined}
-              />
-              <div className="grid grid-cols-12 gap-2 text-[10px] uppercase tracking-wider text-white/40 px-2 mb-1">
-                <div className="col-span-4">Sector</div>
-                <div className="col-span-5 text-center">30D relative</div>
-                <div className="col-span-1 text-right">1D</div>
-                <div className="col-span-1 text-right">7D</div>
-                <div className="col-span-1 text-right">30D</div>
-              </div>
-              {isLoading &&
-                Array.from({ length: 8 }).map((_, i) => (
-                  <Skeleton key={i} className="h-7 my-1 rounded bg-white/[0.04]" />
-                ))}
-              {!isLoading &&
-                (data?.theme_performance?.themes || []).map((t, i) => (
-                  <ThemeRow key={i} theme={t} />
-                ))}
-              {!isLoading &&
-                (!data?.theme_performance?.themes ||
-                  data.theme_performance.themes.length === 0) && (
-                  <div className="text-sm text-white/40 py-8 text-center">
-                    Sector rotation data temporarily unavailable.
-                  </div>
-                )}
+              {(() => {
+                const subThemes = data?.sub_theme_performance;
+                const hasSubThemes = subThemes && subThemes.length > 0;
+                return (
+                  <>
+                    <SectionHeader
+                      icon={BarChart3}
+                      title="Theme Performance"
+                      accent={hasSubThemes ? "sub-theme leaders" : "sector rotation"}
+                    />
+                    {isLoading && Array.from({ length: 8 }).map((_, i) => (
+                      <Skeleton key={i} className="h-10 my-1 rounded bg-white/[0.04]" />
+                    ))}
+                    {!isLoading && hasSubThemes && (
+                      <div>
+                        <div className="flex justify-between text-[9px] uppercase tracking-wider text-white/30 px-2 mb-1">
+                          <span>Sub-theme · leaders</span>
+                          <span className="flex gap-6 mr-1"><span>breadth</span><span>1D</span></span>
+                        </div>
+                        {subThemes.map((item, i) => (
+                          <SubThemeRow key={item.sub_theme || i} item={item} />
+                        ))}
+                      </div>
+                    )}
+                    {!isLoading && !hasSubThemes && (data?.theme_performance?.themes || []).length > 0 && (
+                      <>
+                        <div className="grid grid-cols-12 gap-2 text-[10px] uppercase tracking-wider text-white/40 px-2 mb-1">
+                          <div className="col-span-4">Sector</div>
+                          <div className="col-span-5 text-center">30D relative</div>
+                          <div className="col-span-1 text-right">1D</div>
+                          <div className="col-span-1 text-right">7D</div>
+                          <div className="col-span-1 text-right">30D</div>
+                        </div>
+                        {(data?.theme_performance?.themes || []).map((t, i) => (
+                          <ThemeRow key={i} theme={t} />
+                        ))}
+                      </>
+                    )}
+                    {!isLoading && !hasSubThemes && (!data?.theme_performance?.themes || data.theme_performance.themes.length === 0) && (
+                      <div className="text-sm text-white/40 py-8 text-center">Theme data temporarily unavailable.</div>
+                    )}
+                  </>
+                );
+              })()}
             </GlassCard>
           </div>
 
@@ -806,8 +901,9 @@ export default function HomePage() {
             loading={isLoading}
             title="Watchlist Snapshot"
             icon={Wallet}
-            accent="watchlist"
+            accent="top movers from watchlist"
             status={data?.section_status?.watchlist_snapshot}
+            limit={15}
           />
         </div>
 

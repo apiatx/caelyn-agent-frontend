@@ -34,8 +34,24 @@ export interface HomeMacroCard {
 }
 
 export interface HomeHighlightedCompany {
-  ticker: string;
-  source: string;
+  symbol:        string;
+  current_price: number | null;
+  change_1d_pct: number | null;
+  volume_vs_avg: number | null;
+  options_signal?: string | null;
+  rsi?:          number | null;
+  signal_label?: string | null;
+}
+
+export interface HomeSubThemeItem {
+  sub_theme:      string;
+  avg_change_1d:  number | null;
+  avg_change_7d:  number | null;
+  leader_symbols: string[];
+  leader_count:   number;
+  breadth_score:  number | null;
+  momentum_score: number | null;
+  pattern_summary?: string | null;
 }
 
 export interface HomeThemePerformanceItem {
@@ -126,6 +142,8 @@ export interface HomeSectionStatus {
   portfolio_snapshot?:     string;
   watchlist_snapshot?:     string;
   unusual_options_flows?:  string;
+  highlighted_companies?:  string;
+  sub_theme_performance?:  string;
 }
 
 // News articles folded into the Home composed payload (Node-side, reuses NEWS_CACHE)
@@ -175,22 +193,23 @@ export interface HomeUnusualOptionsFlowItem {
 }
 
 export interface HomeDashboardPayload {
-  generated_at:           string;
-  greeting:               HomeGreeting;
-  ticker_strip:           HomeTickerStripItem[];
-  macro_cards:            HomeMacroCard[];
-  highlighted_companies:  HomeHighlightedCompany[];
-  theme_performance:      HomeThemePerformance;
-  trending_ideas:         HomeTrendingIdea[];
-  movers:                 HomeMovers;
-  trending_on_x:          HomeTrendingOnX;
-  fear_greed:             HomeFearGreed;
-  news?:                  HomeNewsSection;
-  latest_news?:           HomeLatestNewsItem[];
-  portfolio_snapshot?:    HomeSnapshotItem[];
-  watchlist_snapshot?:    HomeSnapshotItem[];
-  unusual_options_flows?: HomeUnusualOptionsFlowItem[];
-  section_status:         HomeSectionStatus;
-  timing?:                { total_seconds: number };
-  from_cache?:            boolean;
+  generated_at:             string;
+  greeting:                 HomeGreeting;
+  ticker_strip:             HomeTickerStripItem[];
+  macro_cards:              HomeMacroCard[];
+  highlighted_companies:    HomeHighlightedCompany[];
+  theme_performance:        HomeThemePerformance;
+  sub_theme_performance?:   HomeSubThemeItem[];
+  trending_ideas:           HomeTrendingIdea[];
+  movers:                   HomeMovers;
+  trending_on_x:            HomeTrendingOnX;
+  fear_greed:               HomeFearGreed;
+  news?:                    HomeNewsSection;
+  latest_news?:             HomeLatestNewsItem[];
+  portfolio_snapshot?:      HomeSnapshotItem[];
+  watchlist_snapshot?:      HomeSnapshotItem[];
+  unusual_options_flows?:   HomeUnusualOptionsFlowItem[];
+  section_status:           HomeSectionStatus;
+  timing?:                  { total_seconds: number };
+  from_cache?:              boolean;
 }
