@@ -16,7 +16,6 @@ import {
   Briefcase,
   Wallet,
   Zap,
-  AlertCircle,
   ChevronUp,
   ChevronDown,
   ChevronsUpDown,
@@ -460,32 +459,24 @@ function UnusualFlowsSection({
       <SectionHeader
         icon={Zap}
         title="Unusual Options Flows"
-        accent={isPending ? "warming up" : flows?.length ? `${flows.length} signals` : "options screening"}
+        accent={flows?.length ? `${flows.length} signals` : "live screening"}
         action={
-          isPending ? (
-            <span className="text-[10px] px-1.5 py-0.5 rounded border border-amber-500/30 text-amber-300 bg-amber-500/10 flex items-center gap-1">
-              <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-300 animate-pulse" />
-              precompute warming
-            </span>
-          ) : isFastCache ? (
+          isFastCache ? (
             <span className="text-[10px] px-1.5 py-0.5 rounded border border-emerald-500/25 text-emerald-400 bg-emerald-500/10 flex items-center gap-1">
               <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400" />
-              10-min cache
+              live
+            </span>
+          ) : isPending ? (
+            <span className="text-[10px] px-1.5 py-0.5 rounded border border-white/10 text-white/40 flex items-center gap-1">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-white/30 animate-pulse" />
+              loading
             </span>
           ) : undefined
         }
       />
-      {loading && Array.from({ length: 3 }).map((_, i) => (
+      {(loading || isPending) && Array.from({ length: 3 }).map((_, i) => (
         <Skeleton key={i} className="h-10 my-1 rounded bg-white/[0.04]" />
       ))}
-      {!loading && isPending && (
-        <div className="flex items-start gap-2.5 py-2 px-1">
-          <AlertCircle className="w-3.5 h-3.5 text-amber-400/80 mt-0.5 shrink-0" />
-          <p className="text-xs text-white/50">
-            Options flow analysis runs on a 10-minute precompute cycle. Data will appear automatically once the cache warms after restart.
-          </p>
-        </div>
-      )}
       {!loading && !isPending && isEmpty && (
         <div className="text-xs text-white/40 py-4 text-center">No unusual options activity detected.</div>
       )}
@@ -696,6 +687,13 @@ export default function HomePage() {
   const { data, isLoading, isError } = useQuery<HomeDashboardPayload>({
     queryKey: ["/api/home/dashboard"],
     staleTime: 60_000,
+    // Poll every 30 s while options flows haven't appeared yet
+    refetchInterval: (query) => {
+      const d = query.state.data as HomeDashboardPayload | undefined;
+      const pending = d?.section_status?.unusual_options_flows === "precompute_pending";
+      const empty   = !d?.unusual_options_flows?.length;
+      return (pending || empty) && !query.state.error ? 30_000 : false;
+    },
   });
 
   // Hyperliquid top signals — secondary query using the same cache key as the
@@ -953,9 +951,9 @@ export default function HomePage() {
         </div>
 
         {/* I + J + H. Four-across: Trending on X | Trending on Stocktwits | Top Movers | Top Losers */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-6" style={{ gridAutoRows: "460px" }}>
           {/* Trending on X */}
-          <GlassCard className="p-4">
+          <GlassCard className="p-4 flex flex-col overflow-hidden">
             {(() => {
               const tx = data?.trending_on_x;
               const generatedAt = tx?.generated_at ? new Date(tx.generated_at) : null;
@@ -987,7 +985,7 @@ export default function HomePage() {
                 />
               );
             })()}
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 overflow-y-auto flex-1 min-h-0">
               {(data?.trending_on_x?.top_tickers || []).map((t, i) => (
                 <div key={t.symbol || i} className="px-2 py-2 rounded-lg border border-white/[0.05] bg-white/[0.02] hover:border-white/12 transition-colors cursor-pointer" onClick={() => openTicker(t.symbol)}>
                   <div className="flex items-center justify-between gap-1.5">
@@ -1006,9 +1004,9 @@ export default function HomePage() {
           </GlassCard>
 
           {/* Trending on Stocktwits */}
-          <GlassCard className="p-4">
+          <GlassCard className="p-4 flex flex-col overflow-hidden">
             <SectionHeader icon={Sparkles} title="Trending on Stocktwits" accent="Stocktwits" />
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 overflow-y-auto flex-1 min-h-0">
               {isLoading && Array.from({ length: 5 }).map((_, i) => (
                 <Skeleton key={i} className="h-10 rounded bg-white/[0.04]" />
               ))}
@@ -1030,9 +1028,9 @@ export default function HomePage() {
           </GlassCard>
 
           {/* Top Movers */}
-          <GlassCard className="p-4">
+          <GlassCard className="p-4 flex flex-col overflow-hidden">
             <SectionHeader icon={TrendingUp} title="Top Movers" accent="today" />
-            <div className="divide-y divide-white/[0.04]">
+            <div className="divide-y divide-white/[0.04] overflow-y-auto flex-1 min-h-0">
               {isLoading && Array.from({ length: 6 }).map((_, i) => (
                 <Skeleton key={i} className="h-9 my-0.5 rounded bg-white/[0.04]" />
               ))}
@@ -1046,9 +1044,9 @@ export default function HomePage() {
           </GlassCard>
 
           {/* Top Losers */}
-          <GlassCard className="p-4">
+          <GlassCard className="p-4 flex flex-col overflow-hidden">
             <SectionHeader icon={TrendingDown} title="Top Losers" accent="today" />
-            <div className="divide-y divide-white/[0.04]">
+            <div className="divide-y divide-white/[0.04] overflow-y-auto flex-1 min-h-0">
               {isLoading && Array.from({ length: 6 }).map((_, i) => (
                 <Skeleton key={i} className="h-9 my-0.5 rounded bg-white/[0.04]" />
               ))}

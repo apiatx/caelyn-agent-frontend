@@ -2354,6 +2354,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
       };
       res.json(composed);
+
+      // If options flows are still pending, fire a background force-refresh so the
+      // backend starts computing immediately rather than waiting for its next cycle.
+      const flowStatus = (backend as any)?.section_status?.unusual_options_flows;
+      if (flowStatus === 'precompute_pending') {
+        setImmediate(async () => {
+          try {
+            const ctrl = new AbortController();
+            const t = setTimeout(() => ctrl.abort(), 60_000);
+            await fetch(`${SR_URL}/api/home/dashboard?force=true`, {
+              headers: srHdr(),
+              signal: ctrl.signal,
+            });
+            clearTimeout(t);
+          } catch (_) { /* fire-and-forget — ignore errors */ }
+        });
+      }
     } catch (e: any) {
       res.status(500).json({
         error: e?.name === 'AbortError' ? 'Request timed out (30s)' : (e?.message || 'Home dashboard unavailable'),
