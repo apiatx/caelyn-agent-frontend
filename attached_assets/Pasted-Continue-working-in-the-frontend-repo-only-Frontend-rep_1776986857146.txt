@@ -1,0 +1,144 @@
+Continue working in the frontend repo only:
+
+* Frontend repo: https://github.com/apiatx/caelyn-agent-frontend.git
+
+Workflow rules:
+
+* Work directly on `main`
+* Do NOT create a branch
+* Do NOT create a PR
+* Commit directly to `main`
+* Push directly to `main`
+
+The last frontend pass was NOT the final UI I asked for.
+
+It only updated the existing 4-panel Options page to understand the backend’s new master-screener fields. It did not build a real single screener UX.
+
+I need the Options page to become a true **master unusual-options screener**.
+
+PRIMARY GOAL
+Replace the current 4-section/category-card Options page with **one sortable screener view**.
+
+I do NOT want the primary UX to be:
+
+* ETFs panel
+* Megacaps panel
+* Large Caps panel
+* Small Caps panel
+
+I DO want:
+
+* one master ranked unusual-options screener
+* sortable columns/controls
+* filters/toggles/chips for:
+
+  * All
+  * Stocks
+  * ETFs
+  * Megacap
+  * Large
+  * Small
+* preserve ticker click -> popup/detail modal behavior
+
+AUDIT FIRST
+Inspect the current implementation and identify:
+
+1. where the page still renders the 4 category panels
+2. whether the backend now has a direct master screener endpoint
+3. if not, whether `/api/options/all-tabs` can be merged client-side temporarily into one master list without extra fetches
+4. what existing row/detail/modal components can be reused
+5. what the current sortable table/list utilities are
+
+IMPLEMENT
+
+PART 1 — Replace 4-panel layout with 1 screener
+Build one main screener table/list/grid for unusual-options rows.
+
+Required behavior:
+
+* render one ranked list of unusual-options names
+* support sorting by useful screener fields such as:
+
+  * score / composite_score
+  * symbol
+  * asset_type
+  * market_cap_bucket
+  * move %
+  * p/c
+  * vol
+  * premium / strongest flow metric available
+  * signal label if present
+* use the cleanest backend master endpoint available
+* if backend only gives all-tabs temporarily, merge those filtered views into one deduped master list client-side as an interim step
+
+PART 2 — Filters / chips / toggles
+Add filter controls for:
+
+* All
+* Stocks
+* ETFs
+* Megacap
+* Large
+* Small
+
+These are filters on the same master list, not separate page sections.
+
+PART 3 — Preserve detail modal
+Critical:
+
+* clicking a ticker row must still open the richer popup/detail/modal
+* preserve charts, contract detail, supporting info, etc.
+* do not regress the existing deep-dive experience
+
+PART 4 — Freshness/state UX
+At the page level, show snapshot status cleanly:
+
+* live_ok
+* stale_but_available
+* refresh_in_progress
+* no_data_yet
+* true_zero_results
+
+Do not make the user stare at 4 separate “refreshing” cards anymore.
+This should feel like one screener with one source of truth.
+
+PART 5 — Keep page dense and useful
+The end result should look like an actual screener, not a dashboard of buckets.
+Think:
+
+* one main table/list
+* compact but readable
+* fast scanability
+* filters at top
+* row click for details
+
+VERIFY
+Before finishing, verify:
+
+1. the 4-panel layout is gone as the primary UX
+2. one master screener is rendered
+3. filters for Stocks/ETFs/cap-buckets work
+4. sorting works
+5. ticker click -> popup/detail still works
+6. no extra unnecessary fetch fan-out was added
+7. query count is reasonable
+
+DELIVERABLES
+When done, report:
+
+1. exact frontend files changed
+2. exact previous layout that was replaced
+3. exact data source now used for the master screener
+4. what filters were added
+5. what sorting options are supported
+6. confirmation ticker detail/modal still works
+7. whether query count changed
+8. confirmation changes were committed and pushed directly to `main`
+
+EXECUTION STYLE
+
+* Audit first
+* Build the actual screener UX this time
+* Preserve the detail modal
+* Remove the bucket-dashboard primary layout
+* Then commit and push directly to `main`

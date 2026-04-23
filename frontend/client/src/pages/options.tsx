@@ -1566,154 +1566,316 @@ function CompactTickerRow({ t, rank, onClick }: { t: TickerResult; rank: number;
   );
 }
 
-// ─── Category panel — pure display, data comes from parent's all-tabs fetch ─
-// tabData shape (from /api/options/all-tabs):
-//   { data_state, result_count, stale, cache_age_seconds, refresh_in_progress,
-//     source, tickers[], all_contracts[], market_summary, ... }
-// tickers are at tabData.tickers — no "response" wrapper.
-function CategoryPanel({
-  tab,
-  tabData,
+// ─── Master Screener — one unified ranked list with filters + sort ─────────
+type FilterChip = "all" | "etf" | "stock" | "megacap" | "large" | "small";
+type SortField  = "score" | "symbol" | "move" | "vol" | "pc" | "signal";
+
+const FILTER_CHIPS: Array<{ key: FilterChip; label: string }> = [
+  { key: "all",     label: "All" },
+  { key: "etf",     label: "ETFs" },
+  { key: "stock",   label: "Stocks" },
+  { key: "megacap", label: "Megacap" },
+  { key: "large",   label: "Large Cap" },
+  { key: "small",   label: "Small Cap" },
+];
+
+function MasterScreener({
+  allTabsData,
   pageLoading,
   pageRefreshing,
   onRefresh,
   onTickerSelect,
 }: {
-  tab: ScanTab;
-  tabData: any;
+  allTabsData: any;
   pageLoading: boolean;
   pageRefreshing: boolean;
   onRefresh: () => void;
   onTickerSelect: (t: TickerResult) => void;
 }) {
-  // Tickers live directly on tabData — no .response wrapper in all-tabs shape
-  const rawTickers: TickerResult[] = Array.isArray(tabData?.tickers) ? tabData.tickers : [];
-  const tickers = rawTickers
-    .slice()
-    .sort((a, b) => (normalizeScore(b.composite_score) ?? -1) - (normalizeScore(a.composite_score) ?? -1))
-    .slice(0, 10);
-  const hasData = tickers.length > 0;
+  const [filter, setFilter]     = useState<FilterChip>("all");
+  const [sortField, setSortField] = useState<SortField>("score");
+  const [sortDir, setSortDir]   = useState<SortDir>("desc");
 
-  // Metadata from the all-tabs tab slice
-  const dataState: string = tabData?.data_state || "no_data_yet";
-  const resultCount: number = tabData?.result_count ?? rawTickers.length;
-  const isStale: boolean = tabData?.stale ?? false;
-  const cacheAge: number | null = tabData?.cache_age_seconds ?? null;
-  const refreshInProgress: boolean = tabData?.refresh_in_progress ?? false;
-  const mktSum: Record<string, any> = tabData?.market_summary || {};
+  const tabs = allTabsData?.tabs || {};
 
-  // 5 explicit states from the backend:
-  // live_ok | stale_but_available | refresh_in_progress | true_zero_results | no_data_yet
-  const NOT_READY = new Set(["no_data_yet", "none", "warming", ""]);
-  const isNotReady = NOT_READY.has(dataState) && !hasData;
-  const isWarmingUp = isNotReady && tabData != null && !pageLoading;
-  const isTrueZero = dataState === "true_zero_results" && !hasData && !pageLoading;
+  // Page-level freshness derived from all tabs
+  const hasAnyData     = SCAN_TAB_ORDER.some(t => (tabs[t]?.tickers || []).length > 0);
+  const anyRefreshing  = SCAN_TAB_ORDER.some(t => tabs[t]?.refresh_in_progress);
+  const anyStale       = SCAN_TAB_ORDER.some(t => tabs[t]?.stale);
+  const allDataStates  = SCAN_TAB_ORDER.map(t => tabs[t]?.data_state).filter(Boolean) as string[];
+  const overallState   = (() => {
+    if (allDataStates.some(s => s === "live_ok")) return "live_ok";
+    if (allDataStates.some(s => s === "stale_but_available") || anyStale) return "stale_but_available";
+    if (allDataStates.some(s => s === "refresh_in_progress") || anyRefreshing) return "refresh_in_progress";
+    if (allDataStates.every(s => s === "true_zero_results")) return "true_zero_results";
+    return "no_data_yet";
+  })();
 
-  const loading = pageLoading && !hasData;
-  const spinning = pageRefreshing || refreshInProgress;
+  // Merge all tabs → single deduped master list, preserving source tab for fallback
+  const masterList = useMemo(() => {
+    const seen = new Set<string>();
+    const rows: Array<TickerResult & { _tab: ScanTab }> = [];
+    for (const tab of SCAN_TAB_ORDER) {
+      for (const t of (tabs[tab]?.tickers || []) as TickerResult[]) {
+        if (!seen.has(t.ticker)) {
+          seen.add(t.ticker);
+          rows.push({ ...t, _tab: tab });
+        }
+      }
+    }
+    return rows;
+  }, [tabs]);
+
+  // Apply filter chip
+  const filtered = useMemo(() => {
+    if (filter === "all") return masterList;
+    return masterList.filter(t => {
+      const assetType  = (t.asset_type  || (t._tab === "etf" ? "etf" : "stock")).toLowerCase();
+      const capBucket  = (t.market_cap_bucket || t._tab).toLowerCase();
+      if (filter === "etf")     return assetType === "etf";
+      if (filter === "stock")   return assetType !== "etf";
+      if (filter === "megacap") return capBucket === "megacap";
+      if (filter === "large")   return capBucket === "large_cap";
+      if (filter === "small")   return capBucket === "small_cap";
+      return true;
+    });
+  }, [masterList, filter]);
+
+  // Apply sort
+  const sorted = useMemo(() => {
+    const dir = sortDir === "asc" ? 1 : -1;
+    return [...filtered].sort((a, b) => {
+      switch (sortField) {
+        case "score":  return dir * ((normalizeScore(b.composite_score) ?? -1) - (normalizeScore(a.composite_score) ?? -1));
+        case "symbol": return dir * a.ticker.localeCompare(b.ticker);
+        case "move": {
+          const av = safeNum(a.price_change_pct) ?? 0;
+          const bv = safeNum(b.price_change_pct) ?? 0;
+          return dir * (bv - av);
+        }
+        case "vol":    return dir * ((b.total_volume ?? 0) - (a.total_volume ?? 0));
+        case "pc":     return dir * ((b.pc_ratio ?? 0) - (a.pc_ratio ?? 0));
+        case "signal": return dir * (a.primary_signal || "").localeCompare(b.primary_signal || "");
+        default:       return 0;
+      }
+    });
+  }, [filtered, sortField, sortDir]);
+
+  const toggleSort = (field: SortField) => {
+    if (sortField === field) setSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setSortField(field); setSortDir("desc"); }
+  };
+
+  // Column header helper
+  const ColHdr = ({ field, label, style }: { field: SortField; label: string; style?: React.CSSProperties }) => (
+    <span
+      onClick={() => toggleSort(field)}
+      style={{
+        cursor: "pointer",
+        color: sortField === field ? C.blue : C.dim,
+        fontSize: 9, fontFamily: font,
+        textTransform: "uppercase" as const,
+        letterSpacing: "0.06em",
+        userSelect: "none" as const,
+        display: "inline-flex", alignItems: "center", gap: 2,
+        ...style,
+      }}
+    >
+      {label}{sortField === field ? (sortDir === "desc" ? " ↓" : " ↑") : ""}
+    </span>
+  );
+
+  // Page-level status element
+  const StatusEl = () => {
+    if (pageLoading && !hasAnyData) return null;
+    if (overallState === "live_ok")
+      return <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: C.green, fontSize: 10, fontFamily: font }}><span style={{ width: 5, height: 5, borderRadius: "50%", background: C.green, display: "inline-block" }} />live</span>;
+    if (overallState === "refresh_in_progress" || pageRefreshing)
+      return <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: C.blue, fontSize: 10, fontFamily: font }}><span style={{ width: 5, height: 5, borderRadius: "50%", background: C.blue, display: "inline-block", animation: "pulse 1.4s ease-in-out infinite" }} />refreshing</span>;
+    if (overallState === "stale_but_available" || anyStale)
+      return <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: C.yellow, fontSize: 10, fontFamily: font }}><span style={{ width: 5, height: 5, borderRadius: "50%", background: C.yellow, display: "inline-block", animation: "pulse 1.4s ease-in-out infinite" }} />stale snapshot</span>;
+    if (overallState === "no_data_yet")
+      return <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: C.blue, fontSize: 10, fontFamily: font }}><span style={{ width: 5, height: 5, borderRadius: "50%", background: C.blue, display: "inline-block", animation: "pulse 1.4s ease-in-out infinite" }} />scanning…</span>;
+    return null;
+  };
+
+  // Grid template — rank | ticker | score | signal | move | vol | p/c | context
+  const ROW_GRID = "24px 150px 90px 110px 72px 72px 56px 1fr";
+
+  if (pageLoading && !hasAnyData) {
+    return (
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, color: C.blue, padding: 40 }}>
+        <div style={{ width: 16, height: 16, border: `2px solid ${C.border}`, borderTop: `2px solid ${C.blue}`, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+        <div style={{ color: C.dim, fontSize: 11, fontFamily: font }}>Loading master screener…</div>
+      </div>
+    );
+  }
 
   return (
-    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, display: "flex", flexDirection: "column", overflow: "hidden", minHeight: 300 }}>
-      {/* Panel header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ color: C.bright, fontSize: 12, fontWeight: 800, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-            {SCAN_TAB_SHORT[tab]}
-          </span>
-          {resultCount > 0 && (
-            <span style={{ color: C.dim, fontSize: 10, fontFamily: font }}>{resultCount} ranked</span>
-          )}
-          {hasData && mktSum.market_pc_ratio != null && (
-            <span style={{ color: C.dim, fontSize: 10, fontFamily: font }}>
-              P/C <span style={{ color: pcColor(safeNum(mktSum.market_pc_ratio)) }}>{fmtNum(mktSum.market_pc_ratio, 2)}</span>
-            </span>
-          )}
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden" }}>
+
+      {/* ── Controls: filter chips + count + status + refresh ── */}
+      <div style={{ padding: "8px 16px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", flexShrink: 0, background: C.bg }}>
+        <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+          {FILTER_CHIPS.map(f => (
+            <button
+              key={f.key}
+              onClick={() => setFilter(f.key)}
+              style={{
+                padding: "3px 11px", borderRadius: 999,
+                border: `1px solid ${filter === f.key ? C.blue : C.border}`,
+                background: filter === f.key ? `${C.blue}15` : "transparent",
+                color: filter === f.key ? C.blue : C.dim,
+                fontSize: 10, fontFamily: font, cursor: "pointer", transition: "all 0.12s",
+              }}
+            >
+              {f.label}
+            </button>
+          ))}
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <PanelStatusBadge
-            dataState={dataState}
-            fromCache={isStale}
-            cacheAge={cacheAge}
-            isRefreshing={spinning}
-            refreshInProgress={refreshInProgress}
-          />
-          <button
-            onClick={onRefresh}
-            disabled={pageLoading}
-            title="Refresh all scans"
-            style={{ background: "none", border: "none", cursor: pageLoading ? "not-allowed" : "pointer", color: pageLoading ? C.border : C.dim, padding: 2, display: "flex", alignItems: "center" }}
-          >
-            <RefreshCw className={`w-3 h-3 ${spinning ? "animate-spin" : ""}`} />
-          </button>
-        </div>
+        <span style={{ flex: 1 }} />
+        {sorted.length > 0 && <span style={{ color: C.dim, fontSize: 10, fontFamily: font }}>{sorted.length} signals</span>}
+        <StatusEl />
+        <button
+          onClick={onRefresh}
+          disabled={pageLoading}
+          title="Refresh"
+          style={{ background: "none", border: "none", cursor: pageLoading ? "not-allowed" : "pointer", color: pageLoading ? C.border : C.dim, padding: 2, display: "flex", alignItems: "center" }}
+        >
+          <RefreshCw className={`w-3 h-3 ${pageRefreshing ? "animate-spin" : ""}`} />
+        </button>
       </div>
 
-      {/* Panel body — always render rows if they exist, regardless of data_state */}
-      <div style={{ flex: 1, overflowY: "auto" }}>
-        {loading && (
-          <div style={{ padding: "18px 14px" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, color: C.blue, fontSize: 11, fontFamily: font, marginBottom: 12 }}>
-              <div style={{ width: 14, height: 14, border: `2px solid ${C.border}`, borderTop: `2px solid ${C.blue}`, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-              Loading scan…
-            </div>
-            {[0, 1, 2].map(i => <Skeleton key={i} h={52} mb={8} />)}
-          </div>
-        )}
+      {/* ── Stale notice bar ── */}
+      {hasAnyData && (overallState === "stale_but_available" || anyStale || pageRefreshing) && (
+        <div style={{ padding: "5px 16px", background: `${C.yellow}08`, borderBottom: `1px solid ${C.yellow}15`, display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+          <span style={{ width: 4, height: 4, borderRadius: "50%", background: C.yellow, display: "inline-block", animation: "pulse 1.4s ease-in-out infinite" }} />
+          <span style={{ color: C.yellow, fontSize: 10, fontFamily: font }}>
+            {pageRefreshing ? "Refresh in progress — showing last snapshot" : "Stale snapshot — live data may differ"}
+          </span>
+        </div>
+      )}
 
-        {/* Stale-but-available notice — shown above rows when backend says refresh is in progress */}
-        {!loading && hasData && (refreshInProgress || dataState === "stale_but_available") && (
-          <div style={{ padding: "6px 14px", background: `${C.yellow}08`, borderBottom: `1px solid ${C.yellow}18`, display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ width: 5, height: 5, borderRadius: "50%", background: C.yellow, display: "inline-block", animation: "pulse 1.4s ease-in-out infinite" }} />
-            <span style={{ color: C.yellow, fontSize: 10, fontFamily: font }}>
-              {refreshInProgress ? "Refresh in progress — showing last snapshot" : `Stale snapshot${cacheAge != null ? ` · ${cacheAge}s old` : ""}`}
-            </span>
-          </div>
-        )}
+      {/* ── Column headers (clickable to sort) ── */}
+      <div style={{ display: "grid", gridTemplateColumns: ROW_GRID, gap: 0, padding: "5px 16px", borderBottom: `1px solid ${C.border}`, background: C.cardAlt, flexShrink: 0 }}>
+        <span style={{ color: C.dim, fontSize: 9, fontFamily: font }}>#</span>
+        <ColHdr field="symbol" label="Ticker" />
+        <ColHdr field="score"  label="Score" />
+        <ColHdr field="signal" label="Signal" />
+        <ColHdr field="move"   label="Move %" />
+        <ColHdr field="vol"    label="Vol" />
+        <ColHdr field="pc"     label="P/C" />
+        <span style={{ color: C.dim, fontSize: 9, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>Context</span>
+      </div>
 
-        {/* Warming — no data yet from this tab */}
-        {!loading && isWarmingUp && (
-          <div style={{ padding: "28px 14px", textAlign: "center" }}>
+      {/* ── Rows ── */}
+      <div style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
+
+        {/* Warming / no data */}
+        {!hasAnyData && overallState === "no_data_yet" && (
+          <div style={{ padding: "48px 20px", textAlign: "center" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7, marginBottom: 8, color: C.blue, fontSize: 12, fontFamily: font }}>
               <span style={{ width: 7, height: 7, borderRadius: "50%", background: C.blue, display: "inline-block", animation: "pulse 1.4s ease-in-out infinite" }} />
               Warming scanner…
             </div>
-            <div style={{ color: C.dim, fontSize: 11, lineHeight: 1.5 }}>First result set is building — will appear automatically</div>
+            <div style={{ color: C.dim, fontSize: 11 }}>First results are building — will appear automatically</div>
           </div>
         )}
 
-        {/* True zero — scan ran and found no signals */}
-        {!loading && isTrueZero && (
-          <div style={{ padding: "24px 14px", textAlign: "center", color: C.dim, fontSize: 11 }}>
-            Scan complete — no signals above threshold in this category
+        {/* True zero */}
+        {!hasAnyData && overallState === "true_zero_results" && (
+          <div style={{ padding: "48px 20px", textAlign: "center", color: C.dim, fontSize: 12 }}>
+            Scan complete — no unusual options signals above threshold
           </div>
         )}
 
-        {/* Rows — rendered regardless of data_state as long as tickers exist */}
-        {tickers.map((t, i) => (
-          <CompactTickerRow key={t.ticker} t={t} rank={i + 1} onClick={() => onTickerSelect(t)} />
-        ))}
+        {/* Filter yields zero from non-empty master list */}
+        {hasAnyData && sorted.length === 0 && (
+          <div style={{ padding: "32px 20px", textAlign: "center", color: C.dim, fontSize: 11 }}>
+            No signals match the current filter
+          </div>
+        )}
+
+        {sorted.map((t, i) => {
+          const score = normalizeScore(t.composite_score);
+          const sigColor = getSignalColor(t.primary_signal);
+          const pchg = safeNum(t.price_change_pct);
+          const pchgPct = pchg != null ? (Math.abs(pchg) <= 1 ? pchg * 100 : pchg) : null;
+          const assetLabel  = t.asset_type  || (t._tab === "etf" ? "ETF" : "");
+          const capLabel    = t.market_cap_bucket || (t._tab !== "etf" ? SCAN_TAB_SHORT[t._tab] : "");
+          const contextText = (t.stock_context_summary || t.options_context_summary || "").slice(0, 120);
+          return (
+            <div
+              key={t.ticker}
+              onClick={() => onTickerSelect(t)}
+              style={{
+                display: "grid", gridTemplateColumns: ROW_GRID, gap: 0,
+                padding: "9px 16px", borderBottom: `1px solid ${C.border}`,
+                cursor: "pointer", alignItems: "center", transition: "background 0.1s",
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = `${C.blue}07`)}
+              onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+            >
+              {/* Rank */}
+              <span style={{ color: C.dim, fontSize: 10, fontFamily: font }}>{i + 1}</span>
+
+              {/* Ticker + price + category badges */}
+              <div style={{ minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
+                  <span style={{ color: C.bright, fontFamily: font, fontWeight: 800, fontSize: 12 }}>{t.ticker}</span>
+                  {t.underlying_price != null && (
+                    <span style={{ color: C.dim, fontFamily: font, fontSize: 10 }}>{fmtMoney(t.underlying_price)}</span>
+                  )}
+                </div>
+                <div style={{ display: "flex", gap: 3, marginTop: 2, flexWrap: "wrap" }}>
+                  {assetLabel && <Badge color={C.dim} sm>{assetLabel.toUpperCase()}</Badge>}
+                  {capLabel && assetLabel.toLowerCase() !== "etf" && <Badge color={C.dim} sm>{capLabel}</Badge>}
+                </div>
+              </div>
+
+              {/* Score bar + number */}
+              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                {score != null ? (
+                  <>
+                    <div style={{ width: 36, height: 3, background: C.border, borderRadius: 999, flexShrink: 0 }}>
+                      <div style={{ width: `${score}%`, height: "100%", background: scoreColor(score), borderRadius: 999 }} />
+                    </div>
+                    <span style={{ color: scoreColor(score), fontSize: 11, fontFamily: font, fontWeight: 700 }}>{fmtNum(score, 0)}</span>
+                  </>
+                ) : <span style={{ color: C.dim, fontSize: 10 }}>—</span>}
+              </div>
+
+              {/* Signal */}
+              <div>
+                {t.primary_signal
+                  ? <Badge color={sigColor}>{t.primary_signal}</Badge>
+                  : <span style={{ color: C.dim, fontSize: 10, fontFamily: font }}>—</span>
+                }
+              </div>
+
+              {/* Move % */}
+              <span style={{ color: pchgPct == null ? C.dim : pchgPct >= 0 ? C.green : C.red, fontFamily: font, fontSize: 11 }}>
+                {pchgPct != null ? `${pchgPct >= 0 ? "+" : ""}${pchgPct.toFixed(1)}%` : "—"}
+              </span>
+
+              {/* Vol */}
+              <span style={{ color: C.text, fontFamily: font, fontSize: 11 }}>
+                {t.total_volume != null ? fmtVol(t.total_volume) : "—"}
+              </span>
+
+              {/* P/C */}
+              <span style={{ color: t.pc_ratio != null ? pcColor(t.pc_ratio) : C.dim, fontFamily: font, fontSize: 11 }}>
+                {t.pc_ratio != null ? fmtNum(t.pc_ratio, 2) : "—"}
+              </span>
+
+              {/* Context excerpt */}
+              <span style={{ color: C.dim, fontSize: 10, lineHeight: 1.4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
+                {contextText}
+              </span>
+            </div>
+          );
+        })}
       </div>
-
-      {/* Mini market summary footer */}
-      {hasData && (mktSum.most_active_ticker || mktSum.total_call_volume != null) && (
-        <div style={{ borderTop: `1px solid ${C.border}`, padding: "7px 14px", display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", flexShrink: 0 }}>
-          {mktSum.most_active_ticker && (
-            <span style={{ color: C.dim, fontSize: 10, fontFamily: font }}>
-              Most active: <span style={{ color: C.gold }}>{mktSum.most_active_ticker}</span>
-            </span>
-          )}
-          {mktSum.total_call_volume != null && (
-            <span style={{ color: C.dim, fontSize: 10, fontFamily: font }}>
-              C <span style={{ color: C.green }}>{fmtVol(mktSum.total_call_volume)}</span>
-            </span>
-          )}
-          {mktSum.total_put_volume != null && (
-            <span style={{ color: C.dim, fontSize: 10, fontFamily: font }}>
-              P <span style={{ color: C.red }}>{fmtVol(mktSum.total_put_volume)}</span>
-            </span>
-          )}
-        </div>
-      )}
     </div>
   );
 }
@@ -1756,8 +1918,6 @@ export default function OptionsPage() {
     refreshTimerRef.current = setInterval(() => fetchAllTabs(true), 120_000);
     return () => { if (refreshTimerRef.current) clearInterval(refreshTimerRef.current); };
   }, [fetchAllTabs]);
-
-  const tabs = allTabsData?.tabs || {};
 
   // ── Chat ─────────────────────────────────────────────────────────────────
   const [selectedTicker, setSelectedTicker] = useState<TickerResult | null>(null);
@@ -1806,7 +1966,7 @@ export default function OptionsPage() {
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           <Zap className="w-5 h-5" style={{ color: C.green }} />
           <span style={{ color: C.bright, fontSize: 17, fontWeight: 800, fontFamily: font, letterSpacing: "-0.02em" }}>OPTIONS FLOW</span>
-          <span style={{ color: C.dim, fontSize: 11, fontFamily: font }}>· master screener · 4 category views</span>
+          <span style={{ color: C.dim, fontSize: 11, fontFamily: font }}>· unusual options flow · master screener</span>
           <div style={{ marginLeft: "auto" }}>
             <DataIngestionWidget />
           </div>
@@ -1821,20 +1981,14 @@ export default function OptionsPage() {
         </div>
       )}
 
-      {/* 2×2 panel grid — data from single /api/options/all-tabs fetch */}
-      <div style={{ flex: 1, padding: "14px 16px 0", display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 14, alignContent: "start" }}>
-        {SCAN_TAB_ORDER.map(tab => (
-          <CategoryPanel
-            key={tab}
-            tab={tab}
-            tabData={tabs[tab] ?? null}
-            pageLoading={pageLoading}
-            pageRefreshing={pageRefreshing}
-            onRefresh={() => fetchAllTabs(true)}
-            onTickerSelect={setSelectedTicker}
-          />
-        ))}
-      </div>
+      {/* Master screener — one ranked list, client-side filter + sort */}
+      <MasterScreener
+        allTabsData={allTabsData}
+        pageLoading={pageLoading}
+        pageRefreshing={pageRefreshing}
+        onRefresh={() => fetchAllTabs(true)}
+        onTickerSelect={setSelectedTicker}
+      />
 
       {/* Bottom AI chat */}
       <div style={{ borderTop: `1px solid ${C.border}`, background: C.card, padding: "10px 20px 14px", flexShrink: 0, marginTop: 14 }}>
