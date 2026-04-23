@@ -175,12 +175,14 @@ export interface HomeLatestNewsItem {
 
 // Portfolio / Watchlist snapshot items
 export interface HomeSnapshotItem {
-  symbol:        string;
-  current_price: number | null;
-  change_1d_pct: number | null;
-  volume_vs_avg: number | null;
+  symbol:         string;
+  current_price:  number | null;
+  change_1d_pct:  number | null;
+  volume_vs_avg:  number | null;
   options_signal?: string | null;
-  asset_type?:   string | null;
+  asset_type?:    string | null;
+  rsi?:           number | null;
+  signal_label?:  string | null;
 }
 
 // Unusual options flows — populated after 30-min precompute warms

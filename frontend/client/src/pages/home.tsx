@@ -20,6 +20,7 @@ import {
   ChevronUp,
   ChevronDown,
   ChevronsUpDown,
+  X,
 } from "lucide-react";
 import TickerTapeWidget from "@/components/TickerTapeWidget";
 import { GlassCard } from "@/components/glass-card";
@@ -146,10 +147,10 @@ function MacroCard({ card }: { card: HomeMacroCard }) {
   );
 }
 
-function MoverRow({ row }: { row: HomeMoverRow }) {
+function MoverRow({ row, onClick }: { row: HomeMoverRow; onClick?: () => void }) {
   const up = row.direction === "up";
   return (
-    <div className="flex items-center justify-between px-3 py-2 rounded-md hover:bg-white/[0.03] transition-colors">
+    <div className="flex items-center justify-between px-3 py-2 rounded-md hover:bg-white/[0.03] transition-colors cursor-pointer" onClick={onClick}>
       <div className="flex items-center gap-2.5 min-w-0">
         <div className={`w-6 h-6 rounded flex items-center justify-center text-[10px] font-bold ${
           up ? "bg-emerald-500/15 text-emerald-300" : "bg-rose-500/15 text-rose-300"
@@ -443,11 +444,12 @@ function SnapshotTable({
 
 // ── Unusual Options Flows ─────────────────────────────────────────────────
 function UnusualFlowsSection({
-  flows, status, loading,
+  flows, status, loading, onTickerClick,
 }: {
   flows: HomeUnusualOptionsFlowItem[] | undefined;
   status?: string;
   loading: boolean;
+  onTickerClick?: (symbol: string) => void;
 }) {
   const isPending    = status === "precompute_pending";
   const isFastCache  = status === "ok_fast_cache";
@@ -488,17 +490,23 @@ function UnusualFlowsSection({
         <div className="text-xs text-white/40 py-4 text-center">No unusual options activity detected.</div>
       )}
       {!loading && !isPending && (flows || []).map((f, i) => (
-        <div key={f.symbol || i} className="flex items-center justify-between px-2 py-2 rounded hover:bg-white/[0.03] transition-colors border-b border-white/[0.04] last:border-0">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <span className="text-xs font-semibold text-white/90">{f.symbol}</span>
-            {f.signal && <Badge variant="outline" className="h-4 px-1 text-[9px] border-indigo-500/30 text-indigo-300">{f.signal}</Badge>}
-          </div>
-          <div className="flex items-center gap-3 shrink-0">
+        <div
+          key={f.symbol || i}
+          className="px-2 py-2.5 rounded hover:bg-white/[0.03] transition-colors border-b border-white/[0.04] last:border-0 cursor-pointer"
+          onClick={() => onTickerClick?.(f.symbol)}
+        >
+          <div className="flex items-center justify-between gap-2 mb-0.5">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-xs font-semibold text-white/90 shrink-0">{f.symbol}</span>
+              {f.signal && <Badge variant="outline" className="h-4 px-1 text-[9px] border-indigo-500/30 text-indigo-300 shrink-0">{f.signal}</Badge>}
+            </div>
             {f.composite_score != null && (
-              <span className="text-xs font-mono text-white/60">score {f.composite_score.toFixed(1)}</span>
+              <span className="text-xs font-mono text-white/55 shrink-0">score {f.composite_score.toFixed(1)}</span>
             )}
-            {f.rationale && <span className="text-[11px] text-white/45 max-w-[180px] truncate hidden sm:block">{f.rationale}</span>}
           </div>
+          {f.rationale && (
+            <div className="text-[11px] text-white/45 leading-snug">{f.rationale}</div>
+          )}
         </div>
       ))}
     </GlassCard>
@@ -567,12 +575,111 @@ function HLTopSignals({ signals, loading }: { signals: HLAdvSigs | undefined; lo
   );
 }
 
+// ── Ticker info popup ─────────────────────────────────────────────────────
+function TickerInfoPopup({
+  symbol, onClose, data,
+}: {
+  symbol: string;
+  onClose: () => void;
+  data: HomeDashboardPayload | undefined;
+}) {
+  const snapshot = [
+    ...(data?.portfolio_snapshot || []),
+    ...(data?.watchlist_snapshot || []),
+  ].find(s => s.symbol === symbol);
+
+  const flow = (data?.unusual_options_flows || []).find(f => f.symbol === symbol);
+
+  const mover = [
+    ...(data?.movers?.gainers || []),
+    ...(data?.movers?.losers || []),
+  ].find(m => m.ticker === symbol);
+
+  const price     = snapshot?.current_price ?? (mover?.price as number | undefined) ?? null;
+  const changePct = snapshot?.change_1d_pct  ?? mover?.change_pct ?? null;
+  const signal    = snapshot?.signal_label   || flow?.signal || null;
+
+  const tvSrc = `https://s.tradingview.com/widgetembed/?symbol=${encodeURIComponent(symbol)}&interval=D&theme=dark&style=1&locale=en&hide_top_toolbar=0&hide_side_toolbar=1&allow_symbol_change=0&save_image=0&width=100%25&height=100%25`;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ background: "rgba(0,0,0,0.72)", backdropFilter: "blur(6px)" }}
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-2xl mx-4 rounded-2xl border border-white/10 overflow-hidden shadow-2xl"
+        style={{ background: "#0b0d12" }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.08]">
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="text-xl font-bold text-white tracking-tight">{symbol}</span>
+            {price != null && (
+              <span className="text-sm text-white/65">
+                ${typeof price === "number"
+                  ? price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                  : price}
+              </span>
+            )}
+            {changePct != null && (
+              <span className={`text-sm font-semibold ${changePct >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                {changePct >= 0 ? "+" : ""}{changePct.toFixed(2)}%
+              </span>
+            )}
+            {signal && (
+              <Badge variant="outline" className="text-[10px] border-indigo-500/30 text-indigo-300">{signal}</Badge>
+            )}
+          </div>
+          <button
+            className="w-7 h-7 rounded-full flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 transition-colors shrink-0"
+            onClick={onClose}
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* TradingView chart */}
+        <div style={{ height: 400 }}>
+          <iframe
+            src={tvSrc}
+            style={{ width: "100%", height: "100%", border: "none", display: "block" }}
+            title={`${symbol} chart`}
+            sandbox="allow-scripts allow-same-origin allow-popups"
+          />
+        </div>
+
+        {/* Extra data strip */}
+        {(flow || snapshot) && (
+          <div className="px-5 py-3 border-t border-white/[0.06] flex flex-wrap gap-x-6 gap-y-1.5">
+            {snapshot?.rsi != null && (
+              <div className="text-xs text-white/45">RSI <span className="text-white/80 font-medium ml-1">{snapshot.rsi.toFixed(1)}</span></div>
+            )}
+            {snapshot?.volume_vs_avg != null && (
+              <div className="text-xs text-white/45">Vol× <span className="text-white/80 font-medium ml-1">{snapshot.volume_vs_avg.toFixed(2)}x</span></div>
+            )}
+            {flow?.composite_score != null && (
+              <div className="text-xs text-white/45">Flow score <span className="text-white/80 font-medium ml-1">{flow.composite_score.toFixed(1)}</span></div>
+            )}
+            {flow?.rationale && (
+              <div className="text-xs text-white/50 w-full">{flow.rationale}</div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ───────────────────────────────────────────────────────────────────────────
 // Main page
 // ───────────────────────────────────────────────────────────────────────────
 
 export default function HomePage() {
   const [, setLocation] = useLocation();
+  const [tickerPopup, setTickerPopup] = useState<string | null>(null);
+  const openTicker = (symbol: string) => setTickerPopup(symbol);
 
   // Home aggregator — primary query. The Express proxy composes:
   // backend /api/home/dashboard + news (NEWS_CACHE) + crypto FG (CMC cache).
@@ -733,7 +840,7 @@ export default function HomePage() {
                   <HighlightedCompanyCard
                     key={sym || i}
                     c={normalized}
-                    onClick={() => setLocation(`/app/caelyn-ai?q=${encodeURIComponent(sym)}`)}
+                    onClick={() => openTicker(sym)}
                   />
                 );
               })}
@@ -828,43 +935,6 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* H. Top movers / losers */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
-          <GlassCard className="p-4">
-            <SectionHeader icon={TrendingUp} title="Top Movers" accent="Equities · today" />
-            <div className="divide-y divide-white/[0.04]">
-              {isLoading &&
-                Array.from({ length: 6 }).map((_, i) => (
-                  <Skeleton key={i} className="h-10 my-1 rounded bg-white/[0.04]" />
-                ))}
-              {!isLoading &&
-                (data?.movers?.gainers || []).slice(0, 8).map((row, i) => (
-                  <MoverRow key={i} row={row} />
-                ))}
-              {!isLoading && (!data?.movers?.gainers || data.movers.gainers.length === 0) && (
-                <div className="text-sm text-white/40 py-6 text-center">No data</div>
-              )}
-            </div>
-          </GlassCard>
-
-          <GlassCard className="p-4">
-            <SectionHeader icon={TrendingDown} title="Top Losers" accent="Equities · today" />
-            <div className="divide-y divide-white/[0.04]">
-              {isLoading &&
-                Array.from({ length: 6 }).map((_, i) => (
-                  <Skeleton key={i} className="h-10 my-1 rounded bg-white/[0.04]" />
-                ))}
-              {!isLoading &&
-                (data?.movers?.losers || []).slice(0, 8).map((row, i) => (
-                  <MoverRow key={i} row={row} />
-                ))}
-              {!isLoading && (!data?.movers?.losers || data.movers.losers.length === 0) && (
-                <div className="text-sm text-white/40 py-6 text-center">No data</div>
-              )}
-            </div>
-          </GlassCard>
-        </div>
-
         {/* H2. Portfolio Snapshot + Watchlist Snapshot */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
           <SnapshotTable
@@ -893,6 +963,7 @@ export default function HomePage() {
             flows={data?.unusual_options_flows}
             status={data?.section_status?.unusual_options_flows}
             loading={isLoading}
+            onTickerClick={openTicker}
           />
           <HLTopSignals signals={hlSignals} loading={hlLoading} />
         </div>
@@ -944,7 +1015,7 @@ export default function HomePage() {
                 <div
                   key={t.symbol || i}
                   className="p-3 rounded-lg border border-white/[0.06] bg-white/[0.02] hover:border-white/15 transition-colors cursor-pointer"
-                  onClick={() => setLocation(`/app/caelyn-ai?q=${encodeURIComponent(t.symbol)}`)}
+                  onClick={() => openTicker(t.symbol)}
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div className="text-sm font-semibold text-white/90 truncate">${t.symbol}</div>
@@ -989,7 +1060,7 @@ export default function HomePage() {
                 <div
                   key={d.ticker || i}
                   className="p-3 rounded-lg border border-white/[0.06] bg-white/[0.02] hover:border-white/15 transition-colors cursor-pointer"
-                  onClick={() => setLocation(`/app/caelyn-ai?q=${encodeURIComponent(d.ticker)}`)}
+                  onClick={() => openTicker(d.ticker)}
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div className="text-sm font-semibold text-white/90 truncate">${d.ticker}</div>
@@ -1004,6 +1075,38 @@ export default function HomePage() {
               ))}
               {!isLoading && (!data?.trending_ideas || data.trending_ideas.length === 0) && (
                 <div className="text-xs text-white/40 py-4 text-center">No trending ideas right now.</div>
+              )}
+            </div>
+          </GlassCard>
+        </div>
+
+        {/* H. Top movers / losers */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
+          <GlassCard className="p-4">
+            <SectionHeader icon={TrendingUp} title="Top Movers" accent="Equities · today" />
+            <div className="divide-y divide-white/[0.04]">
+              {isLoading && Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-10 my-1 rounded bg-white/[0.04]" />
+              ))}
+              {!isLoading && (data?.movers?.gainers || []).slice(0, 8).map((row, i) => (
+                <MoverRow key={i} row={row} onClick={row.ticker ? () => openTicker(row.ticker!) : undefined} />
+              ))}
+              {!isLoading && (!data?.movers?.gainers || data.movers.gainers.length === 0) && (
+                <div className="text-sm text-white/40 py-6 text-center">No data</div>
+              )}
+            </div>
+          </GlassCard>
+          <GlassCard className="p-4">
+            <SectionHeader icon={TrendingDown} title="Top Losers" accent="Equities · today" />
+            <div className="divide-y divide-white/[0.04]">
+              {isLoading && Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-10 my-1 rounded bg-white/[0.04]" />
+              ))}
+              {!isLoading && (data?.movers?.losers || []).slice(0, 8).map((row, i) => (
+                <MoverRow key={i} row={row} onClick={row.ticker ? () => openTicker(row.ticker!) : undefined} />
+              ))}
+              {!isLoading && (!data?.movers?.losers || data.movers.losers.length === 0) && (
+                <div className="text-sm text-white/40 py-6 text-center">No data</div>
               )}
             </div>
           </GlassCard>
@@ -1035,6 +1138,15 @@ export default function HomePage() {
           {data?.generated_at ? ` ${new Date(data.generated_at).toLocaleTimeString()}` : ""}
         </div>
       </div>
+
+      {/* Ticker info popup */}
+      {tickerPopup && (
+        <TickerInfoPopup
+          symbol={tickerPopup}
+          onClose={() => setTickerPopup(null)}
+          data={data}
+        />
+      )}
     </div>
   );
 }
