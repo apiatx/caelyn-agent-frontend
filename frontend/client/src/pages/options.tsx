@@ -1529,67 +1529,51 @@ function CompactTickerRow({ t, rank, onClick }: { t: TickerResult; rank: number;
   );
 }
 
-// ─── Self-contained category panel ───────────────────────────────────────
-function CategoryPanel({ tab, onTickerSelect }: { tab: ScanTab; onTickerSelect: (t: TickerResult) => void }) {
-  const [panelData, setPanelData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [error, setError] = useState("");
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const doFetch = useCallback(async (background = false) => {
-    if (background) {
-      setIsRefreshing(true);
-    } else {
-      setLoading(true);
-      setError("");
-    }
-    try {
-      const ctrl = new AbortController();
-      const tid = setTimeout(() => ctrl.abort(), 90_000);
-      const res = await window.fetch(`${API_BASE}/dashboard?tab=${encodeURIComponent(tab)}`, {
-        headers: authHeaders(),
-        signal: ctrl.signal,
-      });
-      clearTimeout(tid);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = await res.json();
-      setPanelData(json);
-      setError("");
-    } catch (e: any) {
-      if (!background) {
-        setError(e.name === "AbortError"
-          ? "Timed out — backend may still be warming this scan"
-          : (e.message || "Failed to load"));
-      }
-    } finally {
-      if (!background) setLoading(false);
-      setIsRefreshing(false);
-    }
-  }, [tab]);
-
-  useEffect(() => {
-    doFetch(false);
-    intervalRef.current = setInterval(() => doFetch(true), 120_000);
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [doFetch]);
-
-  const resp: OptionsDashboardResponse = panelData?.response || {};
-  const tickers = (resp.tickers || [])
+// ─── Category panel — pure display, data comes from parent's all-tabs fetch ─
+// tabData shape (from /api/options/all-tabs):
+//   { data_state, result_count, stale, cache_age_seconds, refresh_in_progress,
+//     source, tickers[], all_contracts[], market_summary, ... }
+// tickers are at tabData.tickers — no "response" wrapper.
+function CategoryPanel({
+  tab,
+  tabData,
+  pageLoading,
+  pageRefreshing,
+  onRefresh,
+  onTickerSelect,
+}: {
+  tab: ScanTab;
+  tabData: any;
+  pageLoading: boolean;
+  pageRefreshing: boolean;
+  onRefresh: () => void;
+  onTickerSelect: (t: TickerResult) => void;
+}) {
+  // Tickers live directly on tabData — no .response wrapper in all-tabs shape
+  const rawTickers: TickerResult[] = Array.isArray(tabData?.tickers) ? tabData.tickers : [];
+  const tickers = rawTickers
     .slice()
     .sort((a, b) => (normalizeScore(b.composite_score) ?? -1) - (normalizeScore(a.composite_score) ?? -1))
     .slice(0, 10);
   const hasData = tickers.length > 0;
-  const dataState: string | undefined = panelData?.data_state;
-  const fromCache: boolean = panelData?.from_cache ?? false;
-  const cacheAge: number | null = panelData?.cache_age_seconds ?? null;
-  const refreshInProgress: boolean = panelData?.refresh_in_progress ?? false;
-  const mktSum: Record<string, any> = resp.market_summary || {};
 
-  // Not-ready: response came back but no tickers and scanner hasn't run yet
-  const notReadyState = !dataState || ["no_data_yet", "none", "warming"].includes(dataState);
-  const isWarmingUp = !hasData && panelData != null && !loading && notReadyState;
-  const isTrueZero = !hasData && panelData != null && !loading && !notReadyState && !error;
+  // Metadata from the all-tabs tab slice
+  const dataState: string = tabData?.data_state || "no_data_yet";
+  const resultCount: number = tabData?.result_count ?? rawTickers.length;
+  const isStale: boolean = tabData?.stale ?? false;
+  const cacheAge: number | null = tabData?.cache_age_seconds ?? null;
+  const refreshInProgress: boolean = tabData?.refresh_in_progress ?? false;
+  const mktSum: Record<string, any> = tabData?.market_summary || {};
+
+  // 5 explicit states from the backend:
+  // live_ok | stale_but_available | refresh_in_progress | true_zero_results | no_data_yet
+  const NOT_READY = new Set(["no_data_yet", "none", "warming", ""]);
+  const isNotReady = NOT_READY.has(dataState) && !hasData;
+  const isWarmingUp = isNotReady && tabData != null && !pageLoading;
+  const isTrueZero = dataState === "true_zero_results" && !hasData && !pageLoading;
+
+  const loading = pageLoading && !hasData;
+  const spinning = pageRefreshing || refreshInProgress;
 
   return (
     <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, display: "flex", flexDirection: "column", overflow: "hidden", minHeight: 300 }}>
@@ -1599,8 +1583,8 @@ function CategoryPanel({ tab, onTickerSelect }: { tab: ScanTab; onTickerSelect: 
           <span style={{ color: C.bright, fontSize: 12, fontWeight: 800, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>
             {SCAN_TAB_SHORT[tab]}
           </span>
-          {hasData && (
-            <span style={{ color: C.dim, fontSize: 10, fontFamily: font }}>{tickers.length} ranked</span>
+          {resultCount > 0 && (
+            <span style={{ color: C.dim, fontSize: 10, fontFamily: font }}>{resultCount} ranked</span>
           )}
           {hasData && mktSum.market_pc_ratio != null && (
             <span style={{ color: C.dim, fontSize: 10, fontFamily: font }}>
@@ -1609,41 +1593,48 @@ function CategoryPanel({ tab, onTickerSelect }: { tab: ScanTab; onTickerSelect: 
           )}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <PanelStatusBadge dataState={dataState} fromCache={fromCache} cacheAge={cacheAge} isRefreshing={isRefreshing} refreshInProgress={refreshInProgress} />
+          <PanelStatusBadge
+            dataState={dataState}
+            fromCache={isStale}
+            cacheAge={cacheAge}
+            isRefreshing={spinning}
+            refreshInProgress={refreshInProgress}
+          />
           <button
-            onClick={() => doFetch(hasData)}
-            disabled={loading}
-            title="Refresh this scan"
-            style={{ background: "none", border: "none", cursor: loading ? "not-allowed" : "pointer", color: loading ? C.border : C.dim, padding: 2, display: "flex", alignItems: "center" }}
+            onClick={onRefresh}
+            disabled={pageLoading}
+            title="Refresh all scans"
+            style={{ background: "none", border: "none", cursor: pageLoading ? "not-allowed" : "pointer", color: pageLoading ? C.border : C.dim, padding: 2, display: "flex", alignItems: "center" }}
           >
-            <RefreshCw className={`w-3 h-3 ${(loading || isRefreshing) ? "animate-spin" : ""}`} />
+            <RefreshCw className={`w-3 h-3 ${spinning ? "animate-spin" : ""}`} />
           </button>
         </div>
       </div>
 
-      {/* Panel body */}
+      {/* Panel body — always render rows if they exist, regardless of data_state */}
       <div style={{ flex: 1, overflowY: "auto" }}>
-        {loading && !hasData && (
+        {loading && (
           <div style={{ padding: "18px 14px" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, color: C.blue, fontSize: 11, fontFamily: font, marginBottom: 12 }}>
               <div style={{ width: 14, height: 14, border: `2px solid ${C.border}`, borderTop: `2px solid ${C.blue}`, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-              Running live scan…
+              Loading scan…
             </div>
             {[0, 1, 2].map(i => <Skeleton key={i} h={52} mb={8} />)}
           </div>
         )}
 
-        {error && !loading && !hasData && (
-          <div style={{ padding: "16px 14px" }}>
-            <div style={{ color: C.red, fontSize: 11, fontFamily: font, marginBottom: 10 }}>⚠ {error}</div>
-            <button onClick={() => doFetch(false)} style={{ padding: "6px 14px", background: `${C.blue}14`, border: `1px solid ${C.blue}35`, borderRadius: 6, color: C.blue, fontSize: 11, fontFamily: font, cursor: "pointer" }}>
-              <RefreshCw className="w-3 h-3" style={{ display: "inline-block", marginRight: 5, verticalAlign: "middle" }} />
-              Retry
-            </button>
+        {/* Stale-but-available notice — shown above rows when backend says refresh is in progress */}
+        {!loading && hasData && (refreshInProgress || dataState === "stale_but_available") && (
+          <div style={{ padding: "6px 14px", background: `${C.yellow}08`, borderBottom: `1px solid ${C.yellow}18`, display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ width: 5, height: 5, borderRadius: "50%", background: C.yellow, display: "inline-block", animation: "pulse 1.4s ease-in-out infinite" }} />
+            <span style={{ color: C.yellow, fontSize: 10, fontFamily: font }}>
+              {refreshInProgress ? "Refresh in progress — showing last snapshot" : `Stale snapshot${cacheAge != null ? ` · ${cacheAge}s old` : ""}`}
+            </span>
           </div>
         )}
 
-        {isWarmingUp && (
+        {/* Warming — no data yet from this tab */}
+        {!loading && isWarmingUp && (
           <div style={{ padding: "28px 14px", textAlign: "center" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7, marginBottom: 8, color: C.blue, fontSize: 12, fontFamily: font }}>
               <span style={{ width: 7, height: 7, borderRadius: "50%", background: C.blue, display: "inline-block", animation: "pulse 1.4s ease-in-out infinite" }} />
@@ -1653,18 +1644,20 @@ function CategoryPanel({ tab, onTickerSelect }: { tab: ScanTab; onTickerSelect: 
           </div>
         )}
 
-        {isTrueZero && (
+        {/* True zero — scan ran and found no signals */}
+        {!loading && isTrueZero && (
           <div style={{ padding: "24px 14px", textAlign: "center", color: C.dim, fontSize: 11 }}>
-            No ranked tickers — scan completed with no signals above threshold
+            Scan complete — no signals above threshold in this category
           </div>
         )}
 
-        {hasData && tickers.map((t, i) => (
+        {/* Rows — rendered regardless of data_state as long as tickers exist */}
+        {tickers.map((t, i) => (
           <CompactTickerRow key={t.ticker} t={t} rank={i + 1} onClick={() => onTickerSelect(t)} />
         ))}
       </div>
 
-      {/* Mini market summary footer (only when data is present) */}
+      {/* Mini market summary footer */}
       {hasData && (mktSum.most_active_ticker || mktSum.total_call_volume != null) && (
         <div style={{ borderTop: `1px solid ${C.border}`, padding: "7px 14px", display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", flexShrink: 0 }}>
           {mktSum.most_active_ticker && (
@@ -1674,12 +1667,12 @@ function CategoryPanel({ tab, onTickerSelect }: { tab: ScanTab; onTickerSelect: 
           )}
           {mktSum.total_call_volume != null && (
             <span style={{ color: C.dim, fontSize: 10, fontFamily: font }}>
-              C vol: <span style={{ color: C.green }}>{fmtVol(mktSum.total_call_volume)}</span>
+              C <span style={{ color: C.green }}>{fmtVol(mktSum.total_call_volume)}</span>
             </span>
           )}
           {mktSum.total_put_volume != null && (
             <span style={{ color: C.dim, fontSize: 10, fontFamily: font }}>
-              P vol: <span style={{ color: C.red }}>{fmtVol(mktSum.total_put_volume)}</span>
+              P <span style={{ color: C.red }}>{fmtVol(mktSum.total_put_volume)}</span>
             </span>
           )}
         </div>
@@ -1688,8 +1681,48 @@ function CategoryPanel({ tab, onTickerSelect }: { tab: ScanTab; onTickerSelect: 
   );
 }
 
-// ─── Main Options Flow page (unified 2×2 layout) ─────────────────────────
+// ─── Main Options Flow page (unified 2×2 layout, single all-tabs fetch) ──
 export default function OptionsPage() {
+  // ── All-tabs data (single fetch, 4 panels rendered from it) ──────────────
+  const [allTabsData, setAllTabsData] = useState<any>(null);
+  const [pageLoading, setPageLoading] = useState(true);
+  const [pageRefreshing, setPageRefreshing] = useState(false);
+  const [fetchError, setFetchError] = useState("");
+  const refreshTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const fetchAllTabs = useCallback(async (background = false) => {
+    if (background) {
+      setPageRefreshing(true);
+    } else {
+      setPageLoading(true);
+      setFetchError("");
+    }
+    try {
+      const ctrl = new AbortController();
+      const tid = setTimeout(() => ctrl.abort(), 30_000);
+      const res = await window.fetch(`${API_BASE}/all-tabs`, { headers: authHeaders(), signal: ctrl.signal });
+      clearTimeout(tid);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      setAllTabsData(json);
+      setFetchError("");
+    } catch (e: any) {
+      if (!background) setFetchError(e.name === "AbortError" ? "Timed out loading scans" : (e.message || "Failed"));
+    } finally {
+      if (!background) setPageLoading(false);
+      setPageRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchAllTabs(false);
+    refreshTimerRef.current = setInterval(() => fetchAllTabs(true), 120_000);
+    return () => { if (refreshTimerRef.current) clearInterval(refreshTimerRef.current); };
+  }, [fetchAllTabs]);
+
+  const tabs = allTabsData?.tabs || {};
+
+  // ── Chat ─────────────────────────────────────────────────────────────────
   const [selectedTicker, setSelectedTicker] = useState<TickerResult | null>(null);
   const [contractDetailSymbol, setContractDetailSymbol] = useState<string | null>(null);
   const [chatInput, setChatInput] = useState("");
@@ -1743,12 +1776,24 @@ export default function OptionsPage() {
         </div>
       </div>
 
-      {/* 2×2 panel grid — each panel is self-contained with independent fetch */}
+      {/* Page-level fetch error */}
+      {fetchError && !pageLoading && (
+        <div style={{ margin: "10px 16px 0", padding: "10px 14px", background: `${C.red}10`, border: `1px solid ${C.red}25`, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span style={{ color: C.red, fontSize: 11, fontFamily: font }}>⚠ {fetchError}</span>
+          <button onClick={() => fetchAllTabs(false)} style={{ padding: "4px 12px", background: `${C.blue}14`, border: `1px solid ${C.blue}35`, borderRadius: 6, color: C.blue, fontSize: 11, fontFamily: font, cursor: "pointer" }}>Retry</button>
+        </div>
+      )}
+
+      {/* 2×2 panel grid — data from single /api/options/all-tabs fetch */}
       <div style={{ flex: 1, padding: "14px 16px 0", display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 14, alignContent: "start" }}>
         {SCAN_TAB_ORDER.map(tab => (
           <CategoryPanel
             key={tab}
             tab={tab}
+            tabData={tabs[tab] ?? null}
+            pageLoading={pageLoading}
+            pageRefreshing={pageRefreshing}
+            onRefresh={() => fetchAllTabs(true)}
             onTickerSelect={setSelectedTicker}
           />
         ))}

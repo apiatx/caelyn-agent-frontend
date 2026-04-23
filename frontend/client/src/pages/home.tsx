@@ -468,8 +468,10 @@ function UnusualFlowsSection({
   // Live / ok statuses — covers both old section_status and new data_state values
   const isFastCache    = status === "ok_fast_cache" || status === "live_ok";
   const isOk           = status === "ok" || isFastCache;
-  // Only show true-zero message when a completed scan found nothing
-  const isTrueZero     = !loading && isOk && !hasResults && !isBgRefreshing;
+  // Only show true-zero message when scan is done and explicitly found nothing.
+  // true_zero_results falls through isOk, so we broaden the condition:
+  // not loading + no results + not refreshing/warming = show zero message.
+  const isTrueZero     = !loading && !hasResults && !isBgRefreshing && !isNotReady;
 
   return (
     <GlassCard className="p-4">

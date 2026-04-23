@@ -1211,6 +1211,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // === Options Flow — all-tabs endpoint (single call, all 4 categories) ===
+  app.get('/api/options/all-tabs', async (req, res) => {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+      const fwdHeaders: Record<string,string> = { 'X-API-Key': AGENT_KEY };
+      if (req.headers.authorization) fwdHeaders['Authorization'] = req.headers.authorization as string;
+      const response = await fetch(`${AGENT_URL}/api/options/all-tabs`, {
+        method: 'GET',
+        headers: fwdHeaders,
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      if (!response.ok) {
+        const text = await response.text();
+        return res.status(response.status).json({ error: `Agent returned ${response.status}`, detail: text.slice(0, 200) });
+      }
+      const data = await response.json();
+      res.json(data);
+    } catch (error: any) {
+      console.error('[options/all-tabs] error:', error);
+      res.status(500).json({ error: error?.name === 'AbortError' ? 'Request timed out' : 'Failed to fetch options all-tabs' });
+    }
+  });
+
   app.get('/api/options/chain/:symbol', async (req, res) => {
     try {
       const { symbol } = req.params;
