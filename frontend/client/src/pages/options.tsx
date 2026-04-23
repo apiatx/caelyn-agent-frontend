@@ -1362,209 +1362,344 @@ function TimeSalesPanel({ symbol }: { symbol: string }) {
     </div>
   );
 }
-
+// ─── Scan tab definitions ─────────────────────────────────────────────────
 type ScanTab = "etf" | "megacap" | "large_cap" | "small_cap";
-const SCAN_TAB_LABELS: Record<ScanTab, string> = { etf: "ETFs", megacap: "Megacap ($1T+)", large_cap: "Large Cap ($100B–$999B)", small_cap: "Small Cap ($500M–$99B)" };
+const SCAN_TAB_LABELS: Record<ScanTab, string> = {
+  etf: "ETFs",
+  megacap: "Megacap ($1T+)",
+  large_cap: "Large Cap ($100B–$999B)",
+  small_cap: "Small Cap ($500M–$99B)",
+};
+const SCAN_TAB_SHORT: Record<ScanTab, string> = {
+  etf: "ETFs",
+  megacap: "Megacaps",
+  large_cap: "Large Caps",
+  small_cap: "Small Caps",
+};
 const SCAN_TAB_ORDER: ScanTab[] = ["etf", "megacap", "large_cap", "small_cap"];
 
-export default function OptionsPage() {
-  const [data, setData] = useState<any>(null);
+// ─── Per-panel status badge ───────────────────────────────────────────────
+function PanelStatusBadge({
+  dataState, fromCache, cacheAge, isRefreshing, refreshInProgress,
+}: {
+  dataState?: string | null;
+  fromCache?: boolean;
+  cacheAge?: number | null;
+  isRefreshing?: boolean;
+  refreshInProgress?: boolean;
+}) {
+  const spinning = isRefreshing || refreshInProgress;
+  if (spinning) {
+    return (
+      <span style={{ display: "flex", alignItems: "center", gap: 5, color: C.blue, fontSize: 10, fontFamily: font }}>
+        <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.blue, display: "inline-block", animation: "pulse 1.2s ease-in-out infinite" }} />
+        refreshing
+      </span>
+    );
+  }
+  const state = (dataState || "").toLowerCase();
+  if (state === "live_ok" || state === "ok") {
+    return (
+      <span style={{ display: "flex", alignItems: "center", gap: 5, color: C.green, fontSize: 10, fontFamily: font }}>
+        <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.green, display: "inline-block" }} />
+        {cacheAge != null ? `live · ${cacheAge}s` : "live"}
+      </span>
+    );
+  }
+  if (state === "stale_but_available") {
+    return (
+      <span style={{ display: "flex", alignItems: "center", gap: 5, color: C.yellow, fontSize: 10, fontFamily: font }}>
+        <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.yellow, display: "inline-block" }} />
+        {fromCache && cacheAge != null ? `stale · ${cacheAge}s` : "stale"}
+      </span>
+    );
+  }
+  if (!state || state === "no_data_yet" || state === "none" || state === "warming") {
+    return (
+      <span style={{ display: "flex", alignItems: "center", gap: 5, color: C.blue, fontSize: 10, fontFamily: font }}>
+        <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.blue, display: "inline-block", animation: "pulse 1.4s ease-in-out infinite" }} />
+        scanning
+      </span>
+    );
+  }
+  return (
+    <span style={{ color: C.dim, fontSize: 10, fontFamily: font }}>{toTitleCase(state)}</span>
+  );
+}
+
+// ─── Ticker detail modal ──────────────────────────────────────────────────
+function TickerDetailModal({ ticker, onClose }: { ticker: TickerResult; onClose: () => void }) {
+  return (
+    <div
+      style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: 24, paddingBottom: 24 }}
+      onClick={onClose}
+    >
+      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.76)" }} />
+      <div
+        style={{ position: "relative", background: C.bg, border: `1px solid ${C.border}`, borderRadius: 12, width: "92%", maxWidth: 920, maxHeight: "calc(100vh - 48px)", overflowY: "auto" }}
+        onClick={e => e.stopPropagation()}
+      >
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 18px", borderBottom: `1px solid ${C.border}`, position: "sticky", top: 0, background: C.bg, zIndex: 1 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <span style={{ color: C.bright, fontSize: 16, fontWeight: 800, fontFamily: font }}>{ticker.ticker}</span>
+            {ticker.primary_signal && <Badge color={getSignalColor(ticker.primary_signal)}>{ticker.primary_signal}</Badge>}
+            {ticker.composite_score != null && (
+              <span style={{ color: scoreColor(normalizeScore(ticker.composite_score)), fontFamily: font, fontSize: 11 }}>
+                score {fmtNum(normalizeScore(ticker.composite_score), 0)}
+              </span>
+            )}
+            {ticker.underlying_price != null && (
+              <span style={{ color: C.text, fontFamily: font, fontSize: 12 }}>{fmtMoney(ticker.underlying_price)}</span>
+            )}
+          </div>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: C.dim, cursor: "pointer", padding: 4 }}>
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        <div style={{ padding: "16px 18px" }}>
+          <TickerDetailPanel symbol={ticker.ticker} ticker={ticker} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Compact ticker row (per-panel card list) ─────────────────────────────
+function CompactTickerRow({ t, rank, onClick }: { t: TickerResult; rank: number; onClick: () => void }) {
+  const score = normalizeScore(t.composite_score);
+  const signalColor = getSignalColor(t.primary_signal);
+  const pchg = safeNum(t.price_change_pct);
+  const pchgPct = pchg != null ? (Math.abs(pchg) <= 1 ? pchg * 100 : pchg) : null;
+  const tags = signalTagsForTicker(t).slice(0, 2);
+  return (
+    <div
+      onClick={onClick}
+      style={{ display: "grid", gridTemplateColumns: "22px 1fr 20px", alignItems: "start", gap: 8, padding: "10px 12px", borderBottom: `1px solid ${C.border}`, cursor: "pointer", transition: "background 0.1s ease" }}
+      onMouseEnter={e => (e.currentTarget.style.background = `${C.blue}07`)}
+      onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+    >
+      {/* Rank */}
+      <span style={{ color: C.dim, fontSize: 10, fontFamily: font, textAlign: "right", paddingTop: 2 }}>#{rank}</span>
+      {/* Main */}
+      <div style={{ minWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 3 }}>
+          <span style={{ color: C.bright, fontFamily: font, fontWeight: 800, fontSize: 13 }}>{t.ticker}</span>
+          {t.primary_signal && <Badge color={signalColor} sm>{t.primary_signal}</Badge>}
+          {pchgPct != null && (
+            <span style={{ color: pchgPct >= 0 ? C.green : C.red, fontFamily: font, fontSize: 10 }}>
+              {pchgPct >= 0 ? "+" : ""}{pchgPct.toFixed(1)}%
+            </span>
+          )}
+          {t.underlying_price != null && (
+            <span style={{ color: C.text, fontFamily: font, fontSize: 10 }}>{fmtMoney(t.underlying_price)}</span>
+          )}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          {score != null && (
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <span style={{ color: C.dim, fontSize: 9, fontFamily: font }}>score</span>
+              <div style={{ width: 44, height: 4, background: C.border, borderRadius: 999, overflow: "hidden" }}>
+                <div style={{ width: `${score}%`, height: "100%", background: scoreColor(score) }} />
+              </div>
+              <span style={{ color: scoreColor(score), fontSize: 10, fontFamily: font, fontWeight: 700 }}>{fmtNum(score, 0)}</span>
+            </div>
+          )}
+          {t.pc_ratio != null && (
+            <span style={{ color: C.dim, fontSize: 10, fontFamily: font }}>
+              P/C <span style={{ color: pcColor(t.pc_ratio) }}>{fmtNum(t.pc_ratio, 2)}</span>
+            </span>
+          )}
+          {t.total_volume != null && (
+            <span style={{ color: C.dim, fontSize: 10, fontFamily: font }}>
+              vol <span style={{ color: C.text }}>{fmtVol(t.total_volume)}</span>
+            </span>
+          )}
+          {tags.map(tag => <Badge key={tag.label} color={tag.color} sm>{tag.label}</Badge>)}
+        </div>
+        {(t.stock_context_summary || t.options_context_summary) && (
+          <div style={{ color: C.dim, fontSize: 10, lineHeight: 1.4, marginTop: 4 }}>
+            {((t.stock_context_summary || t.options_context_summary) ?? "").slice(0, 90)}
+            {((t.stock_context_summary || t.options_context_summary) ?? "").length > 90 ? "…" : ""}
+          </div>
+        )}
+      </div>
+      {/* Expand indicator */}
+      <ChevronDown className="w-3 h-3" style={{ color: C.dim, flexShrink: 0, marginTop: 4 }} />
+    </div>
+  );
+}
+
+// ─── Self-contained category panel ───────────────────────────────────────
+function CategoryPanel({ tab, onTickerSelect }: { tab: ScanTab; onTickerSelect: (t: TickerResult) => void }) {
+  const [panelData, setPanelData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [loadStage, setLoadStage] = useState("Initializing live scan...");
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [refreshError, setRefreshError] = useState<string | null>(null);
   const [error, setError] = useState("");
-  const [scanTab, setScanTab] = useState<ScanTab>("megacap");
-  const [tab, setTab] = useState<MainTab>("tickers");
-  const [chatInput, setChatInput] = useState("");
-  const [chatMessages, setChatMessages] = useState<Array<{ role: "user" | "ai"; text: string }>>([]);
-  const [chatLoading, setChatLoading] = useState(false);
-  const [showRankingInfo, setShowRankingInfo] = useState(false);
-  const [contractDetailSymbol, setContractDetailSymbol] = useState<string | null>(null);
-  const [lastFetchedAt, setLastFetchedAt] = useState<number | null>(null);
-  const [nextRefreshSecs, setNextRefreshSecs] = useState<number | null>(null);
-  const [refreshStatusText, setRefreshStatusText] = useState<string>("");
-  const chatBottomRef = useRef<HTMLDivElement>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const tabCacheRef = useRef<Record<string, any>>({});
 
-  const scanTabRef = useRef<ScanTab>(scanTab);
-  scanTabRef.current = scanTab;
-
-  // Track available tabs separately so they don't jump around when switching tabs
-  const [knownAvailableTabs, setKnownAvailableTabs] = useState<ScanTab[]>(SCAN_TAB_ORDER);
-
-  // Scan defaults state
-  const [scanDefaults, setScanDefaults] = useState<Record<string, any>>({});
-  const [scanDefaultsEditable, setScanDefaultsEditable] = useState<string[]>([]);
-  const [scanDefaultsIsEditable, setScanDefaultsIsEditable] = useState(false);
-  const [scanDefaultsOverrides, setScanDefaultsOverrides] = useState<Record<string, any>>({});
-  const [tierMcapRange, setTierMcapRange] = useState<Record<string, any> | null>(null);
-  const [scanDefaultsSaving, setScanDefaultsSaving] = useState(false);
-
-  const fetchScanDefaults = useCallback(async (t: ScanTab) => {
-    try {
-      const res = await fetch(`${API_BASE}/scan-defaults?tab=${t}`, { headers: authHeaders() });
-      if (!res.ok) return;
-      const json = await res.json();
-      setScanDefaults(json.defaults || {});
-      setScanDefaultsEditable(json.editable_keys || []);
-      setScanDefaultsIsEditable(json.editable !== false);
-      setScanDefaultsOverrides({});
-      setTierMcapRange(json.tier_mcap_range || null);
-    } catch { /* ignore */ }
-  }, []);
-
-  useEffect(() => {
-    fetchScanDefaults(scanTab);
-  }, [scanTab, fetchScanDefaults]);
-
-  const saveScanDefaults = async () => {
-    setScanDefaultsSaving(true);
-    try {
-      const res = await fetch(`${API_BASE}/scan-defaults`, {
-        method: "PUT",
-        headers: authHeaders(),
-        body: JSON.stringify({ tab: scanTab, overrides: scanDefaultsOverrides }),
-      });
-      if (res.ok) {
-        const json = await res.json();
-        setScanDefaults(json.defaults || {});
-        setScanDefaultsOverrides({});
-      }
-    } catch { /* ignore */ } finally {
-      setScanDefaultsSaving(false);
-    }
-  };
-
-  const resetScanDefaults = async () => {
-    setScanDefaultsSaving(true);
-    try {
-      const res = await fetch(`${API_BASE}/scan-defaults`, {
-        method: "PUT",
-        headers: authHeaders(),
-        body: JSON.stringify({ tab: scanTab, reset: true }),
-      });
-      if (res.ok) {
-        const json = await res.json();
-        setScanDefaults(json.defaults || {});
-        setScanDefaultsOverrides({});
-      }
-    } catch { /* ignore */ } finally {
-      setScanDefaultsSaving(false);
-    }
-  };
-
-  const fetchDashboard = useCallback(async (tabOverride?: ScanTab) => {
-    const activeTab = tabOverride ?? scanTabRef.current;
-    const hasExistingData = !!tabCacheRef.current[activeTab];
-
-    // Background refresh: don't clear content, just show subtle indicator
-    if (hasExistingData) {
+  const doFetch = useCallback(async (background = false) => {
+    if (background) {
       setIsRefreshing(true);
-      setRefreshError(null);
     } else {
-      // Initial load: show full loading state
       setLoading(true);
       setError("");
     }
-
-    const stages = ["Running live scan...", "Scanning options chains...", "Aggregating flow & context...", "Scoring modular signals...", "Building market summary...", "Finalizing dashboard..."];
-    let si = 0;
-    if (!hasExistingData) setLoadStage(stages[0]);
-    const stageTimer = !hasExistingData ? setInterval(() => {
-      si = Math.min(si + 1, stages.length - 1);
-      setLoadStage(stages[si]);
-    }, 2500) : null;
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 90_000);
     try {
-      const url = `${API_BASE}/dashboard?tab=${encodeURIComponent(activeTab)}`;
-      console.log(`[OptionsPage] fetchDashboard → ${url}  (tabOverride=${tabOverride ?? "none"}, scanTabRef=${scanTabRef.current}, background=${hasExistingData})`);
-      const res = await fetch(url, { headers: authHeaders(), signal: controller.signal });
+      const ctrl = new AbortController();
+      const tid = setTimeout(() => ctrl.abort(), 90_000);
+      const res = await window.fetch(`${API_BASE}/dashboard?tab=${encodeURIComponent(tab)}`, {
+        headers: authHeaders(),
+        signal: ctrl.signal,
+      });
+      clearTimeout(tid);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
-      const resp = json?.response || {};
-      console.log(`[OptionsPage] response keys:`, Object.keys(resp), `| tickers: ${(resp.tickers || []).length} | all_contracts: ${(resp.all_contracts || []).length} | tickers_scanned (seed, NOT used): ${resp.tickers_scanned ?? "n/a"}`);
-      // Update cache and state in-place
-      tabCacheRef.current[activeTab] = json;
-      // Update known available tabs from API response (merged, not replaced)
-      const apiTabs = json?.available_tabs as ScanTab[] | undefined;
-      if (apiTabs?.length) {
-        setKnownAvailableTabs(prev => {
-          const merged = new Set([...prev, ...apiTabs]);
-          return SCAN_TAB_ORDER.filter(t => merged.has(t));
-        });
-      }
-      if (activeTab === scanTabRef.current) {
-        setData(json);
-        setLastFetchedAt(Date.now());
-        if (json.next_refresh_in_seconds != null) setNextRefreshSecs(json.next_refresh_in_seconds);
-      }
+      setPanelData(json);
       setError("");
     } catch (e: any) {
-      if (hasExistingData) {
-        // Background refresh failed — keep old data, show toast
-        setRefreshError("Refresh failed, showing cached data");
-        setTimeout(() => setRefreshError(null), 5000);
-      } else {
-        if (e.name === "AbortError") {
-          setError("Request timed out (90s). The backend may still be building the cache — click Refresh to try again.");
-        } else {
-          setError(e.message || "Failed to load options dashboard");
-        }
+      if (!background) {
+        setError(e.name === "AbortError"
+          ? "Timed out — backend may still be warming this scan"
+          : (e.message || "Failed to load"));
       }
     } finally {
-      clearTimeout(timeout);
-      if (stageTimer) clearInterval(stageTimer);
-      setLoading(false);
-      setLoadStage("");
+      if (!background) setLoading(false);
       setIsRefreshing(false);
     }
-  }, []);
+  }, [tab]);
 
   useEffect(() => {
-    fetchDashboard();
-    intervalRef.current = setInterval(() => fetchDashboard(), 120_000);
+    doFetch(false);
+    intervalRef.current = setInterval(() => doFetch(true), 120_000);
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [fetchDashboard]);
+  }, [doFetch]);
 
-  const switchScanTab = (newTab: ScanTab) => {
-    if (newTab === scanTab) return;
-    setScanTab(newTab);
-    // Show cached data instantly if available, otherwise show loading
-    const cached = tabCacheRef.current[newTab];
-    if (cached) {
-      setData(cached);
-      setError("");
-    } else {
-      setData(null);
-    }
-    fetchDashboard(newTab);
-  };
+  const resp: OptionsDashboardResponse = panelData?.response || {};
+  const tickers = (resp.tickers || [])
+    .slice()
+    .sort((a, b) => (normalizeScore(b.composite_score) ?? -1) - (normalizeScore(a.composite_score) ?? -1))
+    .slice(0, 10);
+  const hasData = tickers.length > 0;
+  const dataState: string | undefined = panelData?.data_state;
+  const fromCache: boolean = panelData?.from_cache ?? false;
+  const cacheAge: number | null = panelData?.cache_age_seconds ?? null;
+  const refreshInProgress: boolean = panelData?.refresh_in_progress ?? false;
+  const mktSum: Record<string, any> = resp.market_summary || {};
+
+  // Not-ready: response came back but no tickers and scanner hasn't run yet
+  const notReadyState = !dataState || ["no_data_yet", "none", "warming"].includes(dataState);
+  const isWarmingUp = !hasData && panelData != null && !loading && notReadyState;
+  const isTrueZero = !hasData && panelData != null && !loading && !notReadyState && !error;
+
+  return (
+    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, display: "flex", flexDirection: "column", overflow: "hidden", minHeight: 300 }}>
+      {/* Panel header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ color: C.bright, fontSize: 12, fontWeight: 800, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+            {SCAN_TAB_SHORT[tab]}
+          </span>
+          {hasData && (
+            <span style={{ color: C.dim, fontSize: 10, fontFamily: font }}>{tickers.length} ranked</span>
+          )}
+          {hasData && mktSum.market_pc_ratio != null && (
+            <span style={{ color: C.dim, fontSize: 10, fontFamily: font }}>
+              P/C <span style={{ color: pcColor(safeNum(mktSum.market_pc_ratio)) }}>{fmtNum(mktSum.market_pc_ratio, 2)}</span>
+            </span>
+          )}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <PanelStatusBadge dataState={dataState} fromCache={fromCache} cacheAge={cacheAge} isRefreshing={isRefreshing} refreshInProgress={refreshInProgress} />
+          <button
+            onClick={() => doFetch(hasData)}
+            disabled={loading}
+            title="Refresh this scan"
+            style={{ background: "none", border: "none", cursor: loading ? "not-allowed" : "pointer", color: loading ? C.border : C.dim, padding: 2, display: "flex", alignItems: "center" }}
+          >
+            <RefreshCw className={`w-3 h-3 ${(loading || isRefreshing) ? "animate-spin" : ""}`} />
+          </button>
+        </div>
+      </div>
+
+      {/* Panel body */}
+      <div style={{ flex: 1, overflowY: "auto" }}>
+        {loading && !hasData && (
+          <div style={{ padding: "18px 14px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, color: C.blue, fontSize: 11, fontFamily: font, marginBottom: 12 }}>
+              <div style={{ width: 14, height: 14, border: `2px solid ${C.border}`, borderTop: `2px solid ${C.blue}`, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+              Running live scan…
+            </div>
+            {[0, 1, 2].map(i => <Skeleton key={i} h={52} mb={8} />)}
+          </div>
+        )}
+
+        {error && !loading && !hasData && (
+          <div style={{ padding: "16px 14px" }}>
+            <div style={{ color: C.red, fontSize: 11, fontFamily: font, marginBottom: 10 }}>⚠ {error}</div>
+            <button onClick={() => doFetch(false)} style={{ padding: "6px 14px", background: `${C.blue}14`, border: `1px solid ${C.blue}35`, borderRadius: 6, color: C.blue, fontSize: 11, fontFamily: font, cursor: "pointer" }}>
+              <RefreshCw className="w-3 h-3" style={{ display: "inline-block", marginRight: 5, verticalAlign: "middle" }} />
+              Retry
+            </button>
+          </div>
+        )}
+
+        {isWarmingUp && (
+          <div style={{ padding: "28px 14px", textAlign: "center" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7, marginBottom: 8, color: C.blue, fontSize: 12, fontFamily: font }}>
+              <span style={{ width: 7, height: 7, borderRadius: "50%", background: C.blue, display: "inline-block", animation: "pulse 1.4s ease-in-out infinite" }} />
+              Warming scanner…
+            </div>
+            <div style={{ color: C.dim, fontSize: 11, lineHeight: 1.5 }}>First result set is building — will appear automatically</div>
+          </div>
+        )}
+
+        {isTrueZero && (
+          <div style={{ padding: "24px 14px", textAlign: "center", color: C.dim, fontSize: 11 }}>
+            No ranked tickers — scan completed with no signals above threshold
+          </div>
+        )}
+
+        {hasData && tickers.map((t, i) => (
+          <CompactTickerRow key={t.ticker} t={t} rank={i + 1} onClick={() => onTickerSelect(t)} />
+        ))}
+      </div>
+
+      {/* Mini market summary footer (only when data is present) */}
+      {hasData && (mktSum.most_active_ticker || mktSum.total_call_volume != null) && (
+        <div style={{ borderTop: `1px solid ${C.border}`, padding: "7px 14px", display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", flexShrink: 0 }}>
+          {mktSum.most_active_ticker && (
+            <span style={{ color: C.dim, fontSize: 10, fontFamily: font }}>
+              Most active: <span style={{ color: C.gold }}>{mktSum.most_active_ticker}</span>
+            </span>
+          )}
+          {mktSum.total_call_volume != null && (
+            <span style={{ color: C.dim, fontSize: 10, fontFamily: font }}>
+              C vol: <span style={{ color: C.green }}>{fmtVol(mktSum.total_call_volume)}</span>
+            </span>
+          )}
+          {mktSum.total_put_volume != null && (
+            <span style={{ color: C.dim, fontSize: 10, fontFamily: font }}>
+              P vol: <span style={{ color: C.red }}>{fmtVol(mktSum.total_put_volume)}</span>
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Main Options Flow page (unified 2×2 layout) ─────────────────────────
+export default function OptionsPage() {
+  const [selectedTicker, setSelectedTicker] = useState<TickerResult | null>(null);
+  const [contractDetailSymbol, setContractDetailSymbol] = useState<string | null>(null);
+  const [chatInput, setChatInput] = useState("");
+  const [chatMessages, setChatMessages] = useState<Array<{ role: "user" | "ai"; text: string }>>([]);
+  const [chatLoading, setChatLoading] = useState(false);
+  const chatBottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     chatBottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatMessages]);
-
-  // Live "last refresh / refresh in" countdown
-  useEffect(() => {
-    if (!lastFetchedAt) return;
-    const tick = () => {
-      const ageS = Math.floor((Date.now() - lastFetchedAt) / 1000);
-      const agoText = ageS < 60 ? `${ageS}s ago` : `${Math.floor(ageS / 60)}m ${ageS % 60}s ago`;
-      if (nextRefreshSecs != null) {
-        const remaining = Math.max(0, nextRefreshSecs - ageS);
-        const remText = remaining < 60 ? `${remaining}s` : `${Math.floor(remaining / 60)}m ${remaining % 60}s`;
-        setRefreshStatusText(`Last refresh: ${agoText} · Refresh in ${remText}`);
-      } else {
-        setRefreshStatusText(`Last refresh: ${agoText}`);
-      }
-    };
-    tick();
-    const iv = setInterval(tick, 1000);
-    return () => clearInterval(iv);
-  }, [lastFetchedAt, nextRefreshSecs]);
 
   const askAgent = async () => {
     if (!chatInput.trim() || chatLoading) return;
@@ -1573,14 +1708,14 @@ export default function OptionsPage() {
     setChatMessages(prev => [...prev, { role: "user", text: q }]);
     setChatLoading(true);
     try {
-      const res = await fetch(`${AGENT_BACKEND_URL}/api/options/query`, {
+      const res = await window.fetch(`${API_BASE}/query`, {
         method: "POST",
         headers: authHeaders(),
-        body: JSON.stringify({ query: q, tab: scanTab, context_data: data, conversation_id: null }),
+        body: JSON.stringify({ query: q, context_data: null, conversation_id: null }),
       });
       const json = await res.json();
-      const text = json.analysis || json.response?.analysis || json.structured?.summary || json.text || "No response.";
-      setChatMessages(prev => [...prev, { role: "ai", text }]);
+      const text = json.analysis || json.response?.analysis || json.structured?.summary || json.answer || json.text || "No response.";
+      setChatMessages(prev => [...prev, { role: "ai", text: String(text) }]);
     } catch (e: any) {
       setChatMessages(prev => [...prev, { role: "ai", text: `Error: ${e.message}` }]);
     } finally {
@@ -1588,264 +1723,83 @@ export default function OptionsPage() {
     }
   };
 
-  const resp: OptionsDashboardResponse = data?.response || {};
-  const tickers = (resp.tickers || []).slice().sort((a, b) => (normalizeScore(b.composite_score) ?? -1) - (normalizeScore(a.composite_score) ?? -1));
-  const allContracts = resp.all_contracts || [];
-  const mktSum = resp.market_summary || {};
-  const pipelineStats = resp.pipeline_stats || {};
-  const filterDefaults = resp.filter_defaults || {};
-  const scoreWeights = resp.score_weights || {};
-  const cacheAge: number | null = data?.cache_age_seconds ?? null;
-  const fromCache: boolean = data?.from_cache ?? false;
-  // Always use stable knownAvailableTabs so tabs never jump around on click
-  const availableTabs: ScanTab[] = knownAvailableTabs;
-  const hasData = tickers.length > 0;
-  // Detect scanner-warming state: response received but produced zero ranked tickers.
-  // This is distinct from a true zero-result (completed scan that found nothing).
-  // Backend may signal this via explicit fields; we also infer it from the response shape.
-  const explicitWarmup = !!(
-    (data as any)?.cache_warming === true ||
-    (data as any)?.scan_status === "warming" ||
-    (data as any)?.scan_status === "precompute_pending"
-  );
-  // When the scan returned 0 tickers and we have no previous stale data, treat as warming.
-  const isWarmingUp = !hasData && data != null && !loading && !error && (explicitWarmup || !fromCache);
-  const degradedSources = ensureArray((pipelineStats as any)?.degraded_sources || (mktSum as any)?.degraded_sources);
-
-  const filterEntries = Object.entries(filterDefaults).filter(([, value]) => value !== null && value !== undefined && value !== "").slice(0, 8);
-  const scoreWeightEntries = Object.entries(scoreWeights).filter(([, value]) => typeof value === "number");
-
   return (
-    <div style={{ background: C.bg, minHeight: "100vh", fontFamily: sans }}>
+    <div style={{ background: C.bg, minHeight: "100vh", fontFamily: sans, display: "flex", flexDirection: "column" }}>
       <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes pulse { 0%,100% { opacity:0.5; } 50% { opacity:1; } }
-        @keyframes fadeIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
-        @keyframes refreshBar { from { width: 0%; } to { width: 100%; } }
-        @keyframes toastIn { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
-        @keyframes toastOut { from { opacity:1; } to { opacity:0; } }
+        @keyframes spin   { to { transform: rotate(360deg); } }
+        @keyframes pulse  { 0%,100% { opacity: 0.45; } 50% { opacity: 1; } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
       `}</style>
 
-      <div style={{ padding: "16px 20px 10px", borderBottom: `1px solid ${C.border}`, background: C.bg, zIndex: 10 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: hasData ? 10 : 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            <Zap className="w-5 h-5" style={{ color: C.green }} />
-            <span style={{ color: C.bright, fontSize: 17, fontWeight: 800, fontFamily: font, letterSpacing: "-0.02em" }}>OPTIONS FLOW</span>
-            {fromCache && cacheAge != null ? <span style={{ color: C.dim, fontSize: 10, fontFamily: font }}>Updated {cacheAge}s ago</span> : null}
-            {isRefreshing && <Loader2 className="w-3 h-3 animate-spin" style={{ color: C.blue, opacity: 0.7 }} />}
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            {scoreWeightEntries.length ? (
-              <button onClick={() => setShowRankingInfo(v => !v)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", background: `${C.purple}12`, border: `1px solid ${C.purple}30`, borderRadius: 7, color: C.purple, fontSize: 11, fontWeight: 600, fontFamily: font, cursor: "pointer" }}>
-                <BarChart3 className="w-3 h-3" /> How ranking works
-              </button>
-            ) : null}
-            <button onClick={() => fetchDashboard()} disabled={loading || isRefreshing} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 14px", background: `${C.blue}12`, border: `1px solid ${C.blue}30`, borderRadius: 7, color: (loading || isRefreshing) ? C.dim : C.blue, fontSize: 12, fontWeight: 600, fontFamily: font, cursor: (loading || isRefreshing) ? "not-allowed" : "pointer" }}>
-              <RefreshCw className={`w-3 h-3 ${(loading || isRefreshing) ? "animate-spin" : ""}`} />
-              {loading ? loadStage : isRefreshing ? "Refreshing..." : "Refresh"}
-            </button>
+      {/* Page header */}
+      <div style={{ padding: "13px 20px 11px", borderBottom: `1px solid ${C.border}`, background: C.bg, flexShrink: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <Zap className="w-5 h-5" style={{ color: C.green }} />
+          <span style={{ color: C.bright, fontSize: 17, fontWeight: 800, fontFamily: font, letterSpacing: "-0.02em" }}>OPTIONS FLOW</span>
+          <span style={{ color: C.dim, fontSize: 11, fontFamily: font }}>· all 4 scans load simultaneously</span>
+          <div style={{ marginLeft: "auto" }}>
+            <DataIngestionWidget />
           </div>
         </div>
+      </div>
 
-        {/* Scan tab switcher */}
-        <div style={{ display: "flex", gap: 4, alignItems: "center", flexWrap: "wrap", marginBottom: 4 }}>
-          {availableTabs.map(t => (
-            <button key={t} onClick={() => switchScanTab(t)} disabled={loading && !hasData}
-              style={{ padding: "5px 16px", fontSize: 11, fontWeight: 700, fontFamily: font, background: scanTab === t ? `${C.green}18` : "transparent", color: scanTab === t ? C.green : C.dim, border: `1px solid ${scanTab === t ? C.green + "40" : C.border}`, borderRadius: 6, cursor: (loading && !hasData) ? "not-allowed" : "pointer", opacity: (loading && !hasData) && scanTab !== t ? 0.5 : 1, transition: "all 0.15s ease" }}>
-              {SCAN_TAB_LABELS[t] || toTitleCase(t)}
-            </button>
-          ))}
-          {refreshStatusText && (
-            <span style={{ marginLeft: "auto", color: C.dim, fontSize: 10, fontFamily: font }}>{refreshStatusText}</span>
-          )}
-        </div>
+      {/* 2×2 panel grid — each panel is self-contained with independent fetch */}
+      <div style={{ flex: 1, padding: "14px 16px 0", display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 14, alignContent: "start" }}>
+        {SCAN_TAB_ORDER.map(tab => (
+          <CategoryPanel
+            key={tab}
+            tab={tab}
+            onTickerSelect={setSelectedTicker}
+          />
+        ))}
+      </div>
 
-        {showRankingInfo && scoreWeightEntries.length ? (
-          <div style={{ marginBottom: 10, background: C.card, border: `1px solid ${C.border}`, borderRadius: 9, padding: 12, animation: "fadeIn 0.25s ease" }}>
-            <div style={{ color: C.dim, fontSize: 10, fontFamily: font, textTransform: "uppercase", marginBottom: 8 }}>Score weights</div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {scoreWeightEntries.map(([key, value]) => <Badge key={key} color={C.purple}>{toTitleCase(key)} {fmtNum(normalizeScore(value as number), 0)}</Badge>)}
-            </div>
-          </div>
-        ) : null}
-
-        {hasData && (
-          <div style={{ display: "grid", gap: 10, animation: "fadeIn 0.35s ease" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(135px, 1fr))", gap: 8 }}>
-              <MetricBlock label="Most Active" value={fmtMaybeText((mktSum as any).most_active_ticker)} color={C.gold} />
-              <MetricBlock label="Market P/C" value={(mktSum as any).market_pc_ratio != null ? fmtNum((mktSum as any).market_pc_ratio, 2) : "—"} color={pcColor((mktSum as any).market_pc_ratio ?? null)} />
-              <MetricBlock label="Call Volume" value={fmtVol((mktSum as any).total_call_volume as number | null)} color={C.green} />
-              <MetricBlock label="Put Volume" value={fmtVol((mktSum as any).total_put_volume as number | null)} color={C.red} />
-              <MetricBlock label="Tickers Ranked" value={(mktSum as any).tickers_ranked ?? tickers.length} color={C.blue} />
-              <MetricBlock label="Prefilter" value={(pipelineStats as any).prefilter_candidate_count ?? "—"} color={C.text} />
-              <MetricBlock label="Inspected" value={(pipelineStats as any).options_inspection_count ?? "—"} color={C.text} />
-              <MetricBlock label="Ranked Results" value={(pipelineStats as any).ranked_result_count ?? tickers.length} color={C.bright} />
-              <MetricBlock label="Degraded Sources" value={degradedSources.length} color={degradedSources.length ? C.orange : C.green} subtext={degradedSources.length ? degradedSources.join(", ") : "All enrichment sources available"} />
-            </div>
-
-            {((mktSum as any).macro_context || filterEntries.length || degradedSources.length) && (
-              <SectionCard>
-                <div style={{ padding: 12, display: "grid", gap: 10 }}>
-                  {(mktSum as any).macro_context ? <div style={{ color: C.text, fontSize: 12, lineHeight: 1.6 }}><span style={{ color: C.dim, fontFamily: font, fontSize: 10, textTransform: "uppercase" }}>Macro context:</span> {(mktSum as any).macro_context as ReactNode}</div> : null}
-                  {Object.keys(scanDefaults).length ? (
-                    <div>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-                        <div style={{ color: C.dim, fontSize: 9, fontFamily: font, textTransform: "uppercase" }}>Scan defaults</div>
-                        {scanDefaultsIsEditable && (
-                          <div style={{ display: "flex", gap: 6 }}>
-                            {Object.keys(scanDefaultsOverrides).length > 0 && (
-                              <button onClick={saveScanDefaults} disabled={scanDefaultsSaving} style={{ display: "flex", alignItems: "center", gap: 4, padding: "3px 8px", fontSize: 9, fontWeight: 600, fontFamily: font, background: `${C.green}15`, border: `1px solid ${C.green}30`, borderRadius: 4, color: C.green, cursor: scanDefaultsSaving ? "not-allowed" : "pointer" }}>
-                                <Save className="w-3 h-3" /> Save
-                              </button>
-                            )}
-                            <button onClick={resetScanDefaults} disabled={scanDefaultsSaving} style={{ display: "flex", alignItems: "center", gap: 4, padding: "3px 8px", fontSize: 9, fontWeight: 600, fontFamily: font, background: `${C.orange}15`, border: `1px solid ${C.orange}30`, borderRadius: 4, color: C.orange, cursor: scanDefaultsSaving ? "not-allowed" : "pointer" }}>
-                              <RotateCcw className="w-3 h-3" /> Reset to Defaults
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                        {tierMcapRange && (tierMcapRange.min != null || tierMcapRange.max != null || tierMcapRange.label) && (
-                          <Badge key="__tier_mcap" color={C.dim} sm>Mcap Range: {tierMcapRange.label || `${tierMcapRange.min != null ? fmtMaybeText(tierMcapRange.min) : "—"} – ${tierMcapRange.max != null ? fmtMaybeText(tierMcapRange.max) : "—"}`}</Badge>
-                        )}
-                        {Object.entries(scanDefaults).filter(([k, v]) => v !== null && v !== undefined && v !== "" && !/(^|_)(min|max)_mcap$|^mcap_/i.test(k)).slice(0, 12).map(([key, value]) => {
-                          const isEditable = scanDefaultsIsEditable && scanDefaultsEditable.includes(key);
-                          const currentVal = scanDefaultsOverrides[key] ?? value;
-                          if (isEditable) {
-                            return (
-                              <div key={key} style={{ display: "flex", alignItems: "center", gap: 4, background: `${C.blue}10`, border: `1px solid ${C.blue}25`, borderRadius: 5, padding: "2px 6px" }}>
-                                <span style={{ color: C.dim, fontSize: 9, fontFamily: font }}>{toTitleCase(key)}:</span>
-                                <input
-                                  type={typeof value === "number" ? "number" : "text"}
-                                  value={currentVal}
-                                  onChange={e => {
-                                    const v = typeof value === "number" ? (e.target.value === "" ? "" : Number(e.target.value)) : e.target.value;
-                                    setScanDefaultsOverrides(prev => ({ ...prev, [key]: v }));
-                                  }}
-                                  style={{ width: 60, background: C.bg, border: `1px solid ${C.border}`, borderRadius: 3, padding: "1px 4px", color: C.bright, fontSize: 10, fontFamily: font, outline: "none" }}
-                                />
-                              </div>
-                            );
-                          }
-                          return <Badge key={key} color={C.blue} sm>{toTitleCase(key)}: {fmtMaybeText(currentVal)}</Badge>;
-                        })}
-                      </div>
-                    </div>
-                  ) : null}
-                  {degradedSources.length ? (
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, color: C.orange, fontSize: 12 }}>
-                      <CircleAlert className="w-4 h-4" /> Some enrichment sources were unavailable, so certain scores or details may be approximate.
-                    </div>
-                  ) : null}
+      {/* Bottom AI chat */}
+      <div style={{ borderTop: `1px solid ${C.border}`, background: C.card, padding: "10px 20px 14px", flexShrink: 0, marginTop: 14 }}>
+        {chatMessages.length > 0 && (
+          <div style={{ maxHeight: 180, overflowY: "auto", marginBottom: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+            {chatMessages.map((m, i) => (
+              <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
+                <div style={{ maxWidth: "82%", padding: "8px 12px", borderRadius: 8, fontSize: 12, fontFamily: sans, lineHeight: 1.6, background: m.role === "user" ? `${C.blue}18` : C.cardAlt, color: m.role === "user" ? C.blue : C.text, border: `1px solid ${m.role === "user" ? `${C.blue}30` : C.border}` }}>
+                  {m.text}
                 </div>
-              </SectionCard>
+              </div>
+            ))}
+            {chatLoading && (
+              <div style={{ display: "flex", alignItems: "center", gap: 6, color: C.dim, fontSize: 11, fontFamily: font }}>
+                <Loader2 className="w-3 h-3 animate-spin" /> Analyzing…
+              </div>
             )}
+            <div ref={chatBottomRef} />
           </div>
         )}
-      </div>
-
-      {/* Thin refresh progress bar */}
-      {isRefreshing && (
-        <div style={{ height: 2, background: C.border, overflow: "hidden", position: "relative" }}>
-          <div style={{ height: "100%", background: C.blue, animation: "refreshBar 8s ease-in-out infinite", opacity: 0.8 }} />
-        </div>
-      )}
-
-      {/* Refresh error toast */}
-      {refreshError && (
-        <div style={{ position: "fixed", top: 12, right: 12, zIndex: 100, background: `${C.orange}18`, border: `1px solid ${C.orange}40`, borderRadius: 8, padding: "8px 14px", color: C.orange, fontSize: 12, fontFamily: font, animation: "toastIn 0.2s ease", display: "flex", alignItems: "center", gap: 6 }}>
-          <CircleAlert className="w-3 h-3" /> {refreshError}
-        </div>
-      )}
-
-      <div style={{ display: "flex", flexDirection: "column" }}>
-        <div style={{ padding: "14px 20px" }}>
-          {loading && !hasData && (
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, padding: "60px 20px" }}>
-              <div style={{ width: 40, height: 40, border: `3px solid ${C.border}`, borderTop: `3px solid ${C.blue}`, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-              <div style={{ color: C.blue, fontSize: 13, fontFamily: font }}>{loadStage}</div>
-              {[1, 2, 3].map(i => <Skeleton key={i} h={48} mb={0} />)}
-            </div>
-          )}
-
-          {error && !loading && !hasData && (
-            <div style={{ background: `${C.red}10`, border: `1px solid ${C.red}30`, borderRadius: 10, padding: "14px 18px", color: C.red, fontSize: 13, fontFamily: sans }}>⚠ {error}</div>
-          )}
-
-          {isWarmingUp && (
-            <div style={{ background: `${C.blue}06`, border: `1px solid ${C.blue}18`, borderRadius: 10, padding: "28px 20px", textAlign: "center", animation: "fadeIn 0.3s ease" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 8 }}>
-                <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: C.blue, animation: "pulse 1.4s ease-in-out infinite" }} />
-                <span style={{ color: C.blue, fontSize: 14, fontWeight: 700, fontFamily: font }}>Warming live options scanner…</span>
-              </div>
-              <div style={{ color: C.text, fontSize: 12, lineHeight: 1.6 }}>
-                The scanner is building its first ranked result set. Data will appear automatically — no action needed.
-              </div>
-            </div>
-          )}
-          {!loading && !isRefreshing && !error && data && tickers.length === 0 && !isWarmingUp && (
-            <div style={{ background: `${C.yellow}08`, border: `1px solid ${C.yellow}25`, borderRadius: 10, padding: "24px 20px", textAlign: "center", animation: "fadeIn 0.3s ease" }}>
-              <div style={{ color: C.yellow, fontSize: 14, fontWeight: 700, fontFamily: font, marginBottom: 8 }}>No ranked tickers</div>
-              <div style={{ color: C.text, fontSize: 12, lineHeight: 1.6, marginBottom: 14 }}>
-                The scan completed but found no tickers meeting the current signal thresholds.
-              </div>
-              <button onClick={() => fetchDashboard()} style={{ padding: "8px 20px", background: `${C.blue}18`, border: `1px solid ${C.blue}40`, borderRadius: 7, color: C.blue, fontSize: 12, fontWeight: 600, fontFamily: font, cursor: "pointer" }}>
-                <RefreshCw className="w-3 h-3" style={{ display: "inline-block", marginRight: 6, verticalAlign: "middle" }} />
-                Refresh
-              </button>
-            </div>
-          )}
-
-          {hasData && <DataIngestionWidget />}
-
-          {hasData && (
-            <div style={{ animation: "fadeIn 0.35s ease" }}>
-              <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
-                {[
-                  { id: "tickers" as MainTab, label: "Signal Board", count: tickers.length },
-                  { id: "flow" as MainTab, label: "Contracts Table", count: allContracts.length },
-                ].map(t => (
-                  <button key={t.id} onClick={() => setTab(t.id)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 16px", fontSize: 11, fontWeight: 600, fontFamily: font, background: tab === t.id ? `${C.blue}18` : "transparent", color: tab === t.id ? C.blue : C.dim, border: `1px solid ${tab === t.id ? `${C.blue}40` : C.border}`, borderRadius: 6, cursor: "pointer" }}>
-                    {t.label}
-                    <span style={{ background: `${C.blue}25`, color: C.blue, borderRadius: 10, padding: "0 6px", fontSize: 9 }}>{t.count}</span>
-                  </button>
-                ))}
-              </div>
-              {tab === "tickers" && <TickerSummaryTab tickers={tickers} />}
-              {tab === "flow" && <FlowTab contracts={allContracts} onContractClick={(sym) => setContractDetailSymbol(sym)} />}
-            </div>
-          )}
-        </div>
-
-        <div style={{ borderTop: `1px solid ${C.border}`, background: C.card, padding: "10px 20px 14px", flexShrink: 0 }}>
-          {chatMessages.length > 0 && (
-            <div style={{ maxHeight: 180, overflowY: "auto", marginBottom: 10, display: "flex", flexDirection: "column", gap: 8 }}>
-              {chatMessages.map((m, i) => (
-                <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
-                  <div style={{ maxWidth: "82%", padding: "8px 12px", borderRadius: 8, fontSize: 12, fontFamily: sans, lineHeight: 1.6, background: m.role === "user" ? `${C.blue}18` : C.cardAlt, color: m.role === "user" ? C.blue : C.text, border: `1px solid ${m.role === "user" ? `${C.blue}30` : C.border}` }}>
-                    {m.text}
-                  </div>
-                </div>
-              ))}
-              {chatLoading && <div style={{ display: "flex", alignItems: "center", gap: 6, color: C.dim, fontSize: 11, fontFamily: font }}><Loader2 className="w-3 h-3 animate-spin" /> Analyzing...</div>}
-              <div ref={chatBottomRef} />
-            </div>
-          )}
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <input value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); askAgent(); } }} placeholder={hasData ? "Ask about signal rank, thesis, risks, IV regime, or contract ideas..." : "Loading data..."} disabled={chatLoading || !hasData} style={{ flex: 1, background: C.cardAlt, border: `1px solid ${C.border}`, borderRadius: 8, padding: "9px 14px", color: C.bright, fontSize: 12, fontFamily: sans, outline: "none", opacity: hasData ? 1 : 0.5 }} />
-            <button onClick={askAgent} disabled={chatLoading || !chatInput.trim() || !hasData} style={{ padding: "9px 14px", background: chatLoading || !chatInput.trim() || !hasData ? `${C.dim}18` : `${C.blue}20`, border: `1px solid ${chatLoading || !chatInput.trim() || !hasData ? C.border : `${C.blue}40`}`, borderRadius: 8, color: chatLoading || !chatInput.trim() || !hasData ? C.dim : C.blue, cursor: chatLoading || !chatInput.trim() || !hasData ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 5 }}>
-              {chatLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-            </button>
-          </div>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <input
+            value={chatInput}
+            onChange={e => setChatInput(e.target.value)}
+            onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); askAgent(); } }}
+            placeholder="Ask about signal rank, thesis, flow drivers, or any ticker across all scans…"
+            disabled={chatLoading}
+            style={{ flex: 1, background: C.cardAlt, border: `1px solid ${C.border}`, borderRadius: 8, padding: "9px 14px", color: C.bright, fontSize: 12, fontFamily: sans, outline: "none" }}
+          />
+          <button
+            onClick={askAgent}
+            disabled={chatLoading || !chatInput.trim()}
+            style={{ padding: "9px 14px", background: chatLoading || !chatInput.trim() ? `${C.dim}18` : `${C.blue}20`, border: `1px solid ${chatLoading || !chatInput.trim() ? C.border : `${C.blue}40`}`, borderRadius: 8, color: chatLoading || !chatInput.trim() ? C.dim : C.blue, cursor: chatLoading || !chatInput.trim() ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 5 }}
+          >
+            {chatLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+          </button>
         </div>
       </div>
 
-      {/* Contract Detail Modal */}
+      {/* Ticker detail modal */}
+      {selectedTicker && (
+        <TickerDetailModal ticker={selectedTicker} onClose={() => setSelectedTicker(null)} />
+      )}
+
+      {/* Contract detail modal (for inline contract drill-down) */}
       {contractDetailSymbol && (
-        <ContractDetailModal
-          occSymbol={contractDetailSymbol}
-          onClose={() => setContractDetailSymbol(null)}
-        />
+        <ContractDetailModal occSymbol={contractDetailSymbol} onClose={() => setContractDetailSymbol(null)} />
       )}
     </div>
   );

@@ -1,0 +1,147 @@
+You are working in this repo only:
+
+* Frontend repo: https://github.com/apiatx/caelyn-agent-frontend.git
+
+Workflow rules:
+
+* Work directly on `main`
+* Do NOT create a branch
+* Do NOT create a PR
+* Commit directly to `main`
+* Push directly to `main`
+* Make small logical commits as you go
+
+Project constraints:
+
+* This repo is the display layer. 
+* The goal is to reuse existing backend payloads cleanly and avoid wasteful extra requests. 
+
+This is a focused Options page + Home page frontend pass. Do not broaden scope.
+
+PRIMARY GOALS
+
+1. Replace the current tab-switched Options Flow page with a unified 4-panel page
+   Instead of:
+
+* click ETFs
+* wait
+* click Megacaps
+* wait
+* click Large Caps
+* timeout
+* click Small Caps
+* timeout
+
+I want:
+
+* ETFs
+* Megacaps
+* Large Caps
+* Small Caps
+
+all visible side by side on one unified Options Flow page at the same time.
+
+Important:
+
+* the current data tables/cards are wide, so the layout will need adjustment
+* do not just cram the current tab UI into microscopic columns
+* redesign the page layout enough that four category glass cards/panels can coexist cleanly
+
+2. Make the Home page “Unusual Options Flow” section reflect the repaired engine
+
+* once backend is fixed, Home should show the highest-signal unusual names, not just biggest companies
+* wire whatever repaired backend payload comes back
+* do not keep stale front-end assumptions that bias the display
+
+AUDIT FIRST
+Inspect the current frontend implementation for:
+
+* the Options Flow page component(s)
+* how tab switching is currently wired
+* how many requests happen on tab change
+* current table/card widths and why a 4-across layout would or would not fit
+* current Home unusual-options section rendering and row assumptions
+
+IMPLEMENT — OPTIONS FLOW PAGE
+
+A. Remove the tab-switched UX
+
+* convert the page into a unified multi-panel layout
+* all 4 categories should be visible on the page simultaneously:
+
+  * ETFs
+  * Megacaps
+  * Large Caps
+  * Small Caps
+
+B. Layout
+
+* create a clean layout that can accommodate all four without becoming unreadable
+* strong preference:
+
+  * responsive 2x2 grid on normal desktop widths if 4-across is too cramped
+  * or 4-across only if it remains genuinely readable
+* prioritize legibility over literalness
+* each panel should be a clean glass card with:
+
+  * title/category
+  * freshness/status metadata if available
+  * ranked unusual options rows
+
+C. Data flow
+
+* use the backend’s repaired multi-category options payload if provided
+* do not force user interaction to load categories one by one
+* do not add silly polling hacks
+* keep requests disciplined
+
+D. State semantics
+
+* each category panel should clearly distinguish:
+
+  * warming
+  * refreshing
+  * stale but available
+  * live with data
+  * true zero results
+* do not show misleading empty states during recompute
+
+IMPLEMENT — HOME PAGE
+
+* update the Home Unusual Options Flow section to match the repaired backend row shape/scoring
+* ensure the Home section reflects the highest-signal unusual names across the broader market
+* if the backend now returns better metadata, surface it cleanly
+
+VERIFY
+Before finishing, verify:
+
+1. Options Flow page no longer requires tab switching
+2. all four categories are visible together
+3. all four datasets render without the prior timeout-driven UX failure
+4. layout remains readable
+5. Home unusual options section renders the repaired engine output
+6. no new unnecessary page-level fetch fan-out was added beyond what backend now supports
+
+DELIVERABLES
+When done, report:
+
+1. exact frontend files changed
+2. exact previous cause of the bad tab UX
+3. exact new layout chosen:
+
+   * 4-across
+   * 2x2 grid
+   * or adaptive responsive mix
+4. how the page now consumes all four categories
+5. how category status/freshness is shown
+6. whether Home unusual options section needed row-shape/UI updates
+7. whether query count changed
+8. confirmation changes were committed and pushed directly to `main`
+
+EXECUTION STYLE
+
+* Audit first
+* Make the page usable, not clever
+* Keep it dense but readable
+* Remove the “click and pray” tab workflow
+* Then commit and push directly to `main`
