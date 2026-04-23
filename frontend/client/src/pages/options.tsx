@@ -385,13 +385,13 @@ function DetailList({ title, items }: { title: string; items: Array<{ label: str
   const visible = items.filter(item => item.value !== null && item.value !== undefined && item.value !== "—" && item.value !== "");
   if (!visible.length) return null;
   return (
-    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, padding: 12 }}>
-      <div style={{ color: C.bright, fontSize: 11, fontFamily: font, textTransform: "uppercase", marginBottom: 8 }}>{title}</div>
-      <div style={{ display: "grid", gap: 8 }}>
+    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, padding: 12, minWidth: 0 }}>
+      <div style={{ color: C.bright, fontSize: 11, fontFamily: font, textTransform: "uppercase", marginBottom: 10 }}>{title}</div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {visible.map(item => (
-          <div key={item.label} style={{ display: "grid", gridTemplateColumns: "150px 1fr", gap: 8, alignItems: "start" }}>
-            <div style={{ color: C.dim, fontSize: 10, fontFamily: font, textTransform: "uppercase" }}>{item.label}</div>
-            <div style={{ color: item.color || C.text, fontSize: 12, lineHeight: 1.5 }}>{item.value}</div>
+          <div key={item.label} style={{ minWidth: 0 }}>
+            <div style={{ color: C.dim, fontSize: 9, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 2 }}>{item.label}</div>
+            <div style={{ color: item.color || C.text, fontSize: 12, lineHeight: 1.5, wordBreak: "break-word" }}>{item.value}</div>
           </div>
         ))}
       </div>
@@ -662,7 +662,7 @@ function TickerDetailPanel({ symbol, ticker }: { symbol: string; ticker: TickerR
 
   return (
     <div style={{ display: "grid", gap: 12, minWidth: 0 }} onClick={e => e.stopPropagation()}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
         <DetailList
           title="Signal thesis"
           items={[
