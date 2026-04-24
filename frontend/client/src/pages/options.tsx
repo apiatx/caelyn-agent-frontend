@@ -207,6 +207,12 @@ interface TickerResult {
   data_quality?: DataQuality | null;
   technicals?: any;
   historic_volume?: any;
+  // Screener-specific fields — gracefully null if backend hasn't deployed them yet
+  heat_score?: number | null;
+  premium?: number | null;
+  premium_change_pct?: number | null;
+  oi_change_pct?: number | null;
+  unusual_otm?: boolean | null;
 }
 
 interface OptionsDashboardResponse {
@@ -264,6 +270,14 @@ const fmtRatioPct = (n: unknown, d = 1) => {
   return `${(v * 100).toFixed(d)}%`;
 };
 const fmtPlainPct = (n: unknown, d = 1) => { const v = safeNum(n); return v == null ? "—" : `${v.toFixed(d)}%`; };
+const fmtCurrencyShort = (n: unknown): string => {
+  const v = safeNum(n);
+  if (v == null) return "—";
+  const a = Math.abs(v);
+  if (a >= 1_000_000) return `$${(v / 1_000_000).toFixed(2)}M`;
+  if (a >= 1_000)     return `$${(v / 1_000).toFixed(0)}K`;
+  return `$${v.toFixed(0)}`;
+};
 const fmtMaybeText = (value: unknown) => {
   if (value == null || value === "") return "—";
   if (Array.isArray(value)) return value.filter(Boolean).join(", ");
@@ -1566,26 +1580,120 @@ function CompactTickerRow({ t, rank, onClick }: { t: TickerResult; rank: number;
   );
 }
 
-// ─── Master Screener — single endpoint, client-side filter + sort ──────────
-type FilterChip = "all" | "etf" | "stock" | "megacap" | "large" | "small";
-type SortField  = "score" | "symbol" | "move" | "vol" | "oi" | "pc" | "confidence" | "ivskew";
+// ─── Master Screener — TradingView-style screener from /api/options/screener ─
+type FilterChip =
+  | "all" | "stock" | "etf" | "call" | "put" | "bullish" | "bearish"
+  | "high_premium" | "unusual_otm" | "short_dte" | "high_heat" | "small" | "large";
+type SortField =
+  | "score" | "heat" | "symbol" | "move" | "premium" | "vol" | "oi"
+  | "oi_change" | "vol_oi" | "call_pct" | "dte";
 
 const FILTER_CHIPS: Array<{ key: FilterChip; label: string }> = [
-  { key: "all",     label: "All" },
-  { key: "etf",     label: "ETFs" },
-  { key: "stock",   label: "Stocks" },
-  { key: "megacap", label: "Megacap" },
-  { key: "large",   label: "Large Cap" },
-  { key: "small",   label: "Small Cap" },
+  { key: "all",          label: "All" },
+  { key: "stock",        label: "Stocks" },
+  { key: "etf",          label: "ETFs" },
+  { key: "call",         label: "Calls" },
+  { key: "put",          label: "Puts" },
+  { key: "bullish",      label: "Bullish" },
+  { key: "bearish",      label: "Bearish" },
+  { key: "high_premium", label: "High Premium" },
+  { key: "unusual_otm",  label: "Unusual OTM" },
+  { key: "short_dte",    label: "Short DTE" },
+  { key: "high_heat",    label: "High Heat" },
+  { key: "small",        label: "Small Cap" },
+  { key: "large",        label: "Large Cap" },
 ];
 
-const confColor = (c?: string | null) => {
-  const s = (c || "").toLowerCase();
-  if (s === "high")   return C.green;
-  if (s === "medium") return C.yellow;
-  if (s === "low")    return C.red;
-  return C.dim;
+// ── Screener derive helpers ────────────────────────────────────────────────
+const COL_TIPS: Record<string, string> = {
+  heat:    "Custom composite of signal score, premium, volume/OI, OI delta, premium delta, and urgency.",
+  premium: "Estimated dollar value of the option flow.",
+  prem_d:  "Premium change versus prior cached snapshot.",
+  oi_d:    "Open interest change versus prior cached snapshot.",
+  voi:     "Volume ÷ open interest. High values may indicate unusual activity.",
+  callpct: "Share of total volume flowing into calls.",
+  putpct:  "Share of total volume flowing into puts.",
+  otm:     "Distance of the contract strike from the underlying price.",
+  unusual: "OTM contract with meaningful premium and unusually high volume/OI.",
+  dte:     "Days until expiration of the primary contract focus.",
 };
+
+const getBias = (t: TickerResult): { label: string; color: string } | null => {
+  const sig = (t.primary_signal || "").toLowerCase();
+  if (sig.includes("bull") || sig.includes("breakout") || sig.includes("squeeze"))
+    return { label: "Bullish", color: C.green };
+  if (sig.includes("bear") || sig.includes("short") || sig.includes("reversal"))
+    return { label: "Bearish", color: C.red };
+  const pcr = safeNum(t.pc_ratio);
+  if (pcr != null && pcr < 0.75) return { label: "Calls", color: C.green };
+  if (pcr != null && pcr > 1.25) return { label: "Puts",  color: C.red };
+  return null;
+};
+
+const getDTE = (t: TickerResult): number | null => {
+  const d = safeNum(t.top_contracts?.[0]?.dte);
+  if (d != null) return d;
+  const ef = t.expiration_focus;
+  if (Array.isArray(ef) && ef.length > 0) {
+    const last = ef[ef.length - 1];
+    if (typeof last === "number") return last;
+  }
+  return null;
+};
+
+const getOTMPct = (t: TickerResult): number | null => {
+  const c = t.top_contracts?.[0];
+  const bep = safeNum(c?.break_even_distance_pct);
+  if (bep != null) return bep;
+  const strike = safeNum(c?.strike);
+  const price  = safeNum(t.underlying_price);
+  if (strike != null && price != null && price > 0)
+    return ((strike - price) / price) * 100;
+  return null;
+};
+
+const getCallPct = (t: TickerResult): number | null => {
+  const cv = safeNum(t.call_volume), tv = safeNum(t.total_volume);
+  return (cv != null && tv != null && tv > 0) ? (cv / tv) * 100 : null;
+};
+
+const getPutPct = (t: TickerResult): number | null => {
+  const pv = safeNum(t.put_volume), tv = safeNum(t.total_volume);
+  return (pv != null && tv != null && tv > 0) ? (pv / tv) * 100 : null;
+};
+
+const getVolOI = (t: TickerResult): number | null => {
+  const vol = safeNum(t.total_volume), oi = safeNum(t.total_oi);
+  return (vol != null && oi != null && oi > 0) ? vol / oi : null;
+};
+
+const isUnusualOTM = (t: TickerResult): boolean => {
+  if (t.unusual_otm != null) return Boolean(t.unusual_otm);
+  return (t.top_contracts || []).some(c =>
+    ((c.vol_oi_ratio ?? c.option_volume_to_oi_ratio ?? 0) > 10) &&
+    ((c.break_even_distance_pct ?? 0) > 5)
+  );
+};
+
+const heatColor = (h: number | null) => {
+  if (h == null) return C.dim;
+  if (h >= 80)   return C.green;
+  if (h >= 60)   return C.blue;
+  if (h >= 40)   return C.yellow;
+  return C.text;
+};
+
+const SDot = ({ color, anim = false }: { color: string; anim?: boolean }) => (
+  <span style={{ width: 5, height: 5, borderRadius: "50%", background: color, display: "inline-block", flexShrink: 0, ...(anim ? { animation: "pulse 1.4s ease-in-out infinite" } : {}) }} />
+);
+
+// Column width map
+const W = {
+  rank: 24, ticker: 112, type: 48, price: 72, score: 62, heat: 54,
+  signal: 100, bias: 62, move: 60, premium: 82, prem_d: 64, vol: 64,
+  oi: 64, oi_d: 62, voi: 52, callpct: 52, putpct: 52, dte: 40,
+  strike: 66, otm: 56, unusual: 66, thesis: 180,
+} as const;
 
 function MasterScreener({
   screenerData,
@@ -1623,36 +1731,58 @@ function MasterScreener({
     return "no_data_yet";
   })();
 
-  // Apply filter chip — uses asset_type and market_cap_bucket from screener payload
+  // Filter
   const filtered = useMemo(() => {
     if (filter === "all") return rawTickers;
     return rawTickers.filter(t => {
-      const at  = (t.asset_type        || "stock").toLowerCase();
+      const at  = (t.asset_type || "stock").toLowerCase();
       const cap = (t.market_cap_bucket || "").toLowerCase();
-      if (filter === "etf")     return at === "etf";
-      if (filter === "stock")   return at !== "etf";
-      if (filter === "megacap") return cap === "megacap";
-      if (filter === "large")   return cap === "large" || cap === "large_cap";
-      if (filter === "small")   return cap === "small" || cap === "small_cap";
-      return true;
+      const sig = (t.primary_signal || "").toLowerCase();
+      const pcr = safeNum(t.pc_ratio);
+      const dte = getDTE(t);
+      switch (filter) {
+        case "stock":        return at !== "etf";
+        case "etf":          return at === "etf";
+        case "call":         return (pcr != null && pcr < 0.85) || sig.includes("call") || sig.includes("bull");
+        case "put":          return (pcr != null && pcr > 1.15) || sig.includes("put") || sig.includes("bear");
+        case "bullish":      return sig.includes("bull") || sig.includes("breakout") || sig.includes("squeeze");
+        case "bearish":      return sig.includes("bear") || sig.includes("short");
+        case "high_premium": return (t.premium ?? 0) > 500_000;
+        case "unusual_otm":  return isUnusualOTM(t);
+        case "short_dte":    return dte != null && dte <= 7;
+        case "high_heat":    return (t.heat_score ?? 0) >= 75;
+        case "small":        return cap.includes("small");
+        case "large":        return cap.includes("large") || cap.includes("mega");
+        default:             return true;
+      }
     });
   }, [rawTickers, filter]);
 
-  // Apply sort
+  // Multi-key sort: primary field, then heat → premium → score as tie-breakers
   const sorted = useMemo(() => {
     const dir = sortDir === "asc" ? 1 : -1;
+    const scoreOf = (t: TickerResult) => normalizeScore(t.composite_score) ?? -1;
+    const heatOf  = (t: TickerResult) => t.heat_score ?? -1;
+    const premOf  = (t: TickerResult) => t.premium ?? -1;
     return [...filtered].sort((a, b) => {
+      let d = 0;
       switch (sortField) {
-        case "score":      return dir * ((normalizeScore(b.composite_score) ?? -1) - (normalizeScore(a.composite_score) ?? -1));
-        case "symbol":     return dir * a.ticker.localeCompare(b.ticker);
-        case "move":       return dir * ((safeNum(b.price_change_pct) ?? 0) - (safeNum(a.price_change_pct) ?? 0));
-        case "vol":        return dir * ((b.total_volume ?? 0) - (a.total_volume ?? 0));
-        case "oi":         return dir * ((b.total_oi ?? 0) - (a.total_oi ?? 0));
-        case "pc":         return dir * ((b.pc_ratio ?? 0) - (a.pc_ratio ?? 0));
-        case "confidence": return dir * ((b.confidence_score ?? 0) - (a.confidence_score ?? 0));
-        case "ivskew":     return dir * ((safeNum(b.iv_skew) ?? 0) - (safeNum(a.iv_skew) ?? 0));
-        default:           return 0;
+        case "score":     d = scoreOf(b) - scoreOf(a); break;
+        case "heat":      d = heatOf(b) - heatOf(a); break;
+        case "symbol":    d = a.ticker.localeCompare(b.ticker); break;
+        case "move":      d = (safeNum(b.price_change_pct) ?? 0) - (safeNum(a.price_change_pct) ?? 0); break;
+        case "premium":   d = premOf(b) - premOf(a); break;
+        case "vol":       d = (b.total_volume ?? 0) - (a.total_volume ?? 0); break;
+        case "oi":        d = (b.total_oi ?? 0) - (a.total_oi ?? 0); break;
+        case "oi_change": d = (safeNum(b.oi_change_pct) ?? 0) - (safeNum(a.oi_change_pct) ?? 0); break;
+        case "vol_oi":    d = (getVolOI(b) ?? 0) - (getVolOI(a) ?? 0); break;
+        case "call_pct":  d = (getCallPct(b) ?? 0) - (getCallPct(a) ?? 0); break;
+        case "dte":       d = (getDTE(a) ?? 9999) - (getDTE(b) ?? 9999); break;
       }
+      if (d !== 0) return dir * d;
+      const hd = heatOf(b) - heatOf(a); if (hd !== 0) return hd;
+      const pd = premOf(b) - premOf(a); if (pd !== 0) return pd;
+      return scoreOf(b) - scoreOf(a);
     });
   }, [filtered, sortField, sortDir]);
 
@@ -1661,47 +1791,58 @@ function MasterScreener({
     else { setSortField(field); setSortDir("desc"); }
   };
 
-  const ColHdr = ({ field, label }: { field: SortField; label: string }) => (
-    <span
-      onClick={() => toggleSort(field)}
-      style={{
-        cursor: "pointer",
-        color: sortField === field ? C.blue : C.dim,
-        fontSize: 9, fontFamily: font,
-        textTransform: "uppercase" as const,
-        letterSpacing: "0.06em",
-        userSelect: "none" as const,
-        display: "inline-flex", alignItems: "center", gap: 2,
-      }}
-    >
-      {label}{sortField === field ? (sortDir === "desc" ? " ↓" : " ↑") : ""}
-    </span>
-  );
+  const totalW = Object.values(W).reduce((a: number, b: number) => a + b, 0);
 
-  const StatusEl = () => {
-    if (pageLoading && !hasData) return null;
-    const dot = (color: string, anim = false) => (
-      <span style={{ width: 5, height: 5, borderRadius: "50%", background: color, display: "inline-block", ...(anim ? { animation: "pulse 1.4s ease-in-out infinite" } : {}) }} />
+  // Column header helper (closure over sortField/sortDir/toggleSort)
+  const ch = (id: string, label: string, sort?: SortField, align: "left" | "right" = "left") => {
+    const active = !!sort && sortField === sort;
+    return (
+      <div
+        key={id}
+        onClick={sort ? () => toggleSort(sort) : undefined}
+        title={COL_TIPS[id]}
+        style={{
+          width: W[id as keyof typeof W], flexShrink: 0,
+          padding: "0 5px 5px",
+          fontSize: 9, fontFamily: font,
+          textTransform: "uppercase" as const, letterSpacing: "0.06em",
+          color: active ? C.blue : C.dim,
+          cursor: sort ? "pointer" : "default",
+          userSelect: "none" as const,
+          display: "flex", alignItems: "center",
+          justifyContent: align === "right" ? "flex-end" : "flex-start",
+          gap: 2,
+          borderBottom: `1px solid ${active ? C.blue + "55" : "transparent"}`,
+          boxSizing: "border-box" as const,
+        }}
+      >
+        {label}
+        {active && <span>{sortDir === "desc" ? "↓" : "↑"}</span>}
+        {!!COL_TIPS[id] && !active && <span style={{ opacity: 0.35, fontSize: 8 }}>ⓘ</span>}
+      </div>
     );
-    if (overallState === "live_ok")
-      return <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: C.green, fontSize: 10, fontFamily: font }}>{dot(C.green)} live</span>;
-    if (overallState === "refresh_in_progress")
-      return <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: C.blue, fontSize: 10, fontFamily: font }}>{dot(C.blue, true)} refreshing{nextRefresh != null ? ` · next in ${nextRefresh}s` : ""}</span>;
-    if (overallState === "stale_but_available")
-      return <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: C.yellow, fontSize: 10, fontFamily: font }}>{dot(C.yellow, true)} stale{cacheAge != null ? ` · ${cacheAge}s old` : ""}</span>;
-    if (overallState === "no_data_yet")
-      return <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: C.blue, fontSize: 10, fontFamily: font }}>{dot(C.blue, true)} scanning…</span>;
-    return null;
   };
 
-  // rank | ticker | score | signal+conf | move% | vol | OI | P/C | thesis
-  const ROW_GRID = "24px 152px 82px 120px 65px 62px 62px 50px 1fr";
+  // Status indicator
+  const statusEl = (() => {
+    if (pageLoading && !hasData) return null;
+    const base: React.CSSProperties = { display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontFamily: font };
+    if (overallState === "live_ok")
+      return <span style={{ ...base, color: C.green }}><SDot color={C.green} /> live</span>;
+    if (overallState === "refresh_in_progress")
+      return <span style={{ ...base, color: C.blue }}><SDot color={C.blue} anim /> refreshing{nextRefresh != null ? ` · ${nextRefresh}s` : ""}</span>;
+    if (overallState === "stale_but_available")
+      return <span style={{ ...base, color: C.yellow }}><SDot color={C.yellow} anim /> stale{cacheAge != null ? ` · ${cacheAge}s old` : ""}</span>;
+    if (overallState === "no_data_yet")
+      return <span style={{ ...base, color: C.blue }}><SDot color={C.blue} anim /> scanning…</span>;
+    return null;
+  })();
 
   if (pageLoading && !hasData) {
     return (
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, padding: 40 }}>
+      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, padding: 40 }}>
         <div style={{ width: 16, height: 16, border: `2px solid ${C.border}`, borderTop: `2px solid ${C.blue}`, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-        <div style={{ color: C.dim, fontSize: 11, fontFamily: font }}>Loading master screener…</div>
+        <span style={{ color: C.dim, fontSize: 11, fontFamily: font }}>Loading screener…</span>
       </div>
     );
   }
@@ -1709,30 +1850,24 @@ function MasterScreener({
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden" }}>
 
-      {/* ── Controls bar ── */}
+      {/* ── Filter / control bar ── */}
       <div style={{ padding: "8px 16px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", flexShrink: 0, background: C.bg }}>
         <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
           {FILTER_CHIPS.map(f => (
-            <button
-              key={f.key}
-              onClick={() => setFilter(f.key)}
-              style={{
-                padding: "3px 11px", borderRadius: 999,
-                border: `1px solid ${filter === f.key ? C.blue : C.border}`,
-                background: filter === f.key ? `${C.blue}15` : "transparent",
-                color: filter === f.key ? C.blue : C.dim,
-                fontSize: 10, fontFamily: font, cursor: "pointer", transition: "all 0.12s",
-              }}
-            >{f.label}</button>
+            <button key={f.key} onClick={() => setFilter(f.key)} style={{
+              padding: "3px 10px", borderRadius: 999,
+              border: `1px solid ${filter === f.key ? C.blue : C.border}`,
+              background: filter === f.key ? `${C.blue}14` : "transparent",
+              color: filter === f.key ? C.blue : C.dim,
+              fontSize: 10, fontFamily: font, cursor: "pointer", transition: "all 0.1s",
+            }}>{f.label}</button>
           ))}
         </div>
         <span style={{ flex: 1 }} />
         {sorted.length > 0 && <span style={{ color: C.dim, fontSize: 10, fontFamily: font }}>{sorted.length} signals</span>}
-        <StatusEl />
-        <button
-          onClick={onRefresh} disabled={pageLoading} title="Refresh"
-          style={{ background: "none", border: "none", cursor: pageLoading ? "not-allowed" : "pointer", color: pageLoading ? C.border : C.dim, padding: 2, display: "flex", alignItems: "center" }}
-        >
+        {statusEl}
+        <button onClick={onRefresh} disabled={pageLoading} title="Refresh"
+          style={{ background: "none", border: "none", cursor: pageLoading ? "not-allowed" : "pointer", color: pageLoading ? C.border : C.dim, padding: 2, display: "flex", alignItems: "center" }}>
           <RefreshCw className={`w-3 h-3 ${pageRefreshing ? "animate-spin" : ""}`} />
         </button>
       </div>
@@ -1740,142 +1875,196 @@ function MasterScreener({
       {/* ── Stale / refresh notice ── */}
       {hasData && (isStale || pageRefreshing || refreshInProgress) && (
         <div style={{ padding: "5px 16px", background: `${C.yellow}08`, borderBottom: `1px solid ${C.yellow}15`, display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-          <span style={{ width: 4, height: 4, borderRadius: "50%", background: C.yellow, display: "inline-block", animation: "pulse 1.4s ease-in-out infinite" }} />
+          <SDot color={C.yellow} anim />
           <span style={{ color: C.yellow, fontSize: 10, fontFamily: font }}>
             {refreshInProgress || pageRefreshing ? "Refresh in progress — showing last snapshot" : `Stale snapshot${cacheAge != null ? ` · ${cacheAge}s old` : ""}`}
           </span>
         </div>
       )}
 
-      {/* ── Column headers ── */}
-      <div style={{ display: "grid", gridTemplateColumns: ROW_GRID, gap: 0, padding: "5px 16px", borderBottom: `1px solid ${C.border}`, background: C.cardAlt, flexShrink: 0 }}>
-        <span style={{ color: C.dim, fontSize: 9, fontFamily: font }}>#</span>
-        <ColHdr field="symbol"     label="Ticker" />
-        <ColHdr field="score"      label="Score" />
-        <ColHdr field="confidence" label="Signal / Conf" />
-        <ColHdr field="move"       label="Move %" />
-        <ColHdr field="vol"        label="Vol" />
-        <ColHdr field="oi"         label="OI" />
-        <ColHdr field="pc"         label="P/C" />
-        <span style={{ color: C.dim, fontSize: 9, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>Thesis</span>
-      </div>
+      {/* ── Empty / loading states ── */}
+      {!hasData && overallState === "no_data_yet" && (
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          <SDot color={C.blue} anim />
+          <span style={{ color: C.dim, fontSize: 11, fontFamily: font }}>Warming scanner — first results building automatically</span>
+        </div>
+      )}
+      {!hasData && overallState === "true_zero_results" && (
+        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <span style={{ color: C.dim, fontSize: 12, fontFamily: font }}>Scan complete — no unusual signals above threshold</span>
+        </div>
+      )}
+      {hasData && sorted.length === 0 && (
+        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <span style={{ color: C.dim, fontSize: 11, fontFamily: font }}>No signals match the current filter</span>
+        </div>
+      )}
 
-      {/* ── Rows ── */}
-      <div style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
+      {/* ── Screener table (horizontally scrollable) ── */}
+      {sorted.length > 0 && (
+        <div style={{ flex: 1, overflowX: "auto", overflowY: "auto", minHeight: 0 }}>
+          <div style={{ minWidth: totalW + 32 }}>
 
-        {!hasData && overallState === "no_data_yet" && (
-          <div style={{ padding: "52px 20px", textAlign: "center" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7, marginBottom: 8, color: C.blue, fontSize: 12, fontFamily: font }}>
-              <span style={{ width: 7, height: 7, borderRadius: "50%", background: C.blue, display: "inline-block", animation: "pulse 1.4s ease-in-out infinite" }} />
-              Warming scanner…
+            {/* Sticky column header row */}
+            <div style={{
+              display: "flex", alignItems: "stretch",
+              position: "sticky", top: 0, zIndex: 10,
+              background: C.cardAlt, borderBottom: `1px solid ${C.border}`,
+              paddingLeft: 16, paddingTop: 6,
+            }}>
+              {ch("rank",    "#")}
+              {ch("ticker",  "Ticker",   "symbol")}
+              {ch("type",    "Type")}
+              {ch("price",   "Price",    undefined, "right")}
+              {ch("score",   "Score",    "score",   "right")}
+              {ch("heat",    "Heat",     "heat",    "right")}
+              {ch("signal",  "Signal")}
+              {ch("bias",    "Bias")}
+              {ch("move",    "Move %",   "move",    "right")}
+              {ch("premium", "Premium",  "premium", "right")}
+              {ch("prem_d",  "Prem Δ%",  undefined, "right")}
+              {ch("vol",     "Vol",      "vol",     "right")}
+              {ch("oi",      "OI",       "oi",      "right")}
+              {ch("oi_d",    "OI Δ%",    "oi_change","right")}
+              {ch("voi",     "V/OI",     "vol_oi",  "right")}
+              {ch("callpct", "Call %",   "call_pct","right")}
+              {ch("putpct",  "Put %",    undefined, "right")}
+              {ch("dte",     "DTE",      "dte",     "right")}
+              {ch("strike",  "Strike",   undefined, "right")}
+              {ch("otm",     "OTM %",    undefined, "right")}
+              {ch("unusual", "Unusual")}
+              {ch("thesis",  "Thesis")}
             </div>
-            <div style={{ color: C.dim, fontSize: 11 }}>First results are building — will appear automatically</div>
-          </div>
-        )}
-        {!hasData && overallState === "true_zero_results" && (
-          <div style={{ padding: "52px 20px", textAlign: "center", color: C.dim, fontSize: 12 }}>
-            Scan complete — no unusual options signals above threshold
-          </div>
-        )}
-        {hasData && sorted.length === 0 && (
-          <div style={{ padding: "36px 20px", textAlign: "center", color: C.dim, fontSize: 11 }}>
-            No signals match the current filter
-          </div>
-        )}
 
-        {sorted.map((t, i) => {
-          const score   = normalizeScore(t.composite_score);
-          const sigClr  = getSignalColor(t.primary_signal);
-          const confClr = confColor(t.confidence);
-          const pchg    = safeNum(t.price_change_pct);
-          const pchgPct = pchg != null ? (Math.abs(pchg) <= 1 ? pchg * 100 : pchg) : null;
-          const assetLbl = (t.asset_type || "").toUpperCase();
-          const capLbl   = t.market_cap_bucket || "";
-          // Thesis: prefer explicit thesis string, fall back to context summary
-          const thesisArr = Array.isArray(t.thesis) ? t.thesis : (t.thesis ? [t.thesis] : []);
-          const thesisText = (thesisArr[0] || t.stock_context_summary || t.options_context_summary || "").slice(0, 140);
-          return (
-            <div
-              key={t.ticker}
-              onClick={() => onTickerSelect(t)}
-              style={{
-                display: "grid", gridTemplateColumns: ROW_GRID, gap: 0,
-                padding: "9px 16px", borderBottom: `1px solid ${C.border}`,
-                cursor: "pointer", alignItems: "center", transition: "background 0.1s",
-              }}
-              onMouseEnter={e => (e.currentTarget.style.background = `${C.blue}07`)}
-              onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
-            >
-              {/* Rank */}
-              <span style={{ color: C.dim, fontSize: 10, fontFamily: font }}>{i + 1}</span>
+            {/* Data rows */}
+            {sorted.map((t, i) => {
+              const score   = normalizeScore(t.composite_score);
+              const heat    = t.heat_score ?? null;
+              const sigClr  = getSignalColor(t.primary_signal);
+              const bias    = getBias(t);
+              const pchg    = safeNum(t.price_change_pct);
+              const pchgPct = pchg != null ? (Math.abs(pchg) <= 1 ? pchg * 100 : pchg) : null;
+              const premium = t.premium ?? null;
+              const premD   = safeNum(t.premium_change_pct);
+              const oiD     = safeNum(t.oi_change_pct);
+              const voi     = getVolOI(t);
+              const callPct = getCallPct(t);
+              const putPct  = getPutPct(t);
+              const dte     = getDTE(t);
+              const strike  = safeNum(t.top_contracts?.[0]?.strike);
+              const otmPct  = getOTMPct(t);
+              const unusual = isUnusualOTM(t);
+              const assetLbl = (t.asset_type || "").toUpperCase();
 
-              {/* Ticker + price + badges */}
-              <div style={{ minWidth: 0 }}>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
-                  <span style={{ color: C.bright, fontFamily: font, fontWeight: 800, fontSize: 12 }}>{t.ticker}</span>
-                  {t.underlying_price != null && (
-                    <span style={{ color: C.dim, fontFamily: font, fontSize: 10 }}>{fmtMoney(t.underlying_price)}</span>
-                  )}
+              const thesisArr  = Array.isArray(t.thesis) ? t.thesis : (t.thesis ? [t.thesis] : []);
+              const thesisFull = thesisArr[0] || t.stock_context_summary || t.options_context_summary || "";
+              const thesisTrunc = thesisFull.length > 110 ? thesisFull.slice(0, 110) + "…" : thesisFull;
+
+              // Cell helper — fixed-width flex cell
+              const cell = (id: keyof typeof W, content: ReactNode, color = C.text, align: "left" | "right" = "left", bold = false) => (
+                <div style={{
+                  width: W[id], flexShrink: 0, padding: "0 5px",
+                  fontSize: 11, fontFamily: font, color, fontWeight: bold ? 700 : 400,
+                  textAlign: align, display: "flex", alignItems: "center",
+                  justifyContent: align === "right" ? "flex-end" : "flex-start",
+                  boxSizing: "border-box" as const,
+                }}>
+                  {content ?? <span style={{ color: C.dim }}>—</span>}
                 </div>
-                <div style={{ display: "flex", gap: 3, marginTop: 2, flexWrap: "wrap" }}>
-                  {assetLbl && <Badge color={C.dim} sm>{assetLbl}</Badge>}
-                  {capLbl && assetLbl !== "ETF" && <Badge color={C.dim} sm>{capLbl}</Badge>}
+              );
+
+              return (
+                <div
+                  key={t.ticker}
+                  onClick={() => onTickerSelect(t)}
+                  style={{
+                    display: "flex", alignItems: "center",
+                    paddingLeft: 16, paddingTop: 7, paddingBottom: 7,
+                    borderBottom: `1px solid ${C.border}`,
+                    cursor: "pointer", transition: "background 0.08s",
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.background = `${C.blue}07`)}
+                  onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                >
+                  {cell("rank",   i + 1, C.dim, "right")}
+
+                  {/* Ticker */}
+                  <div style={{ width: W.ticker, flexShrink: 0, padding: "0 5px" }}>
+                    <span style={{ color: C.bright, fontFamily: font, fontWeight: 700, fontSize: 12 }}>{t.ticker}</span>
+                  </div>
+
+                  {/* Type badge */}
+                  <div style={{ width: W.type, flexShrink: 0, padding: "0 4px" }}>
+                    {assetLbl && <span style={{ fontSize: 9, color: C.dim, fontFamily: font, background: `${C.border}90`, borderRadius: 3, padding: "1px 4px" }}>{assetLbl}</span>}
+                  </div>
+
+                  {cell("price",   t.underlying_price != null ? fmtMoney(t.underlying_price) : null, C.text, "right")}
+
+                  {/* Score — colored number */}
+                  <div style={{ width: W.score, flexShrink: 0, padding: "0 5px", textAlign: "right" }}>
+                    {score != null
+                      ? <span style={{ color: scoreColor(score), fontFamily: font, fontWeight: 700, fontSize: 12 }}>{fmtNum(score, 0)}</span>
+                      : <span style={{ color: C.dim }}>—</span>}
+                  </div>
+
+                  {/* Heat */}
+                  <div style={{ width: W.heat, flexShrink: 0, padding: "0 5px", textAlign: "right" }}>
+                    {heat != null
+                      ? <span style={{ color: heatColor(heat), fontFamily: font, fontWeight: heat >= 80 ? 700 : 400, fontSize: 11 }}>{heat.toFixed(0)}</span>
+                      : <span style={{ color: C.dim }}>—</span>}
+                  </div>
+
+                  {/* Signal badge */}
+                  <div style={{ width: W.signal, flexShrink: 0, padding: "0 5px" }}>
+                    {t.primary_signal ? <Badge color={sigClr}>{t.primary_signal}</Badge> : <span style={{ color: C.dim, fontSize: 10 }}>—</span>}
+                  </div>
+
+                  {/* Bias */}
+                  <div style={{ width: W.bias, flexShrink: 0, padding: "0 5px" }}>
+                    {bias
+                      ? <span style={{ color: bias.color, fontSize: 10, fontFamily: font, fontWeight: 600 }}>{bias.label}</span>
+                      : <span style={{ color: C.dim, fontSize: 10 }}>—</span>}
+                  </div>
+
+                  {cell("move",    pchgPct != null ? fmtSmartPct(pchgPct) : null, pchgPct == null ? C.dim : pchgPct >= 0 ? C.green : C.red, "right")}
+
+                  {/* Premium — bold + gold if >$1M */}
+                  <div style={{ width: W.premium, flexShrink: 0, padding: "0 5px", textAlign: "right" }}>
+                    {premium != null
+                      ? <span style={{ color: premium >= 1_000_000 ? C.gold : C.text, fontFamily: font, fontWeight: premium >= 1_000_000 ? 700 : 400, fontSize: 11 }}>{fmtCurrencyShort(premium)}</span>
+                      : <span style={{ color: C.dim }}>—</span>}
+                  </div>
+
+                  {cell("prem_d",  premD != null ? fmtSmartPct(premD) : null, premD == null ? C.dim : premD >= 0 ? C.green : C.red, "right")}
+                  {cell("vol",     t.total_volume != null ? fmtVol(t.total_volume) : null, C.text, "right")}
+                  {cell("oi",      t.total_oi != null ? fmtVol(t.total_oi) : null, C.text, "right")}
+                  {cell("oi_d",    oiD != null ? fmtSmartPct(oiD) : null, oiD == null ? C.dim : oiD >= 0 ? C.green : C.red, "right")}
+                  {cell("voi",     voi != null ? fmtNum(voi, 1) : null, voi == null ? C.dim : voi > 5 ? C.orange : C.text, "right")}
+                  {cell("callpct", callPct != null ? `${callPct.toFixed(0)}%` : null, callPct != null ? C.green : C.dim, "right")}
+                  {cell("putpct",  putPct != null ? `${putPct.toFixed(0)}%` : null, putPct != null ? C.red : C.dim, "right")}
+                  {cell("dte",     dte != null ? String(dte) : null, dte == null ? C.dim : dte <= 3 ? C.red : dte <= 7 ? C.orange : C.text, "right")}
+                  {cell("strike",  strike != null ? `$${strike}` : null, C.text, "right")}
+                  {cell("otm",     otmPct != null ? `${otmPct > 0 ? "+" : ""}${otmPct.toFixed(1)}%` : null, C.text, "right")}
+
+                  {/* Unusual OTM badge */}
+                  <div style={{ width: W.unusual, flexShrink: 0, padding: "0 5px" }}>
+                    {unusual && (
+                      <span style={{ fontSize: 9, color: C.orange, fontFamily: font, background: `${C.orange}18`, border: `1px solid ${C.orange}35`, borderRadius: 3, padding: "1px 5px", fontWeight: 700, letterSpacing: "0.04em" }}>UNUSUAL</span>
+                    )}
+                  </div>
+
+                  {/* Thesis truncated with full text in tooltip */}
+                  <div style={{ width: W.thesis, flexShrink: 0, padding: "0 8px 0 5px" }} title={thesisFull || undefined}>
+                    <span style={{ color: C.dim, fontSize: 10, fontFamily: font, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {thesisTrunc}
+                    </span>
+                  </div>
                 </div>
-              </div>
-
-              {/* Score bar + number */}
-              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                {score != null ? (
-                  <>
-                    <div style={{ width: 32, height: 3, background: C.border, borderRadius: 999, flexShrink: 0 }}>
-                      <div style={{ width: `${score}%`, height: "100%", background: scoreColor(score), borderRadius: 999 }} />
-                    </div>
-                    <span style={{ color: scoreColor(score), fontSize: 11, fontFamily: font, fontWeight: 700 }}>{fmtNum(score, 0)}</span>
-                  </>
-                ) : <span style={{ color: C.dim, fontSize: 10 }}>—</span>}
-              </div>
-
-              {/* Signal + confidence badge stacked */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                {t.primary_signal
-                  ? <Badge color={sigClr}>{t.primary_signal}</Badge>
-                  : <span style={{ color: C.dim, fontSize: 10, fontFamily: font }}>—</span>
-                }
-                {t.confidence && (
-                  <span style={{ color: confClr, fontSize: 9, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.04em" }}>
-                    {t.confidence} conf
-                  </span>
-                )}
-              </div>
-
-              {/* Move % */}
-              <span style={{ color: pchgPct == null ? C.dim : pchgPct >= 0 ? C.green : C.red, fontFamily: font, fontSize: 11 }}>
-                {pchgPct != null ? `${pchgPct >= 0 ? "+" : ""}${pchgPct.toFixed(1)}%` : "—"}
-              </span>
-
-              {/* Vol */}
-              <span style={{ color: C.text, fontFamily: font, fontSize: 11 }}>
-                {t.total_volume != null ? fmtVol(t.total_volume) : "—"}
-              </span>
-
-              {/* OI */}
-              <span style={{ color: C.text, fontFamily: font, fontSize: 11 }}>
-                {t.total_oi != null ? fmtVol(t.total_oi) : "—"}
-              </span>
-
-              {/* P/C */}
-              <span style={{ color: t.pc_ratio != null ? pcColor(t.pc_ratio) : C.dim, fontFamily: font, fontSize: 11 }}>
-                {t.pc_ratio != null ? fmtNum(t.pc_ratio, 2) : "—"}
-              </span>
-
-              {/* Thesis / context excerpt */}
-              <span style={{ color: C.dim, fontSize: 10, lineHeight: 1.4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
-                {thesisText}
-              </span>
-            </div>
-          );
-        })}
-      </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
