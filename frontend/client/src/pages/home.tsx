@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useState, useEffect, useRef } from "react";
-import { LineChart as RLineChart, Line, ResponsiveContainer } from "recharts";
+import { AreaChart, Area, LineChart as RLineChart, Line, ResponsiveContainer } from "recharts";
 import {
   TrendingUp,
   TrendingDown,
@@ -29,7 +29,8 @@ import { GlassCard } from "@/components/glass-card";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import type {
   HomeDashboardPayload,
   HomeFearGreedSide,
@@ -272,55 +273,72 @@ function TVChartWidget({ symbol }: { symbol: string }) {
 
 function MacroCard({ card, history, onClick }: { card: HomeMacroCard; history?: number[]; onClick?: () => void }) {
   const up = (card.change_pct ?? 0) >= 0;
+  const neutral = card.change_pct === null || card.change_pct === 0;
   const chartData = (history && history.length > 1)
     ? history.map((v, i) => ({ i, v }))
     : null;
-  const lineColor = up ? "#34d399" : "#f87171";
+  const lineColor = neutral ? "#6b7280" : up ? "#34d399" : "#f87171";
+  const fillId = `macro-fill-${card.symbol}`;
   const isRate = card.kind === "rate";
-  const noteLabel = card.note || "1D";
+
+  const priceStr = card.price == null
+    ? "—"
+    : isRate
+      ? card.price.toFixed(2)
+      : fmtNum(card.price, 2);
+
+  let changeStr = "0.00%";
+  if (card.change_pct == null) {
+    changeStr = isRate ? "0 bps" : "0.00%";
+  } else if (isRate) {
+    const bps = Math.round(card.change_pct * 100);
+    changeStr = `${bps >= 0 ? "+" : ""}${bps} bps`;
+  } else {
+    changeStr = `${card.change_pct >= 0 ? "+" : ""}${card.change_pct.toFixed(2)}%`;
+  }
+
   return (
     <GlassCard
-      className="p-3 min-h-[92px] flex flex-col justify-between relative overflow-hidden cursor-pointer hover:border-white/20 hover:bg-white/[0.04] transition-all"
+      className="flex flex-col overflow-hidden cursor-pointer hover:border-white/20 transition-colors"
       onClick={onClick}
     >
-      <div className="flex items-center justify-between">
-        <div className="text-[11px] uppercase tracking-wide text-white/50">
-          {card.label}
+      <div className="px-3 pt-3 pb-1">
+        <div className="text-[13px] font-medium text-white/85 leading-tight">{card.label}</div>
+        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+          <span className="text-[13px] font-semibold text-white/90">{priceStr}</span>
+          <span className={`flex items-center gap-0.5 text-[11px] font-medium ${neutral ? "text-white/40" : up ? "text-emerald-400" : "text-rose-400"}`}>
+            {!neutral && (up
+              ? <TrendingUp className="w-3 h-3" />
+              : <TrendingDown className="w-3 h-3" />
+            )}
+            {changeStr}
+          </span>
+          <span className="text-[10px] text-white/30">1D</span>
         </div>
-        <span className="text-[9px] text-white/30 uppercase tracking-wider">{noteLabel}</span>
       </div>
-      <div className="flex items-end justify-between gap-2 mt-1">
-        <div className="flex-1 min-w-0">
-          <div className="text-xl font-semibold text-white/95 leading-none">
-            {isRate
-              ? (card.price != null ? card.price.toFixed(2) : "—")
-              : fmtNum(card.price, 2)}
-          </div>
-          <div className={`text-[11px] flex items-center gap-0.5 font-medium mt-1 ${pctColor(card.change_pct)}`}>
-            {card.change_pct !== null && (up ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />)}
-            {isRate
-              ? (card.change_pct != null ? `${card.change_pct >= 0 ? "+" : ""}${(card.change_pct * 10).toFixed(1)} bps` : "—")
-              : fmtPct(card.change_pct)}
-          </div>
-        </div>
-        {chartData && (
-          <div className="w-[70px] h-[36px] shrink-0">
-            <ResponsiveContainer width="100%" height="100%">
-              <RLineChart data={chartData} margin={{ top: 2, right: 0, left: 0, bottom: 2 }}>
-                <Line
-                  type="monotone"
-                  dataKey="v"
-                  stroke={lineColor}
-                  strokeWidth={1.5}
-                  dot={false}
-                  isAnimationActive={false}
-                />
-              </RLineChart>
-            </ResponsiveContainer>
-          </div>
-        )}
-        {!chartData && (
-          <div className="w-[70px] h-[36px] shrink-0 flex items-end">
+      <div className="h-[44px] w-full mt-auto">
+        {chartData ? (
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={chartData} margin={{ top: 2, right: 0, left: 0, bottom: 0 }}>
+              <defs>
+                <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={lineColor} stopOpacity={0.18} />
+                  <stop offset="95%" stopColor={lineColor} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <Area
+                type="monotone"
+                dataKey="v"
+                stroke={lineColor}
+                strokeWidth={1.5}
+                fill={`url(#${fillId})`}
+                dot={false}
+                isAnimationActive={false}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="w-full h-full flex items-center px-3">
             <div className="w-full h-px bg-white/10" />
           </div>
         )}
@@ -1038,7 +1056,7 @@ export default function HomePage() {
     if (s === "DJI" || l.includes("DOW")) return "DJI";
     if (s === "NDX" || s === "QQQ" || l.includes("NASDAQ")) return "NDX";
     if (s === "BTC" || l.includes("BITCOIN")) return "BTC";
-    if (s === "TNX" || s === "^TNX" || l.includes("10Y") || l.includes("YIELD")) return "TNX";
+    if (s === "TNX" || s === "^TNX" || s === "US10Y" || l.includes("10Y") || l.includes("YIELD")) return "TNX";
     if (s === "VIX" || l.includes("VIX")) return "VIX";
     if (s === "DXY" || l.includes("DXY") || l.includes("DOLLAR")) return "DXY";
     return null;
@@ -1216,6 +1234,7 @@ export default function HomePage() {
         {/* TradingView chart popup modal */}
         <Dialog open={!!macroChartCard} onOpenChange={(open) => { if (!open) setMacroChartCard(null); }}>
           <DialogContent className="max-w-5xl w-[90vw] h-[80vh] p-0 bg-[#0d0e11] border-white/10 overflow-hidden">
+            <VisuallyHidden.Root><DialogTitle>Chart</DialogTitle></VisuallyHidden.Root>
             {macroChartCard && (
               <div className="flex flex-col h-full">
                 <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/[0.07] shrink-0">

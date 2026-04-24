@@ -1,13 +1,13 @@
 import { Card } from "@/components/ui/card";
 
-interface GlassCardProps {
+interface GlassCardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   className?: string;
 }
 
-export function GlassCard({ children, className = "" }: GlassCardProps) {
+export function GlassCard({ children, className = "", ...props }: GlassCardProps) {
   return (
-    <Card className={`glass-card ${className}`}>
+    <Card className={`glass-card ${className}`} {...props}>
       {children}
     </Card>
   );
