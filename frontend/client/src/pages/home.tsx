@@ -548,59 +548,85 @@ function UnusualFlowsSection({
 }
 
 // ── Hyperliquid Top Signals (compact) ─────────────────────────────────────
+// Strip prefixes like "cash:", "perp:", "xyz:" that the backend sometimes includes
+const cleanHLSymbol = (s: string): string => {
+  const stripped = s.includes(":") ? (s.split(":").pop() ?? s) : s;
+  return stripped.replace(/-PERP$/i, "").toUpperCase();
+};
+
+const OI_REGIME_CLR: Record<string, string> = {
+  "Fresh Longs":      "text-emerald-400",
+  "Fresh Shorts":     "text-rose-400",
+  "Short Covering":   "text-amber-400",
+  "Long Liquidation": "text-orange-400",
+};
+
 function HLTopSignals({ signals, loading }: { signals: HLAdvSigs | undefined; loading: boolean }) {
   const rsLeaders = (signals?.relative_strength_leaders || []).slice(0, 5);
-  const oiShifts  = (signals?.oi_regime_shift || []).slice(0, 4);
+  const oiShifts  = (signals?.oi_regime_shift || []).slice(0, 5);
 
-  const OI_REGIME_CLR: Record<string, string> = {
-    "Fresh Longs":      "text-emerald-300 border-emerald-500/25",
-    "Fresh Shorts":     "text-rose-300 border-rose-500/25",
-    "Short Covering":   "text-amber-300 border-amber-500/25",
-    "Long Liquidation": "text-orange-300 border-orange-500/25",
-  };
+  const colHdr  = "text-[9px] uppercase tracking-widest text-white/30 font-medium select-none";
+  const numCell = "text-xs font-mono tabular-nums text-right";
 
   return (
     <GlassCard className="p-4">
       <SectionHeader icon={Activity} title="Hyperliquid Top Signals" accent="Perps · live" />
+
       {loading && Array.from({ length: 5 }).map((_, i) => (
-        <Skeleton key={i} className="h-8 my-1 rounded bg-white/[0.04]" />
+        <Skeleton key={i} className="h-7 my-1 rounded bg-white/[0.04]" />
       ))}
+
       {!loading && !signals && (
         <div className="text-xs text-white/40 py-4 text-center">Signals unavailable.</div>
       )}
+
+      {/* ── RS Leaders ── */}
       {!loading && rsLeaders.length > 0 && (
-        <>
-          <div className="text-[10px] uppercase tracking-wider text-white/35 mb-1.5 px-1">RS Leaders</div>
+        <div className="mt-2">
+          <div className="text-[10px] uppercase tracking-wider text-white/35 mb-2 px-1">Relative Strength Leaders</div>
+          {/* Header row */}
+          <div className="grid grid-cols-[72px_1fr_1fr_1fr_48px] gap-x-2 px-2 pb-1.5 border-b border-white/[0.06]">
+            <span className={colHdr}>Ticker</span>
+            <span className={`${colHdr} text-right`}>1H</span>
+            <span className={`${colHdr} text-right`}>4H</span>
+            <span className={`${colHdr} text-right`}>24H</span>
+            <span className={`${colHdr} text-right`}>RS</span>
+          </div>
           {rsLeaders.map((r) => (
-            <div key={r.symbol} className="flex items-center justify-between px-2 py-1.5 rounded hover:bg-white/[0.03] border-b border-white/[0.03] last:border-0">
-              <span className="text-xs font-semibold text-white/90 w-20 shrink-0">{r.symbol}</span>
-              <div className="flex gap-3 text-xs font-mono">
-                <span className={pctColor(r.return_1h)}>{fmtPct(r.return_1h, 2)} 1h</span>
-                <span className={pctColor(r.return_4h)}>{fmtPct(r.return_4h, 2)} 4h</span>
-                <span className={pctColor(r.return_24h)}>{fmtPct(r.return_24h, 2)} 24h</span>
-              </div>
-              <span className="text-[10px] text-white/40 tabular-nums ml-2 hidden sm:block">RS {r.rs_score.toFixed(1)}</span>
+            <div key={r.symbol} className="grid grid-cols-[72px_1fr_1fr_1fr_48px] gap-x-2 px-2 py-1.5 items-center rounded hover:bg-white/[0.03] border-b border-white/[0.03] last:border-0">
+              <span className="text-xs font-bold text-white/90 truncate">{cleanHLSymbol(r.symbol)}</span>
+              <span className={`${numCell} ${pctColor(r.return_1h)}`}>{fmtPct(r.return_1h, 2)}</span>
+              <span className={`${numCell} ${pctColor(r.return_4h)}`}>{fmtPct(r.return_4h, 2)}</span>
+              <span className={`${numCell} ${pctColor(r.return_24h)}`}>{fmtPct(r.return_24h, 2)}</span>
+              <span className={`${numCell} text-white/45`}>{r.rs_score.toFixed(1)}</span>
             </div>
           ))}
-        </>
+        </div>
       )}
+
+      {/* ── OI Regime Shifts ── */}
       {!loading && oiShifts.length > 0 && (
-        <div className="mt-3">
-          <div className="text-[10px] uppercase tracking-wider text-white/35 mb-1.5 px-1">OI Regime Shifts</div>
+        <div className="mt-4">
+          <div className="text-[10px] uppercase tracking-wider text-white/35 mb-2 px-1">OI Regime Shifts</div>
+          {/* Header row */}
+          <div className="grid grid-cols-[72px_1fr_60px_60px] gap-x-2 px-2 pb-1.5 border-b border-white/[0.06]">
+            <span className={colHdr}>Ticker</span>
+            <span className={colHdr}>Regime</span>
+            <span className={`${colHdr} text-right`}>OI 1H</span>
+            <span className={`${colHdr} text-right`}>Px 24H</span>
+          </div>
           {oiShifts.map((r) => (
-            <div key={r.symbol} className="flex items-center justify-between px-2 py-1.5 rounded hover:bg-white/[0.03] border-b border-white/[0.03] last:border-0">
-              <span className="text-xs font-semibold text-white/90 w-20 shrink-0">{r.symbol}</span>
-              <Badge variant="outline" className={`h-5 text-[9px] px-1.5 ${OI_REGIME_CLR[r.regime] || "text-white/60 border-white/10"}`}>
+            <div key={r.symbol} className="grid grid-cols-[72px_1fr_60px_60px] gap-x-2 px-2 py-1.5 items-center rounded hover:bg-white/[0.03] border-b border-white/[0.03] last:border-0">
+              <span className="text-xs font-bold text-white/90 truncate">{cleanHLSymbol(r.symbol)}</span>
+              <span className={`text-[10px] font-semibold truncate ${OI_REGIME_CLR[r.regime] ?? "text-white/50"}`}>
                 {r.regime}
-              </Badge>
-              <div className="flex gap-2 text-xs font-mono ml-2">
-                {r.oi_change_1h_pct != null && (
-                  <span className={pctColor(r.oi_change_1h_pct)}>{fmtPct(r.oi_change_1h_pct, 1)} OI</span>
-                )}
-                {r.price_change_24h_pct != null && (
-                  <span className={pctColor(r.price_change_24h_pct)}>{fmtPct(r.price_change_24h_pct, 1)} 24h</span>
-                )}
-              </div>
+              </span>
+              <span className={`${numCell} ${r.oi_change_1h_pct != null ? pctColor(r.oi_change_1h_pct) : "text-white/25"}`}>
+                {r.oi_change_1h_pct != null ? fmtPct(r.oi_change_1h_pct, 1) : "—"}
+              </span>
+              <span className={`${numCell} ${r.price_change_24h_pct != null ? pctColor(r.price_change_24h_pct) : "text-white/25"}`}>
+                {r.price_change_24h_pct != null ? fmtPct(r.price_change_24h_pct, 1) : "—"}
+              </span>
             </div>
           ))}
         </div>

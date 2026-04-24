@@ -1,0 +1,112 @@
+You are working in caelyn-agent-frontend. Do not change backend logic. Do not remove ticker click popup behavior. Make the Options Flow page look and behave like a real TradingView-style options screener.
+
+1. Redesign table layout
+
+Replace the current hard-to-read terminal table with a cleaner TradingView-style screener:
+
+Columns:
+
+Ticker
+Type
+Price
+Score
+Heat
+Signal
+Bias
+Move %
+Premium
+Prem Δ%
+Vol
+OI
+OI Δ%
+Vol/OI
+Call %
+Put %
+DTE
+Strike
+OTM %
+Unusual OTM
+Thesis
+
+Use compact but readable spacing. Keep dark theme, but reduce the “all neon all the time” look. Think TradingView, not hacker cave at 3 a.m.
+
+2. Default sort
+
+Default sort should be:
+
+score desc
+heat_score desc
+premium desc
+
+User should not need to click Score. Highest signal names must appear first automatically.
+
+3. Add better formatting
+
+Implement formatters:
+
+formatCurrencyShort(1240000) => "$1.24M"
+formatPercent(42.13) => "+42.1%"
+formatNumberShort(13000) => "13K"
+
+Color rules:
+
+Bullish / positive: green
+Bearish / negative: red
+Neutral / missing: muted gray
+Heat score above 80: strong highlight
+Unusual OTM: visible badge
+Premium above $1M: visible badge or bold
+4. Better filters
+
+Top filter chips should include:
+
+All
+Stocks
+ETFs
+Calls
+Puts
+Bullish
+Bearish
+High Premium
+Unusual OTM
+Short DTE
+High Heat
+Small Cap
+Large Cap
+
+Do not keep only the old ETF/Stock/Megacap/Large/Small filters.
+
+5. Better row UX
+
+Each row should:
+
+Be clickable
+Preserve existing ticker popup/modal
+Highlight on hover
+Use sticky header
+Allow horizontal scroll on small screens
+Truncate thesis but show full thesis in tooltip or expanded row
+Show loading state and stale snapshot warning cleanly
+6. Add column tooltips
+
+Add small tooltip/help text for confusing options columns:
+
+Heat: Custom composite of signal score, premium, volume/OI, OI delta, premium delta, and urgency.
+Premium: Estimated dollar value of the option flow.
+Prem Δ%: Premium change versus prior cached snapshot.
+OI Δ%: Open interest change versus prior cached snapshot.
+Vol/OI: Volume divided by open interest. High values can indicate unusual activity.
+Call %: Share of flow leaning calls.
+Put %: Share of flow leaning puts.
+OTM %: How far the contract strike is out-of-the-money.
+Unusual OTM: OTM contract with meaningful premium and unusually high volume/OI.
+DTE: Days until expiration.
+7. Keep old fields compatible
+
+The frontend must gracefully handle both old and new backend rows:
+
+row.heat_score ?? null
+row.premium ?? null
+row.oi_change_pct ?? null
+
+No crashes if backend deploy lags.
