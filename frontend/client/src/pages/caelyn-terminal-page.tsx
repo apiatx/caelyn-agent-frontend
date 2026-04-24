@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import StocksPortfolioPage from './stocks-portfolio';
+import { PortfolioCompareWatchlistButton, PortfolioCompareWatchlistModal } from '@/components/portfolio-compare-watchlist';
 import { useQuery } from '@tanstack/react-query';
 import {
   ComposedChart, Line, Area, XAxis, YAxis, Tooltip as RCTooltip, ResponsiveContainer,
@@ -182,6 +183,7 @@ function SuggCard({ s }: { s: CTRiskSuggestion }) {
 export default function CaelynTerminalPage() {
   const [perfPeriod, setPerfPeriod] = useState<'1D'|'5D'|'1M'|'6M'|'1Y'>('1Y');
   const [view, setView] = useState<'terminal'|'dashboard'>('terminal');
+  const [compareOpen, setCompareOpen] = useState(false);
 
   const { data, isLoading, isFetching } = useQuery<CaelynTerminalData>({
     queryKey: ['caelyn-terminal'],
@@ -314,6 +316,9 @@ export default function CaelynTerminalPage() {
             </div>
           </div>
         )}
+        <div style={{ flexShrink:0, marginLeft:8 }}>
+          <PortfolioCompareWatchlistButton onClick={() => setCompareOpen(true)} />
+        </div>
       </div>
 
       {view === 'terminal' && (<>
@@ -630,6 +635,12 @@ export default function CaelynTerminalPage() {
           <StocksPortfolioPage />
         </div>
       )}
+
+      {/* ── Compare to Watchlist Modal ────────────────────────────────── */}
+      <PortfolioCompareWatchlistModal
+        open={compareOpen}
+        onClose={() => setCompareOpen(false)}
+      />
 
     </div>
   );
