@@ -1046,8 +1046,8 @@ export default function HomePage() {
           <HLTopSignals signals={hlSignals} loading={hlLoading} />
         </div>
 
-        {/* I + J + H. Four-across: Trending on X | Trending on Stocktwits | Top Movers | Top Losers */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-6" style={{ gridAutoRows: "460px" }}>
+        {/* I + J. Social cards: Trending on X | Trending on Stocktwits */}
+        <div className="grid grid-cols-2 gap-5 mb-5" style={{ gridAutoRows: "460px" }}>
           {/* Trending on X */}
           <GlassCard className="p-4 flex flex-col overflow-hidden">
             {(() => {
@@ -1122,30 +1122,32 @@ export default function HomePage() {
               )}
             </div>
           </GlassCard>
+        </div>
 
+        {/* Category toggle — snug above movers cards, right-aligned */}
+        <div className="flex justify-end mb-2">
+          <div className="flex items-center gap-1 bg-white/[0.03] border border-white/[0.07] rounded-lg px-2 py-1">
+            {(["all", "stocks", "commodities", "crypto", "etfs"] as const).map(cat => (
+              <button
+                key={cat}
+                onClick={() => setMoverCategory(cat)}
+                className={`text-[10px] uppercase tracking-wide px-2.5 py-1 rounded-md transition-colors ${
+                  moverCategory === cat
+                    ? "bg-white/[0.10] text-white font-medium"
+                    : "text-white/40 hover:text-white/65"
+                }`}
+              >
+                {cat === "commodities" ? "Commod." : cat === "all" ? "All" : cat.charAt(0).toUpperCase() + cat.slice(1)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* H. Movers: Top Movers | Top Losers */}
+        <div className="grid grid-cols-2 gap-5 mb-6" style={{ gridAutoRows: "460px" }}>
           {/* Top Movers */}
           <GlassCard className="p-4 flex flex-col overflow-hidden">
-            <SectionHeader
-              icon={TrendingUp}
-              title="Top Movers"
-              action={
-                <div className="flex gap-1 flex-wrap">
-                  {(["all", "stocks", "commodities", "crypto", "etfs"] as const).map(cat => (
-                    <button
-                      key={cat}
-                      onClick={() => setMoverCategory(cat)}
-                      className={`text-[9px] uppercase tracking-wide px-1.5 py-0.5 rounded transition-colors ${
-                        moverCategory === cat
-                          ? "bg-indigo-500/25 text-indigo-300 border border-indigo-500/40"
-                          : "text-white/35 hover:text-white/65 border border-transparent"
-                      }`}
-                    >
-                      {cat === "commodities" ? "Commod." : cat === "all" ? "All" : cat.charAt(0).toUpperCase() + cat.slice(1)}
-                    </button>
-                  ))}
-                </div>
-              }
-            />
+            <SectionHeader icon={TrendingUp} title="Top Movers" accent="today" />
             <div className="divide-y divide-white/[0.04] overflow-y-auto flex-1 min-h-0">
               {categoryMoversLoading && Array.from({ length: 6 }).map((_, i) => (
                 <Skeleton key={i} className="h-9 my-0.5 rounded bg-white/[0.04]" />
@@ -1164,7 +1166,7 @@ export default function HomePage() {
             <SectionHeader
               icon={TrendingDown}
               title="Top Losers"
-              accent={moverCategory === "all" ? "all" : moverCategory === "commodities" ? "commod." : moverCategory}
+              accent="today"
             />
             <div className="divide-y divide-white/[0.04] overflow-y-auto flex-1 min-h-0">
               {categoryMoversLoading && Array.from({ length: 6 }).map((_, i) => (
