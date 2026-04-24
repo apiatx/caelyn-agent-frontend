@@ -2778,7 +2778,11 @@ function useLiveClock() {
 
 // ─── MAIN COMPONENT ──────────────────────────────────────────────────────────
 export function MacroTerminalLive() {
-  const [activeTab, setActiveTab] = useState<TabId>('overview');
+  const [activeTab, setActiveTab] = useState<TabId>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const t = params.get('tab') as TabId | null;
+    return t && TABS.some(tab => tab.id === t) ? t : 'overview';
+  });
   const now = useLiveClock();
 
   useEffect(() => { injectTerminalStyles(); }, []);

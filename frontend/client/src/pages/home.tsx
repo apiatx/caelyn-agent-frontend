@@ -19,7 +19,9 @@ import {
   ChevronUp,
   ChevronDown,
   ChevronsUpDown,
+  ChevronRight,
   X,
+  Signal,
 } from "lucide-react";
 import TickerTapeWidget from "@/components/TickerTapeWidget";
 import { GlassCard } from "@/components/glass-card";
@@ -179,12 +181,15 @@ function SectionHeader({
   title,
   accent,
   action,
+  viewMore,
 }: {
   icon: React.ElementType;
   title: string;
   accent?: string;
   action?: React.ReactNode;
+  viewMore?: string;
 }) {
+  const [, setLocation] = useLocation();
   return (
     <div className="flex items-center justify-between mb-3">
       <div className="flex items-center gap-2">
@@ -199,7 +204,17 @@ function SectionHeader({
           <span className="text-[11px] text-white/40 ml-1">{accent}</span>
         )}
       </div>
-      {action}
+      <div className="flex items-center gap-2">
+        {action}
+        {viewMore && (
+          <button
+            onClick={() => setLocation(viewMore)}
+            className="text-[10px] text-white/30 hover:text-white/60 flex items-center gap-0.5 transition-colors"
+          >
+            View more <ChevronRight className="w-3 h-3" />
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -432,7 +447,7 @@ function FearGreedGauge({
 type SnapSort = "symbol" | "current_price" | "change_1d_pct" | "volume_vs_avg";
 
 function SnapshotTable({
-  items, loading, title, icon: Icon, accent, status, limit = 999, scrollable = false,
+  items, loading, title, icon: Icon, accent, status, limit = 999, scrollable = false, viewMore,
 }: {
   items: HomeSnapshotItem[] | undefined;
   loading: boolean;
@@ -442,6 +457,7 @@ function SnapshotTable({
   status?: string;
   limit?: number;
   scrollable?: boolean;
+  viewMore?: string;
 }) {
   const [sortKey, setSortKey]   = useState<SnapSort>("change_1d_pct");
   const [sortDir, setSortDir]   = useState<"asc" | "desc">("desc");
@@ -468,7 +484,7 @@ function SnapshotTable({
 
   return (
     <GlassCard className="p-4">
-      <SectionHeader icon={Icon} title={title} accent={accent} />
+      <SectionHeader icon={Icon} title={title} accent={accent} viewMore={viewMore} />
       {loading && Array.from({ length: 4 }).map((_, i) => (
         <Skeleton key={i} className="h-8 my-1 rounded bg-white/[0.04]" />
       ))}
@@ -526,12 +542,13 @@ function SnapshotTable({
 
 // ── Unusual Options Flows ─────────────────────────────────────────────────
 function UnusualFlowsSection({
-  flows, status, loading, onTickerClick,
+  flows, status, loading, onTickerClick, viewMore,
 }: {
   flows: HomeUnusualOptionsFlowItem[] | undefined;
   status?: string;
   loading: boolean;
   onTickerClick?: (symbol: string) => void;
+  viewMore?: string;
 }) {
   const hasResults     = (flows?.length ?? 0) > 0;
   // Statuses where the scanner hasn't produced valid data yet.
@@ -562,6 +579,7 @@ function UnusualFlowsSection({
         icon={Zap}
         title="Unusual Options Flows"
         accent={hasResults ? `${flows!.length} signals` : isNotReady ? "live screening" : "options screening"}
+        viewMore={viewMore}
         action={
           isFastCache && hasResults ? (
             <span className="text-[10px] px-1.5 py-0.5 rounded border border-emerald-500/25 text-emerald-400 bg-emerald-500/10 flex items-center gap-1">
@@ -643,7 +661,7 @@ const OI_REGIME_CLR: Record<string, string> = {
   "Long Liquidation": "text-orange-400",
 };
 
-function HLTopSignals({ signals, loading }: { signals: HLAdvSigs | undefined; loading: boolean }) {
+function HLTopSignals({ signals, loading, viewMore }: { signals: HLAdvSigs | undefined; loading: boolean; viewMore?: string }) {
   const rsLeaders = (signals?.relative_strength_leaders || []).slice(0, 5);
   const oiShifts  = (signals?.oi_regime_shift || []).slice(0, 5);
 
@@ -652,7 +670,7 @@ function HLTopSignals({ signals, loading }: { signals: HLAdvSigs | undefined; lo
 
   return (
     <GlassCard className="p-4">
-      <SectionHeader icon={Activity} title="Hyperliquid Top Signals" accent="Perps · live" />
+      <SectionHeader icon={Activity} title="Hyperliquid Top Signals" accent="Perps · live" viewMore={viewMore} />
 
       {loading && Array.from({ length: 5 }).map((_, i) => (
         <Skeleton key={i} className="h-7 my-1 rounded bg-white/[0.04]" />
@@ -883,6 +901,28 @@ export default function HomePage() {
     refetchOnWindowFocus: false,
   });
 
+  // Should I Be Trading? — trading dashboard (swing mode)
+  const { data: tradingData } = useQuery<any>({
+    queryKey: ["/api/trading-dashboard-home"],
+    queryFn: async () => {
+      const r = await fetch("/api/trading-dashboard?mode=swing");
+      if (!r.ok) throw new Error(`Trading dashboard ${r.status}`);
+      return r.json();
+    },
+    staleTime: 5 * 60_000,
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+
+  // Top Equity Signals — from Prophetik investor overview
+  const { data: equityOverview } = useQuery<any>({
+    queryKey: ["/api/predict/investor/overview"],
+    staleTime: 5 * 60_000,
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+  const topEquitySignals: any[] = equityOverview?.top_equity_signals?.slice(0, 5) ?? [];
+
   // Prefer backend-provided latest_news (FMP). Fall back to proxy-composed
   // news.articles (RSS, may have images) when latest_news is absent or empty.
   const newsArticles = (() => {
@@ -988,7 +1028,7 @@ export default function HomePage() {
         </div>
 
         {/* D. Top macro cards */}
-        <SectionHeader icon={Activity} title="Market Snapshot" />
+        <SectionHeader icon={Activity} title="Market Snapshot" viewMore="/app/macro-terminal" />
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
           {isLoading &&
             Array.from({ length: 6 }).map((_, i) => (
@@ -1003,11 +1043,60 @@ export default function HomePage() {
           )}
         </div>
 
-        {/* F + G. Two-column row: Theme Performance (2/3) | Latest News (1/3) */}
+        {/* E. Should I Be Trading? card */}
+        {(() => {
+          const td = tradingData;
+          const decision: string | undefined = td?.decision;
+          const score: number | undefined = td?.market_quality_score;
+          const summary: string | undefined = td?.summary;
+          const decisionColor = decision === 'YES' ? 'text-emerald-400' : decision === 'CAUTION' ? 'text-amber-400' : decision === 'NO' ? 'text-rose-400' : 'text-white/40';
+          const decisionBorder = decision === 'YES' ? 'border-emerald-500/25 bg-emerald-500/[0.04]' : decision === 'CAUTION' ? 'border-amber-500/25 bg-amber-500/[0.04]' : decision === 'NO' ? 'border-rose-500/25 bg-rose-500/[0.04]' : 'border-white/10';
+          const scoreColor = score == null ? 'text-white/30' : score >= 70 ? 'text-emerald-400' : score >= 50 ? 'text-amber-400' : score >= 30 ? 'text-orange-400' : 'text-rose-400';
+          return (
+            <GlassCard className="p-4 mb-6">
+              <SectionHeader icon={Gauge} title="Should I Be Trading?" accent="swing mode" viewMore="/app/macro-terminal?tab=trade" />
+              {!td && (
+                <div className="flex gap-3">
+                  <Skeleton className="h-12 w-24 rounded-lg bg-white/[0.04]" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-3 rounded bg-white/[0.04]" />
+                    <Skeleton className="h-3 w-3/4 rounded bg-white/[0.04]" />
+                  </div>
+                </div>
+              )}
+              {td && (
+                <div className="flex items-start gap-4">
+                  <div className={`shrink-0 rounded-xl border px-4 py-2.5 text-center min-w-[80px] ${decisionBorder}`}>
+                    <div className={`text-xl font-bold tabular-nums ${decisionColor}`}>{decision ?? '—'}</div>
+                    {score != null && (
+                      <div className={`text-[10px] font-semibold mt-0.5 tabular-nums ${scoreColor}`}>{score}/100</div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    {summary && (
+                      <p className="text-[11px] text-white/55 leading-relaxed line-clamp-3">{summary}</p>
+                    )}
+                    {td.mode && (
+                      <div className="flex items-center gap-1.5 mt-1.5">
+                        <Signal className="w-3 h-3 text-white/25" />
+                        <span className="text-[10px] text-white/30 uppercase tracking-wide">{td.mode} mode</span>
+                        {td.execution_window_score != null && (
+                          <span className="text-[10px] text-white/25">· exec window {td.execution_window_score}/100</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </GlassCard>
+          );
+        })()}
+
+        {/* F + G + G2. Three-column row: Theme Performance | Top Equity Signals | Latest News */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
-          {/* Theme Performance — 2/3 width */}
-          <div className="lg:col-span-2">
-            <GlassCard className="p-4">
+          {/* Theme Performance — 1/3 width */}
+          <div className="lg:col-span-1">
+            <GlassCard className="p-4 h-full">
               {(() => {
                 const subThemes = data?.sub_theme_performance;
                 const hasSubThemes = subThemes && subThemes.length > 0;
@@ -1017,6 +1106,7 @@ export default function HomePage() {
                       icon={BarChart3}
                       title="Theme Performance"
                       accent={hasSubThemes ? "sub-theme leaders" : "sector rotation"}
+                      viewMore="/app/stocks/sectors"
                     />
                     {isLoading && Array.from({ length: 8 }).map((_, i) => (
                       <Skeleton key={i} className="h-10 my-1 rounded bg-white/[0.04]" />
@@ -1055,10 +1145,55 @@ export default function HomePage() {
             </GlassCard>
           </div>
 
-          {/* Right: Latest News — 1/3 width */}
+          {/* Top Equity Signals — 1/3 width */}
           <div className="lg:col-span-1">
             <GlassCard className="p-4 h-full">
-              <SectionHeader icon={Newspaper} title="Latest News" accent="Cross-market" />
+              <SectionHeader icon={Signal} title="Top Equity Signals" accent="Prophetik" viewMore="/app/predict" />
+              {!equityOverview && (
+                <div className="space-y-2">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <Skeleton key={i} className="h-14 rounded bg-white/[0.04]" />
+                  ))}
+                </div>
+              )}
+              {equityOverview && topEquitySignals.length === 0 && (
+                <div className="text-sm text-white/40 py-8 text-center">No equity signals available.</div>
+              )}
+              {topEquitySignals.length > 0 && (
+                <div className="space-y-2">
+                  {topEquitySignals.map((sig: any, i: number) => {
+                    const dir = (() => {
+                      const s = (sig.summary_direction || '').toLowerCase();
+                      if (s.includes('bull') || s === 'up') return 'bullish';
+                      if (s.includes('bear') || s === 'down') return 'bearish';
+                      return 'neutral';
+                    })();
+                    const dirColor = dir === 'bullish' ? 'text-emerald-400' : dir === 'bearish' ? 'text-rose-400' : 'text-amber-400';
+                    const dirBg   = dir === 'bullish' ? 'bg-emerald-500/[0.06] border-emerald-500/15' : dir === 'bearish' ? 'bg-rose-500/[0.06] border-rose-500/15' : 'bg-amber-500/[0.06] border-amber-500/15';
+                    return (
+                      <div key={i} className={`rounded-lg border p-2.5 ${dirBg}`}>
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <span className={`text-[8px] font-bold uppercase tracking-widest ${dirColor}`}>{dir}</span>
+                          {sig.confidence && (
+                            <span className="text-[9px] text-white/30">{sig.confidence}</span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-white/85 font-medium leading-snug line-clamp-2">{sig.title}</p>
+                        {sig.summary && (
+                          <p className="text-[10px] text-white/45 leading-relaxed mt-1 line-clamp-2">{sig.summary}</p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </GlassCard>
+          </div>
+
+          {/* Latest News — 1/3 width */}
+          <div className="lg:col-span-1">
+            <GlassCard className="p-4 h-full">
+              <SectionHeader icon={Newspaper} title="Latest News" accent="Cross-market" viewMore="/app/notifai" />
               <div className="divide-y divide-white/[0.04]">
                 {isLoading && Array.from({ length: 5 }).map((_, i) => (
                   <Skeleton key={i} className="h-14 my-1 rounded bg-white/[0.04]" />
@@ -1100,6 +1235,7 @@ export default function HomePage() {
             accent="tracked positions"
             status={data?.section_status?.portfolio_snapshot}
             scrollable
+            viewMore="/app/portfolio"
           />
           <SnapshotTable
             items={data?.watchlist_snapshot}
@@ -1109,6 +1245,7 @@ export default function HomePage() {
             accent="top movers from watchlist"
             status={data?.section_status?.watchlist_snapshot}
             scrollable
+            viewMore="/app/watchlist"
           />
         </div>
 
@@ -1117,15 +1254,14 @@ export default function HomePage() {
           <UnusualFlowsSection
             flows={data?.unusual_options_flows}
             status={
-              // Prefer unusual_options_meta.data_state (master screener state).
-              // Fall back to section_status.unusual_options_flows for older payloads.
               data?.unusual_options_meta?.data_state ||
               data?.section_status?.unusual_options_flows
             }
             loading={isLoading}
             onTickerClick={openTicker}
+            viewMore="/app/options"
           />
-          <HLTopSignals signals={hlSignals} loading={hlLoading} />
+          <HLTopSignals signals={hlSignals} loading={hlLoading} viewMore="/app/hyperliquid-screener" />
         </div>
 
         {/* I + J. Social cards: Trending on X | Trending on Stocktwits */}
@@ -1154,6 +1290,7 @@ export default function HomePage() {
                   icon={LineChart}
                   title="Trending on X"
                   accent={relativeUpdated}
+                  viewMore="/app/onchain/social"
                   action={
                     <div className="flex items-center gap-1">
                       {isStale && <span className="text-[9px] px-1 py-0.5 rounded border border-amber-500/30 text-amber-300 bg-amber-500/10">stale</span>}
@@ -1183,7 +1320,7 @@ export default function HomePage() {
 
           {/* Trending on Stocktwits */}
           <GlassCard className="p-4 flex flex-col overflow-hidden">
-            <SectionHeader icon={Sparkles} title="Trending on Stocktwits" accent="Stocktwits" />
+            <SectionHeader icon={Sparkles} title="Trending on Stocktwits" accent="Stocktwits" viewMore="/app/onchain/social" />
             <div className="space-y-1.5 overflow-y-auto flex-1 min-h-0">
               {isLoading && Array.from({ length: 5 }).map((_, i) => (
                 <Skeleton key={i} className="h-10 rounded bg-white/[0.04]" />
@@ -1229,7 +1366,7 @@ export default function HomePage() {
         <div className="grid grid-cols-2 gap-5 mb-6" style={{ gridAutoRows: "460px" }}>
           {/* Top Movers */}
           <GlassCard className="p-4 flex flex-col overflow-hidden">
-            <SectionHeader icon={TrendingUp} title="Top Movers" accent="today" />
+            <SectionHeader icon={TrendingUp} title="Top Movers" accent="today" viewMore="/app/strategy-screener" />
             <div className="divide-y divide-white/[0.04] overflow-y-auto flex-1 min-h-0">
               {categoryMoversLoading && Array.from({ length: 6 }).map((_, i) => (
                 <Skeleton key={i} className="h-9 my-0.5 rounded bg-white/[0.04]" />
@@ -1255,6 +1392,7 @@ export default function HomePage() {
               icon={TrendingDown}
               title="Top Losers"
               accent="today"
+              viewMore="/app/strategy-screener"
             />
             <div className="divide-y divide-white/[0.04] overflow-y-auto flex-1 min-h-0">
               {categoryMoversLoading && Array.from({ length: 6 }).map((_, i) => (
