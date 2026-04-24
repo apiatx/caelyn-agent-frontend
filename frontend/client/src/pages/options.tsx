@@ -1806,12 +1806,12 @@ const SDot = ({ color, anim = false }: { color: string; anim?: boolean }) => (
   <span style={{ width: 5, height: 5, borderRadius: "50%", background: color, display: "inline-block", flexShrink: 0, ...(anim ? { animation: "pulse 1.4s ease-in-out infinite" } : {}) }} />
 );
 
-// Column width map
+// Column flex weights (proportional — table fills full viewport width)
 const W = {
-  rank: 24, ticker: 112, type: 48, price: 72, score: 62, heat: 54,
-  signal: 100, bias: 62, move: 60, premium: 82, prem_d: 64, vol: 64,
-  oi: 64, oi_d: 62, voi: 52, callpct: 52, putpct: 52, dte: 40,
-  strike: 66, otm: 56, unusual: 66,
+  rank: 22, ticker: 100, type: 44, price: 68, score: 56, heat: 50,
+  signal: 130, bias: 60, move: 58, premium: 80, prem_d: 60, vol: 60,
+  oi: 60, oi_d: 58, voi: 48, callpct: 50, putpct: 50, dte: 38,
+  strike: 62, otm: 54, unusual: 64,
 } as const;
 
 function MasterScreener({
@@ -1922,7 +1922,7 @@ function MasterScreener({
         onClick={sort ? () => toggleSort(sort) : undefined}
         title={COL_TIPS[id]}
         style={{
-          width: W[id as keyof typeof W], flexShrink: 0,
+          flex: W[id as keyof typeof W], minWidth: 0, overflow: "hidden",
           padding: "0 5px 5px",
           fontSize: 9, fontFamily: font,
           textTransform: "uppercase" as const, letterSpacing: "0.06em",
@@ -2027,10 +2027,10 @@ function MasterScreener({
         </div>
       )}
 
-      {/* ── Screener table (horizontally scrollable) ── */}
+      {/* ── Screener table (fills viewport width) ── */}
       {sorted.length > 0 && (
         <div style={{ flex: 1, overflowX: "auto", overflowY: "auto", minHeight: 0 }}>
-          <div style={{ minWidth: totalW + 32 }}>
+          <div style={{ width: "100%", minWidth: 900 }}>
 
             {/* Sticky column header row */}
             <div style={{
@@ -2086,10 +2086,10 @@ function MasterScreener({
               const thesisFull = thesisArr[0] || t.stock_context_summary || t.options_context_summary || "";
               const thesisTrunc = thesisFull.length > 110 ? thesisFull.slice(0, 110) + "…" : thesisFull;
 
-              // Cell helper — fixed-width flex cell
+              // Cell helper — fluid flex cell
               const cell = (id: keyof typeof W, content: ReactNode, color = C.text, align: "left" | "right" = "left", bold = false) => (
                 <div style={{
-                  width: W[id], flexShrink: 0, padding: "0 5px",
+                  flex: W[id], minWidth: 0, padding: "0 5px", overflow: "hidden",
                   fontSize: 11, fontFamily: font, color, fontWeight: bold ? 700 : 400,
                   textAlign: align, display: "flex", alignItems: "center",
                   justifyContent: align === "right" ? "flex-end" : "flex-start",
@@ -2115,38 +2115,40 @@ function MasterScreener({
                   {cell("rank",   i + 1, C.dim, "right")}
 
                   {/* Ticker */}
-                  <div style={{ width: W.ticker, flexShrink: 0, padding: "0 5px" }}>
+                  <div style={{ flex: W.ticker, minWidth: 0, padding: "0 5px", overflow: "hidden" }}>
                     <span style={{ color: C.bright, fontFamily: font, fontWeight: 700, fontSize: 12 }}>{t.ticker}</span>
                   </div>
 
                   {/* Type badge */}
-                  <div style={{ width: W.type, flexShrink: 0, padding: "0 4px" }}>
+                  <div style={{ flex: W.type, minWidth: 0, padding: "0 4px", overflow: "hidden" }}>
                     {assetLbl && <span style={{ fontSize: 9, color: C.dim, fontFamily: font, background: `${C.border}90`, borderRadius: 3, padding: "1px 4px" }}>{assetLbl}</span>}
                   </div>
 
                   {cell("price",   t.underlying_price != null ? fmtMoney(t.underlying_price) : null, C.text, "right")}
 
                   {/* Score — colored number */}
-                  <div style={{ width: W.score, flexShrink: 0, padding: "0 5px", textAlign: "right" }}>
+                  <div style={{ flex: W.score, minWidth: 0, padding: "0 5px", textAlign: "right", display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
                     {score != null
                       ? <span style={{ color: scoreColor(score), fontFamily: font, fontWeight: 700, fontSize: 12 }}>{fmtNum(score, 0)}</span>
                       : <span style={{ color: C.dim }}>—</span>}
                   </div>
 
                   {/* Heat */}
-                  <div style={{ width: W.heat, flexShrink: 0, padding: "0 5px", textAlign: "right" }}>
+                  <div style={{ flex: W.heat, minWidth: 0, padding: "0 5px", textAlign: "right", display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
                     {heat != null
                       ? <span style={{ color: heatColor(heat), fontFamily: font, fontWeight: heat >= 80 ? 700 : 400, fontSize: 11 }}>{heat.toFixed(0)}</span>
                       : <span style={{ color: C.dim }}>—</span>}
                   </div>
 
-                  {/* Signal badge */}
-                  <div style={{ width: W.signal, flexShrink: 0, padding: "0 5px" }}>
-                    {t.primary_signal ? <Badge color={sigClr}>{t.primary_signal}</Badge> : <span style={{ color: C.dim, fontSize: 10 }}>—</span>}
+                  {/* Signal badge — sm text, truncated */}
+                  <div style={{ flex: W.signal, minWidth: 0, padding: "0 5px", overflow: "hidden", display: "flex", alignItems: "center" }}>
+                    {t.primary_signal
+                      ? <Badge color={sigClr} sm>{t.primary_signal}</Badge>
+                      : <span style={{ color: C.dim, fontSize: 10 }}>—</span>}
                   </div>
 
                   {/* Bias */}
-                  <div style={{ width: W.bias, flexShrink: 0, padding: "0 5px" }}>
+                  <div style={{ flex: W.bias, minWidth: 0, padding: "0 5px", overflow: "hidden", display: "flex", alignItems: "center" }}>
                     {bias
                       ? <span style={{ color: bias.color, fontSize: 10, fontFamily: font, fontWeight: 600 }}>{bias.label}</span>
                       : <span style={{ color: C.dim, fontSize: 10 }}>—</span>}
@@ -2155,7 +2157,7 @@ function MasterScreener({
                   {cell("move",    pchgPct != null ? fmtSmartPct(pchgPct) : null, pchgPct == null ? C.dim : pchgPct >= 0 ? C.green : C.red, "right")}
 
                   {/* Premium — bold + gold if >$1M */}
-                  <div style={{ width: W.premium, flexShrink: 0, padding: "0 5px", textAlign: "right" }}>
+                  <div style={{ flex: W.premium, minWidth: 0, padding: "0 5px", textAlign: "right", display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
                     {premium != null
                       ? <span style={{ color: premium >= 1_000_000 ? C.gold : C.text, fontFamily: font, fontWeight: premium >= 1_000_000 ? 700 : 400, fontSize: 11 }}>{fmtCurrencyShort(premium)}</span>
                       : <span style={{ color: C.dim }}>—</span>}
@@ -2173,7 +2175,7 @@ function MasterScreener({
                   {cell("otm",     otmPct != null ? `${otmPct > 0 ? "+" : ""}${otmPct.toFixed(1)}%` : null, C.text, "right")}
 
                   {/* Unusual OTM badge */}
-                  <div style={{ width: W.unusual, flexShrink: 0, padding: "0 8px 0 5px" }}>
+                  <div style={{ flex: W.unusual, minWidth: 0, padding: "0 8px 0 5px", overflow: "hidden", display: "flex", alignItems: "center" }}>
                     {unusual && (
                       <span style={{ fontSize: 9, color: C.orange, fontFamily: font, background: `${C.orange}18`, border: `1px solid ${C.orange}35`, borderRadius: 3, padding: "1px 5px", fontWeight: 700, letterSpacing: "0.04em" }}>UNUSUAL</span>
                     )}
