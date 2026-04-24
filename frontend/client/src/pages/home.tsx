@@ -986,7 +986,7 @@ export default function HomePage() {
 
       <div className="relative z-10 max-w-[1540px] mx-auto px-5 lg:px-8 pt-10 pb-6">
         {/* C. Greeting & market status */}
-        <div className="flex flex-wrap items-end justify-between gap-4 mb-5">
+        <div className="flex items-start justify-between gap-4 mb-5">
           <div>
             <div className="text-[11px] uppercase tracking-[0.2em] text-white/40 mb-1">
               Caelyn Home
@@ -1042,7 +1042,7 @@ export default function HomePage() {
         </div>
 
         {/* D. Top macro cards */}
-        <SectionHeader icon={Activity} title="Market Snapshot" viewMore="/app/macro-terminal" />
+        <SectionHeader icon={Activity} title="Market Snapshot" />
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
           {isLoading &&
             Array.from({ length: 6 }).map((_, i) => (
