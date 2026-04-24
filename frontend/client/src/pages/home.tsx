@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useState } from "react";
+import { LineChart as RLineChart, Line, ResponsiveContainer } from "recharts";
 import {
   TrendingUp,
   TrendingDown,
@@ -219,26 +220,57 @@ function SectionHeader({
   );
 }
 
-function MacroCard({ card }: { card: HomeMacroCard }) {
+function MacroCard({ card, history }: { card: HomeMacroCard; history?: number[] }) {
   const up = (card.change_pct ?? 0) >= 0;
+  const chartData = (history && history.length > 1)
+    ? history.map((v, i) => ({ i, v }))
+    : null;
+  const lineColor = up ? "#34d399" : "#f87171";
+  const isRate = card.kind === "rate";
+  const noteLabel = card.note || "1D";
   return (
-    <GlassCard className="p-3 min-h-[92px] flex flex-col justify-between">
+    <GlassCard className="p-3 min-h-[92px] flex flex-col justify-between relative overflow-hidden">
       <div className="flex items-center justify-between">
         <div className="text-[11px] uppercase tracking-wide text-white/50">
           {card.label}
         </div>
-        <Badge variant="outline" className="h-5 px-1.5 text-[10px] border-white/10 text-white/60">
-          {card.symbol}
-        </Badge>
+        <span className="text-[9px] text-white/30 uppercase tracking-wider">{noteLabel}</span>
       </div>
-      <div className="flex items-end justify-between">
-        <div className="text-xl font-semibold text-white/95">
-          {fmtNum(card.price, card.kind === "rate" ? 2 : 2)}
+      <div className="flex items-end justify-between gap-2 mt-1">
+        <div className="flex-1 min-w-0">
+          <div className="text-xl font-semibold text-white/95 leading-none">
+            {isRate
+              ? (card.price != null ? card.price.toFixed(2) : "—")
+              : fmtNum(card.price, 2)}
+          </div>
+          <div className={`text-[11px] flex items-center gap-0.5 font-medium mt-1 ${pctColor(card.change_pct)}`}>
+            {card.change_pct !== null && (up ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />)}
+            {isRate
+              ? (card.change_pct != null ? `${card.change_pct >= 0 ? "+" : ""}${(card.change_pct * 10).toFixed(1)} bps` : "—")
+              : fmtPct(card.change_pct)}
+          </div>
         </div>
-        <div className={`text-sm flex items-center gap-0.5 font-medium ${pctColor(card.change_pct)}`}>
-          {card.change_pct !== null && (up ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />)}
-          {fmtPct(card.change_pct)}
-        </div>
+        {chartData && (
+          <div className="w-[70px] h-[36px] shrink-0">
+            <ResponsiveContainer width="100%" height="100%">
+              <RLineChart data={chartData} margin={{ top: 2, right: 0, left: 0, bottom: 2 }}>
+                <Line
+                  type="monotone"
+                  dataKey="v"
+                  stroke={lineColor}
+                  strokeWidth={1.5}
+                  dot={false}
+                  isAnimationActive={false}
+                />
+              </RLineChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+        {!chartData && (
+          <div className="w-[70px] h-[36px] shrink-0 flex items-end">
+            <div className="w-full h-px bg-white/10" />
+          </div>
+        )}
       </div>
     </GlassCard>
   );
@@ -923,6 +955,65 @@ export default function HomePage() {
   });
   const topEquitySignals: any[] = equityOverview?.top_equity_signals?.slice(0, 5) ?? [];
 
+  // Extra macro cards (Dow Jones + Bitcoin) fetched client-side
+  const { data: extraCards } = useQuery<HomeMacroCard[]>({
+    queryKey: ["/api/macro/extra-cards"],
+    staleTime: 60_000,
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+
+  // Sparkline history for all macro card symbols
+  const { data: sparklines } = useQuery<Record<string, number[]>>({
+    queryKey: ["/api/macro/sparklines"],
+    queryFn: async () => {
+      const r = await fetch("/api/macro/sparklines?symbols=SPX,DJI,NDX,BTC,TNX,VIX,DXY");
+      if (!r.ok) return {};
+      return r.json();
+    },
+    staleTime: 5 * 60_000,
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+
+  // Map a card's symbol/label to a sparkline key
+  const cardSparklineKey = (card: HomeMacroCard): string | null => {
+    const s = card.symbol?.toUpperCase();
+    const l = (card.label || "").toUpperCase();
+    if (s === "SPX" || s === "SPY" || l.includes("S&P")) return "SPX";
+    if (s === "DJI" || l.includes("DOW")) return "DJI";
+    if (s === "NDX" || s === "QQQ" || l.includes("NASDAQ")) return "NDX";
+    if (s === "BTC" || l.includes("BITCOIN")) return "BTC";
+    if (s === "TNX" || s === "^TNX" || l.includes("10Y") || l.includes("YIELD")) return "TNX";
+    if (s === "VIX" || l.includes("VIX")) return "VIX";
+    if (s === "DXY" || l.includes("DXY") || l.includes("DOLLAR")) return "DXY";
+    return null;
+  };
+
+  // Merged macro cards: insert DJI after S&P 500 and BTC after NASDAQ 100
+  const allMacroCards: HomeMacroCard[] = (() => {
+    const base: HomeMacroCard[] = data?.macro_cards ?? [];
+    const dji = (extraCards ?? []).find(c => c.symbol === "DJI");
+    const btc = (extraCards ?? []).find(c => c.symbol === "BTC");
+    const merged: HomeMacroCard[] = [];
+    let djiAdded = false;
+    let btcAdded = false;
+    for (const card of base) {
+      merged.push(card);
+      const l = (card.label || "").toUpperCase();
+      const s = (card.symbol || "").toUpperCase();
+      if (!djiAdded && dji && (l.includes("S&P") || s === "SPX" || s === "SPY")) {
+        merged.push(dji);
+        djiAdded = true;
+      }
+      if (!btcAdded && btc && (l.includes("NASDAQ") || s === "NDX" || s === "QQQ")) {
+        merged.push(btc);
+        btcAdded = true;
+      }
+    }
+    return merged;
+  })();
+
   // Prefer backend-provided latest_news (FMP). Fall back to proxy-composed
   // news.articles (RSS, may have images) when latest_news is absent or empty.
   const newsArticles = (() => {
@@ -1049,8 +1140,12 @@ export default function HomePage() {
               <Skeleton key={i} className="h-[92px] rounded-xl bg-white/[0.04]" />
             ))}
           {!isLoading &&
-            (data?.macro_cards || []).map((c, i) => <MacroCard key={i} card={c} />)}
-          {!isLoading && (!data?.macro_cards || data.macro_cards.length === 0) && (
+            allMacroCards.map((c, i) => {
+              const key = cardSparklineKey(c);
+              const hist = key && sparklines ? sparklines[key] : undefined;
+              return <MacroCard key={`${c.symbol}-${i}`} card={c} history={hist} />;
+            })}
+          {!isLoading && allMacroCards.length === 0 && (
             <div className="col-span-full text-sm text-white/40">
               Macro data temporarily unavailable.
             </div>

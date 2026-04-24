@@ -1182,6 +1182,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // === Macro card sparklines — 30-day daily close prices via Yahoo Finance ===
+  app.get('/api/macro/sparklines', async (req, res) => {
+    const symbolsParam = String(req.query.symbols || 'SPX,DJI,NDX,BTC,TNX,VIX');
+    const symbols = symbolsParam.split(',').map((s: string) => s.trim().toUpperCase()).filter(Boolean);
+    const yahooMap: Record<string, string> = {
+      'SPX': '^GSPC', 'DJI': '^DJI', 'NDX': '^NDX', 'IXIC': '^IXIC',
+      'TNX': '^TNX', 'VIX': '^VIX', 'BTC': 'BTC-USD', 'DXY': 'DX-Y.NYB',
+    };
+    const result: Record<string, number[]> = {};
+    await Promise.all(symbols.map(async (sym: string) => {
+      const yahoo = yahooMap[sym] || sym;
+      try {
+        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahoo)}?interval=1d&range=1mo`;
+        const r = await fetch(url, {
+          headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+          signal: AbortSignal.timeout(8000),
+        });
+        const d = await r.json() as any;
+        const closes: (number | null)[] = d?.chart?.result?.[0]?.indicators?.quote?.[0]?.close ?? [];
+        result[sym] = closes.filter((c: number | null) => c != null).map((c: number | null) => Math.round((c as number) * 100) / 100);
+      } catch { result[sym] = []; }
+    }));
+    res.setHeader('Cache-Control', 'public, max-age=300');
+    res.json(result);
+  });
+
+  // === Extra macro cards — DJI (Dow Jones) and BTC (Bitcoin) via Yahoo Finance chart API ===
+  app.get('/api/macro/extra-cards', async (req, res) => {
+    const targets = [
+      { yahoo: '^DJI',    label: 'Dow Jones', symbol: 'DJI', kind: 'equity' },
+      { yahoo: 'BTC-USD', label: 'Bitcoin',   symbol: 'BTC', kind: 'crypto' },
+    ];
+    const cards: any[] = [];
+    await Promise.all(targets.map(async (t) => {
+      try {
+        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(t.yahoo)}?interval=1d&range=5d`;
+        const r = await fetch(url, {
+          headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+          signal: AbortSignal.timeout(8000),
+        });
+        const d = await r.json() as any;
+        const meta = d?.chart?.result?.[0]?.meta;
+        if (!meta) return;
+        const price: number = meta.regularMarketPrice ?? meta.previousClose ?? 0;
+        const prevClose: number = meta.chartPreviousClose ?? meta.previousClose ?? price;
+        const change_pct: number = prevClose > 0 ? ((price - prevClose) / prevClose) * 100 : 0;
+        cards.push({ label: t.label, symbol: t.symbol, price, change_pct, kind: t.kind, note: '1D' });
+      } catch { /* skip on error */ }
+    }));
+    // Sort to match original order (DJI first, BTC second)
+    cards.sort((a, b) => (a.symbol === 'DJI' ? -1 : 1));
+    res.setHeader('Cache-Control', 'public, max-age=60');
+    res.json(cards);
+  });
+
   // === Options Flow (proxy to FastAPI backend) ===
 
   app.get('/api/options/dashboard', async (req, res) => {
