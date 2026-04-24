@@ -1,0 +1,97 @@
+Options Flow page update — small UX cleanup only. Do not touch backend. Do not change scoring, sorting, filters, fetch logic, or ticker popup behavior.
+
+Tasks:
+
+1) Add an “About” button at the top of the Options Flow page
+- Place it near the page title / controls.
+- Label: “About”
+- Style it like a small TradingView-style secondary button.
+- On click, open a modal/popup explaining the screener columns in simple beginner-friendly terms.
+- Modal title: “How to Read the Options Flow Screener”
+- Add a short intro:
+  “This screener ranks unusual options activity. Higher scores mean the flow looks more interesting, but it is not a guaranteed trade signal.”
+
+2) About modal content
+
+Use these definitions:
+
+Ticker:
+The stock or ETF symbol.
+
+Type:
+Whether the symbol is a stock or ETF.
+
+Price:
+Current price of the underlying stock or ETF.
+
+Score:
+Main signal score from our options-flow model. Higher means stronger unusual activity.
+
+Heat:
+Extra momentum/intensity score using premium, volume vs open interest, urgency, and unusual contract behavior.
+
+Signal:
+The type of setup detected, such as unusual flow or asymmetric risk/reward.
+
+Bias:
+Whether the options activity leans bullish, bearish, mixed, or unclear.
+
+Move %:
+Recent move in the underlying stock or ETF.
+
+Premium:
+Estimated dollar value of the options activity. Bigger premium usually means larger money is involved.
+
+Prem Δ%:
+Change in options premium versus the previous snapshot. Rising premium can mean interest is accelerating.
+
+Vol:
+Options contract volume.
+
+OI:
+Open interest. This is the number of existing open contracts.
+
+OI Δ%:
+Change in open interest versus the previous snapshot. Rising OI can suggest new positioning.
+
+V/OI:
+Volume divided by open interest. High V/OI can indicate unusual fresh activity.
+
+Call %:
+Percent of flow leaning toward calls. Calls often suggest bullish positioning.
+
+Put %:
+Percent of flow leaning toward puts. Puts often suggest bearish or hedging activity.
+
+DTE:
+Days to expiration. Lower DTE means the trade is more urgent/speculative.
+
+Strike:
+The option contract’s strike price.
+
+OTM %:
+How far the contract is out-of-the-money. Far OTM contracts are higher risk, higher reward.
+
+Unusual:
+Flags contracts that are meaningfully out-of-the-money with strong premium and unusual volume/open-interest behavior.
+
+3) Add a simple “How to use this” section inside the modal:
+
+- Start with Score and Heat.
+- Check Premium to see if real money is involved.
+- Use Bias, Call %, and Put % to understand direction.
+- Watch V/OI and OI Δ% for signs of fresh positioning.
+- Treat short DTE and far OTM as higher-risk, higher-upside speculation.
+- Click any ticker for the full thesis and deeper details.
+
+4) Remove the “Thesis” column from the screener table
+- Remove the column header.
+- Remove the table cell.
+- Do not remove thesis from row data.
+- Do not remove thesis from ticker popup/modal.
+- This should make the table cleaner and less horizontally stretched.
+
+5) Keep compatibility
+- If some fields are null/missing, modal still works.
+- No page crashes.
+- No backend changes.

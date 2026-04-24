@@ -1811,7 +1811,7 @@ const W = {
   rank: 24, ticker: 112, type: 48, price: 72, score: 62, heat: 54,
   signal: 100, bias: 62, move: 60, premium: 82, prem_d: 64, vol: 64,
   oi: 64, oi_d: 62, voi: 52, callpct: 52, putpct: 52, dte: 40,
-  strike: 66, otm: 56, unusual: 66, thesis: 180,
+  strike: 66, otm: 56, unusual: 66,
 } as const;
 
 function MasterScreener({
@@ -1830,6 +1830,7 @@ function MasterScreener({
   const [filter, setFilter]      = useState<FilterChip>("all");
   const [sortField, setSortField] = useState<SortField>("score");
   const [sortDir, setSortDir]    = useState<SortDir>("desc");
+  const [showAbout, setShowAbout] = useState(false);
 
   // Screener payload shape — backend wraps inner data in a .response key,
   // metadata (stale, cache_age_seconds, data_state) may live at top level or inside .response
@@ -1985,6 +1986,13 @@ function MasterScreener({
         <span style={{ flex: 1 }} />
         {sorted.length > 0 && <span style={{ color: C.dim, fontSize: 10, fontFamily: font }}>{sorted.length} signals</span>}
         {statusEl}
+        <button onClick={() => setShowAbout(true)}
+          style={{ padding: "3px 10px", borderRadius: 4, border: `1px solid ${C.border}`, background: "transparent", color: C.dim, fontSize: 10, fontFamily: font, cursor: "pointer", transition: "border-color 0.1s, color 0.1s" }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = C.blue; (e.currentTarget as HTMLButtonElement).style.color = C.blue; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = C.border; (e.currentTarget as HTMLButtonElement).style.color = C.dim; }}
+        >
+          About
+        </button>
         <button onClick={onRefresh} disabled={pageLoading} title="Refresh"
           style={{ background: "none", border: "none", cursor: pageLoading ? "not-allowed" : "pointer", color: pageLoading ? C.border : C.dim, padding: 2, display: "flex", alignItems: "center" }}>
           <RefreshCw className={`w-3 h-3 ${pageRefreshing ? "animate-spin" : ""}`} />
@@ -2052,7 +2060,6 @@ function MasterScreener({
               {ch("strike",  "Strike",   undefined, "right")}
               {ch("otm",     "OTM %",    undefined, "right")}
               {ch("unusual", "Unusual")}
-              {ch("thesis",  "Thesis")}
             </div>
 
             {/* Data rows */}
@@ -2166,21 +2173,97 @@ function MasterScreener({
                   {cell("otm",     otmPct != null ? `${otmPct > 0 ? "+" : ""}${otmPct.toFixed(1)}%` : null, C.text, "right")}
 
                   {/* Unusual OTM badge */}
-                  <div style={{ width: W.unusual, flexShrink: 0, padding: "0 5px" }}>
+                  <div style={{ width: W.unusual, flexShrink: 0, padding: "0 8px 0 5px" }}>
                     {unusual && (
                       <span style={{ fontSize: 9, color: C.orange, fontFamily: font, background: `${C.orange}18`, border: `1px solid ${C.orange}35`, borderRadius: 3, padding: "1px 5px", fontWeight: 700, letterSpacing: "0.04em" }}>UNUSUAL</span>
                     )}
                   </div>
-
-                  {/* Thesis truncated with full text in tooltip */}
-                  <div style={{ width: W.thesis, flexShrink: 0, padding: "0 8px 0 5px" }} title={thesisFull || undefined}>
-                    <span style={{ color: C.dim, fontSize: 10, fontFamily: font, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {thesisTrunc}
-                    </span>
-                  </div>
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* ── About modal ── */}
+      {showAbout && (
+        <div
+          style={{ position: "fixed", inset: 0, zIndex: 2000, display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: 32, paddingBottom: 32 }}
+          onClick={() => setShowAbout(false)}
+        >
+          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.78)" }} />
+          <div
+            style={{ position: "relative", background: C.bg, border: `1px solid ${C.border}`, borderRadius: 12, width: "92%", maxWidth: 680, maxHeight: "calc(100vh - 64px)", overflowY: "auto" }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px", borderBottom: `1px solid ${C.border}`, position: "sticky", top: 0, background: C.bg, zIndex: 1 }}>
+              <span style={{ color: C.bright, fontSize: 15, fontWeight: 800, fontFamily: font }}>How to Read the Options Flow Screener</span>
+              <button onClick={() => setShowAbout(false)} style={{ background: "none", border: "none", color: C.dim, cursor: "pointer", padding: 4, display: "flex" }}>
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div style={{ padding: "18px 20px", display: "grid", gap: 20 }}>
+              {/* Intro */}
+              <p style={{ color: C.text, fontSize: 12, fontFamily: font, lineHeight: 1.7, margin: 0 }}>
+                This screener ranks unusual options activity. Higher scores mean the flow looks more interesting, but it is not a guaranteed trade signal.
+              </p>
+
+              {/* Column definitions */}
+              <div>
+                <div style={{ color: C.bright, fontSize: 11, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>Column Definitions</div>
+                <div style={{ display: "grid", gap: 0, border: `1px solid ${C.border}`, borderRadius: 8, overflow: "hidden" }}>
+                  {[
+                    { col: "Ticker",   def: "The stock or ETF symbol." },
+                    { col: "Type",     def: "Whether the symbol is a stock or ETF." },
+                    { col: "Price",    def: "Current price of the underlying stock or ETF." },
+                    { col: "Score",    def: "Main signal score from our options-flow model. Higher means stronger unusual activity." },
+                    { col: "Heat",     def: "Extra momentum/intensity score using premium, volume vs open interest, urgency, and unusual contract behavior." },
+                    { col: "Signal",   def: "The type of setup detected, such as unusual flow or asymmetric risk/reward." },
+                    { col: "Bias",     def: "Whether the options activity leans bullish, bearish, mixed, or unclear." },
+                    { col: "Move %",   def: "Recent move in the underlying stock or ETF." },
+                    { col: "Premium",  def: "Estimated dollar value of the options activity. Bigger premium usually means larger money is involved." },
+                    { col: "Prem Δ%", def: "Change in options premium versus the previous snapshot. Rising premium can mean interest is accelerating." },
+                    { col: "Vol",      def: "Options contract volume." },
+                    { col: "OI",       def: "Open interest. This is the number of existing open contracts." },
+                    { col: "OI Δ%",   def: "Change in open interest versus the previous snapshot. Rising OI can suggest new positioning." },
+                    { col: "V/OI",     def: "Volume divided by open interest. High V/OI can indicate unusual fresh activity." },
+                    { col: "Call %",   def: "Percent of flow leaning toward calls. Calls often suggest bullish positioning." },
+                    { col: "Put %",    def: "Percent of flow leaning toward puts. Puts often suggest bearish or hedging activity." },
+                    { col: "DTE",      def: "Days to expiration. Lower DTE means the trade is more urgent/speculative." },
+                    { col: "Strike",   def: "The option contract's strike price." },
+                    { col: "OTM %",    def: "How far the contract is out-of-the-money. Far OTM contracts are higher risk, higher reward." },
+                    { col: "Unusual",  def: "Flags contracts that are meaningfully out-of-the-money with strong premium and unusual volume/open-interest behavior." },
+                  ].map(({ col, def }, i) => (
+                    <div key={col} style={{ display: "grid", gridTemplateColumns: "90px 1fr", borderBottom: i < 19 ? `1px solid ${C.border}` : "none", background: i % 2 === 0 ? C.cardAlt : "transparent" }}>
+                      <div style={{ padding: "8px 12px", color: C.blue, fontSize: 11, fontFamily: font, fontWeight: 700, borderRight: `1px solid ${C.border}` }}>{col}</div>
+                      <div style={{ padding: "8px 12px", color: C.text, fontSize: 11, fontFamily: font, lineHeight: 1.5 }}>{def}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* How to use */}
+              <div>
+                <div style={{ color: C.bright, fontSize: 11, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>How to Use This</div>
+                <div style={{ background: C.cardAlt, border: `1px solid ${C.border}`, borderRadius: 8, padding: "12px 16px" }}>
+                  {[
+                    "Start with Score and Heat.",
+                    "Check Premium to see if real money is involved.",
+                    "Use Bias, Call %, and Put % to understand direction.",
+                    "Watch V/OI and OI Δ% for signs of fresh positioning.",
+                    "Treat short DTE and far OTM as higher-risk, higher-upside speculation.",
+                    "Click any ticker for the full thesis and deeper details.",
+                  ].map((step, i) => (
+                    <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: i < 5 ? 8 : 0 }}>
+                      <span style={{ color: C.blue, fontSize: 10, fontFamily: font, fontWeight: 700, minWidth: 16, paddingTop: 1 }}>{i + 1}.</span>
+                      <span style={{ color: C.text, fontSize: 12, fontFamily: font, lineHeight: 1.6 }}>{step}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
