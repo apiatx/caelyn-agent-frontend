@@ -1,0 +1,94 @@
+The HL screener page already processes these dex-prefixed tokens and tags them as commodities via the normalizer. Let me find where that data lives:
+
+
+3 actions
+The HIP-3 refresh is running live. Let me check the state structure and how to read live commodity assets from it:
+
+
+3 actions
+The state.assets contains these HIP-3 commodity tokens live. I need to find how the HL screener page accesses that state:
+
+
+3 actions
+Now let me see router.py's _state getter and how _hl_set_state works:
+
+
+2 actions
+The _state singleton has all HIP-3 commodity assets live with their current prices. Now let me check what fields ScreenerAsset has for price/change data:
+
+examples: "WTIOIL-USD", "COPPER-USDH"
+
+8 minutes ago
+
+Analyzing commodity token key formats (5 seconds)
+Those are the actual coin keys in the live HL state. Let me inspect the state directly for all commodity-tagged assets:
+
+
+3 actions
+The commodity tokens are in the spot market but with coin keys like "WTIOIL-USD", "COPPER-USDH" — not the xyz: format. Let me probe those exact keys from the live spot API:
+
+
+2 actions
+Let me look at _periodic_hip3_refresh to see exactly how these tokens are fetched and stored:
+
+
+5 actions
+The HIP-3 assets are stored in state with xyz: prefixes. The user's examples ("WTIOIL-USD", "COPPER-USDH") must be the raw names from the DEX API before prefixing. Let me fetch the live DEX data to see the exact coin keys and find the commodity ones:
+
+
+2 actions
+The data is all there with live prices. The xyz:, flx:, vntl:, km:, cash: DEX tokens are already in state.assets tagged as "commodity". I just need to read from the live HL state.
+
+Let me check the ScreenerAsset fields for price/change and how to access the router state:
+
+
+2 actions
+All the data I need is in state.assets, tagged with "commodity". I'll add a clean getter to the router and wire it into _movers_commodities. This replaces the FMP ETF approach with live HL data — exactly as the HL page uses it:
+
+
+2 actions
+Now rewrite _movers_commodities in home_service.py to pull live commodity assets from the HL state:
+
+
+2 actions
+Now I need to update home_service.py — add the HL state import, replace _COMMODITY_ETF_MAP with an HL display-name preset, and rewrite _movers_commodities to pull live data from state:
+
+
+2 actions
+Now replace the commodity preset and rewrite _movers_commodities:
+
+
+2 actions
+Now rewrite _movers_commodities:
+
+
+2 actions
+Good. Now restart and test — the HL state needs a moment for post-boot enrichment to populate HIP-3 assets:
+
+
+4 actions
+Commodities are working perfectly with live HL data — 15 commodity symbols, correct prices and % changes. Let me now verify all 5 categories quickly:
+
+
+2 actions
+All 5 categories working. Let me clean up the unused get_spot_commodities() method I added to hyperliquid_provider.py since it's now superseded by the state-based approach:
+
+
+2 actions
+Good. Now commit and push to main:
+
+
+8 actions
+Pushed. Let me do one final verification of all 5 categories:
+
+
+2 actions
+All 5 categories working correctly and pushed to main:
+
+Category	Source	Top Gainer	Top Loser
+stocks	FMP	SKLZ +238%	ZSPC -51.7%
+etfs	FMP	USO +4.1%	UNG -4.0%
+commodities	Hyperliquid HIP-3	BRENTOIL +2.8%	GAS -5.0%
+crypto	CMC Top 500	KAT +60.7%	WHITE -45.3%
+all	combined	SKLZ +238%	ZSPC -51.7%
+Here's what changed for commodities: instead of guessing at HL's spot or perp market (where those tokens don't exist with live data), the function now reads directly from the same live HyperliquidState that the HL screener page uses. It filters all xyz:, flx:, vntl:, km:, and cash: prefixed coins by display name, de-duplicates so each commodity (e.g. GOLD) only appears once (preferring xyz: as the highest-fidelity source), and maps ALUMINIUM→ALUMINUM and WTI→WTOIL for your label convention. The crypto change was a one-line fix: CMC limit 250 → 500.

@@ -750,6 +750,7 @@ export default function HomePage() {
   const [, setLocation] = useLocation();
   const [tickerPopup, setTickerPopup] = useState<string | null>(null);
   const openTicker = (symbol: string) => setTickerPopup(symbol);
+  const [moverCategory, setMoverCategory] = useState<"all" | "stocks" | "commodities" | "crypto" | "etfs">("stocks");
 
   // Home aggregator — primary query. The Express proxy composes:
   // backend /api/home/dashboard + news (NEWS_CACHE) + crypto FG (CMC cache).
@@ -780,6 +781,23 @@ export default function HomePage() {
       return r.json();
     },
     staleTime: 2 * 60_000,
+    refetchOnWindowFocus: false,
+  });
+
+  // Category movers — shared between Top Movers + Top Losers cards.
+  // Uses the new /api/home/movers?category= backend endpoint (normalized to HomeMoverRow shape).
+  const { data: categoryMovers, isLoading: categoryMoversLoading } = useQuery<{
+    gainers: HomeMoverRow[];
+    losers:  HomeMoverRow[];
+    category: string;
+  }>({
+    queryKey: ["/api/home/movers", moverCategory],
+    queryFn: async () => {
+      const r = await fetch(`/api/home/movers?category=${moverCategory}`);
+      if (!r.ok) throw new Error(`Movers ${r.status}`);
+      return r.json();
+    },
+    staleTime: 60_000,
     refetchOnWindowFocus: false,
   });
 
@@ -1107,15 +1125,35 @@ export default function HomePage() {
 
           {/* Top Movers */}
           <GlassCard className="p-4 flex flex-col overflow-hidden">
-            <SectionHeader icon={TrendingUp} title="Top Movers" accent="today" />
+            <SectionHeader
+              icon={TrendingUp}
+              title="Top Movers"
+              action={
+                <div className="flex gap-1 flex-wrap">
+                  {(["all", "stocks", "commodities", "crypto", "etfs"] as const).map(cat => (
+                    <button
+                      key={cat}
+                      onClick={() => setMoverCategory(cat)}
+                      className={`text-[9px] uppercase tracking-wide px-1.5 py-0.5 rounded transition-colors ${
+                        moverCategory === cat
+                          ? "bg-indigo-500/25 text-indigo-300 border border-indigo-500/40"
+                          : "text-white/35 hover:text-white/65 border border-transparent"
+                      }`}
+                    >
+                      {cat === "commodities" ? "Commod." : cat === "all" ? "All" : cat.charAt(0).toUpperCase() + cat.slice(1)}
+                    </button>
+                  ))}
+                </div>
+              }
+            />
             <div className="divide-y divide-white/[0.04] overflow-y-auto flex-1 min-h-0">
-              {isLoading && Array.from({ length: 6 }).map((_, i) => (
+              {categoryMoversLoading && Array.from({ length: 6 }).map((_, i) => (
                 <Skeleton key={i} className="h-9 my-0.5 rounded bg-white/[0.04]" />
               ))}
-              {!isLoading && (data?.movers?.gainers || []).slice(0, 8).map((row, i) => (
+              {!categoryMoversLoading && (categoryMovers?.gainers || []).slice(0, 8).map((row, i) => (
                 <MoverRow key={i} row={row} onClick={row.ticker ? () => openTicker(row.ticker!) : undefined} />
               ))}
-              {!isLoading && (!data?.movers?.gainers || data.movers.gainers.length === 0) && (
+              {!categoryMoversLoading && (!categoryMovers?.gainers || categoryMovers.gainers.length === 0) && (
                 <div className="text-sm text-white/40 py-6 text-center">No data</div>
               )}
             </div>
@@ -1123,15 +1161,19 @@ export default function HomePage() {
 
           {/* Top Losers */}
           <GlassCard className="p-4 flex flex-col overflow-hidden">
-            <SectionHeader icon={TrendingDown} title="Top Losers" accent="today" />
+            <SectionHeader
+              icon={TrendingDown}
+              title="Top Losers"
+              accent={moverCategory === "all" ? "all" : moverCategory === "commodities" ? "commod." : moverCategory}
+            />
             <div className="divide-y divide-white/[0.04] overflow-y-auto flex-1 min-h-0">
-              {isLoading && Array.from({ length: 6 }).map((_, i) => (
+              {categoryMoversLoading && Array.from({ length: 6 }).map((_, i) => (
                 <Skeleton key={i} className="h-9 my-0.5 rounded bg-white/[0.04]" />
               ))}
-              {!isLoading && (data?.movers?.losers || []).slice(0, 8).map((row, i) => (
+              {!categoryMoversLoading && (categoryMovers?.losers || []).slice(0, 8).map((row, i) => (
                 <MoverRow key={i} row={row} onClick={row.ticker ? () => openTicker(row.ticker!) : undefined} />
               ))}
-              {!isLoading && (!data?.movers?.losers || data.movers.losers.length === 0) && (
+              {!categoryMoversLoading && (!categoryMovers?.losers || categoryMovers.losers.length === 0) && (
                 <div className="text-sm text-white/40 py-6 text-center">No data</div>
               )}
             </div>

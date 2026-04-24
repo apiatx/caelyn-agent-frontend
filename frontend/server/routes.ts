@@ -2462,6 +2462,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // === Home — per-category movers (gainers / losers) ===
+  app.get('/api/home/movers', async (req, res) => {
+    try {
+      const category = (req.query.category as string) || 'stocks';
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 20000);
+      const r = await fetch(`${SR_URL}/api/home/movers?category=${encodeURIComponent(category)}`, {
+        headers: srHdr(),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      if (!r.ok) {
+        const txt = await r.text();
+        return res.status(r.status).json({ error: `Backend ${r.status}`, detail: txt.slice(0, 200) });
+      }
+      const raw = await r.json();
+      // Normalize new API shape { symbol, name, change_percent } → existing HomeMoverRow shape
+      const normalize = (items: any[]) =>
+        (items || []).map((item: any) => ({
+          ticker:       item.symbol    || item.ticker   || '',
+          company:      item.name      || item.company  || '',
+          price:        item.price     ?? null,
+          change_pct:   item.change_percent ?? item.change_pct ?? null,
+          change_label: item.change_label || '',
+          direction:    ((item.change_percent ?? item.change_pct ?? 0) >= 0 ? 'up' : 'down'),
+        }));
+      res.json({
+        gainers:  normalize(raw.gainers  || []),
+        losers:   normalize(raw.losers   || []),
+        category: raw.category || category,
+      });
+    } catch (error: any) {
+      console.error('[home/movers] error:', error);
+      res.status(500).json({ error: error?.name === 'AbortError' ? 'Request timed out' : 'Failed to fetch category movers' });
+    }
+  });
+
   app.get('/api/sector-rotation/dashboard', async (req, res) => {
     try {
       const controller = new AbortController();
