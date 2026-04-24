@@ -105,6 +105,22 @@ interface Analysis {
   generated_at?:           string | null;
   top_stocks_to_watch?:    TopStock[];
   winning_sector_etfs?:    any[];
+  theme_rotation?:         string | null;
+}
+interface ThemeRow {
+  id:                      string;
+  label:                   string | null;
+  parent_sector:           string | null;
+  theme_type:              string | null;
+  symbols:                 string[];
+  leader_symbol:           string | null;
+  performance:             { "1d"?: number; "5d"?: number; "1m"?: number; "3m"?: number; "6m"?: number; ytd?: number; "1y"?: number } | null;
+  pct_from_50d:            number | null;
+  trend_accel_20d:         number | null;
+  relative_strength_score: number | null;
+  momentum_rank:           number | null;
+  trend_state:             string | null;
+  rotation_state:          string | null;
 }
 interface DashboardData {
   updated_at:          string | null;
@@ -172,6 +188,13 @@ const regimeCls = (v: string | null) => {
   if (!v) return "bg-gray-500/20 text-gray-300 border-gray-500/30";
   const k = Object.keys(REGIME_BADGE).find(k => v.toLowerCase().includes(k));
   return k ? REGIME_BADGE[k] : "bg-gray-500/20 text-gray-300 border-gray-500/30";
+};
+const TREND_STYLES: Record<string, string> = {
+  Leadership: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+  Improving:  "bg-sky-500/20 text-sky-400 border-sky-500/30",
+  Neutral:    "bg-white/10 text-white/50 border-white/[0.06]",
+  Weakening:  "bg-amber-500/20 text-amber-400 border-amber-500/30",
+  Lagging:    "bg-red-500/20 text-red-400 border-red-500/30",
 };
 
 // Convert backend series { dates, prices } to recharts-friendly normalized points
@@ -242,6 +265,135 @@ function SectionHeader({ icon: Icon, title, badge, right, color = "teal" }: {
         {badge && <Badge className="bg-white/10 text-gray-300 border-white/10 text-xs">{badge}</Badge>}
       </div>
       {right && <div className="flex items-center gap-2 flex-wrap">{right}</div>}
+    </div>
+  );
+}
+
+// ─── Mode toggle (Sectors | Themes) ──────────────────────────────────────────
+function ModeToggle({ mode, setMode }: { mode: "sectors" | "themes"; setMode: (m: "sectors" | "themes") => void }) {
+  return (
+    <div className="flex items-center rounded border border-white/[0.08] bg-black/30 p-0.5 flex-shrink-0">
+      {(["sectors", "themes"] as const).map(m => (
+        <button
+          key={m}
+          onClick={() => setMode(m)}
+          className={`px-2.5 py-1 rounded text-[10px] font-medium uppercase tracking-wide transition-colors ${
+            mode === m
+              ? "bg-teal-500/20 text-teal-300 border border-teal-500/30"
+              : "text-white/35 hover:text-white/60"
+          }`}
+        >
+          {m === "sectors" ? "Sectors" : "Themes"}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ─── Theme Performance Table ──────────────────────────────────────────────────
+function ThemePerformanceView({ themes }: { themes: ThemeRow[] }) {
+  const p = (item: ThemeRow, key: string) => (item.performance as any)?.[key] ?? null;
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[820px]">
+        <thead>
+          <tr className="border-b border-white/[0.06]">
+            {["Theme", "ETF Basket", "Parent", "1D", "5D", "1M", "3M", "YTD", "RS Score", "Rank", "Trend"].map(h => (
+              <th key={h} className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {themes.map(item => {
+            const trendCls = TREND_STYLES[item.trend_state ?? ""] ?? "bg-white/10 text-white/50 border-white/[0.06]";
+            return (
+              <tr key={item.id} className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors">
+                <td className="px-3 py-2.5">
+                  <div className="text-sm font-medium text-white">{item.label ?? item.id}</div>
+                  {item.theme_type && <div className="text-[10px] text-white/30">{item.theme_type}</div>}
+                </td>
+                <td className="px-3 py-2.5">
+                  <div className="flex flex-wrap gap-1 max-w-[180px]">
+                    {(item.symbols ?? []).map(s => (
+                      <span key={s} className="font-mono text-[10px] px-1 py-0.5 bg-white/[0.04] border border-white/[0.06] rounded">{s}</span>
+                    ))}
+                    {(!item.symbols || item.symbols.length === 0) && <span className="text-white/30">—</span>}
+                  </div>
+                </td>
+                <td className="px-3 py-2.5 text-xs text-gray-400 max-w-[120px] truncate">{item.parent_sector ?? "—"}</td>
+                <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(p(item, "1d"))}`}>{fmtPct(p(item, "1d"))}</td>
+                <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(p(item, "5d"))}`}>{fmtPct(p(item, "5d"))}</td>
+                <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(p(item, "1m"))}`}>{fmtPct(p(item, "1m"))}</td>
+                <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(p(item, "3m"))}`}>{fmtPct(p(item, "3m"))}</td>
+                <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(p(item, "ytd"))}`}>{fmtPct(p(item, "ytd"))}</td>
+                <td className="px-3 py-2.5">
+                  {item.relative_strength_score != null ? (
+                    <div className="flex items-center gap-2 min-w-[72px]">
+                      <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full bg-teal-500" style={{ width: `${Math.min(100, item.relative_strength_score)}%` }} />
+                      </div>
+                      <span className="text-xs text-gray-400 tabular-nums">{item.relative_strength_score.toFixed(0)}</span>
+                    </div>
+                  ) : <span className="text-gray-600 text-xs">—</span>}
+                </td>
+                <td className="px-3 py-2.5">
+                  {item.momentum_rank != null
+                    ? <span className="text-xs text-gray-500 font-mono">#{item.momentum_rank}</span>
+                    : <span className="text-gray-600 text-xs">—</span>}
+                </td>
+                <td className="px-3 py-2.5">
+                  {item.trend_state
+                    ? <Badge className={`border text-[10px] px-1.5 py-0 ${trendCls}`}>{item.trend_state}</Badge>
+                    : <span className="text-gray-600 text-xs">—</span>}
+                </td>
+              </tr>
+            );
+          })}
+          {themes.length === 0 && (
+            <tr><td colSpan={11} className="px-3 py-8 text-center text-gray-500 text-sm">No theme data available</td></tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ─── Theme Relative Strength List ─────────────────────────────────────────────
+function ThemeRSView({ themes }: { themes: ThemeRow[] }) {
+  return (
+    <div className="space-y-1.5">
+      {themes.map((item, idx) => {
+        const trendCls = TREND_STYLES[item.trend_state ?? ""] ?? "bg-white/10 text-white/50 border-white/[0.06]";
+        return (
+          <div key={item.id} className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-white/[0.04] bg-white/[0.02] hover:bg-white/[0.03] transition-colors flex-wrap">
+            <span className="text-xs text-gray-500 font-mono flex-shrink-0 w-6 text-right">#{item.momentum_rank ?? idx + 1}</span>
+            <div className="flex-1 min-w-[120px]">
+              <div className="text-sm font-medium text-white">{item.label ?? item.id}</div>
+              {item.parent_sector && <div className="text-[10px] text-white/30">{item.parent_sector}</div>}
+            </div>
+            <div className="flex flex-wrap gap-1 max-w-[200px]">
+              {(item.symbols ?? []).map(s => (
+                <span key={s} className="font-mono text-[10px] px-1 py-0.5 bg-white/[0.04] border border-white/[0.06] rounded">{s}</span>
+              ))}
+            </div>
+            {item.relative_strength_score != null && (
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                <span className="text-[10px] text-gray-500">RS</span>
+                <span className="text-sm font-mono font-bold text-teal-300">{item.relative_strength_score.toFixed(0)}</span>
+              </div>
+            )}
+            {item.trend_state && (
+              <Badge className={`border text-[10px] px-1.5 py-0 flex-shrink-0 ${trendCls}`}>{item.trend_state}</Badge>
+            )}
+            {item.rotation_state && (
+              <span className="text-[10px] text-white/30 flex-shrink-0">{item.rotation_state}</span>
+            )}
+          </div>
+        );
+      })}
+      {themes.length === 0 && (
+        <div className="py-8 text-center text-gray-500 text-sm">No theme relative strength data available</div>
+      )}
     </div>
   );
 }
@@ -529,6 +681,15 @@ function SectorPerformanceTable({
   const [sortKey, setSortKey] = useState<SortKey>("rotation_score");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [expandedTicker, setExpandedTicker] = useState<string | null>(null);
+  const [perfMode, setPerfMode] = useState<"sectors" | "themes">("sectors");
+
+  const { data: themePerfRaw, isLoading: themePerfLoading, isError: themePerfError } = useQuery<{ items: ThemeRow[] }>({
+    queryKey: ["sector-performance", "themes"],
+    queryFn: () => fetch("/api/sectors/performance?mode=themes").then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); }),
+    enabled: perfMode === "themes",
+    staleTime: 5 * 60_000,
+    retry: 1,
+  });
 
   const toggleExpand = (ticker: string) => {
     setExpandedTicker(prev => prev === ticker ? null : ticker);
@@ -567,7 +728,7 @@ function SectorPerformanceTable({
   if (loading) {
     return (
       <GlassCard className="p-4 sm:p-6">
-        <SectionHeader icon={BarChart3} title="Sector Performance" />
+        <SectionHeader icon={BarChart3} title="Sector Performance" right={<ModeToggle mode={perfMode} setMode={setPerfMode} />} />
         <div className="space-y-2">{Array.from({ length: 11 }).map((_, i) => (
           <div key={i} className="flex gap-3"><Skel w={50} h={14} /><Skel w={120} h={14} /><Skel w={60} h={14} /><Skel w={60} h={14} /><Skel w={60} h={14} /></div>
         ))}</div>
@@ -575,9 +736,35 @@ function SectorPerformanceTable({
     );
   }
 
+  if (perfMode === "themes") {
+    return (
+      <GlassCard className="p-4 sm:p-6 overflow-hidden">
+        <SectionHeader icon={BarChart3} title="Sector Performance" badge="Theme ETF Baskets"
+          right={<ModeToggle mode={perfMode} setMode={setPerfMode} />}
+        />
+        <p className="text-[10px] text-white/30 mb-3">
+          Granular ETF baskets showing which investable subsectors are leading beneath the broad sectors.
+        </p>
+        {themePerfLoading ? (
+          <div className="space-y-2">{Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="flex gap-3"><Skel w={140} h={14} /><Skel w={100} h={14} /><Skel w={60} h={14} /><Skel w={60} h={14} /></div>
+          ))}</div>
+        ) : themePerfError ? (
+          <div className="flex items-center gap-2 text-sm text-amber-400 py-4">
+            <AlertTriangle className="w-4 h-4" /> Failed to load theme performance data.
+          </div>
+        ) : (
+          <ThemePerformanceView themes={themePerfRaw?.items ?? []} />
+        )}
+      </GlassCard>
+    );
+  }
+
   return (
     <GlassCard className="p-4 sm:p-6 overflow-hidden">
-      <SectionHeader icon={BarChart3} title="Sector Performance" badge="SPDR ETFs" />
+      <SectionHeader icon={BarChart3} title="Sector Performance" badge="SPDR ETFs"
+        right={<ModeToggle mode={perfMode} setMode={setPerfMode} />}
+      />
       <div className="overflow-x-auto">
         <table className="w-full min-w-[720px]">
           <thead>
@@ -669,6 +856,15 @@ function SectorRotationChart({
   selectedTickers: Set<string>; onToggleTicker: (t: string) => void;
 }) {
   const [tf, setTf] = useState<Timeframe>("7d");
+  const [rsMode, setRsMode] = useState<"sectors" | "themes">("sectors");
+
+  const { data: themeRSRaw, isLoading: themeRSLoading, isError: themeRSError } = useQuery<{ ranked: ThemeRow[] }>({
+    queryKey: ["sector-relative-strength", "themes"],
+    queryFn: () => fetch("/api/sectors/relative-strength?mode=themes").then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); }),
+    enabled: rsMode === "themes",
+    staleTime: 5 * 60_000,
+    retry: 1,
+  });
 
   const pctForTf = (row: SectorRow): number | null =>
     tf === "1d" ? row.change_1d :
@@ -697,8 +893,32 @@ function SectorRotationChart({
   if (loading) {
     return (
       <GlassCard className="p-4 sm:p-6">
-        <SectionHeader icon={TrendingUp} title="Relative Strength" color="blue" />
+        <SectionHeader icon={TrendingUp} title="Relative Strength" color="blue"
+          right={<ModeToggle mode={rsMode} setMode={setRsMode} />}
+        />
         <Skel h={220} />
+      </GlassCard>
+    );
+  }
+
+  if (rsMode === "themes") {
+    return (
+      <GlassCard className="p-4 sm:p-6">
+        <SectionHeader icon={TrendingUp} title="Relative Strength" badge="Theme ETFs" color="blue"
+          right={<ModeToggle mode={rsMode} setMode={setRsMode} />}
+        />
+        <p className="text-[10px] text-white/30 mb-3">
+          Ranks theme ETFs by momentum and acceleration to catch rotation before broad sectors make it obvious.
+        </p>
+        {themeRSLoading ? (
+          <div className="space-y-2">{Array.from({ length: 8 }).map((_, i) => <Skel key={i} h={48} />)}</div>
+        ) : themeRSError ? (
+          <div className="flex items-center gap-2 text-sm text-amber-400 py-4">
+            <AlertTriangle className="w-4 h-4" /> Failed to load theme relative strength data.
+          </div>
+        ) : (
+          <ThemeRSView themes={themeRSRaw?.ranked ?? []} />
+        )}
       </GlassCard>
     );
   }
@@ -707,13 +927,16 @@ function SectorRotationChart({
     <GlassCard className="p-4 sm:p-6">
       <SectionHeader icon={TrendingUp} title="Relative Strength" badge="Normalised" color="blue"
         right={
-          <div className="flex gap-1 bg-white/5 rounded-lg p-0.5">
-            {TF_OPTIONS.map(t => (
-              <button key={t} onClick={() => setTf(t)}
-                className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${tf === t ? "bg-blue-500 text-white" : "text-gray-400 hover:text-white"}`}>
-                {t.toUpperCase()}
-              </button>
-            ))}
+          <div className="flex items-center gap-2">
+            <div className="flex gap-1 bg-white/5 rounded-lg p-0.5">
+              {TF_OPTIONS.map(t => (
+                <button key={t} onClick={() => setTf(t)}
+                  className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${tf === t ? "bg-blue-500 text-white" : "text-gray-400 hover:text-white"}`}>
+                  {t.toUpperCase()}
+                </button>
+              ))}
+            </div>
+            <ModeToggle mode={rsMode} setMode={setRsMode} />
           </div>
         }
       />
@@ -951,6 +1174,11 @@ function SectorAnalysisPanel({ analysis, analysisTs, loading, isNull, onRefresh,
             ))}
           </ul>
         </div>
+      )}
+
+      {/* Theme Rotation */}
+      {analysis.theme_rotation && (
+        <Block label="Theme Rotation" icon={Layers} text={analysis.theme_rotation} color="text-sky-400" />
       )}
 
       {/* Sources */}

@@ -1,0 +1,265 @@
+We need to update the Sectors page frontend to consume the new backend Theme Rotation ETF layer.
+
+Backend is already complete and exposes:
+
+GET /api/sectors/performance?mode=sectors
+GET /api/sectors/performance?mode=themes
+GET /api/sectors/relative-strength?mode=sectors
+GET /api/sectors/relative-strength?mode=themes
+
+Backend also adds AIAnalysis.theme_rotation for the Agent Analysis response.
+
+Goal:
+Add compact Sectors | Themes toggles to the existing Sector Performance and Relative Strength sections on the Sectors page.
+
+Do not redesign the page.
+Do not remove existing SPDR sector behavior.
+Do not change the existing default view.
+Default must remain broad sectors exactly as it is today.
+
+Implementation steps:
+
+1. Audit the current Sectors page/components first.
+
+Find the files/components rendering:
+- Sector Performance
+- SPDR ETFs / normalized views
+- Relative Strength
+- Agent Analysis
+
+Likely files:
+client/src/pages/sectors.tsx
+client/src/pages/Sectors.tsx
+client/src/components/SectorPerformance.tsx
+client/src/components/RelativeStrength.tsx
+client/src/components/SectorRotation.tsx
+or similar.
+
+Before editing, identify the current API calls and data shape.
+
+2. Add independent local mode state.
+
+In the Sectors page or the relevant parent component, add:
+
+const [performanceMode, setPerformanceMode] = useState<"sectors" | "themes">("sectors");
+const [relativeStrengthMode, setRelativeStrengthMode] = useState<"sectors" | "themes">("sectors");
+
+Sector Performance and Relative Strength should each have their own top-right toggle.
+
+3. Add compact toggle UI to each card header.
+
+In the top-right of the Sector Performance card/header, add:
+
+Sectors | Themes
+
+In the top-right of the Relative Strength card/header, add:
+
+Sectors | Themes
+
+Use the existing terminal/Bloomberg style. Keep it small, premium, and unobtrusive.
+
+Example structure:
+
+<div className="flex items-center gap-1 rounded-md border border-cyan-500/20 bg-black/30 p-1">
+  <button
+    onClick={() => setMode("sectors")}
+    className={mode === "sectors" ? activeClass : inactiveClass}
+  >
+    Sectors
+  </button>
+  <button
+    onClick={() => setMode("themes")}
+    className={mode === "themes" ? activeClass : inactiveClass}
+  >
+    Themes
+  </button>
+</div>
+
+Use whatever classes match the existing page style. Do not introduce a new design language.
+
+4. Wire API calls to mode.
+
+Sector Performance should call:
+
+/api/sectors/performance?mode=${performanceMode}
+
+Relative Strength should call:
+
+/api/sectors/relative-strength?mode=${relativeStrengthMode}
+
+If the frontend uses a backend proxy route, use the existing proxy/client pattern. Do not create a new random fetch helper if one already exists.
+
+5. Preserve existing sector rendering.
+
+When mode === "sectors":
+- Render the existing UI exactly as it works today.
+- Do not rename columns.
+- Do not alter normalized/SPDR behavior.
+- Do not change sorting unless already existing.
+
+6. Add Themes rendering for Sector Performance.
+
+When performanceMode === "themes", render the backend theme records.
+
+Backend fields include:
+
+id
+label
+symbols
+parent_sector
+theme_type
+leader_symbol
+performance
+relative_strength_score
+momentum_rank
+trend_state
+rotation_state
+notes
+
+Render columns/cards like:
+
+Theme
+ETF Basket
+Parent Sector
+1D
+5D
+1M
+3M
+YTD
+RS Score
+Rank
+Trend State
+
+Use graceful fallbacks because some values may be missing:
+
+item.label ?? item.id
+item.symbols?.join(" / ") ?? "-"
+item.parent_sector ?? "-"
+item.performance?.["1d"] ?? item.performance?.one_day ?? null
+
+Important:
+Inspect the actual JSON returned from the backend before finalizing field names. The backend says it returns stable fields, but verify casing and performance keys from the real response.
+
+7. Add Themes rendering for Relative Strength.
+
+When relativeStrengthMode === "themes", render the backend theme records sorted by:
+
+relative_strength_score descending
+
+Display:
+
+Rank
+Theme
+ETF Basket
+Parent Sector
+RS Score
+Trend State
+Rotation State
+
+Example row:
+
+#1 Semiconductors | SMH / SOXX / XSD / PSI | Technology | RS 92 | Leadership | Accelerating
+
+8. Add tiny helper copy only in Themes mode.
+
+Under Sector Performance title, when mode is Themes:
+
+"Granular ETF baskets showing which investable subsectors are leading beneath the broad sectors."
+
+Under Relative Strength title, when mode is Themes:
+
+"Ranks theme ETFs by momentum and acceleration to catch rotation before broad sectors make it obvious."
+
+Keep this small. Do not add bulky paragraphs.
+
+9. Agent Analysis update.
+
+Backend now adds:
+
+theme_rotation
+
+Find where Agent Analysis is rendered.
+
+If the response is already markdown/text from backend and includes Theme Rotation naturally, do nothing.
+
+If the frontend manually renders AIAnalysis fields one by one, append a new section at the bottom:
+
+Title:
+Theme Rotation
+
+Body:
+analysis.theme_rotation
+
+Only show it if theme_rotation exists and is not empty.
+
+Style it exactly like the other Agent Analysis subsections.
+
+Do not redesign Agent Analysis.
+
+10. Loading/error handling.
+
+Each section should load independently.
+
+If Theme Performance fails:
+- Show an inline error inside the Sector Performance card only.
+- Do not break Relative Strength.
+- Do not break broad sectors.
+
+If Theme Relative Strength fails:
+- Show an inline error inside the Relative Strength card only.
+
+Switching back to Sectors should work instantly or refetch normally.
+
+Do not silently fall back to sectors while the toggle says themes. That is confusing.
+
+11. Prevent excessive fetching.
+
+Use existing React Query/SWR/cache pattern if present.
+
+Good query keys:
+
+["sector-performance", performanceMode]
+["sector-relative-strength", relativeStrengthMode]
+
+Do not refetch Agent Analysis just because the user toggles Sectors/Themes.
+
+The backend already made sure toggles do not trigger AI calls. Keep frontend behavior aligned.
+
+12. Responsive behavior.
+
+Theme names and ETF baskets can be longer than sector ETF names.
+
+Make sure:
+- Rows do not overflow horizontally in a broken way.
+- ETF basket text can wrap or truncate cleanly.
+- Mobile/tablet remains usable.
+- Existing desktop layout stays premium.
+
+13. Acceptance tests.
+
+Verify all of this in the browser:
+
+Default page load:
+- Sector Performance shows existing broad sector/SPDR view.
+- Relative Strength shows existing broad sector view.
+- Agent Analysis still renders.
+
+Toggle Sector Performance to Themes:
+- Calls /api/sectors/performance?mode=themes.
+- Shows 20 theme rows/cards.
+- Displays labels like Semiconductors, Cybersecurity, Aerospace & Defense, Nuclear & Uranium, etc.
+- Shows ETF baskets like SMH/SOXX/XSD.
+
+Toggle Relative Strength to Themes:
+- Calls /api/sectors/relative-strength?mode=themes.
+- Shows ranked theme rows.
+- Sorted by RS score descending.
+
+Toggle back to Sectors:
+- Existing broad sector UI returns unchanged.
+
+Agent Analysis:
+- If analysis.theme_rotation exists, show it as the final subsection titled Theme Rotation.
+- Do not trigger analysis regeneration from simple dashboard toggles.
+
+Do not push to git. Work directly in Replit.
