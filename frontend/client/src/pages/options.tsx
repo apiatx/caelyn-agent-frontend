@@ -616,23 +616,27 @@ function TopContractsSection({ ticker, historyReady }: { ticker: TickerResult; h
 }
 
 function TickerDetailPanel({ symbol, ticker }: { symbol: string; ticker: TickerResult }) {
-  const [technicals, setTechnicals] = useState<any>(null);
-  const [history, setHistory] = useState<any[]>([]);
+  const [technicals, setTechnicals]       = useState<any>(null);
+  const [history, setHistory]             = useState<any[]>([]);
   const [volumeSummary, setVolumeSummary] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [screenerDetail, setScreenerDetail] = useState<any>(null);
+  const [loading, setLoading]             = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
+    setScreenerDetail(null);
     Promise.all([
       fetch(`${API_BASE}/technicals/${encodeURIComponent(symbol)}`, { headers: authHeaders() }).then(r => r.ok ? r.json() : null).catch(() => null),
       fetch(`${API_BASE}/history/${encodeURIComponent(symbol)}?limit=60`, { headers: authHeaders() }).then(r => r.ok ? r.json() : null).catch(() => null),
       fetch(`${API_BASE}/volume-summary/${encodeURIComponent(symbol)}?days=30`, { headers: authHeaders() }).then(r => r.ok ? r.json() : null).catch(() => null),
-    ]).then(([tech, hist, vol]) => {
+      fetch(`${API_BASE}/screener/${encodeURIComponent(symbol)}`, { headers: authHeaders() }).then(r => r.ok ? r.json() : null).catch(() => null),
+    ]).then(([tech, hist, vol, sd]) => {
       if (cancelled) return;
       setTechnicals(tech);
       setHistory(Array.isArray(hist?.bars || hist) ? (hist?.bars || hist) : []);
       setVolumeSummary(vol);
+      setScreenerDetail(sd);
       setLoading(false);
     });
     return () => { cancelled = true; };
@@ -735,6 +739,121 @@ function TickerDetailPanel({ symbol, ticker }: { symbol: string; ticker: TickerR
         <div style={{ color: C.bright, fontSize: 11, fontFamily: font, textTransform: "uppercase", marginBottom: 8 }}>Top contract ideas</div>
         <TopContractsSection ticker={ticker} historyReady={historyReady} />
       </div>
+
+      {/* ── Enriched screener breakdown (from /api/options/screener/:symbol) ── */}
+      {screenerDetail && (screenerDetail.premium_breakdown || screenerDetail.call_put_breakdown || screenerDetail.otm_breakdown || screenerDetail.recent_snapshot_history) && (
+        <div style={{ display: "grid", gap: 12 }}>
+          {/* Premium breakdown */}
+          {screenerDetail.premium_breakdown && typeof screenerDetail.premium_breakdown === "object" && Object.keys(screenerDetail.premium_breakdown).length > 0 && (
+            <div>
+              <div style={{ color: C.bright, fontSize: 11, fontFamily: font, textTransform: "uppercase", marginBottom: 8 }}>Premium Breakdown</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8 }}>
+                {Object.entries(screenerDetail.premium_breakdown).map(([k, v]) => (
+                  <div key={k} style={{ background: C.cardAlt, border: `1px solid ${C.border}`, borderRadius: 6, padding: "8px 10px" }}>
+                    <div style={{ color: C.dim, fontSize: 9, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>{k.replace(/_/g, " ")}</div>
+                    <div style={{ color: k.toLowerCase().includes("call") ? C.green : k.toLowerCase().includes("put") ? C.red : C.text, fontSize: 12, fontFamily: font, fontWeight: 600 }}>
+                      {typeof v === "number" ? fmtCurrencyShort(v) : String(v ?? "—")}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Call / Put breakdown */}
+          {screenerDetail.call_put_breakdown && typeof screenerDetail.call_put_breakdown === "object" && Object.keys(screenerDetail.call_put_breakdown).length > 0 && (
+            <div>
+              <div style={{ color: C.bright, fontSize: 11, fontFamily: font, textTransform: "uppercase", marginBottom: 8 }}>Call / Put Breakdown</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8 }}>
+                {Object.entries(screenerDetail.call_put_breakdown).map(([k, v]) => {
+                  const isCall = k.toLowerCase().includes("call");
+                  const isPut  = k.toLowerCase().includes("put");
+                  const isPct  = k.toLowerCase().includes("pct") || k.toLowerCase().includes("ratio");
+                  return (
+                    <div key={k} style={{ background: C.cardAlt, border: `1px solid ${C.border}`, borderRadius: 6, padding: "8px 10px" }}>
+                      <div style={{ color: C.dim, fontSize: 9, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>{k.replace(/_/g, " ")}</div>
+                      <div style={{ color: isCall ? C.green : isPut ? C.red : C.text, fontSize: 12, fontFamily: font, fontWeight: 600 }}>
+                        {typeof v === "number" ? (isPct ? fmtSmartPct(v) : fmtCurrencyShort(v)) : String(v ?? "—")}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* OTM breakdown table */}
+          {Array.isArray(screenerDetail.otm_breakdown) && screenerDetail.otm_breakdown.length > 0 && (() => {
+            const rows: Record<string, unknown>[] = screenerDetail.otm_breakdown;
+            const cols = Object.keys(rows[0]);
+            return (
+              <div>
+                <div style={{ color: C.bright, fontSize: 11, fontFamily: font, textTransform: "uppercase", marginBottom: 8 }}>OTM Breakdown</div>
+                <div style={{ overflowX: "auto", borderRadius: 6, border: `1px solid ${C.border}` }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 10, fontFamily: font }}>
+                    <thead>
+                      <tr style={{ borderBottom: `1px solid ${C.border}`, background: C.cardAlt }}>
+                        {cols.map(c => <th key={c} style={{ color: C.dim, textAlign: "right", padding: "5px 10px", fontWeight: 400, textTransform: "uppercase", fontSize: 9 }}>{c.replace(/_/g, " ")}</th>)}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.map((row, i) => (
+                        <tr key={i} style={{ borderBottom: `1px solid ${C.border}40` }}>
+                          {cols.map(c => {
+                            const v = row[c];
+                            const isPct = c.includes("pct") || c.includes("ratio");
+                            const isVol = c.includes("vol") || c.includes("oi");
+                            const display = typeof v === "number" ? (isPct ? fmtSmartPct(v) : isVol ? fmtVol(v) : fmtNum(v, 2)) : String(v ?? "—");
+                            return <td key={c} style={{ color: C.text, textAlign: "right", padding: "6px 10px" }}>{display}</td>;
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Recent snapshot history table */}
+          {Array.isArray(screenerDetail.recent_snapshot_history) && screenerDetail.recent_snapshot_history.length > 0 && (() => {
+            const rows: Record<string, unknown>[] = screenerDetail.recent_snapshot_history;
+            const cols = Object.keys(rows[0]);
+            return (
+              <div>
+                <div style={{ color: C.bright, fontSize: 11, fontFamily: font, textTransform: "uppercase", marginBottom: 8 }}>Recent Snapshot History</div>
+                <div style={{ overflowX: "auto", borderRadius: 6, border: `1px solid ${C.border}` }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 10, fontFamily: font }}>
+                    <thead>
+                      <tr style={{ borderBottom: `1px solid ${C.border}`, background: C.cardAlt }}>
+                        {cols.map(c => <th key={c} style={{ color: C.dim, textAlign: "right", padding: "5px 10px", fontWeight: 400, textTransform: "uppercase", fontSize: 9 }}>{c.replace(/_/g, " ")}</th>)}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.map((row, i) => (
+                        <tr key={i} style={{ borderBottom: `1px solid ${C.border}40` }}>
+                          {cols.map(c => {
+                            const v = row[c];
+                            const isScore  = c.includes("score");
+                            const isPrem   = c.includes("prem") || c.includes("premium");
+                            const isPct    = c.includes("pct") || c.includes("change");
+                            const isSig    = c === "signal" || c === "primary_signal";
+                            const display  = typeof v === "number"
+                              ? (isScore ? fmtNum(v, 0) : isPrem ? fmtCurrencyShort(v) : isPct ? fmtSmartPct(v) : fmtNum(v, 2))
+                              : String(v ?? "—");
+                            const color = isSig ? getSignalColor(String(v)) : C.text;
+                            return <td key={c} style={{ color, textAlign: "right", padding: "6px 10px" }}>{display}</td>;
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      )}
 
       <TVChart symbol={ticker.ticker} />
 

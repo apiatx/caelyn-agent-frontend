@@ -1241,6 +1241,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // === Options Flow — per-symbol enriched detail from screener ===
+  app.get('/api/options/screener/:symbol', async (req, res) => {
+    try {
+      const { symbol } = req.params;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 20000);
+      const fwdHeaders: Record<string,string> = { 'X-API-Key': AGENT_KEY };
+      if (req.headers.authorization) fwdHeaders['Authorization'] = req.headers.authorization as string;
+      const response = await fetch(`${AGENT_URL}/api/options/screener/${encodeURIComponent(symbol)}`, {
+        method: 'GET',
+        headers: fwdHeaders,
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      if (!response.ok) {
+        const text = await response.text();
+        return res.status(response.status).json({ error: `Agent returned ${response.status}`, detail: text.slice(0, 200) });
+      }
+      const data = await response.json();
+      res.json(data);
+    } catch (error: any) {
+      console.error('[options/screener/:symbol] error:', error);
+      res.status(500).json({ error: error?.name === 'AbortError' ? 'Request timed out' : 'Failed to fetch symbol screener detail' });
+    }
+  });
+
   // === Options Flow — all-tabs endpoint (legacy, kept for compatibility) ===
   app.get('/api/options/all-tabs', async (req, res) => {
     try {
