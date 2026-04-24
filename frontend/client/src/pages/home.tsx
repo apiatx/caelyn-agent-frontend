@@ -923,7 +923,7 @@ function TickerInfoPopup({
             src={tvSrc}
             style={{ width: "100%", height: "100%", border: "none", display: "block" }}
             title={`${symbol} chart`}
-            sandbox="allow-scripts allow-same-origin allow-popups"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
           />
         </div>
 
@@ -967,6 +967,10 @@ export default function HomePage() {
   const openTicker = (symbol: string, assetType?: string, price?: number | null, changePct?: number | null) =>
     setTickerPopup({ symbol, assetType, price, changePct });
   const [moverCategory, setMoverCategory] = useState<"all" | "stocks" | "commodities" | "crypto" | "etfs">("stocks");
+  const moverViewMore =
+    moverCategory === "crypto"      ? "/app/crypto-stocks" :
+    moverCategory === "commodities" ? "/app/commodities"   :
+    "/app/stocks/screening";
   const [macroChartCard, setMacroChartCard] = useState<HomeMacroCard | null>(null);
 
   // Home aggregator — primary query. The Express proxy composes:
@@ -1613,7 +1617,7 @@ export default function HomePage() {
         <div className="grid grid-cols-2 gap-5 mb-6" style={{ gridAutoRows: "460px" }}>
           {/* Top Movers */}
           <GlassCard className="p-4 flex flex-col overflow-hidden">
-            <SectionHeader icon={TrendingUp} title="Top Movers" accent="today" viewMore="/app/stocks/screening" />
+            <SectionHeader icon={TrendingUp} title="Top Movers" accent="today" viewMore={moverViewMore} />
             <div className="divide-y divide-white/[0.04] overflow-y-auto flex-1 min-h-0">
               {categoryMoversLoading && Array.from({ length: 6 }).map((_, i) => (
                 <Skeleton key={i} className="h-9 my-0.5 rounded bg-white/[0.04]" />
@@ -1639,7 +1643,7 @@ export default function HomePage() {
               icon={TrendingDown}
               title="Top Losers"
               accent="today"
-              viewMore="/app/stocks/screening"
+              viewMore={moverViewMore}
             />
             <div className="divide-y divide-white/[0.04] overflow-y-auto flex-1 min-h-0">
               {categoryMoversLoading && Array.from({ length: 6 }).map((_, i) => (
