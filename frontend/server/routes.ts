@@ -2487,6 +2487,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           change_pct:   item.change_percent ?? item.change_pct ?? null,
           change_label: item.change_label || '',
           direction:    ((item.change_percent ?? item.change_pct ?? 0) >= 0 ? 'up' : 'down'),
+          asset_type:   item.asset_type || null,
         }));
       res.json({
         gainers:  normalize(raw.gainers  || []),

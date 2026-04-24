@@ -45,73 +45,84 @@ interface HLOIRegime  { symbol: string; regime: string; price_change_24h_pct?: n
 interface HLAdvSigs   { relative_strength_leaders: HLRSLeader[]; oi_regime_shift: HLOIRegime[]; as_of?: string; }
 
 // ───────────────────────────────────────────────────────────────────────────
-// TradingView symbol resolution — maps backend tickers to valid TV symbols
+// External chart URL resolution for movers
+// Commodities → TradingView chart links (same chart ID used by Commodities page)
+// Crypto      → CoinMarketCap currency page
 // ───────────────────────────────────────────────────────────────────────────
 
-const COMMODITY_TV_SYMBOLS: Record<string, string> = {
+const TV_CHART = "https://www.tradingview.com/chart/e5l95XgZ/?symbol=";
+
+// FMP commodity ticker → full TradingView chart URL (mirrors Commodities page links)
+const COMMODITY_TV_URLS: Record<string, string> = {
   // Energy
-  BRENTOIL: "TVC:UKOIL",   BRENT: "TVC:UKOIL",
-  UKOIL:    "TVC:UKOIL",
-  WTIOIL:   "TVC:USOIL",   CRUDEOIL: "TVC:USOIL",   USOIL: "TVC:USOIL",
-  OIL:      "TVC:USOIL",   CL1:      "NYMEX:CL1!",
-  GAS:      "TVC:NATGAS",  NATGAS:   "TVC:NATGAS",   NATURALGAS: "TVC:NATGAS",
-  NG1:      "NYMEX:NG1!",
+  BRENTOIL:   TV_CHART + "TVC%3AUKOIL",
+  BRENT:      TV_CHART + "TVC%3AUKOIL",
+  UKOIL:      TV_CHART + "TVC%3AUKOIL",
+  WTIOIL:     TV_CHART + "TVC%3AUSOIL",
+  CRUDEOIL:   TV_CHART + "TVC%3AUSOIL",
+  OIL:        TV_CHART + "TVC%3AUSOIL",
+  USOIL:      TV_CHART + "TVC%3AUSOIL",
+  GAS:        TV_CHART + "FXOPEN%3AXNGUSD",
+  NATGAS:     TV_CHART + "FXOPEN%3AXNGUSD",
+  NATURALGAS: TV_CHART + "FXOPEN%3AXNGUSD",
+  XNGUSD:     TV_CHART + "FXOPEN%3AXNGUSD",
   // Metals
-  GOLD:      "TVC:GOLD",    GC1:  "COMEX:GC1!",
-  SILVER:    "TVC:SILVER",  SI1:  "COMEX:SI1!",
-  COPPER:    "TVC:COPPER",  HG1:  "COMEX:HG1!",
-  PLATINUM:  "NYMEX:PL1!",  PL1:  "NYMEX:PL1!",
-  PALLADIUM: "NYMEX:PA1!",  PA1:  "NYMEX:PA1!",
-  ALUMINUM:  "COMEX:ALI1!",
-  NICKEL:    "COMEX:HG1!",
+  GOLD:      TV_CHART + "OANDA%3AXAUUSD",
+  XAUUSD:    TV_CHART + "OANDA%3AXAUUSD",
+  SILVER:    TV_CHART + "TVC%3ASILVER",
+  XAGUSD:    TV_CHART + "TVC%3ASILVER",
+  COPPER:    TV_CHART + "CAPITALCOM%3ACOPPER",
+  PLATINUM:  TV_CHART + "CAPITALCOM%3APLATINUM",
+  XPTUSD:    TV_CHART + "CAPITALCOM%3APLATINUM",
+  PALLADIUM: TV_CHART + "OANDA%3AXPDUSD",
+  XPDUSD:    TV_CHART + "OANDA%3AXPDUSD",
+  ALUMINUM:  TV_CHART + "PEPPERSTONE%3AALUMINIUM",
+  ALUMINIUM: TV_CHART + "PEPPERSTONE%3AALUMINIUM",
+  NICKEL:    TV_CHART + "CAPITALCOM%3ANICKEL",
+  URANIUM:   TV_CHART + "COMEX%3AUX1%21",
+  COAL:      TV_CHART + "ICEEUR%3ANCF1%21",
+  IRON:      TV_CHART + "COMEX%3ATIO1%21",
   // Grains / Softs
-  WHEAT:    "CBOT:ZW1!",   ZW1:  "CBOT:ZW1!",
-  CORN:     "CBOT:ZC1!",   ZC1:  "CBOT:ZC1!",
-  SOYBEAN:  "CBOT:ZS1!",   SOYBEANS: "CBOT:ZS1!",   ZS1: "CBOT:ZS1!",
-  OATS:     "CBOT:ZO1!",
-  RICE:     "CBOT:ZR1!",   ROUGHRICE: "CBOT:ZR1!",
-  LUMBER:   "CME:LB1!",    LB1:  "CME:LB1!",
-  COTTON:   "ICEEUR:TF1!",
-  COFFEE:   "ICEEUR:KC1!", KC1:  "ICEEUR:KC1!",
-  COCOA:    "ICEEUR:C1!",  CC1:  "ICEEUR:C1!",
-  SUGAR:    "ICEEUR:SB1!", SB1:  "ICEEUR:SB1!",
-  ORANGEJUICE: "ICEEUR:OJ1!",
-  // Livestock
-  LIVECATTLE:   "CME:LE1!",
-  FEEDERCATTLE: "CME:GF1!",
-  LEANHOGS:     "CME:HE1!",
+  WHEAT:     TV_CHART + "OANDA%3AWHEATUSD",
+  WHEATUSD:  TV_CHART + "OANDA%3AWHEATUSD",
+  CORN:      TV_CHART + "OANDA%3ACORNUSD",
+  CORNUSD:   TV_CHART + "OANDA%3ACORNUSD",
+  SOYBEAN:   TV_CHART + "OANDA%3ASOYBNUSD",
+  SOYBEANS:  TV_CHART + "OANDA%3ASOYBNUSD",
+  SOYBNUSD:  TV_CHART + "OANDA%3ASOYBNUSD",
+  COFFEE:    TV_CHART + "ICEEUR%3AKC1%21",
+  COCOA:     TV_CHART + "ICEEUR%3AC1%21",
+  SUGAR:     TV_CHART + "ICEEUR%3ASB1%21",
+  COTTON:    TV_CHART + "CMCMARKETS%3ACOTTON",
+  LUMBER:    TV_CHART + "CME%3ALB1%21",
+  ORANGEJUICE: TV_CHART + "ICEEUR%3AOJ1%21",
 };
 
-const CRYPTO_TV_SYMBOLS: Record<string, string> = {
-  BTC:  "BINANCE:BTCUSDT",  ETH:  "BINANCE:ETHUSDT",  BNB:  "BINANCE:BNBUSDT",
-  SOL:  "BINANCE:SOLUSDT",  XRP:  "BINANCE:XRPUSDT",  ADA:  "BINANCE:ADAUSDT",
-  DOGE: "BINANCE:DOGEUSDT", AVAX: "BINANCE:AVAXUSDT", DOT:  "BINANCE:DOTUSDT",
-  LINK: "BINANCE:LINKUSDT", UNI:  "BINANCE:UNIUSDT",  ATOM: "BINANCE:ATOMUSDT",
-  LTC:  "BINANCE:LTCUSDT",  NEAR: "BINANCE:NEARUSDT", HYPE: "BINANCE:HYPEUSDT",
-  SUI:  "BINANCE:SUIUSDT",  TON:  "BINANCE:TONUSDT",  TRX:  "BINANCE:TRXUSDT",
-  APT:  "BINANCE:APTUSDT",  INJ:  "BINANCE:INJUSDT",  OP:   "BINANCE:OPUSDT",
-  ARB:  "BINANCE:ARBUSDT",  STX:  "BINANCE:STXUSDT",  PEPE: "BINANCE:PEPEUSDT",
-  WIF:  "BINANCE:WIFUSDT",  BONK: "BINANCE:BONKUSDT", SHIB: "BINANCE:SHIBUSDT",
-  FTM:  "BINANCE:FTMUSDT",  AAVE: "BINANCE:AAVEUSDT", CRV:  "BINANCE:CRVUSDT",
-  MKR:  "BINANCE:MKRUSDT",  SNX:  "BINANCE:SNXUSDT",  COMP: "BINANCE:COMPUSDT",
-  JTO:  "BINANCE:JTOUSDT",  JUP:  "BINANCE:JUPUSDT",  PYTH: "BINANCE:PYTHUSDT",
-  WLD:  "BINANCE:WLDUSDT",  TAO:  "BINANCE:TAOUSDT",  RENDER: "BINANCE:RENDERUSDT",
-  FET:  "BINANCE:FETUSDT",  ONDO: "BINANCE:ONDOUSDT", SEI:  "BINANCE:SEIUSDT",
-};
+// Returns a TradingView chart URL for a commodity ticker, or null if unknown
+function getCommodityUrl(ticker: string): string {
+  const upper = ticker.toUpperCase().replace(/\s+/g, "");
+  return COMMODITY_TV_URLS[upper] ?? (TV_CHART + "TVC%3A" + encodeURIComponent(upper));
+}
 
-function resolveTVSymbol(symbol: string, assetType?: string): string {
-  const upper = symbol.toUpperCase().replace(/[^A-Z0-9!]/g, "");
+// Returns a CoinMarketCap URL for a crypto ticker using the company/name for the slug
+function getCryptoUrl(ticker: string, company?: string): string {
+  const slug = (company || ticker)
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9-]/g, "");
+  return `https://coinmarketcap.com/currencies/${slug}/`;
+}
+
+// Returns an external URL for commodities/crypto mover rows, or null for stocks/ETFs (use popup instead)
+function getMoverExternalUrl(ticker: string, assetType: string | null | undefined, company?: string): string | null {
   const at = (assetType || "").toLowerCase();
+  if (at === "commodities" || at === "commodity") return getCommodityUrl(ticker);
+  if (at === "crypto" || at === "cryptocurrency") return getCryptoUrl(ticker, company);
+  return null;
+}
 
-  if (at === "commodities" || at === "commodity") {
-    return COMMODITY_TV_SYMBOLS[upper] ?? `TVC:${upper}`;
-  }
-
-  if (at === "crypto") {
-    return CRYPTO_TV_SYMBOLS[upper] ?? `BINANCE:${upper}USDT`;
-  }
-
-  // Stocks / ETFs / unknown — bare symbol works for US equities on TradingView
+function resolveTVSymbol(symbol: string): string {
+  // For stocks/ETFs the bare symbol works on TradingView
   return symbol;
 }
 
@@ -730,7 +741,7 @@ function TickerInfoPopup({
   const changePct = snapshot?.change_1d_pct  ?? moverChangePct ?? null;
   const signal    = snapshot?.signal_label   || flow?.signal || null;
 
-  const tvSymbol = resolveTVSymbol(symbol, assetType);
+  const tvSymbol = resolveTVSymbol(symbol);
   const tvSrc = `https://s.tradingview.com/widgetembed/?symbol=${encodeURIComponent(tvSymbol)}&interval=D&theme=dark&style=1&locale=en&hide_top_toolbar=0&hide_side_toolbar=1&allow_symbol_change=0&save_image=0&width=100%25&height=100%25`;
 
   return (
@@ -1223,9 +1234,15 @@ export default function HomePage() {
               {categoryMoversLoading && Array.from({ length: 6 }).map((_, i) => (
                 <Skeleton key={i} className="h-9 my-0.5 rounded bg-white/[0.04]" />
               ))}
-              {!categoryMoversLoading && (categoryMovers?.gainers || []).slice(0, 8).map((row, i) => (
-                <MoverRow key={i} row={row} onClick={row.ticker ? () => openTicker(row.ticker!, moverCategory, typeof row.price === "number" ? row.price : null, row.change_pct) : undefined} />
-              ))}
+              {!categoryMoversLoading && (categoryMovers?.gainers || []).slice(0, 8).map((row, i) => {
+                const externalUrl = row.ticker ? getMoverExternalUrl(row.ticker, row.asset_type || moverCategory, row.company) : null;
+                return (
+                  <MoverRow key={i} row={row} onClick={row.ticker ? () => {
+                    if (externalUrl) { window.open(externalUrl, "_blank", "noopener,noreferrer"); }
+                    else { openTicker(row.ticker!, moverCategory, typeof row.price === "number" ? row.price : null, row.change_pct); }
+                  } : undefined} />
+                );
+              })}
               {!categoryMoversLoading && (!categoryMovers?.gainers || categoryMovers.gainers.length === 0) && (
                 <div className="text-sm text-white/40 py-6 text-center">No data</div>
               )}
@@ -1243,9 +1260,15 @@ export default function HomePage() {
               {categoryMoversLoading && Array.from({ length: 6 }).map((_, i) => (
                 <Skeleton key={i} className="h-9 my-0.5 rounded bg-white/[0.04]" />
               ))}
-              {!categoryMoversLoading && (categoryMovers?.losers || []).slice(0, 8).map((row, i) => (
-                <MoverRow key={i} row={row} onClick={row.ticker ? () => openTicker(row.ticker!, moverCategory, typeof row.price === "number" ? row.price : null, row.change_pct) : undefined} />
-              ))}
+              {!categoryMoversLoading && (categoryMovers?.losers || []).slice(0, 8).map((row, i) => {
+                const externalUrl = row.ticker ? getMoverExternalUrl(row.ticker, row.asset_type || moverCategory, row.company) : null;
+                return (
+                  <MoverRow key={i} row={row} onClick={row.ticker ? () => {
+                    if (externalUrl) { window.open(externalUrl, "_blank", "noopener,noreferrer"); }
+                    else { openTicker(row.ticker!, moverCategory, typeof row.price === "number" ? row.price : null, row.change_pct); }
+                  } : undefined} />
+                );
+              })}
               {!categoryMoversLoading && (!categoryMovers?.losers || categoryMovers.losers.length === 0) && (
                 <div className="text-sm text-white/40 py-6 text-center">No data</div>
               )}

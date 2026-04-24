@@ -90,6 +90,7 @@ export interface HomeMoverRow {
   change_pct: number | null;
   change_label: string;
   direction: "up" | "down";
+  asset_type?: string | null;
 }
 
 export interface HomeMovers {
