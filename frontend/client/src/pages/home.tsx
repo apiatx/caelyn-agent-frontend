@@ -208,7 +208,7 @@ function SectionHeader({
         {action}
         {viewMore && (
           <button
-            onClick={() => setLocation(viewMore)}
+            onClick={() => { window.scrollTo({ top: 0, behavior: 'instant' }); setLocation(viewMore); }}
             className="text-[10px] text-white/30 hover:text-white/60 flex items-center gap-0.5 transition-colors"
           >
             View more <ChevronRight className="w-3 h-3" />
@@ -1011,20 +1011,34 @@ export default function HomePage() {
               )}
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            {data?.section_status && Object.entries(data.section_status).map(([k, v]) => (
-              <span
-                key={k}
-                className={`text-[10px] px-1.5 py-0.5 rounded border ${
-                  v === "ok"
-                    ? "border-emerald-500/20 text-emerald-300/80"
-                    : "border-white/10 text-white/40"
-                }`}
+          {/* Should I Be Trading? — compact corner widget */}
+          {(() => {
+            const td = tradingData;
+            const decision: string | undefined = td?.decision;
+            const score: number | undefined = td?.market_quality_score;
+            const decisionColor = decision === 'YES' ? 'text-emerald-400' : decision === 'CAUTION' ? 'text-amber-400' : decision === 'NO' ? 'text-rose-400' : 'text-white/40';
+            const borderColor = decision === 'YES' ? 'border-emerald-500/20' : decision === 'CAUTION' ? 'border-amber-500/20' : decision === 'NO' ? 'border-rose-500/20' : 'border-white/10';
+            const scoreColor = score == null ? 'text-white/30' : score >= 70 ? 'text-emerald-400' : score >= 50 ? 'text-amber-400' : score >= 30 ? 'text-orange-400' : 'text-rose-400';
+            return (
+              <button
+                onClick={() => { window.scrollTo({ top: 0, behavior: 'instant' }); setLocation('/app/macro-terminal?tab=trade'); }}
+                className={`flex flex-col items-center justify-center rounded-xl border bg-white/[0.02] hover:bg-white/[0.04] transition-all px-5 py-3 min-w-[120px] text-center ${borderColor}`}
               >
-                {k}
-              </span>
-            ))}
-          </div>
+                <div className="text-[9px] uppercase tracking-widest text-white/30 mb-1">Should I Trade?</div>
+                {!td ? (
+                  <div className="text-lg font-bold text-white/20">—</div>
+                ) : (
+                  <>
+                    <div className={`text-2xl font-bold tabular-nums leading-none ${decisionColor}`}>{decision ?? '—'}</div>
+                    {score != null && (
+                      <div className={`text-[10px] font-semibold mt-1 tabular-nums ${scoreColor}`}>{score}/100</div>
+                    )}
+                  </>
+                )}
+                <div className="text-[9px] text-white/20 mt-1 flex items-center gap-0.5">swing <ChevronRight className="w-2.5 h-2.5" /></div>
+              </button>
+            );
+          })()}
         </div>
 
         {/* D. Top macro cards */}
@@ -1042,55 +1056,6 @@ export default function HomePage() {
             </div>
           )}
         </div>
-
-        {/* E. Should I Be Trading? card */}
-        {(() => {
-          const td = tradingData;
-          const decision: string | undefined = td?.decision;
-          const score: number | undefined = td?.market_quality_score;
-          const summary: string | undefined = td?.summary;
-          const decisionColor = decision === 'YES' ? 'text-emerald-400' : decision === 'CAUTION' ? 'text-amber-400' : decision === 'NO' ? 'text-rose-400' : 'text-white/40';
-          const decisionBorder = decision === 'YES' ? 'border-emerald-500/25 bg-emerald-500/[0.04]' : decision === 'CAUTION' ? 'border-amber-500/25 bg-amber-500/[0.04]' : decision === 'NO' ? 'border-rose-500/25 bg-rose-500/[0.04]' : 'border-white/10';
-          const scoreColor = score == null ? 'text-white/30' : score >= 70 ? 'text-emerald-400' : score >= 50 ? 'text-amber-400' : score >= 30 ? 'text-orange-400' : 'text-rose-400';
-          return (
-            <GlassCard className="p-4 mb-6">
-              <SectionHeader icon={Gauge} title="Should I Be Trading?" accent="swing mode" viewMore="/app/macro-terminal?tab=trade" />
-              {!td && (
-                <div className="flex gap-3">
-                  <Skeleton className="h-12 w-24 rounded-lg bg-white/[0.04]" />
-                  <div className="flex-1 space-y-2">
-                    <Skeleton className="h-3 rounded bg-white/[0.04]" />
-                    <Skeleton className="h-3 w-3/4 rounded bg-white/[0.04]" />
-                  </div>
-                </div>
-              )}
-              {td && (
-                <div className="flex items-start gap-4">
-                  <div className={`shrink-0 rounded-xl border px-4 py-2.5 text-center min-w-[80px] ${decisionBorder}`}>
-                    <div className={`text-xl font-bold tabular-nums ${decisionColor}`}>{decision ?? '—'}</div>
-                    {score != null && (
-                      <div className={`text-[10px] font-semibold mt-0.5 tabular-nums ${scoreColor}`}>{score}/100</div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    {summary && (
-                      <p className="text-[11px] text-white/55 leading-relaxed line-clamp-3">{summary}</p>
-                    )}
-                    {td.mode && (
-                      <div className="flex items-center gap-1.5 mt-1.5">
-                        <Signal className="w-3 h-3 text-white/25" />
-                        <span className="text-[10px] text-white/30 uppercase tracking-wide">{td.mode} mode</span>
-                        {td.execution_window_score != null && (
-                          <span className="text-[10px] text-white/25">· exec window {td.execution_window_score}/100</span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </GlassCard>
-          );
-        })()}
 
         {/* F + G + G2. Three-column row: Theme Performance | Top Equity Signals | Latest News */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
@@ -1147,12 +1112,12 @@ export default function HomePage() {
 
           {/* Top Equity Signals — 1/3 width */}
           <div className="lg:col-span-1">
-            <GlassCard className="p-4 h-full">
+            <GlassCard className="p-4 h-full overflow-y-auto">
               <SectionHeader icon={Signal} title="Top Equity Signals" accent="Prophetik" viewMore="/app/predict" />
               {!equityOverview && (
                 <div className="space-y-2">
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <Skeleton key={i} className="h-14 rounded bg-white/[0.04]" />
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <Skeleton key={i} className="h-24 rounded bg-white/[0.04]" />
                   ))}
                 </div>
               )}
@@ -1160,7 +1125,7 @@ export default function HomePage() {
                 <div className="text-sm text-white/40 py-8 text-center">No equity signals available.</div>
               )}
               {topEquitySignals.length > 0 && (
-                <div className="space-y-2">
+                <div className="space-y-2.5">
                   {topEquitySignals.map((sig: any, i: number) => {
                     const dir = (() => {
                       const s = (sig.summary_direction || '').toLowerCase();
@@ -1168,19 +1133,76 @@ export default function HomePage() {
                       if (s.includes('bear') || s === 'down') return 'bearish';
                       return 'neutral';
                     })();
-                    const dirColor = dir === 'bullish' ? 'text-emerald-400' : dir === 'bearish' ? 'text-rose-400' : 'text-amber-400';
-                    const dirBg   = dir === 'bullish' ? 'bg-emerald-500/[0.06] border-emerald-500/15' : dir === 'bearish' ? 'bg-rose-500/[0.06] border-rose-500/15' : 'bg-amber-500/[0.06] border-amber-500/15';
+                    const dirColor  = dir === 'bullish' ? 'text-emerald-400' : dir === 'bearish' ? 'text-rose-400' : 'text-amber-400';
+                    const dirBg     = dir === 'bullish' ? 'border-emerald-500/15' : dir === 'bearish' ? 'border-rose-500/15' : 'border-amber-500/15';
+                    const bullSectors: string[] = sig.bullish_sectors ?? [];
+                    const bearSectors: string[] = sig.bearish_sectors ?? [];
+                    const bullStocks:  string[] = sig.bullish_stocks  ?? [];
+                    const bearStocks:  string[] = sig.bearish_stocks  ?? [];
                     return (
-                      <div key={i} className={`rounded-lg border p-2.5 ${dirBg}`}>
-                        <div className="flex items-start justify-between gap-2 mb-1">
+                      <div key={i} className={`rounded-lg border bg-white/[0.02] p-2.5 ${dirBg}`}>
+                        {/* Direction + confidence */}
+                        <div className="flex items-center justify-between gap-2 mb-1.5">
                           <span className={`text-[8px] font-bold uppercase tracking-widest ${dirColor}`}>{dir}</span>
                           {sig.confidence && (
-                            <span className="text-[9px] text-white/30">{sig.confidence}</span>
+                            <span className="text-[9px] text-white/25 capitalize">{sig.confidence}</span>
                           )}
                         </div>
-                        <p className="text-[11px] text-white/85 font-medium leading-snug line-clamp-2">{sig.title}</p>
+                        {/* Title */}
+                        <p className="text-[11px] text-white/85 font-semibold leading-snug mb-1">{sig.title}</p>
+                        {/* Summary */}
                         {sig.summary && (
-                          <p className="text-[10px] text-white/45 leading-relaxed mt-1 line-clamp-2">{sig.summary}</p>
+                          <p className="text-[10px] text-white/45 leading-relaxed mb-2 line-clamp-2">{sig.summary}</p>
+                        )}
+                        {/* Odds move */}
+                        {sig.odds_move_summary && (
+                          <p className="text-[10px] text-blue-300/70 mb-2 leading-snug">↻ {sig.odds_move_summary}</p>
+                        )}
+                        {/* Sectors */}
+                        {(bullSectors.length > 0 || bearSectors.length > 0) && (
+                          <div className="flex gap-2 mb-2">
+                            {bullSectors.length > 0 && (
+                              <div className="flex-1 min-w-0">
+                                <p className="text-[7px] font-bold uppercase tracking-widest text-emerald-400/50 mb-1">↑ Sectors</p>
+                                {bullSectors.slice(0, 3).map(s => (
+                                  <p key={s} className="text-[9px] text-emerald-300/80 font-medium truncate">{s}</p>
+                                ))}
+                              </div>
+                            )}
+                            {bearSectors.length > 0 && (
+                              <div className="flex-1 min-w-0">
+                                <p className="text-[7px] font-bold uppercase tracking-widest text-rose-400/50 mb-1">↓ Sectors</p>
+                                {bearSectors.slice(0, 3).map(s => (
+                                  <p key={s} className="text-[9px] text-rose-300/80 font-medium truncate">{s}</p>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {/* Stock tickers */}
+                        {(bullStocks.length > 0 || bearStocks.length > 0) && (
+                          <div className="flex gap-2">
+                            {bullStocks.length > 0 && (
+                              <div className="flex-1 min-w-0">
+                                <p className="text-[7px] font-bold uppercase tracking-widest text-emerald-400/50 mb-1">Bullish</p>
+                                <div className="flex flex-wrap gap-1">
+                                  {bullStocks.slice(0, 4).map(t => (
+                                    <span key={t} className="text-[8px] font-bold font-mono px-1 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">{t}</span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            {bearStocks.length > 0 && (
+                              <div className="flex-1 min-w-0">
+                                <p className="text-[7px] font-bold uppercase tracking-widest text-rose-400/50 mb-1">Bearish</p>
+                                <div className="flex flex-wrap gap-1">
+                                  {bearStocks.slice(0, 4).map(t => (
+                                    <span key={t} className="text-[8px] font-bold font-mono px-1 py-0.5 rounded bg-rose-500/10 border border-rose-500/20 text-rose-400">{t}</span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         )}
                       </div>
                     );
@@ -1235,7 +1257,7 @@ export default function HomePage() {
             accent="tracked positions"
             status={data?.section_status?.portfolio_snapshot}
             scrollable
-            viewMore="/app/portfolio"
+            viewMore="/app/caelyn-terminal"
           />
           <SnapshotTable
             items={data?.watchlist_snapshot}
@@ -1366,7 +1388,7 @@ export default function HomePage() {
         <div className="grid grid-cols-2 gap-5 mb-6" style={{ gridAutoRows: "460px" }}>
           {/* Top Movers */}
           <GlassCard className="p-4 flex flex-col overflow-hidden">
-            <SectionHeader icon={TrendingUp} title="Top Movers" accent="today" viewMore="/app/strategy-screener" />
+            <SectionHeader icon={TrendingUp} title="Top Movers" accent="today" viewMore="/app/stocks/screening" />
             <div className="divide-y divide-white/[0.04] overflow-y-auto flex-1 min-h-0">
               {categoryMoversLoading && Array.from({ length: 6 }).map((_, i) => (
                 <Skeleton key={i} className="h-9 my-0.5 rounded bg-white/[0.04]" />
@@ -1392,7 +1414,7 @@ export default function HomePage() {
               icon={TrendingDown}
               title="Top Losers"
               accent="today"
-              viewMore="/app/strategy-screener"
+              viewMore="/app/stocks/screening"
             />
             <div className="divide-y divide-white/[0.04] overflow-y-auto flex-1 min-h-0">
               {categoryMoversLoading && Array.from({ length: 6 }).map((_, i) => (
