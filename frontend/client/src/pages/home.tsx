@@ -1476,47 +1476,27 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* H2. Portfolio Snapshot + Watchlist Snapshot */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
-          <SnapshotTable
-            items={data?.portfolio_snapshot}
-            loading={isLoading}
-            title="Portfolio Snapshot"
-            icon={Briefcase}
-            accent="tracked positions"
-            status={data?.section_status?.portfolio_snapshot}
-            scrollable
-            viewMore="/app/caelyn-terminal"
-          />
-          <SnapshotTable
-            items={data?.watchlist_snapshot}
-            loading={isLoading}
-            title="Watchlist Snapshot"
-            icon={Wallet}
-            accent="top movers from watchlist"
-            status={data?.section_status?.watchlist_snapshot}
-            scrollable
-            viewMore="/app/watchlist"
-          />
+        {/* Category toggle — above social + movers 4-across row */}
+        <div className="flex justify-end mb-2">
+          <div className="flex items-center gap-1 bg-white/[0.03] border border-white/[0.07] rounded-lg px-2 py-1">
+            {(["all", "stocks", "commodities", "crypto", "etfs"] as const).map(cat => (
+              <button
+                key={cat}
+                onClick={() => setMoverCategory(cat)}
+                className={`text-[10px] uppercase tracking-wide px-2.5 py-1 rounded-md transition-colors ${
+                  moverCategory === cat
+                    ? "bg-white/[0.10] text-white font-medium"
+                    : "text-white/40 hover:text-white/65"
+                }`}
+              >
+                {cat === "commodities" ? "Commod." : cat === "all" ? "All" : cat.charAt(0).toUpperCase() + cat.slice(1)}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* H3. Unusual Options Flows + Hyperliquid Top Signals */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
-          <UnusualFlowsSection
-            flows={data?.unusual_options_flows}
-            status={
-              data?.unusual_options_meta?.data_state ||
-              data?.section_status?.unusual_options_flows
-            }
-            loading={isLoading}
-            onTickerClick={openTicker}
-            viewMore="/app/options"
-          />
-          <HLTopSignals signals={hlSignals} loading={hlLoading} viewMore="/app/hyperliquid-screener" />
-        </div>
-
-        {/* I + J. Social cards: Trending on X | Trending on Stocktwits */}
-        <div className="grid grid-cols-2 gap-5 mb-5" style={{ gridAutoRows: "460px" }}>
+        {/* Social + Movers: 4-across on xl screens (2-across on smaller) */}
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-5 mb-6" style={{ gridAutoRows: "460px" }}>
           {/* Trending on X */}
           <GlassCard className="p-4 flex flex-col overflow-hidden">
             {(() => {
@@ -1592,29 +1572,7 @@ export default function HomePage() {
               )}
             </div>
           </GlassCard>
-        </div>
 
-        {/* Category toggle — snug above movers cards, right-aligned */}
-        <div className="flex justify-end mb-2">
-          <div className="flex items-center gap-1 bg-white/[0.03] border border-white/[0.07] rounded-lg px-2 py-1">
-            {(["all", "stocks", "commodities", "crypto", "etfs"] as const).map(cat => (
-              <button
-                key={cat}
-                onClick={() => setMoverCategory(cat)}
-                className={`text-[10px] uppercase tracking-wide px-2.5 py-1 rounded-md transition-colors ${
-                  moverCategory === cat
-                    ? "bg-white/[0.10] text-white font-medium"
-                    : "text-white/40 hover:text-white/65"
-                }`}
-              >
-                {cat === "commodities" ? "Commod." : cat === "all" ? "All" : cat.charAt(0).toUpperCase() + cat.slice(1)}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* H. Movers: Top Movers | Top Losers */}
-        <div className="grid grid-cols-2 gap-5 mb-6" style={{ gridAutoRows: "460px" }}>
           {/* Top Movers */}
           <GlassCard className="p-4 flex flex-col overflow-hidden">
             <SectionHeader icon={TrendingUp} title="Top Movers" accent="today" viewMore={moverViewMore} />
@@ -1663,6 +1621,45 @@ export default function HomePage() {
               )}
             </div>
           </GlassCard>
+        </div>
+
+        {/* H2. Portfolio Snapshot + Watchlist Snapshot */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
+          <SnapshotTable
+            items={data?.portfolio_snapshot}
+            loading={isLoading}
+            title="Portfolio Snapshot"
+            icon={Briefcase}
+            accent="tracked positions"
+            status={data?.section_status?.portfolio_snapshot}
+            scrollable
+            viewMore="/app/caelyn-terminal"
+          />
+          <SnapshotTable
+            items={data?.watchlist_snapshot}
+            loading={isLoading}
+            title="Watchlist Snapshot"
+            icon={Wallet}
+            accent="top movers from watchlist"
+            status={data?.section_status?.watchlist_snapshot}
+            scrollable
+            viewMore="/app/watchlist"
+          />
+        </div>
+
+        {/* H3. Unusual Options Flows + Hyperliquid Top Signals */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
+          <UnusualFlowsSection
+            flows={data?.unusual_options_flows}
+            status={
+              data?.unusual_options_meta?.data_state ||
+              data?.section_status?.unusual_options_flows
+            }
+            loading={isLoading}
+            onTickerClick={openTicker}
+            viewMore="/app/options"
+          />
+          <HLTopSignals signals={hlSignals} loading={hlLoading} viewMore="/app/hyperliquid-screener" />
         </div>
 
         {/* K. Fear & Greed — equities + crypto */}
