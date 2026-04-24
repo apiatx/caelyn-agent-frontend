@@ -1276,172 +1276,182 @@ export default function HomePage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
           {/* Theme Performance — 1/3 width */}
           <div className="lg:col-span-1">
-            <GlassCard className="p-4 h-full">
-              {(() => {
-                const subThemes = data?.sub_theme_performance;
-                const hasSubThemes = subThemes && subThemes.length > 0;
-                return (
-                  <>
+            <GlassCard className="flex flex-col h-[480px]">
+              <div className="px-4 pt-4 pb-2 shrink-0">
+                {(() => {
+                  const subThemes = data?.sub_theme_performance;
+                  const hasSubThemes = subThemes && subThemes.length > 0;
+                  return (
                     <SectionHeader
                       icon={BarChart3}
                       title="Theme Performance"
                       accent={hasSubThemes ? "sub-theme leaders" : "sector rotation"}
                       viewMore="/app/stocks/sectors"
                     />
-                    {isLoading && Array.from({ length: 8 }).map((_, i) => (
-                      <Skeleton key={i} className="h-10 my-1 rounded bg-white/[0.04]" />
-                    ))}
-                    {!isLoading && hasSubThemes && (
-                      <div>
-                        <div className="flex justify-between text-[9px] uppercase tracking-wider text-white/30 px-2 mb-1">
-                          <span>Sub-theme · leaders</span>
-                          <span className="flex gap-6 mr-1"><span>breadth</span><span>1D</span></span>
+                  );
+                })()}
+              </div>
+              <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4">
+                {(() => {
+                  const subThemes = data?.sub_theme_performance;
+                  const hasSubThemes = subThemes && subThemes.length > 0;
+                  return (
+                    <>
+                      {isLoading && Array.from({ length: 8 }).map((_, i) => (
+                        <Skeleton key={i} className="h-10 my-1 rounded bg-white/[0.04]" />
+                      ))}
+                      {!isLoading && hasSubThemes && (
+                        <div>
+                          <div className="flex justify-between text-[9px] uppercase tracking-wider text-white/30 px-2 mb-1">
+                            <span>Sub-theme · leaders</span>
+                            <span className="flex gap-6 mr-1"><span>breadth</span><span>1D</span></span>
+                          </div>
+                          {subThemes.map((item, i) => (
+                            <SubThemeRow key={item.sub_theme || i} item={item} />
+                          ))}
                         </div>
-                        {subThemes.map((item, i) => (
-                          <SubThemeRow key={item.sub_theme || i} item={item} />
-                        ))}
-                      </div>
-                    )}
-                    {!isLoading && !hasSubThemes && (data?.theme_performance?.themes || []).length > 0 && (
-                      <>
-                        <div className="grid grid-cols-12 gap-2 text-[10px] uppercase tracking-wider text-white/40 px-2 mb-1">
-                          <div className="col-span-4">Sector</div>
-                          <div className="col-span-5 text-center">30D relative</div>
-                          <div className="col-span-1 text-right">1D</div>
-                          <div className="col-span-1 text-right">7D</div>
-                          <div className="col-span-1 text-right">30D</div>
-                        </div>
-                        {(data?.theme_performance?.themes || []).map((t, i) => (
-                          <ThemeRow key={i} theme={t} />
-                        ))}
-                      </>
-                    )}
-                    {!isLoading && !hasSubThemes && (!data?.theme_performance?.themes || data.theme_performance.themes.length === 0) && (
-                      <div className="text-sm text-white/40 py-8 text-center">Theme data temporarily unavailable.</div>
-                    )}
-                  </>
-                );
-              })()}
+                      )}
+                      {!isLoading && !hasSubThemes && (data?.theme_performance?.themes || []).length > 0 && (
+                        <>
+                          <div className="grid grid-cols-12 gap-2 text-[10px] uppercase tracking-wider text-white/40 px-2 mb-1">
+                            <div className="col-span-4">Sector</div>
+                            <div className="col-span-5 text-center">30D relative</div>
+                            <div className="col-span-1 text-right">1D</div>
+                            <div className="col-span-1 text-right">7D</div>
+                            <div className="col-span-1 text-right">30D</div>
+                          </div>
+                          {(data?.theme_performance?.themes || []).map((t, i) => (
+                            <ThemeRow key={i} theme={t} />
+                          ))}
+                        </>
+                      )}
+                      {!isLoading && !hasSubThemes && (!data?.theme_performance?.themes || data.theme_performance.themes.length === 0) && (
+                        <div className="text-sm text-white/40 py-8 text-center">Theme data temporarily unavailable.</div>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
             </GlassCard>
           </div>
 
           {/* Top Equity Signals — 1/3 width */}
           <div className="lg:col-span-1">
-            <GlassCard className="p-4 h-full overflow-y-auto">
-              <SectionHeader icon={Signal} title="Top Equity Signals" accent="Prophetik" viewMore="/app/predict" />
-              {!equityOverview && (
-                <div className="space-y-2">
-                  {Array.from({ length: 3 }).map((_, i) => (
-                    <Skeleton key={i} className="h-24 rounded bg-white/[0.04]" />
-                  ))}
-                </div>
-              )}
-              {equityOverview && topEquitySignals.length === 0 && (
-                <div className="text-sm text-white/40 py-8 text-center">No equity signals available.</div>
-              )}
-              {topEquitySignals.length > 0 && (
-                <div className="space-y-2.5">
-                  {topEquitySignals.map((sig: any, i: number) => {
-                    const dir = (() => {
-                      const s = (sig.summary_direction || '').toLowerCase();
-                      if (s.includes('bull') || s === 'up') return 'bullish';
-                      if (s.includes('bear') || s === 'down') return 'bearish';
-                      return 'neutral';
-                    })();
-                    const dirColor  = dir === 'bullish' ? 'text-emerald-400' : dir === 'bearish' ? 'text-rose-400' : 'text-amber-400';
-                    const dirBg     = dir === 'bullish' ? 'border-emerald-500/15' : dir === 'bearish' ? 'border-rose-500/15' : 'border-amber-500/15';
-                    const bullSectors: string[] = sig.bullish_sectors ?? [];
-                    const bearSectors: string[] = sig.bearish_sectors ?? [];
-                    const bullStocks:  string[] = sig.bullish_stocks  ?? [];
-                    const bearStocks:  string[] = sig.bearish_stocks  ?? [];
-                    return (
-                      <div key={i} className={`rounded-lg border bg-white/[0.02] p-2.5 ${dirBg}`}>
-                        {/* Direction + confidence */}
-                        <div className="flex items-center justify-between gap-2 mb-1.5">
-                          <span className={`text-[8px] font-bold uppercase tracking-widest ${dirColor}`}>{dir}</span>
-                          {sig.confidence && (
-                            <span className="text-[9px] text-white/25 capitalize">{sig.confidence}</span>
+            <GlassCard className="flex flex-col h-[480px]">
+              <div className="px-4 pt-4 pb-2 shrink-0">
+                <SectionHeader icon={Signal} title="Top Equity Signals" accent="Prophetik" viewMore="/app/predict" />
+              </div>
+              <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4">
+                {!equityOverview && (
+                  <div className="space-y-2">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <Skeleton key={i} className="h-24 rounded bg-white/[0.04]" />
+                    ))}
+                  </div>
+                )}
+                {equityOverview && topEquitySignals.length === 0 && (
+                  <div className="text-sm text-white/40 py-8 text-center">No equity signals available.</div>
+                )}
+                {topEquitySignals.length > 0 && (
+                  <div className="space-y-2.5">
+                    {topEquitySignals.map((sig: any, i: number) => {
+                      const dir = (() => {
+                        const s = (sig.summary_direction || '').toLowerCase();
+                        if (s.includes('bull') || s === 'up') return 'bullish';
+                        if (s.includes('bear') || s === 'down') return 'bearish';
+                        return 'neutral';
+                      })();
+                      const dirColor  = dir === 'bullish' ? 'text-emerald-400' : dir === 'bearish' ? 'text-rose-400' : 'text-amber-400';
+                      const dirBg     = dir === 'bullish' ? 'border-emerald-500/15' : dir === 'bearish' ? 'border-rose-500/15' : 'border-amber-500/15';
+                      const bullSectors: string[] = sig.bullish_sectors ?? [];
+                      const bearSectors: string[] = sig.bearish_sectors ?? [];
+                      const bullStocks:  string[] = sig.bullish_stocks  ?? [];
+                      const bearStocks:  string[] = sig.bearish_stocks  ?? [];
+                      return (
+                        <div key={i} className={`rounded-lg border bg-white/[0.02] p-2.5 ${dirBg}`}>
+                          <div className="flex items-center justify-between gap-2 mb-1.5">
+                            <span className={`text-[8px] font-bold uppercase tracking-widest ${dirColor}`}>{dir}</span>
+                            {sig.confidence && (
+                              <span className="text-[9px] text-white/25 capitalize">{sig.confidence}</span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-white/85 font-semibold leading-snug mb-1">{sig.title}</p>
+                          {sig.summary && (
+                            <p className="text-[10px] text-white/45 leading-relaxed mb-2 line-clamp-2">{sig.summary}</p>
+                          )}
+                          {sig.odds_move_summary && (
+                            <p className="text-[10px] text-blue-300/70 mb-2 leading-snug">↻ {sig.odds_move_summary}</p>
+                          )}
+                          {(bullSectors.length > 0 || bearSectors.length > 0) && (
+                            <div className="flex gap-2 mb-2">
+                              {bullSectors.length > 0 && (
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-[7px] font-bold uppercase tracking-widest text-emerald-400/50 mb-1">↑ Sectors</p>
+                                  {bullSectors.slice(0, 3).map(s => (
+                                    <p key={s} className="text-[9px] text-emerald-300/80 font-medium truncate">{s}</p>
+                                  ))}
+                                </div>
+                              )}
+                              {bearSectors.length > 0 && (
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-[7px] font-bold uppercase tracking-widest text-rose-400/50 mb-1">↓ Sectors</p>
+                                  {bearSectors.slice(0, 3).map(s => (
+                                    <p key={s} className="text-[9px] text-rose-300/80 font-medium truncate">{s}</p>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {(bullStocks.length > 0 || bearStocks.length > 0) && (
+                            <div className="flex gap-2">
+                              {bullStocks.length > 0 && (
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-[7px] font-bold uppercase tracking-widest text-emerald-400/50 mb-1">Bullish</p>
+                                  <div className="flex flex-wrap gap-1">
+                                    {bullStocks.slice(0, 4).map(t => (
+                                      <span key={t} className="text-[8px] font-bold font-mono px-1 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">{t}</span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              {bearStocks.length > 0 && (
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-[7px] font-bold uppercase tracking-widest text-rose-400/50 mb-1">Bearish</p>
+                                  <div className="flex flex-wrap gap-1">
+                                    {bearStocks.slice(0, 4).map(t => (
+                                      <span key={t} className="text-[8px] font-bold font-mono px-1 py-0.5 rounded bg-rose-500/10 border border-rose-500/20 text-rose-400">{t}</span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           )}
                         </div>
-                        {/* Title */}
-                        <p className="text-[11px] text-white/85 font-semibold leading-snug mb-1">{sig.title}</p>
-                        {/* Summary */}
-                        {sig.summary && (
-                          <p className="text-[10px] text-white/45 leading-relaxed mb-2 line-clamp-2">{sig.summary}</p>
-                        )}
-                        {/* Odds move */}
-                        {sig.odds_move_summary && (
-                          <p className="text-[10px] text-blue-300/70 mb-2 leading-snug">↻ {sig.odds_move_summary}</p>
-                        )}
-                        {/* Sectors */}
-                        {(bullSectors.length > 0 || bearSectors.length > 0) && (
-                          <div className="flex gap-2 mb-2">
-                            {bullSectors.length > 0 && (
-                              <div className="flex-1 min-w-0">
-                                <p className="text-[7px] font-bold uppercase tracking-widest text-emerald-400/50 mb-1">↑ Sectors</p>
-                                {bullSectors.slice(0, 3).map(s => (
-                                  <p key={s} className="text-[9px] text-emerald-300/80 font-medium truncate">{s}</p>
-                                ))}
-                              </div>
-                            )}
-                            {bearSectors.length > 0 && (
-                              <div className="flex-1 min-w-0">
-                                <p className="text-[7px] font-bold uppercase tracking-widest text-rose-400/50 mb-1">↓ Sectors</p>
-                                {bearSectors.slice(0, 3).map(s => (
-                                  <p key={s} className="text-[9px] text-rose-300/80 font-medium truncate">{s}</p>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                        {/* Stock tickers */}
-                        {(bullStocks.length > 0 || bearStocks.length > 0) && (
-                          <div className="flex gap-2">
-                            {bullStocks.length > 0 && (
-                              <div className="flex-1 min-w-0">
-                                <p className="text-[7px] font-bold uppercase tracking-widest text-emerald-400/50 mb-1">Bullish</p>
-                                <div className="flex flex-wrap gap-1">
-                                  {bullStocks.slice(0, 4).map(t => (
-                                    <span key={t} className="text-[8px] font-bold font-mono px-1 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">{t}</span>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                            {bearStocks.length > 0 && (
-                              <div className="flex-1 min-w-0">
-                                <p className="text-[7px] font-bold uppercase tracking-widest text-rose-400/50 mb-1">Bearish</p>
-                                <div className="flex flex-wrap gap-1">
-                                  {bearStocks.slice(0, 4).map(t => (
-                                    <span key={t} className="text-[8px] font-bold font-mono px-1 py-0.5 rounded bg-rose-500/10 border border-rose-500/20 text-rose-400">{t}</span>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </GlassCard>
           </div>
 
           {/* Latest News — 1/3 width */}
           <div className="lg:col-span-1">
-            <GlassCard className="p-4 h-full">
-              <SectionHeader icon={Newspaper} title="Latest News" accent="Cross-market" viewMore="/app/notifai" />
-              <div className="divide-y divide-white/[0.04]">
+            <GlassCard className="flex flex-col h-[480px]">
+              <div className="px-4 pt-4 pb-2 shrink-0">
+                <SectionHeader icon={Newspaper} title="Latest News" accent="Cross-market" viewMore="/app/notifai" />
+              </div>
+              <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4 divide-y divide-white/[0.04]">
                 {isLoading && Array.from({ length: 5 }).map((_, i) => (
                   <Skeleton key={i} className="h-14 my-1 rounded bg-white/[0.04]" />
                 ))}
-                {newsArticles.slice(0, 8).map((a: any, i: number) => (
+                {newsArticles.slice(0, 15).map((a: any, i: number) => (
                   <a
                     key={i}
                     href={a.url}
                     target="_blank"
                     rel="noreferrer noopener"
-                    className="flex items-start gap-2.5 p-2.5 hover:bg-white/[0.03] rounded-md transition-colors"
+                    className="flex items-start gap-2.5 py-2.5 hover:bg-white/[0.03] rounded-md transition-colors"
                   >
                     <div className="min-w-0 flex-1">
                       <div className="text-xs text-white/90 line-clamp-2">{a.title}</div>
