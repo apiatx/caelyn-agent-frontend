@@ -228,10 +228,14 @@ function tvSymbolFor(card: HomeMacroCard): string {
   const l = (card.label || "").toUpperCase();
   if (s === "SPX" || s === "SPY" || l.includes("S&P")) return "FOREXCOM:SPXUSD";
   if (s === "DJI" || l.includes("DOW")) return "FOREXCOM:DJI";
-  if (s === "NDX" || s === "QQQ" || l.includes("NASDAQ")) return "NASDAQ:NDX";
+  // QQQ ETF — more reliably available in embedded widget than NASDAQ:NDX (requires data sub)
+  if (s === "NDX" || s === "QQQ" || l.includes("NASDAQ")) return "NASDAQ:QQQ";
   if (s === "BTC" || l.includes("BITCOIN")) return "BITSTAMP:BTCUSD";
-  if (s === "TNX" || l.includes("10Y") || l.includes("YIELD")) return "TVC:US10Y";
-  if (s === "VIX" || l.includes("VIX")) return "CBOE:VIX";
+  // TVC:US10Y = TradingView's own US 10-year yield feed
+  if (s === "TNX" || s === "US10Y" || l.includes("10Y") || l.includes("YIELD")) return "TVC:US10Y";
+  // TVC:VIX = TradingView's own VIX feed (CBOE:VIX unavailable in free embed)
+  if (s === "VIX" || l.includes("VIX")) return "TVC:VIX";
+  // TVC:DXY = TradingView's own DXY index feed
   if (s === "DXY" || l.includes("DXY") || l.includes("DOLLAR")) return "TVC:DXY";
   return s;
 }
@@ -243,6 +247,12 @@ function TVChartWidget({ symbol }: { symbol: string }) {
     const container = containerRef.current;
     if (!container) return;
     container.innerHTML = "";
+    // TradingView requires an inner widget div for the chart to render into
+    const widgetDiv = document.createElement("div");
+    widgetDiv.className = "tradingview-widget-container__widget";
+    widgetDiv.style.height = "100%";
+    widgetDiv.style.width = "100%";
+    container.appendChild(widgetDiv);
     const script = document.createElement("script");
     script.type = "text/javascript";
     script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
@@ -256,6 +266,9 @@ function TVChartWidget({ symbol }: { symbol: string }) {
       style: "1",
       locale: "en",
       allow_symbol_change: true,
+      hide_top_toolbar: false,
+      hide_legend: false,
+      save_image: false,
       calendar: false,
       support_host: "https://www.tradingview.com",
     });
