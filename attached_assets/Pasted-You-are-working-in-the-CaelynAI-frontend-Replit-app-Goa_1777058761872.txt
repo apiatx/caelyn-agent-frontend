@@ -1,0 +1,214 @@
+You are working in the CaelynAI frontend Replit app.
+
+Goal:
+Add a new feature to the Portfolio page called “Compare to Watchlist.”
+
+This should add a button and panel/modal that lets the user compare their current portfolio against a saved watchlist from the Watchlist page. The backend will do the expensive intelligence work. The frontend should not generate AI prompts or call AI providers directly.
+
+Important:
+- Do not break the existing Portfolio page.
+- Do not remove existing portfolio functionality.
+- Do not trigger expensive compare calls automatically on page load.
+- The frontend should load saved/latest reports only.
+- The user must manually click Compare or Refresh to generate a new expensive report.
+
+UI requirements:
+
+Add a button near the top of the Portfolio page:
+“Compare to Watchlist”
+
+Suggested placement:
+- Near existing portfolio action buttons.
+- Make it visually important but not obnoxious.
+- This is a premium intelligence action, so style it like a high-value CTA.
+
+When clicked:
+Open a modal/drawer/panel called:
+“Portfolio vs Watchlist”
+
+Inside the panel:
+1. Watchlist selector dropdown
+   - Pull options from GET /api/portfolio/compare-watchlist/options
+   - Show watchlist name and ticker count.
+   - If no watchlists exist, show a helpful empty state:
+     “No saved watchlists found. Save a watchlist first, then compare it against your portfolio.”
+
+2. Last saved report area
+   - After a watchlist is selected, call:
+     GET /api/portfolio/compare-watchlist/latest?watchlist_id=<id>
+   - Do not generate a fresh report here.
+   - If a saved report exists, display it immediately.
+   - Show:
+     - Generated date/time
+     - Watchlist name
+     - Cache status
+     - Stale badge if stale=true
+     - “Refresh Analysis” button
+   - If no report exists, show:
+     “No saved comparison yet for this portfolio/watchlist combo.”
+     Button: “Run Comparison”
+
+3. Manual action buttons
+   - “Run Comparison” if no saved result exists.
+   - “Refresh Analysis” if a saved result exists.
+   - Optional secondary button: “Use Cached Report” if backend returns stale cached data.
+   - Button should call POST /api/portfolio/compare-watchlist/run with:
+     {
+       "watchlist_id": selectedWatchlistId,
+       "force_refresh": true or false
+     }
+
+4. Loading state
+   This is expensive. Show a serious loading state:
+   - “Analyzing portfolio, watchlist, fundamentals, technicals, filings, news, catalysts, and regime fit…”
+   - Show spinner/progress style.
+   - Disable duplicate clicks while running.
+   - Do not auto-retry repeatedly.
+
+5. Render the report cleanly.
+Backend will return structured JSON and markdown. Prefer structured components where available and render markdown below.
+
+Top summary card:
+- Executive verdict
+- Generated timestamp
+- Watchlist compared
+- Portfolio tickers count
+- Watchlist tickers count
+- Stale/fresh badge
+
+Replacement table:
+Columns:
+- Current Holding
+- Suggested Replacement
+- Confidence
+- Score Delta
+- Why
+- Timing
+
+Ticker rankings:
+Two side-by-side sections if screen width allows:
+- Portfolio Stack Rank
+- Watchlist Stack Rank
+
+Each row/card should show:
+- ticker
+- total score
+- verdict
+- one-line thesis
+- key risk/catalyst badges if available
+
+Grouped action cards:
+- Keep
+- Add / Upgrade
+- Trim / Replace
+- Avoid / Not Yet
+
+Full report:
+- Render report_markdown in a readable markdown component.
+- Make sure headings, tables, and bullets look good in the existing CaelynAI/Bloomberg-terminal visual style.
+- Preserve line breaks.
+
+UX details:
+- The generated date must be obvious. The user needs to know whether they are looking at today’s analysis or something from last week.
+- Show wording like:
+  “Generated Apr 24, 2026, 9:42 AM CT”
+- If stale:
+  “This report may be stale because your portfolio/watchlist changed or the report is older than 24 hours.”
+- Add a “Refresh Analysis” button right next to the timestamp/stale badge.
+
+API integration:
+Use existing frontend API client/proxy pattern. Do not hardcode backend URLs if the app already has a helper.
+
+Endpoints:
+GET /api/portfolio/compare-watchlist/options
+GET /api/portfolio/compare-watchlist/latest?watchlist_id=<id>
+POST /api/portfolio/compare-watchlist/run
+
+Expected response examples:
+
+Options:
+{
+  "ok": true,
+  "watchlists": [
+    {
+      "id": "abc",
+      "name": "AI Infrastructure",
+      "ticker_count": 22,
+      "updated_at": "2026-04-24T14:22:00Z"
+    }
+  ],
+  "default_watchlist_id": "abc"
+}
+
+Latest:
+{
+  "ok": true,
+  "exists": true,
+  "report_id": "...",
+  "watchlist_id": "...",
+  "watchlist_name": "...",
+  "generated_at": "2026-04-24T14:22:00Z",
+  "stale": false,
+  "stale_reasons": [],
+  "summary": {...},
+  "rankings": {...},
+  "replacement_recommendations": [...],
+  "report_markdown": "...",
+  "raw": {...}
+}
+
+Run:
+Same as Latest, but cache_status should indicate generated/cached/stale_cached.
+
+Error states:
+- No portfolio:
+  “Add or upload portfolio holdings before comparing to a watchlist.”
+- No watchlist:
+  “Save a watchlist first, then come back to compare.”
+- Empty watchlist:
+  “Selected watchlist has no tickers.”
+- Provider partial failure:
+  Show report if available, but include warning:
+  “Some data providers were unavailable. Analysis used available sources.”
+- Full backend error:
+  Show clean error toast/card. Do not dump raw stack traces.
+
+Do not:
+- Do not automatically run POST when the page loads.
+- Do not run POST when the user changes dropdown selection.
+- Do not discard the saved report on refresh.
+- Do not make the user re-run an expensive report if a saved one exists.
+- Do not call model APIs directly from frontend.
+- Do not mention backend internals in the UI.
+
+Suggested component structure:
+- PortfolioCompareWatchlistButton
+- PortfolioCompareWatchlistModal
+- WatchlistSelector
+- ComparisonReportHeader
+- ReplacementRecommendationsTable
+- TickerRankingsPanel
+- ActionBuckets
+- MarkdownReportRenderer
+
+Visual direction:
+Keep the existing CaelynAI terminal style:
+- dark cards
+- thin borders
+- compact but readable
+- green/yellow/red confidence/risk badges
+- “Fresh” / “Stale” badge
+- clear table layout
+- mobile responsive
+
+Testing:
+1. Portfolio page loads normally.
+2. Button opens modal.
+3. Watchlists load.
+4. Selecting a watchlist fetches latest saved report only.
+5. No saved report state works.
+6. Run Comparison works.
+7. Refresh Analysis works.
+8. Saved report still appears after page refresh.
+9. Stale badge displays when backend says stale=true.
+10. Empty/error states look clean.

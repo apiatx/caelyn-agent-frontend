@@ -3317,5 +3317,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ── Portfolio vs Watchlist Comparison ──────────────────────────────────────
+  const CMP_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
+  const CMP_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+  const cmpHdr  = () => ({ 'Content-Type': 'application/json', 'X-API-Key': CMP_KEY });
+
+  app.get('/api/portfolio/compare-watchlist/options', async (req, res) => {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 15000);
+      const r = await fetch(`${CMP_URL}/api/portfolio/compare-watchlist/options`, {
+        headers: cmpHdr(), signal: ctrl.signal,
+      });
+      if (!r.ok) return res.status(r.status).json({ ok: false, error: `Backend returned ${r.status}` });
+      res.json(await r.json());
+    } catch (e: any) {
+      console.error('[compare-watchlist/options] error:', e.message);
+      res.status(500).json({ ok: false, error: e.message });
+    }
+  });
+
+  app.get('/api/portfolio/compare-watchlist/latest', async (req, res) => {
+    try {
+      const { watchlist_id } = req.query;
+      if (!watchlist_id) return res.status(400).json({ ok: false, error: 'watchlist_id is required' });
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 20000);
+      const r = await fetch(
+        `${CMP_URL}/api/portfolio/compare-watchlist/latest?watchlist_id=${encodeURIComponent(String(watchlist_id))}`,
+        { headers: cmpHdr(), signal: ctrl.signal },
+      );
+      if (!r.ok) return res.status(r.status).json({ ok: false, error: `Backend returned ${r.status}` });
+      res.json(await r.json());
+    } catch (e: any) {
+      console.error('[compare-watchlist/latest] error:', e.message);
+      res.status(500).json({ ok: false, error: e.message });
+    }
+  });
+
+  app.post('/api/portfolio/compare-watchlist/run', async (req, res) => {
+    try {
+      const { watchlist_id, force_refresh } = req.body || {};
+      if (!watchlist_id) return res.status(400).json({ ok: false, error: 'watchlist_id is required' });
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 120000);
+      const r = await fetch(`${CMP_URL}/api/portfolio/compare-watchlist/run`, {
+        method: 'POST',
+        headers: cmpHdr(),
+        body: JSON.stringify({ watchlist_id, force_refresh: !!force_refresh }),
+        signal: ctrl.signal,
+      });
+      if (!r.ok) {
+        const body = await r.text().catch(() => '');
+        return res.status(r.status).json({ ok: false, error: `Backend returned ${r.status}`, detail: body });
+      }
+      res.json(await r.json());
+    } catch (e: any) {
+      console.error('[compare-watchlist/run] error:', e.message);
+      res.status(500).json({ ok: false, error: e.message });
+    }
+  });
+
   return httpServer;
 }

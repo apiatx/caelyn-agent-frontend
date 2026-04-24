@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Wallet, ExternalLink, TrendingUp, Edit3, Save, Plus, Activity, ChevronDown, BarChart3, Brain } from "lucide-react";
+import { PortfolioCompareWatchlistButton, PortfolioCompareWatchlistModal } from "@/components/portfolio-compare-watchlist";
 import StrategySelector from "@/components/strategy-selector";
 import { PortfolioScorePanel } from "@/components/playbook-score-panel";
 import { fetchPlaybooks, scorePortfolio } from "@/lib/playbooks";
@@ -46,6 +47,7 @@ export default function PortfolioSection() {
   const [selectedStrategy, setSelectedStrategy] = useState<string>('default');
   const [strategyScoreData, setStrategyScoreData] = useState<PortfolioPlaybookResponse | null>(null);
   const [strategyScoreLoading, setStrategyScoreLoading] = useState(false);
+  const [compareOpen, setCompareOpen] = useState(false);
 
   useEffect(() => {
     fetchPlaybooks().then(setStrategyPlaybooks).catch(() => {});
@@ -150,6 +152,10 @@ export default function PortfolioSection() {
             />
           </div>
         )}
+
+        <div className="flex justify-center mt-4">
+          <PortfolioCompareWatchlistButton onClick={() => setCompareOpen(true)} />
+        </div>
       </div>
 
       {/* Strategy Score Panel */}
@@ -330,6 +336,12 @@ export default function PortfolioSection() {
         holding={selectedHolding}
         subnets={[]}
         onClose={() => setSelectedHolding(null)}
+      />
+
+      {/* Portfolio vs Watchlist Comparison Modal */}
+      <PortfolioCompareWatchlistModal
+        open={compareOpen}
+        onClose={() => setCompareOpen(false)}
       />
     </div>
   );
