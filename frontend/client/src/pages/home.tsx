@@ -45,6 +45,77 @@ interface HLOIRegime  { symbol: string; regime: string; price_change_24h_pct?: n
 interface HLAdvSigs   { relative_strength_leaders: HLRSLeader[]; oi_regime_shift: HLOIRegime[]; as_of?: string; }
 
 // ───────────────────────────────────────────────────────────────────────────
+// TradingView symbol resolution — maps backend tickers to valid TV symbols
+// ───────────────────────────────────────────────────────────────────────────
+
+const COMMODITY_TV_SYMBOLS: Record<string, string> = {
+  // Energy
+  BRENTOIL: "TVC:UKOIL",   BRENT: "TVC:UKOIL",
+  UKOIL:    "TVC:UKOIL",
+  WTIOIL:   "TVC:USOIL",   CRUDEOIL: "TVC:USOIL",   USOIL: "TVC:USOIL",
+  OIL:      "TVC:USOIL",   CL1:      "NYMEX:CL1!",
+  GAS:      "TVC:NATGAS",  NATGAS:   "TVC:NATGAS",   NATURALGAS: "TVC:NATGAS",
+  NG1:      "NYMEX:NG1!",
+  // Metals
+  GOLD:      "TVC:GOLD",    GC1:  "COMEX:GC1!",
+  SILVER:    "TVC:SILVER",  SI1:  "COMEX:SI1!",
+  COPPER:    "TVC:COPPER",  HG1:  "COMEX:HG1!",
+  PLATINUM:  "NYMEX:PL1!",  PL1:  "NYMEX:PL1!",
+  PALLADIUM: "NYMEX:PA1!",  PA1:  "NYMEX:PA1!",
+  ALUMINUM:  "COMEX:ALI1!",
+  NICKEL:    "COMEX:HG1!",
+  // Grains / Softs
+  WHEAT:    "CBOT:ZW1!",   ZW1:  "CBOT:ZW1!",
+  CORN:     "CBOT:ZC1!",   ZC1:  "CBOT:ZC1!",
+  SOYBEAN:  "CBOT:ZS1!",   SOYBEANS: "CBOT:ZS1!",   ZS1: "CBOT:ZS1!",
+  OATS:     "CBOT:ZO1!",
+  RICE:     "CBOT:ZR1!",   ROUGHRICE: "CBOT:ZR1!",
+  LUMBER:   "CME:LB1!",    LB1:  "CME:LB1!",
+  COTTON:   "ICEEUR:TF1!",
+  COFFEE:   "ICEEUR:KC1!", KC1:  "ICEEUR:KC1!",
+  COCOA:    "ICEEUR:C1!",  CC1:  "ICEEUR:C1!",
+  SUGAR:    "ICEEUR:SB1!", SB1:  "ICEEUR:SB1!",
+  ORANGEJUICE: "ICEEUR:OJ1!",
+  // Livestock
+  LIVECATTLE:   "CME:LE1!",
+  FEEDERCATTLE: "CME:GF1!",
+  LEANHOGS:     "CME:HE1!",
+};
+
+const CRYPTO_TV_SYMBOLS: Record<string, string> = {
+  BTC:  "BINANCE:BTCUSDT",  ETH:  "BINANCE:ETHUSDT",  BNB:  "BINANCE:BNBUSDT",
+  SOL:  "BINANCE:SOLUSDT",  XRP:  "BINANCE:XRPUSDT",  ADA:  "BINANCE:ADAUSDT",
+  DOGE: "BINANCE:DOGEUSDT", AVAX: "BINANCE:AVAXUSDT", DOT:  "BINANCE:DOTUSDT",
+  LINK: "BINANCE:LINKUSDT", UNI:  "BINANCE:UNIUSDT",  ATOM: "BINANCE:ATOMUSDT",
+  LTC:  "BINANCE:LTCUSDT",  NEAR: "BINANCE:NEARUSDT", HYPE: "BINANCE:HYPEUSDT",
+  SUI:  "BINANCE:SUIUSDT",  TON:  "BINANCE:TONUSDT",  TRX:  "BINANCE:TRXUSDT",
+  APT:  "BINANCE:APTUSDT",  INJ:  "BINANCE:INJUSDT",  OP:   "BINANCE:OPUSDT",
+  ARB:  "BINANCE:ARBUSDT",  STX:  "BINANCE:STXUSDT",  PEPE: "BINANCE:PEPEUSDT",
+  WIF:  "BINANCE:WIFUSDT",  BONK: "BINANCE:BONKUSDT", SHIB: "BINANCE:SHIBUSDT",
+  FTM:  "BINANCE:FTMUSDT",  AAVE: "BINANCE:AAVEUSDT", CRV:  "BINANCE:CRVUSDT",
+  MKR:  "BINANCE:MKRUSDT",  SNX:  "BINANCE:SNXUSDT",  COMP: "BINANCE:COMPUSDT",
+  JTO:  "BINANCE:JTOUSDT",  JUP:  "BINANCE:JUPUSDT",  PYTH: "BINANCE:PYTHUSDT",
+  WLD:  "BINANCE:WLDUSDT",  TAO:  "BINANCE:TAOUSDT",  RENDER: "BINANCE:RENDERUSDT",
+  FET:  "BINANCE:FETUSDT",  ONDO: "BINANCE:ONDOUSDT", SEI:  "BINANCE:SEIUSDT",
+};
+
+function resolveTVSymbol(symbol: string, assetType?: string): string {
+  const upper = symbol.toUpperCase().replace(/[^A-Z0-9!]/g, "");
+  const at = (assetType || "").toLowerCase();
+
+  if (at === "commodities" || at === "commodity") {
+    return COMMODITY_TV_SYMBOLS[upper] ?? `TVC:${upper}`;
+  }
+
+  if (at === "crypto") {
+    return CRYPTO_TV_SYMBOLS[upper] ?? `BINANCE:${upper}USDT`;
+  }
+
+  // Stocks / ETFs / unknown — bare symbol works for US equities on TradingView
+  return symbol;
+}
+
+// ───────────────────────────────────────────────────────────────────────────
 // Helpers
 // ───────────────────────────────────────────────────────────────────────────
 function fmtNum(v: number | string | null | undefined, digits = 2): string {
@@ -637,9 +708,12 @@ function HLTopSignals({ signals, loading }: { signals: HLAdvSigs | undefined; lo
 
 // ── Ticker info popup ─────────────────────────────────────────────────────
 function TickerInfoPopup({
-  symbol, onClose, data,
+  symbol, assetType, moverPrice, moverChangePct, onClose, data,
 }: {
   symbol: string;
+  assetType?: string;
+  moverPrice?: number | null;
+  moverChangePct?: number | null;
   onClose: () => void;
   data: HomeDashboardPayload | undefined;
 }) {
@@ -652,16 +726,12 @@ function TickerInfoPopup({
 
   const xTicker = (data?.trending_on_x?.top_tickers || []).find(t => t.symbol === symbol);
 
-  const mover = [
-    ...(data?.movers?.gainers || []),
-    ...(data?.movers?.losers || []),
-  ].find(m => m.ticker === symbol);
-
-  const price     = snapshot?.current_price ?? (mover?.price as number | undefined) ?? null;
-  const changePct = snapshot?.change_1d_pct  ?? mover?.change_pct ?? null;
+  const price     = snapshot?.current_price ?? moverPrice ?? null;
+  const changePct = snapshot?.change_1d_pct  ?? moverChangePct ?? null;
   const signal    = snapshot?.signal_label   || flow?.signal || null;
 
-  const tvSrc = `https://s.tradingview.com/widgetembed/?symbol=${encodeURIComponent(symbol)}&interval=D&theme=dark&style=1&locale=en&hide_top_toolbar=0&hide_side_toolbar=1&allow_symbol_change=0&save_image=0&width=100%25&height=100%25`;
+  const tvSymbol = resolveTVSymbol(symbol, assetType);
+  const tvSrc = `https://s.tradingview.com/widgetembed/?symbol=${encodeURIComponent(tvSymbol)}&interval=D&theme=dark&style=1&locale=en&hide_top_toolbar=0&hide_side_toolbar=1&allow_symbol_change=0&save_image=0&width=100%25&height=100%25`;
 
   return (
     <div
@@ -748,8 +818,9 @@ function TickerInfoPopup({
 
 export default function HomePage() {
   const [, setLocation] = useLocation();
-  const [tickerPopup, setTickerPopup] = useState<string | null>(null);
-  const openTicker = (symbol: string) => setTickerPopup(symbol);
+  const [tickerPopup, setTickerPopup] = useState<{ symbol: string; assetType?: string; price?: number | null; changePct?: number | null } | null>(null);
+  const openTicker = (symbol: string, assetType?: string, price?: number | null, changePct?: number | null) =>
+    setTickerPopup({ symbol, assetType, price, changePct });
   const [moverCategory, setMoverCategory] = useState<"all" | "stocks" | "commodities" | "crypto" | "etfs">("stocks");
 
   // Home aggregator — primary query. The Express proxy composes:
@@ -1153,7 +1224,7 @@ export default function HomePage() {
                 <Skeleton key={i} className="h-9 my-0.5 rounded bg-white/[0.04]" />
               ))}
               {!categoryMoversLoading && (categoryMovers?.gainers || []).slice(0, 8).map((row, i) => (
-                <MoverRow key={i} row={row} onClick={row.ticker ? () => openTicker(row.ticker!) : undefined} />
+                <MoverRow key={i} row={row} onClick={row.ticker ? () => openTicker(row.ticker!, moverCategory, typeof row.price === "number" ? row.price : null, row.change_pct) : undefined} />
               ))}
               {!categoryMoversLoading && (!categoryMovers?.gainers || categoryMovers.gainers.length === 0) && (
                 <div className="text-sm text-white/40 py-6 text-center">No data</div>
@@ -1173,7 +1244,7 @@ export default function HomePage() {
                 <Skeleton key={i} className="h-9 my-0.5 rounded bg-white/[0.04]" />
               ))}
               {!categoryMoversLoading && (categoryMovers?.losers || []).slice(0, 8).map((row, i) => (
-                <MoverRow key={i} row={row} onClick={row.ticker ? () => openTicker(row.ticker!) : undefined} />
+                <MoverRow key={i} row={row} onClick={row.ticker ? () => openTicker(row.ticker!, moverCategory, typeof row.price === "number" ? row.price : null, row.change_pct) : undefined} />
               ))}
               {!categoryMoversLoading && (!categoryMovers?.losers || categoryMovers.losers.length === 0) && (
                 <div className="text-sm text-white/40 py-6 text-center">No data</div>
@@ -1212,7 +1283,10 @@ export default function HomePage() {
       {/* Ticker info popup */}
       {tickerPopup && (
         <TickerInfoPopup
-          symbol={tickerPopup}
+          symbol={tickerPopup.symbol}
+          assetType={tickerPopup.assetType}
+          moverPrice={tickerPopup.price}
+          moverChangePct={tickerPopup.changePct}
           onClose={() => setTickerPopup(null)}
           data={data}
         />
