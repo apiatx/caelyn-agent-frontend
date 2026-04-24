@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { LineChart as RLineChart, Line, ResponsiveContainer } from "recharts";
 import {
   TrendingUp,
@@ -29,6 +29,7 @@ import { GlassCard } from "@/components/glass-card";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import type {
   HomeDashboardPayload,
   HomeFearGreedSide,
@@ -220,7 +221,56 @@ function SectionHeader({
   );
 }
 
-function MacroCard({ card, history }: { card: HomeMacroCard; history?: number[] }) {
+// ── TradingView symbol mapping ────────────────────────────────────────────────
+function tvSymbolFor(card: HomeMacroCard): string {
+  const s = (card.symbol || "").toUpperCase();
+  const l = (card.label || "").toUpperCase();
+  if (s === "SPX" || s === "SPY" || l.includes("S&P")) return "FOREXCOM:SPXUSD";
+  if (s === "DJI" || l.includes("DOW")) return "FOREXCOM:DJI";
+  if (s === "NDX" || s === "QQQ" || l.includes("NASDAQ")) return "NASDAQ:NDX";
+  if (s === "BTC" || l.includes("BITCOIN")) return "BITSTAMP:BTCUSD";
+  if (s === "TNX" || l.includes("10Y") || l.includes("YIELD")) return "TVC:US10Y";
+  if (s === "VIX" || l.includes("VIX")) return "CBOE:VIX";
+  if (s === "DXY" || l.includes("DXY") || l.includes("DOLLAR")) return "TVC:DXY";
+  return s;
+}
+
+// ── TradingView Advanced Chart Widget (injected via script) ───────────────────
+function TVChartWidget({ symbol }: { symbol: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    container.innerHTML = "";
+    const script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
+    script.async = true;
+    script.innerHTML = JSON.stringify({
+      autosize: true,
+      symbol,
+      interval: "D",
+      timezone: "America/New_York",
+      theme: "dark",
+      style: "1",
+      locale: "en",
+      allow_symbol_change: true,
+      calendar: false,
+      support_host: "https://www.tradingview.com",
+    });
+    container.appendChild(script);
+    return () => { container.innerHTML = ""; };
+  }, [symbol]);
+  return (
+    <div
+      ref={containerRef}
+      className="tradingview-widget-container"
+      style={{ width: "100%", height: "100%" }}
+    />
+  );
+}
+
+function MacroCard({ card, history, onClick }: { card: HomeMacroCard; history?: number[]; onClick?: () => void }) {
   const up = (card.change_pct ?? 0) >= 0;
   const chartData = (history && history.length > 1)
     ? history.map((v, i) => ({ i, v }))
@@ -229,7 +279,10 @@ function MacroCard({ card, history }: { card: HomeMacroCard; history?: number[] 
   const isRate = card.kind === "rate";
   const noteLabel = card.note || "1D";
   return (
-    <GlassCard className="p-3 min-h-[92px] flex flex-col justify-between relative overflow-hidden">
+    <GlassCard
+      className="p-3 min-h-[92px] flex flex-col justify-between relative overflow-hidden cursor-pointer hover:border-white/20 hover:bg-white/[0.04] transition-all"
+      onClick={onClick}
+    >
       <div className="flex items-center justify-between">
         <div className="text-[11px] uppercase tracking-wide text-white/50">
           {card.label}
@@ -883,6 +936,7 @@ export default function HomePage() {
   const openTicker = (symbol: string, assetType?: string, price?: number | null, changePct?: number | null) =>
     setTickerPopup({ symbol, assetType, price, changePct });
   const [moverCategory, setMoverCategory] = useState<"all" | "stocks" | "commodities" | "crypto" | "etfs">("stocks");
+  const [macroChartCard, setMacroChartCard] = useState<HomeMacroCard | null>(null);
 
   // Home aggregator — primary query. The Express proxy composes:
   // backend /api/home/dashboard + news (NEWS_CACHE) + crypto FG (CMC cache).
@@ -1134,16 +1188,23 @@ export default function HomePage() {
 
         {/* D. Top macro cards */}
         <SectionHeader icon={Activity} title="Market Snapshot" />
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 mb-6">
           {isLoading &&
-            Array.from({ length: 6 }).map((_, i) => (
+            Array.from({ length: 7 }).map((_, i) => (
               <Skeleton key={i} className="h-[92px] rounded-xl bg-white/[0.04]" />
             ))}
           {!isLoading &&
             allMacroCards.map((c, i) => {
               const key = cardSparklineKey(c);
               const hist = key && sparklines ? sparklines[key] : undefined;
-              return <MacroCard key={`${c.symbol}-${i}`} card={c} history={hist} />;
+              return (
+                <MacroCard
+                  key={`${c.symbol}-${i}`}
+                  card={c}
+                  history={hist}
+                  onClick={() => setMacroChartCard(c)}
+                />
+              );
             })}
           {!isLoading && allMacroCards.length === 0 && (
             <div className="col-span-full text-sm text-white/40">
@@ -1151,6 +1212,33 @@ export default function HomePage() {
             </div>
           )}
         </div>
+
+        {/* TradingView chart popup modal */}
+        <Dialog open={!!macroChartCard} onOpenChange={(open) => { if (!open) setMacroChartCard(null); }}>
+          <DialogContent className="max-w-5xl w-[90vw] h-[80vh] p-0 bg-[#0d0e11] border-white/10 overflow-hidden">
+            {macroChartCard && (
+              <div className="flex flex-col h-full">
+                <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/[0.07] shrink-0">
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-semibold text-white/90">{macroChartCard.label}</span>
+                    <span className="text-[10px] text-white/30 uppercase tracking-wider">{tvSymbolFor(macroChartCard)}</span>
+                  </div>
+                  <div className={`text-sm font-medium ${(macroChartCard.change_pct ?? 0) >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                    {macroChartCard.price != null ? (macroChartCard.kind === "rate" ? macroChartCard.price.toFixed(2) : fmtNum(macroChartCard.price, 2)) : "—"}
+                    {macroChartCard.change_pct != null && (
+                      <span className="ml-2 text-xs">
+                        {macroChartCard.change_pct >= 0 ? "+" : ""}{macroChartCard.change_pct.toFixed(2)}%
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex-1 min-h-0">
+                  <TVChartWidget key={tvSymbolFor(macroChartCard)} symbol={tvSymbolFor(macroChartCard)} />
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
 
         {/* F + G + G2. Three-column row: Theme Performance | Top Equity Signals | Latest News */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
