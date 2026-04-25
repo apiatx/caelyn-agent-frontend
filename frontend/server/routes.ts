@@ -3475,5 +3475,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // === Fundamentals Compare (proxy to FastAPI backend) ===
+  const FC_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
+  const FC_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+  const fcHdr  = () => ({ 'X-API-Key': FC_KEY, 'Content-Type': 'application/json' });
+
+  app.get('/api/fundamentals/compare/search', async (req, res) => {
+    const q = (req.query.q as string) || '';
+    const limit = (req.query.limit as string) || '10';
+    const ctrl = new AbortController();
+    setTimeout(() => ctrl.abort(), 10000);
+    try {
+      const r = await fetch(
+        `${FC_URL}/api/fundamentals/compare/search?q=${encodeURIComponent(q)}&limit=${encodeURIComponent(limit)}`,
+        { headers: fcHdr(), signal: ctrl.signal }
+      );
+      if (!r.ok) {
+        const body = await r.text().catch(() => '');
+        return res.status(r.status).json({ error: `Backend ${r.status}`, detail: body.slice(0, 200) });
+      }
+      return res.json(await r.json());
+    } catch (e: any) {
+      const msg = e?.name === 'AbortError' ? 'Search timed out' : (e?.message || 'Fetch failed');
+      return res.status(500).json({ error: msg });
+    }
+  });
+
+  app.post('/api/fundamentals/compare', async (req, res) => {
+    const ctrl = new AbortController();
+    setTimeout(() => ctrl.abort(), 30000);
+    try {
+      const r = await fetch(`${FC_URL}/api/fundamentals/compare`, {
+        method: 'POST',
+        headers: fcHdr(),
+        body: JSON.stringify(req.body),
+        signal: ctrl.signal,
+      });
+      if (!r.ok) {
+        const body = await r.text().catch(() => '');
+        return res.status(r.status).json({ error: `Backend ${r.status}`, detail: body.slice(0, 200) });
+      }
+      return res.json(await r.json());
+    } catch (e: any) {
+      const msg = e?.name === 'AbortError' ? 'Compare timed out (30s)' : (e?.message || 'Fetch failed');
+      return res.status(500).json({ error: msg });
+    }
+  });
+
   return httpServer;
 }

@@ -1,0 +1,436 @@
+Implement a new Stock Compare section on the existing Fundamentals page.
+
+This should look and behave very close to the attached screenshot:
+
+Breadcrumb-style heading area.
+Title: Stock Compare
+Ticker chip input bar.
+Up to 15 selected ticker chips.
+Search icon.
+Metric dropdown.
+Saved dropdown.
+Options dropdown.
+Time range buttons.
+Chart with colored ticker legend.
+Right-side value labels at the end of each line.
+Recent news / snapshot table below chart.
+
+The screenshot visual style should be copied closely: white card, thin borders, big bold title, blue accent line, clean rounded controls, metric dropdown with search and star icons.
+
+Placement
+
+Add this as a new section on the existing Fundamentals page.
+
+Suggested placement:
+
+Fundamentals Page
+├── Existing page content
+├── Stock Compare section
+└── Existing lower sections, if any
+
+Do not remove or break existing Fundamentals page functionality.
+
+User Flow
+User opens Fundamentals page.
+User sees a Stock Compare card/section.
+User types a ticker/company name into the ticker bar.
+Autocomplete dropdown appears with:
+ticker
+company name
+exchange
+optional sector/industry
+User selects a ticker.
+Ticker becomes a colored chip.
+User can add up to 15 tickers.
+User selects a metric from dropdown.
+Frontend calls backend compare endpoint.
+Chart updates with one line per ticker.
+Below chart, show current snapshot values and recent news.
+Visual Requirements
+
+Match screenshot style as closely as possible.
+
+Header
+Home » Fundamentals » Stock Compare
+Stock Compare
+
+Use a bold, large title.
+
+Add a thin blue underline/accent rule below the title, similar to the screenshot.
+
+Right side optional:
+
+Full Width >>
+
+If there is no full-width behavior currently, include the label but keep it non-breaking or wire it to a simple expanded layout toggle.
+
+Top Controls
+
+Create this layout:
+
+[ INTT x ] [ TRT x ] [ NNBR x ] [ ticker input...        🔍 ] [ Revenue ▼ ] [ Saved ▼ ] [ Options ▼ ]
+Ticker chips
+Each ticker chip gets a stable color.
+Use the same color for chart line and legend.
+Example palette:
+blue
+orange
+purple
+green
+red
+cyan
+pink
+yellow
+indigo
+teal
+gray
+lime
+rose
+amber
+violet
+Max tickers
+Max 15.
+If user tries to add a 16th ticker, show toast:
+You can compare up to 15 tickers at once.
+Autocomplete
+
+Call:
+
+GET /api/fundamentals/compare/search?q={query}&limit=10
+
+Debounce by 250–350ms.
+
+Dropdown result format:
+
+TRT — Trio-Tech International
+AMEX · Semiconductor Equipment
+
+Clicking result adds ticker chip.
+
+Metric Dropdown
+
+Use these metric labels:
+
+Market Cap
+Revenue
+Revenue Growth
+Gross Profit
+Gross Margin
+Profit Margin
+EPS (Diluted)
+Operating Income
+Net Income
+EBITDA
+Free Cash Flow
+Total Debt
+P/S Ratio
+P/E Ratio
+Recent News
+
+Map to backend keys:
+
+const STOCK_COMPARE_METRICS = [
+  { key: "market_cap", label: "Market Cap", unit: "currency" },
+  { key: "revenue", label: "Revenue", unit: "currency" },
+  { key: "revenue_growth", label: "Revenue Growth", unit: "percent" },
+  { key: "gross_profit", label: "Gross Profit", unit: "currency" },
+  { key: "gross_margin", label: "Gross Margin", unit: "percent" },
+  { key: "profit_margin", label: "Profit Margin", unit: "percent" },
+  { key: "eps_diluted", label: "EPS (Diluted)", unit: "number" },
+  { key: "operating_income", label: "Operating Income", unit: "currency" },
+  { key: "net_income", label: "Net Income", unit: "currency" },
+  { key: "ebitda", label: "EBITDA", unit: "currency" },
+  { key: "free_cash_flow", label: "Free Cash Flow", unit: "currency" },
+  { key: "total_debt", label: "Total Debt", unit: "currency" },
+  { key: "ps_ratio", label: "P/S Ratio", unit: "ratio" },
+  { key: "pe_ratio", label: "P/E Ratio", unit: "ratio" },
+  { key: "recent_news", label: "Recent News", unit: "news" }
+];
+
+Inside dropdown:
+
+Add Quick search... input at top.
+Show star icon on the right of each metric.
+Starred metrics should appear under Saved.
+
+Default starred metrics:
+
+Revenue
+Gross Profit
+Profit Margin
+EPS (Diluted)
+Operating Income
+EBITDA
+Free Cash Flow
+Total Debt
+Market Cap
+
+Use localStorage for saved/starred metrics.
+
+Time Range Buttons
+
+Create buttons exactly like:
+
+1M  3M  6M  YTD  1Y  3Y  5Y  10Y  MAX  ALL
+
+Default selected:
+
+ALL
+
+Important: financial statement data is annual/quarterly. For short ranges like 1M/3M/6M, still send the selected range to backend, but show a small muted note:
+
+Financial statement metrics update quarterly or annually; short ranges may show the latest available filing data.
+Compare API Call
+
+Call:
+
+POST /api/fundamentals/compare
+
+Body:
+
+{
+  symbols: selectedSymbols,
+  metric: selectedMetric.key,
+  period: "annual",
+  range: selectedRange
+}
+
+Trigger fetch when:
+
+ticker added
+ticker removed
+metric changed
+range changed
+
+Debounce rapid ticker edits slightly.
+
+Chart Requirements
+
+Use the existing project charting library if one already exists. If the frontend already uses Recharts, use Recharts.
+
+Chart behavior:
+
+One line per ticker.
+X-axis = fiscal date/year.
+Y-axis = selected metric value.
+Legend at top-left with colored squares and ticker symbols.
+Chart title centered: selected metric label.
+Right-side end labels showing latest formatted values, like screenshot:
+113.83M
+49.22M
+422.21M
+Tooltip should show:
+date / fiscal year
+symbol
+company name
+formatted value
+Missing values should not break the line.
+Loading state should use skeleton or spinner.
+Empty state should say:
+Add up to 15 tickers to compare fundamentals.
+Formatting Helpers
+
+Add local helpers if not already available:
+
+formatCurrencyCompact(113830000) => "113.83M"
+formatPercent(0.128) => "12.8%"
+formatRatio(1.42) => "1.42x"
+formatNumber(0.71) => "0.71"
+
+Currency formatting:
+
+>= 1T: T
+>= 1B: B
+>= 1M: M
+>= 1K: K
+
+Negative values should render with minus sign:
+
+-12.4M
+
+Null values:
+
+N/A
+Below-Chart Snapshot Table
+
+Below the chart, add a compact comparison table for selected symbols.
+
+Columns:
+
+Ticker
+Company
+Market Cap
+Revenue
+Revenue Growth
+Gross Margin
+Profit Margin
+EPS
+EBITDA
+FCF
+Total Debt
+P/S
+P/E
+
+Use the backend snapshot object.
+
+This is important because the chart only displays one metric at a time; the snapshot table gives the user the full side-by-side view.
+
+Recent News Panel
+
+If selected metric is recent_news, replace or supplement the chart with a news comparison layout.
+
+For each ticker, show:
+
+TRT — Trio-Tech International
+- Headline
+- Source · Date
+- Summary
+
+If selected metric is not recent_news, still show a small Recent News panel below the snapshot table with latest 2–3 headlines per ticker.
+
+Options Dropdown
+
+Add dropdown with these actions:
+
+Reset tickers
+Copy comparison link
+Export CSV
+Toggle quarterly / annual
+Reset tickers
+
+Clears selected symbols.
+
+Copy comparison link
+
+Serialize state into URL query params:
+
+?compare=INTT,TRT,NNBR&metric=revenue&range=ALL&period=annual
+
+On page load, parse these params and hydrate the compare section.
+
+Export CSV
+
+Export the snapshot table and latest selected metric values.
+
+Toggle quarterly / annual
+
+Switch request period between:
+
+annual
+quarterly
+
+Default annual.
+
+Saved Dropdown
+
+Saved dropdown should show starred metrics from localStorage.
+
+Clicking a saved metric updates selected metric.
+
+State Shape
+
+Suggested frontend state:
+
+type CompareSymbol = {
+  symbol: string;
+  name?: string;
+  exchange?: string;
+  sector?: string;
+  industry?: string;
+};
+
+type CompareMetricKey =
+  | "market_cap"
+  | "revenue"
+  | "revenue_growth"
+  | "gross_profit"
+  | "gross_margin"
+  | "profit_margin"
+  | "eps_diluted"
+  | "operating_income"
+  | "net_income"
+  | "ebitda"
+  | "free_cash_flow"
+  | "total_debt"
+  | "ps_ratio"
+  | "pe_ratio"
+  | "recent_news";
+
+type CompareRange =
+  | "1M"
+  | "3M"
+  | "6M"
+  | "YTD"
+  | "1Y"
+  | "3Y"
+  | "5Y"
+  | "10Y"
+  | "MAX"
+  | "ALL";
+Initial Default State
+
+To mirror the screenshot, default selected tickers can be:
+
+INTT, TRT, NNBR
+
+Default metric:
+
+Revenue
+
+Default range:
+
+ALL
+
+This is useful during development and for first-load UX. Later, this can be swapped to an empty state if desired.
+
+Frontend Implementation Checklist
+Locate existing Fundamentals page component.
+Add new StockCompareSection component.
+Add ticker autocomplete input.
+Add selected ticker chips.
+Add metric dropdown with quick search and stars.
+Add saved metrics dropdown using localStorage.
+Add options dropdown.
+Add range selector buttons.
+Add line chart.
+Add snapshot comparison table.
+Add recent news panel.
+Add URL query param hydration.
+Add CSV export.
+Add loading/error/empty states.
+Make responsive:
+desktop: screenshot-style horizontal controls
+mobile: stacked controls, scrollable chart/table
+Important Design Notes
+
+Do not use AI reasoning for the core comparison. This should be deterministic financial data from FMP.
+
+AI can be added later as a button like:
+
+Analyze Compare
+
+But the first version should be fast, clean, and data-native.
+
+This feature should feel like:
+
+“YCharts-style comparison, but inside CaelynAI.”
+
+Not like another chat answer. The page itself should do the work.
+
+Suggested Final Architecture
+Frontend Fundamentals Page
+        ↓
+StockCompareSection
+        ↓
+/api/fundamentals/compare/search
+/api/fundamentals/compare
+        ↓
+Backend Compare Service
+        ↓
+FMP Primary Data
+        ↓
+SEC EDGAR / Finnhub fallback only when needed
+        ↓
+Cached normalized response
+        ↓
+Chart + Snapshot Table + Recent News

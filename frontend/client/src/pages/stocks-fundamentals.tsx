@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, ExternalLink } from "lucide-react";
-
+import { StockCompareSection } from "@/components/stock-compare-section";
 
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
   <Card className={`bg-black/40 backdrop-blur-lg border-white/[0.06] ${className}`}>
@@ -44,6 +44,9 @@ export default function StocksFundamentalsPage() {
               />
             </div>
           </GlassCard>
+
+          {/* Stock Compare Section */}
+          <StockCompareSection />
         </div>
       </main>
     </div>
