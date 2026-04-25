@@ -1,0 +1,106 @@
+FRONTEND AGENT — Fix Relative Strength timeframe chart behavior
+
+Issue:
+In the Sectors page Relative Strength section, changing timeframe buttons does not change the line chart. 1D / 5D / 1M / 3M / YTD all show the same graph shape. Also the UI says 5D, but product requirement is 7D.
+
+Goal:
+The Relative Strength chart must clearly reflect the selected timeframe, and the UI must use 7D instead of 5D.
+
+Required changes:
+
+1. Rename 5D to 7D everywhere in Relative Strength
+- Button should say 7D, not 5D.
+- Any labels, legends, tooltip text, helper text, and data keys should prefer 7D.
+- If backend still returns 5D temporarily, map it as fallback only:
+  selectedRange === "7D" uses data.performance["7d"] first, then ["5d"] fallback.
+
+2. Make chart data actually depend on selectedRange
+Audit the Relative Strength component.
+Find where chartData is built.
+Right now it is likely using the same normalized points regardless of selected timeframe.
+
+Fix:
+- selectedRange must be included in the chart data calculation.
+- selectedRange must be included in React useMemo dependencies.
+- selectedRange must be included in query/cache keys if the chart fetches timeframe-specific data.
+
+3. Chart x-axis must match selected timeframe
+When selectedRange is:
+- 1D: x-axis should show intraday progression if available, otherwise a simple start/end 1D line.
+- 7D: x-axis should represent 7-day progression.
+- 1M: x-axis should represent 1-month progression.
+- 3M: x-axis should represent 3-month progression.
+- YTD: x-axis should represent year-to-date progression.
+- 1Y if present: x-axis should represent 1-year progression.
+
+Do not show the same x-axis labels for every selected timeframe unless the underlying data truly represents that period.
+
+4. Add a visible chart timeframe label
+Somewhere above or inside the chart header, show exactly what the chart is plotting:
+
+Examples:
+- "Chart: 3M relative performance"
+- "Showing 7D relative strength trend"
+- "YTD relative performance, normalized to 0%"
+
+Keep it small and styled like the existing terminal UI.
+
+5. Do not fake a line from summary return points
+If only summary values exist, do not draw a full curve pretending it is historical.
+
+Acceptable fallback:
+- Render a bar/rank view for selected timeframe.
+- Or render a simple two-point line from 0% to selected return, clearly labeled as "summary-only".
+- But best outcome is to consume real backend trend/history arrays.
+
+6. If backend provides trend/history data, filter it by selectedRange
+If each symbol/theme has historical performance series, slice/filter it based on selectedRange:
+- 1D: last market day/intraday points
+- 7D: last 7 calendar/trading days available
+- 1M: last ~30 days
+- 3M: last ~90 days
+- YTD: since Jan 1
+- 1Y: last ~365 days
+
+Normalize each line to 0% at the start of the selected window:
+relativeReturn = ((currentPrice / startPrice) - 1) * 100
+
+7. If backend does not provide enough history, coordinate with backend
+Do not hack around missing data with fake curves.
+
+Ask backend to add a non-breaking field per item:
+
+trend_series: [
+  { date: "2026-01-02", value: 0 },
+  { date: "2026-01-03", value: 1.2 }
+]
+
+Or better:
+
+history: [
+  { date: "2026-01-02", close: 123.45 },
+  ...
+]
+
+Then frontend can calculate selected timeframe performance correctly.
+
+8. Leaders/laggards must also use selectedRange
+Top Leaders and Bottom Laggards should rank by the selected timeframe:
+- 1D ranks by 1D return
+- 7D ranks by 7D return
+- 1M ranks by 1M return
+- 3M ranks by 3M return
+- YTD ranks by YTD return
+
+Verify this currently works. If not, fix it.
+
+9. Acceptance checks
+After fixing:
+- Clicking 1D visibly changes the chart and label to 1D.
+- Clicking 7D visibly changes the chart and label to 7D.
+- Clicking 1M visibly changes the chart and label to 1M.
+- Clicking 3M visibly changes the chart and label to 3M.
+- Clicking YTD visibly changes the chart and label to YTD.
+- 5D no longer appears anywhere in this section.
+- Sectors and Themes modes both work.
+- The chart is never visually misleading. If data is summary-only, label it as summary-only or use a simpler visualization.

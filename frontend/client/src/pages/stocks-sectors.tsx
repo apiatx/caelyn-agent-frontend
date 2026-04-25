@@ -9,7 +9,8 @@ import {
   Eye, Clock, Layers, Info, ArrowRight, Zap, Activity,
 } from "lucide-react";
 import {
-  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  LineChart, Line, BarChart, Bar, Cell, XAxis, YAxis, Tooltip,
+  ResponsiveContainer, ReferenceLine,
 } from "recharts";
 
 // ─── Types — exact backend shapes ────────────────────────────────────────────
@@ -150,7 +151,7 @@ const SECTOR_COLOR = Object.fromEntries(SECTORS.map(s => [s.ticker, s.color]));
 const SECTOR_NAME  = Object.fromEntries(SECTORS.map(s => [s.ticker, s.name]));
 const TF_OPTIONS   = ["1d", "7d", "30d", "ytd", "1y"] as const;
 type Timeframe = typeof TF_OPTIONS[number];
-const TF_THEME_OPTIONS = ["1d", "5d", "1m", "3m", "ytd"] as const;
+const TF_THEME_OPTIONS = ["1d", "7d", "1m", "3m", "ytd"] as const;
 type ThemeTf = typeof TF_THEME_OPTIONS[number];
 const THEME_PALETTE = [
   "#a855f7","#3b82f6","#22c55e","#f59e0b","#ec4899",
@@ -415,9 +416,6 @@ function normalizeThemeToRow(theme: ThemeRow, idx: number): DisplayRow {
 }
 
 // ─── Theme Relative Strength Chart ────────────────────────────────────────────
-const THEME_TF_KEYS:   readonly string[] = ["1d", "5d", "1m", "3m", "ytd"];
-const THEME_TF_LABELS: readonly string[] = ["1D",  "5D", "1M", "3M", "YTD"];
-
 function ThemeRSView({ themes, tf }: { themes: ThemeRow[]; tf: ThemeTf }) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(
     () => new Set(themes.slice(0, 8).map(t => t.id))
@@ -435,37 +433,40 @@ function ThemeRSView({ themes, tf }: { themes: ThemeRow[]; tf: ThemeTf }) {
 
   const p = (item: ThemeRow, key: string): number | null => (item.performance as any)?.[key] ?? null;
 
+  // "7d" uses "7d" first, falls back to "5d" if backend still returns 5d key
+  const pctForItem = (item: ThemeRow): number | null =>
+    tf === "7d" ? (p(item, "7d") ?? p(item, "5d")) : p(item, tf);
+
   const colorMap = useMemo(() => {
     const map: Record<string, string> = {};
     themes.forEach((t, i) => { map[t.id] = THEME_PALETTE[i % THEME_PALETTE.length]; });
     return map;
   }, [themes]);
 
+  // Sort leaders/laggards by the selected timeframe return
   const sorted = useMemo(() =>
-    [...themes].sort((a, b) => (b.relative_strength_score ?? 0) - (a.relative_strength_score ?? 0)),
-    [themes]
+    [...themes].sort((a, b) => (pctForItem(b) ?? -Infinity) - (pctForItem(a) ?? -Infinity)),
+    [themes, tf]
   );
 
   const topLeaders  = sorted.slice(0, 3);
   const topLaggards = [...sorted].reverse().slice(0, 3);
 
-  const pctForItem = (item: ThemeRow) => p(item, tf);
-
   const selectedThemes = useMemo(() => themes.filter(t => selectedIds.has(t.id)), [themes, selectedIds]);
 
-  // Build line chart data: each row is a time-horizon point (1D → 5D → 1M → 3M → YTD)
-  // Each selected theme becomes a named key with its % value at that horizon
-  const chartData = useMemo(() =>
-    THEME_TF_KEYS.map((key, i) => {
-      const point: Record<string, any> = { period: THEME_TF_LABELS[i] };
-      selectedThemes.forEach(t => {
-        const sym = t.leader_symbol ?? t.symbols?.[0] ?? t.id;
-        point[sym] = p(t, key);
-      });
-      return point;
-    }),
-    [selectedThemes]
-  );
+  // Bar chart: one bar per selected theme for the chosen TF, sorted best → worst
+  const barData = useMemo(() => {
+    return selectedThemes
+      .map(t => ({
+        name:  t.leader_symbol ?? t.symbols?.[0] ?? t.id.slice(0, 6),
+        value: pctForItem(t),
+        color: colorMap[t.id] ?? "#64748b",
+      }))
+      .filter((d): d is { name: string; value: number; color: string } => d.value != null)
+      .sort((a, b) => b.value - a.value);
+  }, [selectedThemes, tf]);
+
+  const tfLabel = tf.toUpperCase();
 
   return (
     <>
@@ -493,7 +494,7 @@ function ThemeRSView({ themes, tf }: { themes: ThemeRow[]; tf: ThemeTf }) {
         </div>
       </div>
       {/* Theme filter pills */}
-      <div className="flex gap-1.5 mb-4 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
+      <div className="flex gap-1.5 mb-3 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
         {themes.map((t, i) => {
           const on    = selectedIds.has(t.id);
           const color = THEME_PALETTE[i % THEME_PALETTE.length];
@@ -508,34 +509,39 @@ function ThemeRSView({ themes, tf }: { themes: ThemeRow[]; tf: ThemeTf }) {
           );
         })}
       </div>
-      {/* Line chart — performance across time horizons */}
-      {selectedThemes.length > 0 ? (
-        <div style={{ height: 260 }}>
+      {/* Chart label */}
+      <div className="text-[10px] uppercase tracking-wider text-gray-600 mb-2 px-0.5">
+        {tfLabel} relative performance — summary return
+      </div>
+      {/* Horizontal bar chart — one bar per theme, updates on TF change */}
+      {barData.length > 0 ? (
+        <div style={{ height: Math.max(180, barData.length * 26 + 16) }}>
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 4, right: 10, left: -20, bottom: 0 }}>
-              <XAxis dataKey="period" tick={{ fontSize: 9, fill: "#64748b" }} tickLine={false} axisLine={false} />
-              <YAxis tick={{ fontSize: 9, fill: "#64748b" }} tickLine={false} axisLine={false}
+            <BarChart data={barData} layout="vertical" margin={{ top: 0, right: 48, left: 4, bottom: 0 }}>
+              <XAxis type="number" tick={{ fontSize: 9, fill: "#64748b" }} tickLine={false} axisLine={false}
                 tickFormatter={v => `${v > 0 ? "+" : ""}${Number(v).toFixed(1)}%`} />
+              <YAxis type="category" dataKey="name" width={44}
+                tick={{ fontSize: 9, fill: "#94a3b8", fontFamily: "monospace", fontWeight: 600 }}
+                tickLine={false} axisLine={false} />
               <Tooltip
                 contentStyle={{ background: "#0d1623", border: "1px solid #1a2540", borderRadius: 6, fontSize: 11 }}
-                labelStyle={{ color: "#94a3b8" }}
-                itemSorter={(item: any) => -(item.value ?? 0)}
-                formatter={(v: any, name: string) => [`${Number(v) > 0 ? "+" : ""}${Number(v).toFixed(2)}%`, name]}
+                cursor={{ fill: "rgba(255,255,255,0.03)" }}
+                formatter={(v: any) => [`${Number(v) > 0 ? "+" : ""}${Number(v).toFixed(2)}%`, tfLabel + " return"]}
               />
-              {selectedThemes.map(t => {
-                const sym   = t.leader_symbol ?? t.symbols?.[0] ?? t.id;
-                const color = colorMap[t.id] ?? "#64748b";
-                return (
-                  <Line key={t.id} type="monotone" dataKey={sym} dot={false} strokeWidth={1.5}
-                    stroke={color} strokeOpacity={0.9} connectNulls />
-                );
-              })}
-            </LineChart>
+              <ReferenceLine x={0} stroke="#374151" strokeWidth={1} />
+              <Bar dataKey="value" radius={[0, 3, 3, 0]} maxBarSize={16}>
+                {barData.map((entry, idx) => (
+                  <Cell key={idx} fill={entry.color} fillOpacity={0.8} />
+                ))}
+              </Bar>
+            </BarChart>
           </ResponsiveContainer>
         </div>
       ) : (
-        <div className="h-[260px] flex items-center justify-center text-gray-600 text-sm">
-          Select themes above to compare performance
+        <div className="h-[180px] flex items-center justify-center text-gray-600 text-sm">
+          {selectedThemes.length === 0
+            ? "Select themes above to compare performance"
+            : `No ${tfLabel} data available`}
         </div>
       )}
     </>
@@ -1085,7 +1091,7 @@ function SectorRotationChart({
   selectedTickers: Set<string>; onToggleTicker: (t: string) => void;
 }) {
   const [tf, setTf] = useState<Timeframe>("7d");
-  const [themeTf, setThemeTf] = useState<ThemeTf>("5d");
+  const [themeTf, setThemeTf] = useState<ThemeTf>("7d");
   const [rsMode, setRsMode] = useState<"sectors" | "themes">("sectors");
 
   const { data: themeRSRaw, isLoading: themeRSLoading, isError: themeRSError } = useQuery<{ ranked: ThemeRow[] }>({
