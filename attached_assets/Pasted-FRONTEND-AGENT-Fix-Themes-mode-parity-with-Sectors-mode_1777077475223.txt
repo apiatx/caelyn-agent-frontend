@@ -1,0 +1,171 @@
+FRONTEND AGENT — Fix Themes mode parity with Sectors mode on Sectors page
+
+Issue:
+The Sectors | Themes toggle works, but Themes mode is not visually/behaviorally identical to Sectors mode.
+
+In the screenshots:
+- Sectors mode uses the correct toggle styling, badge text, columns, sortable headers, score bar, trend sparkline, and status layout.
+- Themes mode has different spacing/styling, different columns, different sortable columns, no trend sparkline column, and the table feels like a separate component.
+
+Goal:
+Themes mode should use the exact same table shell/component/styling/interaction model as Sectors mode.
+
+Do not redesign the page.
+Do not change backend unless absolutely necessary.
+Do not change Sectors mode.
+Make Themes mode look like the same component with different data.
+
+Required fixes:
+
+1. Reuse the exact same Sector Performance table component for both modes
+- Do not maintain a separate Themes table layout if one exists.
+- Create a normalized row adapter for themes so theme records can render through the same table as sector records.
+- Sectors mode and Themes mode should share:
+  - same outer card
+  - same header layout
+  - same toggle styling
+  - same badge styling
+  - same table spacing
+  - same font sizes
+  - same row heights
+  - same hover states
+  - same score bar styling
+  - same sparkline/trend column
+  - same status pill component
+
+2. Make the toggle identical in both states
+Current issue: active/inactive button styling differs between Sectors and Themes.
+
+The toggle should not change size, border, glow, padding, opacity, or placement depending on selected mode.
+
+Use one shared Toggle component or one shared class set:
+
+SECTORS active + THEMES inactive
+must be visually identical to
+SECTORS inactive + THEMES active
+
+Only active label changes.
+
+3. Keep the exact same columns as Sectors mode
+
+Themes mode should use the same columns/order as Sectors mode:
+
+Rank
+Ticker
+Sector
+Price
+1D
+7D
+30D
+YTD
+1Y
+Score
+Trend
+Status
+
+For Themes mode:
+- Ticker = leader_symbol if available, otherwise first symbol in symbols[]
+- Sector column = theme label
+- Price = leader ETF price if backend provides it, otherwise blank/"—"
+- 1D = performance.1d
+- 7D = use performance.7d if available, otherwise performance.5d but label must still remain 7D only if backend provides true 7D; otherwise ask backend to add 7D
+- 30D = performance.30d if available, otherwise performance.1m
+- YTD = performance.ytd
+- 1Y = performance.1y if available
+- Score = relative_strength_score
+- Trend = same sparkline visualization used in Sectors mode
+- Status = trend_state/status pill using the same component/colors as Sectors mode
+
+Important:
+Do NOT show separate columns like:
+Theme
+Parent
+5D
+1M
+3M
+RS Score
+
+Those make Themes mode feel like a different product. The user wants exact parity.
+
+4. Sortability must match exactly
+Themes mode should allow sorting on the same sortable headers as Sectors mode.
+
+If Sectors mode has sortable:
+- Rank
+- Ticker
+- Price
+- 1D
+- 7D
+- 30D
+- YTD
+- 1Y
+- Score
+
+Then Themes mode must have the exact same sortable headers and sort icons.
+
+Do not make Theme/Parent sortable unless Sector mode’s Sector column is sortable too.
+
+5. Header badge should match the selected mode but keep same badge style
+Sectors mode badge currently says:
+SPDR ETFs
+
+Themes mode badge can say:
+Theme ETF Baskets
+
+But it must use the exact same pill/badge component/style as SPDR ETFs.
+
+6. Trend sparkline must exist in Themes mode
+Themes mode currently appears to omit the Trend column/sparkline.
+
+Fix this:
+- Use the same sparkline component as Sectors mode.
+- If backend theme data includes trend/history array, pass it through.
+- If backend does not provide sparkline/history, create a safe fallback from available performance points only temporarily, but prefer backend to provide the same trend series field as sectors.
+- Do not remove the Trend column.
+
+7. Status pill should use same mapping
+Use the exact same Status component and styles.
+
+Map theme trend_state to current sector statuses:
+- Leadership / Leading => Leading
+- Improving => Improving
+- Weakening => Weakening
+- Lagging => Lagging
+- Neutral => Neutral
+
+Do not introduce new styling unless current sectors already use it.
+
+8. Data normalization function
+Add a small frontend adapter, something like:
+
+function normalizeThemeToSectorRow(theme) {
+  return {
+    rank: theme.momentum_rank,
+    ticker: theme.leader_symbol || theme.symbols?.[0] || theme.id,
+    sector: theme.label,
+    price: theme.price ?? theme.leader_price ?? null,
+    oneDay: theme.performance?.["1d"],
+    sevenDay: theme.performance?.["7d"] ?? theme.performance?.["5d"],
+    thirtyDay: theme.performance?.["30d"] ?? theme.performance?.["1m"],
+    ytd: theme.performance?.["ytd"],
+    oneYear: theme.performance?.["1y"],
+    score: theme.relative_strength_score,
+    trend: theme.trend ?? theme.sparkline ?? theme.history ?? null,
+    status: normalizeThemeStatus(theme.trend_state ?? theme.rotation_state),
+    raw: theme
+  };
+}
+
+Then pass normalized theme rows into the same table renderer used by sectors.
+
+9. Do not display Parent column in this table
+Parent sector is useful metadata, but not for parity here.
+If needed later, put it in tooltip/hover/detail drawer, not as a main column.
+
+10. Acceptance checks
+After fixing:
+- Sectors mode screenshot should look unchanged.
+- Themes mode should have the exact same column headers as Sectors mode.
+- Themes mode should have the same table width, row height, font sizing, score bar, sparkline column, status pills, toggle style, and sort icons.
+- Switching Sectors ↔ Themes should feel like changing the dataset, not changing the component.
+- No Agent Analysis behavior should change.

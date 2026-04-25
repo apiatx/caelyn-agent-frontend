@@ -196,13 +196,6 @@ const regimeCls = (v: string | null) => {
   const k = Object.keys(REGIME_BADGE).find(k => v.toLowerCase().includes(k));
   return k ? REGIME_BADGE[k] : "bg-gray-500/20 text-gray-300 border-gray-500/30";
 };
-const TREND_STYLES: Record<string, string> = {
-  Leadership: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
-  Improving:  "bg-sky-500/20 text-sky-400 border-sky-500/30",
-  Neutral:    "bg-white/10 text-white/50 border-white/[0.06]",
-  Weakening:  "bg-amber-500/20 text-amber-400 border-amber-500/30",
-  Lagging:    "bg-red-500/20 text-red-400 border-red-500/30",
-};
 
 // Convert backend series { dates, prices } to recharts-friendly normalized points
 function buildChartData(sectors: SectorRow[], tf: Timeframe) {
@@ -353,144 +346,72 @@ function themeEtfTvSymbol(ticker: string): string {
   return THEME_ETF_TV[ticker.toUpperCase()] ?? `AMEX:${ticker}`;
 }
 
-// ─── Theme Performance Table ──────────────────────────────────────────────────
-type ThemeSortKey = "rank" | "label" | "parent_sector" | "p1d" | "p5d" | "p1m" | "p3m" | "pytd" | "rs_score";
+// ─── Unified display row — both sectors and themes render through this shape ───
+interface DisplayRow {
+  key:                    string;
+  ticker:                 string;
+  name:                   string | null;
+  price:                  number | null;
+  change_1d:              number | null;
+  change_7d:              number | null;
+  change_30d:             number | null;
+  change_ytd:             number | null;
+  change_1y:              number | null;
+  rotation_score:         number | null;
+  relative_strength_rank: number | null;
+  regime_tag:             string | null;
+  spkPrices:              number[];
+  spkPos:                 boolean;
+  dotColor:               string;
+  tvSymbol:               string;
+}
 
-function ThemePerformanceView({ themes }: { themes: ThemeRow[] }) {
-  const [sortKey, setSortKey] = useState<ThemeSortKey>("rs_score");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+function buildThemeSparkline(theme: ThemeRow): number[] {
+  const p = (k: string): number | null => (theme.performance as any)?.[k] ?? null;
+  // Build synthetic price series from longest → shortest timeframe
+  const vals = [p("1y"), p("ytd"), p("3m"), p("1m"), p("5d"), p("1d")]
+    .filter((v): v is number => v != null);
+  if (vals.length < 2) return [];
+  return vals.reduce<number[]>((acc, pct, i) => {
+    if (i === 0) return [100 * (1 + pct / 100)];
+    return [...acc, acc[acc.length - 1] * (1 + pct / 100)];
+  }, []);
+}
 
-  const colorMap = useMemo(() => {
-    const map: Record<string, string> = {};
-    themes.forEach((t, i) => { map[t.id] = THEME_PALETTE[i % THEME_PALETTE.length]; });
-    return map;
-  }, [themes]);
+function normalizeThemeStatus(state: string | null): string | null {
+  if (!state) return null;
+  const s = state.toLowerCase();
+  if (s.includes("lead"))                      return "Leading";
+  if (s.includes("improv"))                    return "Improving";
+  if (s.includes("weak") || s.includes("deteriorat")) return "Weakening";
+  if (s.includes("lag"))                       return "Lagging";
+  if (s.includes("neutral"))                   return "Neutral";
+  return state;
+}
 
-  const p = (item: ThemeRow, key: string): number | null => (item.performance as any)?.[key] ?? null;
-
-  const getVal = (item: ThemeRow, k: ThemeSortKey): number | string | null => {
-    if (k === "rank")          return item.momentum_rank;
-    if (k === "label")         return item.label;
-    if (k === "parent_sector") return item.parent_sector;
-    if (k === "p1d")           return p(item, "1d");
-    if (k === "p5d")           return p(item, "5d");
-    if (k === "p1m")           return p(item, "1m");
-    if (k === "p3m")           return p(item, "3m");
-    if (k === "pytd")          return p(item, "ytd");
-    if (k === "rs_score")      return item.relative_strength_score;
-    return null;
+function normalizeThemeToRow(theme: ThemeRow, idx: number): DisplayRow {
+  const ticker  = theme.leader_symbol ?? theme.symbols?.[0] ?? theme.id;
+  const p       = (k: string): number | null => (theme.performance as any)?.[k] ?? null;
+  const ch7     = p("7d") ?? p("5d");
+  const spkPrices = buildThemeSparkline(theme);
+  return {
+    key:                    theme.id,
+    ticker,
+    name:                   theme.label,
+    price:                  null,
+    change_1d:              p("1d"),
+    change_7d:              ch7,
+    change_30d:             p("30d") ?? p("1m"),
+    change_ytd:             p("ytd"),
+    change_1y:              p("1y"),
+    rotation_score:         theme.relative_strength_score,
+    relative_strength_rank: theme.momentum_rank ?? idx + 1,
+    regime_tag:             normalizeThemeStatus(theme.trend_state ?? theme.rotation_state),
+    spkPrices,
+    spkPos:                 (ch7 ?? 0) >= 0,
+    dotColor:               THEME_PALETTE[idx % THEME_PALETTE.length],
+    tvSymbol:               themeEtfTvSymbol(ticker),
   };
-
-  const sorted = useMemo(() => [...themes].sort((a, b) => {
-    const av = getVal(a, sortKey), bv = getVal(b, sortKey);
-    if (av == null && bv == null) return 0;
-    if (av == null) return 1; if (bv == null) return -1;
-    if (typeof av === "string" && typeof bv === "string")
-      return sortDir === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
-    return sortDir === "asc" ? (av as number) - (bv as number) : (bv as number) - (av as number);
-  }), [themes, sortKey, sortDir]);
-
-  const handleSort = (k: ThemeSortKey) => {
-    if (k === sortKey) setSortDir(d => d === "asc" ? "desc" : "asc");
-    else { setSortKey(k); setSortDir("desc"); }
-  };
-
-  const Th = ({ label, k }: { label: string; k?: ThemeSortKey }) => (
-    <th onClick={k ? () => handleSort(k) : undefined}
-      className={`px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap ${k ? "cursor-pointer select-none hover:text-gray-300 transition-colors" : ""}`}>
-      <div className="flex items-center gap-1">
-        {label}
-        {k && (sortKey === k
-          ? sortDir === "asc" ? <ChevronUp className="w-3 h-3 text-teal-400" /> : <ChevronDown className="w-3 h-3 text-teal-400" />
-          : <ChevronsUpDown className="w-3 h-3 opacity-30" />)}
-      </div>
-    </th>
-  );
-
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[720px]">
-        <thead>
-          <tr className="border-b border-white/[0.06]">
-            <Th label="Rank" k="rank" />
-            <Th label="Ticker" />
-            <Th label="Theme" k="label" />
-            <Th label="Parent" k="parent_sector" />
-            <Th label="1D"  k="p1d" />
-            <Th label="5D"  k="p5d" />
-            <Th label="1M"  k="p1m" />
-            <Th label="3M"  k="p3m" />
-            <Th label="YTD" k="pytd" />
-            <Th label="RS Score" k="rs_score" />
-            <Th label="Status" />
-          </tr>
-        </thead>
-        <tbody>
-          {sorted.map((item, idx) => {
-            const trendCls  = TREND_STYLES[item.trend_state ?? ""] ?? "bg-white/10 text-white/50 border-white/[0.06]";
-            const leaderSym = item.leader_symbol ?? item.symbols?.[0] ?? null;
-            const expanded  = expandedId === item.id;
-            return (
-              <React.Fragment key={item.id}>
-                <tr onClick={() => setExpandedId(prev => prev === item.id ? null : item.id)}
-                  className={`border-b border-white/[0.03] cursor-pointer transition-colors ${expanded ? "bg-white/[0.08]" : "hover:bg-white/[0.03]"}`}>
-                  <td className="px-3 py-2.5">
-                    {item.momentum_rank != null
-                      ? <span className="text-xs text-gray-500 font-mono">#{item.momentum_rank}</span>
-                      : <span className="text-gray-600 text-xs">#{idx + 1}</span>}
-                  </td>
-                  <td className="px-3 py-2.5">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: colorMap[item.id] ?? "#64748b" }} />
-                      <span className="font-mono font-bold text-white text-sm">{leaderSym ?? "—"}</span>
-                    </div>
-                  </td>
-                  <td className="px-3 py-2.5 text-xs text-gray-400 max-w-[140px] truncate">{item.label ?? item.id}</td>
-                  <td className="px-3 py-2.5 text-xs text-gray-400 max-w-[100px] truncate">{item.parent_sector ?? "—"}</td>
-                  <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(p(item, "1d"))}`}>{fmtPct(p(item, "1d"))}</td>
-                  <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(p(item, "5d"))}`}>{fmtPct(p(item, "5d"))}</td>
-                  <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(p(item, "1m"))}`}>{fmtPct(p(item, "1m"))}</td>
-                  <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(p(item, "3m"))}`}>{fmtPct(p(item, "3m"))}</td>
-                  <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(p(item, "ytd"))}`}>{fmtPct(p(item, "ytd"))}</td>
-                  <td className="px-3 py-2.5">
-                    {item.relative_strength_score != null ? (
-                      <div className="flex items-center gap-2 min-w-[72px]">
-                        <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                          <div className="h-full rounded-full bg-teal-500" style={{ width: `${Math.min(100, item.relative_strength_score)}%` }} />
-                        </div>
-                        <span className="text-xs text-gray-400 tabular-nums">{item.relative_strength_score.toFixed(0)}</span>
-                      </div>
-                    ) : <span className="text-gray-600 text-xs">—</span>}
-                  </td>
-                  <td className="px-3 py-2.5">
-                    {item.trend_state
-                      ? <Badge className={`border text-[10px] px-1.5 py-0 ${trendCls}`}>{item.trend_state}</Badge>
-                      : <span className="text-gray-600 text-xs">—</span>}
-                  </td>
-                </tr>
-                {expanded && leaderSym && (
-                  <tr key={`${item.id}-chart`} className="bg-black/30">
-                    <td colSpan={11} className="px-4 py-3">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-2 h-2 rounded-full" style={{ background: colorMap[item.id] ?? "#64748b" }} />
-                        <span className="text-xs font-mono font-bold text-white">{leaderSym}</span>
-                        <span className="text-xs text-gray-500">{item.label}</span>
-                      </div>
-                      <TVTickerChart ticker={leaderSym} symbol={themeEtfTvSymbol(leaderSym)} />
-                    </td>
-                  </tr>
-                )}
-              </React.Fragment>
-            );
-          })}
-          {themes.length === 0 && (
-            <tr><td colSpan={11} className="px-3 py-8 text-center text-gray-500 text-sm">No theme data available</td></tr>
-          )}
-        </tbody>
-      </table>
-    </div>
-  );
 }
 
 // ─── Theme Relative Strength Chart ────────────────────────────────────────────
@@ -936,6 +857,20 @@ function SectorPerformanceTable({
     });
   }, [sectors, sortKey, sortDir]);
 
+  const themeSorted = useMemo(() => {
+    const rows = (themePerfRaw?.items ?? []).map((t, i) => normalizeThemeToRow(t, i));
+    return rows.sort((a, b) => {
+      const av = a[sortKey as keyof DisplayRow] as number | string | null;
+      const bv = b[sortKey as keyof DisplayRow] as number | string | null;
+      if (av == null && bv == null) return 0;
+      if (av == null) return 1;
+      if (bv == null) return -1;
+      if (typeof av === "string" && typeof bv === "string")
+        return sortDir === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
+      return sortDir === "asc" ? (av as number) - (bv as number) : (bv as number) - (av as number);
+    });
+  }, [themePerfRaw, sortKey, sortDir]);
+
   const Th = ({ label, k }: { label: string; k?: SortKey }) => (
     <th onClick={k ? () => handleSort(k) : undefined}
       className={`px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap ${k ? "cursor-pointer select-none hover:text-gray-300 transition-colors" : ""}`}>
@@ -967,14 +902,88 @@ function SectorPerformanceTable({
         />
         {themePerfLoading ? (
           <div className="space-y-2">{Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="flex gap-3"><Skel w={140} h={14} /><Skel w={100} h={14} /><Skel w={60} h={14} /><Skel w={60} h={14} /></div>
+            <div key={i} className="flex gap-3"><Skel w={50} h={14} /><Skel w={120} h={14} /><Skel w={60} h={14} /><Skel w={60} h={14} /><Skel w={60} h={14} /></div>
           ))}</div>
         ) : themePerfError ? (
           <div className="flex items-center gap-2 text-sm text-amber-400 py-4">
             <AlertTriangle className="w-4 h-4" /> Failed to load theme performance data.
           </div>
         ) : (
-          <ThemePerformanceView themes={themePerfRaw?.items ?? []} />
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[720px]">
+              <thead>
+                <tr className="border-b border-white/[0.06]">
+                  <Th label="Rank" /><Th label="Ticker" k="ticker" /><Th label="Sector" />
+                  <Th label="Price" k="price" /><Th label="1D" k="change_1d" />
+                  <Th label="7D" k="change_7d" /><Th label="30D" k="change_30d" />
+                  <Th label="YTD" k="change_ytd" /><Th label="1Y" k="change_1y" />
+                  <Th label="Score" k="rotation_score" /><Th label="Trend" /><Th label="Status" />
+                </tr>
+              </thead>
+              <tbody>
+                {themeSorted.map(row => {
+                  const expanded = expandedTicker === row.key;
+                  const tagCls   = row.regime_tag ? (TAG_STYLES[row.regime_tag] ?? "") : "";
+                  return (
+                    <React.Fragment key={row.key}>
+                      <tr onClick={() => setExpandedTicker(prev => prev === row.key ? null : row.key)}
+                        className={`border-b border-white/[0.03] cursor-pointer transition-colors ${expanded ? "bg-white/[0.08]" : "hover:bg-white/[0.03]"}`}>
+                        <td className="px-3 py-2.5">
+                          {row.relative_strength_rank != null
+                            ? <span className="text-xs text-gray-500 font-mono">#{row.relative_strength_rank}</span>
+                            : <span className="text-gray-600 text-xs">—</span>}
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: row.dotColor }} />
+                            <span className="font-mono font-bold text-white text-sm">{row.ticker}</span>
+                          </div>
+                        </td>
+                        <td className="px-3 py-2.5 text-xs text-gray-400 max-w-[130px] truncate">{row.name}</td>
+                        <td className="px-3 py-2.5 text-sm font-mono text-white tabular-nums">{fmtPx(row.price)}</td>
+                        <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(row.change_1d)}`}>{fmtPct(row.change_1d)}</td>
+                        <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(row.change_7d)}`}>{fmtPct(row.change_7d)}</td>
+                        <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(row.change_30d)}`}>{fmtPct(row.change_30d)}</td>
+                        <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(row.change_ytd)}`}>{fmtPct(row.change_ytd)}</td>
+                        <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(row.change_1y)}`}>{fmtPct(row.change_1y)}</td>
+                        <td className="px-3 py-2.5">
+                          {row.rotation_score != null ? (
+                            <div className="flex items-center gap-2 min-w-[72px]">
+                              <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                                <div className="h-full rounded-full" style={{ width: `${Math.min(100, row.rotation_score)}%`, background: row.dotColor }} />
+                              </div>
+                              <span className="text-xs text-gray-400 tabular-nums">{row.rotation_score.toFixed(0)}</span>
+                            </div>
+                          ) : <span className="text-gray-600 text-xs">—</span>}
+                        </td>
+                        <td className="px-3 py-2.5"><Sparkline prices={row.spkPrices} positive={row.spkPos} /></td>
+                        <td className="px-3 py-2.5">
+                          {row.regime_tag
+                            ? <Badge className={`border text-[10px] px-1.5 py-0 ${tagCls}`}>{row.regime_tag}</Badge>
+                            : <span className="text-gray-600 text-xs">—</span>}
+                        </td>
+                      </tr>
+                      {expanded && (
+                        <tr key={`${row.key}-chart`} className="bg-black/30">
+                          <td colSpan={12} className="px-4 py-3">
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="w-2 h-2 rounded-full" style={{ background: row.dotColor }} />
+                              <span className="text-xs font-mono font-bold text-white">{row.ticker}</span>
+                              <span className="text-xs text-gray-500">{row.name}</span>
+                            </div>
+                            <TVTickerChart ticker={row.ticker} symbol={row.tvSymbol} />
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+                {themeSorted.length === 0 && (
+                  <tr><td colSpan={12} className="px-3 py-8 text-center text-gray-500 text-sm">No theme data available</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         )}
       </GlassCard>
     );
