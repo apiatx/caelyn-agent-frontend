@@ -9,7 +9,7 @@ import {
   Eye, Clock, Layers, Info, ArrowRight, Zap, Activity,
 } from "lucide-react";
 import {
-  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  LineChart, Line, BarChart, Bar, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from "recharts";
 
 // ─── Types — exact backend shapes ────────────────────────────────────────────
@@ -150,6 +150,13 @@ const SECTOR_COLOR = Object.fromEntries(SECTORS.map(s => [s.ticker, s.color]));
 const SECTOR_NAME  = Object.fromEntries(SECTORS.map(s => [s.ticker, s.name]));
 const TF_OPTIONS   = ["1d", "7d", "30d", "ytd", "1y"] as const;
 type Timeframe = typeof TF_OPTIONS[number];
+const TF_THEME_OPTIONS = ["1d", "5d", "1m", "3m", "ytd"] as const;
+type ThemeTf = typeof TF_THEME_OPTIONS[number];
+const THEME_PALETTE = [
+  "#a855f7","#3b82f6","#22c55e","#f59e0b","#ec4899",
+  "#06b6d4","#f97316","#8b5cf6","#0ea5e9","#fbbf24",
+  "#10b981","#ef4444","#84cc16","#d946ef","#64748b",
+];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmtPct = (v: number | null, digits = 2): string =>
@@ -291,62 +298,128 @@ function ModeToggle({ mode, setMode }: { mode: "sectors" | "themes"; setMode: (m
 }
 
 // ─── Theme Performance Table ──────────────────────────────────────────────────
+type ThemeSortKey = "rank" | "label" | "parent_sector" | "p1d" | "p5d" | "p1m" | "p3m" | "pytd" | "rs_score";
+
 function ThemePerformanceView({ themes }: { themes: ThemeRow[] }) {
-  const p = (item: ThemeRow, key: string) => (item.performance as any)?.[key] ?? null;
+  const [sortKey, setSortKey] = useState<ThemeSortKey>("rs_score");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const p = (item: ThemeRow, key: string): number | null => (item.performance as any)?.[key] ?? null;
+
+  const getVal = (item: ThemeRow, k: ThemeSortKey): number | string | null => {
+    if (k === "rank")          return item.momentum_rank;
+    if (k === "label")         return item.label;
+    if (k === "parent_sector") return item.parent_sector;
+    if (k === "p1d")           return p(item, "1d");
+    if (k === "p5d")           return p(item, "5d");
+    if (k === "p1m")           return p(item, "1m");
+    if (k === "p3m")           return p(item, "3m");
+    if (k === "pytd")          return p(item, "ytd");
+    if (k === "rs_score")      return item.relative_strength_score;
+    return null;
+  };
+
+  const sorted = useMemo(() => [...themes].sort((a, b) => {
+    const av = getVal(a, sortKey), bv = getVal(b, sortKey);
+    if (av == null && bv == null) return 0;
+    if (av == null) return 1; if (bv == null) return -1;
+    if (typeof av === "string" && typeof bv === "string")
+      return sortDir === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
+    return sortDir === "asc" ? (av as number) - (bv as number) : (bv as number) - (av as number);
+  }), [themes, sortKey, sortDir]);
+
+  const handleSort = (k: ThemeSortKey) => {
+    if (k === sortKey) setSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setSortKey(k); setSortDir("desc"); }
+  };
+
+  const Th = ({ label, k }: { label: string; k?: ThemeSortKey }) => (
+    <th onClick={k ? () => handleSort(k) : undefined}
+      className={`px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap ${k ? "cursor-pointer select-none hover:text-gray-300 transition-colors" : ""}`}>
+      <div className="flex items-center gap-1">
+        {label}
+        {k && (sortKey === k
+          ? sortDir === "asc" ? <ChevronUp className="w-3 h-3 text-teal-400" /> : <ChevronDown className="w-3 h-3 text-teal-400" />
+          : <ChevronsUpDown className="w-3 h-3 opacity-30" />)}
+      </div>
+    </th>
+  );
+
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[820px]">
+      <table className="w-full min-w-[720px]">
         <thead>
           <tr className="border-b border-white/[0.06]">
-            {["Theme", "ETF Basket", "Parent", "1D", "5D", "1M", "3M", "YTD", "RS Score", "Rank", "Trend"].map(h => (
-              <th key={h} className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
-            ))}
+            <Th label="Rank" k="rank" />
+            <Th label="Leader" />
+            <Th label="Theme" k="label" />
+            <Th label="Parent" k="parent_sector" />
+            <Th label="1D"  k="p1d" />
+            <Th label="5D"  k="p5d" />
+            <Th label="1M"  k="p1m" />
+            <Th label="3M"  k="p3m" />
+            <Th label="YTD" k="pytd" />
+            <Th label="RS Score" k="rs_score" />
+            <Th label="Status" />
           </tr>
         </thead>
         <tbody>
-          {themes.map(item => {
-            const trendCls = TREND_STYLES[item.trend_state ?? ""] ?? "bg-white/10 text-white/50 border-white/[0.06]";
+          {sorted.map((item, idx) => {
+            const trendCls  = TREND_STYLES[item.trend_state ?? ""] ?? "bg-white/10 text-white/50 border-white/[0.06]";
+            const leaderSym = item.leader_symbol ?? item.symbols?.[0] ?? null;
+            const expanded  = expandedId === item.id;
             return (
-              <tr key={item.id} className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors">
-                <td className="px-3 py-2.5">
-                  <div className="text-sm font-medium text-white">{item.label ?? item.id}</div>
-                  {item.theme_type && <div className="text-[10px] text-white/30">{item.theme_type}</div>}
-                </td>
-                <td className="px-3 py-2.5">
-                  <div className="flex flex-wrap gap-1 max-w-[180px]">
-                    {(item.symbols ?? []).map(s => (
-                      <span key={s} className="font-mono text-[10px] px-1 py-0.5 bg-white/[0.04] border border-white/[0.06] rounded">{s}</span>
-                    ))}
-                    {(!item.symbols || item.symbols.length === 0) && <span className="text-white/30">—</span>}
-                  </div>
-                </td>
-                <td className="px-3 py-2.5 text-xs text-gray-400 max-w-[120px] truncate">{item.parent_sector ?? "—"}</td>
-                <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(p(item, "1d"))}`}>{fmtPct(p(item, "1d"))}</td>
-                <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(p(item, "5d"))}`}>{fmtPct(p(item, "5d"))}</td>
-                <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(p(item, "1m"))}`}>{fmtPct(p(item, "1m"))}</td>
-                <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(p(item, "3m"))}`}>{fmtPct(p(item, "3m"))}</td>
-                <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(p(item, "ytd"))}`}>{fmtPct(p(item, "ytd"))}</td>
-                <td className="px-3 py-2.5">
-                  {item.relative_strength_score != null ? (
-                    <div className="flex items-center gap-2 min-w-[72px]">
-                      <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                        <div className="h-full rounded-full bg-teal-500" style={{ width: `${Math.min(100, item.relative_strength_score)}%` }} />
-                      </div>
-                      <span className="text-xs text-gray-400 tabular-nums">{item.relative_strength_score.toFixed(0)}</span>
+              <React.Fragment key={item.id}>
+                <tr onClick={() => setExpandedId(prev => prev === item.id ? null : item.id)}
+                  className={`border-b border-white/[0.03] cursor-pointer transition-colors ${expanded ? "bg-white/[0.08]" : "hover:bg-white/[0.03]"}`}>
+                  <td className="px-3 py-2.5">
+                    {item.momentum_rank != null
+                      ? <span className="text-xs text-gray-500 font-mono">#{item.momentum_rank}</span>
+                      : <span className="text-gray-600 text-xs">#{idx + 1}</span>}
+                  </td>
+                  <td className="px-3 py-2.5">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full flex-shrink-0 bg-teal-500/70" />
+                      <span className="font-mono font-bold text-white text-sm">{leaderSym ?? "—"}</span>
                     </div>
-                  ) : <span className="text-gray-600 text-xs">—</span>}
-                </td>
-                <td className="px-3 py-2.5">
-                  {item.momentum_rank != null
-                    ? <span className="text-xs text-gray-500 font-mono">#{item.momentum_rank}</span>
-                    : <span className="text-gray-600 text-xs">—</span>}
-                </td>
-                <td className="px-3 py-2.5">
-                  {item.trend_state
-                    ? <Badge className={`border text-[10px] px-1.5 py-0 ${trendCls}`}>{item.trend_state}</Badge>
-                    : <span className="text-gray-600 text-xs">—</span>}
-                </td>
-              </tr>
+                  </td>
+                  <td className="px-3 py-2.5 text-xs text-gray-400 max-w-[140px] truncate">{item.label ?? item.id}</td>
+                  <td className="px-3 py-2.5 text-xs text-gray-400 max-w-[100px] truncate">{item.parent_sector ?? "—"}</td>
+                  <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(p(item, "1d"))}`}>{fmtPct(p(item, "1d"))}</td>
+                  <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(p(item, "5d"))}`}>{fmtPct(p(item, "5d"))}</td>
+                  <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(p(item, "1m"))}`}>{fmtPct(p(item, "1m"))}</td>
+                  <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(p(item, "3m"))}`}>{fmtPct(p(item, "3m"))}</td>
+                  <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(p(item, "ytd"))}`}>{fmtPct(p(item, "ytd"))}</td>
+                  <td className="px-3 py-2.5">
+                    {item.relative_strength_score != null ? (
+                      <div className="flex items-center gap-2 min-w-[72px]">
+                        <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                          <div className="h-full rounded-full bg-teal-500" style={{ width: `${Math.min(100, item.relative_strength_score)}%` }} />
+                        </div>
+                        <span className="text-xs text-gray-400 tabular-nums">{item.relative_strength_score.toFixed(0)}</span>
+                      </div>
+                    ) : <span className="text-gray-600 text-xs">—</span>}
+                  </td>
+                  <td className="px-3 py-2.5">
+                    {item.trend_state
+                      ? <Badge className={`border text-[10px] px-1.5 py-0 ${trendCls}`}>{item.trend_state}</Badge>
+                      : <span className="text-gray-600 text-xs">—</span>}
+                  </td>
+                </tr>
+                {expanded && leaderSym && (
+                  <tr key={`${item.id}-chart`} className="bg-black/30">
+                    <td colSpan={11} className="px-4 py-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-2 h-2 rounded-full bg-teal-500/70" />
+                        <span className="text-xs font-mono font-bold text-white">{leaderSym}</span>
+                        <span className="text-xs text-gray-500">{item.label}</span>
+                      </div>
+                      <TVTickerChart ticker={leaderSym} />
+                    </td>
+                  </tr>
+                )}
+              </React.Fragment>
             );
           })}
           {themes.length === 0 && (
@@ -358,43 +431,128 @@ function ThemePerformanceView({ themes }: { themes: ThemeRow[] }) {
   );
 }
 
-// ─── Theme Relative Strength List ─────────────────────────────────────────────
+// ─── Theme Relative Strength Chart ────────────────────────────────────────────
 function ThemeRSView({ themes }: { themes: ThemeRow[] }) {
+  const [tf, setTf] = useState<ThemeTf>("5d");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(
+    () => new Set(themes.slice(0, 8).map(t => t.id))
+  );
+
+  useEffect(() => {
+    setSelectedIds(new Set(themes.slice(0, 8).map(t => t.id)));
+  }, [themes.length]);
+
+  const toggleId = (id: string) => setSelectedIds(prev => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
+
+  const p = (item: ThemeRow, key: string): number | null => (item.performance as any)?.[key] ?? null;
+
+  const colorMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    themes.forEach((t, i) => { map[t.id] = THEME_PALETTE[i % THEME_PALETTE.length]; });
+    return map;
+  }, [themes]);
+
+  const sorted = useMemo(() =>
+    [...themes].sort((a, b) => (b.relative_strength_score ?? 0) - (a.relative_strength_score ?? 0)),
+    [themes]
+  );
+
+  const topLeaders  = sorted.slice(0, 3);
+  const topLaggards = [...sorted].reverse().slice(0, 3);
+
+  const pctForItem = (item: ThemeRow) => p(item, tf);
+
+  const chartData = useMemo(() =>
+    themes
+      .filter(t => selectedIds.has(t.id))
+      .map(t => ({ id: t.id, name: t.leader_symbol ?? t.symbols?.[0] ?? t.label ?? t.id, value: p(t, tf) }))
+      .filter(d => d.value != null)
+      .sort((a, b) => (b.value ?? 0) - (a.value ?? 0)),
+    [themes, selectedIds, tf]
+  );
+
   return (
-    <div className="space-y-1.5">
-      {themes.map((item, idx) => {
-        const trendCls = TREND_STYLES[item.trend_state ?? ""] ?? "bg-white/10 text-white/50 border-white/[0.06]";
-        return (
-          <div key={item.id} className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-white/[0.04] bg-white/[0.02] hover:bg-white/[0.03] transition-colors flex-wrap">
-            <span className="text-xs text-gray-500 font-mono flex-shrink-0 w-6 text-right">#{item.momentum_rank ?? idx + 1}</span>
-            <div className="flex-1 min-w-[120px]">
-              <div className="text-sm font-medium text-white">{item.label ?? item.id}</div>
-              {item.parent_sector && <div className="text-[10px] text-white/30">{item.parent_sector}</div>}
+    <>
+      {/* Timeframe picker */}
+      <div className="flex gap-1 mb-4 bg-white/5 rounded-lg p-0.5 w-fit">
+        {TF_THEME_OPTIONS.map(t => (
+          <button key={t} onClick={() => setTf(t)}
+            className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${tf === t ? "bg-blue-500 text-white" : "text-gray-400 hover:text-white"}`}>
+            {t.toUpperCase()}
+          </button>
+        ))}
+      </div>
+      {/* Leaders / Laggards */}
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-lg p-3">
+          <div className="text-xs text-emerald-400 font-medium mb-2 flex items-center gap-1"><TrendingUp className="w-3 h-3" />Top Leaders</div>
+          {topLeaders.length ? topLeaders.map(r => (
+            <div key={r.id} className="flex items-center gap-2 mb-1">
+              <div className="w-1.5 h-1.5 rounded-full" style={{ background: colorMap[r.id] }} />
+              <span className="text-xs font-mono font-bold text-white truncate max-w-[110px]">{r.leader_symbol ?? r.symbols?.[0] ?? r.id}</span>
+              <span className={`text-xs ml-auto ${pctCls(pctForItem(r))}`}>{fmtPct(pctForItem(r), 1)}</span>
             </div>
-            <div className="flex flex-wrap gap-1 max-w-[200px]">
-              {(item.symbols ?? []).map(s => (
-                <span key={s} className="font-mono text-[10px] px-1 py-0.5 bg-white/[0.04] border border-white/[0.06] rounded">{s}</span>
-              ))}
+          )) : <span className="text-xs text-gray-600">—</span>}
+        </div>
+        <div className="bg-red-500/5 border border-red-500/20 rounded-lg p-3">
+          <div className="text-xs text-red-400 font-medium mb-2 flex items-center gap-1"><TrendingDown className="w-3 h-3" />Bottom Laggards</div>
+          {topLaggards.length ? topLaggards.map(r => (
+            <div key={r.id} className="flex items-center gap-2 mb-1">
+              <div className="w-1.5 h-1.5 rounded-full" style={{ background: colorMap[r.id] }} />
+              <span className="text-xs font-mono font-bold text-white truncate max-w-[110px]">{r.leader_symbol ?? r.symbols?.[0] ?? r.id}</span>
+              <span className={`text-xs ml-auto ${pctCls(pctForItem(r))}`}>{fmtPct(pctForItem(r), 1)}</span>
             </div>
-            {item.relative_strength_score != null && (
-              <div className="flex items-center gap-1.5 flex-shrink-0">
-                <span className="text-[10px] text-gray-500">RS</span>
-                <span className="text-sm font-mono font-bold text-teal-300">{item.relative_strength_score.toFixed(0)}</span>
-              </div>
-            )}
-            {item.trend_state && (
-              <Badge className={`border text-[10px] px-1.5 py-0 flex-shrink-0 ${trendCls}`}>{item.trend_state}</Badge>
-            )}
-            {item.rotation_state && (
-              <span className="text-[10px] text-white/30 flex-shrink-0">{item.rotation_state}</span>
-            )}
-          </div>
-        );
-      })}
-      {themes.length === 0 && (
-        <div className="py-8 text-center text-gray-500 text-sm">No theme relative strength data available</div>
+          )) : <span className="text-xs text-gray-600">—</span>}
+        </div>
+      </div>
+      {/* Theme filter pills */}
+      <div className="flex gap-1.5 mb-4 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
+        {themes.map((t, i) => {
+          const on    = selectedIds.has(t.id);
+          const color = THEME_PALETTE[i % THEME_PALETTE.length];
+          const label = t.leader_symbol ?? t.symbols?.[0] ?? t.id.slice(0, 6);
+          return (
+            <button key={t.id} onClick={() => toggleId(t.id)}
+              className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs font-mono font-medium border transition-all flex-shrink-0 whitespace-nowrap ${on ? "text-white border-transparent" : "text-gray-600 border-white/10"}`}
+              style={on ? { background: `${color}30`, borderColor: `${color}60` } : {}}>
+              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: on ? color : "#374151" }} />
+              {label}
+            </button>
+          );
+        })}
+      </div>
+      {/* Bar chart */}
+      {chartData.length > 0 ? (
+        <div style={{ height: 260 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData} margin={{ top: 4, right: 10, left: -20, bottom: 44 }}>
+              <XAxis dataKey="name" tick={{ fontSize: 9, fill: "#64748b" }} tickLine={false} axisLine={false}
+                angle={-35} textAnchor="end" interval={0} />
+              <YAxis tick={{ fontSize: 9, fill: "#64748b" }} tickLine={false} axisLine={false}
+                tickFormatter={v => `${v > 0 ? "+" : ""}${Number(v).toFixed(1)}%`} />
+              <Tooltip
+                contentStyle={{ background: "#0d1623", border: "1px solid #1a2540", borderRadius: 6, fontSize: 11 }}
+                labelStyle={{ color: "#94a3b8" }}
+                formatter={(v: any) => [`${Number(v) > 0 ? "+" : ""}${Number(v).toFixed(2)}%`, tf.toUpperCase()]}
+              />
+              <Bar dataKey="value" radius={[2, 2, 0, 0]}>
+                {chartData.map(entry => (
+                  <Cell key={entry.id} fill={colorMap[entry.id] ?? "#64748b"} fillOpacity={0.85} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      ) : (
+        <div className="h-[260px] flex items-center justify-center text-gray-600 text-sm">
+          Select themes above to compare performance
+        </div>
       )}
-    </div>
+    </>
   );
 }
 
@@ -742,9 +900,6 @@ function SectorPerformanceTable({
         <SectionHeader icon={BarChart3} title="Sector Performance" badge="Theme ETF Baskets"
           right={<ModeToggle mode={perfMode} setMode={setPerfMode} />}
         />
-        <p className="text-[10px] text-white/30 mb-3">
-          Granular ETF baskets showing which investable subsectors are leading beneath the broad sectors.
-        </p>
         {themePerfLoading ? (
           <div className="space-y-2">{Array.from({ length: 8 }).map((_, i) => (
             <div key={i} className="flex gap-3"><Skel w={140} h={14} /><Skel w={100} h={14} /><Skel w={60} h={14} /><Skel w={60} h={14} /></div>
@@ -907,9 +1062,6 @@ function SectorRotationChart({
         <SectionHeader icon={TrendingUp} title="Relative Strength" badge="Theme ETFs" color="blue"
           right={<ModeToggle mode={rsMode} setMode={setRsMode} />}
         />
-        <p className="text-[10px] text-white/30 mb-3">
-          Ranks theme ETFs by momentum and acceleration to catch rotation before broad sectors make it obvious.
-        </p>
         {themeRSLoading ? (
           <div className="space-y-2">{Array.from({ length: 8 }).map((_, i) => <Skel key={i} h={48} />)}</div>
         ) : themeRSError ? (
