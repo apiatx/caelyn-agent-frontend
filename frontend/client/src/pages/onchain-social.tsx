@@ -664,8 +664,10 @@ function XSnapshotSections({ tx }: { tx: any }) {
   const topTickers: any[] = tx.top_tickers        || [];
   const keyThemes:  any[] = tx.key_themes          || [];
   const sentAccel:  any[] = tx.sentiment_acceleration || [];
-  const freshAlpha         = tx.freshest_alpha || tx.spotlight || null;
-  const freshTrades: any[] = tx.fresh_trades   || [];
+  // freshest_alpha arrives as { trades: [...], spotlight: {...} }
+  const faObj              = tx.freshest_alpha ?? null;
+  const freshAlpha         = faObj?.spotlight   || tx.spotlight || null;
+  const freshTrades: any[] = faObj?.trades       || tx.fresh_trades || [];
   const isStale      = tx.is_stale === true || tx.stale === true;
   const isRefreshing = tx.refresh_in_progress === true;
   const generatedAt  = tx.generated_at ? new Date(tx.generated_at) : null;
