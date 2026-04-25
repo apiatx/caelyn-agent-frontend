@@ -1461,19 +1461,19 @@ export default function OnchainSocialPage() {
     },
   });
 
-  const isRefreshing   = refreshMutation.isPending || tx?.refresh_in_progress === true;
-  const windowOpen     = tx?.refresh_window_open !== false;
-  const cooldownRaw    = tx?.next_allowed_refresh_at ?? null;
-  const cooldownDate   = cooldownRaw ? new Date(cooldownRaw) : null;
-  const inCooldown     = !!(cooldownDate && cooldownDate > new Date() && !windowOpen);
-  const isDisabled     = isRefreshing || inCooldown;
+  const isRefreshing     = refreshMutation.isPending || tx?.refresh_in_progress === true;
+  const windowOpen       = tx?.refresh_window_open !== false;
+  const autoResumeRaw    = tx?.next_allowed_refresh_at ?? null;
+  const autoResumeDate   = autoResumeRaw ? new Date(autoResumeRaw) : null;
+  // Button is disabled ONLY when a refresh is already running.
+  // next_allowed_refresh_at reflects the AUTO-schedule, not a manual lock —
+  // so we never use it to gate the manual button.
+  const isDisabled       = isRefreshing;
 
-  const cooldownLabel  = (() => {
-    if (!cooldownDate || !inCooldown) return null;
-    const diff = cooldownDate.getTime() - Date.now();
-    const m = Math.ceil(diff / 60_000);
-    if (m <= 0) return null;
-    return m < 60 ? `in ${m}m` : `in ${Math.ceil(m / 60)}h`;
+  // Informational label shown below the button when auto-refresh is paused overnight.
+  const autoResumeLabel  = (() => {
+    if (windowOpen || !autoResumeDate) return null;
+    return autoResumeDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Chicago', timeZoneName: 'short' });
   })();
 
   return (
@@ -1499,8 +1499,6 @@ export default function OnchainSocialPage() {
             disabled={isDisabled}
             title={
               isRefreshing ? 'Refresh in progress…'
-              : inCooldown && cooldownLabel ? `Next refresh available ${cooldownLabel}`
-              : !windowOpen ? 'Outside refresh window'
               : 'Manually refresh X snapshot data'
             }
             style={{
@@ -1513,25 +1511,19 @@ export default function OnchainSocialPage() {
               transition: 'all 0.18s',
               background: isRefreshing
                 ? 'rgba(56,189,248,0.08)'
-                : inCooldown || !windowOpen
-                  ? 'rgba(255,255,255,0.03)'
-                  : refreshMutation.isError
-                    ? 'rgba(239,68,68,0.08)'
-                    : 'rgba(56,189,248,0.07)',
+                : refreshMutation.isError
+                  ? 'rgba(239,68,68,0.08)'
+                  : 'rgba(56,189,248,0.07)',
               border: isRefreshing
                 ? '1px solid rgba(56,189,248,0.35)'
-                : inCooldown || !windowOpen
-                  ? '1px solid rgba(255,255,255,0.08)'
-                  : refreshMutation.isError
-                    ? '1px solid rgba(239,68,68,0.3)'
-                    : '1px solid rgba(56,189,248,0.22)',
+                : refreshMutation.isError
+                  ? '1px solid rgba(239,68,68,0.3)'
+                  : '1px solid rgba(56,189,248,0.22)',
               color: isRefreshing
                 ? '#38bdf8'
-                : inCooldown || !windowOpen
-                  ? '#475569'
-                  : refreshMutation.isError
-                    ? '#ef4444'
-                    : '#7dd3fc',
+                : refreshMutation.isError
+                  ? '#ef4444'
+                  : '#7dd3fc',
               opacity: isDisabled ? 0.7 : 1,
             }}
           >
@@ -1551,10 +1543,10 @@ export default function OnchainSocialPage() {
             {isRefreshing ? 'Refreshing…' : refreshMutation.isError ? 'Retry' : 'Refresh X Snapshot'}
           </button>
 
-          {/* Sub-label: cooldown or error */}
-          {(inCooldown && cooldownLabel) ? (
+          {/* Sub-label: informational auto-resume / error / success */}
+          {autoResumeLabel ? (
             <span style={{ fontSize: '0.58rem', color: '#334155', fontFamily: "'JetBrains Mono', monospace" }}>
-              next {cooldownLabel}
+              auto resumes {autoResumeLabel}
             </span>
           ) : refreshMutation.isError ? (
             <span style={{ fontSize: '0.58rem', color: '#ef4444', fontFamily: "'JetBrains Mono', monospace" }}>

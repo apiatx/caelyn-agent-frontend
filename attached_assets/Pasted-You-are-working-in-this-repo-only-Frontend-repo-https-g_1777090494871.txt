@@ -1,0 +1,82 @@
+You are working in this repo only:
+
+* Frontend repo: https://github.com/apiatx/caelyn-agent-frontend.git
+
+Workflow rules:
+
+* Work directly on `main`
+* Do NOT create a branch
+* Do NOT create a PR
+* Commit directly to `main`
+* Push directly to `main`
+
+This is a focused bug fix. Do not broaden scope.
+
+PRIMARY BUG
+The Social page `Refresh Snapshot` button is currently grayed out after hours and says something like “next one in 10 hr”.
+
+That is wrong.
+
+The button should still be clickable after hours if the user wants a manual refresh.
+
+REQUIRED BEHAVIOR
+
+* During hours:
+
+  * automatic refresh still runs every 2 hours
+  * manual refresh still available as needed
+* After hours:
+
+  * automatic refresh is paused
+  * manual refresh button should still be enabled
+  * unless a refresh is already running or manual cooldown is active
+
+AUDIT FIRST
+Inspect the current Social page refresh button logic and identify:
+
+1. what field currently disables the button
+2. whether the UI is incorrectly using `next_allowed_refresh_at` / auto schedule to disable manual refresh
+3. whether the UI has access to separate manual-refresh metadata already, or needs new fields from backend
+
+IMPLEMENT
+Update the button logic so that:
+
+* it is NOT disabled just because auto refresh is paused overnight
+* it is disabled only when:
+
+  * `refresh_in_progress = true`
+  * or `manual_refresh_available = false` due to cooldown/lock
+* if backend provides both automatic and manual scheduling metadata, use them correctly
+
+UI COPY
+Make the behavior clear:
+
+* after hours, do NOT show the button as unavailable just because next automatic refresh is in many hours
+* instead, allow click
+* optional small helper copy can say something like:
+
+  * “Auto refresh resumes at 8:00 AM CT”
+  * while still keeping the button active
+
+Disabled-state reasons should only reflect:
+
+* refresh already running
+* cooldown active
+
+VERIFY
+Before finishing, verify:
+
+1. after hours the button is clickable
+2. during a running refresh it is disabled
+3. during cooldown it is disabled
+4. auto refresh schedule can still be shown as informational text without disabling the button
+5. page layout remains clean
+
+DELIVERABLES
+When done, report:
+
+1. exact frontend files changed
+2. exact root cause in the UI
+3. what fields now control button enabled/disabled
+4. what helper text is shown after hours
+5. confirmation changes were committed and pushed directly to `main`
