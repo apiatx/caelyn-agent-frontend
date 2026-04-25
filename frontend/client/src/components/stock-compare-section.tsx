@@ -454,7 +454,6 @@ export function StockCompareSection() {
 
   const [metricOpen, setMetricOpen] = useState(false);
   const [metricSearch, setMetricSearch] = useState("");
-  const [savedOpen, setSavedOpen] = useState(false);
   const [optionsOpen, setOptionsOpen] = useState(false);
 
   const [starred, setStarred] = useState<CompareMetricKey[]>(() => {
@@ -464,8 +463,6 @@ export function StockCompareSection() {
     } catch { /* ignore */ }
     return DEFAULT_STARRED;
   });
-
-  const [fullWidth, setFullWidth] = useState(false);
 
   // Color assignment per symbol (stable)
   const colorMap = useMemo<Record<string, string>>(() => {
@@ -679,29 +676,14 @@ export function StockCompareSection() {
     m.label.toLowerCase().includes(metricSearch.toLowerCase())
   );
 
-  const savedMetrics = STOCK_COMPARE_METRICS.filter((m) => starred.includes(m.key));
-
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className={`bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden ${fullWidth ? "w-full" : ""}`}>
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
       {/* Header */}
       <div className="px-5 pt-5 pb-3 border-b border-gray-100">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="text-xs text-gray-400 mb-1">
-              Home &rsaquo; Fundamentals &rsaquo; Stock Compare
-            </div>
-            <h2 className="text-2xl font-bold text-gray-900 leading-tight">Stock Compare</h2>
-            <div className="mt-1 h-0.5 w-16 bg-blue-500 rounded-full" />
-          </div>
-          <button
-            onClick={() => setFullWidth((f) => !f)}
-            className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1 transition-colors"
-          >
-            {fullWidth ? "Collapse" : "Full Width >>"}
-          </button>
-        </div>
+        <h2 className="text-2xl font-bold text-gray-900 leading-tight">Stock Compare</h2>
+        <div className="mt-1 h-0.5 w-16 bg-blue-500 rounded-full" />
       </div>
 
       <div className="p-5">
@@ -757,7 +739,7 @@ export function StockCompareSection() {
           {/* Metric dropdown */}
           <div className="relative">
             <button
-              onClick={() => { setMetricOpen((o) => !o); setSavedOpen(false); setOptionsOpen(false); setMetricSearch(""); }}
+              onClick={() => { setMetricOpen((o) => !o); setOptionsOpen(false); setMetricSearch(""); }}
               className="flex items-center gap-1.5 text-xs font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 hover:bg-gray-100 transition-colors whitespace-nowrap"
             >
               {metric.label}
@@ -797,36 +779,10 @@ export function StockCompareSection() {
             </DropdownMenu>
           </div>
 
-          {/* Saved dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => { setSavedOpen((o) => !o); setMetricOpen(false); setOptionsOpen(false); }}
-              className="flex items-center gap-1.5 text-xs font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 hover:bg-gray-100 transition-colors"
-            >
-              Saved
-              <ChevronDown className="w-3 h-3 text-gray-400" />
-            </button>
-            <DropdownMenu open={savedOpen} onClose={() => setSavedOpen(false)} width={200}>
-              {savedMetrics.length === 0 ? (
-                <div className="px-3 py-2 text-xs text-white/40">No saved metrics</div>
-              ) : (
-                savedMetrics.map((m) => (
-                  <button
-                    key={m.key}
-                    onClick={() => { setMetric(m); setSavedOpen(false); }}
-                    className={`w-full text-left px-3 py-1.5 text-xs hover:bg-white/5 transition-colors ${m.key === metric.key ? "text-blue-400" : "text-white/80"}`}
-                  >
-                    {m.label}
-                  </button>
-                ))
-              )}
-            </DropdownMenu>
-          </div>
-
           {/* Options dropdown */}
           <div className="relative">
             <button
-              onClick={() => { setOptionsOpen((o) => !o); setMetricOpen(false); setSavedOpen(false); }}
+              onClick={() => { setOptionsOpen((o) => !o); setMetricOpen(false); }}
               className="flex items-center gap-1.5 text-xs font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 hover:bg-gray-100 transition-colors"
             >
               Options
@@ -946,7 +902,7 @@ export function StockCompareSection() {
                 <div className="text-xs text-center text-gray-500 mb-2 font-medium">{metric.label}</div>
 
                 {/* Chart */}
-                <div className="w-full" style={{ height: 300 }}>
+                <div className="w-full" style={{ height: 480 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={chartData} margin={{ top: 10, right: 80, left: 10, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
