@@ -1,0 +1,184 @@
+Workflow rules:
+
+Work directly on main
+Do NOT create a branch
+Do NOT create a PR
+Commit directly to main
+Push directly to main
+
+This is a focused Social page enhancement. Do not broaden scope.
+
+CRITICAL CLARIFICATION
+The backend has now been fixed correctly.
+
+The existing Social consensus section must remain exactly as it is today.
+Do NOT change its existing payload assumptions or rendering contract.
+
+The backend Social response now preserves the existing flat Home-style top-level X payload unchanged, and adds 3 new sibling keys:
+
+freshest_alpha
+theme_leadership
+sentiment_acceleration
+
+So your job is:
+
+keep the current existing Social consensus section working exactly as-is
+add the 3 new sections around it
+do not break the existing section
+
+IMPORTANT BACKEND HANDOFF
+The Social page response now contains:
+
+A. Existing top-level flat keys (unchanged)
+
+generated_at
+top_tickers
+key_themes
+notable_accounts
+is_stale
+stale
+data_state
+age_seconds
+refresh_in_progress
+available
+refresh_window_open
+next_allowed_refresh_at
+timezone
+
+B. New Social-only sibling keys
+
+freshest_alpha
+theme_leadership
+sentiment_acceleration
+
+C. Extra context keys
+
+market_pulse
+portfolio_bias
+spotlight
+metadata
+
+Do NOT replace the existing section with a new nested contract.
+Use the existing flat payload for the current consensus section, and add the 3 new sections from the new sibling keys.
+
+PRIMARY GOAL
+Implement these 4 Social page sections:
+
+Existing working consensus section
+keep current rendering and payload path unchanged
+label/name on Social page should be:
+X Consensus
+Freshest Alpha
+use freshest_alpha.trades
+optionally use freshest_alpha.spotlight or top-level spotlight if helpful
+Theme Leadership
+use theme_leadership.themes
+optionally use market_pulse context if helpful
+Sentiment Acceleration
+use sentiment_acceleration
+
+Also include compact context if it fits:
+
+market_pulse
+portfolio_bias
+
+AUDIT FIRST
+Inspect the current Social page and identify:
+
+where the existing consensus section is rendered
+what exact payload path it currently uses
+where the 3 new sections should be added without disrupting layout
+what existing ticker click / popup / chart behavior can be reused
+whether the current query already hits the correct backend endpoint and exposes the new sibling keys
+
+IMPLEMENT
+
+PART 1 — Keep the existing consensus section unchanged
+
+preserve the current section’s data path and rendering behavior
+just update its display title on the Social page to:
+X Consensus
+do not break the Home page UI
+do not redesign the existing consensus cards unless necessary
+
+PART 2 — Add Freshest Alpha
+Use:
+
+freshest_alpha.trades
+
+Render useful fields such as:
+
+ticker
+name
+why_fresh
+entry_thesis
+first_mentioned_by
+spotlight badge if relevant
+
+Only show “No fresh alpha data yet” if freshest_alpha.trades is truly empty.
+
+PART 3 — Add Theme Leadership
+Use:
+
+theme_leadership.themes
+
+Render:
+
+theme
+buzz_level
+key_tickers
+why_hot
+
+PART 4 — Add Sentiment Acceleration
+Use:
+
+sentiment_acceleration
+
+Render:
+
+ticker
+mention/hype delta if provided
+trader_count delta if provided
+buzz trend
+why_now / thesis
+
+PART 5 — Preserve ticker click behavior
+If a section contains tickers:
+
+clicking ticker names/cards should still use the existing popup/detail/chart behavior wherever it makes sense
+do not break that UX
+
+PART 6 — State and metadata
+Keep the page honest:
+
+use existing metadata/state for stale / refreshing / available
+do not create extra frontend timers or XAI-triggering behavior
+keep manual refresh button behavior intact
+
+VERIFY
+Before finishing, verify:
+
+the existing consensus section still renders exactly as before
+it is now labeled X Consensus
+freshest_alpha renders when freshest_alpha.trades.length > 0
+theme_leadership renders from theme_leadership.themes
+sentiment_acceleration renders from sentiment_acceleration
+no extra X-related fetch fan-out was added
+ticker popup/detail behavior still works
+
+DELIVERABLES
+When done, report:
+
+exact frontend files changed
+where the 3 new sections were added
+confirmation the existing consensus section was left functionally unchanged
+confirmation the Social page label now says X Consensus
+confirmation all 3 new sibling-key sections are rendered
+whether query count changed
+confirmation changes were committed and pushed directly to main
+
+EXECUTION STYLE
+
+Preserve the working section
+Add the 3 new sections next to it
+Do not re-architect the existing consensus block

@@ -661,9 +661,11 @@ function XSnapshotSections({ tx }: { tx: any }) {
 
   const mp          = tx.market_pulse      || {};
   const bias        = tx.portfolio_bias    || '';
-  const topTickers: any[] = tx.top_tickers        || [];
-  const keyThemes:  any[] = tx.key_themes          || [];
-  const sentAccel:  any[] = tx.sentiment_acceleration || [];
+  const topTickers: any[]        = tx.top_tickers || [];
+  // theme_leadership.themes is the new sibling key; fall back to key_themes for compatibility
+  const keyThemes:  any[]        = tx.theme_leadership?.themes || tx.key_themes || [];
+  // sentiment_acceleration is a direct sibling array
+  const sentAccel:  any[]        = Array.isArray(tx.sentiment_acceleration) ? tx.sentiment_acceleration : [];
   // freshest_alpha arrives as { trades: [...], spotlight: {...} }
   const faObj              = tx.freshest_alpha ?? null;
   const freshAlpha         = faObj?.spotlight   || tx.spotlight || null;
@@ -793,7 +795,7 @@ function XSnapshotSections({ tx }: { tx: any }) {
 
         {/* ① X Consensus */}
         <div style={cardStyle}>
-          {sectionTitle('𝕏 Consensus', C.blue, topTickers.length)}
+          {sectionTitle('X Consensus', C.blue, topTickers.length)}
           {topTickers.length === 0 ? emptyState('No consensus data yet.') : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', flex: 1, overflowY: 'auto', maxHeight: 480 }}>
               {topTickers.map((t: any, i: number) => {
@@ -873,22 +875,47 @@ function XSnapshotSections({ tx }: { tx: any }) {
                 );
               })()}
               {freshTrades.length > 0 && (
-                <div>
-                  <div style={{ color: C.dim, fontSize: '0.58rem', fontWeight: 700, fontFamily: font,
-                    textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.4rem' }}>Fresh Trades</div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
-                    {freshTrades.map((t: any, i: number) => {
-                      const sym   = t.ticker || t.symbol;
-                      const key   = `ft-${sym}`;
-                      const isExp = expandedAlphaTicker === key;
-                      return (
-                        <div key={i}>
-                          {tickerChip(sym, isExp, () => toggle(key, setExpandedAlphaTicker, expandedAlphaTicker), C.green)}
-                          {isExp && <TradingViewChart symbol={`NASDAQ:${sym}`} />}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+                  {freshTrades.map((t: any, i: number) => {
+                    const sym   = t.ticker || t.symbol;
+                    const key   = `ft-${sym}`;
+                    const isExp = expandedAlphaTicker === key;
+                    const desc  = t.why_fresh || t.entry_thesis || t.thesis || t.rationale || t.reason;
+                    return (
+                      <div key={i}>
+                        <div
+                          onClick={() => toggle(key, setExpandedAlphaTicker, expandedAlphaTicker)}
+                          style={{
+                            background: isExp ? `${C.green}0a` : C.card,
+                            border: `1px solid ${isExp ? `${C.green}40` : C.border}`,
+                            borderRadius: 8, padding: '0.6rem 0.8rem',
+                            cursor: 'pointer', transition: 'border-color 0.15s',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: desc ? 5 : 0, flexWrap: 'wrap' }}>
+                            <span style={{ color: C.green, fontWeight: 800, fontSize: '0.88rem', fontFamily: font }}>${sym}</span>
+                            {t.name && <span style={{ color: C.dim, fontSize: '0.62rem', fontFamily: sansFont }}>{t.name}</span>}
+                            {t.conviction && <ConvictionBadge value={t.conviction} />}
+                            {t.first_mentioned_by && (
+                              <span style={{ color: C.blue, fontSize: '0.58rem', fontFamily: font }}>@{t.first_mentioned_by}</span>
+                            )}
+                            <span style={{ color: C.dim, fontSize: '0.56rem', fontFamily: font, marginLeft: 'auto' }}>{isExp ? '▼' : '▶'} chart</span>
+                          </div>
+                          {desc && (
+                            <div style={{
+                              color: C.text, fontSize: '0.68rem', fontFamily: sansFont, lineHeight: 1.55,
+                              overflow: 'hidden', display: '-webkit-box',
+                              WebkitLineClamp: isExp ? 'unset' : 2,
+                              WebkitBoxOrient: 'vertical' as const,
+                            }}>
+                              {desc}
+                            </div>
+                          )}
                         </div>
-                      );
-                    })}
-                  </div>
+                        {isExp && <TradingViewChart symbol={`NASDAQ:${sym}`} />}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -961,7 +988,7 @@ function XSnapshotSections({ tx }: { tx: any }) {
                       }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap',
-                        marginBottom: (item.reason || item.why_now || item.context) ? 5 : 0 }}>
+                        marginBottom: (item.thesis || item.reason || item.why_now || item.context) ? 5 : 0 }}>
                         <span style={{ color: C.purple, fontWeight: 800, fontSize: '0.88rem', fontFamily: font }}>${sym}</span>
                         {item.hype_delta != null && (
                           <span style={{ color: item.hype_delta >= 0 ? C.green : C.red, fontSize: '0.62rem', fontFamily: font, fontWeight: 700 }}>
@@ -973,14 +1000,22 @@ function XSnapshotSections({ tx }: { tx: any }) {
                             mentions {item.mention_delta >= 0 ? '+' : ''}{item.mention_delta}
                           </span>
                         )}
+                        {item.trader_count_delta != null && (
+                          <span style={{ color: item.trader_count_delta >= 0 ? C.green : C.red, fontSize: '0.62rem', fontFamily: font }}>
+                            traders {item.trader_count_delta >= 0 ? '+' : ''}{item.trader_count_delta}
+                          </span>
+                        )}
+                        {item.buzz_trend && (
+                          <span style={{ color: C.gold, fontSize: '0.6rem', fontFamily: font, fontWeight: 700, textTransform: 'uppercase' }}>{item.buzz_trend}</span>
+                        )}
                         {item.sentiment && (
                           <span style={{ color: sentColor(item.sentiment), fontSize: '0.6rem', fontFamily: font, fontWeight: 700, textTransform: 'uppercase' }}>{item.sentiment}</span>
                         )}
                         <span style={{ color: C.dim, fontSize: '0.56rem', fontFamily: font, marginLeft: 'auto' }}>{isExp ? '▼' : '▶'} chart</span>
                       </div>
-                      {(item.reason || item.why_now || item.context) && (
+                      {(item.thesis || item.reason || item.why_now || item.context) && (
                         <div style={{ color: C.text, fontSize: '0.68rem', fontFamily: sansFont, lineHeight: 1.55 }}>
-                          {item.reason || item.why_now || item.context}
+                          {item.thesis || item.reason || item.why_now || item.context}
                         </div>
                       )}
                     </div>
