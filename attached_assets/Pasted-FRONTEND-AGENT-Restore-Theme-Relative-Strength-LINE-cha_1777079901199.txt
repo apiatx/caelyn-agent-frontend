@@ -1,0 +1,93 @@
+FRONTEND AGENT — Restore Theme Relative Strength LINE chart, do not use bar chart
+
+You changed Themes Relative Strength to a bar chart. Revert that. The requirement is:
+
+Themes mode must use the exact same LINE GRAPH visualization as Sectors mode.
+No bar chart.
+
+Goal:
+The Relative Strength chart should remain a multi-line time-series chart in both Sectors and Themes mode. The selected timeframe buttons should change the time window of the line chart.
+
+Required:
+
+1. Remove the bar chart implementation
+- Remove BarChart, Bar, Cell, ReferenceLine imports if only used for this.
+- Restore the same LineChart / Line / XAxis / YAxis / Tooltip / ResponsiveContainer structure used by Sectors mode.
+- Theme mode should visually match Sectors mode.
+
+2. Use the same chart component for Sectors and Themes if possible
+Best fix:
+- Extract/reuse the existing Sectors Relative Strength line chart component.
+- Pass normalized rows into it for either sectors or themes.
+- Do not maintain a separate chart type for themes.
+
+3. Timeframe buttons must control chart window
+Buttons should be:
+
+1D | 7D | 1M | 3M | YTD | 1Y
+
+Replace 5D with 7D everywhere.
+
+When selected:
+- 1D = line chart for 1D window
+- 7D = line chart for 7D window
+- 1M = line chart for 30D window
+- 3M = line chart for 90D window
+- YTD = line chart from Jan 1 to today
+- 1Y = line chart for trailing 1 year
+
+4. Build chart data from real history/trend series, not summary points
+Do not plot summary performance points as fake time-series.
+
+Preferred input per theme:
+item.history = [{ date, close }]
+or
+item.trend_series[selectedTf] = [{ date, value }]
+
+If backend already returns history:
+- Slice history to selected timeframe.
+- Normalize each symbol/theme line to 0% at the first point:
+  value = ((close / firstClose) - 1) * 100
+- Plot date on X-axis and normalized % return on Y-axis.
+
+If backend returns trend_series:
+- Use trend_series[selectedTf] directly.
+- Still verify it starts at/near 0%.
+
+5. If history is missing, show a clear inline empty state, not a bar chart
+Example:
+"Historical trend data unavailable for Theme ETFs. Backend needs history/trend_series to render this line chart."
+
+Do not silently switch to bars.
+
+6. Keep leaders/laggards ranking by selected timeframe
+That part was correct:
+- 1D ranks by 1D
+- 7D ranks by 7D
+- 1M ranks by 1M/30D
+- 3M ranks by 3M
+- YTD ranks by YTD
+- 1Y ranks by 1Y
+
+7. Chart label should say what the line chart is showing
+Examples:
+- "3M relative performance, normalized to 0%"
+- "7D relative performance, normalized to 0%"
+- "YTD relative performance, normalized to 0%"
+
+Do not say "summary return" if it is a line chart.
+
+8. Theme pills remain above the chart
+Keep the colored ticker pills, but they should toggle/show line visibility just like Sectors mode if Sectors mode supports that.
+
+9. Acceptance checks
+- Themes mode shows a line chart, not bars.
+- Sectors mode still shows the existing line chart unchanged.
+- Clicking 1D changes the line chart to 1D window.
+- Clicking 7D changes the line chart to 7D window.
+- Clicking 1M changes the line chart to 1M window.
+- Clicking 3M changes the line chart to 3M window.
+- Clicking YTD changes the line chart to YTD window.
+- Clicking 1Y changes the line chart to 1Y window.
+- 5D no longer appears.
+- If backend lacks history, show the missing-history message and stop. Do not invent fake curves or use bars.

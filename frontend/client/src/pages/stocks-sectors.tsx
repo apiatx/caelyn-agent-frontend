@@ -933,7 +933,7 @@ function SectorPerformanceTable({
                   return (
                     <React.Fragment key={row.key}>
                       <tr onClick={() => setExpandedTicker(prev => prev === row.key ? null : row.key)}
-                        className={`border-b border-white/[0.03] cursor-pointer transition-colors ${expanded ? "bg-white/[0.08]" : "hover:bg-white/[0.03]"}`}>
+                        className={`border-b border-white/[0.03] cursor-pointer transition-colors ${expanded ? "bg-white/[0.08]" : "bg-white/[0.06] hover:bg-white/[0.08]"}`}>
                         <td className="px-3 py-2.5">
                           {row.relative_strength_rank != null
                             ? <span className="text-xs text-gray-500 font-mono">#{row.relative_strength_rank}</span>
