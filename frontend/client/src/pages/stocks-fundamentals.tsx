@@ -18,6 +18,9 @@ export default function StocksFundamentalsPage() {
     <div className="min-h-screen text-white" style={{ background: '#050608' }}>
       <main className="max-w-[95vw] mx-auto px-2 sm:px-3 py-4">
         <div className="space-y-4 lg:space-y-8">
+          {/* Stock Compare Section */}
+          <StockCompareSection />
+
           <GlassCard className="p-3 sm:p-4 lg:p-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-6">
               <div className="flex items-center gap-2">
@@ -44,9 +47,6 @@ export default function StocksFundamentalsPage() {
               />
             </div>
           </GlassCard>
-
-          {/* Stock Compare Section */}
-          <StockCompareSection />
         </div>
       </main>
     </div>
