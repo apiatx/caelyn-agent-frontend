@@ -647,11 +647,10 @@ function ConsensusBriefingCard({ data }: { data: any }) {
 }
 
 // ─── X Snapshot — 4 primary sections ─────────────────────────────
-function XSnapshotSections({ tx }: { tx: any }) {
-  const [expandedTicker,      setExpandedTicker]      = useState<string | null>(null);
-  const [expandedThemeTicker, setExpandedThemeTicker] = useState<string | null>(null);
-  const [expandedAccelTicker, setExpandedAccelTicker] = useState<string | null>(null);
-  const [expandedAlphaTicker, setExpandedAlphaTicker] = useState<string | null>(null);
+function XSnapshotSections({ tx, onTickerClick }: {
+  tx: any;
+  onTickerClick: (sym: string, dataObj?: any, context?: string, name?: string) => void;
+}) {
 
   const C = {
     blue: '#38bdf8', gold: '#f59e0b', green: '#22c55e', red: '#ef4444',
@@ -686,9 +685,6 @@ function XSnapshotSections({ tx }: { tx: any }) {
     if (ageHr  < 24)  return `${ageHr}h ago`;
     return `${Math.floor(ageHr / 24)}d ago`;
   })();
-
-  const toggle = (key: string, setter: (v: string | null) => void, current: string | null) =>
-    setter(current === key ? null : key);
 
   const sentColor = (s: string | null | undefined) =>
     !s ? C.dim : /bull/i.test(s) ? C.green : /bear/i.test(s) ? C.red : C.gold;
@@ -799,43 +795,38 @@ function XSnapshotSections({ tx }: { tx: any }) {
           {topTickers.length === 0 ? emptyState('No consensus data yet.') : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', flex: 1, overflowY: 'auto', maxHeight: 480 }}>
               {topTickers.map((t: any, i: number) => {
-                const sym   = t.symbol || t.ticker;
-                const isExp = expandedTicker === sym;
+                const sym = t.symbol || t.ticker;
                 return (
-                  <div key={sym || i}>
-                    <div
-                      onClick={() => toggle(sym, setExpandedTicker, expandedTicker)}
-                      style={{
-                        background: isExp ? `${C.blue}0a` : C.card,
-                        border: `1px solid ${isExp ? `${C.blue}40` : C.border}`,
-                        borderRadius: 8, padding: '0.6rem 0.8rem',
-                        cursor: 'pointer', transition: 'border-color 0.15s',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: t.rationale ? 5 : 0, flexWrap: 'wrap' }}>
-                        <span style={{ color: C.dim, fontWeight: 700, fontSize: '0.7rem', fontFamily: font }}>#{i + 1}</span>
-                        <span style={{ color: C.blue, fontWeight: 800, fontSize: '0.88rem', fontFamily: font }}>${sym}</span>
-                        {t.sentiment && (
-                          <span style={{ color: sentColor(t.sentiment), fontSize: '0.6rem', fontFamily: font, fontWeight: 700, textTransform: 'uppercase' }}>{t.sentiment}</span>
-                        )}
-                        {Array.isArray(t.accounts) && t.accounts.length > 0 && (
-                          <span style={{ color: C.dim, fontSize: '0.58rem', fontFamily: font }}>{t.accounts.length} src</span>
-                        )}
-                        <span style={{ color: C.dim, fontSize: '0.56rem', fontFamily: font, marginLeft: 'auto' }}>{isExp ? '▼' : '▶'} chart</span>
-                      </div>
-                      {t.rationale && (
-                        <div style={{
-                          color: C.text, fontSize: '0.68rem', fontFamily: sansFont, lineHeight: 1.55,
-                          overflow: 'hidden',
-                          display: '-webkit-box',
-                          WebkitLineClamp: isExp ? 'unset' : 2,
-                          WebkitBoxOrient: 'vertical' as const,
-                        }}>
-                          {t.rationale}
-                        </div>
+                  <div
+                    key={sym || i}
+                    onClick={() => onTickerClick(sym, t, t.rationale)}
+                    style={{
+                      background: C.card,
+                      border: `1px solid ${C.border}`,
+                      borderRadius: 8, padding: '0.6rem 0.8rem',
+                      cursor: 'pointer', transition: 'border-color 0.15s',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: t.rationale ? 5 : 0, flexWrap: 'wrap' }}>
+                      <span style={{ color: C.dim, fontWeight: 700, fontSize: '0.7rem', fontFamily: font }}>#{i + 1}</span>
+                      <span style={{ color: C.blue, fontWeight: 800, fontSize: '0.88rem', fontFamily: font }}>${sym}</span>
+                      {t.sentiment && (
+                        <span style={{ color: sentColor(t.sentiment), fontSize: '0.6rem', fontFamily: font, fontWeight: 700, textTransform: 'uppercase' }}>{t.sentiment}</span>
                       )}
+                      {Array.isArray(t.accounts) && t.accounts.length > 0 && (
+                        <span style={{ color: C.dim, fontSize: '0.58rem', fontFamily: font }}>{t.accounts.length} src</span>
+                      )}
+                      <span style={{ color: C.dim, fontSize: '0.56rem', fontFamily: font, marginLeft: 'auto' }}>↗ chart</span>
                     </div>
-                    {isExp && <TradingViewChart symbol={resolveTVSymbol(sym, t)} />}
+                    {t.rationale && (
+                      <div style={{
+                        color: C.text, fontSize: '0.68rem', fontFamily: sansFont, lineHeight: 1.55,
+                        overflow: 'hidden', display: '-webkit-box',
+                        WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const,
+                      }}>
+                        {t.rationale}
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -849,70 +840,62 @@ function XSnapshotSections({ tx }: { tx: any }) {
           {!freshAlpha && freshTrades.length === 0 ? emptyState('No fresh alpha data yet.') : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
               {freshAlpha && (freshAlpha.ticker || freshAlpha.symbol) && (() => {
-                const sym   = freshAlpha.ticker || freshAlpha.symbol;
-                const isExp = expandedAlphaTicker === sym;
+                const sym = freshAlpha.ticker || freshAlpha.symbol;
+                const ctx = freshAlpha.thesis || freshAlpha.reason || freshAlpha.catalyst;
                 return (
-                  <div>
-                    <div
-                      onClick={() => toggle(sym, setExpandedAlphaTicker, expandedAlphaTicker)}
-                      style={{ background: `${C.purple}08`, border: `1px solid ${C.purple}22`, borderRadius: 8, padding: '0.75rem 0.9rem', cursor: 'pointer' }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: 6, flexWrap: 'wrap' }}>
-                        <span style={{ padding: '1px 7px', borderRadius: 100, fontSize: '0.58rem', fontWeight: 700,
-                          fontFamily: font, color: C.purple, border: `1px solid ${C.purple}40`,
-                          background: `${C.purple}12`, textTransform: 'uppercase', letterSpacing: '0.06em' }}>SPOTLIGHT</span>
-                        <span style={{ color: C.purple, fontWeight: 800, fontSize: '0.88rem', fontFamily: font }}>${sym}</span>
-                        {freshAlpha.conviction && <ConvictionBadge value={freshAlpha.conviction} />}
-                        <span style={{ color: C.dim, fontSize: '0.56rem', fontFamily: font, marginLeft: 'auto' }}>{isExp ? '▼' : '▶'} chart</span>
-                      </div>
-                      {freshAlpha.thesis && <div style={{ color: C.text, fontSize: '0.72rem', fontFamily: sansFont, lineHeight: 1.65 }}>{freshAlpha.thesis}</div>}
-                      {freshAlpha.reason && <div style={{ color: C.text, fontSize: '0.72rem', fontFamily: sansFont, lineHeight: 1.65 }}>{freshAlpha.reason}</div>}
-                      {freshAlpha.catalyst && <div style={{ color: C.gold, fontSize: '0.68rem', fontFamily: sansFont, marginTop: 4 }}>{freshAlpha.catalyst}</div>}
-                      {freshAlpha.first_mentioned_by && <div style={{ color: C.blue, fontSize: '0.62rem', fontFamily: font, marginTop: 4 }}>First by: {freshAlpha.first_mentioned_by}</div>}
+                  <div
+                    onClick={() => onTickerClick(sym, freshAlpha, ctx)}
+                    style={{ background: `${C.purple}08`, border: `1px solid ${C.purple}22`, borderRadius: 8, padding: '0.75rem 0.9rem', cursor: 'pointer' }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: 6, flexWrap: 'wrap' }}>
+                      <span style={{ padding: '1px 7px', borderRadius: 100, fontSize: '0.58rem', fontWeight: 700,
+                        fontFamily: font, color: C.purple, border: `1px solid ${C.purple}40`,
+                        background: `${C.purple}12`, textTransform: 'uppercase', letterSpacing: '0.06em' }}>SPOTLIGHT</span>
+                      <span style={{ color: C.purple, fontWeight: 800, fontSize: '0.88rem', fontFamily: font }}>${sym}</span>
+                      {freshAlpha.conviction && <ConvictionBadge value={freshAlpha.conviction} />}
+                      <span style={{ color: C.dim, fontSize: '0.56rem', fontFamily: font, marginLeft: 'auto' }}>↗ chart</span>
                     </div>
-                    {isExp && <TradingViewChart symbol={resolveTVSymbol(sym, freshAlpha)} />}
+                    {freshAlpha.thesis && <div style={{ color: C.text, fontSize: '0.72rem', fontFamily: sansFont, lineHeight: 1.65 }}>{freshAlpha.thesis}</div>}
+                    {freshAlpha.reason && <div style={{ color: C.text, fontSize: '0.72rem', fontFamily: sansFont, lineHeight: 1.65 }}>{freshAlpha.reason}</div>}
+                    {freshAlpha.catalyst && <div style={{ color: C.gold, fontSize: '0.68rem', fontFamily: sansFont, marginTop: 4 }}>{freshAlpha.catalyst}</div>}
+                    {freshAlpha.first_mentioned_by && <div style={{ color: C.blue, fontSize: '0.62rem', fontFamily: font, marginTop: 4 }}>First by: {freshAlpha.first_mentioned_by}</div>}
                   </div>
                 );
               })()}
               {freshTrades.length > 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
                   {freshTrades.map((t: any, i: number) => {
-                    const sym   = t.ticker || t.symbol;
-                    const key   = `ft-${sym}`;
-                    const isExp = expandedAlphaTicker === key;
-                    const desc  = t.why_fresh || t.entry_thesis || t.thesis || t.rationale || t.reason;
+                    const sym  = t.ticker || t.symbol;
+                    const desc = t.why_fresh || t.entry_thesis || t.thesis || t.rationale || t.reason;
                     return (
-                      <div key={i}>
-                        <div
-                          onClick={() => toggle(key, setExpandedAlphaTicker, expandedAlphaTicker)}
-                          style={{
-                            background: isExp ? `${C.green}0a` : C.card,
-                            border: `1px solid ${isExp ? `${C.green}40` : C.border}`,
-                            borderRadius: 8, padding: '0.6rem 0.8rem',
-                            cursor: 'pointer', transition: 'border-color 0.15s',
-                          }}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: desc ? 5 : 0, flexWrap: 'wrap' }}>
-                            <span style={{ color: C.green, fontWeight: 800, fontSize: '0.88rem', fontFamily: font }}>${sym}</span>
-                            {t.name && <span style={{ color: C.dim, fontSize: '0.62rem', fontFamily: sansFont }}>{t.name}</span>}
-                            {t.conviction && <ConvictionBadge value={t.conviction} />}
-                            {t.first_mentioned_by && (
-                              <span style={{ color: C.blue, fontSize: '0.58rem', fontFamily: font }}>@{t.first_mentioned_by}</span>
-                            )}
-                            <span style={{ color: C.dim, fontSize: '0.56rem', fontFamily: font, marginLeft: 'auto' }}>{isExp ? '▼' : '▶'} chart</span>
-                          </div>
-                          {desc && (
-                            <div style={{
-                              color: C.text, fontSize: '0.68rem', fontFamily: sansFont, lineHeight: 1.55,
-                              overflow: 'hidden', display: '-webkit-box',
-                              WebkitLineClamp: isExp ? 'unset' : 2,
-                              WebkitBoxOrient: 'vertical' as const,
-                            }}>
-                              {desc}
-                            </div>
+                      <div
+                        key={i}
+                        onClick={() => onTickerClick(sym, t, desc, t.name)}
+                        style={{
+                          background: C.card,
+                          border: `1px solid ${C.border}`,
+                          borderRadius: 8, padding: '0.6rem 0.8rem',
+                          cursor: 'pointer', transition: 'border-color 0.15s',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: desc ? 5 : 0, flexWrap: 'wrap' }}>
+                          <span style={{ color: C.green, fontWeight: 800, fontSize: '0.88rem', fontFamily: font }}>${sym}</span>
+                          {t.name && <span style={{ color: C.dim, fontSize: '0.62rem', fontFamily: sansFont }}>{t.name}</span>}
+                          {t.conviction && <ConvictionBadge value={t.conviction} />}
+                          {t.first_mentioned_by && (
+                            <span style={{ color: C.blue, fontSize: '0.58rem', fontFamily: font }}>@{t.first_mentioned_by}</span>
                           )}
+                          <span style={{ color: C.dim, fontSize: '0.56rem', fontFamily: font, marginLeft: 'auto' }}>↗ chart</span>
                         </div>
-                        {isExp && <TradingViewChart symbol={resolveTVSymbol(sym, t)} />}
+                        {desc && (
+                          <div style={{
+                            color: C.text, fontSize: '0.68rem', fontFamily: sansFont, lineHeight: 1.55,
+                            overflow: 'hidden', display: '-webkit-box',
+                            WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const,
+                          }}>
+                            {desc}
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -947,21 +930,11 @@ function XSnapshotSections({ tx }: { tx: any }) {
                       </div>
                     )}
                     {Array.isArray(h.key_tickers) && h.key_tickers.length > 0 && (
-                      <>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
-                          {h.key_tickers.map((ticker: string, j: number) => {
-                            const chipKey = `${themeKey}-${ticker}`;
-                            const isExp   = expandedThemeTicker === chipKey;
-                            return tickerChip(ticker, isExp, () => toggle(chipKey, setExpandedThemeTicker, expandedThemeTicker), C.blue);
-                          })}
-                        </div>
-                        {h.key_tickers.map((ticker: string) => {
-                          const chipKey = `${themeKey}-${ticker}`;
-                          return expandedThemeTicker === chipKey
-                            ? <TradingViewChart key={ticker} symbol={resolveTVSymbol(ticker)} />
-                            : null;
-                        })}
-                      </>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                        {h.key_tickers.map((ticker: string) =>
+                          tickerChip(ticker, false, (e: any) => { e.stopPropagation(); onTickerClick(ticker, undefined, h.why_hot || h.description); }, C.blue)
+                        )}
+                      </div>
                     )}
                   </div>
                 );
@@ -976,50 +949,46 @@ function XSnapshotSections({ tx }: { tx: any }) {
           {sentAccel.length === 0 ? emptyState('No acceleration data yet.') : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', flex: 1, overflowY: 'auto', maxHeight: 480 }}>
               {sentAccel.map((item: any, i: number) => {
-                const sym   = item.ticker || item.symbol;
-                const isExp = expandedAccelTicker === sym;
+                const sym = item.ticker || item.symbol;
+                const ctx = item.thesis || item.reason || item.why_now || item.context;
                 return (
-                  <div key={sym || i}>
-                    <div
-                      onClick={() => toggle(sym, setExpandedAccelTicker, expandedAccelTicker)}
-                      style={{
-                        background: C.card, border: `1px solid ${isExp ? `${C.purple}40` : C.border}`,
-                        borderRadius: 8, padding: '0.65rem 0.85rem', cursor: 'pointer', transition: 'border-color 0.15s',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap',
-                        marginBottom: (item.thesis || item.reason || item.why_now || item.context) ? 5 : 0 }}>
-                        <span style={{ color: C.purple, fontWeight: 800, fontSize: '0.88rem', fontFamily: font }}>${sym}</span>
-                        {item.hype_delta != null && (
-                          <span style={{ color: item.hype_delta >= 0 ? C.green : C.red, fontSize: '0.62rem', fontFamily: font, fontWeight: 700 }}>
-                            Δ{item.hype_delta >= 0 ? '+' : ''}{item.hype_delta}
-                          </span>
-                        )}
-                        {item.mention_delta != null && (
-                          <span style={{ color: item.mention_delta >= 0 ? C.green : C.red, fontSize: '0.62rem', fontFamily: font }}>
-                            mentions {item.mention_delta >= 0 ? '+' : ''}{item.mention_delta}
-                          </span>
-                        )}
-                        {item.trader_count_delta != null && (
-                          <span style={{ color: item.trader_count_delta >= 0 ? C.green : C.red, fontSize: '0.62rem', fontFamily: font }}>
-                            traders {item.trader_count_delta >= 0 ? '+' : ''}{item.trader_count_delta}
-                          </span>
-                        )}
-                        {item.buzz_trend && (
-                          <span style={{ color: C.gold, fontSize: '0.6rem', fontFamily: font, fontWeight: 700, textTransform: 'uppercase' }}>{item.buzz_trend}</span>
-                        )}
-                        {item.sentiment && (
-                          <span style={{ color: sentColor(item.sentiment), fontSize: '0.6rem', fontFamily: font, fontWeight: 700, textTransform: 'uppercase' }}>{item.sentiment}</span>
-                        )}
-                        <span style={{ color: C.dim, fontSize: '0.56rem', fontFamily: font, marginLeft: 'auto' }}>{isExp ? '▼' : '▶'} chart</span>
-                      </div>
-                      {(item.thesis || item.reason || item.why_now || item.context) && (
-                        <div style={{ color: C.text, fontSize: '0.68rem', fontFamily: sansFont, lineHeight: 1.55 }}>
-                          {item.thesis || item.reason || item.why_now || item.context}
-                        </div>
+                  <div
+                    key={sym || i}
+                    onClick={() => onTickerClick(sym, item, ctx)}
+                    style={{
+                      background: C.card, border: `1px solid ${C.border}`,
+                      borderRadius: 8, padding: '0.65rem 0.85rem', cursor: 'pointer', transition: 'border-color 0.15s',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap',
+                      marginBottom: ctx ? 5 : 0 }}>
+                      <span style={{ color: C.purple, fontWeight: 800, fontSize: '0.88rem', fontFamily: font }}>${sym}</span>
+                      {item.hype_delta != null && (
+                        <span style={{ color: item.hype_delta >= 0 ? C.green : C.red, fontSize: '0.62rem', fontFamily: font, fontWeight: 700 }}>
+                          Δ{item.hype_delta >= 0 ? '+' : ''}{item.hype_delta}
+                        </span>
                       )}
+                      {item.mention_delta != null && (
+                        <span style={{ color: item.mention_delta >= 0 ? C.green : C.red, fontSize: '0.62rem', fontFamily: font }}>
+                          mentions {item.mention_delta >= 0 ? '+' : ''}{item.mention_delta}
+                        </span>
+                      )}
+                      {item.trader_count_delta != null && (
+                        <span style={{ color: item.trader_count_delta >= 0 ? C.green : C.red, fontSize: '0.62rem', fontFamily: font }}>
+                          traders {item.trader_count_delta >= 0 ? '+' : ''}{item.trader_count_delta}
+                        </span>
+                      )}
+                      {item.buzz_trend && (
+                        <span style={{ color: C.gold, fontSize: '0.6rem', fontFamily: font, fontWeight: 700, textTransform: 'uppercase' }}>{item.buzz_trend}</span>
+                      )}
+                      {item.sentiment && (
+                        <span style={{ color: sentColor(item.sentiment), fontSize: '0.6rem', fontFamily: font, fontWeight: 700, textTransform: 'uppercase' }}>{item.sentiment}</span>
+                      )}
+                      <span style={{ color: C.dim, fontSize: '0.56rem', fontFamily: font, marginLeft: 'auto' }}>↗ chart</span>
                     </div>
-                    {isExp && <TradingViewChart symbol={resolveTVSymbol(sym, item)} />}
+                    {ctx && (
+                      <div style={{ color: C.text, fontSize: '0.68rem', fontFamily: sansFont, lineHeight: 1.55 }}>{ctx}</div>
+                    )}
                   </div>
                 );
               })}
@@ -1476,9 +1445,64 @@ const SafeLink: React.FC<SafeLinkProps> = ({ href, children, className = "", sty
   );
 };
 
+function SocialTickerPopup({
+  symbol, tvSymbol, name, context, onClose,
+}: {
+  symbol: string;
+  tvSymbol: string;
+  name?: string;
+  context?: string;
+  onClose: () => void;
+}) {
+  const tvSrc = `https://s.tradingview.com/widgetembed/?symbol=${encodeURIComponent(tvSymbol)}&interval=D&theme=dark&style=1&locale=en&hide_top_toolbar=0&hide_side_toolbar=1&allow_symbol_change=0&save_image=0&width=100%25&height=100%25`;
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)' }}
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-2xl mx-4 rounded-2xl overflow-hidden shadow-2xl"
+        style={{ background: '#0b0d12', border: '1px solid rgba(255,255,255,0.09)' }}
+        onClick={e => e.stopPropagation()}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem 1.25rem', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '1.2rem', fontWeight: 800, color: '#e2e8f0', letterSpacing: '-0.02em', fontFamily: "'JetBrains Mono', monospace" }}>${symbol}</span>
+            {name && <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.4)', fontFamily: "'Outfit', sans-serif" }}>{name}</span>}
+            {tvSymbol !== symbol && <span style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.25)', fontFamily: "'JetBrains Mono', monospace" }}>{tvSymbol}</span>}
+          </div>
+          <button
+            onClick={onClose}
+            style={{ width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: '0.85rem' }}
+          >✕</button>
+        </div>
+        <div style={{ height: 420 }}>
+          <iframe
+            key={tvSymbol}
+            src={tvSrc}
+            style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
+            title={`${symbol} chart`}
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
+          />
+        </div>
+        {context && (
+          <div style={{ padding: '0.75rem 1.25rem', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+            <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.55)', lineHeight: 1.6, fontFamily: "'Outfit', sans-serif" }}>{context}</div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function OnchainSocialPage() {
   const openInNewTab = (url: string) => { openSecureLink(url); };
   const queryClient = useQueryClient();
+
+  const [tickerPopup, setTickerPopup] = useState<{ symbol: string; tvSymbol: string; name?: string; context?: string } | null>(null);
+  const openTicker = (sym: string, dataObj?: any, context?: string, name?: string) =>
+    setTickerPopup({ symbol: sym, tvSymbol: resolveTVSymbol(sym, dataObj), name, context });
 
   const { data: dashData, isLoading: dashLoading } = useQuery<any>({
     queryKey: ['/api/social/x-dashboard'],
@@ -1622,7 +1646,7 @@ export default function OnchainSocialPage() {
               </div>
             </section>
           ) : tx ? (
-            <XSnapshotSections tx={tx} />
+            <XSnapshotSections tx={tx} onTickerClick={openTicker} />
           ) : null}
         </div>
 
@@ -2061,6 +2085,16 @@ export default function OnchainSocialPage() {
           </p>
         </footer>
       </div>
+
+      {tickerPopup && (
+        <SocialTickerPopup
+          symbol={tickerPopup.symbol}
+          tvSymbol={tickerPopup.tvSymbol}
+          name={tickerPopup.name}
+          context={tickerPopup.context}
+          onClose={() => setTickerPopup(null)}
+        />
+      )}
     </div>
   );
 }
