@@ -816,7 +816,6 @@ function XSnapshotSections({ tx, onTickerClick }: {
                       {Array.isArray(t.accounts) && t.accounts.length > 0 && (
                         <span style={{ color: C.dim, fontSize: '0.58rem', fontFamily: font }}>{t.accounts.length} src</span>
                       )}
-                      <span style={{ color: C.dim, fontSize: '0.56rem', fontFamily: font, marginLeft: 'auto' }}>↗ chart</span>
                     </div>
                     {t.rationale && (
                       <div style={{
@@ -853,7 +852,6 @@ function XSnapshotSections({ tx, onTickerClick }: {
                         background: `${C.purple}12`, textTransform: 'uppercase', letterSpacing: '0.06em' }}>SPOTLIGHT</span>
                       <span style={{ color: C.purple, fontWeight: 800, fontSize: '0.88rem', fontFamily: font }}>${sym}</span>
                       {freshAlpha.conviction && <ConvictionBadge value={freshAlpha.conviction} />}
-                      <span style={{ color: C.dim, fontSize: '0.56rem', fontFamily: font, marginLeft: 'auto' }}>↗ chart</span>
                     </div>
                     {freshAlpha.thesis && <div style={{ color: C.text, fontSize: '0.72rem', fontFamily: sansFont, lineHeight: 1.65 }}>{freshAlpha.thesis}</div>}
                     {freshAlpha.reason && <div style={{ color: C.text, fontSize: '0.72rem', fontFamily: sansFont, lineHeight: 1.65 }}>{freshAlpha.reason}</div>}
@@ -885,7 +883,6 @@ function XSnapshotSections({ tx, onTickerClick }: {
                           {t.first_mentioned_by && (
                             <span style={{ color: C.blue, fontSize: '0.58rem', fontFamily: font }}>@{t.first_mentioned_by}</span>
                           )}
-                          <span style={{ color: C.dim, fontSize: '0.56rem', fontFamily: font, marginLeft: 'auto' }}>↗ chart</span>
                         </div>
                         {desc && (
                           <div style={{
@@ -984,7 +981,6 @@ function XSnapshotSections({ tx, onTickerClick }: {
                       {item.sentiment && (
                         <span style={{ color: sentColor(item.sentiment), fontSize: '0.6rem', fontFamily: font, fontWeight: 700, textTransform: 'uppercase' }}>{item.sentiment}</span>
                       )}
-                      <span style={{ color: C.dim, fontSize: '0.56rem', fontFamily: font, marginLeft: 'auto' }}>↗ chart</span>
                     </div>
                     {ctx && (
                       <div style={{ color: C.text, fontSize: '0.68rem', fontFamily: sansFont, lineHeight: 1.55 }}>{ctx}</div>
