@@ -717,7 +717,7 @@ function EtfDetailPanel({ ticker, tvSymbol, dotColor, name }: {
         <div className="mt-4 space-y-5">
           <div className="flex flex-wrap gap-x-6 gap-y-3 px-1 py-3 bg-white/[0.03] rounded-lg border border-white/[0.06]">
             {([
-              { label: "Price", value: data.price != null ? `$${fmtNum(data.price)}` : null, cls: "text-white" },
+              { label: "Price", value: data.price != null ? `$${fmtPx(data.price)}` : null, cls: "text-white" },
               { label: "1D",    value: fmtPct(perf?.["1d"]),  cls: pctCls(perf?.["1d"] ?? null) },
               { label: "7D",    value: fmtPct(perf?.["7d"]),  cls: pctCls(perf?.["7d"] ?? null) },
               { label: "30D",   value: fmtPct(perf?.["30d"]), cls: pctCls(perf?.["30d"] ?? null) },
