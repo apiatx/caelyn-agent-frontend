@@ -34,7 +34,7 @@ type CompareMetricKey =
   | "net_income" | "ebitda" | "free_cash_flow" | "total_debt"
   | "ps_ratio" | "pe_ratio" | "recent_news";
 
-type CompareRange = "1M" | "3M" | "6M" | "YTD" | "1Y" | "3Y" | "5Y" | "10Y" | "MAX" | "ALL";
+type CompareRange = "1Y" | "3Y" | "5Y";
 
 type MetricDef = { key: CompareMetricKey; label: string; unit: string };
 
@@ -115,9 +115,12 @@ const DEFAULT_STARRED: CompareMetricKey[] = [
   "operating_income", "ebitda", "free_cash_flow", "total_debt", "market_cap",
 ];
 
-const RANGES: CompareRange[] = ["1M","3M","6M","YTD","1Y","3Y","5Y","10Y","MAX","ALL"];
+const RANGES: CompareRange[] = ["1Y", "3Y", "5Y"];
 
-const SHORT_RANGES: CompareRange[] = ["1M","3M","6M"];
+const LEGACY_RANGE_COERCE: Record<string, CompareRange> = {
+  "1M": "1Y", "3M": "1Y", "6M": "1Y", "YTD": "1Y",
+  "10Y": "5Y", "MAX": "5Y", "ALL": "5Y",
+};
 
 const CHIP_COLORS = [
   "#3b82f6", // blue
@@ -440,7 +443,7 @@ export function StockCompareSection() {
 
   const [symbols, setSymbols] = useState<CompareSymbol[]>([]);
   const [metric, setMetric] = useState<MetricDef>(STOCK_COMPARE_METRICS[1]); // Revenue default
-  const [range, setRange] = useState<CompareRange>("ALL");
+  const [range, setRange] = useState<CompareRange>("5Y");
   const [period, setPeriod] = useState<"annual" | "quarterly">("annual");
 
   const [compareData, setCompareData] = useState<CompareResponse | null>(null);
@@ -491,8 +494,9 @@ export function StockCompareSection() {
       const m = STOCK_COMPARE_METRICS.find((x) => x.key === metricParam);
       if (m) setMetric(m);
     }
-    if (rangeParam && RANGES.includes(rangeParam as CompareRange)) {
-      setRange(rangeParam as CompareRange);
+    if (rangeParam) {
+      const coerced = LEGACY_RANGE_COERCE[rangeParam] ?? (RANGES.includes(rangeParam as CompareRange) ? rangeParam as CompareRange : null);
+      if (coerced) setRange(coerced);
     }
     if (periodParam === "quarterly" || periodParam === "annual") {
       setPeriod(periodParam);
@@ -558,7 +562,7 @@ export function StockCompareSection() {
       });
       if (!resp.ok) {
         const body = await resp.json().catch(() => ({}));
-        throw new Error(body.error || `Backend ${resp.status}`);
+        throw new Error(body.error || "Could not load comparison data. Try removing unsupported tickers or switching to 5Y.");
       }
       const data: CompareResponse = await resp.json();
       setCompareData(data);
@@ -669,7 +673,16 @@ export function StockCompareSection() {
   const series = compareData?.series || [];
   const snapshot = compareData?.snapshot || [];
   const news = compareData?.news || {};
+  const warnings = compareData?.meta?.warnings || [];
   const isNewsMetric = metric.key === "recent_news";
+
+  // Series that have at least one non-null data point — used to skip empty Lines
+  const chartableSeries = series.filter((s) =>
+    (s.points || []).some((p) => p.value != null)
+  );
+
+  // True only when every series has zero valid points (and we have data back)
+  const allSeriesEmpty = series.length > 0 && chartableSeries.length === 0;
 
   // Filtered metric list for dropdown
   const filteredMetrics = STOCK_COMPARE_METRICS.filter((m) =>
@@ -849,10 +862,12 @@ export function StockCompareSection() {
           ))}
         </div>
 
-        {/* Short-range notice */}
-        {SHORT_RANGES.includes(range) && (
-          <div className="text-xs text-gray-400 mb-3 italic">
-            Financial statement metrics update quarterly or annually; short ranges may show the latest available filing data.
+        {/* Backend warnings */}
+        {warnings.length > 0 && (
+          <div className="text-xs text-amber-600/80 mb-3 space-y-0.5">
+            {warnings.map((w, i) => (
+              <div key={i} className="italic">{w}</div>
+            ))}
           </div>
         )}
 
@@ -893,11 +908,13 @@ export function StockCompareSection() {
                   <div className="flex flex-wrap gap-3">
                     {series.map((s, i) => {
                       const color = colorMap[s.symbol] || CHIP_COLORS[i % CHIP_COLORS.length];
+                      const hasData = chartableSeries.some((cs) => cs.symbol === s.symbol);
                       return (
-                        <div key={s.symbol} className="flex items-center gap-1.5 text-xs text-gray-600">
-                          <span className="w-3 h-2 rounded-sm flex-shrink-0" style={{ backgroundColor: color }} />
-                          <span className="font-semibold text-gray-800">{s.symbol}</span>
+                        <div key={s.symbol} className={`flex items-center gap-1.5 text-xs ${hasData ? "text-gray-600" : "text-gray-400"}`}>
+                          <span className="w-3 h-2 rounded-sm flex-shrink-0" style={{ backgroundColor: hasData ? color : "#d1d5db" }} />
+                          <span className={`font-semibold ${hasData ? "text-gray-800" : "text-gray-400"}`}>{s.symbol}</span>
                           {s.name && <span className="text-gray-400 hidden sm:inline">{s.name}</span>}
+                          {!hasData && <span className="text-gray-400 italic">(no data)</span>}
                         </div>
                       );
                     })}
@@ -905,56 +922,63 @@ export function StockCompareSection() {
                   <div className="ml-auto text-xs font-semibold text-gray-500">{metric.label}</div>
                 </div>
 
-                {/* Chart */}
-                <div className="w-full" style={{ height: 520 }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart
-                      data={chartData}
-                      margin={{ top: 20, right: 30, left: 20, bottom: 10 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
-                      <XAxis
-                        dataKey="date"
-                        tick={{ fontSize: 11, fill: "#9ca3af" }}
-                        tickFormatter={(v: string) => String(v).slice(0, 4)}
-                        minTickGap={28}
-                        axisLine={{ stroke: "#e5e7eb" }}
-                        tickLine={false}
-                      />
-                      <YAxis
-                        tick={{ fontSize: 11, fill: "#9ca3af" }}
-                        tickFormatter={(v: number) => formatValue(v, metric.unit)}
-                        width={68}
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <Tooltip
-                        content={
-                          <CompareTooltip
-                            unit={metric.unit}
-                            seriesMap={Object.fromEntries(series.map((s) => [s.symbol, s.name || ""]))}
-                          />
-                        }
-                      />
-                      {series.map((s, i) => {
-                        const color = colorMap[s.symbol] || CHIP_COLORS[i % CHIP_COLORS.length];
-                        return (
-                          <Line
-                            key={s.symbol}
-                            type="linear"
-                            dataKey={s.symbol}
-                            name={s.symbol}
-                            stroke={color}
-                            strokeWidth={3}
-                            dot={false}
-                            activeDot={{ r: 4, strokeWidth: 0 }}
-                            connectNulls={false}
-                          />
-                        );
-                      })}
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
+                {/* All-empty state */}
+                {allSeriesEmpty ? (
+                  <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+                    <div className="text-sm">No chartable data returned for these tickers. Try removing unsupported tickers or switching to 5Y.</div>
+                  </div>
+                ) : (
+                  /* Chart */
+                  <div className="w-full" style={{ height: 520 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart
+                        data={chartData}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 10 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                        <XAxis
+                          dataKey="date"
+                          tick={{ fontSize: 11, fill: "#9ca3af" }}
+                          tickFormatter={(v: string) => String(v).slice(0, 4)}
+                          minTickGap={28}
+                          axisLine={{ stroke: "#e5e7eb" }}
+                          tickLine={false}
+                        />
+                        <YAxis
+                          tick={{ fontSize: 11, fill: "#9ca3af" }}
+                          tickFormatter={(v: number) => formatValue(v, metric.unit)}
+                          width={68}
+                          axisLine={false}
+                          tickLine={false}
+                        />
+                        <Tooltip
+                          content={
+                            <CompareTooltip
+                              unit={metric.unit}
+                              seriesMap={Object.fromEntries(series.map((s) => [s.symbol, s.name || ""]))}
+                            />
+                          }
+                        />
+                        {chartableSeries.map((s, i) => {
+                          const color = colorMap[s.symbol] || CHIP_COLORS[i % CHIP_COLORS.length];
+                          return (
+                            <Line
+                              key={s.symbol}
+                              type="linear"
+                              dataKey={s.symbol}
+                              name={s.symbol}
+                              stroke={color}
+                              strokeWidth={3}
+                              dot={false}
+                              activeDot={{ r: 4, strokeWidth: 0 }}
+                              connectNulls={false}
+                            />
+                          );
+                        })}
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
 
                 {/* Snapshot table */}
                 {snapshot.length > 0 && (
