@@ -735,15 +735,15 @@ function XSnapshotSections({ tx, onTickerClick }: {
       <style>{`
         .x-snap-grid {
           display: grid;
-          grid-template-columns: repeat(4, 1fr);
+          grid-template-columns: repeat(4, minmax(0, 1fr));
           gap: 0.9rem;
           margin-bottom: 1.5rem;
         }
         @media (max-width: 1000px) {
-          .x-snap-grid { grid-template-columns: repeat(2, 1fr); }
+          .x-snap-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
         @media (max-width: 560px) {
-          .x-snap-grid { grid-template-columns: 1fr; }
+          .x-snap-grid { grid-template-columns: minmax(0, 1fr); }
         }
       `}</style>
 
@@ -1565,7 +1565,7 @@ export default function OnchainSocialPage() {
         <div style={{ marginTop: '1.25rem' }}>
           {dashLoading ? (
             <section style={{ maxWidth: 1400, margin: '0 auto', padding: '0 1.5rem 0' }}>
-              <style>{`.x-snap-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.9rem;margin-bottom:1.5rem}@media(max-width:1000px){.x-snap-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:560px){.x-snap-grid{grid-template-columns:1fr}}`}</style>
+              <style>{`.x-snap-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.9rem;margin-bottom:1.5rem}@media(max-width:1000px){.x-snap-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:560px){.x-snap-grid{grid-template-columns:minmax(0,1fr)}}`}</style>
               <div className="x-snap-grid">
                 {[0, 1, 2, 3].map(i => (
                   <div key={i} style={{ background: '#0a0b1e', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: '1.25rem', height: 200 }}>
