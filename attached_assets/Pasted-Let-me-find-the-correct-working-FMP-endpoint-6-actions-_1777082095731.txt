@@ -1,0 +1,74 @@
+Let me find the correct working FMP endpoint:
+
+
+6 actions
+Let me check the existing fmp_provider.py to see exactly how it calls FMP, then try the correct stable endpoint path:
+
+
+3 actions
+/stable/etf/holdings returns 76! Let me verify the response shape:
+
+
+3 actions
+The correct FMP endpoint is /stable/etf/holdings with asset, name, weightPercentage, updatedAt. Now update the service to use this:
+
+
+2 actions
+Now rewrite _fetch_from_fmp to use the correct /stable/etf/holdings endpoint, and flip the priority so FMP goes first (since Finnhub is plan-gated):
+
+
+2 actions
+Now restart and run both acceptance tests:
+
+
+4 actions
+XLK works. Now SMH and verify cache behavior:
+
+
+2 actions
+Both pass. Second XLK call took 97ms — disk + memory cache confirmed working. Let me also verify the disk cache was persisted for restarts:
+
+
+2 actions
+Disk cache confirmed. Let me also do a quick regression check on the existing endpoints:
+
+
+2 actions
+All existing endpoints untouched. Everything is working cleanly. Let me write the commit message:
+
+
+2 actions
+Here's a summary of what was built:
+
+New endpoint: GET /api/sectors/etf/{symbol}
+
+Works for any ETF — both broad SPDR sectors (XLK, XLE, XLF…) and all theme ETFs (SMH, CIBR, URA, BLOK, QTUM…).
+
+Returns:
+
+{
+  "symbol": "XLK",
+  "price": 160.22,
+  "performance": { "1d": 2.82, "7d": 3.8, "30d": 17.68, "ytd": 11.43, "1y": 62.73 },
+  "holding_count": 73,
+  "top_holdings": [
+    { "ticker": "NVDA", "name": "NVIDIA CORP", "weight": 15.422 },
+    ...10 entries
+  ],
+  "holdings": [ ...all 73 ],
+  "as_of": "2026-04-20",
+  "source": "fmp"
+}
+
+Holdings service — caching architecture:
+
+The holdings are stored in data/etf_holdings/{symbol}.json on disk so they survive restarts and are never re-fetched unnecessarily. The tiers work as follows:
+
+Age	Behavior
+0–7 days	Serve from cache immediately
+7–30 days	Serve stale data immediately + trigger background refresh
+>30 days	Force live fetch before returning
+API fails	Return stale data rather than error
+Data source: The correct FMP endpoint turned out to be /stable/etf/holdings (not the legacy /api/v3/etf-holder that was deprecated). Finnhub's holdings endpoint is plan-gated, so it's kept as a fallback for future plan upgrades. No Finnhub calls fire today.
+
+Finnhub usage: Zero additional calls. Quote/history come from the existing Tradier batch + yfinance providers. Holdings only fetch once per 7 days per symbol, only when a popup opens.

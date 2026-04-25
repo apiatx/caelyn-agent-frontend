@@ -2645,6 +2645,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/sectors/etf/:symbol', async (req, res) => {
+    try {
+      const symbol = req.params.symbol.toUpperCase();
+      const controller = new AbortController();
+      const tid = setTimeout(() => controller.abort(), 20000);
+      const r = await fetch(`${SR_URL}/api/sectors/etf/${encodeURIComponent(symbol)}`, {
+        headers: srHdr(), signal: controller.signal,
+      });
+      clearTimeout(tid);
+      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
+      res.json(await r.json());
+    } catch (e: any) {
+      res.status(500).json({ error: e?.name === 'AbortError' ? 'Request timed out' : 'ETF detail unavailable' });
+    }
+  });
+
   // ── Insider Activity proxy ───────────────────────────────────────────────────
   const IA_URL = "https://fast-api-server-trading-agent-aidanpilon.replit.app";
   const iaHdr  = () => ({ "X-API-Key": "hippo_ak_7f3x9k2m4p8q1w5t", "Content-Type": "application/json" });

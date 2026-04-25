@@ -659,7 +659,127 @@ const TVTickerChart = memo(function TVTickerChart({ ticker, symbol }: { ticker: 
   );
 });
 
-// ─── D: Top Stocks in Winning Sectors ────────────────────────────────────────
+// ─── D: ETF Detail Panel (chart + performance + holdings) ────────────────────
+interface EtfDetail {
+  symbol:        string;
+  price:         number | null;
+  performance:   { "1d"?: number; "7d"?: number; "30d"?: number; ytd?: number; "1y"?: number } | null;
+  holding_count: number | null;
+  top_holdings:  { ticker: string; name: string; weight: number }[];
+  holdings:      { ticker: string; name: string; weight: number }[];
+  as_of:         string | null;
+  source:        string | null;
+}
+
+function EtfDetailPanel({ ticker, tvSymbol, dotColor, name }: {
+  ticker: string; tvSymbol?: string; dotColor?: string; name?: string | null;
+}) {
+  const [showAll, setShowAll] = useState(false);
+
+  const { data, isLoading, isError } = useQuery<EtfDetail>({
+    queryKey: ["sector-etf-detail", ticker],
+    queryFn: () =>
+      fetch(`/api/sectors/etf/${encodeURIComponent(ticker)}`)
+        .then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); }),
+    staleTime: 10 * 60_000,
+    retry: 1,
+  });
+
+  const perf          = data?.performance ?? null;
+  const allHoldings   = data?.holdings?.length ? data.holdings : (data?.top_holdings ?? []);
+  const topHoldings   = data?.top_holdings?.length ? data.top_holdings : allHoldings.slice(0, 15);
+  const displayed     = showAll ? allHoldings : topHoldings;
+  const canExpand     = allHoldings.length > topHoldings.length;
+
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-3">
+        <div className="w-2 h-2 rounded-full" style={{ background: dotColor ?? "#64748b" }} />
+        <span className="text-xs font-mono font-bold text-white">{ticker}</span>
+        {name && <span className="text-xs text-gray-500">{name}</span>}
+      </div>
+
+      <TVTickerChart ticker={ticker} symbol={tvSymbol} />
+
+      {isLoading ? (
+        <div className="mt-4 space-y-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="flex gap-3">
+              <Skel w={80} h={14} /><Skel w={80} h={14} /><Skel w={80} h={14} /><Skel w={80} h={14} />
+            </div>
+          ))}
+        </div>
+      ) : isError ? (
+        <div className="mt-4 flex items-center gap-2 text-sm text-amber-400">
+          <AlertTriangle className="w-4 h-4 flex-shrink-0" /> ETF holdings unavailable
+        </div>
+      ) : data ? (
+        <div className="mt-4 space-y-5">
+          <div className="flex flex-wrap gap-x-6 gap-y-3 px-1 py-3 bg-white/[0.03] rounded-lg border border-white/[0.06]">
+            {([
+              { label: "Price", value: data.price != null ? `$${fmtNum(data.price)}` : null, cls: "text-white" },
+              { label: "1D",    value: fmtPct(perf?.["1d"]),  cls: pctCls(perf?.["1d"] ?? null) },
+              { label: "7D",    value: fmtPct(perf?.["7d"]),  cls: pctCls(perf?.["7d"] ?? null) },
+              { label: "30D",   value: fmtPct(perf?.["30d"]), cls: pctCls(perf?.["30d"] ?? null) },
+              { label: "YTD",   value: fmtPct(perf?.ytd),     cls: pctCls(perf?.ytd ?? null) },
+              { label: "1Y",    value: fmtPct(perf?.["1y"]),  cls: pctCls(perf?.["1y"] ?? null) },
+            ] as { label: string; value: string | null; cls: string }[]).map(({ label, value, cls }) => (
+              <div key={label} className="flex flex-col gap-0.5 min-w-[52px]">
+                <span className="text-[10px] text-gray-500 uppercase tracking-wider">{label}</span>
+                <span className={`text-sm font-mono font-bold tabular-nums ${cls}`}>{value ?? "—"}</span>
+              </div>
+            ))}
+          </div>
+
+          {displayed.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-2.5">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-xs font-semibold text-gray-300 uppercase tracking-wider">ETF Holdings</span>
+                  {data.as_of && (
+                    <span className="text-[10px] text-gray-600">Top holdings as of {data.as_of}</span>
+                  )}
+                </div>
+                {canExpand && (
+                  <button
+                    onClick={() => setShowAll(v => !v)}
+                    className="text-[10px] text-teal-400 hover:text-teal-300 transition-colors"
+                  >
+                    {showAll ? "Show fewer" : `Show all ${data.holding_count ?? allHoldings.length} holdings`}
+                  </button>
+                )}
+              </div>
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-white/[0.06]">
+                    <th className="px-2 py-1.5 text-left text-[10px] text-gray-500 uppercase tracking-wider w-8">#</th>
+                    <th className="px-2 py-1.5 text-left text-[10px] text-gray-500 uppercase tracking-wider">Ticker</th>
+                    <th className="px-2 py-1.5 text-left text-[10px] text-gray-500 uppercase tracking-wider">Name</th>
+                    <th className="px-2 py-1.5 text-right text-[10px] text-gray-500 uppercase tracking-wider">Weight %</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {displayed.map((h, i) => (
+                    <tr key={`${h.ticker ?? i}`} className="border-b border-white/[0.03] hover:bg-white/[0.03]">
+                      <td className="px-2 py-1.5 text-gray-600 font-mono tabular-nums">{i + 1}</td>
+                      <td className="px-2 py-1.5 font-mono font-bold text-white">{h.ticker}</td>
+                      <td className="px-2 py-1.5 text-gray-400 truncate max-w-[220px]">{h.name}</td>
+                      <td className="px-2 py-1.5 text-right font-mono tabular-nums text-gray-300">
+                        {h.weight != null ? `${h.weight.toFixed(2)}%` : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+// ─── E: Top Stocks in Winning Sectors ────────────────────────────────────────
 const ROLE_CONFIG: Record<string, { label: string; color: string; border: string; bg: string; badge: string }> = {
   momentum_leader:    { label: "Momentum Leaders",      color: "text-emerald-400", border: "border-emerald-500/25", bg: "bg-emerald-500/10", badge: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" },
   bottleneck_enabler: { label: "Bottleneck / Enablers", color: "text-amber-400",   border: "border-amber-500/25",  bg: "bg-amber-500/10",   badge: "bg-amber-500/20 text-amber-300 border-amber-500/30"   },
@@ -976,13 +1096,13 @@ function SectorPerformanceTable({
                       </tr>
                       {expanded && (
                         <tr key={`${row.key}-chart`} className="bg-black/30">
-                          <td colSpan={12} className="px-4 py-3">
-                            <div className="flex items-center gap-2 mb-2">
-                              <div className="w-2 h-2 rounded-full" style={{ background: row.dotColor }} />
-                              <span className="text-xs font-mono font-bold text-white">{row.ticker}</span>
-                              <span className="text-xs text-gray-500">{row.name}</span>
-                            </div>
-                            <TVTickerChart ticker={row.ticker} symbol={row.tvSymbol} />
+                          <td colSpan={12} className="px-4 py-4">
+                            <EtfDetailPanel
+                              ticker={row.ticker}
+                              tvSymbol={row.tvSymbol}
+                              dotColor={row.dotColor}
+                              name={row.name}
+                            />
                           </td>
                         </tr>
                       )}
@@ -1065,13 +1185,12 @@ function SectorPerformanceTable({
                   </tr>
                   {expanded && (
                     <tr key={`${row.ticker}-chart`} className="bg-black/30">
-                      <td colSpan={12} className="px-4 py-3">
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="w-2 h-2 rounded-full" style={{ background: color }} />
-                          <span className="text-xs font-mono font-bold text-white">{row.ticker}</span>
-                          <span className="text-xs text-gray-500">{row.name}</span>
-                        </div>
-                        <TVTickerChart ticker={row.ticker} />
+                      <td colSpan={12} className="px-4 py-4">
+                        <EtfDetailPanel
+                          ticker={row.ticker}
+                          dotColor={color}
+                          name={row.name}
+                        />
                       </td>
                     </tr>
                   )}
