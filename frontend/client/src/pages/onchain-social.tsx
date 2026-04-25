@@ -1,7 +1,6 @@
 import { useState, useCallback, useEffect, useRef, CSSProperties } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { openSecureLink } from '@/utils/security';
-import socialImage from "@assets/image_1771574082445.png";
 
 // ─── Grok Agent Constants ─────────────────────────────────────────
 const AGENT_BACKEND_URL = "https://fast-api-server-trading-agent-aidanpilon.replit.app";
@@ -1604,30 +1603,8 @@ export default function OnchainSocialPage() {
           pointerEvents: 'none', zIndex: 0
         }} />
 
-        {/* HERO */}
-        <div style={{ padding: '0.6rem 3rem 0', maxWidth: 900, margin: '0 auto', textAlign: 'center', position: 'relative', zIndex: 1 }}>
-          <div style={{ position: 'relative', display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem', paddingBottom: '0.25rem', marginBottom: '0.25rem' }}>
-            <div style={{
-              position: 'absolute',
-              inset: -80,
-              background: 'white',
-              filter: 'blur(50px)',
-              borderRadius: '50%',
-              zIndex: 0,
-              pointerEvents: 'none',
-            }} />
-            <img src={socialImage} alt="Caelyn.ai" style={{ width: 260, height: 'auto', objectFit: 'contain', position: 'relative', zIndex: 1 }} />
-            <h1 style={{ fontSize: 'clamp(1.1rem, 2.2vw, 1.55rem)', fontWeight: 700, lineHeight: 1.15, letterSpacing: '-0.03em', margin: 0, marginTop: '-58px', position: 'relative', zIndex: 1 }}>
-              <span className="gradient-text">Social</span>
-            </h1>
-            <p style={{ fontSize: '0.76rem', color: '#64748b', margin: 0, lineHeight: 1.5, position: 'relative', zIndex: 1 }}>
-              Social intelligence and community analytics
-            </p>
-          </div>
-        </div>
-
         {/* ═══ X Intelligence Snapshot — 4 sections ═══ */}
-        <div style={{ marginTop: '0.6rem' }}>
+        <div style={{ marginTop: '1.25rem' }}>
           {dashLoading ? (
             <section style={{ maxWidth: 1400, margin: '0 auto', padding: '0 1.5rem 0' }}>
               <style>{`.x-snap-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.9rem;margin-bottom:1.5rem}@media(max-width:1000px){.x-snap-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:560px){.x-snap-grid{grid-template-columns:1fr}}`}</style>
