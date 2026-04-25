@@ -9,7 +9,7 @@ import {
   Eye, Clock, Layers, Info, ArrowRight, Zap, Activity,
 } from "lucide-react";
 import {
-  LineChart, Line, BarChart, Bar, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from "recharts";
 
 // ─── Types — exact backend shapes ────────────────────────────────────────────
@@ -305,6 +305,12 @@ function ThemePerformanceView({ themes }: { themes: ThemeRow[] }) {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
+  const colorMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    themes.forEach((t, i) => { map[t.id] = THEME_PALETTE[i % THEME_PALETTE.length]; });
+    return map;
+  }, [themes]);
+
   const p = (item: ThemeRow, key: string): number | null => (item.performance as any)?.[key] ?? null;
 
   const getVal = (item: ThemeRow, k: ThemeSortKey): number | string | null => {
@@ -352,7 +358,7 @@ function ThemePerformanceView({ themes }: { themes: ThemeRow[] }) {
         <thead>
           <tr className="border-b border-white/[0.06]">
             <Th label="Rank" k="rank" />
-            <Th label="Leader" />
+            <Th label="Ticker" />
             <Th label="Theme" k="label" />
             <Th label="Parent" k="parent_sector" />
             <Th label="1D"  k="p1d" />
@@ -380,7 +386,7 @@ function ThemePerformanceView({ themes }: { themes: ThemeRow[] }) {
                   </td>
                   <td className="px-3 py-2.5">
                     <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full flex-shrink-0 bg-teal-500/70" />
+                      <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: colorMap[item.id] ?? "#64748b" }} />
                       <span className="font-mono font-bold text-white text-sm">{leaderSym ?? "—"}</span>
                     </div>
                   </td>
@@ -411,7 +417,7 @@ function ThemePerformanceView({ themes }: { themes: ThemeRow[] }) {
                   <tr key={`${item.id}-chart`} className="bg-black/30">
                     <td colSpan={11} className="px-4 py-3">
                       <div className="flex items-center gap-2 mb-2">
-                        <div className="w-2 h-2 rounded-full bg-teal-500/70" />
+                        <div className="w-2 h-2 rounded-full" style={{ background: colorMap[item.id] ?? "#64748b" }} />
                         <span className="text-xs font-mono font-bold text-white">{leaderSym}</span>
                         <span className="text-xs text-gray-500">{item.label}</span>
                       </div>
@@ -432,8 +438,10 @@ function ThemePerformanceView({ themes }: { themes: ThemeRow[] }) {
 }
 
 // ─── Theme Relative Strength Chart ────────────────────────────────────────────
-function ThemeRSView({ themes }: { themes: ThemeRow[] }) {
-  const [tf, setTf] = useState<ThemeTf>("5d");
+const THEME_TF_KEYS:   readonly string[] = ["1d", "5d", "1m", "3m", "ytd"];
+const THEME_TF_LABELS: readonly string[] = ["1D",  "5D", "1M", "3M", "YTD"];
+
+function ThemeRSView({ themes, tf }: { themes: ThemeRow[]; tf: ThemeTf }) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(
     () => new Set(themes.slice(0, 8).map(t => t.id))
   );
@@ -466,26 +474,24 @@ function ThemeRSView({ themes }: { themes: ThemeRow[] }) {
 
   const pctForItem = (item: ThemeRow) => p(item, tf);
 
+  const selectedThemes = useMemo(() => themes.filter(t => selectedIds.has(t.id)), [themes, selectedIds]);
+
+  // Build line chart data: each row is a time-horizon point (1D → 5D → 1M → 3M → YTD)
+  // Each selected theme becomes a named key with its % value at that horizon
   const chartData = useMemo(() =>
-    themes
-      .filter(t => selectedIds.has(t.id))
-      .map(t => ({ id: t.id, name: t.leader_symbol ?? t.symbols?.[0] ?? t.label ?? t.id, value: p(t, tf) }))
-      .filter(d => d.value != null)
-      .sort((a, b) => (b.value ?? 0) - (a.value ?? 0)),
-    [themes, selectedIds, tf]
+    THEME_TF_KEYS.map((key, i) => {
+      const point: Record<string, any> = { period: THEME_TF_LABELS[i] };
+      selectedThemes.forEach(t => {
+        const sym = t.leader_symbol ?? t.symbols?.[0] ?? t.id;
+        point[sym] = p(t, key);
+      });
+      return point;
+    }),
+    [selectedThemes]
   );
 
   return (
     <>
-      {/* Timeframe picker */}
-      <div className="flex gap-1 mb-4 bg-white/5 rounded-lg p-0.5 w-fit">
-        {TF_THEME_OPTIONS.map(t => (
-          <button key={t} onClick={() => setTf(t)}
-            className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${tf === t ? "bg-blue-500 text-white" : "text-gray-400 hover:text-white"}`}>
-            {t.toUpperCase()}
-          </button>
-        ))}
-      </div>
       {/* Leaders / Laggards */}
       <div className="grid grid-cols-2 gap-3 mb-4">
         <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-lg p-3">
@@ -525,26 +531,29 @@ function ThemeRSView({ themes }: { themes: ThemeRow[] }) {
           );
         })}
       </div>
-      {/* Bar chart */}
-      {chartData.length > 0 ? (
+      {/* Line chart — performance across time horizons */}
+      {selectedThemes.length > 0 ? (
         <div style={{ height: 260 }}>
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} margin={{ top: 4, right: 10, left: -20, bottom: 44 }}>
-              <XAxis dataKey="name" tick={{ fontSize: 9, fill: "#64748b" }} tickLine={false} axisLine={false}
-                angle={-35} textAnchor="end" interval={0} />
+            <LineChart data={chartData} margin={{ top: 4, right: 10, left: -20, bottom: 0 }}>
+              <XAxis dataKey="period" tick={{ fontSize: 9, fill: "#64748b" }} tickLine={false} axisLine={false} />
               <YAxis tick={{ fontSize: 9, fill: "#64748b" }} tickLine={false} axisLine={false}
                 tickFormatter={v => `${v > 0 ? "+" : ""}${Number(v).toFixed(1)}%`} />
               <Tooltip
                 contentStyle={{ background: "#0d1623", border: "1px solid #1a2540", borderRadius: 6, fontSize: 11 }}
                 labelStyle={{ color: "#94a3b8" }}
-                formatter={(v: any) => [`${Number(v) > 0 ? "+" : ""}${Number(v).toFixed(2)}%`, tf.toUpperCase()]}
+                itemSorter={(item: any) => -(item.value ?? 0)}
+                formatter={(v: any, name: string) => [`${Number(v) > 0 ? "+" : ""}${Number(v).toFixed(2)}%`, name]}
               />
-              <Bar dataKey="value" radius={[2, 2, 0, 0]}>
-                {chartData.map(entry => (
-                  <Cell key={entry.id} fill={colorMap[entry.id] ?? "#64748b"} fillOpacity={0.85} />
-                ))}
-              </Bar>
-            </BarChart>
+              {selectedThemes.map(t => {
+                const sym   = t.leader_symbol ?? t.symbols?.[0] ?? t.id;
+                const color = colorMap[t.id] ?? "#64748b";
+                return (
+                  <Line key={t.id} type="monotone" dataKey={sym} dot={false} strokeWidth={1.5}
+                    stroke={color} strokeOpacity={0.9} connectNulls />
+                );
+              })}
+            </LineChart>
           </ResponsiveContainer>
         </div>
       ) : (
@@ -1011,6 +1020,7 @@ function SectorRotationChart({
   selectedTickers: Set<string>; onToggleTicker: (t: string) => void;
 }) {
   const [tf, setTf] = useState<Timeframe>("7d");
+  const [themeTf, setThemeTf] = useState<ThemeTf>("5d");
   const [rsMode, setRsMode] = useState<"sectors" | "themes">("sectors");
 
   const { data: themeRSRaw, isLoading: themeRSLoading, isError: themeRSError } = useQuery<{ ranked: ThemeRow[] }>({
@@ -1060,7 +1070,19 @@ function SectorRotationChart({
     return (
       <GlassCard className="p-4 sm:p-6">
         <SectionHeader icon={TrendingUp} title="Relative Strength" badge="Theme ETFs" color="blue"
-          right={<ModeToggle mode={rsMode} setMode={setRsMode} />}
+          right={
+            <div className="flex items-center gap-2">
+              <div className="flex gap-1 bg-white/5 rounded-lg p-0.5">
+                {TF_THEME_OPTIONS.map(t => (
+                  <button key={t} onClick={() => setThemeTf(t)}
+                    className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${themeTf === t ? "bg-blue-500 text-white" : "text-gray-400 hover:text-white"}`}>
+                    {t.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+              <ModeToggle mode={rsMode} setMode={setRsMode} />
+            </div>
+          }
         />
         {themeRSLoading ? (
           <div className="space-y-2">{Array.from({ length: 8 }).map((_, i) => <Skel key={i} h={48} />)}</div>
@@ -1069,7 +1091,7 @@ function SectorRotationChart({
             <AlertTriangle className="w-4 h-4" /> Failed to load theme relative strength data.
           </div>
         ) : (
-          <ThemeRSView themes={themeRSRaw?.ranked ?? []} />
+          <ThemeRSView themes={themeRSRaw?.ranked ?? []} tf={themeTf} />
         )}
       </GlassCard>
     );
