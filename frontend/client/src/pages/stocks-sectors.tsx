@@ -115,7 +115,12 @@ interface ThemeRow {
   theme_type:              string | null;
   symbols:                 string[];
   leader_symbol:           string | null;
-  performance:             { "1d"?: number; "5d"?: number; "1m"?: number; "3m"?: number; "6m"?: number; ytd?: number; "1y"?: number } | null;
+  ticker:                  string | null;
+  price:                   number | null;
+  leader_price:            number | null;
+  current_price:           number | null;
+  quote:                   { price?: number; last?: number; close?: number } | null;
+  performance:             { "1d"?: number; "5d"?: number; "7d"?: number; "1m"?: number; "3m"?: number; "6m"?: number; ytd?: number; "1y"?: number } | null;
   pct_from_50d:            number | null;
   trend_accel_20d:         number | null;
   relative_strength_score: number | null;
@@ -399,7 +404,7 @@ function normalizeThemeToRow(theme: ThemeRow, idx: number): DisplayRow {
     key:                    theme.id,
     ticker,
     name:                   theme.label,
-    price:                  null,
+    price:                  theme.price ?? theme.leader_price ?? theme.current_price ?? theme.quote?.price ?? theme.quote?.last ?? theme.quote?.close ?? null,
     change_1d:              p("1d"),
     change_7d:              ch7,
     change_30d:             p("30d") ?? p("1m"),
